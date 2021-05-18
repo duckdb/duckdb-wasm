@@ -1,8 +1,9 @@
 import esbuild from 'esbuild';
-import { DEFAULT_BUILD_SETTINGS, copy_static, clean_dist } from './esbuild_config.js';
+import { DEFAULT_BUILD_SETTINGS, copy_static, clean_dist, bundle_css } from './esbuild_config.js';
 
 clean_dist();
 copy_static();
+bundle_css();
 
 console.log(`Building duckdb-explorer.js`);
 esbuild.build({

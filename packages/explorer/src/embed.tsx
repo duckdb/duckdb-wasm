@@ -7,9 +7,7 @@ import { AppContextProvider, IAppContext } from './app_context';
 import { Route, BrowserRouter, Switch, Redirect } from 'react-router-dom';
 import { withNavBar } from './components';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'react-resizable/css/styles.css';
-import 'react-virtualized/styles.css';
+import './vars.module.css';
 
 export interface EmbedOptions {
     /// The URL of the DuckDB worker script
@@ -33,7 +31,6 @@ export function embed(element: Element, options?: EmbedOptions): void {
                         <Redirect to="/404" />
                     </Switch>
                 </BrowserRouter>
-                <Explorer />
             </ReduxProvider>
         </AppContextProvider>,
         element,

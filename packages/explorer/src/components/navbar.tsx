@@ -1,7 +1,6 @@
 import * as React from 'react';
 import classNames from 'classnames';
 import { withRouter, RouteComponentProps, Link } from 'react-router-dom';
-import Button from 'react-bootstrap/Button';
 
 import styles from './navbar.module.css';
 
@@ -17,11 +16,11 @@ function Tab(props: { route: string; location: string; icon: string }): React.Re
             })}
         >
             <Link to={props.route}>
-                <Button variant="link">
-                    <svg className={styles.tab_icon} width="20px" height="20px">
+                <div className={styles.tabButton}>
+                    <svg className={styles.tabIcon} width="18px" height="18px">
                         <use xlinkHref={`${props.icon}#sym`} />
                     </svg>
-                </Button>
+                </div>
             </Link>
         </div>
     );
@@ -37,7 +36,9 @@ class NavBarImpl extends React.Component<Props> {
         return (
             <div className={styles.navbar}>
                 <div className={styles.logo}>
-                    <img src={logo} />
+                    <svg width="32px" height="32px">
+                        <use xlinkHref={`${logo}#sym`} />
+                    </svg>
                 </div>
                 <div className={styles.tabs}>
                     <Tab route="/" location={this.props.location.pathname} icon={icon_shell} />
