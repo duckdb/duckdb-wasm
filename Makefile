@@ -104,6 +104,11 @@ lib_tests_relwithdebinfo_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
+# Build the benchmarks
+.PHONY: benchmarks
+benchmarks:
+	yarn workspace @duckdb/benchmarks build
+
 # Make sure we can access the wasm caches
 wasm_caches:
 	mkdir -p ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache

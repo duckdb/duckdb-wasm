@@ -1,0 +1,5 @@
+/node_modules
+/duckdb_webapi.*
+/dist
+*.d.ts.map
+
