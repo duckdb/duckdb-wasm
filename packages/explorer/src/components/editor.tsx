@@ -109,10 +109,10 @@ class Editor extends React.Component<Props> {
     /// Init the monaco editor
     protected initMonaco() {
         if (this.monacoContainer) {
-            monaco.languages.register({ id: 'dashql' });
-            monaco.languages.setTokensProvider('dashql', new TokensProvider(this.props.appContext.store));
-            monaco.editor.defineTheme('dashql', monaco_theme);
-            monaco.editor.setTheme('dashql');
+            monaco.languages.register({ id: 'sql' });
+            monaco.languages.setTokensProvider('sql', new TokensProvider(this.props.appContext.store));
+            monaco.editor.defineTheme('sql', monaco_theme);
+            monaco.editor.setTheme('sql');
 
             this.editor = monaco.editor.create(this.monacoContainer, {
                 fontSize: 13,
@@ -183,7 +183,7 @@ class Editor extends React.Component<Props> {
                         this.resizeEditorDelayed(size.height, size.width);
                     }}
                 >
-                    {_size => <div className={styles.editor_monaco} ref={ref => (this.monacoContainer = ref)} />}
+                    {_size => <div className={styles.editorMonaco} ref={ref => (this.monacoContainer = ref)} />}
                 </AutoSizer>
             </div>
         );
@@ -193,7 +193,7 @@ class Editor extends React.Component<Props> {
         const data = this.editor?.getModel();
         if (!data) return;
 
-        monaco.editor.setModelMarkers(data, 'SQL', []);
+        monaco.editor.setModelMarkers(data, 'sql', []);
 
         // XXX Get syntax errors from DuckDB
         // const markers: monaco.editor.IMarkerData[] = [];

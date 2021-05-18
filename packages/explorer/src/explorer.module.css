@@ -1,0 +1,43 @@
+.container {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 25% 50% 25%;
+    grid-template-rows: 100%;
+}
+
+.leftBar {
+    background-color: rgb(250, 250, 250);
+    box-sizing: border-box;
+    border-right: 1px solid rgb(235, 235, 235);
+}
+
+.center {
+    display: grid;
+    grid-template-rows: 50% 50%;
+    grid-template-columns: 100%;
+}
+
+.rightBar {
+    background-color: rgb(250, 250, 250);
+    box-sizing: border-box;
+    border-left: 1px solid rgb(235, 235, 235);
+}
+
+.inputContainer {
+    grid-row: 1; 
+    grid-column: 1; 
+    padding: 16px;
+
+    display: grid;
+    grid-template-rows: 16px 32px auto 60px  16px;
+    grid-template-columns: 16px auto 16px;
+}
+
+.editorContainer {
+    display: grid;
+    grid-row: 3;
+    grid-column: 2;
+    border: 1px solid rgb(235, 235, 235);
+}
+
