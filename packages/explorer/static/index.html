@@ -4,10 +4,15 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-        <title>DuckDB</title>
-        <script src="./duckdb-explorer.js" />
+        <title>DuckDB Explorer</title>
+        <script src="./duckdb-explorer.js"></script>
     </head>
     <body>
         <div id="root"></div>
+        <script type="text/javascript">
+            DuckDBExplorer.embed(document.getElementById('root'), {
+                standalone: true,
+            });
+        </script>
     </body>
 </html>

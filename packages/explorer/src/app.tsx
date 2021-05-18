@@ -5,4 +5,10 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-resizable/css/styles.css';
 import 'react-virtualized/styles.css';
 
-ReactDOM.render(<div />, document.getElementById('root'));
+export interface EmbedOptions {
+    standalone: boolean;
+}
+
+export function embed(element: Element, options?: EmbedOptions): void {
+    ReactDOM.render(<div>Foo</div>, document.getElementById('root'));
+}
