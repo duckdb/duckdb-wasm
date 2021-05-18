@@ -50,11 +50,12 @@ export const DEFAULT_BUILD_SETTINGS = {
     globalName: 'DuckDBExplorer',
     loader: {
         '.svg': 'file',
+        '.ttf': 'file',
     },
     plugins: [
         cssModulesPlugin({
             inject: true,
-            localsConvention: 'camelCaseOnly',
+            localsConvention: 'camelCase',
             //generateScopedName: (name, filename, css) => string,
         }),
     ],

@@ -7,7 +7,7 @@ export interface AppState {
 
 export function createDefaultState(): AppState {
     return {
-        script: '',
+        script: 'foo',
         scriptTokens: [],
     };
 }
