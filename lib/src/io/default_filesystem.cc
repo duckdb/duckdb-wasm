@@ -1,6 +1,3 @@
-#ifndef INCLUDE_DUCKDB_WEB_IO_DEFAULT_FILESYSTEM_H_
-#define INCLUDE_DUCKDB_WEB_IO_DEFAULT_FILESYSTEM_H_
-
 #include <memory>
 
 #include "duckdb/common/constants.hpp"
@@ -23,5 +20,3 @@ std::unique_ptr<duckdb::FileSystem> CreateDefaultFileSystem() {
 }  // namespace io
 }  // namespace web
 }  // namespace duckdb
-
-#endif

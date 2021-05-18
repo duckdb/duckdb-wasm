@@ -1,11 +1,10 @@
 #include "duckdb/web/json_analyzer.h"
 
+#include <iostream>
+
 #include "arrow/result.h"
 #include "arrow/status.h"
 #include "arrow/type_fwd.h"
-
-#include <iostream>
-
 #include "duckdb/web/json_parser.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/istreamwrapper.h"
