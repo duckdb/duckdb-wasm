@@ -34,7 +34,7 @@ runcmd:
   - cd /home/actions
   - mkdir runner
   - cd ./runner
-  - curl -o runner.tgz -L https://github.com/actions/runner/releases/download/v2.277.1/actions-runner-linux-x64-2.277.1.tar.gz
+  - curl -o runner.tgz -L https://github.com/actions/runner/releases/download/v2.278.0/actions-runner-linux-x64-2.278.0.tar.gz
   - tar -xzf ./runner.tgz
   - chown -R actions:actions .
   - ./installdependencies.sh

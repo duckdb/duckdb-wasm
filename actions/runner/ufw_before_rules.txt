@@ -1,3 +1,14 @@
 # Isolate the VMs
+#
+# We certainly want GitHub actions at some point but this will do for the private repo.
+#
+# Find the bridge used by multipass `brctl show`.
+# If you run multipass with libvirt (see multipass.sh), the default bridge will be virbr0.
+# Get you standard gateway (192.168.178.1/32, here)
+#
+# Adjust /etc/ufw/before.rules after L17
+# Accept all packets from the multipass vm that target the standard gateway.
+# Drop all packets from the multipass vm that target any other host.
+
 -I FORWARD 1 -d 192.168.178.1/32 -i virbr0 -j ACCEPT
 -I FORWARD 2 -d 192.168.0.0/16 -i virbr0 -j DROP
