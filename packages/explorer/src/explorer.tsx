@@ -16,8 +16,12 @@ class Explorer extends React.Component<Props> {
                 <div className={styles.leftBar}></div>
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
+                        <div className={styles.inputCard} />
                         <div className={styles.editorContainer}>
                             <EditorLoader />
+                        </div>
+                        <div className={styles.inputControls}>
+                            <div className={styles.runScriptButton}>Run Script</div>
                         </div>
                     </div>
                 </div>

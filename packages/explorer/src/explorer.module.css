@@ -8,7 +8,6 @@
 
 .leftBar {
     background-color: rgb(250, 250, 250);
-    box-sizing: border-box;
     border-right: 1px solid rgb(235, 235, 235);
 }
 
@@ -25,19 +24,43 @@
 }
 
 .inputContainer {
-    grid-row: 1; 
-    grid-column: 1; 
-    padding: 16px;
+    grid-row: 1;
+    grid-column: 1;
+    padding: 32px;
 
     display: grid;
-    grid-template-rows: 16px 32px auto 60px  16px;
-    grid-template-columns: 16px auto 16px;
+    grid-template-rows: 32px auto 64px;
+    grid-template-columns: auto;
+}
+
+.inputCard {
+    grid-row: 2 / span 2;
+    grid-column: 1;
+    border: 1px solid rgb(230, 230, 230);
+}
+
+.inputControls {
+    grid-row: 3;
+    grid-column: 1;
+
+    display: grid;
+    grid-template-columns: 160px 32px auto 16px 16px;
+    font-weight: 500;
+}
+
+.runScriptButton {
+    margin: 14px;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    background-color: hsl(56deg 100% 35%);
+    color: white;
+    border-radius: 2px;
 }
 
 .editorContainer {
     display: grid;
-    grid-row: 3;
-    grid-column: 2;
-    border: 1px solid rgb(235, 235, 235);
+    grid-row: 2;
+    grid-column: 1;
+    border: 1px solid rgb(230, 230, 230);
 }
-
