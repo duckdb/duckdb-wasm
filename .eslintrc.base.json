@@ -47,6 +47,6 @@
         }
     },
     "parserOptions": {
-        "extraFileExtensions": [".cjs"]
+        "extraFileExtensions": [".cjs", ".mjs"]
     }
 }
