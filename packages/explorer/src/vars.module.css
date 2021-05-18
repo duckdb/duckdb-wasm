@@ -23,8 +23,6 @@
     --launcher_bg: rgb(30, 30, 30);
     --log_timestamp_color: rgba(255, 255, 255, 0.6);
     --nav_bar_bg: rgb(30, 30, 30);
-    --nav_bar_minimal_bg: transparent;
-    --nav_bar_minimal_fg: rgb(80, 80, 80);
     --nav_bar_button_height: 48px;
     --nav_bar_button_margin: 4px 8px;
     --nav_bar_width: 64px;

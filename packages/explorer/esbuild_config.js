@@ -28,6 +28,16 @@ export function copy_static() {
     fs.copyFile(path.resolve(static_dir, 'index.html'), path.resolve(dist_dir, 'index.html'), printErr);
 }
 
+// Bundle css
+export function bundle_css() {
+    esbuild.build({
+        entryPoints: ['./src/global.css'],
+        outfile: './dist/duckdb-explorer.global.css',
+        bundle: true,
+        minify: true,
+    });
+}
+
 export const DEFAULT_BUILD_SETTINGS = {
     entryPoints: ['./src/embed.tsx'],
     outfile: './dist/duckdb-explorer.js',
