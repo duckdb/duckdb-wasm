@@ -1,0 +1,3 @@
+# Isolate the VMs
+-I FORWARD 1 -d 192.168.178.1/32 -i virbr0 -j ACCEPT
+-I FORWARD 2 -d 192.168.0.0/16 -i virbr0 -j DROP

@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/build/",
+        "target": "es2020",
+        "module": "es2020",
+        "moduleResolution": "node",
+        "strict": true,
+        "sourceMap": true,
+        "declaration": true,
+        "declarationMap": true,
+        "declarationDir": "./dist/types/",
+        "noImplicitAny": true,
+        "esModuleInterop": true,
+        "downlevelIteration": true,
+
+        // Insanity mode due to:
+        // https://issues.apache.org/jira/browse/ARROW-10794
+        "skipLibCheck": true,
+
+        "types": ["emscripten", "node", "jasmine"],
+        "typeRoots": ["./types", "./node_modules/@types", "../../node_modules/@types"],
+        "baseUrl": ".",
+        "lib": ["es6", "webworker"]
+    },
+    "include": [".eslintrc.js", "./src/**/*", "./types/*.d.ts", "./test/**/*"],
+    "exclude": ["./test/node/**/*"]
+}

@@ -1,0 +1,23 @@
+/perf.data*
+/.cache
+/.ccache
+.tmp
+/.flatc
+/.testfile*
+/artifacts
+/reports
+/packages/reports
+/build
+/.ccls-cache
+/.emscripten_cache
+.DS_Store
+compile_commands.json
+
+/target
+
+# Miscellaneous
+.DS_Store
+/node_modules
+.vscode
+!.vscode/settings.json
+data/tpch/**/*.parquet

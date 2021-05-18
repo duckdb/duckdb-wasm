@@ -1,0 +1,45 @@
+#cloud-config
+
+package_upgrade: true
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - gnupg-agent
+  - software-properties-common
+  - git
+  - curl
+  - jq
+
+groups:
+  - docker
+
+users:
+ - name: actions
+   groups: docker
+   homedir: /home/actions
+   lock_passwd: true
+   sudo: False
+
+runcmd:
+  # Install docker
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+  - add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  - apt-get update -y
+  - apt-get install -y docker-ce docker-ce-cli containerd.io
+  - systemctl start docker
+  - systemctl enable docker
+
+  # Install actions
+  - cd /home/actions
+  - mkdir runner
+  - cd ./runner
+  - curl -o runner.tgz -L https://github.com/actions/runner/releases/download/v2.277.1/actions-runner-linux-x64-2.277.1.tar.gz
+  - tar -xzf ./runner.tgz
+  - chown -R actions:actions .
+  - ./installdependencies.sh
+  - rm ./runner.tgz
+
+  # Cache directories
+  - mkdir -p /home/actions/.emscripten_cache /home/actions/.yarn_cache /home/actions/.ccache
+  - chown -R actions:actions /home/actions/.emscripten_cache /home/actions/.yarn_cache /home/actions/.ccache

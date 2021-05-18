@@ -1,0 +1,16 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 200
+AllowShortFunctionsOnASingleLine: Empty
+IndentCaseLabels: true
+NamespaceIndentation: All
+IncludeCategories:
+  - Regex:           '<.*>'
+    Priority:        -1
+  - Regex:           '.*'
+    Priority:        0
+DerivePointerAlignment: false
+PointerAlignment: Left
+AllowAllArgumentsOnNextLine: true
+SpaceAfterTemplateKeyword: false
+SpaceBeforeCtorInitializerColon: false

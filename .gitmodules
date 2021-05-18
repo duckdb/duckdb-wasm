@@ -1,0 +1,27 @@
+[submodule "submodules/duckdb"]
+	path = submodules/duckdb
+	url = https://github.com/duckdb/duckdb
+[submodule "submodules/arrow"]
+	path = submodules/arrow
+	url = https://github.com/apache/arrow
+	shallow = true
+[submodule "submodules/gflags"]
+	path = submodules/gflags
+	url = https://github.com/gflags/gflags.git
+	shallow = true
+[submodule "submodules/benchmark"]
+	path = submodules/benchmark
+	url = https://github.com/google/benchmark
+	shallow = true
+[submodule "submodules/googletest"]
+	path = submodules/googletest
+	url = https://github.com/google/googletest
+	shallow = true
+[submodule "submodules/spdlog"]
+	path = submodules/spdlog
+	url = https://github.com/gabime/spdlog
+	shallow = true
+[submodule "submodules/rapidjson"]
+	path = submodules/rapidjson
+	url = https://github.com/Tencent/rapidjson
+	shallow = true

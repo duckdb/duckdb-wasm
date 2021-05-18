@@ -1,0 +1,46 @@
+inputs:
+    # The build script
+    script:
+        description: 'script to be passed to the docker image'
+        required: true
+
+    # The cache directories.
+    # Default to global cache directories in the runner home directory.
+    emscripten_cache:
+        description: 'emscripten cache directory'
+        default: /home/actions/.emscripten_cache
+    yarn_cache:
+        description: 'yarn cache directory'
+        default: /home/actions/.yarn_cache
+    ccache:
+        description: 'ccache directory'
+        default: /home/actions/.ccache
+
+runs:
+    using: 'composite'
+    steps:
+        # Build the CI image
+        - run: |-
+              export CI_IMAGE_TAG=`cat ./actions/image/TAG`
+              [ ! -z `docker images -q dashql/ci:${CI_IMAGE_TAG}` ] || \
+                  docker build \
+                      -t dashql/ci:${CI_IMAGE_TAG} \
+                      -f ${{ github.workspace }}/actions/image/Dockerfile \
+                      .
+          shell: bash
+
+        # Run the script inside the image
+        - run: |-
+              export CI_IMAGE_TAG=`cat ./actions/image/TAG`
+              docker run --rm \
+                  -v ${{ github.workspace }}:/wd/ \
+                  -v ${{ inputs.emscripten_cache }}:/mnt/emscripten_cache/ \
+                  -v ${{ inputs.yarn_cache }}:/mnt/yarn_cache/ \
+                  -v ${{ inputs.ccache }}:/mnt/ccache/ \
+                  -e EM_CACHE=/mnt/emscripten_cache \
+                  -e YARN_CACHE_FOLDER=/mnt/yarn_cache \
+                  -e CCACHE_DIR=/mnt/ccache \
+                  -e CCACHE_BASEDIR=/wd/ \
+                  dashql/ci:${CI_IMAGE_TAG} \
+                  bash -c "${{ inputs.script }}"
+          shell: bash
