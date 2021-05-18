@@ -4,8 +4,7 @@
     "private": true,
     "scripts": {
         "serve": "tsc --noEmit && node esbuild_serve.js",
-        "build": "tsc --noEmit && node esbuild_build.js",
-        "serve:release": "node ./server.js",
+        "build:release": "tsc --noEmit && node esbuild_build.js",
         "lint": "yarn run eslint {src,test}/**/*.t{s,sx}"
     },
     "engines": {

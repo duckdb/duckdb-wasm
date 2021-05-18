@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom';
 import * as model from './model';
 import Explorer from './explorer';
 import { Provider as ReduxProvider } from 'react-redux';
+import { AppContextProvider, IAppContext } from './app_context';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-resizable/css/styles.css';
@@ -16,12 +17,17 @@ export interface EmbedOptions {
 }
 
 const store = model.createStore();
+const ctx: IAppContext = {
+    store,
+};
 
 export function embed(element: Element, options?: EmbedOptions): void {
     ReactDOM.render(
-        <ReduxProvider store={store}>
-            <Explorer />
-        </ReduxProvider>,
+        <AppContextProvider value={ctx}>
+            <ReduxProvider store={store}>
+                <Explorer />
+            </ReduxProvider>
+        </AppContextProvider>,
         element,
     );
 }

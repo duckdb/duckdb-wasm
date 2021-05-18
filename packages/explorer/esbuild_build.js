@@ -5,4 +5,7 @@ clean_dist();
 copy_static();
 
 console.log(`Building duckdb-explorer.js`);
-esbuild.build(DEFAULT_BUILD_SETTINGS);
+esbuild.build({
+    ...DEFAULT_BUILD_SETTINGS,
+    define: { 'process.env.NODE_ENV': '"production"' },
+});
