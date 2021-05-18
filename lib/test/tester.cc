@@ -1,9 +1,9 @@
-#include <string_view>
 #include <filesystem>
+#include <string_view>
 
 #include "duckdb/web/test/config.h"
-#include "gtest/gtest.h"
 #include "gflags/gflags.h"
+#include "gtest/gtest.h"
 
 using namespace duckdb::web::test;
 
