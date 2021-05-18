@@ -1,0 +1,204 @@
+name: 'main'
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    clang_format:
+        name: Clang-Format
+        runs-on: self-hosted
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Lint ./lib
+              uses: ./actions/image
+              with:
+                  script: |-
+                      python3 ./scripts/run_clang_format.py \
+                        --exclude ./lib/build \
+                        --exclude ./lib/third_party \
+                        -r ./lib/
+
+    eslint:
+        name: ESLint
+        runs-on: self-hosted
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Prepare repository
+              uses: ./actions/image
+              with:
+                  script: |-
+                      git submodule update --init --recursive
+                      yarn install --frozen-lockfile
+
+            - name: Lint @duckdb/duckdb-wasm
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm run lint
+
+    linux_x86_debug:
+        name: Linux / x86 / Debug
+        runs-on: self-hosted
+        needs:
+            - clang_format
+            - eslint
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Prepare repository
+              uses: ./actions/image
+              with:
+                  script: |-
+                      git submodule update --init --recursive
+                      mkdir -p ./lib/build/debug ./reports
+
+            - name: Build
+              uses: ./actions/image
+              with:
+                  script: |-
+                      cmake \
+                          -S./lib/ \
+                          -B./lib/build/debug \
+                          -DCODE_COVERAGE=1 \
+                          -DCMAKE_BUILD_TYPE=Debug \
+                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_C_COMPILER=clang \
+                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_CXX_COMPILER=clang++ \
+                          -DCMAKE_BUILD_TYPE=Debug
+                      ccache -s
+                      make -C./lib/build/debug -j`nproc`
+                      ccache -s
+
+            - name: Test
+              uses: ./actions/image
+              with:
+                  script: |-
+                      export LLVM_PROFILE_FILE=./reports/lib.profraw
+                      ./lib/build/debug/tester \
+                          --source_dir=./lib/ \
+                          --gtest_output=xml:./reports/tests_lib_debug.xml
+
+            - name: Code Coverage
+              uses: ./actions/image
+              with:
+                  script: |-
+                      llvm-profdata merge \
+                          -sparse ./reports/lib.profraw \
+                          -o ./reports/lib.profdata
+                      llvm-cov show ./lib/build/debug/tester \
+                          --instr-profile ./reports/lib.profdata \
+                          -ignore-filename-regex submodules \
+                          > ./reports/coverage_lib.txt
+
+#            - uses: codecov/codecov-action@v1
+#              with:
+#                  token: ${{ secrets.CODECOV_TOKEN }}
+#                  files: ./reports/coverage_lib.txt
+#                  flags: unittests
+
+    linux_x86_release:
+        name: Linux / x86 / Release
+        runs-on: self-hosted
+        needs:
+            - clang_format
+            - eslint
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Prepare repository
+              uses: ./actions/image
+              with:
+                  script: |-
+                      git submodule update --init --recursive
+                      mkdir -p ./lib/build/release ./reports
+
+            - name: Build
+              uses: ./actions/image
+              with:
+                  script: |-
+                      cmake \
+                          -S./lib/ \
+                          -B./lib/build/release \
+                          -DCMAKE_BUILD_TYPE=Release \
+                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_C_COMPILER=clang \
+                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_CXX_COMPILER=clang++ \
+                          -DCMAKE_BUILD_TYPE=Release
+                      ccache -s
+                      make -C./lib/build/release -j`nproc`
+                      ccache -s
+
+            - name: Test
+              uses: ./actions/image
+              with:
+                  script: |-
+                      ./lib/build/release/tester \
+                          --source_dir=./lib/ \
+                          --gtest_output=xml:./reports/tests_lib_release.xml
+
+    wasm:
+        name: WASM
+        runs-on: self-hosted
+        needs:
+            - linux_x86_debug
+            - linux_x86_release
+
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Prepare repository
+              uses: ./actions/image
+              with:
+                  script: |-
+                      git submodule update --init --recursive
+                      mkdir -p ./lib/build/wasm/release ./reports
+                      yarn install --frozen-lockfile
+
+            - name: Build WASM module
+              uses: ./actions/image
+              with:
+                  script: |-
+                      emcmake cmake \
+                          -S./lib/ \
+                          -B./lib/build/wasm/release \
+                          -DCMAKE_BUILD_TYPE=Release \
+                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                          -DBOOST_ARCHIVE=/opt/boost.tar.gz
+
+                      ccache -s
+
+                      emmake make \
+                          -C./lib/build/wasm/release \
+                          -j`nproc` \
+                          duckdb_wasm duckdb_wasm_node
+
+                      ccache -s
+
+                      cp ./lib/build/wasm/release/duckdb_*.{wasm,js} ./packages/duckdb/src/bindings/
+
+            - name: Build @duckdb/duckdb-wasm
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm build
+
+            - name: Test @duckdb/duckdb-wasm
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:ci
+
+#            - uses: codecov/codecov-action@v1
+#              with:
+#                  token: ${{ secrets.CODECOV_TOKEN }}
+#                  files: ./packages/core/coverage/coverage.json,./packages/duckdb/coverage/coverage.json
+#                  flags: unittests
