@@ -191,6 +191,12 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm build
 
+            - name: Build @duckdb/benchmarks
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks build
+
             - name: Test @duckdb/duckdb-wasm
               uses: ./actions/image
               with:

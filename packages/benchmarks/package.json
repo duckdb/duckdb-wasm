@@ -1,0 +1,30 @@
+{
+    "name": "@duckdb/benchmarks",
+    "version": "0.0.0",
+    "private": true,
+    "dependencies": {
+        "@duckdb/duckdb-wasm": "^0.0.26",
+        "@types/benchmark": "^2.1.0",
+        "benny": "^3.6.15",
+        "kleur": "^4.1.4",
+        "prettier": "^2.3.0",
+        "web-worker": "^1.0.0"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^4.23.0",
+        "@typescript-eslint/parser": "^4.23.0",
+        "eslint": "^7.26.0",
+        "eslint-plugin-jasmine": "^4.1.2",
+        "eslint-plugin-prettier": "^3.3.1",
+        "eslint-plugin-react": "^7.23.2",
+        "prettier": "^2.3.0",
+        "typescript": "^4.2.4"
+    },
+    "optionalDependencies": {
+        "fsevents": "*"
+    },
+    "scripts": {
+        "build": "tsc",
+        "lint": "yarn run eslint {src,test}/**/*.ts"
+    }
+}
