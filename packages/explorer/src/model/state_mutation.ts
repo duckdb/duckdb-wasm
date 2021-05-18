@@ -13,7 +13,7 @@ export enum StateMutationType {
 }
 
 /// An state mutation variant
-export type StateMutationVariant = StateMutation<StateMutationType.UPDATE_SCRIPT, string>;
+export type StateMutationVariant = StateMutation<StateMutationType.UPDATE_SCRIPT, [string, any[]]>;
 
 // The action dispatch
 export type Dispatch = (mutation: StateMutationVariant) => void;
@@ -29,7 +29,8 @@ export class AppStateMutation {
             case StateMutationType.UPDATE_SCRIPT:
                 return {
                     ...state,
-                    script: mutation.data,
+                    script: mutation.data[0],
+                    scriptTokens: mutation.data[1],
                 };
         }
         return state;
