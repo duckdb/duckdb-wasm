@@ -37,5 +37,6 @@ export const DEFAULT_BUILD_SETTINGS = {
     minify: true,
     sourcemap: 'external',
     define: { 'process.env.NODE_ENV': '"production"' },
+    globalName: 'DuckDBExplorer',
 };
 export default DEFAULT_BUILD_SETTINGS;
