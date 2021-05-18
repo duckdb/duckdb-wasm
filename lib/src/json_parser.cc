@@ -20,7 +20,6 @@
 
 #include "duckdb/web/json_parser.h"
 
-
 #include <algorithm>
 #include <iostream>
 #include <memory>
