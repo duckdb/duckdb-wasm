@@ -1,4 +1,5 @@
 import esbuild from 'esbuild';
+import cssModulesPlugin from 'esbuild-css-modules-plugin';
 import fs from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
@@ -37,5 +38,15 @@ export const DEFAULT_BUILD_SETTINGS = {
     minify: true,
     sourcemap: 'external',
     globalName: 'DuckDBExplorer',
+    loader: {
+        '.svg': 'file',
+    },
+    plugins: [
+        cssModulesPlugin({
+            inject: true,
+            localsConvention: 'camelCaseOnly',
+            //generateScopedName: (name, filename, css) => string,
+        }),
+    ],
 };
 export default DEFAULT_BUILD_SETTINGS;
