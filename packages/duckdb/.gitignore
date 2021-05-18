@@ -1,0 +1,9 @@
+/*.parquet
+/*.csv
+/.nyc_output
+/coverage
+/node_modules
+/duckdb_webapi.*
+/dist
+/docs
+*.d.ts.map

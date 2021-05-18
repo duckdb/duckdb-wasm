@@ -1,0 +1,52 @@
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint", "prettier", "react"],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:prettier/recommended",
+        "plugin:react/recommended"
+    ],
+    "env": {
+        "browser": true,
+        "node": true
+    },
+    "rules": {
+        "prettier/prettier": "warn",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/ban-types": "warn",
+        "@typescript-eslint/prefer-for-of": "off",
+        "@typescript-eslint/no-for-in-array": "error",
+        "@typescript-eslint/no-empty-function": "off",
+        "@typescript-eslint/no-require-imports": "error",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "vars": "all",
+                "args": "none"
+            }
+        ],
+        "@typescript-eslint/no-shadow": "error",
+        "@typescript-eslint/no-namespace": "error",
+        "linebreak-style": ["error", "unix"],
+        "no-irregular-whitespace": ["error", { "skipComments": true }],
+        "no-alert": "error",
+        "prefer-const": "error",
+        "no-return-assign": "error",
+        "no-useless-call": "error",
+        "no-useless-concat": "error"
+    },
+    "settings": {
+        "react": {
+            "pragma": "React",
+            "fragment": "Fragment",
+            "version": "detect"
+        }
+    },
+    "parserOptions": {
+        "extraFileExtensions": [".cjs"]
+    }
+}

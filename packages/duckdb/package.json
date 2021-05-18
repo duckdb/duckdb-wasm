@@ -1,0 +1,74 @@
+{
+    "name": "@duckdb/duckdb-wasm",
+    "version": "0.0.26",
+    "description": "DuckDB powered by WebAssembly",
+    "dependencies": {
+        "apache-arrow": "^4.0.0",
+        "glob-to-regexp": "^0.4.1"
+    },
+    "devDependencies": {
+        "@types/emscripten": "^1.39.4",
+        "@types/glob-to-regexp": "^0.4.0",
+        "@types/jasmine": "^3.7.4",
+        "@typescript-eslint/eslint-plugin": "^4.23.0",
+        "@typescript-eslint/parser": "^4.23.0",
+        "esbuild": "^0.11.20",
+        "eslint": "^7.26.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-jasmine": "^4.1.2",
+        "eslint-plugin-react": "^7.23.2",
+        "jasmine": "3.7.0",
+        "jasmine-spec-reporter": "^7.0.0",
+        "karma": "^6.3.2",
+        "karma-chrome-launcher": "^3.1.0",
+        "karma-coverage": "^2.0.3",
+        "karma-firefox-launcher": "^2.1.0",
+        "karma-jasmine": "^4.0.1",
+        "karma-jasmine-html-reporter": "^1.6.0",
+        "karma-sourcemap-loader": "^0.3.8",
+        "karma-spec-reporter": "^0.0.32",
+        "make-dir": "^3.1.0",
+        "nyc": "^15.1.0",
+        "prettier": "^2.3.0",
+        "puppeteer": "^9.1.1",
+        "rimraf": "^3.0.2",
+        "typedoc": "^0.20.36",
+        "typescript": "^4.2.4",
+        "web-worker": "^1.0.0"
+    },
+    "optionalDependencies": {
+        "fsevents": "*"
+    },
+    "scripts": {
+        "build": "node bundle.mjs && tsc --emitDeclarationOnly",
+        "docs": "typedoc --out docs src/index.ts",
+        "report": "node ./coverage.mjs",
+        "test:node": "jasmine ./dist/tests-node.js",
+        "test:node:1": "jasmine ./dist/tests-node.js --filter=\"File buffer registration File buffer used twice\"",
+        "test:node:cov": "nyc -r json --report-dir ./coverage/node jasmine ./dist/tests-node.js",
+        "test:browser": "karma start karma.conf.cjs",
+        "test:browser:cov": "karma start karma.conf.cov.cjs",
+        "test:browser:dbg": "karma start karma.conf.dbg.cjs",
+        "test": "npm run test:browser && npm run test:node",
+        "test:cov": "npm run test:browser:cov && npm run test:node:cov && npm run report",
+        "test:ci": "npm run test:cov",
+        "lint": "yarn run eslint {src,test}/**/*.ts"
+    },
+    "files": [
+        "dist/types/**/*.d.ts",
+        "dist/chunk*.js",
+        "dist/duckdb*.js",
+        "dist/duckdb.wasm"
+    ],
+    "main": "./dist/duckdb-node.js",
+    "types": "./dist/duckdb-node.d.ts",
+    "module": "./dist/duckdb.module.js",
+    "browser": {
+        "./dist/duckdb-node.js": "./dist/duckdb-browser.js",
+        "temp-write": false,
+        "worker_threads": false,
+        "perf_hooks": false,
+        "fs": false,
+        "buffer": false
+    }
+}
