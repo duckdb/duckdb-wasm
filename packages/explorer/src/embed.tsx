@@ -1,5 +1,8 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import * as model from './model';
+import Explorer from './explorer';
+import { Provider as ReduxProvider } from 'react-redux';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-resizable/css/styles.css';
@@ -12,6 +15,13 @@ export interface EmbedOptions {
     withNavbar: boolean;
 }
 
+const store = model.createStore();
+
 export function embed(element: Element, options?: EmbedOptions): void {
-    ReactDOM.render(<div>Foo</div>, element);
+    ReactDOM.render(
+        <ReduxProvider store={store}>
+            <Explorer />
+        </ReduxProvider>,
+        element,
+    );
 }
