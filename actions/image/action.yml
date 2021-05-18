@@ -22,9 +22,9 @@ runs:
         # Build the CI image
         - run: |-
               export CI_IMAGE_TAG=`cat ./actions/image/TAG`
-              [ ! -z `docker images -q dashql/ci:${CI_IMAGE_TAG}` ] || \
+              [ ! -z `docker images -q duckdb/wasm-ci:${CI_IMAGE_TAG}` ] || \
                   docker build \
-                      -t dashql/ci:${CI_IMAGE_TAG} \
+                      -t duckdb/wasm-ci:${CI_IMAGE_TAG} \
                       -f ${{ github.workspace }}/actions/image/Dockerfile \
                       .
           shell: bash
@@ -41,6 +41,6 @@ runs:
                   -e YARN_CACHE_FOLDER=/mnt/yarn_cache \
                   -e CCACHE_DIR=/mnt/ccache \
                   -e CCACHE_BASEDIR=/wd/ \
-                  dashql/ci:${CI_IMAGE_TAG} \
+                  duckdb/wasm-ci:${CI_IMAGE_TAG} \
                   bash -c "${{ inputs.script }}"
           shell: bash
