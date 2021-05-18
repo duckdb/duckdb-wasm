@@ -6,9 +6,12 @@ import 'react-resizable/css/styles.css';
 import 'react-virtualized/styles.css';
 
 export interface EmbedOptions {
-    standalone: boolean;
+    /// The URL of the DuckDB worker script
+    workerURL: string;
+    /// Render with navigation bar?
+    withNavbar: boolean;
 }
 
 export function embed(element: Element, options?: EmbedOptions): void {
-    ReactDOM.render(<div>Foo</div>, document.getElementById('root'));
+    ReactDOM.render(<div>Foo</div>, element);
 }

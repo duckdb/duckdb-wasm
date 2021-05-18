@@ -28,7 +28,7 @@ export function copy_static() {
 }
 
 export const DEFAULT_BUILD_SETTINGS = {
-    entryPoints: ['./src/app.tsx'],
+    entryPoints: ['./src/embed.tsx'],
     outfile: './dist/duckdb-explorer.js',
     platform: 'browser',
     format: 'iife',
