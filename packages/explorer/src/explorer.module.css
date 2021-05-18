@@ -26,7 +26,7 @@
 .inputContainer {
     grid-row: 1;
     grid-column: 1;
-    padding: 32px;
+    padding: 16px 32px;
 
     display: grid;
     grid-template-rows: 32px auto 64px;
