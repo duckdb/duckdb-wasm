@@ -15,8 +15,8 @@
 #include <thread>
 #include <vector>
 
-#include "duckdb/web/test/config.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/test/config.h"
 
 using namespace duckdb::web;
 namespace fs = std::filesystem;
