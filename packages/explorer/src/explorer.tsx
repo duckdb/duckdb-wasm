@@ -16,6 +16,9 @@ import styles from './explorer.module.css';
 
 import icon_plus from '../static/svg/icons/plus.svg';
 import icon_file from '../static/svg/icons/file-document-outline.svg';
+import icon_timer from '../static/svg/icons/timer.svg';
+import icon_list from '../static/svg/icons/view-list.svg';
+import icon_file_box from '../static/svg/icons/file-table-box.svg';
 
 interface Props {
     script: string;
@@ -41,7 +44,7 @@ class Explorer extends React.Component<Props> {
                                     <use xlinkHref={`${icon_file}#sym`} />
                                 </svg>
                             </div>
-                            <div className={styles.scriptListEntryHeader}>Hello World</div>
+                            <div className={styles.scriptListEntryHeader}>HelloWorld.sql</div>
                             <div className={styles.scriptListEntryTimestamp}>19.05.2021, 10:21</div>
                         </div>
                     </div>
@@ -51,7 +54,7 @@ class Explorer extends React.Component<Props> {
                         <div className={styles.scriptTabsContainer}>
                             <div className={cn(styles.scriptTab, styles.active)}>HelloWorld.sql</div>
                             <div className={styles.scriptTabsAdd}>
-                                <svg className={styles.scriptTabsAddIcon} width="18px" height="18px">
+                                <svg width="18px" height="18px">
                                     <use xlinkHref={`${icon_plus}#sym`} />
                                 </svg>
                             </div>
@@ -64,7 +67,36 @@ class Explorer extends React.Component<Props> {
                             <Button className={styles.runScriptButton}>Run Script</Button>
                         </div>
                     </div>
-                    <div className={styles.outputContainer}></div>
+                    <div className={styles.outputContainer}>
+                        <div className={styles.outputControls} />
+                        <div className={styles.outputStats}>
+                            <div className={styles.outputStatsEntry}>
+                                <div className={styles.outputStatsEntryIcon}>
+                                    <svg width="18px" height="18px">
+                                        <use xlinkHref={`${icon_list}#sym`} />
+                                    </svg>
+                                </div>
+                                <div className={styles.outputStatsEntryValue}>115</div>
+                            </div>
+                            <div className={styles.outputStatsEntry}>
+                                <div className={styles.outputStatsEntryIcon}>
+                                    <svg width="18px" height="18px">
+                                        <use xlinkHref={`${icon_timer}#sym`} />
+                                    </svg>
+                                </div>
+                                <div className={styles.outputStatsEntryValue}>812 ms</div>
+                            </div>
+                            <div className={styles.outputStatsEntry}>
+                                <div className={styles.outputStatsEntryIcon}>
+                                    <svg width="18px" height="18px">
+                                        <use xlinkHref={`${icon_file_box}#sym`} />
+                                    </svg>
+                                </div>
+                                <div className={styles.outputStatsEntryValue}>8 KB</div>
+                            </div>
+                        </div>
+                        <div className={styles.outputTable} />
+                    </div>
                 </div>
                 <div className={styles.rightBar}></div>
             </div>

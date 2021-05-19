@@ -6,23 +6,12 @@
     grid-template-rows: 100%;
 }
 
-.leftBar {
-    background-color: rgb(250, 250, 250);
-    border-right: 1px solid rgb(235, 235, 235);
-    display: flex;
-    flex-direction: column;
-}
+/* Center - Input */
 
 .center {
     display: grid;
     grid-template-rows: 50% 50%;
     grid-template-columns: 100%;
-}
-
-.rightBar {
-    background-color: rgb(250, 250, 250);
-    box-sizing: border-box;
-    border-left: 1px solid rgb(235, 235, 235);
 }
 
 .inputContainer {
@@ -94,10 +83,65 @@
     border: 1px solid rgb(230, 230, 230);
 }
 
+/* Center - Output */
+
 .outputContainer {
     grid-row: 2;
     grid-column: 1;
     padding: 16px 32px;
+
+    display: grid;
+    grid-template-rows: 60px 48px auto;
+    grid-template-columns: 100%;
+}
+
+.outputControls {
+    grid-row: 1;
+    grid-column: 1;
+}
+
+.outputStats {
+    grid-row: 2;
+    grid-column: 1;
+
+    display: flex;
+    flex-direction: row;
+}
+
+.outputStatsEntry {
+    display: flex;
+    flex-direction: row;
+    padding: 0px 8px;
+}
+
+.outputStatsEntryIcon {
+    padding: 0px 2px;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+}
+
+.outputStatsEntryValue {
+    padding: 0px 2px;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.outputTable {
+    grid-row: 3;
+    grid-column: 1;
+}
+
+/* Left Sidebar */
+
+.leftBar {
+    background-color: rgb(250, 250, 250);
+    border-right: 1px solid rgb(235, 235, 235);
+    display: flex;
+    flex-direction: column;
 }
 
 .selectorHeader {
@@ -151,4 +195,12 @@
     font-size: 0.8rem;
     font-weight: 500;
     opacity: 0.5;
+}
+
+/* Right Sidebar */
+
+.rightBar {
+    background-color: rgb(250, 250, 250);
+    box-sizing: border-box;
+    border-left: 1px solid rgb(235, 235, 235);
 }
