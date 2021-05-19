@@ -212,3 +212,25 @@
     box-sizing: border-box;
     border-left: 1px solid rgb(235, 235, 235);
 }
+
+.inspectorSection {
+    border-bottom: 1px solid rgb(235, 235, 235);
+}
+
+.inspectorSectionHeader {
+    display: grid;
+    grid-template-columns: 28px auto;
+    padding: 8px 16px;
+}
+
+.inspectorSectionHeaderLogo {
+    display: grid;
+    justify-content: left;
+    align-items: center;
+}
+
+.inspectorSectionHeaderName {
+    display: grid;
+    justify-content: left;
+    align-items: center;
+}
