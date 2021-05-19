@@ -100,6 +100,9 @@
     grid-column: 1;
 }
 
+.outputTabs {
+}
+
 .outputStats {
     grid-row: 2;
     grid-column: 1;
