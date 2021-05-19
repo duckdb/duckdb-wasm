@@ -118,7 +118,38 @@ class Explorer extends React.Component<Props> {
                         </div>
                     </div>
                 </div>
-                <div className={styles.rightBar}></div>
+                <div className={styles.rightBar}>
+                    <div className={styles.inspectorSection}>
+                        <div className={styles.inspectorSectionHeader}>
+                            <div className={styles.inspectorSectionHeaderLogo}>
+                                <svg width="20px" height="20px">
+                                    <use xlinkHref={`${icon_file}#sym`} />
+                                </svg>
+                            </div>
+                            <div className={styles.inspectorSectionHeaderName}>Tables</div>
+                        </div>
+                    </div>
+                    <div className={styles.inspectorSection}>
+                        <div className={styles.inspectorSectionHeader}>
+                            <div className={styles.inspectorSectionHeaderLogo}>
+                                <svg width="20px" height="20px">
+                                    <use xlinkHref={`${icon_file}#sym`} />
+                                </svg>
+                            </div>
+                            <div className={styles.inspectorSectionHeaderName}>Views</div>
+                        </div>
+                    </div>
+                    <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
+                        <div className={styles.inspectorSectionHeader}>
+                            <div className={styles.inspectorSectionHeaderLogo}>
+                                <svg width="20px" height="20px">
+                                    <use xlinkHref={`${icon_file}#sym`} />
+                                </svg>
+                            </div>
+                            <div className={styles.inspectorSectionHeaderName}>Files</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
