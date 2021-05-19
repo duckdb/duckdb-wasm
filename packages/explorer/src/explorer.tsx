@@ -13,7 +13,7 @@ import Nav from 'react-bootstrap/Nav';
 
 import Select from 'react-select';
 
-const dbOptions = [{ value: 'wasm', label: 'WebAssembly' }];
+const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
 
 import styles from './explorer.module.css';
 
