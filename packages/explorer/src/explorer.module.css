@@ -91,3 +91,9 @@
     grid-column: 1;
     border: 1px solid rgb(230, 230, 230);
 }
+
+.outputContainer {
+    grid-row: 2;
+    grid-column: 1;
+    padding: 16px 32px;
+}

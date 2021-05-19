@@ -7,7 +7,7 @@ import { AppContextProvider, IAppContext } from './app_context';
 import { Route, BrowserRouter, Switch, Redirect } from 'react-router-dom';
 import { withNavBar } from './components';
 
-import './vars.module.css';
+import './theme.css';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import 'react-resizable/css/styles.css';

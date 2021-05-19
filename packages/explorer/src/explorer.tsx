@@ -3,6 +3,7 @@ import * as model from './model';
 import { connect } from 'react-redux';
 import cn from 'classnames';
 import EditorLoader from './components/editor';
+import Button from 'react-bootstrap/Button';
 
 import styles from './explorer.module.css';
 
@@ -32,9 +33,10 @@ class Explorer extends React.Component<Props> {
                             <EditorLoader />
                         </div>
                         <div className={styles.inputControls}>
-                            <div className={styles.runScriptButton}>Run Script</div>
+                            <Button className={styles.runScriptButton}>Run Script</Button>
                         </div>
                     </div>
+                    <div className={styles.outputContainer}></div>
                 </div>
                 <div className={styles.rightBar}></div>
             </div>
