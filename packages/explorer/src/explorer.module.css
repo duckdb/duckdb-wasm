@@ -36,10 +36,11 @@
 .scriptTabsContainer {
     grid-row: 1;
     grid-column: 1;
+    display: flex;
+    flex-direction: row;
 }
 
 .scriptTab {
-    display: inline-block;
     height: 100%;
     box-sizing: border-box;
     padding: 0px 8px;
@@ -47,6 +48,16 @@
 
 .scriptTab.active {
     border-bottom: 2px solid black;
+}
+
+.scriptTabsAdd {
+    width: 32px;
+    height: 100%;
+    color: black;
+
+    display: grid;
+    justify-content: center;
+    align-items: center;
 }
 
 .inputCard {
