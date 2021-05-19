@@ -1,0 +1,64 @@
+.launcher {
+    width: 100%;
+    height: 100%;
+
+    display: grid;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--launcher_bg);
+    color: rgb(255, 255, 255);
+}
+
+.inner {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo {
+    display: grid;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo > img {
+    width: 104px;
+}
+
+.title {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: 500;
+    font-size: 250%;
+    letter-spacing: 2px;
+}
+
+.steps {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.step {
+    display: grid;
+    grid-template-columns: 48px auto;
+    grid-template-rows: 28px;
+}
+
+.step_status {
+    grid-row: 1;
+    grid-column: 1;
+
+    display: grid;
+    align-items: center;
+    justify-content: center;
+}
+
+.step_name {
+    grid-row: 1;
+    grid-column: 2;
+
+    display: grid;
+    align-items: center;
+    justify-content: start;
+}

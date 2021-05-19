@@ -12,9 +12,9 @@ import styles from './editor.module.css';
 type Props = {
     ctx: IAppContext;
     className?: string;
-    script: string;
+    script: model.Script | null;
 
-    updateScript: (script: string, scriptTokens: Array<any>) => void;
+    updateScript: (script: model.Script) => void;
 };
 
 /** Dummy state to propagate the line number through the TokensProvider API.
@@ -93,8 +93,8 @@ class Editor extends React.Component<Props> {
             return;
         }
         // Value changed?
-        if (this.editor && this.editor.getValue() !== this.props.script) {
-            this.editor.setValue(this.props.script);
+        if (this.editor && this.props.script?.text && this.editor.getValue() !== this.props.script?.text) {
+            this.editor.setValue(this.props.script.text);
         }
         // Layout editor
         if (this.monacoContainer) {
@@ -117,7 +117,7 @@ class Editor extends React.Component<Props> {
             this.editor = monaco.editor.create(this.monacoContainer, {
                 fontSize: 13,
                 language: 'sql',
-                value: this.props.script,
+                value: this.props.script?.text || '',
                 links: false,
                 wordWrap: 'on',
                 minimap: {
@@ -144,8 +144,11 @@ class Editor extends React.Component<Props> {
     public editorDidMount() {
         const editor = this.editor!;
         editor.onDidChangeModelContent(_event => {
-            if (editor.getValue() != this.props.script) {
-                this.props.updateScript(editor.getValue(), []);
+            if (editor.getValue() != this.props.script?.text) {
+                this.props.updateScript({
+                    text: editor.getValue(),
+                    tokens: [], // XXX
+                });
             }
         });
         if (this.monacoContainer) {
@@ -227,10 +230,10 @@ const mapStateToProps = (state: model.AppState) => ({
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
-    updateScript: (script: string, scriptTokens: Array<any>) => {
+    updateScript: (script: model.Script) => {
         model.mutate(dispatch, {
             type: model.StateMutationType.UPDATE_SCRIPT,
-            data: [script, scriptTokens],
+            data: script,
         });
     },
 });

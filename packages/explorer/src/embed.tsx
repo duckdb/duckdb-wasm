@@ -4,6 +4,7 @@ import * as model from './model';
 import * as duckdb from '../../duckdb/dist/duckdb.module';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
 import Explorer from './explorer';
+import AppLauncher from './app_launcher';
 import { Provider as ReduxProvider } from 'react-redux';
 import { AppContextProvider, IAppContext } from './app_context';
 import { Route, BrowserRouter, Switch, Redirect } from 'react-router-dom';
@@ -34,19 +35,21 @@ export async function embed(element: Element, options: EmbedOptions): Promise<vo
     const ctx: IAppContext = {
         store,
         logger,
-        db,
-        dbConnection: conn,
+        database: db,
+        databaseConnection: conn,
     };
 
     ReactDOM.render(
         <AppContextProvider value={ctx}>
             <ReduxProvider store={store}>
-                <BrowserRouter>
-                    <Switch>
-                        <Route exact path="/" component={withNavBar(Explorer)} />
-                        <Redirect to="/404" />
-                    </Switch>
-                </BrowserRouter>
+                <AppLauncher>
+                    <BrowserRouter>
+                        <Switch>
+                            <Route exact path="/" component={withNavBar(Explorer)} />
+                            <Redirect to="/404" />
+                        </Switch>
+                    </BrowserRouter>
+                </AppLauncher>
             </ReduxProvider>
         </AppContextProvider>,
         element,

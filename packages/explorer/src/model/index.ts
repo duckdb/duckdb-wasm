@@ -5,6 +5,9 @@ import { Store } from 'redux';
 
 export * from './state_mutation';
 export * from './state';
+export * from './launch_step';
+export * from './files';
+export * from './script';
 
 // The store type
 export type AppReduxStore = Store<AppState>;

@@ -1,0 +1,13 @@
+.status {
+}
+
+.status_spinner {
+    transform-origin: 0 0;
+    animation: status_rotate 1s linear infinite;
+}
+
+@keyframes status_rotate {
+    100% {
+        transform: rotate(1turn);
+    }
+}
