@@ -3,8 +3,11 @@
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "serve": "tsc --noEmit && node esbuild_serve.js",
-        "build:release": "tsc --noEmit && node esbuild_build.js",
+        "start": "webpack serve --config webpack.debug.js",
+        "build:debug": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.debug.js",
+        "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.release.js",
+        "analyze:debug": "webpack --config webpack.debug.js --analyze",
+        "analyze:release": "webpack --config webpack.release.js --analyze",
         "lint": "yarn run eslint {src,test}/**/*.t{s,sx}"
     },
     "engines": {
