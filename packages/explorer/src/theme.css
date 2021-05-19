@@ -54,3 +54,14 @@
     --vizcard_header_bg: rgb(245, 245, 245);
     --vizcard_header_border: 1px solid rgb(215, 215, 215);
 }
+
+.btn-primary {
+    background-color: hsl(56deg 100% 35%) !important;
+    border-color: hsl(56deg 100% 35%) !important;
+}
+
+.btn:focus,
+.btn:active {
+    outline: hsl(56deg 100% 30%) !important;
+    box-shadow: 0 0 0 3px hsl(56deg 90% 30%) !important;
+}
