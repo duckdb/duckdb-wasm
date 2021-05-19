@@ -1,2 +1,2 @@
-const base = require("../../.prettierrc.js");
+const base = require('../../.prettierrc.js');
 module.exports = base;
