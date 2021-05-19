@@ -4,6 +4,7 @@ import * as arrow from 'apache-arrow';
 import { ArrowGrid } from './components';
 import { connect } from 'react-redux';
 import cn from 'classnames';
+import { IAppContext, withAppContext } from './app_context';
 import EditorLoader from './components/editor';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
@@ -14,8 +15,6 @@ import { useDropzone } from 'react-dropzone';
 
 import Select from 'react-select';
 
-const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
-
 import styles from './explorer.module.css';
 
 import icon_plus from '../static/svg/icons/plus.svg';
@@ -23,6 +22,10 @@ import icon_file from '../static/svg/icons/file-document-outline.svg';
 import icon_timer from '../static/svg/icons/timer.svg';
 import icon_list from '../static/svg/icons/view-list.svg';
 import icon_file_box from '../static/svg/icons/file-table-box.svg';
+
+import { formatBytes, formatThousands } from './util';
+
+const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
 
 function FilePicker(props: Record<string, never>) {
     const { getRootProps, getInputProps } = useDropzone();
@@ -40,10 +43,23 @@ function FilePicker(props: Record<string, never>) {
 }
 
 interface Props {
+    ctx: IAppContext;
     script: string;
+    result: arrow.Table | null;
+
+    setQueryResult: (result: arrow.Table) => void;
 }
 
 class Explorer extends React.Component<Props> {
+    _runScript = this.runScript.bind(this);
+
+    public async runScript() {
+        const conn = this.props.ctx.dbConnection;
+        const result = await conn.runQuery(this.props.script);
+        console.log(result);
+        this.props.setQueryResult(result);
+    }
+
     public render() {
         return (
             <div className={styles.container}>
@@ -83,7 +99,9 @@ class Explorer extends React.Component<Props> {
                             <EditorLoader />
                         </div>
                         <div className={styles.inputControls}>
-                            <Button className={styles.runScriptButton}>Run Script</Button>
+                            <Button className={styles.runScriptButton} onClick={this._runScript}>
+                                Run Script
+                            </Button>
                         </div>
                     </div>
                     <div className={styles.outputContainer}>
@@ -104,7 +122,9 @@ class Explorer extends React.Component<Props> {
                                         <use xlinkHref={`${icon_list}#sym`} />
                                     </svg>
                                 </div>
-                                <div className={styles.outputStatsEntryValue}>115</div>
+                                <div className={styles.outputStatsEntryValue}>
+                                    {formatThousands(this.props.result?.length || 0)}
+                                </div>
                             </div>
                             <div className={styles.outputStatsEntry}>
                                 <div className={styles.outputStatsEntryIcon}>
@@ -112,7 +132,7 @@ class Explorer extends React.Component<Props> {
                                         <use xlinkHref={`${icon_timer}#sym`} />
                                     </svg>
                                 </div>
-                                <div className={styles.outputStatsEntryValue}>812 ms</div>
+                                <div className={styles.outputStatsEntryValue}>-</div>
                             </div>
                             <div className={styles.outputStatsEntry}>
                                 <div className={styles.outputStatsEntryIcon}>
@@ -120,17 +140,13 @@ class Explorer extends React.Component<Props> {
                                         <use xlinkHref={`${icon_file_box}#sym`} />
                                     </svg>
                                 </div>
-                                <div className={styles.outputStatsEntryValue}>8 KB</div>
+                                <div className={styles.outputStatsEntryValue}>
+                                    {formatBytes(this.props.result?.byteLength || 0)}
+                                </div>
                             </div>
                         </div>
                         <div className={styles.outputTable}>
-                            <ArrowGrid
-                                table={arrow.Table.new(
-                                    arrow.Column.new('foo', arrow.Int32Vector.from([...Array(1000).keys()])),
-                                    arrow.Column.new('bar', arrow.Int32Vector.from([...Array(1000).keys()])),
-                                    arrow.Column.new('bam', arrow.Int32Vector.from([...Array(1000).keys()])),
-                                )}
-                            />
+                            {this.props.result && <ArrowGrid table={this.props.result} />}
                         </div>
                     </div>
                 </div>
@@ -174,8 +190,16 @@ class Explorer extends React.Component<Props> {
 
 const mapStateToProps = (state: model.AppState) => ({
     script: state.script,
+    result: state.queryResult,
 });
 
-const mapDispatchToProps = (_dispatch: model.Dispatch) => ({});
+const mapDispatchToProps = (dispatch: model.Dispatch) => ({
+    setQueryResult: (result: arrow.Table) => {
+        model.mutate(dispatch, {
+            type: model.StateMutationType.SET_QUERY_RESULT,
+            data: result,
+        });
+    },
+});
 
-export default connect(mapStateToProps, mapDispatchToProps)(Explorer);
+export default connect(mapStateToProps, mapDispatchToProps)(withAppContext(Explorer));

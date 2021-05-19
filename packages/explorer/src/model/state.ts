@@ -11,7 +11,7 @@ export interface AppState {
 
 export function createDefaultState(): AppState {
     return {
-        script: 'foo',
+        script: 'select v::INTEGER from generate_series(1, 10000) t(v)',
         scriptTokens: [],
         queryResult: null,
     };
