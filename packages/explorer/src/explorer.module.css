@@ -138,6 +138,9 @@
 .outputTable {
     grid-row: 3;
     grid-column: 1;
+    border: 1px solid rgb(215, 215, 215);
+    box-sizing: border-box;
+    font-size: 0.9rem;
 }
 
 /* Left Sidebar */
