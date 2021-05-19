@@ -10,7 +10,7 @@ import { theme as monaco_theme } from './editor_theme_light';
 import styles from './editor.module.css';
 
 type Props = {
-    appContext: IAppContext;
+    ctx: IAppContext;
     className?: string;
     script: string;
 
@@ -110,7 +110,7 @@ class Editor extends React.Component<Props> {
     protected initMonaco() {
         if (this.monacoContainer) {
             monaco.languages.register({ id: 'sql' });
-            monaco.languages.setTokensProvider('sql', new TokensProvider(this.props.appContext.store));
+            monaco.languages.setTokensProvider('sql', new TokensProvider(this.props.ctx.store));
             monaco.editor.defineTheme('sql', monaco_theme);
             monaco.editor.setTheme('sql');
 
@@ -145,7 +145,7 @@ class Editor extends React.Component<Props> {
         const editor = this.editor!;
         editor.onDidChangeModelContent(_event => {
             if (editor.getValue() != this.props.script) {
-                this.props.updateScript(this.props.script, []);
+                this.props.updateScript(editor.getValue(), []);
             }
         });
         if (this.monacoContainer) {
@@ -227,11 +227,12 @@ const mapStateToProps = (state: model.AppState) => ({
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
-    updateScript: (script: string, scriptTokens: Array<any>) =>
+    updateScript: (script: string, scriptTokens: Array<any>) => {
         model.mutate(dispatch, {
             type: model.StateMutationType.UPDATE_SCRIPT,
             data: [script, scriptTokens],
-        }),
+        });
+    },
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(withAppContext(Editor));
