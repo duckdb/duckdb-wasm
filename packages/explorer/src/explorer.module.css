@@ -143,6 +143,7 @@
 }
 
 .outputResultTable {
+    background-color: rgb(250, 250, 250);
     border: 1px solid rgb(215, 215, 215);
 }
 
@@ -220,6 +221,7 @@
 }
 
 .inspectorFileEntry {
+    padding: 8px 16px;
 }
 
 .inspectorSectionBorder {

@@ -61,6 +61,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    background-color: white;
 }
 
 .cell_nodata {
