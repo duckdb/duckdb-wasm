@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as model from './model';
 import { connect } from 'react-redux';
+import cn from 'classnames';
 import EditorLoader from './components/editor';
 
 import styles from './explorer.module.css';
@@ -16,6 +17,9 @@ class Explorer extends React.Component<Props> {
                 <div className={styles.leftBar}></div>
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
+                        <div className={styles.scriptTabsContainer}>
+                            <div className={cn(styles.scriptTab, styles.active)}>HelloWorld.sql</div>
+                        </div>
                         <div className={styles.inputCard} />
                         <div className={styles.editorContainer}>
                             <EditorLoader />
