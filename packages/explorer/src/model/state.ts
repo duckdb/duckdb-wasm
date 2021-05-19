@@ -7,6 +7,8 @@ export interface AppState {
     scriptTokens: Array<any>;
     /// The current result table (if any)
     queryResult: arrow.Table | null;
+    /// The files (if any)
+    files: string[];
 }
 
 export function createDefaultState(): AppState {
@@ -14,5 +16,6 @@ export function createDefaultState(): AppState {
         script: 'select v::INTEGER from generate_series(1, 10000) t(v)',
         scriptTokens: [],
         queryResult: null,
+        files: [],
     };
 }
