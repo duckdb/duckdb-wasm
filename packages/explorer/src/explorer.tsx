@@ -4,14 +4,18 @@ import { connect } from 'react-redux';
 import cn from 'classnames';
 import EditorLoader from './components/editor';
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
+import FormControl from 'react-bootstrap/FormControl';
 
 import Select from 'react-select';
 
-const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
+const dbOptions = [{ value: 'wasm', label: 'WebAssembly' }];
 
 import styles from './explorer.module.css';
 
 import icon_plus from '../static/svg/icons/plus.svg';
+import icon_file from '../static/svg/icons/file-document-outline.svg';
 
 interface Props {
     script: string;
@@ -24,6 +28,23 @@ class Explorer extends React.Component<Props> {
                 <div className={styles.leftBar}>
                     <div className={styles.selectorHeader}>Select a Database</div>
                     <Select options={dbOptions} className={styles.selectorDrowdown} defaultValue={dbOptions[0]} />
+                    <div className={styles.scriptSearchHeader}>Scripts</div>
+                    <Form className={styles.scriptSearchForm}>
+                        <InputGroup className="mb-2 mr-sm-2">
+                            <FormControl id="inlineFormInputGroupUsername2" placeholder="Search..." />
+                        </InputGroup>
+                    </Form>
+                    <div className={styles.scriptList}>
+                        <div className={styles.scriptListEntry}>
+                            <div className={styles.scriptListEntryIcon}>
+                                <svg width="20px" height="20px">
+                                    <use xlinkHref={`${icon_file}#sym`} />
+                                </svg>
+                            </div>
+                            <div className={styles.scriptListEntryHeader}>Hello World</div>
+                            <div className={styles.scriptListEntryTimestamp}>19.05.2021, 10:21</div>
+                        </div>
+                    </div>
                 </div>
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
