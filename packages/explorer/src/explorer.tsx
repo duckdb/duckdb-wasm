@@ -1,3 +1,4 @@
+import Immutable from 'immutable';
 import * as React from 'react';
 import * as model from './model';
 import * as arrow from 'apache-arrow';
@@ -48,34 +49,38 @@ function FilePicker(props: FilePickerProps) {
 
 interface Props {
     ctx: IAppContext;
-    script: string;
+    script: model.Script | null;
     result: arrow.Table | null;
-    files: string[];
+    files: Immutable.Map<string, model.FileInfo>;
 
     setQueryResult: (result: arrow.Table) => void;
-    addFiles: (files: string[]) => void;
+    registerFiles: (files: model.FileInfo[]) => void;
 }
 
 class Explorer extends React.Component<Props> {
     _runScript = this.runScript.bind(this);
-    _addFiles = this.addFiles.bind(this);
+    _registerFiles = this.registerFiles.bind(this);
 
     public async runScript() {
-        const conn = this.props.ctx.dbConnection;
-        const result = await conn.runQuery(this.props.script);
+        const conn = this.props.ctx.databaseConnection;
+        if (!conn || !this.props.script) return;
+        const result = await conn.runQuery(this.props.script.text);
         console.log(result);
         this.props.setQueryResult(result);
     }
 
-    public async addFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
-        const db = this.props.ctx.db;
-        const fileNames = [];
+    public async registerFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
+        const database = this.props.ctx.database;
+        if (!database) return;
         for (const file of acceptedFiles) {
-            await db.addFileBlob(file.name, file);
-            fileNames.push(file.name);
+            await database.addFileBlob(file.name, file);
         }
-        console.log(fileNames);
-        this.props.addFiles(fileNames);
+        const fileInfos = acceptedFiles.map(f => ({
+            name: f.name,
+            sizeBytes: f.size,
+        }));
+        console.log(fileInfos);
+        this.props.registerFiles(fileInfos);
     }
 
     public render() {
@@ -130,6 +135,9 @@ class Explorer extends React.Component<Props> {
                                 </Nav.Item>
                                 <Nav.Item>
                                     <Nav.Link eventKey="output-plan">Plan</Nav.Link>
+                                </Nav.Item>
+                                <Nav.Item>
+                                    <Nav.Link eventKey="output-logs">Logs</Nav.Link>
                                 </Nav.Item>
                             </Nav>
                         </div>
@@ -201,11 +209,11 @@ class Explorer extends React.Component<Props> {
                             <div className={styles.inspectorSectionHeaderName}>Files</div>
                         </div>
                         {this.props.files.map(f => (
-                            <div key={f} className={styles.inspectorFileEntry}>
-                                {f}
+                            <div key={f.name} className={styles.inspectorFileEntry}>
+                                {f.name}
                             </div>
                         ))}
-                        <FilePicker onDrop={this._addFiles} />
+                        <FilePicker onDrop={this._registerFiles} />
                     </div>
                 </div>
             </div>
@@ -216,7 +224,7 @@ class Explorer extends React.Component<Props> {
 const mapStateToProps = (state: model.AppState) => ({
     script: state.script,
     result: state.queryResult,
-    files: state.files,
+    files: state.registeredFiles,
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
@@ -226,9 +234,9 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
             data: result,
         });
     },
-    addFiles: (files: string[]) => {
+    registerFiles: (files: model.FileInfo[]) => {
         model.mutate(dispatch, {
-            type: model.StateMutationType.ADD_FILES,
+            type: model.StateMutationType.REGISTER_FILES,
             data: files,
         });
     },

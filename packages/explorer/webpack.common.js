@@ -50,7 +50,7 @@ export function configure(params) {
                     ],
                 },
                 {
-                    test: /\.(png|jpe?g|gif|svg)$/i,
+                    test: /\.(png|jpe?g|gif|svg|csv)$/i,
                     loader: 'file-loader',
                     options: {
                         name: 'static/img/[name].[contenthash].[ext]',

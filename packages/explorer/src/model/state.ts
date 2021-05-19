@@ -1,21 +1,32 @@
+import Immutable from 'immutable';
 import * as arrow from 'apache-arrow';
+import { AppConfig, createDefaultConfig } from './config';
+import { Script } from './script';
+import { LaunchStep, LaunchStepInfo, createLaunchSteps } from './launch_step';
+import { FileInfo } from './files';
 
 export interface AppState {
-    /// The launch is complete?
-    script: string;
-    /// The tokens within the script for syntax highlighting
-    scriptTokens: Array<any>;
+    /// The config
+    config: AppConfig;
+    /// Is the launch complete?
+    launchComplete: boolean;
+    /// The launch progress
+    launchSteps: Immutable.Map<LaunchStep, LaunchStepInfo>;
+    /// The script
+    script: Script | null;
     /// The current result table (if any)
     queryResult: arrow.Table | null;
     /// The files (if any)
-    files: string[];
+    registeredFiles: Immutable.Map<string, FileInfo>;
 }
 
-export function createDefaultState(): AppState {
+export function createDefaultState(config = createDefaultConfig()): AppState {
     return {
-        script: 'select v::INTEGER from generate_series(1, 10000) t(v)',
-        scriptTokens: [],
+        config,
+        launchComplete: false,
+        launchSteps: createLaunchSteps(),
+        script: null,
         queryResult: null,
-        files: [],
+        registeredFiles: Immutable.Map(),
     };
 }

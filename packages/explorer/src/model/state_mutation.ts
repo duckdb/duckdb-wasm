@@ -1,5 +1,8 @@
 import * as arrow from 'apache-arrow';
 import { AppState, createDefaultState } from './state';
+import { LaunchStep, Status } from './launch_step';
+import { Script } from './script';
+import { FileInfo } from './files';
 
 /// A mutation
 export type StateMutation<T, P> = {
@@ -10,16 +13,20 @@ export type StateMutation<T, P> = {
 /// A mutation type
 export enum StateMutationType {
     UPDATE_SCRIPT = 'UPDATE_SCRIPT',
+    UPDATE_LAUNCH_STEP = 'UPDATE_LAUNCH_STEP',
     SET_QUERY_RESULT = 'SET_QUERY_RESULT',
-    ADD_FILES = 'ADD_FILES',
+    REGISTER_FILES = 'REGISTER_FILES',
+    MARK_LAUNCH_COMPLETE = 'MARK_LAUNCH_COMPLETE',
     OTHER = 'OTHER',
 }
 
 /// An state mutation variant
 export type StateMutationVariant =
-    | StateMutation<StateMutationType.UPDATE_SCRIPT, [string, any[]]>
+    | StateMutation<StateMutationType.UPDATE_SCRIPT, Script>
+    | StateMutation<StateMutationType.UPDATE_LAUNCH_STEP, [LaunchStep, Status, string | null]>
     | StateMutation<StateMutationType.SET_QUERY_RESULT, arrow.Table>
-    | StateMutation<StateMutationType.ADD_FILES, string[]>;
+    | StateMutation<StateMutationType.REGISTER_FILES, FileInfo[]>
+    | StateMutation<StateMutationType.MARK_LAUNCH_COMPLETE, null>;
 
 // The action dispatch
 export type Dispatch = (mutation: StateMutationVariant) => void;
@@ -35,20 +42,47 @@ export class AppStateMutation {
             case StateMutationType.UPDATE_SCRIPT:
                 return {
                     ...state,
-                    script: mutation.data[0],
-                    scriptTokens: mutation.data[1],
+                    script: mutation.data,
                 };
             case StateMutationType.SET_QUERY_RESULT:
                 return {
                     ...state,
                     queryResult: mutation.data,
                 };
-            case StateMutationType.ADD_FILES:
+            case StateMutationType.REGISTER_FILES:
                 return {
                     ...state,
-                    files: state.files.concat(mutation.data),
+                    registeredFiles: state.registeredFiles.withMutations(m => {
+                        for (const file of mutation.data) {
+                            m.set(file.name, file);
+                        }
+                    }),
                 };
+            case StateMutationType.UPDATE_LAUNCH_STEP: {
+                const [step, status, error] = mutation.data;
+                const steps = state.launchSteps.withMutations(s => {
+                    const info = s.get(step);
+                    const now = new Date();
+                    if (!info) return;
+                    s.set(step, {
+                        ...info,
+                        startedAt: info.startedAt || now,
+                        lastUpdateAt: now,
+                        status: status,
+                        error: error,
+                    });
+                });
+                return {
+                    ...state,
+                    launchSteps: steps,
+                };
+            }
+            case StateMutationType.MARK_LAUNCH_COMPLETE: {
+                return {
+                    ...state,
+                    launchComplete: true,
+                };
+            }
         }
-        return state;
     }
 }
