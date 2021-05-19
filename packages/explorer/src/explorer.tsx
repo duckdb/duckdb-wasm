@@ -10,6 +10,7 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import FormControl from 'react-bootstrap/FormControl';
 import Nav from 'react-bootstrap/Nav';
+import { useDropzone } from 'react-dropzone';
 
 import Select from 'react-select';
 
@@ -22,6 +23,21 @@ import icon_file from '../static/svg/icons/file-document-outline.svg';
 import icon_timer from '../static/svg/icons/timer.svg';
 import icon_list from '../static/svg/icons/view-list.svg';
 import icon_file_box from '../static/svg/icons/file-table-box.svg';
+
+function FilePicker(props: Record<string, never>) {
+    const { getRootProps, getInputProps } = useDropzone();
+
+    return (
+        <div {...getRootProps({ className: styles.fileDropzone })}>
+            <input {...getInputProps()} />
+            <p>
+                Drop some files here,
+                <br />
+                or click to select them.
+            </p>
+        </div>
+    );
+}
 
 interface Props {
     script: string;
@@ -119,7 +135,7 @@ class Explorer extends React.Component<Props> {
                     </div>
                 </div>
                 <div className={styles.rightBar}>
-                    <div className={styles.inspectorSection}>
+                    <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
                         <div className={styles.inspectorSectionHeader}>
                             <div className={styles.inspectorSectionHeaderLogo}>
                                 <svg width="20px" height="20px">
@@ -129,7 +145,7 @@ class Explorer extends React.Component<Props> {
                             <div className={styles.inspectorSectionHeaderName}>Tables</div>
                         </div>
                     </div>
-                    <div className={styles.inspectorSection}>
+                    <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
                         <div className={styles.inspectorSectionHeader}>
                             <div className={styles.inspectorSectionHeaderLogo}>
                                 <svg width="20px" height="20px">
@@ -139,7 +155,7 @@ class Explorer extends React.Component<Props> {
                             <div className={styles.inspectorSectionHeaderName}>Views</div>
                         </div>
                     </div>
-                    <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
+                    <div className={styles.inspectorSection}>
                         <div className={styles.inspectorSectionHeader}>
                             <div className={styles.inspectorSectionHeaderLogo}>
                                 <svg width="20px" height="20px">
@@ -148,6 +164,7 @@ class Explorer extends React.Component<Props> {
                             </div>
                             <div className={styles.inspectorSectionHeaderName}>Files</div>
                         </div>
+                        <FilePicker />
                     </div>
                 </div>
             </div>
