@@ -11,7 +11,7 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import FormControl from 'react-bootstrap/FormControl';
 import Nav from 'react-bootstrap/Nav';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection, DropEvent } from 'react-dropzone';
 
 import Select from 'react-select';
 
@@ -27,8 +27,12 @@ import { formatBytes, formatThousands } from './util';
 
 const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
 
-function FilePicker(props: Record<string, never>) {
-    const { getRootProps, getInputProps } = useDropzone();
+interface FilePickerProps {
+    onDrop: <T extends File>(acceptedFiles: T[], fileRejections: FileRejection[], event: DropEvent) => void;
+}
+
+function FilePicker(props: FilePickerProps) {
+    const { getRootProps, getInputProps } = useDropzone({ onDrop: props.onDrop });
 
     return (
         <div {...getRootProps({ className: styles.fileDropzone })}>
@@ -46,18 +50,32 @@ interface Props {
     ctx: IAppContext;
     script: string;
     result: arrow.Table | null;
+    files: string[];
 
     setQueryResult: (result: arrow.Table) => void;
+    addFiles: (files: string[]) => void;
 }
 
 class Explorer extends React.Component<Props> {
     _runScript = this.runScript.bind(this);
+    _addFiles = this.addFiles.bind(this);
 
     public async runScript() {
         const conn = this.props.ctx.dbConnection;
         const result = await conn.runQuery(this.props.script);
         console.log(result);
         this.props.setQueryResult(result);
+    }
+
+    public async addFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
+        const db = this.props.ctx.db;
+        const fileNames = [];
+        for (const file of acceptedFiles) {
+            await db.addFileBlob(file.name, file);
+            fileNames.push(file.name);
+        }
+        console.log(fileNames);
+        this.props.addFiles(fileNames);
     }
 
     public render() {
@@ -180,7 +198,12 @@ class Explorer extends React.Component<Props> {
                             </div>
                             <div className={styles.inspectorSectionHeaderName}>Files</div>
                         </div>
-                        <FilePicker />
+                        {this.props.files.map(f => (
+                            <div key={f} className={styles.inspectorFileEntry}>
+                                {f}
+                            </div>
+                        ))}
+                        <FilePicker onDrop={this._addFiles} />
                     </div>
                 </div>
             </div>
@@ -191,6 +214,7 @@ class Explorer extends React.Component<Props> {
 const mapStateToProps = (state: model.AppState) => ({
     script: state.script,
     result: state.queryResult,
+    files: state.files,
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
@@ -198,6 +222,12 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
         model.mutate(dispatch, {
             type: model.StateMutationType.SET_QUERY_RESULT,
             data: result,
+        });
+    },
+    addFiles: (files: string[]) => {
+        model.mutate(dispatch, {
+            type: model.StateMutationType.ADD_FILES,
+            data: files,
         });
     },
 });

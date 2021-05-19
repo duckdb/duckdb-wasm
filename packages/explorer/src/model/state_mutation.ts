@@ -11,13 +11,15 @@ export type StateMutation<T, P> = {
 export enum StateMutationType {
     UPDATE_SCRIPT = 'UPDATE_SCRIPT',
     SET_QUERY_RESULT = 'SET_QUERY_RESULT',
+    ADD_FILES = 'ADD_FILES',
     OTHER = 'OTHER',
 }
 
 /// An state mutation variant
 export type StateMutationVariant =
     | StateMutation<StateMutationType.UPDATE_SCRIPT, [string, any[]]>
-    | StateMutation<StateMutationType.SET_QUERY_RESULT, arrow.Table>;
+    | StateMutation<StateMutationType.SET_QUERY_RESULT, arrow.Table>
+    | StateMutation<StateMutationType.ADD_FILES, string[]>;
 
 // The action dispatch
 export type Dispatch = (mutation: StateMutationVariant) => void;
@@ -40,6 +42,11 @@ export class AppStateMutation {
                 return {
                     ...state,
                     queryResult: mutation.data,
+                };
+            case StateMutationType.ADD_FILES:
+                return {
+                    ...state,
+                    files: state.files.concat(mutation.data),
                 };
         }
         return state;
