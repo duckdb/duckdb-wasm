@@ -93,7 +93,7 @@
     padding: 16px 32px;
 
     display: grid;
-    grid-template-rows: 60px 48px auto;
+    grid-template-rows: max-content 48px auto;
     grid-template-columns: 100%;
 }
 
