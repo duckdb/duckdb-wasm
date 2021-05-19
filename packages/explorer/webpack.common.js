@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function configure(params) {
     return {
-        target: 'web',
+        target: ['web'],
         entry: {
             app: ['./src/app.tsx'],
         },
@@ -50,7 +50,7 @@ export function configure(params) {
                     ],
                 },
                 {
-                    test: /\.(png|jpe?g|gif|svg|csv)$/i,
+                    test: /\.(png|jpe?g|gif|svg|csv|parquet)$/i,
                     loader: 'file-loader',
                     options: {
                         name: 'static/img/[name].[contenthash].[ext]',
