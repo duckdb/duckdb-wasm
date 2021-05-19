@@ -1,5 +1,5 @@
 import * as arrow from 'apache-arrow';
-import { AppState, createDefaultState } from './state';
+import { AppState } from './state';
 import { LaunchStep, Status } from './launch_step';
 import { Script } from './script';
 import { FileInfo } from './files';
@@ -37,7 +37,7 @@ export function mutate(dispatch: Dispatch, m: StateMutationVariant): void {
 /// Mutation of the application state
 export class AppStateMutation {
     /// Set the editor program
-    public static reduce(state: AppState = createDefaultState(), mutation: StateMutationVariant): AppState {
+    public static reduce(state: AppState, mutation: StateMutationVariant): AppState {
         switch (mutation.type) {
             case StateMutationType.UPDATE_SCRIPT:
                 return {

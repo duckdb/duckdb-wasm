@@ -9,8 +9,10 @@ export enum ExampleID {
 export async function loadExample(id: ExampleID): Promise<File> {
     switch (id) {
         case ExampleID.TEST_CSV: {
-            const res = await axios.get(test_csv);
-            return new File(res.data(), 'test.csv');
+            const res = await axios.get(test_csv, { responseType: 'blob' });
+            console.log(test_csv);
+            console.log(res);
+            return new File([res.data], 'test.csv');
         }
     }
 }

@@ -27,6 +27,7 @@ const enhancer = composeEnhancers();
 export default function createStore(): model.AppReduxStore {
     const store = createReduxStore<model.AppState, model.StateMutationVariant, any, any>(
         (state: model.AppState | undefined, variant: model.StateMutationVariant) => {
+            if (!state) return model.createDefaultState();
             return model.AppStateMutation.reduce(state, variant);
         },
         enhancer,

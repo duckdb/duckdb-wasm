@@ -79,6 +79,7 @@ async function loadExampleFiles(ctx: IAppContext): Promise<boolean> {
 
         stepSucceeded(ctx.store, model.LaunchStep.FETCH_EXAMPLE_DATA);
     } catch (e) {
+        console.log(e);
         stepFailed(ctx.store, model.LaunchStep.FETCH_EXAMPLE_DATA);
         return false;
     }
@@ -105,9 +106,7 @@ interface Props {
 class AppLauncher extends React.Component<Props> {
     public renderStep(s: LaunchStep) {
         const info = this.props.launchSteps.get(s);
-        if (!info) {
-            return null;
-        }
+        if (!info) return null;
         return (
             <div key={s as number} className={styles.step}>
                 <div className={styles.step_status}>
@@ -126,9 +125,10 @@ class AppLauncher extends React.Component<Props> {
             <div className={styles.launcher}>
                 <div className={styles.inner}>
                     <div className={styles.logo}>
-                        <img src={logo} />
+                        <svg width="100px" height="100px">
+                            <use xlinkHref={`${logo}#sym`} />
+                        </svg>
                     </div>
-                    <div className={styles.title}>DashQL</div>
                     <div className={styles.steps}>
                         {DEFAULT_LAUNCH_STEPS.map((s: model.LaunchStep) => this.renderStep(s))}
                     </div>

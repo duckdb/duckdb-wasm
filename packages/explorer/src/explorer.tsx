@@ -208,9 +208,9 @@ class Explorer extends React.Component<Props> {
                             </div>
                             <div className={styles.inspectorSectionHeaderName}>Files</div>
                         </div>
-                        {this.props.files.map(f => (
-                            <div key={f.name} className={styles.inspectorFileEntry}>
-                                {f.name}
+                        {this.props.files.toArray().map((entry: [string, model.FileInfo]) => (
+                            <div key={entry[0]} className={styles.inspectorFileEntry}>
+                                {entry[0]}
                             </div>
                         ))}
                         <FilePicker onDrop={this._registerFiles} />
