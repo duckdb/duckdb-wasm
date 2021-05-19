@@ -7,6 +7,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import FormControl from 'react-bootstrap/FormControl';
+import Nav from 'react-bootstrap/Nav';
 
 import Select from 'react-select';
 
@@ -68,7 +69,16 @@ class Explorer extends React.Component<Props> {
                         </div>
                     </div>
                     <div className={styles.outputContainer}>
-                        <div className={styles.outputControls} />
+                        <div className={styles.outputControls}>
+                            <Nav className={styles.outputTabs} variant="tabs" defaultActiveKey="output-results">
+                                <Nav.Item>
+                                    <Nav.Link eventKey="output-results">Results</Nav.Link>
+                                </Nav.Item>
+                                <Nav.Item>
+                                    <Nav.Link eventKey="output-plan">Plan</Nav.Link>
+                                </Nav.Item>
+                            </Nav>
+                        </div>
                         <div className={styles.outputStats}>
                             <div className={styles.outputStatsEntry}>
                                 <div className={styles.outputStatsEntryIcon}>
