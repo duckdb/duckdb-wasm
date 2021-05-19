@@ -9,9 +9,13 @@ import { withNavBar } from './components';
 
 import './vars.module.css';
 
+import 'bootstrap/dist/css/bootstrap.css';
+import 'react-resizable/css/styles.css';
+import 'react-virtualized/styles.css';
+
 export interface EmbedOptions {
     /// The URL of the DuckDB worker script
-    workerURL: string;
+    workerURL?: URL;
     /// Render with navigation bar?
     withNavbar: boolean;
 }
