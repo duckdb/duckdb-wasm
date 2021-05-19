@@ -6,6 +6,8 @@ import EditorLoader from './components/editor';
 
 import styles from './explorer.module.css';
 
+import icon_plus from '../static/svg/icons/plus.svg';
+
 interface Props {
     script: string;
 }
@@ -19,6 +21,11 @@ class Explorer extends React.Component<Props> {
                     <div className={styles.inputContainer}>
                         <div className={styles.scriptTabsContainer}>
                             <div className={cn(styles.scriptTab, styles.active)}>HelloWorld.sql</div>
+                            <div className={styles.scriptTabsAdd}>
+                                <svg className={styles.scriptTabsAddIcon} width="18px" height="18px">
+                                    <use xlinkHref={`${icon_plus}#sym`} />
+                                </svg>
+                            </div>
                         </div>
                         <div className={styles.inputCard} />
                         <div className={styles.editorContainer}>
