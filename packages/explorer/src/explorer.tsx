@@ -163,8 +163,10 @@ class Explorer extends React.Component<Props> {
                                 </div>
                             </div>
                         </div>
-                        <div className={styles.outputTable}>
-                            {this.props.result && <ArrowGrid table={this.props.result} />}
+                        <div className={styles.outputResults}>
+                            {this.props.result && (
+                                <ArrowGrid className={styles.outputResultTable} table={this.props.result} />
+                            )}
                         </div>
                     </div>
                 </div>
