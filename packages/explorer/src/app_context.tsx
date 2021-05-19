@@ -1,8 +1,14 @@
 import * as React from 'react';
 import * as model from './model';
+import * as duckdb from '../../duckdb/dist/duckdb.module';
 
 export interface IAppContext {
     store: model.AppReduxStore;
+    logger: duckdb.Logger;
+
+    // TODO abstract
+    db: duckdb.AsyncDuckDB;
+    dbConnection: duckdb.AsyncDuckDBConnection;
 }
 
 const ctx = React.createContext<IAppContext | null>(null);
