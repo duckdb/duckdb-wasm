@@ -5,6 +5,10 @@ import cn from 'classnames';
 import EditorLoader from './components/editor';
 import Button from 'react-bootstrap/Button';
 
+import Select from 'react-select';
+
+const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
+
 import styles from './explorer.module.css';
 
 import icon_plus from '../static/svg/icons/plus.svg';
@@ -17,7 +21,10 @@ class Explorer extends React.Component<Props> {
     public render() {
         return (
             <div className={styles.container}>
-                <div className={styles.leftBar}></div>
+                <div className={styles.leftBar}>
+                    <div className={styles.selectorHeader}>Select a Database</div>
+                    <Select options={dbOptions} className={styles.selectorDrowdown} defaultValue={dbOptions[0]} />
+                </div>
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
                         <div className={styles.scriptTabsContainer}>

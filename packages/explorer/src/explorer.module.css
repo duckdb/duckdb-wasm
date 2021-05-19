@@ -97,3 +97,12 @@
     grid-column: 1;
     padding: 16px 32px;
 }
+
+.selectorHeader {
+    padding: 12px 16px 4px 16px;
+    font-weight: 400;
+}
+
+.selectorDrowdown {
+    margin: 4px 16px;
+}
