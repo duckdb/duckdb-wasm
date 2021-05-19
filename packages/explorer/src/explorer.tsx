@@ -1,5 +1,7 @@
 import * as React from 'react';
 import * as model from './model';
+import * as arrow from 'apache-arrow';
+import { ArrowGrid } from './components';
 import { connect } from 'react-redux';
 import cn from 'classnames';
 import EditorLoader from './components/editor';
@@ -105,7 +107,15 @@ class Explorer extends React.Component<Props> {
                                 <div className={styles.outputStatsEntryValue}>8 KB</div>
                             </div>
                         </div>
-                        <div className={styles.outputTable} />
+                        <div className={styles.outputTable}>
+                            <ArrowGrid
+                                table={arrow.Table.new(
+                                    arrow.Column.new('foo', arrow.Int32Vector.from([...Array(1000).keys()])),
+                                    arrow.Column.new('bar', arrow.Int32Vector.from([...Array(1000).keys()])),
+                                    arrow.Column.new('bam', arrow.Int32Vector.from([...Array(1000).keys()])),
+                                )}
+                            />
+                        </div>
                     </div>
                 </div>
                 <div className={styles.rightBar}></div>
