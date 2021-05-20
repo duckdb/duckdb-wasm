@@ -32,10 +32,10 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
 
     cp -r ${PROJECT_ROOT}/packages/explorer/build/release/* ${PAGES_DIR}
 else
-    TARGET_DIR="${PAGES_DIR}/branch/${CURRENT_BRANCH}"
+    TARGET_DIR="${PAGES_DIR}/branches/${CURRENT_BRANCH}"
     echo "[ RUN ] Install @duckdb/explorer to ${TARGET_DIR}/"
 
     rm -rf ${TARGET_DIR}
-    mkdir -p ${PAGES_DIR}/branch
+    mkdir -p ${PAGES_DIR}/branches
     cp -r ${PROJECT_ROOT}/packages/explorer/build/release ${TARGET_DIR}
 fi
