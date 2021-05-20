@@ -25,3 +25,7 @@
 	path = submodules/rapidjson
 	url = https://github.com/Tencent/rapidjson
 	shallow = true
+[submodule "submodules/gh-pages"]
+	path = submodules/gh-pages
+	url = git@github.com:duckdb/duckdb-wasm.git
+	branch = gh-pages
