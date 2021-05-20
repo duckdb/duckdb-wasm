@@ -17,6 +17,7 @@ export function configure(params) {
             path: params.buildDir,
             filename: 'static/js/[name].[contenthash].js',
             chunkFilename: 'static/js/[name].[contenthash].js',
+            assetModuleFilename: 'static/assets/[name].[contenthash].[ext]',
         },
         resolve: {
             extensions: ['.ts', '.tsx', '.js', '.jsx', '.css'],
