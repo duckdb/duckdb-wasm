@@ -1,7 +1,10 @@
 {
     "name": "@duckdb/duckdb-wasm",
-    "version": "0.0.26",
+    "version": "0.0.27",
     "description": "DuckDB powered by WebAssembly",
+    "publishConfig": {
+        "registry":"https://npm.pkg.github.com"
+    },
     "dependencies": {
         "apache-arrow": "^4.0.0",
         "glob-to-regexp": "^0.4.1"
@@ -71,5 +74,5 @@
         "perf_hooks": false,
         "fs": false,
         "buffer": false
-    }
+    },
 }
