@@ -13,6 +13,7 @@ jobs:
         runs-on: self-hosted
         steps:
             - uses: actions/checkout@v2
+              submodules: 'recursive'
 
             - name: Lint ./lib
               uses: ./actions/image
@@ -28,12 +29,12 @@ jobs:
         runs-on: self-hosted
         steps:
             - uses: actions/checkout@v2
+              submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
               with:
                   script: |-
-                      git submodule update --init --recursive
                       yarn install --frozen-lockfile
 
             - name: Lint @duckdb/duckdb-wasm
@@ -50,12 +51,12 @@ jobs:
             - eslint
         steps:
             - uses: actions/checkout@v2
+              submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
               with:
                   script: |-
-                      git submodule update --init --recursive
                       mkdir -p ./lib/build/debug ./reports
 
             - name: Build
@@ -111,12 +112,12 @@ jobs:
             - eslint
         steps:
             - uses: actions/checkout@v2
+              submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
               with:
                   script: |-
-                      git submodule update --init --recursive
                       mkdir -p ./lib/build/release ./reports
 
             - name: Build
@@ -153,12 +154,12 @@ jobs:
 
         steps:
             - uses: actions/checkout@v2
+              submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
               with:
                   script: |-
-                      git submodule update --init --recursive
                       mkdir -p ./lib/build/wasm/release ./reports
                       yarn install --frozen-lockfile
 
