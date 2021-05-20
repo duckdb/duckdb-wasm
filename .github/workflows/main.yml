@@ -209,7 +209,8 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:ci
 
-            - name: Bundle GitHub Pages
+            - name: Build GitHub Pages
+              if: github.ref == 'refs/heads/master'
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -218,8 +219,8 @@ jobs:
                   ./scripts/build_pages.sh
 
             - name: Deploy GitHub Pages
-              uses: JamesIves/github-pages-deploy-action@4.1.3
               if: github.ref == 'refs/heads/master'
+              uses: JamesIves/github-pages-deploy-action@4.1.3
               with:
                   branch: gh-pages
                   folder: ./.pages
