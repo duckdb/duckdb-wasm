@@ -34,7 +34,7 @@ export default {
         historyApiFallback: true,
         contentBase: path.join(__dirname, './build/debug'),
         compress: true,
-        port: 9001,
+        port: 9002,
         mimeTypes: {
             'text/plain': ['dashql'],
         },
