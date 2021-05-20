@@ -74,5 +74,5 @@
         "perf_hooks": false,
         "fs": false,
         "buffer": false
-    },
+    }
 }
