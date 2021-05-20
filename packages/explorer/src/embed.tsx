@@ -7,7 +7,7 @@ import AppLauncher from './app_launcher';
 import { launchApp } from './app_launcher';
 import { Provider as ReduxProvider } from 'react-redux';
 import { AppContextProvider, IAppContext } from './app_context';
-import { Route, BrowserRouter, Switch, Redirect } from 'react-router-dom';
+import { Route, BrowserRouter, Switch, Redirect, SwitchProps } from 'react-router-dom';
 import { withNavBar } from './components';
 
 import './theme.css';
@@ -22,6 +22,13 @@ export interface EmbedOptions {
     /// Render with navigation bar?
     withNavbar: boolean;
 }
+
+const Routes = (props: SwitchProps) => (
+    <Switch>
+        <Route exact path={props.location?.pathname} component={withNavBar(Explorer)} />
+        <Redirect to={`${props.location?.pathname}`} />
+    </Switch>
+);
 
 export async function embed(element: Element, options: EmbedOptions): Promise<void> {
     const store = model.createStore();
@@ -42,10 +49,7 @@ export async function embed(element: Element, options: EmbedOptions): Promise<vo
             <ReduxProvider store={store}>
                 <AppLauncher>
                     <BrowserRouter>
-                        <Switch>
-                            <Route exact path="/" component={withNavBar(Explorer)} />
-                            <Redirect to="/404" />
-                        </Switch>
+                        <Routes />
                     </BrowserRouter>
                 </AppLauncher>
             </ReduxProvider>

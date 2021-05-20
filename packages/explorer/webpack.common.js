@@ -15,7 +15,6 @@ export function configure(params) {
         },
         output: {
             path: params.buildDir,
-            publicPath: '/',
             filename: 'static/js/[name].[contenthash].js',
             chunkFilename: 'static/js/[name].[contenthash].js',
         },

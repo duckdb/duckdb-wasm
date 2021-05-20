@@ -162,6 +162,17 @@ duckdb_tests_debug: duckdb
 duckdb_tests_node: duckdb
 	yarn workspace @duckdb/duckdb-wasm test:node
 
+# Build the explorer
+.PHONY: explorer
+explorer_release:
+	yarn workspace @duckdb/explorer build:release
+
+pages:
+	${ROOT_DIR}/scripts/build_pages.sh
+
+pages_server:
+	python3 -m http.server 9003 --bind 127.0.0.1 --directory .pages
+
 # C++ formatting
 .PHONY: clang_format
 clang_format:
