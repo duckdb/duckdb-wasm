@@ -13,7 +13,8 @@ jobs:
         runs-on: self-hosted
         steps:
             - uses: actions/checkout@v2
-              submodules: 'recursive'
+              with:
+                submodules: 'recursive'
 
             - name: Lint ./lib
               uses: ./actions/image
@@ -29,7 +30,8 @@ jobs:
         runs-on: self-hosted
         steps:
             - uses: actions/checkout@v2
-              submodules: 'recursive'
+              with:
+                submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
@@ -51,7 +53,8 @@ jobs:
             - eslint
         steps:
             - uses: actions/checkout@v2
-              submodules: 'recursive'
+              with:
+                submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
@@ -112,7 +115,8 @@ jobs:
             - eslint
         steps:
             - uses: actions/checkout@v2
-              submodules: 'recursive'
+              with:
+                submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
@@ -154,7 +158,8 @@ jobs:
 
         steps:
             - uses: actions/checkout@v2
-              submodules: 'recursive'
+              with:
+                submodules: 'recursive'
 
             - name: Prepare repository
               uses: ./actions/image
