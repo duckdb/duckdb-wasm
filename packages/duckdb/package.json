@@ -60,6 +60,7 @@
         "lint": "yarn run eslint {src,test}/**/*.ts"
     },
     "files": [
+        "dist/*.d.ts",
         "dist/types/**/*.d.ts",
         "dist/chunk*.js",
         "dist/duckdb*.js",
