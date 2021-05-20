@@ -14,7 +14,7 @@
         "node": ">=14.13"
     },
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^0.0.26",
+        "@duckdb/duckdb-wasm": "^0.0.27",
         "@types/react-select": "^4.0.15",
         "apache-arrow": "^4.0.0",
         "axios": "^0.21.1",
