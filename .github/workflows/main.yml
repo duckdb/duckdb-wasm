@@ -209,11 +209,15 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:ci
 
-            - name: Create Pages
+            - name: Bundle GitHub Pages
               run: |
+                  git config --global user.name 'DuckDB CI'
+                  git config --global user.email 'duckdb-ci+ankoh@users.noreply.github.com'
+                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+                  git fetch origin gh-pages
                   ./scripts/build_pages.sh
 
-            - name: Deploy to GitHub Pages
+            - name: Deploy GitHub Pages
               uses: JamesIves/github-pages-deploy-action@4.1.3
               if: github.ref == 'refs/heads/master'
               with:
