@@ -167,9 +167,11 @@ duckdb_tests_node: duckdb
 explorer_release:
 	yarn workspace @duckdb/explorer build:release
 
+# Build pages
 pages:
 	${ROOT_DIR}/scripts/build_pages.sh
 
+# Run a local pages server for tests
 pages_server:
 	python3 -m http.server 9003 --bind 127.0.0.1 --directory .pages
 
