@@ -10,8 +10,8 @@ const pkgs = new Map();
 for (const name of pkgNames) {
     const p = path.join('packages', name, 'package.json');
     const j = JSON.parse(fs.readFileSync(p));
-    console.log(j.version);
-    pkgs.set(`@duckdb/${name}`, {
+    console.log(`${j.name}:${j.version}`);
+    pkgs.set(j.name, {
         name,
         path: p,
         config: j,
