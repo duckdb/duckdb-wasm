@@ -609,10 +609,10 @@
     "@types/d3-interpolate" "*"
     "@types/d3-selection" "*"
 
-"@types/d3@^6.3.0":
-  version "6.3.0"
-  resolved "https://registry.yarnpkg.com/@types/d3/-/d3-6.3.0.tgz#28d1bfd4e5ef6a38535d8ef0884d452192719528"
-  integrity sha512-YILdGsjNTbvkWZKsBasB4cVDwNPnni7ILMJg9keMErQHyuII2yO2jyFdUy5E+7k/HTNP/AucrPddQuu27udbeA==
+"@types/d3@^6.3.0", "@types/d3@^6.5.0":
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/@types/d3/-/d3-6.5.0.tgz#d10ab41efc0ba1f18fc57e0c6e4a737ab0e81304"
+  integrity sha512-jVKWUprtDUVybTV73X1z2aSR5/McX+gHv7duAB6RhXksB+hlvzd6MJkRz299n2xKzOgA4fdGJdXrwIaIfaFtZw==
   dependencies:
     "@types/d3-array" "*"
     "@types/d3-axis" "*"
