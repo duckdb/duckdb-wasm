@@ -4,7 +4,8 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 
-BRANCH=${1:-master}
+DEFAULT_BRANCH="master"
+CURRENT_BRANCH=${1:-master}
 
 PAGES_DIR=${PROJECT_ROOT}/.pages
 rm -rf ${PAGES_DIR}
@@ -18,9 +19,23 @@ cd ${PROJECT_ROOT}
 git read-tree --prefix=.pages origin/gh-pages
 git reset .pages
 
+if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
+    echo "[ RUN ] Install @duckdb/explorer to ${PAGES_DIR}/"
 
-echo "[ RUN ] Bundle @duckdb/explorer in /branch/${BRANCH}"
+    find ${PAGES_DIR} \
+        -mindepth 1 \
+        -maxdepth 1 \
+        -type d \
+        -not -name branches \
+        -exec echo rm -rf '{}' \;
 
-rm -rf ${PAGES_DIR}/branch/${BRANCH}
-mkdir -p ${PAGES_DIR}/branch
-cp -r ${PROJECT_ROOT}/packages/explorer/build/release ${PAGES_DIR}/branch/${BRANCH}
+
+    cp -r ${PROJECT_ROOT}/packages/explorer/build/release/* ${PAGES_DIR}
+else
+    TARGET_DIR="${PAGES_DIR}/branch/${CURRENT_BRANCH}"
+    echo "[ RUN ] Install @duckdb/explorer to ${TARGET_DIR}/"
+
+    rm -rf ${TARGET_DIR}
+    mkdir -p ${PAGES_DIR}/branch
+    cp -r ${PROJECT_ROOT}/packages/explorer/build/release ${TARGET_DIR}
+fi
