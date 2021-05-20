@@ -9,6 +9,7 @@
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/common/arrow.hpp"
+#include "duckdb/common/arrow_wrapper.hpp"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/json_parser.h"
 #include "duckdb/web/json_table_options.h"
@@ -62,7 +63,7 @@ class TableReader : public arrow::RecordBatchReader {
     static arrow::Result<std::shared_ptr<TableReader>> Resolve(std::unique_ptr<io::InputFileStream> table,
                                                                TableType type, size_t batch_size = 1024);
     /// Arrow array stream factory function
-    static ArrowArrayStream* CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr);
+    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr);
 };
 
 }  // namespace json
