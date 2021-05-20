@@ -329,7 +329,7 @@ arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper>  TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr) {
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr) {
     assert(this_ptr != 0);
 
     // Rewind the reader
