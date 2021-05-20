@@ -329,7 +329,7 @@ arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr
 }
 
 /// Arrow array stream factory function
-ArrowArrayStream* TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr) {
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper>  TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr) {
     assert(this_ptr != 0);
 
     // Rewind the reader
@@ -338,11 +338,13 @@ ArrowArrayStream* TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_
     if (!maybe_ok.ok()) return nullptr;
 
     // Create arrow stream
-    auto stream = std::make_unique<ArrowArrayStream>();
-    stream->release = nullptr;
-    maybe_ok = arrow::ExportRecordBatchReader(*reader, stream.get());
+    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    stream_wrapper->arrow_array_stream.release = nullptr;
+    maybe_ok = arrow::ExportRecordBatchReader(*reader, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
-        if (stream->release) stream->release(stream.get());
+        if (stream_wrapper->arrow_array_stream.release) {
+            stream_wrapper->arrow_array_stream.release(&stream_wrapper->arrow_array_stream);
+        }
         return nullptr;
     }
 
@@ -351,7 +353,7 @@ ArrowArrayStream* TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_
     // stream->get_schema(stream.get(), &schema);
 
     // Release the stream
-    return stream.release();
+    return stream_wrapper;
 }
 
 }  // namespace json
