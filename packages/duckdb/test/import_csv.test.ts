@@ -1,12 +1,14 @@
 import * as duckdb from '../src/';
-// import * as arrow from 'apache-arrow';
+import { Column, compareTable } from './table_test';
+
+const encoder = new TextEncoder();
 
 interface CSVImportTest {
     name: string;
     input: string;
     options: duckdb.CSVTableOptions;
     query: string;
-    expectedOutput: string;
+    expectedColumns: Column[];
 }
 
 const CSV_IMPORT_TESTS: CSVImportTest[] = [
@@ -16,15 +18,22 @@ const CSV_IMPORT_TESTS: CSVImportTest[] = [
 1,2,3
 4,5,6
 7,8,9
+
 `,
         options: {
             schema: 'main',
             name: 'foo',
         },
         query: 'SELECT * FROM main.foo',
-        expectedOutput: '',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: [3, 6, 9] },
+        ],
     },
 ];
+
+const TEST_FILE = 'TEST';
 
 export function testCSVImport(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
@@ -39,7 +48,12 @@ export function testCSVImport(db: () => duckdb.DuckDBBindings): void {
     describe('CSV Import Sync', () => {
         for (const test of CSV_IMPORT_TESTS) {
             it(test.name, () => {
-                expect(null).toBeNull();
+                conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                const buffer = encoder.encode(test.input);
+                db().addFileBuffer(TEST_FILE, buffer);
+                conn.importCSVFromPath(TEST_FILE, test.options);
+                const results = conn.runQuery(test.query);
+                compareTable(results, test.expectedColumns);
             });
         }
     });
@@ -58,7 +72,12 @@ export function testCSVImportAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('CSV Import Async', () => {
         for (const test of CSV_IMPORT_TESTS) {
             it(test.name, async () => {
-                expect(null).toBeNull();
+                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                const buffer = encoder.encode(test.input);
+                await db().addFileBuffer(TEST_FILE, buffer);
+                await conn.importCSVFromPath(TEST_FILE, test.options);
+                const results = await conn.runQuery(test.query);
+                compareTable(results, test.expectedColumns);
             });
         }
     });
