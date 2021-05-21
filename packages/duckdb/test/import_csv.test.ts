@@ -13,12 +13,11 @@ interface CSVImportTest {
 
 const CSV_IMPORT_TESTS: CSVImportTest[] = [
     {
-        name: 'rows_integers',
+        name: 'integers_auto_1',
         input: `"a","b","c"
 1,2,3
 4,5,6
 7,8,9
-
 `,
         options: {
             schema: 'main',
@@ -30,6 +29,52 @@ const CSV_IMPORT_TESTS: CSVImportTest[] = [
             { name: 'b', values: [2, 5, 8] },
             { name: 'c', values: [3, 6, 9] },
         ],
+    },
+    {
+        name: 'integers_auto_2',
+        input: `a,b,c
+1,2,3
+4,5,6
+7,8,9
+`,
+        options: {
+            schema: 'main',
+            name: 'foo',
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: [3, 6, 9] },
+        ],
+    },
+    {
+        name: 'integers_auto_3',
+        input: `a,b,c`,
+        options: {
+            schema: 'main',
+            name: 'foo',
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [
+            { name: 'column0', values: ['a'] },
+            { name: 'column1', values: ['b'] },
+            { name: 'column2', values: ['c'] },
+        ],
+    },
+    {
+        name: 'integers_auto_2',
+        input: `a
+1
+4
+7
+`,
+        options: {
+            schema: 'main',
+            name: 'foo',
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [{ name: 'a', values: [1, 4, 7] }],
     },
 ];
 
