@@ -25,3 +25,6 @@
 	path = submodules/rapidjson
 	url = https://github.com/Tencent/rapidjson
 	shallow = true
+[submodule "submodules/dbgen"]
+	path = submodules/dbgen
+	url = https://github.com/databricks/tpch-dbgen.git
