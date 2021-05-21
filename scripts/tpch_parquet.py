@@ -1,7 +1,3 @@
-# Convert tbl to parquet
-
-# convert.py <from-dir> <to-dir>
-
 import pandas as pd
 import sys
 
