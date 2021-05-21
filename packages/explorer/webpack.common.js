@@ -50,7 +50,21 @@ export function configure(params) {
                     ],
                 },
                 {
-                    test: /\.(png|jpe?g|gif|svg|csv|parquet)$/i,
+                    test: /\.(csv)$/i,
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/csv/[name].[contenthash].[ext]',
+                    },
+                },
+                {
+                    test: /\.(parquet)$/i,
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/parquet/[name].[contenthash].[ext]',
+                    },
+                },
+                {
+                    test: /\.(png|jpe?g|gif|svg)$/i,
                     loader: 'file-loader',
                     options: {
                         name: 'static/img/[name].[contenthash].[ext]',
