@@ -97,6 +97,8 @@ class Explorer extends React.Component<Props> {
         );
     }
 
+    public selectScript() {}
+
     public render() {
         return (
             <div className={styles.container}>
@@ -109,7 +111,9 @@ class Explorer extends React.Component<Props> {
                             <FormControl id="inlineFormInputGroupUsername2" placeholder="Search..." />
                         </InputGroup>
                     </Form>
-                    <div className={styles.scriptList}>{scripts.SCRIPTS.map(s => this.renderScriptListEntry(s))}</div>
+                    <div className={styles.scriptList}>
+                        {scripts.SCRIPTS.map((_n, s) => this.renderScriptListEntry(s))}
+                    </div>
                 </div>
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
