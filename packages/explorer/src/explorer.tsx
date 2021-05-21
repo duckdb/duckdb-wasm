@@ -2,6 +2,7 @@ import Immutable from 'immutable';
 import * as React from 'react';
 import * as model from './model';
 import * as arrow from 'apache-arrow';
+import * as scripts from './scripts';
 import { ArrowGrid } from './components';
 import { connect } from 'react-redux';
 import cn from 'classnames';
@@ -83,6 +84,19 @@ class Explorer extends React.Component<Props> {
         this.props.registerFiles(fileInfos);
     }
 
+    public renderScriptListEntry(metadata: scripts.ScriptMetadata) {
+        return (
+            <div key={metadata.name} className={styles.scriptListEntry}>
+                <div className={styles.scriptListEntryIcon}>
+                    <svg width="20px" height="20px">
+                        <use xlinkHref={`${icon_file}#sym`} />
+                    </svg>
+                </div>
+                <div className={styles.scriptListEntryHeader}>{metadata.name}</div>
+            </div>
+        );
+    }
+
     public render() {
         return (
             <div className={styles.container}>
@@ -95,17 +109,7 @@ class Explorer extends React.Component<Props> {
                             <FormControl id="inlineFormInputGroupUsername2" placeholder="Search..." />
                         </InputGroup>
                     </Form>
-                    <div className={styles.scriptList}>
-                        <div className={styles.scriptListEntry}>
-                            <div className={styles.scriptListEntryIcon}>
-                                <svg width="20px" height="20px">
-                                    <use xlinkHref={`${icon_file}#sym`} />
-                                </svg>
-                            </div>
-                            <div className={styles.scriptListEntryHeader}>HelloWorld.sql</div>
-                            <div className={styles.scriptListEntryTimestamp}>19.05.2021, 10:21</div>
-                        </div>
-                    </div>
+                    <div className={styles.scriptList}>{scripts.SCRIPTS.map(s => this.renderScriptListEntry(s))}</div>
                 </div>
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>

@@ -18,7 +18,7 @@ const registerScript = (name: string, script: URL, files: RecommendedFile[] = []
     files,
 });
 
-export const EXAMPLE_SCRIPTS: ScriptMetadata[] = [
+export const SCRIPTS: ScriptMetadata[] = [
     registerScript('tpch_schema.sql', new URL('./tpch_schema.sql', import.meta.url)),
     registerScript('tpch_import_parquet.sql', new URL('./tpch_import_parquet.sql', import.meta.url), TPCH_01_PARQUET),
     registerScript('tpch_import_tbl.sql', new URL('./tpch_import_tbl.sql', import.meta.url), TPCH_01_TBL),
