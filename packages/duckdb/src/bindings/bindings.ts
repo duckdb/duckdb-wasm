@@ -212,4 +212,17 @@ export abstract class DuckDBBindings {
             throw new Error(this.readString(d, n));
         }
     }
+
+    /** Import json from path */
+    public importJSONFromPath(conn: number, path: string, options: CSVTableOptions): void {
+        const optionsJSON = JSON.stringify(options);
+        const [s, d, n] = this.callSRet(
+            'duckdb_web_import_json_table',
+            ['number', 'string', 'string'],
+            [conn, path, optionsJSON],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(this.readString(d, n));
+        }
+    }
 }

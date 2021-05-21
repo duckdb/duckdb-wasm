@@ -1,4 +1,4 @@
-import { CSVTableOptions } from 'src/bindings/table_options';
+import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 import { LogEntryVariant } from '../log';
 
 export type ConnectionID = number;
@@ -21,6 +21,7 @@ export enum WorkerRequestType {
     FETCH_QUERY_RESULTS = 'FETCH_QUERY_RESULTS',
     ZIP_EXTRACT_FILE = 'ZIP_EXTRACT_FILE',
     IMPORT_CSV_FROM_PATH = 'IMPORT_CSV_FROM_PATH',
+    IMPORT_JSON_FROM_PATH = 'IMPORT_JSON_FROM_PATH',
 }
 
 export enum WorkerResponseType {
@@ -94,7 +95,8 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.SEND_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
     | WorkerRequest<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs>
-    | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>;
+    | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
+    | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>;
 
 export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.VERSION_STRING, string>
@@ -128,4 +130,5 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>
     | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>
-    | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>;
+    | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
+    | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>;
