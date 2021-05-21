@@ -27,6 +27,8 @@ class TypeAnalyzer {
     TypeAnalyzer(std::shared_ptr<arrow::DataType> type);
 
    public:
+    /// Virtual destructor
+    virtual ~TypeAnalyzer() = default;
     /// Get the type
     auto& type() { return type_; }
     /// Check if a value is of the type
