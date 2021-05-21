@@ -8,11 +8,11 @@ select
         s_phone,
         s_comment
 from
-        'part.parquet',
-        'supplier.parquet',
-        'partsupp.parquet',
-        'nation.parquet',
-        'region.parquet'
+        parquet_scan('part.parquet'),
+        parquet_scan('supplier.parquet'),
+        parquet_scan('partsupp.parquet'),
+        parquet_scan('nation.parquet'),
+        parquet_scan('region.parquet')
 where
         p_partkey = ps_partkey
         and s_suppkey = ps_suppkey

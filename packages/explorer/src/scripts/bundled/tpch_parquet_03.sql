@@ -4,9 +4,9 @@ select
         o_orderdate,
         o_shippriority
 from
-        'customer.parquet',
-        'orders.parquet',
-        'lineitem.parquet'
+        parquet_scan('customer.parquet'),
+        parquet_scan('orders.parquet'),
+        parquet_scan('lineitem.parquet')
 where
         c_mktsegment = 'BUILDING'
         and c_custkey = o_custkey
