@@ -1,8 +1,7 @@
-# Use project versions
-# cmake --help-policy CMP0048
-if (POLICY CMP0048)
-    cmake_policy(SET CMP0048 NEW)
-endif (POLICY CMP0048)
+# Use project versions cmake --help-policy CMP0048
+if(POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif(POLICY CMP0048)
 
 project(dashql VERSION 0.1)
 cmake_minimum_required(VERSION 3.10)
@@ -12,21 +11,23 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS -std=c++17)
 
-if (NOT EMSCRIPTEN)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
-endif ()
+if(NOT EMSCRIPTEN)
+  set(CMAKE_CXX_FLAGS_DEBUG
+      "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
+endif()
 
-if (EMSCRIPTEN)
-    add_compile_options(-s DISABLE_EXCEPTION_CATCHING=0 -fexceptions -sUSE_PTHREADS=0)
-endif ()
+if(EMSCRIPTEN)
+  add_compile_options(-s DISABLE_EXCEPTION_CATCHING=0 -fexceptions
+                      -sUSE_PTHREADS=0)
+endif()
 
 # ---------------------------------------------------------------------------
 # Ccache
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
-    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+  set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -35,7 +36,7 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-set (THREAD_LIBS Threads::Threads)
+set(THREAD_LIBS Threads::Threads)
 
 # ---------------------------------------------------------------------------
 # Parallelism
@@ -47,10 +48,7 @@ set(CMAKE_BUILD_PARALLEL_LEVEL ${NPROCS})
 # ---------------------------------------------------------------------------
 # CMake includes
 
-SET(CMAKE_MODULE_PATH
-  ${CMAKE_SOURCE_DIR}/cmake/modules
-  ${CMAKE_MODULE_PATH}
-)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 
 include("${CMAKE_SOURCE_DIR}/cmake/duckdb.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/boost.cmake")
@@ -65,66 +63,68 @@ include("${CMAKE_SOURCE_DIR}/cmake/spdlog.cmake")
 # Code coverage
 
 if(CODE_COVERAGE)
-    if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
-        message("Building with llvm code coverage")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-    elseif(CMAKE_COMPILER_IS_GNUCXX)
-        message("Building with lcov code coverage")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
-    else()
-        message(FATAL_ERROR "Code coverage requires Clang or GCC. Aborting.")
-    endif()
+  if("${CMAKE_C_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang"
+     OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+    message("Building with llvm code coverage")
+    set(CMAKE_C_FLAGS
+        "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+  elseif(CMAKE_COMPILER_IS_GNUCXX)
+    message("Building with lcov code coverage")
+    set(CMAKE_C_FLAGS
+        "${CMAKE_C_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+  else()
+    message(FATAL_ERROR "Code coverage requires Clang or GCC. Aborting.")
+  endif()
 endif()
 
 # ---------------------------------------------------------------------------
 # Headers
 
-include_directories(
-    "${CMAKE_SOURCE_DIR}/include"
-    "${CMAKE_BINARY_DIR}/include"
-    "${DUCKDB_INCLUDE_DIR}"
-    "${DUCKDB_UTF8PROC_INCLUDE_DIR}"
-)
+include_directories("${CMAKE_SOURCE_DIR}/include" "${CMAKE_BINARY_DIR}/include"
+                    "${DUCKDB_INCLUDE_DIR}" "${DUCKDB_UTF8PROC_INCLUDE_DIR}")
 
 # ---------------------------------------------------------------------------
 # Libraries
 
-add_library(duckdb_web
-    ${CMAKE_SOURCE_DIR}/src/csv_table_options.cc
-    ${CMAKE_SOURCE_DIR}/src/json_analyzer.cc
-    ${CMAKE_SOURCE_DIR}/src/json_parser.cc
-    ${CMAKE_SOURCE_DIR}/src/json_table.cc
-    ${CMAKE_SOURCE_DIR}/src/json_table_options.cc
-    ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
-    ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
-    ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
-    ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc
-    ${CMAKE_SOURCE_DIR}/src/io/filesystem_buffer.cc
-    ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
-    ${CMAKE_SOURCE_DIR}/src/io/ifstream.cc
-    ${CMAKE_SOURCE_DIR}/src/io/web_filesystem.cc
-    ${CMAKE_SOURCE_DIR}/src/miniz_zipper.cc
-    ${CMAKE_SOURCE_DIR}/src/wasm_response.cc
-    ${CMAKE_SOURCE_DIR}/src/webdb.cc
-    ${CMAKE_SOURCE_DIR}/src/webdb_api.cc
-)
-
+add_library(
+  duckdb_web
+  ${CMAKE_SOURCE_DIR}/src/csv_table_options.cc
+  ${CMAKE_SOURCE_DIR}/src/json_analyzer.cc
+  ${CMAKE_SOURCE_DIR}/src/json_parser.cc
+  ${CMAKE_SOURCE_DIR}/src/json_table.cc
+  ${CMAKE_SOURCE_DIR}/src/json_table_options.cc
+  ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
+  ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
+  ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
+  ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc
+  ${CMAKE_SOURCE_DIR}/src/io/filesystem_buffer.cc
+  ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
+  ${CMAKE_SOURCE_DIR}/src/io/ifstream.cc
+  ${CMAKE_SOURCE_DIR}/src/io/web_filesystem.cc
+  ${CMAKE_SOURCE_DIR}/src/miniz_zipper.cc
+  ${CMAKE_SOURCE_DIR}/src/wasm_response.cc
+  ${CMAKE_SOURCE_DIR}/src/webdb.cc
+  ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
 target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson)
 
 # ---------------------------------------------------------------------------
 # Emscripten
 
-# We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our own imports.
-if (EMSCRIPTEN)
-    set(ADDITIONAL_LINKER_FLAGS)
-    if (WASM_FAST_LINKING)
-        set(ADDITIONAL_LINKER_FLAGS -O0)
-    endif ()
+# We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our
+# own imports.
+if(EMSCRIPTEN)
+  set(ADDITIONAL_LINKER_FLAGS)
+  if(WASM_FAST_LINKING)
+    set(ADDITIONAL_LINKER_FLAGS -O0)
+  endif()
 
-    set(DUCKDB_WASM_LINKER_FLAGS " \
+  set(DUCKDB_WASM_LINKER_FLAGS
+      " \
         -s WARN_ON_UNDEFINED_SYMBOLS=0 \
         -s ALLOW_MEMORY_GROWTH=1 \
         -s USE_PTHREADS=0 \
@@ -148,6 +148,8 @@ if (EMSCRIPTEN)
             _duckdb_web_query_fetch_results, \
             _duckdb_web_query_run, \
             _duckdb_web_query_send, \
+            _duckdb_web_import_csv_table, \
+            _duckdb_web_import_json_table, \
             _duckdb_web_zip_load_file, \
             _duckdb_web_zip_read_entry_count, \
             _duckdb_web_zip_read_entry_info, \
@@ -157,18 +159,20 @@ if (EMSCRIPTEN)
         -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
         --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js \
         ${ADDITIONAL_LINKER_FLAGS} \
-        "
-        )
+        ")
 
-    add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
-    target_link_libraries(duckdb_wasm duckdb_web spdlog)
-    set_target_properties(duckdb_wasm PROPERTIES LINK_FLAGS "${DUCKDB_WASM_LINKER_FLAGS} -s ENVIRONMENT='web'")
+  add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
+  target_link_libraries(duckdb_wasm duckdb_web spdlog)
+  set_target_properties(
+    duckdb_wasm PROPERTIES LINK_FLAGS
+                           "${DUCKDB_WASM_LINKER_FLAGS} -s ENVIRONMENT='web'")
 
-    add_executable(duckdb_wasm_node ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
-    target_link_libraries(duckdb_wasm_node duckdb_web spdlog)
-    set_target_properties(duckdb_wasm_node PROPERTIES LINK_FLAGS "${DUCKDB_WASM_LINKER_FLAGS} -s ENVIRONMENT='node'")
+  add_executable(duckdb_wasm_node ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
+  target_link_libraries(duckdb_wasm_node duckdb_web spdlog)
+  set_target_properties(
+    duckdb_wasm_node
+    PROPERTIES LINK_FLAGS "${DUCKDB_WASM_LINKER_FLAGS} -s ENVIRONMENT='node'")
 else()
-
 
 endif()
 
@@ -176,26 +180,21 @@ endif()
 # Tester
 
 if(NOT EMSCRIPTEN)
-    set (TEST_CC
-        ${CMAKE_SOURCE_DIR}/test/filesystem_buffer_test.cc
-        ${CMAKE_SOURCE_DIR}/test/ifstream_test.cc
-        ${CMAKE_SOURCE_DIR}/test/import_csv_test.cc
-        ${CMAKE_SOURCE_DIR}/test/import_json_test.cc
-        ${CMAKE_SOURCE_DIR}/test/import_parquet_test.cc
-        ${CMAKE_SOURCE_DIR}/test/json_analyzer_test.cc
-        ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
-        ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
-        ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
-        ${CMAKE_SOURCE_DIR}/test/miniz_zipper_test.cc
-        ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
-        ${CMAKE_SOURCE_DIR}/test/tester.cc
-    )
-    set (TEST_LIBS
-        duckdb_web
-        gtest gmock gflags
-        ${THREAD_LIBS}
-    )
+  set(TEST_CC
+      ${CMAKE_SOURCE_DIR}/test/filesystem_buffer_test.cc
+      ${CMAKE_SOURCE_DIR}/test/ifstream_test.cc
+      ${CMAKE_SOURCE_DIR}/test/import_csv_test.cc
+      ${CMAKE_SOURCE_DIR}/test/import_json_test.cc
+      ${CMAKE_SOURCE_DIR}/test/import_parquet_test.cc
+      ${CMAKE_SOURCE_DIR}/test/json_analyzer_test.cc
+      ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
+      ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
+      ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
+      ${CMAKE_SOURCE_DIR}/test/miniz_zipper_test.cc
+      ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
+      ${CMAKE_SOURCE_DIR}/test/tester.cc)
+  set(TEST_LIBS duckdb_web gtest gmock gflags ${THREAD_LIBS})
 
-    add_executable(tester ${TEST_CC})
-    target_link_libraries(tester ${TEST_LIBS})
+  add_executable(tester ${TEST_CC})
+  target_link_libraries(tester ${TEST_LIBS})
 endif()

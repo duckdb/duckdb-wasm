@@ -36,7 +36,7 @@ export function testCSVImport(db: () => duckdb.DuckDBBindings): void {
     afterEach(async () => {
         conn.disconnect();
     });
-    describe('CSV Import Tests', () => {
+    describe('CSV Import Sync', () => {
         for (const test of CSV_IMPORT_TESTS) {
             it(test.name, () => {
                 expect(null).toBeNull();
@@ -55,7 +55,7 @@ export function testCSVImportAsync(db: () => duckdb.AsyncDuckDB): void {
     afterEach(async () => {
         await conn.disconnect();
     });
-    describe('CSV Import Tests', () => {
+    describe('CSV Import Async', () => {
         for (const test of CSV_IMPORT_TESTS) {
             it(test.name, async () => {
                 expect(null).toBeNull();
