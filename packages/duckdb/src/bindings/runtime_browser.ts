@@ -21,6 +21,17 @@ export const BrowserRuntime: DuckDBRuntime & {
     filesByID: new Map<number, BrowserRuntimeFile>(),
     nextFileID: 0,
     bindings: null,
+
+    duckdb_web_drop_file(url: string): void {
+        const file = BrowserRuntime.filesByURL.get(url);
+        if (!file) return;
+        BrowserRuntime.filesByID.delete(file.fileID);
+        BrowserRuntime.filesByURL.delete(url);
+    },
+    duckdb_web_drop_files(): void {
+        BrowserRuntime.filesByID.clear();
+        BrowserRuntime.filesByURL.clear();
+    },
     duckdb_web_add_file_path: (_url: string, _path: string) => {
         throw Error('cannot register a file path');
     },

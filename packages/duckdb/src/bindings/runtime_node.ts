@@ -50,6 +50,16 @@ export const NodeRuntime: DuckDBRuntime & {
     nextFileID: 0,
     bindings: null,
 
+    duckdb_web_drop_file(url: string): void {
+        const file = NodeRuntime.filesByURL.get(url);
+        if (!file) return;
+        NodeRuntime.filesByID.delete(file.fileID);
+        NodeRuntime.filesByURL.delete(url);
+    },
+    duckdb_web_drop_files(): void {
+        NodeRuntime.filesByID.clear();
+        NodeRuntime.filesByURL.clear();
+    },
     duckdb_web_add_file_blob: (_url: string, _blob: any) => {
         throw Error('cannot register a file blob');
     },

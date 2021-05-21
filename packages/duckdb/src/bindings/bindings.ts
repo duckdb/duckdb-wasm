@@ -36,6 +36,14 @@ export abstract class DuckDBBindings {
     /// Instantiate the module
     protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
 
+    /// Drop a file by url
+    public dropFile(url: string): void {
+        return this._runtime.duckdb_web_drop_file(url);
+    }
+    /// Drop a file by url
+    public dropFiles(): void {
+        return this._runtime.duckdb_web_drop_files();
+    }
     /// Add file path
     public addFilePath(url: string, path: string): number {
         return this._runtime.duckdb_web_add_file_path(url, path);
