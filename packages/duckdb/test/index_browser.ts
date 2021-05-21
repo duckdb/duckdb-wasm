@@ -54,8 +54,8 @@ import { testBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
 import { testFilesystem } from './filesystem.test';
-import { testZip } from './zip.test';
-import { testZipAsync } from './zip_async.test';
+import { testZip, testZipAsync } from './zip.test';
+import { testJSONImport, testJSONImportAsync } from './import_json.test';
 
 testBindings(() => db!);
 testBatchStream(() => db!);
@@ -63,3 +63,5 @@ testAsyncBatchStream(() => adb!);
 testFilesystem(() => adb!, resolveData);
 testZip(() => db!, resolveData);
 testZipAsync(() => adb!, resolveData);
+testJSONImport(() => db!);
+testJSONImportAsync(() => adb!);
