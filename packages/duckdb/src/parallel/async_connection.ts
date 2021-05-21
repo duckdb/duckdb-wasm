@@ -1,6 +1,6 @@
 import { Logger, LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import * as arrow from 'apache-arrow';
-import { CSVTableOptions } from 'src/bindings/table_options';
+import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 
 interface IAsyncDuckDB {
     logger: Logger;
@@ -18,6 +18,7 @@ interface IAsyncDuckDB {
     fetchQueryResults(conn: number): Promise<Uint8Array>;
 
     importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
+    importJSONFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
 
     extractZipPath(archiveFile: number, outFile: number, entryPath: string): Promise<number>;
 }
@@ -71,6 +72,8 @@ export interface AsyncConnection {
     ): Promise<arrow.AsyncRecordBatchStreamReader<T>>;
     /** Import csv file from path */
     importCSVFromPath(text: string, options: CSVTableOptions): Promise<null>;
+    /** Import csv file from path */
+    importJSONFromPath(text: string, options: JSONTableOptions): Promise<null>;
 }
 
 /** A thin helper to memoize the connection id */
@@ -135,5 +138,9 @@ export class AsyncDuckDBConnection implements AsyncConnection {
     /** Import csv file from path */
     public async importCSVFromPath(text: string, options: CSVTableOptions): Promise<null> {
         return await this._instance.importCSVFromPath(this._conn, text, options);
+    }
+    /** Import json file from path */
+    public async importJSONFromPath(text: string, options: CSVTableOptions): Promise<null> {
+        return await this._instance.importJSONFromPath(this._conn, text, options);
     }
 }

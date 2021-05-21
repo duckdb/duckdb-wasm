@@ -9,7 +9,7 @@ import {
 } from './worker_request';
 import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
-import { CSVTableOptions } from 'src/bindings/table_options';
+import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 
 export class AsyncDuckDB {
     /** The message handler */
@@ -204,13 +204,19 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
+            case WorkerRequestType.ZIP_EXTRACT_FILE:
+                if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.IMPORT_CSV_FROM_PATH:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
                 }
                 break;
-            case WorkerRequestType.ZIP_EXTRACT_FILE:
+            case WorkerRequestType.IMPORT_JSON_FROM_PATH:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
@@ -370,6 +376,14 @@ export class AsyncDuckDB {
     public async importCSVFromPath(conn: ConnectionID, path: string, options: CSVTableOptions): Promise<null> {
         const task = new WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>(
             WorkerRequestType.IMPORT_CSV_FROM_PATH,
+            [conn, path, options],
+        );
+        return await this.postTask(task);
+    }
+    /** Import a json file */
+    public async importJSONFromPath(conn: ConnectionID, path: string, options: JSONTableOptions): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>(
+            WorkerRequestType.IMPORT_JSON_FROM_PATH,
             [conn, path, options],
         );
         return await this.postTask(task);

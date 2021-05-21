@@ -1,5 +1,5 @@
 import * as arrow from 'apache-arrow';
-import { CSVTableOptions } from './table_options';
+import { CSVTableOptions, JSONTableOptions } from './table_options';
 
 interface IDuckDBBindings {
     disconnect(conn: number): void;
@@ -7,6 +7,7 @@ interface IDuckDBBindings {
     sendQuery(conn: number, text: string): Uint8Array;
     fetchQueryResults(conn: number): Uint8Array;
     importCSVFromPath(conn: number, path: string, options: CSVTableOptions): void;
+    importJSONFromPath(conn: number, path: string, options: JSONTableOptions): void;
 }
 
 /** A result stream iterator */
@@ -84,5 +85,8 @@ export class DuckDBConnection {
 
     public importCSVFromPath(path: string, options: CSVTableOptions): void {
         this._bindings.importCSVFromPath(this._conn, path, options);
+    }
+    public importJSONFromPath(path: string, options: CSVTableOptions): void {
+        this._bindings.importJSONFromPath(this._conn, path, options);
     }
 }

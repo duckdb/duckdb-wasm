@@ -106,7 +106,10 @@ struct EventReader : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, Even
     }
     bool Key(const char* txt, size_t length, bool copy) { return SetEvent(ReaderEvent::KEY); }
     bool Null() { return SetEvent(ReaderEvent::NULL_); }
-    bool RawNumber(const Ch* str, size_t len, bool copy) { assert(false); }
+    bool RawNumber(const Ch* str, size_t len, bool copy) {
+        assert(false);
+        return false;
+    }
     bool String(const char* txt, size_t length, bool copy) { return SetEvent(ReaderEvent::STRING); }
     bool Bool(bool v) { return SetEvent(ReaderEvent::BOOL); }
     bool Int(int32_t v) { return SetEvent(ReaderEvent::INT32); }
@@ -161,7 +164,10 @@ struct KeyReader : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, KeyRea
         return SetEvent(ReaderEvent::KEY);
     }
     bool Null() { return SetEvent(ReaderEvent::NULL_); }
-    bool RawNumber(const Ch* str, size_t len, bool copy) { assert(false); }
+    bool RawNumber(const Ch* str, size_t len, bool copy) {
+        assert(false);
+        return false;
+    }
     bool String(const char* txt, size_t length, bool copy) { return SetEvent(ReaderEvent::STRING); }
     bool Bool(bool v) { return SetEvent(ReaderEvent::BOOL); }
     bool Int(int32_t v) { return SetEvent(ReaderEvent::INT32); }

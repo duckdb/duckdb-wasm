@@ -355,7 +355,10 @@ class JSONArrayAnalyzer : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>,
         return sample_idx_ ? sample_buffer_.Key(txt, length, copy) : true;
     }
     bool Null() { return sample_idx_ ? Emit(sample_buffer_.Null()) : true; }
-    bool RawNumber(const char* str, size_t len, bool copy) { assert(false); }
+    bool RawNumber(const char* str, size_t len, bool copy) {
+        assert(false);
+        return false;
+    }
     bool String(const char* txt, size_t length, bool copy) {
         BUMP(counter_string);
         if (current_depth_ == sample_depth_) sample_idx_ = sample_counter_.Insert();
