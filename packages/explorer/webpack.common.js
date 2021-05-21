@@ -50,6 +50,13 @@ export function configure(params) {
                     ],
                 },
                 {
+                    test: /\.(sql)$/i,
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/scripts/[name].[contenthash].[ext]',
+                    },
+                },
+                {
                     test: /\.(csv)$/i,
                     loader: 'file-loader',
                     options: {
