@@ -112,7 +112,7 @@ class Explorer extends React.Component<Props> {
                         </InputGroup>
                     </Form>
                     <div className={styles.scriptList}>
-                        {scripts.SCRIPTS.map((_n, s) => this.renderScriptListEntry(s))}
+                        {Array.from(scripts.SCRIPTS.values()).map(s => this.renderScriptListEntry(s))}
                     </div>
                 </div>
                 <div className={styles.center}>
