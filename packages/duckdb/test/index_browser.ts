@@ -56,6 +56,7 @@ import { testAsyncBatchStream } from './batch_stream_async.test';
 import { testFilesystem } from './filesystem.test';
 import { testZip, testZipAsync } from './zip.test';
 import { testJSONImport, testJSONImportAsync } from './import_json.test';
+import { testCSVImport, testCSVImportAsync } from './import_csv.test';
 
 testBindings(() => db!);
 testBatchStream(() => db!);
@@ -65,3 +66,5 @@ testZip(() => db!, resolveData);
 testZipAsync(() => adb!, resolveData);
 testJSONImport(() => db!);
 testJSONImportAsync(() => adb!);
+testCSVImport(() => db!);
+testCSVImportAsync(() => adb!);

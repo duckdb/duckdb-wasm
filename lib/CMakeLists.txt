@@ -17,8 +17,9 @@ if(NOT EMSCRIPTEN)
 endif()
 
 if(EMSCRIPTEN)
-  add_compile_options(-s DISABLE_EXCEPTION_CATCHING=0 -fexceptions
-                      -sUSE_PTHREADS=0)
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0 -fexceptions -sUSE_PTHREADS=0"
+  )
 endif()
 
 # ---------------------------------------------------------------------------

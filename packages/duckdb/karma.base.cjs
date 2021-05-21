@@ -51,7 +51,7 @@ module.exports = function (config) {
             suppressPassed: false,
             suppressSkipped: true,
             showSpecTiming: true,
-            failFast: true,
+            failFast: false,
             prefixes: {
                 success: '    OK: ',
                 failure: 'FAILED: ',
