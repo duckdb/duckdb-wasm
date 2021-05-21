@@ -7,6 +7,8 @@ export enum WorkerRequestType {
     GET_VERSION = 'GET_VERSION',
     RESET = 'RESET',
     PING = 'PING',
+    DROP_FILE = 'DROP_FILE',
+    DROP_FILES = 'DROP_FILES',
     FLUSH_FILES = 'FLUSH_FILES',
     ADD_FILE_PATH = 'ADD_FILE_PATH',
     ADD_FILE_BLOB = 'ADD_FILE_BLOB',
@@ -82,6 +84,8 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.PING, null>
+    | WorkerRequest<WorkerRequestType.DROP_FILE, string>
+    | WorkerRequest<WorkerRequestType.DROP_FILES, null>
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
     | WorkerRequest<WorkerRequestType.ADD_FILE_PATH, [string, string]>
     | WorkerRequest<WorkerRequestType.ADD_FILE_BLOB, [string, any]>
@@ -117,6 +121,8 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.RESET, null, null>
     | WorkerTask<WorkerRequestType.PING, null, null>
+    | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
+    | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
     | WorkerTask<WorkerRequestType.ADD_FILE_PATH, [string, string], number>
     | WorkerTask<WorkerRequestType.ADD_FILE_BLOB, [string, any], number>

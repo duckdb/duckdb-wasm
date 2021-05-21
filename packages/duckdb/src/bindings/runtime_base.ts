@@ -1,5 +1,7 @@
 export interface DuckDBRuntime {
     bindings: any;
+    duckdb_web_drop_file(url: string): void;
+    duckdb_web_drop_files(): void;
     duckdb_web_add_file_path(url: string, path: string): number;
     duckdb_web_get_file_path(fileId: number): string | null;
     duckdb_web_add_file_blob(url: string, data: any): number;

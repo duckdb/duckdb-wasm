@@ -30,6 +30,7 @@ export function testCSVImport(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
 
     beforeEach(async () => {
+        db().dropFiles();
         conn = db().connect();
     });
     afterEach(async () => {
@@ -48,6 +49,7 @@ export function testCSVImportAsync(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
 
     beforeEach(async () => {
+        await db().dropFiles();
         conn = await db().connect();
     });
     afterEach(async () => {

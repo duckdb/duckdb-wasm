@@ -170,6 +170,16 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
+                case WorkerRequestType.DROP_FILE: {
+                    await this._bindings.dropFile(request.data);
+                    this.sendOK(request);
+                    break;
+                }
+                case WorkerRequestType.DROP_FILES: {
+                    await this._bindings.dropFiles();
+                    this.sendOK(request);
+                    break;
+                }
                 case WorkerRequestType.ADD_FILE_PATH: {
                     const fileID = await this._bindings.addFilePath(request.data[0], request.data[1]);
                     this.postMessage(
