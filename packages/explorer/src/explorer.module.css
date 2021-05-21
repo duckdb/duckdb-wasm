@@ -182,11 +182,15 @@
 }
 
 .scriptListEntry {
-    padding: 4px 16px 4px 16px;
+    padding: 4px 16px 4px 24px;
     display: grid;
     width: 100%;
     grid-template-columns: 32px auto;
     grid-template-rows: 32px;
+}
+
+.scriptListEntry:hover {
+    background-color: rgb(200, 200, 200);
 }
 
 .scriptListEntryIcon {
