@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "private": true,
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^0.0.27",
+        "@duckdb/duckdb-wasm": "^0.0.28",
         "@types/benchmark": "^2.1.0",
         "benny": "^3.6.15",
         "kleur": "^4.1.4",
