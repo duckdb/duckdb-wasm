@@ -48,11 +48,34 @@ TEST_P(CSVImportTestSuite, TestImport) {
 // clang-format off
 static std::vector<CSVImportTest> CSV_IMPORT_TEST = {
     {
-        .name = "integers",
+        .name = "integers_auto_1",
         .input = R"CSV("a","b","c"
 1,2,3
 4,5,6
-7,8,9)CSV",
+7,8,9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo"
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	INTEGER	INTEGER	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    },
+    {
+        .name = "integers_auto_2",
+        .input = R"CSV(a,b,c
+1,2,3
+4,5,6
+7,8,9
+)CSV",
         .options = R"JSON({
             "schema": "main",
             "name": "foo"
