@@ -19,7 +19,7 @@ CI_IMAGE_NAME="wasm-ci"
 CI_IMAGE_TAG="$(shell cat ./actions/image/TAG)"
 CI_IMAGE_FULLY_QUALIFIED="${CI_IMAGE_NAMESPACE}/${CI_IMAGE_NAME}:${CI_IMAGE_TAG}"
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
-IN_IMAGE_MOUNTS=-v${ROOT_DIR}:${ROOT_DIR} -v${ROOT_DIR}/.emscripten_cache/:/mnt/emscripten_cache/ -v${ROOT_DIR}/.ccache/:/mnt/ccache/
+IN_IMAGE_MOUNTS=-v${ROOT_DIR}:${ROOT_DIR} -v${ROOT_DIR}/.emscripten_cache/:/mnt/emscripten_cache/ -v${ROOT_DIR}/.ccache/:/mnt/ccache/ -v${ROOT_DIR}/.tmp/:/wd/.tmp/
 IN_IMAGE_ENV=-e CCACHE_DIR=/mnt/ccache -e CCACHE_BASEDIR=${ROOT_DIR}/lib/ -e EM_CACHE=/mnt/emscripten_cache/
 EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_IMAGE_FULLY_QUALIFIED}"
 
@@ -51,29 +51,29 @@ data:
 .PHONY: lib
 lib:
 	mkdir -p ${LIB_DEBUG_DIR}
-	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
+	${EXEC_ENVIRONMENT} cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
 		-GNinja \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=1
-	ninja -C ${LIB_DEBUG_DIR}
+	${EXEC_ENVIRONMENT} ninja -C ${LIB_DEBUG_DIR}
 
 # Compile the core in release mode
 .PHONY: lib_relwithdebinfo
 lib_relwithdebinfo:
 	mkdir -p ${LIB_RELWITHDEBINFO_DIR}
-	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELWITHDEBINFO_DIR} \
+	${EXEC_ENVIRONMENT} cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELWITHDEBINFO_DIR} \
 		-GNinja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
-	ninja -C ${LIB_RELWITHDEBINFO_DIR}
+	${EXEC_ENVIRONMENT} ninja -C ${LIB_RELWITHDEBINFO_DIR}
 
 # Compile the core in release mode
 .PHONY: lib_release
 lib_release:
 	mkdir -p ${LIB_RELEASE_DIR}
-	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELEASE_DIR} \
+	${EXEC_ENVIRONMENT} cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELEASE_DIR} \
 		-GNinja \
 		-DCMAKE_BUILD_TYPE=Release
-	ninja -C ${LIB_RELEASE_DIR}
+	${EXEC_ENVIRONMENT} ninja -C ${LIB_RELEASE_DIR}
 
 # Perf the library
 .PHONY: lib_perf
