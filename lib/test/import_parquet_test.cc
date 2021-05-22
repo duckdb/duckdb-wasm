@@ -19,11 +19,11 @@ TEST(ParquetImportTest, LoadParquet) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};
     std::stringstream ss;
-    auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "studenten.parquet";
+    auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
     ss << "SELECT * FROM parquet_scan('" << data.string() << "');";
     auto result = conn.connection().Query(ss.str());
     ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(MatrNr	Name	Semester	
+                 R"TXT(matrnr	name	semester	
 INTEGER	VARCHAR	INTEGER	
 [ Rows: 8]
 24002	Xenokrates	18	
@@ -42,12 +42,12 @@ TEST(ParquetImportTest, LoadParquetTwice) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};
     std::stringstream ss;
-    auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "studenten.parquet";
+    auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
     ss << "SELECT * FROM parquet_scan('" << data.string() << "');";
     auto query = ss.str();
     auto result = conn.connection().Query(query);
     ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(MatrNr	Name	Semester	
+                 R"TXT(matrnr	name	semester	
 INTEGER	VARCHAR	INTEGER	
 [ Rows: 8]
 24002	Xenokrates	18	
@@ -62,7 +62,7 @@ INTEGER	VARCHAR	INTEGER
 )TXT");
     result = conn.connection().Query(query);
     ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(MatrNr	Name	Semester	
+                 R"TXT(matrnr	name	semester	
 INTEGER	VARCHAR	INTEGER	
 [ Rows: 8]
 24002	Xenokrates	18	
