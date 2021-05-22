@@ -13,12 +13,12 @@ use std::path::Path;
 use std::process;
 use std::rc::Rc;
 
-enum Column {
+enum StaticColumnData {
     Integer(Vec<i32>),
     Varchar(Vec<&'static str>),
 }
 
-fn write_table(path: std::path::PathBuf, schema: &'static str, data: Vec<Column>) {
+fn write_table(path: std::path::PathBuf, schema: &'static str, data: Vec<StaticColumnData>) {
     let filename = path.file_name().unwrap().to_str().unwrap_or("?");
     print!("{:.<24} ", &filename);
 
@@ -40,10 +40,13 @@ fn write_table(path: std::path::PathBuf, schema: &'static str, data: Vec<Column>
                 )));
             }
             match (&data[column_id], &mut col_writer) {
-                (Column::Integer(ref v), ColumnWriter::Int32ColumnWriter(ref mut w)) => {
+                (StaticColumnData::Integer(ref v), ColumnWriter::Int32ColumnWriter(ref mut w)) => {
                     w.write_batch(&v, None, None)?;
                 }
-                (Column::Varchar(ref v), ColumnWriter::ByteArrayColumnWriter(ref mut w)) => {
+                (
+                    StaticColumnData::Varchar(ref v),
+                    ColumnWriter::ByteArrayColumnWriter(ref mut w),
+                ) => {
                     let buffer: Vec<ByteArray> = v.iter().map(|x| ByteArray::from(*x)).collect();
                     w.write_batch(&buffer, None, None)?;
                 }
@@ -86,8 +89,8 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![2125, 2126, 2127, 2133, 2134, 2136, 2137]),
-            Column::Varchar(vec![
+            StaticColumnData::Integer(vec![2125, 2126, 2127, 2133, 2134, 2136, 2137]),
+            StaticColumnData::Varchar(vec![
                 "Sokrates",
                 "Russel",
                 "Kopernikus",
@@ -96,8 +99,8 @@ pub fn write_tables(out_dir: &Path) {
                 "Curie",
                 "Kant",
             ]),
-            Column::Varchar(vec!["C4", "C4", "C3", "C3", "C3", "C4", "C4"]),
-            Column::Integer(vec![226, 232, 310, 52, 309, 36, 7]),
+            StaticColumnData::Varchar(vec!["C4", "C4", "C3", "C3", "C3", "C4", "C4"]),
+            StaticColumnData::Integer(vec![226, 232, 310, 52, 309, 36, 7]),
         ],
     );
 
@@ -111,8 +114,8 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
-            Column::Varchar(vec![
+            StaticColumnData::Integer(vec![24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
+            StaticColumnData::Varchar(vec![
                 "Xenokrates",
                 "Jonas",
                 "Fichte",
@@ -122,7 +125,7 @@ pub fn write_tables(out_dir: &Path) {
                 "Theophrastos",
                 "Feuerbach",
             ]),
-            Column::Integer(vec![18, 12, 10, 8, 6, 3, 2, 2]),
+            StaticColumnData::Integer(vec![18, 12, 10, 8, 6, 3, 2, 2]),
         ],
     );
 
@@ -137,10 +140,10 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![
+            StaticColumnData::Integer(vec![
                 5001, 5041, 5043, 5049, 4052, 5052, 5216, 5259, 5022, 4630,
             ]),
-            Column::Varchar(vec![
+            StaticColumnData::Varchar(vec![
                 "Grundzüge",
                 "Ethik",
                 "Erkenntnistheorie",
@@ -152,8 +155,8 @@ pub fn write_tables(out_dir: &Path) {
                 "Glaube und Wissen",
                 "Die 3 Kritiken",
             ]),
-            Column::Integer(vec![4, 4, 3, 2, 4, 3, 2, 2, 2, 4]),
-            Column::Integer(vec![
+            StaticColumnData::Integer(vec![4, 4, 3, 2, 4, 3, 2, 2, 2, 4]),
+            StaticColumnData::Integer(vec![
                 2137, 2125, 2126, 2125, 2125, 2126, 2126, 2133, 2134, 2137,
             ]),
         ],
@@ -168,8 +171,8 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![5001, 5001, 5001, 5041, 5043, 5041, 5052]),
-            Column::Integer(vec![5041, 5043, 5049, 5216, 5052, 5052, 5259]),
+            StaticColumnData::Integer(vec![5001, 5001, 5001, 5041, 5043, 5041, 5052]),
+            StaticColumnData::Integer(vec![5041, 5043, 5049, 5216, 5052, 5052, 5259]),
         ],
     );
 
@@ -182,10 +185,10 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![
+            StaticColumnData::Integer(vec![
                 26120, 27550, 27550, 28106, 28106, 28106, 28106, 29120, 29120, 29120, 29555, 25403,
             ]),
-            Column::Integer(vec![
+            StaticColumnData::Integer(vec![
                 5001, 5001, 4052, 5041, 5052, 5216, 5259, 5001, 5041, 5049, 5022, 5022,
             ]),
         ],
@@ -202,10 +205,10 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![28106, 25403, 27550]),
-            Column::Integer(vec![5001, 5041, 4630]),
-            Column::Integer(vec![2126, 2125, 2137]),
-            Column::Integer(vec![1, 2, 2]),
+            StaticColumnData::Integer(vec![28106, 25403, 27550]),
+            StaticColumnData::Integer(vec![5001, 5041, 4630]),
+            StaticColumnData::Integer(vec![2126, 2125, 2137]),
+            StaticColumnData::Integer(vec![1, 2, 2]),
         ],
     );
 
@@ -220,8 +223,8 @@ pub fn write_tables(out_dir: &Path) {
         }
     ",
         vec![
-            Column::Integer(vec![3002, 3003, 3004, 3005, 3006, 3007]),
-            Column::Varchar(vec![
+            StaticColumnData::Integer(vec![3002, 3003, 3004, 3005, 3006, 3007]),
+            StaticColumnData::Varchar(vec![
                 "Platon",
                 "Aristoteles",
                 "Wittgenstein",
@@ -229,7 +232,7 @@ pub fn write_tables(out_dir: &Path) {
                 "Newton",
                 "Spinoza",
             ]),
-            Column::Varchar(vec![
+            StaticColumnData::Varchar(vec![
                 "Ideenlehre",
                 "Syllogistik",
                 "Sprachteorie",
@@ -237,7 +240,7 @@ pub fn write_tables(out_dir: &Path) {
                 "Keplersche Gesetze",
                 "Gott und Natur",
             ]),
-            Column::Integer(vec![2125, 2125, 2126, 2127, 2127, 2126]),
+            StaticColumnData::Integer(vec![2125, 2125, 2126, 2127, 2127, 2126]),
         ],
     );
 }
