@@ -17,9 +17,6 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
-        alias: {
-            benny: './src/utils/log-update.js',
-        },
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
