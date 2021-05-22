@@ -8,7 +8,7 @@ mod error;
 mod tpch;
 mod uni;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("Parquet Generator")
         .version("0.1")
         .author("Andre Kohn. <kohn.a@outlook.com>")
@@ -60,10 +60,12 @@ fn main() {
         process::exit(0);
     }
 
-    if let Some(ref matches) = matches.subcommand_matches("uni") {
+    if let Some(ref matches) = matches.subcommand_matches("tpch") {
         let out_dir = require_dir_arg(&matches, "out");
         let in_dir = require_dir_arg(&matches, "in");
-        tpch::convert_tbls(&in_dir, &out_dir);
+        tpch::convert_tbls(&in_dir, &out_dir)?;
         process::exit(0);
     }
+
+    Ok(())
 }
