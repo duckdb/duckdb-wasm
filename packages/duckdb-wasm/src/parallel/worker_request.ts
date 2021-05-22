@@ -1,4 +1,4 @@
-import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
+import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
 import { LogEntryVariant } from '../log';
 import { ScriptTokens } from 'src/bindings/tokens';
 import { FileStatistics } from 'src/bindings/file_stats';
