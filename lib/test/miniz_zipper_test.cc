@@ -33,7 +33,7 @@ std::filesystem::path CreateTestFile() {
 
 TEST(ZipperTest, LoadFile) {
     auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
-    auto path = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "all.zip";
+    auto path = test::SOURCE_DIR / ".." / "data" / "uni" / "all.zip";
 
     Zipper zipper{filesystem_buffer};
     auto load_status = zipper.LoadFromFile(path.c_str());
@@ -60,8 +60,8 @@ TEST(ZipperTest, LoadFile) {
 
 TEST(ZipperTest, ExtractEntryToPath) {
     auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
-    auto all_path = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "all.zip";
-    auto expected_path = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "assistenten.parquet";
+    auto all_path = test::SOURCE_DIR / ".." / "data" / "uni" / "all.zip";
+    auto expected_path = test::SOURCE_DIR / ".." / "data" / "uni" / "assistenten.parquet";
     auto out_path = CreateTestFile();
 
     Zipper zipper{filesystem_buffer};
@@ -92,8 +92,8 @@ TEST(ZipperTest, ExtractEntryToPath) {
 
 TEST(ZipperTest, ExtractPathToPath) {
     auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
-    auto all_path = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "all.zip";
-    auto expected_path = test::SOURCE_DIR / ".." / "data" / "uni" / "out" / "assistenten.parquet";
+    auto all_path = test::SOURCE_DIR / ".." / "data" / "uni" / "all.zip";
+    auto expected_path = test::SOURCE_DIR / ".." / "data" / "uni" / "assistenten.parquet";
     auto out_path = CreateTestFile();
 
     Zipper zipper{filesystem_buffer};
