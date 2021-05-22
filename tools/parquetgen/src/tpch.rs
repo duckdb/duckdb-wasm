@@ -1,6 +1,4 @@
-use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
-//use arrow::csv::ReaderBuilder;
-use parquet::arrow::arrow_to_parquet_schema;
+use arrow::datatypes::{DataType, Field, Schema};
 use std::fs;
 use std::path::PathBuf;
 use std::process;
@@ -12,11 +10,14 @@ fn convert_tbl(
     schema: Arc<Schema>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tbl_md = fs::metadata(&tbl_file_path);
-    if tbl_md.is_err() || !tbl_md.unwrap().is_dir() {
+    if tbl_md.is_err() || !tbl_md.unwrap().is_file() {
         println!("Tbl does not exist: {}", tbl_file_path.to_str().unwrap());
         process::exit(1);
     }
-    let _parquet_schema = arrow_to_parquet_schema(&schema)?;
+    print!(
+        "{:.<24}",
+        out_file_path.file_name().unwrap().to_str().unwrap()
+    );
 
     // Create csv reader
     let tbl_file = fs::File::open(tbl_file_path)?;
@@ -34,8 +35,14 @@ fn convert_tbl(
     for batch in reader {
         writer.write(&batch?)?;
     }
+
+    println!("OK");
     return Ok(());
 }
+
+// const DECIMAL_12_2: DataType = DataType::Decimal(12, 2);
+// Not supported by the parquet arrow writer at the moment.
+const DECIMAL_12_2: DataType = DataType::Float64;
 
 pub fn convert_tbls(
     tbl_dir: &PathBuf,
@@ -49,27 +56,15 @@ pub fn convert_tbls(
             Field::new("l_partkey", DataType::Int32, false),
             Field::new("l_suppkey", DataType::Int32, false),
             Field::new("l_linenumber", DataType::Int32, false),
-            Field::new("l_quantity", DataType::Decimal(12, 2), false),
-            Field::new("l_extendedprice", DataType::Decimal(12, 2), false),
-            Field::new("l_discount", DataType::Decimal(12, 2), false),
-            Field::new("l_tax", DataType::Decimal(12, 2), false),
+            Field::new("l_quantity", DECIMAL_12_2, false),
+            Field::new("l_extendedprice", DECIMAL_12_2, false),
+            Field::new("l_discount", DECIMAL_12_2, false),
+            Field::new("l_tax", DECIMAL_12_2, false),
             Field::new("l_returnflag", DataType::Utf8, false),
             Field::new("l_linestatus", DataType::Utf8, false),
-            Field::new(
-                "l_shipdate",
-                DataType::Timestamp(TimeUnit::Second, None),
-                false,
-            ),
-            Field::new(
-                "l_commitdate",
-                DataType::Timestamp(TimeUnit::Second, None),
-                false,
-            ),
-            Field::new(
-                "l_receiptdate",
-                DataType::Timestamp(TimeUnit::Second, None),
-                false,
-            ),
+            Field::new("l_shipdate", DataType::Date32, false),
+            Field::new("l_commitdate", DataType::Date32, false),
+            Field::new("l_receiptdate", DataType::Date32, false),
             Field::new("l_shipinstruct", DataType::Utf8, false),
             Field::new("l_shipmode", DataType::Utf8, false),
             Field::new("l_comment", DataType::Utf8, false),
@@ -84,7 +79,7 @@ pub fn convert_tbls(
             Field::new("s_address", DataType::Utf8, false),
             Field::new("s_nationkey", DataType::Int32, false),
             Field::new("s_phone", DataType::Utf8, false),
-            Field::new("s_acctbal", DataType::Decimal(12, 2), false),
+            Field::new("s_acctbal", DataType::Float64, false),
             Field::new("s_comment", DataType::Utf8, false),
         ])),
     )?;
@@ -97,7 +92,7 @@ pub fn convert_tbls(
             Field::new("c_address", DataType::Utf8, false),
             Field::new("c_nationkey", DataType::Int32, false),
             Field::new("c_phone", DataType::Utf8, false),
-            Field::new("c_acctbal", DataType::Decimal(12, 2), false),
+            Field::new("c_acctbal", DataType::Float64, false),
             Field::new("c_mktsegment", DataType::Utf8, false),
             Field::new("c_comment", DataType::Utf8, false),
         ])),
@@ -113,7 +108,7 @@ pub fn convert_tbls(
             Field::new("p_type", DataType::Utf8, false),
             Field::new("p_size", DataType::Int32, false),
             Field::new("p_container", DataType::Utf8, false),
-            Field::new("p_retailprice", DataType::Decimal(12, 2), false),
+            Field::new("p_retailprice", DataType::Float64, false),
             Field::new("p_comment", DataType::Utf8, false),
         ])),
     )?;
@@ -124,7 +119,7 @@ pub fn convert_tbls(
             Field::new("ps_partkey", DataType::Int32, false),
             Field::new("ps_suppkey", DataType::Int32, false),
             Field::new("ps_availqty", DataType::Int32, false),
-            Field::new("ps_supplycost", DataType::Decimal(12, 2), false),
+            Field::new("ps_supplycost", DataType::Float64, false),
             Field::new("ps_comment", DataType::Utf8, false),
         ])),
     )?;
