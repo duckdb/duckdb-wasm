@@ -2,6 +2,7 @@
     "name": "@duckdb/duckdb-wasm",
     "version": "0.0.28",
     "description": "DuckDB powered by WebAssembly",
+    "license": "MIT",
     "repository": "git://github.com/duckdb/duckdb-wasm.git",
     "publishConfig": {
         "registry": "https://npm.pkg.github.com"
