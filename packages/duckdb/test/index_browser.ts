@@ -15,17 +15,15 @@ const resolveBuffer = async (url: string) => {
 const resolveData = async (url: string) => {
     switch (url) {
         case '/uni/all.zip':
-            return await resolveBuffer('/uni/out/all.zip');
+            return await resolveBuffer('/uni/all.zip');
         case '/uni/assistenten.parquet':
-            return await resolveBuffer('/uni/out/assistenten.parquet');
+            return await resolveBuffer('/uni/assistenten.parquet');
         case '/uni/studenten.parquet':
-            return await resolveBuffer('/uni/out/studenten.parquet');
+            return await resolveBuffer('/uni/studenten.parquet');
         case '/uni/hoeren.parquet':
-            return await resolveBuffer('/uni/out/hoeren.parquet');
+            return await resolveBuffer('/uni/hoeren.parquet');
         case '/uni/vorlesungen.parquet':
-            return await resolveBuffer('/uni/out/vorlesungen.parquet');
-        case '/tpch/5/orders.parquet':
-            return await resolveBuffer('/tpch/5/orders.parquet');
+            return await resolveBuffer('/uni/vorlesungen.parquet');
         default:
             return null;
     }

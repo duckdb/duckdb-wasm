@@ -19,8 +19,8 @@ export function testFilesystem(
 
     describe('File buffer registration', () => {
         const test = async () => {
-            const result = await conn.sendQuery(`SELECT MatrNr FROM parquet_scan('studenten.parquet');`);
-            const table = await arrow.Table.from<{ MatrNr: arrow.Int }>(result);
+            const result = await conn.sendQuery(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
+            const table = await arrow.Table.from<{ matrnr: arrow.Int }>(result);
             expect(table.getColumnAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
@@ -53,8 +53,8 @@ export function testFilesystem(
             const studenten = await resolveData('/uni/studenten.parquet');
             expect(studenten).not.toBeNull();
             await db().addFileBuffer('studenten.parquet', studenten!);
-            const result = await conn.sendQuery(`SELECT MatrNr FROM parquet_scan('studenten.parquet');`);
-            const table = await arrow.Table.from<{ MatrNr: arrow.Int }>(result);
+            const result = await conn.sendQuery(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
+            const table = await arrow.Table.from<{ matrnr: arrow.Int }>(result);
             expect(table.getColumnAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
@@ -72,57 +72,34 @@ export function testFilesystem(
             await db().addFileBuffer('vorlesungen.parquet', vorlesungen!);
 
             const result = await conn.sendQuery(`
-                    SELECT studenten.MatrNr, vorlesungen.Titel
+                    SELECT studenten.matrnr, vorlesungen.titel
                     FROM parquet_scan('studenten.parquet') studenten
-                    INNER JOIN parquet_scan('hoeren.parquet') hoeren ON (studenten.MatrNr = hoeren.MatrNr)
-                    INNER JOIN parquet_scan('vorlesungen.parquet') vorlesungen ON (vorlesungen.VorlNr = hoeren.VorlNr);
+                    INNER JOIN parquet_scan('hoeren.parquet') hoeren ON (studenten.matrnr = hoeren.matrnr)
+                    INNER JOIN parquet_scan('vorlesungen.parquet') vorlesungen ON (vorlesungen.vorlnr = hoeren.vorlnr);
                 `);
-            const table = await arrow.Table.from<{ MatrNr: arrow.Int; Titel: arrow.Utf8 }>(result);
+            const table = await arrow.Table.from<{ matrnr: arrow.Int; titel: arrow.Utf8 }>(result);
             expect(table.numCols).toBe(2);
             const flat = [];
             for (const row of table) {
                 flat.push({
-                    MatrNr: row.MatrNr,
-                    Titel: row.Titel?.toString(),
+                    matrnr: row.matrnr,
+                    titel: row.titel?.toString(),
                 });
             }
             expect(flat).toEqual([
-                { MatrNr: 26120, Titel: 'Grundzüge' },
-                { MatrNr: 27550, Titel: 'Grundzüge' },
-                { MatrNr: 27550, Titel: 'Logik' },
-                { MatrNr: 28106, Titel: 'Ethik' },
-                { MatrNr: 28106, Titel: 'Wissenschaftstheorie' },
-                { MatrNr: 28106, Titel: 'Bioethik' },
-                { MatrNr: 28106, Titel: 'Der Wieer Kreis' },
-                { MatrNr: 29120, Titel: 'Grundzüge' },
-                { MatrNr: 29120, Titel: 'Ethik' },
-                { MatrNr: 29120, Titel: 'Mäeutik' },
-                { MatrNr: 29555, Titel: 'Glaube und Wissen' },
-                { MatrNr: 25403, Titel: 'Glaube und Wissen' },
+                { matrnr: 26120, titel: 'Grundzüge' },
+                { matrnr: 27550, titel: 'Grundzüge' },
+                { matrnr: 27550, titel: 'Logik' },
+                { matrnr: 28106, titel: 'Ethik' },
+                { matrnr: 28106, titel: 'Wissenschaftstheorie' },
+                { matrnr: 28106, titel: 'Bioethik' },
+                { matrnr: 28106, titel: 'Der Wiener Kreis' },
+                { matrnr: 29120, titel: 'Grundzüge' },
+                { matrnr: 29120, titel: 'Ethik' },
+                { matrnr: 29120, titel: 'Mäeutik' },
+                { matrnr: 29555, titel: 'Glaube und Wissen' },
+                { matrnr: 25403, titel: 'Glaube und Wissen' },
             ]);
-        });
-
-        it('Huge file', async () => {
-            const orders = await resolveData('/tpch/5/orders.parquet');
-            if (!orders) {
-                pending('Missing TPCH files');
-            } else {
-                await db().addFileBuffer('orders.parquet', orders);
-                const result = await conn.sendQuery(`
-                    SELECT o_orderkey
-                    FROM parquet_scan('orders.parquet');
-                `);
-                let num = 0;
-                let maxV = 0;
-                for await (const batch of result) {
-                    expect(batch.numCols).toBe(1);
-                    for (const v of batch.getChildAt(0)!) {
-                        num++;
-                        maxV = Math.max(maxV, v);
-                    }
-                }
-                expect(num).toBe(7500000);
-            }
         });
     });
 
@@ -137,7 +114,7 @@ export function testFilesystem(
             const outBuffer = await db().getFileBuffer(outID);
             expect(outBuffer).not.toBeNull();
             const text = decoder.decode(outBuffer!);
-            expect(text).toBe(`MatrNr;Name;Semester
+            expect(text).toBe(`matrnr;name;semester
 24002;Xenokrates;18
 25403;Jonas;12
 26120;Fichte;10
@@ -169,8 +146,8 @@ export function testFilesystem(
             const url = await db().getFileObjectURL(outID);
             expect(url).not.toBeNull();
             await conn.runQuery(`CREATE TABLE studenten4 AS SELECT * FROM parquet_scan('studenten3.parquet');`);
-            const result = await conn.sendQuery(`SELECT MatrNr FROM studenten4;`);
-            const table = await arrow.Table.from<{ MatrNr: arrow.Int }>(result);
+            const result = await conn.sendQuery(`SELECT matrnr FROM studenten4;`);
+            const table = await arrow.Table.from<{ matrnr: arrow.Int }>(result);
             expect(table.getColumnAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
