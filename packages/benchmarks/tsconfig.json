@@ -1,26 +1,21 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/",
-        "target": "es2020",
-        "module": "commonjs",
+        "outDir": "./dist/build/",
+        "target": "ES2020",
+        "module": "ES2020",
         "moduleResolution": "node",
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "sourceMap": true,
         "noImplicitAny": true,
-        "noImplicitReturns": true,
-        "noImplicitThis": true,
-        "noUnusedLocals": true,
-        "strictNullChecks": false,
-        "preserveConstEnums": true,
-        "resolveJsonModule": true,
-        "suppressImplicitAnyIndexErrors": true,
-
+        "esModuleInterop": true,
+        "downlevelIteration": true,
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
         // Insanity mode due to:
         // https://issues.apache.org/jira/browse/ARROW-10794
         "skipLibCheck": true,
-
-        "lib": ["ESNext.Array", "DOM", "DOM.Iterable"],
-        "types": [],
+        "lib": ["ESNext.Array", "DOM", "DOM.Iterable", "es6", "webworker"],
+        "types": ["emscripten", "node"],
         "baseUrl": "."
     },
     "include": ["./src/*.ts", "./types/*"],

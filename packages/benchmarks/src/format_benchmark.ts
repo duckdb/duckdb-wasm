@@ -1,17 +1,18 @@
-import * as duckdb from '../../duckdb-wasm/dist/duckdb-node-sync.js';
-import * as utils from './utils';
-import * as benny from 'benny';
 import * as arrow from 'apache-arrow';
-import path from 'path';
+import * as duckdb from '@duckdb/duckdb-wasm/src/';
 import kleur from 'kleur';
+import add from 'benny/src/add';
+import suite from 'benny/src/suite';
+import cycle from 'benny/src/cycle';
+import * as format from './utils/format';
 
-function main(db: duckdb.DuckDB) {
+export function benchmarkFormat(db: () => duckdb.DuckDBBindings) {
     const tupleSize = 8;
     for (const tupleCount of [1000, 10000, 1000000, 10000000]) {
-        benny.suite(
+        suite(
             `Single DOUBLE column | ${tupleCount} rows`,
-            benny.add('columns (iterator)', () => {
-                const conn = db.connect();
+            add('columns (iterator)', () => {
+                const conn = db().connect();
                 const result = conn.runQuery<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
@@ -19,7 +20,7 @@ function main(db: duckdb.DuckDB) {
                 return () => {
                     let sum = 0;
                     let count = 0;
-                    for (const v of result.getColumnAt(0)) {
+                    for (const v of result.getColumnAt(0)!) {
                         sum += v!;
                         ++count;
                     }
@@ -31,8 +32,8 @@ function main(db: duckdb.DuckDB) {
                 };
             }),
 
-            benny.add('rows (iterator)', () => {
-                const conn = db.connect();
+            add('rows (iterator)', () => {
+                const conn = db().connect();
                 const result = conn.runQuery<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
@@ -52,8 +53,8 @@ function main(db: duckdb.DuckDB) {
                 };
             }),
 
-            benny.add('columns (scan + bind)', () => {
-                const conn = db.connect();
+            add('columns (scan + bind)', () => {
+                const conn = db().connect();
                 const table = conn.runQuery<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
@@ -68,7 +69,7 @@ function main(db: duckdb.DuckDB) {
                         },
                         batch => {
                             action = (index: number) => {
-                                sum += batch.getChildAt(0).get(index);
+                                sum += batch.getChildAt(0)!.get(index);
                                 ++count;
                             };
                         },
@@ -81,27 +82,17 @@ function main(db: duckdb.DuckDB) {
                 };
             }),
 
-            benny.cycle((result: any, _summary: any) => {
+            cycle((result: any, _summary: any) => {
                 const bytes = tupleCount * tupleSize;
                 const duration = result.details.median;
                 const tupleThroughput = tupleCount / duration;
                 const dataThroughput = bytes / duration;
                 console.log(
-                    `${kleur.cyan(result.name)} t: ${duration.toFixed(3)} s ttp: ${utils.formatThousands(
+                    `${kleur.cyan(result.name)} t: ${duration.toFixed(3)} s ttp: ${format.formatThousands(
                         tupleThroughput,
-                    )}/s dtp: ${utils.formatBytes(dataThroughput)}/s`,
+                    )}/s dtp: ${format.formatBytes(dataThroughput)}/s`,
                 );
             }),
         );
     }
 }
-
-const logger = new duckdb.VoidLogger();
-const db = new duckdb.DuckDB(
-    logger,
-    duckdb.NODE_RUNTIME,
-    path.join(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
-);
-db.instantiate()
-    .then(() => main(db))
-    .catch(e => console.error(e));
