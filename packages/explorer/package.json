@@ -1,6 +1,7 @@
 {
     "name": "@duckdb/explorer",
     "version": "0.0.0",
+    "license": "MIT",
     "private": true,
     "scripts": {
         "start": "webpack serve --config webpack.debug.js",
