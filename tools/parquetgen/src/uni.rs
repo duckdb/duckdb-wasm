@@ -1,12 +1,13 @@
 use crate::error::Error;
+use arrow::datatypes::{DataType, Field, Schema};
 use parquet::{
+    arrow::arrow_to_parquet_schema,
     column::writer::ColumnWriter,
     data_type::ByteArray,
     file::{
         properties::WriterProperties,
         writer::{FileWriter, SerializedFileWriter},
     },
-    schema::parser::parse_message_type,
 };
 use std::fs;
 use std::path::Path;
@@ -18,17 +19,17 @@ enum StaticColumnData {
     Varchar(Vec<&'static str>),
 }
 
-fn write_table(path: std::path::PathBuf, schema: &'static str, data: Vec<StaticColumnData>) {
+fn write_table(path: std::path::PathBuf, schema: Schema, data: Vec<StaticColumnData>) {
     let filename = path.file_name().unwrap().to_str().unwrap_or("?");
     print!("{:.<24} ", &filename);
 
     match || -> Result<(), Box<dyn std::error::Error>> {
         fs::remove_file(&path).ok();
-        let schema = Arc::new(parse_message_type(&schema)?);
+        let parquet_schema = arrow_to_parquet_schema(&schema)?;
         let props = Arc::new(WriterProperties::builder().build());
         let file = fs::File::create(&path)?;
 
-        let mut writer = SerializedFileWriter::new(file, schema, props)?;
+        let mut writer = SerializedFileWriter::new(file, parquet_schema.root_schema_ptr(), props)?;
         let mut row_group_writer = writer.next_row_group()?;
         let mut column_id = 0;
 
@@ -80,14 +81,12 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("professoren.parquet"),
-        "
-        message schema {
-            required int32 PersNr;
-            required byte_array PersNr (utf8);
-            required byte_array Rang (utf8);
-            required int32 Raum;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("persnr", DataType::Int32, false),
+            Field::new("name", DataType::Utf8, false),
+            Field::new("rang", DataType::Utf8, false),
+            Field::new("raum", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![2125, 2126, 2127, 2133, 2134, 2136, 2137]),
             StaticColumnData::Varchar(vec![
@@ -106,13 +105,11 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("studenten.parquet"),
-        "
-        message schema {
-            required int32 MatrNr;
-            required byte_array Name (utf8);
-            required int32 Semester;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("matrnr", DataType::Int32, false),
+            Field::new("name", DataType::Utf8, false),
+            Field::new("semester", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             StaticColumnData::Varchar(vec![
@@ -131,14 +128,12 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("vorlesungen.parquet"),
-        "
-        message schema {
-            required int32 VorlNr;
-            required byte_array Titel (utf8);
-            required int32 SWS;
-            required int32 gelesenVon;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("vorlnr", DataType::Int32, false),
+            Field::new("titel", DataType::Utf8, false),
+            Field::new("sws", DataType::Int32, false),
+            Field::new("gelesenvon", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![
                 5001, 5041, 5043, 5049, 4052, 5052, 5216, 5259, 5022, 4630,
@@ -164,12 +159,10 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("vorraussetzen.parquet"),
-        "
-        message schema {
-            required int32 Vorgaenger;
-            required int32 Nachfolger;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("vorgaenger", DataType::Int32, false),
+            Field::new("nachfolger", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![5001, 5001, 5001, 5041, 5043, 5041, 5052]),
             StaticColumnData::Integer(vec![5041, 5043, 5049, 5216, 5052, 5052, 5259]),
@@ -178,12 +171,10 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("hoeren.parquet"),
-        "
-        message schema {
-            required int32 MatrNr;
-            required int32 VorlNr;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("matrnr", DataType::Int32, false),
+            Field::new("vorlnr", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![
                 26120, 27550, 27550, 28106, 28106, 28106, 28106, 29120, 29120, 29120, 29555, 25403,
@@ -196,14 +187,12 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("pruefen.parquet"),
-        "
-        message schema {
-            required int32 MatrNr;
-            required int32 VorlNr;
-            required int32 PersNr;
-            required int32 Note;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("matrnr", DataType::Int32, false),
+            Field::new("vorlnr", DataType::Int32, false),
+            Field::new("persnr", DataType::Int32, false),
+            Field::new("note", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![28106, 25403, 27550]),
             StaticColumnData::Integer(vec![5001, 5041, 4630]),
@@ -214,14 +203,12 @@ pub fn write_tables(out_dir: &Path) {
 
     write_table(
         out_dir.join("assistenten.parquet"),
-        "
-        message schema {
-            required int32 PersNr;
-            required byte_array Name (utf8);
-            required byte_array Fachgebiet (utf8);
-            required int32 Boss;
-        }
-    ",
+        Schema::new(vec![
+            Field::new("persnr", DataType::Int32, false),
+            Field::new("name", DataType::Utf8, false),
+            Field::new("fachgebiet", DataType::Utf8, false),
+            Field::new("boss", DataType::Int32, false),
+        ]),
         vec![
             StaticColumnData::Integer(vec![3002, 3003, 3004, 3005, 3006, 3007]),
             StaticColumnData::Varchar(vec![
