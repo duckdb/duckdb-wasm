@@ -53,7 +53,7 @@ RUN mkdir -p /opt/nvm \
     && npm install --global yarn \
     && chown -R ${UID}:${GID} /opt/nvm
 
-ARG RUST_VERSION="1.50.0"
+ARG RUST_VERSION="1.52.1"
 RUN export RUSTUP_HOME=/opt/rust \
     && export CARGO_HOME=/opt/rust \
     && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y \
