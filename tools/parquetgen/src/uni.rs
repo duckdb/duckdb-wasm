@@ -11,7 +11,7 @@ use parquet::{
 use std::fs;
 use std::path::Path;
 use std::process;
-use std::rc::Rc;
+use std::sync::Arc;
 
 enum StaticColumnData {
     Integer(Vec<i32>),
@@ -24,8 +24,8 @@ fn write_table(path: std::path::PathBuf, schema: &'static str, data: Vec<StaticC
 
     match || -> Result<(), Box<dyn std::error::Error>> {
         fs::remove_file(&path).ok();
-        let schema = Rc::new(parse_message_type(&schema)?);
-        let props = Rc::new(WriterProperties::builder().build());
+        let schema = Arc::new(parse_message_type(&schema)?);
+        let props = Arc::new(WriterProperties::builder().build());
         let file = fs::File::create(&path)?;
 
         let mut writer = SerializedFileWriter::new(file, schema, props)?;
