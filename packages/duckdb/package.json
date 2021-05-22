@@ -47,7 +47,7 @@
     },
     "scripts": {
         "build": "node bundle.mjs && tsc --emitDeclarationOnly",
-        "docs": "typedoc --out docs src/index.ts",
+        "docs": "typedoc --out docs --excludeProtected --includeVersion src/index.ts",
         "report": "node ./coverage.mjs",
         "test:node": "jasmine ./dist/tests-node.js",
         "test:node:1": "jasmine ./dist/tests-node.js --filter=\"File buffer registration File buffer used twice\"",
