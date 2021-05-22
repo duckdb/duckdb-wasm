@@ -22,7 +22,6 @@ echo "UNI_DIR=${UNI_DIR}"
 
 if [ ! -f "${UNI_DIR}/all.zip" ]; then
     cd ${UNI_DIR}
-    rm ./all.zip
     zip ./all.zip \
         ./assistenten.parquet \
         ./hoeren.parquet \
