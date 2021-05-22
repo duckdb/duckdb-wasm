@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import test_csv from '../../../data/uni/out/studenten.parquet';
+import test_csv from '../../../data/uni/studenten.parquet';
 
 export enum ExampleID {
     TEST_CSV,
