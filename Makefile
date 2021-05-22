@@ -142,11 +142,6 @@ duckdb:
 duckdb_docs:
 	yarn workspace @duckdb/duckdb-wasm docs
 
-# Watch the duckdb docs
-.PHONY: duckdb_docs_watch
-duckdb_docs_watch:
-	yarn workspace @duckdb/duckdb-wasm docs --watch
-
 # Run the duckdb javascript tests
 .PHONY: duckdb_tests
 duckdb_tests: duckdb

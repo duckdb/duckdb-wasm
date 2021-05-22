@@ -58,7 +58,7 @@
         "test": "npm run test:browser && npm run test:node",
         "test:cov": "npm run test:browser:cov && npm run test:node:cov && npm run report",
         "test:ci": "npm run test:cov",
-        "lint": "yarn run eslint src test"
+        "lint": "yarn run eslint src test types"
     },
     "files": [
         "dist/*.d.ts",
