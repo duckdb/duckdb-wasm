@@ -14,13 +14,13 @@ module.exports = function (config) {
         ],
         frameworks: ['custom'],
         files: [
-            { pattern: 'packages/bench/dist/bench-browser.js' },
-            { pattern: 'packages/bench/dist/bench-browser.js.map', included: false, watched: false, served: true },
+            { pattern: 'packages/benchmarks/dist/bench-browser.js' },
+            { pattern: 'packages/benchmarks/dist/bench-browser.js.map', included: false, watched: false, served: true },
             { pattern: 'packages/duckdb/dist/*', included: false, watched: false, served: true },
             { pattern: 'node_modules/sql.js/dist/*.wasm', included: false, watched: false, served: true },
             { pattern: 'data/**/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/**/*.zip', included: false, watched: false, served: true },
-            { pattern: 'packages/bench/data/**/*', included: false, watched: false, served: true },
+            // { pattern: 'packages/bench/data/**/*', included: false, watched: false, served: true },
         ],
         preprocessors: {
             '**/*.js': ['sourcemap'],
@@ -29,7 +29,7 @@ module.exports = function (config) {
             '/static/': '/base/packages/duckdb/dist/',
             '/sqljs/': '/base/node_modules/sql.js/dist/',
             '/data/': '/base/data/',
-            '/bench_data/': '/base/packages/bench/data/',
+            '/bench_data/': '/base/packages/benchmarks/data/',
         },
         exclude: [],
         reporters: ['dots'],
@@ -37,7 +37,7 @@ module.exports = function (config) {
         colors: true,
         logLevel: config.LOG_INFO,
         autoWatch: true,
-        singleRun: true,
+        singleRun: false,
         browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {

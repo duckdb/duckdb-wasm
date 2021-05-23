@@ -1,6 +1,4 @@
-import add from 'benny/src/add';
-import suite from 'benny/src/suite';
-import cycle from 'benny/src/cycle';
+import { add, suite, cycle } from '@duckdb/benny';
 import kleur from 'kleur';
 import * as format from './utils/format';
 
@@ -11,7 +9,7 @@ function gaussSum(n: number): number {
 }
 
 export async function benchmarkCompetitions(dbs: DBWrapper[], basedir: string) {
-    /*for (const tupleCount of [100, 1000, 10000]) {
+    for (const tupleCount of [100, 1000, 10000]) {
         console.log('Setting up tables');
         /////////////////////////////////////////////
 
@@ -73,15 +71,13 @@ export async function benchmarkCompetitions(dbs: DBWrapper[], basedir: string) {
         for (let db of dbs) {
             await db.close();
         }
-
-        /////////////////////////////////////////////
-    }*/
-
-    for (let db of dbs) {
-        await db.init();
-
-        await db.importCSV('csv_table', `${basedir}/nation.tbl`, '|');
-
-        await db.close();
     }
+
+    //     for (let db of dbs) {
+    //         await db.init();
+    //
+    //         await db.importCSV('csv_table', `${basedir}/nation.tbl`, '|');
+    //
+    //         await db.close();
+    //     }
 }

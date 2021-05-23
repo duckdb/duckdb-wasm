@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as duckdb from '@duckdb/duckdb-wasm/src/';
-import add from 'benny/src/add';
-import suite from 'benny/src/suite';
-import cycle from 'benny/src/cycle';
+import { add, suite, cycle } from '@duckdb/benny';
 import kleur from 'kleur';
 import * as format from './utils/format';
 

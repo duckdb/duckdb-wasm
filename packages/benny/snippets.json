@@ -1,0 +1,59 @@
+{
+  "Benny single suite file - require": {
+    "prefix": "benny",
+    "body": [
+      "const { add, complete, cycle, save, suite } = require('benny')",
+      "",
+      "module.exports = suite(",
+      "  '$1',",
+      "",
+      "  $3",
+      "",
+      "  cycle(),",
+      "  complete(),",
+      "  save({ file: '$2' }),",
+      ")"
+    ],
+    "description": "Creates a template with imports and default suite setup"
+  },
+
+  "Benny single suite file - ES/TS modules": {
+    "prefix": "esbenny",
+    "body": [
+      "import { add, complete, cycle, save, suite } from 'benny'",
+      "",
+      "export default suite(",
+      "  '$1',",
+      "",
+      "  $3",
+      "",
+      "  cycle(),",
+      "  complete(),",
+      "  save({ file: '$2' }),",
+      ")"
+    ],
+    "description": "Creates a template with imports and default suite setup"
+  },
+
+  "Benny add suite": {
+    "prefix": "bsuite",
+    "body": [
+      "suite(",
+      "  '$1',",
+      "",
+      "  $3",
+      "",
+      "  cycle(),",
+      "  complete(),",
+      "  save({ file: '$2' }),",
+      ")"
+    ],
+    "description": "Creates template for standalone suite"
+  },
+
+  "Benny add suite case": {
+    "prefix": "badd",
+    "body": ["add('$1', () => {", "  $2", "}),"],
+    "description": "Creates template for suite case"
+  }
+}

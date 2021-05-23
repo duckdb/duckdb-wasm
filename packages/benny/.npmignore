@@ -1,0 +1,14 @@
+node_modules
+coverage
+.history
+.circleci
+*/**/*.temp.*
+*.temp.*
+*.log.*
+*.log
+benchmark
+examples.temp
+examples/results
+examples/yarn.lock
+benny.gif
+chart.png

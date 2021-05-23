@@ -1,9 +1,7 @@
 import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm/src/';
 import kleur from 'kleur';
-import add from 'benny/src/add';
-import suite from 'benny/src/suite';
-import cycle from 'benny/src/cycle';
+import { add, suite, cycle } from '@duckdb/benny';
 import * as format from './utils/format';
 
 export function benchmarkFormat(db: () => duckdb.DuckDBBindings) {

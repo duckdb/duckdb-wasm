@@ -56,12 +56,12 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
     protected db: duckdb.DuckDBBindings;
 
     constructor(db: duckdb.DuckDBBindings) {
-        this.name = 'DuckDB-mat';
+        this.name = 'DuckDB';
         this.db = db;
     }
 
     importCSV(table: string, csv_path: string, delimiter: string): Promise<void> {
-        // this.conn!.importCSV(csv_path, 'main', table);
+        this.conn!.importCSVFromPath(csv_path, { name: table });
         return Promise.resolve();
     }
 
@@ -100,7 +100,7 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
 export class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
     constructor(db: duckdb.DuckDBBindings) {
         super(db);
-        this.name = 'DuckDB-str';
+        this.name = 'DuckDB-stream';
     }
     scan_int(table: string): Promise<void> {
         const results = this.conn!.sendQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
@@ -111,6 +111,47 @@ export class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
         }
 
         return Promise.resolve();
+    }
+}
+
+export class DuckDBAsyncStreamWrapper implements DBWrapper {
+    public name: string;
+    protected conn?: duckdb.AsyncDuckDBConnection;
+    protected db: duckdb.AsyncDuckDB;
+
+    constructor(db: duckdb.AsyncDuckDB) {
+        this.db = db;
+        this.name = 'DuckDB-async';
+    }
+    async init(): Promise<void> {
+        this.conn = await this.db.connect();
+    }
+    async close(): Promise<void> {
+        await this.conn?.disconnect();
+    }
+    async create(table: string, columns: { [key: string]: string }): Promise<void> {
+        await this.conn!.runQuery(`DROP TABLE IF EXISTS ${table}`);
+        await this.conn!.runQuery(sqlCreate(table, columns));
+    }
+    async load(table: string, data: { [key: string]: any }[]): Promise<void> {
+        await this.conn!.runQuery(sqlInsert(table, data));
+    }
+    async importCSV(table: string, csv_path: string, delimiter: string): Promise<void> {
+        await this.conn!.importCSVFromPath(csv_path, { name: table });
+    }
+    async scan_int(table: string): Promise<void> {
+        const results = await this.conn!.sendQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
+        for await (const batch of results) {
+            for (const v of batch.getChildAt(0)!) {
+                noop();
+            }
+        }
+    }
+    async sum(table: string, column: string): Promise<number> {
+        const result = await this.conn!.runQuery<{ sum_v: arrow.Int32 }>(
+            `SELECT sum(${column})::INTEGER as sum_v FROM ${table}`,
+        );
+        return result.getColumnAt(0)!.get(0);
     }
 }
 
