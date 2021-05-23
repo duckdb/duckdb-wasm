@@ -2,7 +2,7 @@ import Immutable from 'immutable';
 import * as React from 'react';
 import * as model from './model';
 import * as arrow from 'apache-arrow';
-import * as scripts from './data';
+import * as data from './data';
 import { ArrowGrid } from './components';
 import { connect } from 'react-redux';
 import cn from 'classnames';
@@ -52,18 +52,27 @@ interface Props {
     currentScript: model.Script | null;
     currentQueryResult: arrow.Table | null;
     scriptLibrary: Immutable.Map<string, model.Script>;
-    scriptLibraryMarkers: Immutable.Set<string>;
     peekedScript: string | null;
     registeredFiles: Immutable.Map<string, model.FileInfo>;
 
     setQueryResult: (result: arrow.Table) => void;
     registerFiles: (files: model.FileInfo[]) => void;
+    registerLibraryScript: (script: model.Script) => void;
 }
 
 class Explorer extends React.Component<Props> {
     _peekScript = this.peekScript.bind(this);
     _runScript = this.runScript.bind(this);
     _registerFiles = this.registerFiles.bind(this);
+
+    scriptLocks = new Map<string, boolean>();
+
+    constructor(props: Props) {
+        super(props);
+        this.state = {
+            scriptLocks: Immutable.Set(),
+        };
+    }
 
     public async runScript() {
         const conn = this.props.ctx.databaseConnection;
@@ -87,7 +96,7 @@ class Explorer extends React.Component<Props> {
         this.props.registerFiles(fileInfos);
     }
 
-    public renderScriptListEntry(metadata: scripts.ScriptMetadata) {
+    public renderScriptListEntry(metadata: data.ScriptMetadata) {
         return (
             <div key={metadata.name} className={styles.scriptListEntry}>
                 <div className={styles.scriptListEntryIcon}>
@@ -113,10 +122,30 @@ class Explorer extends React.Component<Props> {
         );
     }
 
-    public peekScript(scriptName: string) {
+    public async peekScript(scriptName: string) {
         // Is already available
-        if (this.props.scriptLibraryMarkers.has(scriptName)) {
+        if (this.props.scriptLibrary.has(scriptName) || this.scriptLocks.has(scriptName)) {
             return;
+        }
+        // Unknown file?
+        if (!data.FILES.has(scriptName)) {
+            console.warn(`Unknown script: ${scriptName}`);
+            return;
+        }
+        // Lock the script
+        this.scriptLocks.set(scriptName, true);
+        // Register script
+        try {
+            const file = data.FILES.get(scriptName)!;
+            const response = await fetch(file.url);
+            const scriptText = await response.text();
+            this.props.registerLibraryScript({
+                name: scriptName,
+                text: scriptText,
+                tokens: [],
+            });
+        } catch (e) {
+            console.warn(e);
         }
     }
 
@@ -133,7 +162,7 @@ class Explorer extends React.Component<Props> {
                         </InputGroup>
                     </Form>
                     <div className={styles.scriptList}>
-                        {Array.from(scripts.SCRIPTS.values()).map(s => this.renderScriptListEntry(s))}
+                        {Array.from(data.SCRIPTS.values()).map(s => this.renderScriptListEntry(s))}
                     </div>
                 </div>
                 <div className={styles.center}>
@@ -232,6 +261,8 @@ class Explorer extends React.Component<Props> {
 const mapStateToProps = (state: model.AppState) => ({
     currentScript: state.currentScript,
     currentQueryResult: state.currentQueryResult,
+    scriptLibrary: state.scriptLibrary,
+    peekedScript: state.peekedScript,
     registeredFiles: state.registeredFiles,
 });
 
@@ -240,6 +271,12 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
         model.mutate(dispatch, {
             type: model.StateMutationType.SET_CURRENT_QUERY_RESULT,
             data: result,
+        });
+    },
+    registerLibraryScript: (script: model.Script) => {
+        model.mutate(dispatch, {
+            type: model.StateMutationType.REGISTER_LIBRARY_SCRIPT,
+            data: script,
         });
     },
     registerFiles: (files: model.FileInfo[]) => {
