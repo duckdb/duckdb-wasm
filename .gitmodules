@@ -27,6 +27,6 @@
 	shallow = true
 [submodule "submodules/tpch-dbgen"]
 	path = submodules/tpch-dbgen
-	url = https://github.com/gregrahn/tpch-dbgen.git
+	url = https://github.com/gregrahn/tpch-kit.git
 	ignore = dirty
 	shallow = true
