@@ -226,13 +226,13 @@ class Editor extends React.Component<Props> {
 }
 
 const mapStateToProps = (state: model.AppState) => ({
-    script: state.script,
+    script: state.currentScript,
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
     updateScript: (script: model.Script) => {
         model.mutate(dispatch, {
-            type: model.StateMutationType.UPDATE_SCRIPT,
+            type: model.StateMutationType.SET_CURRENT_SCRIPT,
             data: script,
         });
     },

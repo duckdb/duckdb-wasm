@@ -49,9 +49,9 @@ function FilePicker(props: FilePickerProps) {
 
 interface Props {
     ctx: IAppContext;
-    script: model.Script | null;
-    result: arrow.Table | null;
-    files: Immutable.Map<string, model.FileInfo>;
+    currentScript: model.Script | null;
+    currentQueryResult: arrow.Table | null;
+    registeredFiles: Immutable.Map<string, model.FileInfo>;
 
     setQueryResult: (result: arrow.Table) => void;
     registerFiles: (files: model.FileInfo[]) => void;
@@ -63,8 +63,8 @@ class Explorer extends React.Component<Props> {
 
     public async runScript() {
         const conn = this.props.ctx.databaseConnection;
-        if (!conn || !this.props.script) return;
-        const result = await conn.runQuery(this.props.script.text);
+        if (!conn || !this.props.currentScript) return;
+        const result = await conn.runQuery(this.props.currentScript.text);
         console.log(result);
         this.props.setQueryResult(result);
     }
@@ -164,7 +164,7 @@ class Explorer extends React.Component<Props> {
                                     </svg>
                                 </div>
                                 <div className={styles.outputStatsEntryValue}>
-                                    {formatThousands(this.props.result?.length || 0)}
+                                    {formatThousands(this.props.currentQueryResult?.length || 0)}
                                 </div>
                             </div>
                             <div className={styles.outputStatsEntry}>
@@ -182,13 +182,13 @@ class Explorer extends React.Component<Props> {
                                     </svg>
                                 </div>
                                 <div className={styles.outputStatsEntryValue}>
-                                    {formatBytes(this.props.result?.byteLength || 0)}
+                                    {formatBytes(this.props.currentQueryResult?.byteLength || 0)}
                                 </div>
                             </div>
                         </div>
                         <div className={styles.outputResults}>
-                            {this.props.result && (
-                                <ArrowGrid className={styles.outputResultTable} table={this.props.result} />
+                            {this.props.currentQueryResult && (
+                                <ArrowGrid className={styles.outputResultTable} table={this.props.currentQueryResult} />
                             )}
                         </div>
                     </div>
@@ -201,14 +201,14 @@ class Explorer extends React.Component<Props> {
                         <div className={styles.inspectorSectionHeader}>Registered Files</div>
 
                         <div className={styles.registeredFileList}>
-                            {this.props.files
+                            {this.props.registeredFiles
                                 .toArray()
                                 .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}
                         </div>
                     </div>
                     <div className={styles.inspectorSection}>
                         <div className={styles.inspectorSectionHeader}>Recommended Files</div>
-                        {this.props.files.toArray().map((entry: [string, model.FileInfo]) => (
+                        {this.props.registeredFiles.toArray().map((entry: [string, model.FileInfo]) => (
                             <div key={entry[0]} className={styles.inspectorFileEntry}>
                                 {entry[0]}
                             </div>
@@ -221,15 +221,15 @@ class Explorer extends React.Component<Props> {
 }
 
 const mapStateToProps = (state: model.AppState) => ({
-    script: state.script,
-    result: state.queryResult,
-    files: state.registeredFiles,
+    currentScript: state.currentScript,
+    currentQueryResult: state.currentQueryResult,
+    registeredFiles: state.registeredFiles,
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
     setQueryResult: (result: arrow.Table) => {
         model.mutate(dispatch, {
-            type: model.StateMutationType.SET_QUERY_RESULT,
+            type: model.StateMutationType.SET_CURRENT_QUERY_RESULT,
             data: result,
         });
     },
