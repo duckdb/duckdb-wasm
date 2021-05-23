@@ -40,6 +40,7 @@ echo "PARQUETGEN=${PARQUETGEN}"
 mkdir -p ${TPCH_SF_OUT_TBL}
 TBL_COUNT=$(find ${TPCH_SF_OUT_TBL} -name "*.tbl" | wc -l)
 if [[ ${TBL_COUNT} -ne 8 ]]; then
+    cd ${DBGEN_DIR}
     DSS_PATH=${TPCH_SF_OUT_TBL} ./dbgen -vf -s ${SCALE_FACTOR}
 fi
 echo "TPCH_SF_OUT_TBL=${TPCH_SF_OUT_TBL}"
