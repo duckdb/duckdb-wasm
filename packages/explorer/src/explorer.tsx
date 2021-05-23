@@ -51,6 +51,9 @@ interface Props {
     ctx: IAppContext;
     currentScript: model.Script | null;
     currentQueryResult: arrow.Table | null;
+    scriptLibrary: Immutable.Map<string, model.Script>;
+    scriptLibraryMarkers: Immutable.Set<string>;
+    peekedScript: string | null;
     registeredFiles: Immutable.Map<string, model.FileInfo>;
 
     setQueryResult: (result: arrow.Table) => void;
@@ -58,6 +61,7 @@ interface Props {
 }
 
 class Explorer extends React.Component<Props> {
+    _peekScript = this.peekScript.bind(this);
     _runScript = this.runScript.bind(this);
     _registerFiles = this.registerFiles.bind(this);
 
@@ -109,7 +113,12 @@ class Explorer extends React.Component<Props> {
         );
     }
 
-    public selectScript() {}
+    public peekScript(scriptName: string) {
+        // Is already available
+        if (this.props.scriptLibraryMarkers.has(scriptName)) {
+            return;
+        }
+    }
 
     public render() {
         return (
@@ -130,7 +139,7 @@ class Explorer extends React.Component<Props> {
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
                         <div className={styles.scriptTabsContainer}>
-                            <div className={cn(styles.scriptTab, styles.active)}>HelloWorld.sql</div>
+                            <div className={cn(styles.scriptTab, styles.active)}>HelloDuckDB.sql</div>
                         </div>
                         <div className={styles.inputCard} />
                         <div className={styles.editorContainer}>
