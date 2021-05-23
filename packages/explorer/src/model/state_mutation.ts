@@ -12,9 +12,9 @@ export type StateMutation<T, P> = {
 
 /// A mutation type
 export enum StateMutationType {
-    UPDATE_SCRIPT = 'UPDATE_SCRIPT',
+    SET_CURRENT_SCRIPT = 'SET_CURRENT_SCRIPT',
+    SET_CURRENT_QUERY_RESULT = 'SET_CURRENT_QUERY_RESULT',
     UPDATE_LAUNCH_STEP = 'UPDATE_LAUNCH_STEP',
-    SET_QUERY_RESULT = 'SET_QUERY_RESULT',
     REGISTER_FILES = 'REGISTER_FILES',
     MARK_LAUNCH_COMPLETE = 'MARK_LAUNCH_COMPLETE',
     OTHER = 'OTHER',
@@ -22,9 +22,9 @@ export enum StateMutationType {
 
 /// An state mutation variant
 export type StateMutationVariant =
-    | StateMutation<StateMutationType.UPDATE_SCRIPT, Script>
+    | StateMutation<StateMutationType.SET_CURRENT_SCRIPT, Script>
+    | StateMutation<StateMutationType.SET_CURRENT_QUERY_RESULT, arrow.Table>
     | StateMutation<StateMutationType.UPDATE_LAUNCH_STEP, [LaunchStep, Status, string | null]>
-    | StateMutation<StateMutationType.SET_QUERY_RESULT, arrow.Table>
     | StateMutation<StateMutationType.REGISTER_FILES, FileInfo[]>
     | StateMutation<StateMutationType.MARK_LAUNCH_COMPLETE, null>;
 
@@ -39,15 +39,16 @@ export class AppStateMutation {
     /// Set the editor program
     public static reduce(state: AppState, mutation: StateMutationVariant): AppState {
         switch (mutation.type) {
-            case StateMutationType.UPDATE_SCRIPT:
+            case StateMutationType.SET_CURRENT_SCRIPT:
                 return {
                     ...state,
-                    script: mutation.data,
+                    currentScript: mutation.data,
+                    currentQueryResult: null,
                 };
-            case StateMutationType.SET_QUERY_RESULT:
+            case StateMutationType.SET_CURRENT_QUERY_RESULT:
                 return {
                     ...state,
-                    queryResult: mutation.data,
+                    currentQueryResult: mutation.data,
                 };
             case StateMutationType.REGISTER_FILES:
                 return {

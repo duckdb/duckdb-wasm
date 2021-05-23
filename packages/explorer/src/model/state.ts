@@ -4,6 +4,7 @@ import { AppConfig, createDefaultConfig } from './config';
 import { Script } from './script';
 import { LaunchStep, LaunchStepInfo, createLaunchSteps } from './launch_step';
 import { FileInfo } from './files';
+import { FileMetadata } from '../data';
 
 export interface AppState {
     /// The config
@@ -12,12 +13,16 @@ export interface AppState {
     launchComplete: boolean;
     /// The launch progress
     launchSteps: Immutable.Map<LaunchStep, LaunchStepInfo>;
-    /// The script
-    script: Script | null;
-    /// The current result table (if any)
-    queryResult: arrow.Table | null;
-    /// The files (if any)
+    /// The current script
+    currentScript: Script | null;
+    /// The current query result table
+    currentQueryResult: arrow.Table | null;
+    /// The peeked script
+    peekedScript: Script | null;
+    /// The registered files
     registeredFiles: Immutable.Map<string, FileInfo>;
+    /// The recommended files
+    recommendedFiles: FileMetadata[];
 }
 
 export function createDefaultState(config = createDefaultConfig()): AppState {
@@ -25,8 +30,10 @@ export function createDefaultState(config = createDefaultConfig()): AppState {
         config,
         launchComplete: false,
         launchSteps: createLaunchSteps(),
-        script: null,
-        queryResult: null,
+        currentScript: null,
+        currentQueryResult: null,
+        peekedScript: null,
         registeredFiles: Immutable.Map(),
+        recommendedFiles: [],
     };
 }
