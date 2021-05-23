@@ -220,8 +220,36 @@
 .inspectorSection {
 }
 
-.inspectorFileEntry {
-    padding: 8px 16px;
+.registeredFileList {
+    padding: 8px 0px;
+}
+
+.registeredFileListEntry {
+    padding: 4px 16px 4px 24px;
+    display: grid;
+    width: 100%;
+    grid-template-columns: 32px auto;
+    grid-template-rows: 32px;
+}
+
+.registeredFileListEntry:hover {
+    background-color: rgb(200, 200, 200);
+}
+
+.registeredFileListEntryIcon {
+    grid-row: 1;
+    grid-column: 1;
+    display: grid;
+    justify-content: left;
+    align-items: center;
+}
+
+.registeredFileListEntryHeader {
+    grid-column: 2;
+    font-size: 0.95rem;
+    display: grid;
+    justify-content: left;
+    align-items: center;
 }
 
 .inspectorSectionBorder {
@@ -229,9 +257,8 @@
 }
 
 .inspectorSectionHeader {
-    display: grid;
-    grid-template-columns: 28px auto;
-    padding: 8px 16px;
+    padding: 12px 16px 4px 16px;
+    font-weight: 400;
 }
 
 .inspectorSectionHeaderLogo {

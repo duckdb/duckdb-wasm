@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function configure(params) {
     return {
-        target: ['web'],
+        target: 'web',
         entry: {
             app: ['./src/app.tsx'],
         },
@@ -57,7 +57,7 @@ export function configure(params) {
                     },
                 },
                 {
-                    test: /\.(csv)$/i,
+                    test: /\.(csv|tbl)$/i,
                     loader: 'file-loader',
                     options: {
                         name: 'static/csv/[name].[contenthash].[ext]',
@@ -123,6 +123,7 @@ export function configure(params) {
                 template: './static/index.html',
                 filename: './index.html',
                 favicon: './static/favicon.ico',
+                inject: true,
             }),
             new MiniCssExtractPlugin({
                 filename: './static/css/[id].[contenthash].css',

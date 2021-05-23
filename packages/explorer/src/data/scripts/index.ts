@@ -1,3 +1,5 @@
+import { FILES, FileMetadata } from '../file_loader';
+
 import script_tpch_schema from './tpch_schema.sql';
 import script_tpch_import_parquet from './tpch_import_parquet.sql';
 import script_tpch_import_tbl from './tpch_import_tbl.sql';
@@ -46,18 +48,13 @@ import script_tpch_parquet_20 from './tpch_parquet_20.sql';
 import script_tpch_parquet_21 from './tpch_parquet_21.sql';
 import script_tpch_parquet_22 from './tpch_parquet_22.sql';
 
-export interface RequiredFile {
-    filename: string;
-    url: URL;
-}
-
 export interface ScriptMetadata {
     name: string;
     script: string;
-    files: RequiredFile[];
+    files: FileMetadata[];
 }
 
-const registerScript = (name: string, script: string, files: RequiredFile[] = []): [string, ScriptMetadata] => [
+const registerScript = (name: string, script: string, files: FileMetadata[] = []): [string, ScriptMetadata] => [
     name,
     {
         name,
@@ -68,8 +65,26 @@ const registerScript = (name: string, script: string, files: RequiredFile[] = []
 
 export const SCRIPTS: Map<string, ScriptMetadata> = new Map([
     registerScript('tpch_schema.sql', script_tpch_schema),
-    registerScript('tpch_import_parquet.sql', script_tpch_import_parquet),
-    registerScript('tpch_import_tbl.sql', script_tpch_import_tbl),
+    registerScript('tpch_import_parquet.sql', script_tpch_import_parquet, [
+        FILES.get('customer.parquet')!,
+        FILES.get('lineitem.parquet')!,
+        FILES.get('nation.parquet')!,
+        FILES.get('orders.parquet')!,
+        FILES.get('part.parquet')!,
+        FILES.get('partsupp.parquet')!,
+        FILES.get('region.parquet')!,
+        FILES.get('supplier.parquet')!,
+    ]),
+    registerScript('tpch_import_tbl.sql', script_tpch_import_tbl, [
+        FILES.get('customer.tbl')!,
+        FILES.get('lineitem.tbl')!,
+        FILES.get('nation.tbl')!,
+        FILES.get('orders.tbl')!,
+        FILES.get('part.tbl')!,
+        FILES.get('partsupp.tbl')!,
+        FILES.get('region.tbl')!,
+        FILES.get('supplier.tbl')!,
+    ]),
     registerScript('tpch_imported_01.sql', script_tpch_imported_01),
     registerScript('tpch_imported_02.sql', script_tpch_imported_02),
     registerScript('tpch_imported_03.sql', script_tpch_imported_03),
@@ -92,13 +107,36 @@ export const SCRIPTS: Map<string, ScriptMetadata> = new Map([
     registerScript('tpch_imported_20.sql', script_tpch_imported_20),
     registerScript('tpch_imported_21.sql', script_tpch_imported_21),
     registerScript('tpch_imported_22.sql', script_tpch_imported_22),
-    registerScript('tpch_parquet_01.sql', script_tpch_parquet_01),
-    registerScript('tpch_parquet_02.sql', script_tpch_parquet_02),
-    registerScript('tpch_parquet_03.sql', script_tpch_parquet_03),
-    registerScript('tpch_parquet_04.sql', script_tpch_parquet_04),
-    registerScript('tpch_parquet_05.sql', script_tpch_parquet_05),
-    registerScript('tpch_parquet_06.sql', script_tpch_parquet_06),
-    registerScript('tpch_parquet_07.sql', script_tpch_parquet_07),
+    registerScript('tpch_parquet_01.sql', script_tpch_parquet_01, [FILES.get('lineitem.parquet')!]),
+    registerScript('tpch_parquet_02.sql', script_tpch_parquet_02, [
+        FILES.get('part.parquet')!,
+        FILES.get('supplier.parquet')!,
+        FILES.get('partsupp.parquet')!,
+        FILES.get('nation.parquet')!,
+        FILES.get('region.parquet')!,
+    ]),
+    registerScript('tpch_parquet_03.sql', script_tpch_parquet_03, [
+        FILES.get('customer.parquet')!,
+        FILES.get('lineitem.parquet')!,
+        FILES.get('orders.parquet')!,
+    ]),
+    registerScript('tpch_parquet_04.sql', script_tpch_parquet_04, [FILES.get('orders.parquet')!]),
+    registerScript('tpch_parquet_05.sql', script_tpch_parquet_05, [
+        FILES.get('customer.parquet')!,
+        FILES.get('lineitem.parquet')!,
+        FILES.get('nation.parquet')!,
+        FILES.get('orders.parquet')!,
+        FILES.get('region.parquet')!,
+        FILES.get('supplier.parquet')!,
+    ]),
+    registerScript('tpch_parquet_06.sql', script_tpch_parquet_06, [FILES.get('lineitem.parquet')!]),
+    registerScript('tpch_parquet_07.sql', script_tpch_parquet_07, [
+        FILES.get('customer.parquet')!,
+        FILES.get('lineitem.parquet')!,
+        FILES.get('nation.parquet')!,
+        FILES.get('orders.parquet')!,
+        FILES.get('supplier.parquet')!,
+    ]),
     registerScript('tpch_parquet_08.sql', script_tpch_parquet_08),
     registerScript('tpch_parquet_09.sql', script_tpch_parquet_09),
     registerScript('tpch_parquet_10.sql', script_tpch_parquet_10),

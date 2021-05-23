@@ -2,7 +2,7 @@ import Immutable from 'immutable';
 import * as React from 'react';
 import * as model from './model';
 import * as arrow from 'apache-arrow';
-import * as scripts from './scripts';
+import * as scripts from './data';
 import { ArrowGrid } from './components';
 import { connect } from 'react-redux';
 import cn from 'classnames';
@@ -19,7 +19,6 @@ import Select from 'react-select';
 
 import styles from './explorer.module.css';
 
-import icon_plus from '../static/svg/icons/plus.svg';
 import icon_file from '../static/svg/icons/file-document-outline.svg';
 import icon_timer from '../static/svg/icons/timer.svg';
 import icon_list from '../static/svg/icons/view-list.svg';
@@ -97,6 +96,19 @@ class Explorer extends React.Component<Props> {
         );
     }
 
+    public renderLoadedFileEntry(metadata: model.FileInfo) {
+        return (
+            <div key={metadata.name} className={styles.registeredFileListEntry}>
+                <div className={styles.registeredFileListEntryIcon}>
+                    <svg width="20px" height="20px">
+                        <use xlinkHref={`${icon_file}#sym`} />
+                    </svg>
+                </div>
+                <div className={styles.registeredFileListEntryHeader}>{metadata.name}</div>
+            </div>
+        );
+    }
+
     public selectScript() {}
 
     public render() {
@@ -119,11 +131,6 @@ class Explorer extends React.Component<Props> {
                     <div className={styles.inputContainer}>
                         <div className={styles.scriptTabsContainer}>
                             <div className={cn(styles.scriptTab, styles.active)}>HelloWorld.sql</div>
-                            <div className={styles.scriptTabsAdd}>
-                                <svg width="18px" height="18px">
-                                    <use xlinkHref={`${icon_plus}#sym`} />
-                                </svg>
-                            </div>
                         </div>
                         <div className={styles.inputCard} />
                         <div className={styles.editorContainer}>
@@ -188,40 +195,24 @@ class Explorer extends React.Component<Props> {
                 </div>
                 <div className={styles.rightBar}>
                     <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
-                        <div className={styles.inspectorSectionHeader}>
-                            <div className={styles.inspectorSectionHeaderLogo}>
-                                <svg width="20px" height="20px">
-                                    <use xlinkHref={`${icon_file}#sym`} />
-                                </svg>
-                            </div>
-                            <div className={styles.inspectorSectionHeaderName}>Tables</div>
-                        </div>
+                        <FilePicker onDrop={this._registerFiles} />
                     </div>
                     <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
-                        <div className={styles.inspectorSectionHeader}>
-                            <div className={styles.inspectorSectionHeaderLogo}>
-                                <svg width="20px" height="20px">
-                                    <use xlinkHref={`${icon_file}#sym`} />
-                                </svg>
-                            </div>
-                            <div className={styles.inspectorSectionHeaderName}>Views</div>
+                        <div className={styles.inspectorSectionHeader}>Registered Files</div>
+
+                        <div className={styles.registeredFileList}>
+                            {this.props.files
+                                .toArray()
+                                .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}
                         </div>
                     </div>
                     <div className={styles.inspectorSection}>
-                        <div className={styles.inspectorSectionHeader}>
-                            <div className={styles.inspectorSectionHeaderLogo}>
-                                <svg width="20px" height="20px">
-                                    <use xlinkHref={`${icon_file}#sym`} />
-                                </svg>
-                            </div>
-                            <div className={styles.inspectorSectionHeaderName}>Files</div>
-                        </div>
+                        <div className={styles.inspectorSectionHeader}>Recommended Files</div>
                         {this.props.files.toArray().map((entry: [string, model.FileInfo]) => (
                             <div key={entry[0]} className={styles.inspectorFileEntry}>
                                 {entry[0]}
                             </div>
                         ))}
-                        <FilePicker onDrop={this._registerFiles} />
                     </div>
                 </div>
             </div>

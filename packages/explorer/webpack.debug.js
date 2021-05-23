@@ -33,6 +33,7 @@ export default {
     devServer: {
         historyApiFallback: true,
         contentBase: path.join(__dirname, './build/debug'),
+        watchContentBase: true,
         compress: true,
         port: 9002,
         mimeTypes: {
