@@ -12,9 +12,12 @@ export type StateMutation<T, P> = {
 
 /// A mutation type
 export enum StateMutationType {
+    UPDATE_LAUNCH_STEP = 'UPDATE_LAUNCH_STEP',
     SET_CURRENT_SCRIPT = 'SET_CURRENT_SCRIPT',
     SET_CURRENT_QUERY_RESULT = 'SET_CURRENT_QUERY_RESULT',
-    UPDATE_LAUNCH_STEP = 'UPDATE_LAUNCH_STEP',
+    SET_PEEKED_SCRIPT = 'SET_PEEKED_SCRIPT',
+    CLEAR_PEEKED_SCRIPT = 'CLEAR_PEEKED_SCRIPT',
+    REGISTER_LIBRARY_SCRIPT = 'REGISTER_LIBRARY_SCRIPT',
     REGISTER_FILES = 'REGISTER_FILES',
     MARK_LAUNCH_COMPLETE = 'MARK_LAUNCH_COMPLETE',
     OTHER = 'OTHER',
@@ -22,11 +25,14 @@ export enum StateMutationType {
 
 /// An state mutation variant
 export type StateMutationVariant =
+    | StateMutation<StateMutationType.UPDATE_LAUNCH_STEP, [LaunchStep, Status, string | null]>
+    | StateMutation<StateMutationType.MARK_LAUNCH_COMPLETE, null>
     | StateMutation<StateMutationType.SET_CURRENT_SCRIPT, Script>
     | StateMutation<StateMutationType.SET_CURRENT_QUERY_RESULT, arrow.Table>
-    | StateMutation<StateMutationType.UPDATE_LAUNCH_STEP, [LaunchStep, Status, string | null]>
-    | StateMutation<StateMutationType.REGISTER_FILES, FileInfo[]>
-    | StateMutation<StateMutationType.MARK_LAUNCH_COMPLETE, null>;
+    | StateMutation<StateMutationType.SET_PEEKED_SCRIPT, Script>
+    | StateMutation<StateMutationType.CLEAR_PEEKED_SCRIPT, null>
+    | StateMutation<StateMutationType.REGISTER_LIBRARY_SCRIPT, Script>
+    | StateMutation<StateMutationType.REGISTER_FILES, FileInfo[]>;
 
 // The action dispatch
 export type Dispatch = (mutation: StateMutationVariant) => void;
@@ -49,6 +55,21 @@ export class AppStateMutation {
                 return {
                     ...state,
                     currentQueryResult: mutation.data,
+                };
+            case StateMutationType.SET_PEEKED_SCRIPT:
+                return {
+                    ...state,
+                    peekedScript: mutation.data.name,
+                };
+            case StateMutationType.CLEAR_PEEKED_SCRIPT:
+                return {
+                    ...state,
+                    peekedScript: null,
+                };
+            case StateMutationType.REGISTER_LIBRARY_SCRIPT:
+                return {
+                    ...state,
+                    scriptLibrary: state.scriptLibrary.set(mutation.data.name, mutation.data),
                 };
             case StateMutationType.REGISTER_FILES:
                 return {

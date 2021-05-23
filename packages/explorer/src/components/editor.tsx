@@ -146,6 +146,7 @@ class Editor extends React.Component<Props> {
         editor.onDidChangeModelContent(_event => {
             if (editor.getValue() != this.props.script?.text) {
                 this.props.updateScript({
+                    name: this.props.script?.name || 'HelloDuckDB.sql',
                     text: editor.getValue(),
                     tokens: [], // XXX
                 });
