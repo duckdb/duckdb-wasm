@@ -29,14 +29,17 @@ if [ ! -f ${PARQUETGEN} ]; then
 fi
 echo "PARQUETGEN=${PARQUETGEN}"
 
-if [ ! -f "${TPCH_SF_OUT_TBL}/lineitem.tbl" ]; then
+TBL_COUNT=$(ls -1 ${TPCH_SF_OUT_TBL}/*.tbl 2>/dev/null | wc -l)
+if [[ ${TBL_COUNT} -ne 8 ]]; then
     mkdir -p ${TPCH_SF_OUT_TBL}
     cd ${DBGEN_DIR}
     DSS_PATH=${TPCH_SF_OUT_TBL} ./dbgen -vf -s ${SCALE_FACTOR}
 fi
 echo "TPCH_SF_OUT_TBL=${TPCH_SF_OUT_TBL}"
 
-if [ ! -f "${TPCH_SF_OUT_PARQUET}/lineitem.parquet" ]; then
+PARQUET_COUNT=$(ls -1 ${TPCH_SF_OUT_PARQUET}/*.parquet 2>/dev/null | wc -l)
+if [[ ${PARQUET_COUNT} -ne 8 ]]; then
+    rm -rf ${TPCH_SF_OUT_PARQUET}
     mkdir -p ${TPCH_SF_OUT_PARQUET}
     ${PARQUETGEN} tpch -i ${TPCH_SF_OUT_TBL} -o ${TPCH_SF_OUT_PARQUET}
 fi

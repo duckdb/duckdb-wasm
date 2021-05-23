@@ -98,6 +98,21 @@ pub fn convert_tbls(
         ])),
     )?;
     convert_tbl(
+        tbl_dir.join("orders.tbl"),
+        out_dir.join("orders.parquet"),
+        Arc::new(Schema::new(vec![
+            Field::new("o_orderkey", DataType::Int32, false),
+            Field::new("o_custkey", DataType::Int32, false),
+            Field::new("o_orderstatus", DataType::Utf8, false),
+            Field::new("o_totalprice", DECIMAL_12_2, false),
+            Field::new("o_orderdate", DataType::Date32, false),
+            Field::new("o_orderpriority", DataType::Utf8, false),
+            Field::new("o_clerk", DataType::Utf8, false),
+            Field::new("o_shippriority", DataType::Int32, false),
+            Field::new("o_comment", DataType::Utf8, false),
+        ])),
+    )?;
+    convert_tbl(
         tbl_dir.join("part.tbl"),
         out_dir.join("part.parquet"),
         Arc::new(Schema::new(vec![
