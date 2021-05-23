@@ -10,7 +10,7 @@ UNI_DIR=${PROJECT_ROOT}/data/uni
 PARQUETGEN=${PROJECT_ROOT}/target/release/parquetgen
 
 if [ ! -f ${PARQUETGEN} ]; then
-    cargo build --release -p parquetgen
+    cargo build --manifest-path=${PROJECT_ROOT}/Cargo.toml --release -p parquetgen
 fi
 echo "PARQUETGEN=${PARQUETGEN}"
 

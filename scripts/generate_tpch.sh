@@ -25,7 +25,7 @@ fi
 echo "DBGEN=${DBGEN}"
 
 if [ ! -f ${PARQUETGEN} ]; then
-    cargo build --release -p parquetgen
+    cargo build --manifest-path=${PROJECT_ROOT}/Cargo.toml --release -p parquetgen
 fi
 echo "PARQUETGEN=${PARQUETGEN}"
 
