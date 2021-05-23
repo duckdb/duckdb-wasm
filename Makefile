@@ -40,6 +40,11 @@ check_format:
 # ---------------------------------------------------------------------------
 # Building
 
+.PHONY: data
+data:
+	${ROOT_DIR}/scripts/generate_uni.sh
+	${ROOT_DIR}/scripts/generate_tpch.sh 0.01
+
 # Compile the core in debug mode
 .PHONY: lib
 lib:
