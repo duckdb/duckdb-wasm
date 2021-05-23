@@ -17,8 +17,12 @@ export interface AppState {
     currentScript: Script | null;
     /// The current query result table
     currentQueryResult: arrow.Table | null;
+    /// The script library
+    scriptLibrary: Immutable.Map<string, Script>;
+    /// The script markers
+    scriptLibraryMarkers: Immutable.Set<string>;
     /// The peeked script
-    peekedScript: Script | null;
+    peekedScript: string | null;
     /// The registered files
     registeredFiles: Immutable.Map<string, FileInfo>;
     /// The recommended files
@@ -32,6 +36,8 @@ export function createDefaultState(config = createDefaultConfig()): AppState {
         launchSteps: createLaunchSteps(),
         currentScript: null,
         currentQueryResult: null,
+        scriptLibrary: Immutable.Map(),
+        scriptLibraryMarkers: Immutable.Set(),
         peekedScript: null,
         registeredFiles: Immutable.Map(),
         recommendedFiles: [],

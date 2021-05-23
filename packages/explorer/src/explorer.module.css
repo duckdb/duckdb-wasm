@@ -189,10 +189,6 @@
     grid-template-rows: 32px;
 }
 
-.scriptListEntry:hover {
-    background-color: rgb(200, 200, 200);
-}
-
 .scriptListEntryIcon {
     grid-row: 1;
     grid-column: 1;
