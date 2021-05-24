@@ -12,7 +12,7 @@ import styles from './editor.module.css';
 type Props = {
     ctx: IAppContext;
     className?: string;
-    script: model.Script | null;
+    script: model.Script;
 
     updateScript: (script: model.Script) => void;
 };
@@ -93,7 +93,7 @@ class Editor extends React.Component<Props> {
             return;
         }
         // Value changed?
-        if (this.editor && this.props.script?.text && this.editor.getValue() !== this.props.script?.text) {
+        if (this.editor && this.editor.getValue() !== this.props.script.text) {
             this.editor.setValue(this.props.script.text);
         }
         // Layout editor
@@ -239,7 +239,7 @@ const mapStateToProps = (state: model.AppState) => {
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
     updateScript: (script: model.Script) => {
         model.mutate(dispatch, {
-            type: model.StateMutationType.MODIFY_SCRIPT,
+            type: model.StateMutationType.SET_CURRENT_SCRIPT,
             data: script,
         });
     },
