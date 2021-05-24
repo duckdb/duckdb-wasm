@@ -56,6 +56,8 @@ interface Props {
     peekedScript: string | null;
     registeredFiles: Immutable.Map<string, model.FileInfo>;
 
+    unsetPeekedScript: (script: string) => void;
+    setPeekedScript: (script: string) => void;
     setQueryResult: (result: arrow.Table) => void;
     registerFiles: (files: model.FileInfo[]) => void;
     registerLibraryScript: (script: model.Script) => void;
@@ -65,6 +67,7 @@ class Explorer extends React.Component<Props> {
     _peekScript = this.peekScript.bind(this);
     _runScript = this.runScript.bind(this);
     _dropFiles = this.dropFiles.bind(this);
+    _onMouseOverScript = this.onMouseOverScript.bind(this);
 
     scriptLocks = new Map<string, boolean>();
 
@@ -100,7 +103,12 @@ class Explorer extends React.Component<Props> {
 
     public renderScriptListEntry(metadata: data.ScriptMetadata) {
         return (
-            <div key={metadata.name} className={styles.scriptListEntry}>
+            <div
+                key={metadata.name}
+                className={styles.scriptListEntry}
+                onMouseOver={this._onMouseOverScript}
+                data-script={metadata.name}
+            >
                 <div className={styles.scriptListEntryIcon}>
                     <svg width="20px" height="20px">
                         <use xlinkHref={`${icon_file}#sym`} />
@@ -124,28 +132,42 @@ class Explorer extends React.Component<Props> {
         );
     }
 
+    public onMouseOverScript(event: React.MouseEvent) {
+        const name = (event.target as any).dataset.script;
+        if (!name) return;
+        this.peekScript(name);
+    }
+
+    public onMouseLeaveScript(event: React.MouseEvent) {
+        const name = (event.target as any).dataset.script;
+        if (!name) return;
+        this.props.unsetPeekedScript(name);
+    }
+
     public async peekScript(scriptName: string) {
-        // Is already available?
-        if (this.props.scriptLibrary.has(scriptName) || this.scriptLocks.has(scriptName)) {
+        // Unknown file?
+        if (!data.SCRIPTS.has(scriptName)) {
+            console.warn(`Unknown script: ${scriptName}`);
             return;
         }
-        // Unknown file?
-        if (!data.FILES.has(scriptName)) {
-            console.warn(`Unknown script: ${scriptName}`);
+        // Set the peeked script
+        this.props.setPeekedScript(scriptName);
+        // Is already available?
+        if (this.props.scriptLibrary.has(scriptName) || this.scriptLocks.has(scriptName)) {
             return;
         }
         // Lock the script
         this.scriptLocks.set(scriptName, true);
         // Register script
         try {
-            const file = data.FILES.get(scriptName)!;
+            const file = data.SCRIPTS.get(scriptName)!;
             const response = await axios.request({
                 method: 'get',
-                url: file.url,
+                url: file.script,
                 responseType: 'text',
                 onDownloadProgress: p => {},
             });
-            const scriptText = await response.data();
+            const scriptText = await response.data;
             this.props.registerLibraryScript({
                 name: scriptName,
                 text: scriptText,
@@ -314,9 +336,21 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
             data: result,
         });
     },
+    setPeekedScript: (script: string) => {
+        model.mutate(dispatch, {
+            type: model.StateMutationType.SET_PEEKED_SCRIPT,
+            data: script,
+        });
+    },
+    unsetPeekedScript: (script: string) => {
+        model.mutate(dispatch, {
+            type: model.StateMutationType.UNSET_PEEKED_SCRIPT,
+            data: script,
+        });
+    },
     registerLibraryScript: (script: model.Script) => {
         model.mutate(dispatch, {
-            type: model.StateMutationType.REGISTER_LIBRARY_SCRIPT,
+            type: model.StateMutationType.REGISTER_PEEKED_SCRIPT,
             data: script,
         });
     },
