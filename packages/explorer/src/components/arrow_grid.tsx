@@ -180,7 +180,7 @@ export class ArrowGrid extends React.Component<Props, State> {
                     columnIndex,
                     columnDatum,
                     canCacheStyle,
-                    value,
+                    value.toString(),
                     (key, style, v) => (
                         <div key={key} className={styles.cell_data} style={{ ...style }}>
                             {v}

@@ -35,6 +35,7 @@ fn convert_tbl(
     for batch in reader {
         writer.write(&batch?)?;
     }
+    writer.close()?;
 
     println!("OK");
     return Ok(());

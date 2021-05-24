@@ -7,7 +7,7 @@ from
             c_custkey,
             count(o_orderkey)
         from
-            parquet_scan('customer.parquet') left outer join parquet_scan('orders.parquet') on
+            'customer.parquet' left outer join 'orders.parquet' on
                 c_custkey = o_custkey
                 and o_comment not like '%special%requests%'
         group by
