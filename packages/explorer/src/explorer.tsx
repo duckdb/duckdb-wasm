@@ -55,6 +55,7 @@ interface Props {
     scriptLibrary: Immutable.Map<string, model.Script>;
     peekedScript: string | null;
     registeredFiles: Immutable.Map<string, model.FileInfo>;
+    recommendedFiles: data.FileMetadata[];
 
     setCurrentScript: (script: model.Script) => void;
     setPeekedScript: (script: string) => void;
@@ -96,10 +97,10 @@ class Explorer extends React.Component<Props> {
         }
         const fileInfos = acceptedFiles.map(f => ({
             name: f.name,
-            url: `file://${f}`,
+            url: `file://${f.name}`,
             downloadProgress: 1.0,
         }));
-        console.log(fileInfos);
+        console.log(fileInfos.toString());
         this.props.registerFiles(fileInfos);
     }
 
@@ -340,9 +341,9 @@ class Explorer extends React.Component<Props> {
                     </div>
                     <div className={styles.inspectorSection}>
                         <div className={styles.inspectorSectionHeader}>Recommended Files</div>
-                        {this.props.registeredFiles.toArray().map((entry: [string, model.FileInfo]) => (
-                            <div key={entry[0]} className={styles.inspectorFileEntry}>
-                                {entry[0]}
+                        {this.props.recommendedFiles.map((entry: data.FileMetadata) => (
+                            <div key={entry.name} className={styles.inspectorFileEntry}>
+                                {entry.name}
                             </div>
                         ))}
                     </div>
@@ -358,6 +359,7 @@ const mapStateToProps = (state: model.AppState) => ({
     scriptLibrary: state.scriptLibrary,
     peekedScript: state.peekedScript,
     registeredFiles: state.registeredFiles,
+    recommendedFiles: state.recommendedFiles,
 });
 
 const mapDispatchToProps = (dispatch: model.Dispatch) => ({
