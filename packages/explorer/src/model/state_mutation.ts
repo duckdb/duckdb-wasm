@@ -1,8 +1,8 @@
 import * as arrow from 'apache-arrow';
 import { AppState } from './state';
+import { FileInfo } from './files';
 import { LaunchStep, Status } from './launch_step';
 import { Script } from './script';
-import { FileInfo } from './files';
 
 /// A mutation
 export type StateMutation<T, P> = {
