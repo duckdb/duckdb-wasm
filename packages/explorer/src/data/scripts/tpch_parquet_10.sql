@@ -8,15 +8,15 @@ select
     c_phone,
     c_comment
 from
-    parquet_scan('customer.parquet'),
-    parquet_scan('orders.parquet'),
-    parquet_scan('lineitem.parquet'),
-    parquet_scan('nation.parquet')
+    'customer.parquet',
+    'orders.parquet',
+    'lineitem.parquet',
+    'nation.parquet'
 where
     c_custkey = o_custkey
     and l_orderkey = o_orderkey
-    and o_orderdate >= date '1993-10-01'
-    and o_orderdate < date '1993-10-01' + interval '3' month
+    and o_orderdate >= cast('1993-10-01' as date)
+    and o_orderdate < cast('1994-01-01' as date)
     and l_returnflag = 'R'
     and c_nationkey = n_nationkey
 group by

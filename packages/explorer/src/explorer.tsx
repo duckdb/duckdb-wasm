@@ -27,7 +27,7 @@ import icon_file_box from '../static/svg/icons/file-table-box.svg';
 
 import { formatBytes, formatThousands } from './util';
 
-const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
+const dbOptions = [{ value: 'wasm', label: 'In-Browser DuckDB' }];
 
 interface FileDropzoneProps {
     onDrop: <T extends File>(acceptedFiles: T[], fileRejections: FileRejection[], event: DropEvent) => void;

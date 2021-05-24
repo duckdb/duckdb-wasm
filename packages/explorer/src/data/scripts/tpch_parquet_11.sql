@@ -1,27 +1,27 @@
 select
-    ps_partkey,
-    sum(ps_supplycost * ps_availqty) as value
+  ps_partkey,
+  sum(ps_supplycost * ps_availqty) as value
 from
-    parquet_scan('partsupp.parquet'),
-    parquet_scan('supplier.parquet'),
-    parquet_scan('nation.parquet')
+  'partsupp.parquet',
+  'supplier.parquet',
+  'nation.parquet'
 where
-    ps_suppkey = s_suppkey
-    and s_nationkey = n_nationkey
-    and n_name = 'GERMANY'
+  ps_suppkey = s_suppkey
+  and s_nationkey = n_nationkey
+  and n_name = 'GERMANY'
 group by
-    ps_partkey having
-        sum(ps_supplycost * ps_availqty) > (
-            select
-                sum(ps_supplycost * ps_availqty) * 0.0001
-            from
-                partsupp,
-                supplier,
-                nation
-            where
-                ps_suppkey = s_suppkey
-                and s_nationkey = n_nationkey
-                and n_name = 'GERMANY'
-        )
+  ps_partkey having
+    sum(ps_supplycost * ps_availqty) > (
+      select
+        sum(ps_supplycost * ps_availqty) * 0.0001
+      from
+        'partsupp.parquet',
+        'supplier.parquet',
+        'nation.parquet'
+      where
+        ps_suppkey = s_suppkey
+        and s_nationkey = n_nationkey
+        and n_name = 'GERMANY'
+    )
 order by
-    value desc;
+  value desc;
