@@ -13,10 +13,10 @@ export type StateMutation<T, P> = {
 /// A mutation type
 export enum StateMutationType {
     UPDATE_LAUNCH_STEP = 'UPDATE_LAUNCH_STEP',
-    MODIFY_SCRIPT = 'MODIFY_SCRIPT',
     SET_CURRENT_QUERY_RESULT = 'SET_CURRENT_QUERY_RESULT',
+    SET_CURRENT_SCRIPT = 'SET_CURRENT_SCRIPT',
     SET_PEEKED_SCRIPT = 'SET_PEEKED_SCRIPT',
-    UNSET_PEEKED_SCRIPT = 'CLEAR_PEEKED_SCRIPT',
+    UNSET_PEEKED_SCRIPT = 'UNSET_PEEKED_SCRIPT',
     REGISTER_PEEKED_SCRIPT = 'REGISTER_PEEKED_SCRIPT',
     REGISTER_FILES = 'REGISTER_FILES',
     MARK_LAUNCH_COMPLETE = 'MARK_LAUNCH_COMPLETE',
@@ -27,8 +27,9 @@ export enum StateMutationType {
 export type StateMutationVariant =
     | StateMutation<StateMutationType.UPDATE_LAUNCH_STEP, [LaunchStep, Status, string | null]>
     | StateMutation<StateMutationType.MARK_LAUNCH_COMPLETE, null>
-    | StateMutation<StateMutationType.MODIFY_SCRIPT, Script>
+    | StateMutation<StateMutationType.SET_CURRENT_SCRIPT, Script>
     | StateMutation<StateMutationType.SET_CURRENT_QUERY_RESULT, arrow.Table>
+    | StateMutation<StateMutationType.SET_CURRENT_SCRIPT, Script>
     | StateMutation<StateMutationType.SET_PEEKED_SCRIPT, string>
     | StateMutation<StateMutationType.UNSET_PEEKED_SCRIPT, string>
     | StateMutation<StateMutationType.REGISTER_PEEKED_SCRIPT, Script>
@@ -45,7 +46,7 @@ export class AppStateMutation {
     /// Set the editor program
     public static reduce(state: AppState, mutation: StateMutationVariant): AppState {
         switch (mutation.type) {
-            case StateMutationType.MODIFY_SCRIPT:
+            case StateMutationType.SET_CURRENT_SCRIPT:
                 return {
                     ...state,
                     currentScript: mutation.data,
@@ -67,15 +68,11 @@ export class AppStateMutation {
                     ...state,
                     peekedScript: state.peekedScript == mutation.data ? null : state.peekedScript,
                 };
-            case StateMutationType.REGISTER_PEEKED_SCRIPT: {
-                const isPeeked = mutation.data.name == state.peekedScript;
+            case StateMutationType.REGISTER_PEEKED_SCRIPT:
                 return {
                     ...state,
                     scriptLibrary: state.scriptLibrary.set(mutation.data.name, mutation.data),
-                    currentScript: isPeeked ? mutation.data : state.currentScript,
-                    currentQueryResult: isPeeked ? null : state.currentQueryResult,
                 };
-            }
             case StateMutationType.REGISTER_FILES:
                 return {
                     ...state,

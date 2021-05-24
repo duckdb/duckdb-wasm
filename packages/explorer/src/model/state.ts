@@ -14,7 +14,7 @@ export interface AppState {
     /// The launch progress
     launchSteps: Immutable.Map<LaunchStep, LaunchStepInfo>;
     /// The current script
-    currentScript: Script | null;
+    currentScript: Script;
     /// The current query result table
     currentQueryResult: arrow.Table | null;
     /// The script library
@@ -32,7 +32,11 @@ export function createDefaultState(config = createDefaultConfig()): AppState {
         config,
         launchComplete: false,
         launchSteps: createLaunchSteps(),
-        currentScript: null,
+        currentScript: {
+            name: 'HelloDuckDB.sql',
+            text: '',
+            tokens: [],
+        },
         currentQueryResult: null,
         scriptLibrary: Immutable.Map(),
         peekedScript: null,

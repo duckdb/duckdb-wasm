@@ -37,6 +37,10 @@
     padding: 0px 8px;
 }
 
+.scriptTab.peeking {
+    font-style: italic;
+}
+
 .scriptTab.active {
     border-bottom: 2px solid black;
 }

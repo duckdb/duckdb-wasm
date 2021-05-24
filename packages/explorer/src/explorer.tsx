@@ -50,24 +50,26 @@ function FileDropzone(props: FileDropzoneProps) {
 
 interface Props {
     ctx: IAppContext;
-    currentScript: model.Script | null;
+    currentScript: model.Script;
     currentQueryResult: arrow.Table | null;
     scriptLibrary: Immutable.Map<string, model.Script>;
     peekedScript: string | null;
     registeredFiles: Immutable.Map<string, model.FileInfo>;
 
-    unsetPeekedScript: (script: string) => void;
+    setCurrentScript: (script: model.Script) => void;
     setPeekedScript: (script: string) => void;
+    unsetPeekedScript: (script: string) => void;
     setQueryResult: (result: arrow.Table) => void;
     registerFiles: (files: model.FileInfo[]) => void;
     registerLibraryScript: (script: model.Script) => void;
 }
 
 class Explorer extends React.Component<Props> {
-    _peekScript = this.peekScript.bind(this);
     _runScript = this.runScript.bind(this);
     _dropFiles = this.dropFiles.bind(this);
     _onMouseOverScript = this.onMouseOverScript.bind(this);
+    _onMouseLeaveScript = this.onMouseLeaveScript.bind(this);
+    _onSelectScript = this.onSelectScript.bind(this);
 
     scriptLocks = new Map<string, boolean>();
 
@@ -107,6 +109,8 @@ class Explorer extends React.Component<Props> {
                 key={metadata.name}
                 className={styles.scriptListEntry}
                 onMouseOver={this._onMouseOverScript}
+                onMouseLeave={this._onMouseLeaveScript}
+                onClick={this._onSelectScript}
                 data-script={metadata.name}
             >
                 <div className={styles.scriptListEntryIcon}>
@@ -131,11 +135,16 @@ class Explorer extends React.Component<Props> {
             </div>
         );
     }
+    public async onSelectScript(event: React.MouseEvent) {
+        const name = (event.target as any).dataset.script;
+        if (!name) return;
+        this.selectScript(name, false);
+    }
 
     public onMouseOverScript(event: React.MouseEvent) {
         const name = (event.target as any).dataset.script;
         if (!name) return;
-        this.peekScript(name);
+        this.selectScript(name, true);
     }
 
     public onMouseLeaveScript(event: React.MouseEvent) {
@@ -144,21 +153,25 @@ class Explorer extends React.Component<Props> {
         this.props.unsetPeekedScript(name);
     }
 
-    public async peekScript(scriptName: string) {
+    public async selectScript(scriptName: string, peek: boolean) {
         // Unknown file?
         if (!data.SCRIPTS.has(scriptName)) {
             console.warn(`Unknown script: ${scriptName}`);
             return;
         }
-        // Set the peeked script
-        this.props.setPeekedScript(scriptName);
+        if (peek) {
+            // Set the peeked script
+            this.props.setPeekedScript(scriptName);
+        }
         // Is already available?
         if (this.props.scriptLibrary.has(scriptName) || this.scriptLocks.has(scriptName)) {
+            if (!peek) {
+                this.props.setCurrentScript(this.props.scriptLibrary.get(scriptName)!);
+            }
             return;
         }
         // Lock the script
         this.scriptLocks.set(scriptName, true);
-        // Register script
         try {
             const file = data.SCRIPTS.get(scriptName)!;
             const response = await axios.request({
@@ -168,11 +181,16 @@ class Explorer extends React.Component<Props> {
                 onDownloadProgress: p => {},
             });
             const scriptText = await response.data;
-            this.props.registerLibraryScript({
+            const script = {
                 name: scriptName,
                 text: scriptText,
                 tokens: [], // todo tokenize
-            });
+            };
+            this.props.registerLibraryScript(script);
+            // Set the current script
+            if (!peek) {
+                this.props.setCurrentScript(script);
+            }
         } catch (e) {
             console.warn(e);
         }
@@ -213,6 +231,7 @@ class Explorer extends React.Component<Props> {
     }
 
     public render() {
+        const peeking = this.props.peekedScript && this.props.scriptLibrary.has(this.props.peekedScript);
         return (
             <div className={styles.container}>
                 <div className={styles.leftBar}>
@@ -231,7 +250,19 @@ class Explorer extends React.Component<Props> {
                 <div className={styles.center}>
                     <div className={styles.inputContainer}>
                         <div className={styles.scriptTabsContainer}>
-                            <div className={cn(styles.scriptTab, styles.active)}>HelloDuckDB.sql</div>
+                            <div
+                                className={cn(styles.scriptTab, {
+                                    [styles.active]:
+                                        !peeking || this.props.peekedScript == this.props.currentScript?.name,
+                                })}
+                            >
+                                {this.props.currentScript?.name}
+                            </div>
+                            {peeking && this.props.peekedScript != this.props.currentScript?.name && (
+                                <div className={cn(styles.scriptTab, styles.active, styles.peeking)}>
+                                    {this.props.peekedScript}
+                                </div>
+                            )}
                         </div>
                         <div className={styles.inputCard} />
                         <div className={styles.editorContainer}>
@@ -334,6 +365,12 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
         model.mutate(dispatch, {
             type: model.StateMutationType.SET_CURRENT_QUERY_RESULT,
             data: result,
+        });
+    },
+    setCurrentScript: (script: model.Script) => {
+        model.mutate(dispatch, {
+            type: model.StateMutationType.SET_CURRENT_SCRIPT,
+            data: script,
         });
     },
     setPeekedScript: (script: string) => {
