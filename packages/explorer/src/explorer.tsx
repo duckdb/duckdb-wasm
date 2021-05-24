@@ -1,18 +1,19 @@
-import Immutable from 'immutable';
 import * as React from 'react';
-import * as model from './model';
 import * as arrow from 'apache-arrow';
 import * as data from './data';
-import { ArrowGrid } from './components';
-import { connect } from 'react-redux';
-import cn from 'classnames';
-import { IAppContext, withAppContext } from './app_context';
-import EditorLoader from './components/editor';
+import * as model from './model';
 import Button from 'react-bootstrap/Button';
+import EditorLoader from './components/editor';
 import Form from 'react-bootstrap/Form';
-import InputGroup from 'react-bootstrap/InputGroup';
 import FormControl from 'react-bootstrap/FormControl';
+import Immutable from 'immutable';
+import InputGroup from 'react-bootstrap/InputGroup';
 import Nav from 'react-bootstrap/Nav';
+import axios from 'axios';
+import cn from 'classnames';
+import { ArrowGrid } from './components';
+import { IAppContext, withAppContext } from './app_context';
+import { connect } from 'react-redux';
 import { useDropzone, FileRejection, DropEvent } from 'react-dropzone';
 
 import Select from 'react-select';
@@ -28,11 +29,11 @@ import { formatBytes, formatThousands } from './util';
 
 const dbOptions = [{ value: 'wasm', label: 'In-Browser' }];
 
-interface FilePickerProps {
+interface FileDropzoneProps {
     onDrop: <T extends File>(acceptedFiles: T[], fileRejections: FileRejection[], event: DropEvent) => void;
 }
 
-function FilePicker(props: FilePickerProps) {
+function FileDropzone(props: FileDropzoneProps) {
     const { getRootProps, getInputProps } = useDropzone({ onDrop: props.onDrop });
 
     return (
@@ -63,7 +64,7 @@ interface Props {
 class Explorer extends React.Component<Props> {
     _peekScript = this.peekScript.bind(this);
     _runScript = this.runScript.bind(this);
-    _registerFiles = this.registerFiles.bind(this);
+    _dropFiles = this.dropFiles.bind(this);
 
     scriptLocks = new Map<string, boolean>();
 
@@ -82,7 +83,7 @@ class Explorer extends React.Component<Props> {
         this.props.setQueryResult(result);
     }
 
-    public async registerFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
+    public async dropFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
         const database = this.props.ctx.database;
         if (!database) return;
         for (const file of acceptedFiles) {
@@ -90,7 +91,8 @@ class Explorer extends React.Component<Props> {
         }
         const fileInfos = acceptedFiles.map(f => ({
             name: f.name,
-            sizeBytes: f.size,
+            url: `file://${f}`,
+            downloadProgress: 1.0,
         }));
         console.log(fileInfos);
         this.props.registerFiles(fileInfos);
@@ -123,7 +125,7 @@ class Explorer extends React.Component<Props> {
     }
 
     public async peekScript(scriptName: string) {
-        // Is already available
+        // Is already available?
         if (this.props.scriptLibrary.has(scriptName) || this.scriptLocks.has(scriptName)) {
             return;
         }
@@ -137,13 +139,52 @@ class Explorer extends React.Component<Props> {
         // Register script
         try {
             const file = data.FILES.get(scriptName)!;
-            const response = await fetch(file.url);
-            const scriptText = await response.text();
+            const response = await axios.request({
+                method: 'get',
+                url: file.url,
+                responseType: 'text',
+                onDownloadProgress: p => {},
+            });
+            const scriptText = await response.data();
             this.props.registerLibraryScript({
                 name: scriptName,
                 text: scriptText,
-                tokens: [],
+                tokens: [], // todo tokenize
             });
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    public async downloadFile(file: data.FileMetadata) {
+        // Make sure the database is available
+        const database = this.props.ctx.database;
+        if (!database) return;
+        try {
+            // Request the file
+            const response = await axios.request({
+                method: 'get',
+                url: file.url,
+                responseType: 'blob',
+                onDownloadProgress: p => {
+                    this.props.registerFiles([
+                        {
+                            name: file.name,
+                            url: file.url,
+                            downloadProgress: p,
+                        },
+                    ]);
+                },
+            });
+            // Register the file blob
+            await database.addFileBlob(file.name, response.data);
+            this.props.registerFiles([
+                {
+                    name: file.name,
+                    url: file.url,
+                    downloadProgress: 1.0,
+                },
+            ]);
         } catch (e) {
             console.warn(e);
         }
@@ -233,7 +274,7 @@ class Explorer extends React.Component<Props> {
                 </div>
                 <div className={styles.rightBar}>
                     <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
-                        <FilePicker onDrop={this._registerFiles} />
+                        <FileDropzone onDrop={this._dropFiles} />
                     </div>
                     <div className={cn(styles.inspectorSection, styles.inspectorSectionBorder)}>
                         <div className={styles.inspectorSectionHeader}>Registered Files</div>

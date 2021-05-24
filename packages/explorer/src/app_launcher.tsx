@@ -2,7 +2,6 @@ import * as Immutable from 'immutable';
 import * as React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import * as model from './model';
-import * as examples from './example_data';
 import { IAppContext } from './app_context';
 import { AppState, Dispatch, LaunchStep, LaunchStepInfo, DEFAULT_LAUNCH_STEPS } from './model';
 import { StatusIndicator } from './components';
@@ -55,40 +54,8 @@ async function initDuckDB(ctx: IAppContext): Promise<boolean> {
     return true;
 }
 
-async function loadExampleFiles(ctx: IAppContext): Promise<boolean> {
-    startStep(ctx.store, model.LaunchStep.FETCH_EXAMPLE_DATA);
-    try {
-        // Load the example data
-        const exampleFileIDs = [examples.ExampleID.TEST_CSV];
-        const examplePromises = exampleFileIDs.map(f => examples.loadExample(f));
-        const exampleFiles = await Promise.all(examplePromises);
-
-        // Register the data with duckdb
-        const fileInfos: model.FileInfo[] = [];
-        for (const file of exampleFiles) {
-            fileInfos.push({
-                name: file.name,
-                sizeBytes: file.size,
-            });
-            ctx.database!.addFileBlob(file.name, file);
-        }
-        model.mutate(ctx.store.dispatch, {
-            type: model.StateMutationType.REGISTER_FILES,
-            data: fileInfos,
-        });
-
-        stepSucceeded(ctx.store, model.LaunchStep.FETCH_EXAMPLE_DATA);
-    } catch (e) {
-        console.log(e);
-        stepFailed(ctx.store, model.LaunchStep.FETCH_EXAMPLE_DATA);
-        return false;
-    }
-    return true;
-}
-
 export async function launchApp(ctx: IAppContext): Promise<void> {
     if (!(await initDuckDB(ctx))) return;
-    if (!(await loadExampleFiles(ctx))) return;
 
     model.mutate(ctx.store.dispatch, {
         type: model.StateMutationType.MARK_LAUNCH_COMPLETE,

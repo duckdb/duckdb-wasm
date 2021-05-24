@@ -1,4 +1,8 @@
 export interface FileInfo {
+    /// The file name
     name: string;
-    sizeBytes: number;
+    /// The url
+    url: string;
+    /// The download progress
+    downloadProgress: number;
 }
