@@ -4,6 +4,8 @@ import * as duckdb_parallel from '../src/targets/duckdb-browser-parallel';
 // Loading debug symbols, especially for WASM take insanely long so we just disable the test timeout
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
+console.assert(duckdb_serial.checkPlatform());
+
 // Resolve a buffer by fetching from disk
 const resolveBuffer = async (url: string) => {
     const req = await fetch(`/data${url}`);
