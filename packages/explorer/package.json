@@ -52,7 +52,7 @@
         "@types/react-router-dom": "^5.1.7",
         "@types/react-virtualized": "^9.21.11",
         "@typescript-eslint/eslint-plugin": "^4.25.0",
-        "@typescript-eslint/parser": "^4.23.0",
+        "@typescript-eslint/parser": "^4.25.0",
         "clean-webpack-plugin": "^3.0.0",
         "css-loader": "^5.2.6",
         "esbuild-css-modules-plugin": "^1.0.6",
