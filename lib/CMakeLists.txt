@@ -17,9 +17,9 @@ if(NOT EMSCRIPTEN)
 endif()
 
 if(EMSCRIPTEN)
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0 -fexceptions -sUSE_PTHREADS=0"
-  )
+  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0
+  # -fexceptions -sUSE_PTHREADS=0" )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions -sUSE_PTHREADS=0")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -129,7 +129,6 @@ if(EMSCRIPTEN)
         -s WARN_ON_UNDEFINED_SYMBOLS=0 \
         -s ALLOW_MEMORY_GROWTH=1 \
         -s USE_PTHREADS=0 \
-        -s DISABLE_EXCEPTION_CATCHING=0 \
         -s MODULARIZE=1 \
         -s FILESYSTEM=0 \
         -s EXPORT_ES6=1 \
