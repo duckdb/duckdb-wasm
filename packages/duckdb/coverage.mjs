@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const cov = path.resolve(__dirname, 'coverage');
 const cov_chrome = path.resolve(cov, 'chrome', 'coverage-final.json');
-const cov_firefox = path.resolve(cov, 'firefox', 'coverage-final.json');
+//const cov_firefox = path.resolve(cov, 'firefox', 'coverage-final.json');
 const cov_node = path.resolve(cov, 'node', 'coverage-final.json');
 const cov_all = path.resolve(cov, 'all');
 const cov_out = path.resolve(cov, 'coverage.json');
