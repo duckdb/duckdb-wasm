@@ -20,7 +20,7 @@ class BufferedFileHandle : public duckdb::FileHandle {
     /// The file buffers
     FileSystemBuffer::FileRef file_buffers_;
     /// The file position
-    size_t file_position_;
+    uint64_t file_position_;
 
     /// Close the file
     void Close() override;

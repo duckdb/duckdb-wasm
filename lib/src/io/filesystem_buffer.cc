@@ -24,7 +24,7 @@ static constexpr uint64_t GetPageID(uint64_t frame_id) { return frame_id & ((1ul
 
 /// Helper to dump bytes
 #if 0
-static void dumpBytes(nonstd::span<char> bytes, size_t line_width = 30) {
+static void dumpBytes(nonstd::span<char> bytes, uint64_t line_width = 30) {
     for (int i = 0; i < bytes.size(); i++) {
         auto c = bytes[i];
         if (i % line_width == 0) std::cout << "\n";
@@ -42,7 +42,7 @@ namespace web {
 namespace io {
 
 /// Constructor
-FileSystemBufferFrame::FileSystemBufferFrame(uint64_t frame_id, size_t size, list_position fifo_position,
+FileSystemBufferFrame::FileSystemBufferFrame(uint64_t frame_id, uint64_t size, list_position fifo_position,
                                              list_position lru_position)
     : frame_id(frame_id), fifo_position(fifo_position), lru_position(lru_position) {}
 
@@ -163,9 +163,9 @@ void FileSystemBuffer::BufferRef::Release() {
 }
 
 /// Require a buffer frame to be of a certain size
-void FileSystemBuffer::BufferRef::RequireSize(size_t n) {
+void FileSystemBuffer::BufferRef::RequireSize(uint64_t n) {
     if (!frame_ || n < frame_->data_size) return;
-    n = std::min<size_t>(n, buffer_manager_->GetPageSize());
+    n = std::min<uint64_t>(n, buffer_manager_->GetPageSize());
     auto frame_id = frame_->frame_id;
     auto page_id = GetPageID(frame_id);
     auto file_id = GetFileID(frame_id);
@@ -173,12 +173,12 @@ void FileSystemBuffer::BufferRef::RequireSize(size_t n) {
     if (file_iter == buffer_manager_->files.end()) return;
     auto required = page_id * buffer_manager_->GetPageSize() + n;
     buffer_manager_->RequireFileSize(*file_iter->second, required);
-    frame_->data_size = std::max<size_t>(n, frame_->data_size);
+    frame_->data_size = std::max<uint64_t>(n, frame_->data_size);
 }
 
 /// Constructor
-FileSystemBuffer::FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, size_t page_capacity,
-                                   size_t page_size_bits)
+FileSystemBuffer::FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, uint64_t page_capacity,
+                                   uint64_t page_size_bits)
     : page_size_bits(page_size_bits), page_capacity(page_capacity), filesystem(std::move(filesystem)) {}
 
 /// Destructor
@@ -238,8 +238,8 @@ void FileSystemBuffer::EvictFileFrames(RegisteredFile& file) {
     frames.erase(lb, ub);
 }
 
-void FileSystemBuffer::RequireFileSize(RegisteredFile& file, size_t bytes) {
-    file.file_size_required = std::max(file.file_size_required, bytes);
+void FileSystemBuffer::RequireFileSize(RegisteredFile& file, uint64_t bytes) {
+    file.file_size_required = std::max<uint64_t>(file.file_size_required, bytes);
 }
 
 void FileSystemBuffer::GrowFileIfRequired(RegisteredFile& file) {
@@ -272,7 +272,7 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame) {
     // Determine the actual size of the frame
     assert(files.count(file_id));
     auto& file = *files.at(file_id);
-    frame.data_size = std::min<size_t>(file.file_size - page_id * page_size, GetPageSize());
+    frame.data_size = std::min<uint64_t>(file.file_size - page_id * page_size, GetPageSize());
     frame.is_dirty = false;
 
     // Read data into frame
@@ -344,7 +344,7 @@ std::vector<char> FileSystemBuffer::AllocateFrameBuffer() {
 }
 
 /// Get the file size
-size_t FileSystemBuffer::GetFileSize(const FileRef& file) { return file.file_->file_size; }
+uint64_t FileSystemBuffer::GetFileSize(const FileRef& file) { return file.file_->file_size; }
 
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, uint64_t page_id, bool exclusive) {
@@ -383,7 +383,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
     return BufferRef{shared_from_this(), frame};
 }
 
-void FileSystemBuffer::UnfixPage(size_t frame_id, bool is_dirty) {
+void FileSystemBuffer::UnfixPage(uint64_t frame_id, bool is_dirty) {
     auto iter = frames.find(frame_id);
     if (iter == frames.end()) return;
     auto& frame = iter->second;
@@ -416,34 +416,34 @@ void FileSystemBuffer::Flush() {
     }
 }
 
-size_t FileSystemBuffer::Read(const FileRef& file, void* out, size_t n, size_t offset) {
+uint64_t FileSystemBuffer::Read(const FileRef& file, void* out, uint64_t n, duckdb::idx_t offset) {
     // Check upper file boundary first
-    auto read_end = std::min<size_t>(file.file_->file_size_required, offset + n);
-    auto read_max = std::min<size_t>(n, std::max<size_t>(read_end, offset) - offset);
+    auto read_end = std::min<uint64_t>(file.file_->file_size_required, offset + n);
+    auto read_max = std::min<uint64_t>(n, std::max<uint64_t>(read_end, offset) - offset);
     if (read_max == 0) return 0;
 
     // Determine page & offset
     auto page_id = offset >> GetPageSizeShift();
     auto skip_here = offset - page_id * GetPageSize();
-    auto read_here = std::min<size_t>(read_max, GetPageSize() - skip_here);
+    auto read_here = std::min<uint64_t>(read_max, GetPageSize() - skip_here);
 
     // Read page
     auto page = FixPage(file, page_id, false);
     auto data = page.GetData();
-    read_here = std::min<size_t>(read_here, data.size());
+    read_here = std::min<uint64_t>(read_here, data.size());
     std::memcpy(static_cast<char*>(out), data.data() + skip_here, read_here);
     return read_here;
 }
 
-size_t FileSystemBuffer::Write(const FileRef& file, const void* in, size_t bytes, size_t offset) {
+uint64_t FileSystemBuffer::Write(const FileRef& file, const void* in, uint64_t bytes, duckdb::idx_t offset) {
     // Determine page & offset
     auto page_id = offset >> GetPageSizeShift();
     auto skip_here = offset - page_id * GetPageSize();
-    auto write_here = std::min<size_t>(bytes, GetPageSize() - skip_here);
+    auto write_here = std::min<uint64_t>(bytes, GetPageSize() - skip_here);
 
     // Write page
     auto page = FixPage(file, page_id, false);
-    write_here = std::min<size_t>(write_here, GetPageSize());
+    write_here = std::min<uint64_t>(write_here, GetPageSize());
     page.RequireSize(skip_here + write_here);
     auto data = page.GetData();
     std::memcpy(data.data() + skip_here, static_cast<const char*>(in), write_here);
@@ -451,7 +451,7 @@ size_t FileSystemBuffer::Write(const FileRef& file, const void* in, size_t bytes
     return write_here;
 }
 
-void FileSystemBuffer::Truncate(const FileRef& file_ref, size_t new_size) {
+void FileSystemBuffer::Truncate(const FileRef& file_ref, uint64_t new_size) {
     auto* file = file_ref.file_;
     EvictFileFrames(*file);
     filesystem->Truncate(*file->handle, new_size);

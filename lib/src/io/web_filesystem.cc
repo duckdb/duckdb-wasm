@@ -14,11 +14,11 @@ static std::vector<std::string> *glob_results = {};
 extern "C" {
 extern size_t duckdb_web_fs_file_open(const char *path, size_t pathLen, uint8_t flags);
 extern void duckdb_web_fs_file_close(size_t fileId);
-extern void duckdb_web_fs_file_truncate(size_t fileId, size_t newSize);
+extern void duckdb_web_fs_file_truncate(size_t fileId, double newSize);
 extern time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId);
-extern ssize_t duckdb_web_fs_file_get_size(size_t fileId);
-extern ssize_t duckdb_web_fs_read(size_t fileId, void *buffer, ssize_t bytes, size_t location);
-extern ssize_t duckdb_web_fs_write(size_t fileId, void *buffer, ssize_t bytes, size_t location);
+extern double duckdb_web_fs_file_get_size(size_t fileId);
+extern ssize_t duckdb_web_fs_read(size_t fileId, void *buffer, ssize_t bytes, double location);
+extern ssize_t duckdb_web_fs_write(size_t fileId, void *buffer, ssize_t bytes, double location);
 
 extern void duckdb_web_fs_directory_remove(const char *path, size_t pathLen);
 extern bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen);
@@ -40,11 +40,11 @@ extern bool duckdb_web_fs_file_remove(const char *path, size_t pathLen);
 extern "C" {
 size_t duckdb_web_fs_file_open(const char *path, size_t pathLen, uint8_t flags) { return 0; }
 void duckdb_web_fs_file_close(size_t fileId) {}
-void duckdb_web_fs_file_truncate(size_t fileId, size_t newSize) {}
+void duckdb_web_fs_file_truncate(size_t fileId, double newSize) {}
 time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId) { return 0; }
-ssize_t duckdb_web_fs_file_get_size(size_t fileId) { return 0; }
-ssize_t duckdb_web_fs_read(size_t fileId, void *buffer, ssize_t bytes, size_t location) { return 0; }
-ssize_t duckdb_web_fs_write(size_t fileId, void *buffer, ssize_t bytes, size_t location) { return 0; }
+double duckdb_web_fs_file_get_size(size_t fileId) { return 0; }
+ssize_t duckdb_web_fs_read(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
+ssize_t duckdb_web_fs_write(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
 void duckdb_web_fs_file_sync(size_t fileId) {}
 
 bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen) { return {}; };
@@ -74,12 +74,14 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &path, 
 
 /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read.
 void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
+    assert(nr_bytes < std::numeric_limits<size_t>::max());
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     auto n = duckdb_web_fs_read(file_hdl.file_id, buffer, nr_bytes, location);
     file_hdl.position_ = location + n;
 }
 /// Write exactly nr_bytes to the specified location in the file. Fails if nr_bytes could not be read.
 void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
+    assert(nr_bytes < std::numeric_limits<size_t>::max());
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     auto n = duckdb_web_fs_write(file_hdl.file_id, buffer, nr_bytes, location);
     file_hdl.position_ = location + n;
@@ -87,6 +89,7 @@ void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_b
 /// Read nr_bytes from the specified file into the buffer, moving the file pointer forward by nr_bytes. Returns the
 /// amount of bytes read.
 int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+    assert(nr_bytes < std::numeric_limits<size_t>::max());
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     auto n = duckdb_web_fs_read(file_hdl.file_id, buffer, nr_bytes, file_hdl.position_);
     file_hdl.position_ += n;
@@ -94,6 +97,7 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
 }
 /// Write nr_bytes from the buffer into the file, moving the file pointer forward by nr_bytes.
 int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+    assert(nr_bytes < std::numeric_limits<size_t>::max());
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     auto n = duckdb_web_fs_write(file_hdl.file_id, buffer, nr_bytes, file_hdl.position_);
     file_hdl.position_ += n;

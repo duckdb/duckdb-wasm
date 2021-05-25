@@ -47,7 +47,7 @@ class FileSystemBufferFrame {
     size_t data_size = 0;
 
     /// How many times this page has been fixed
-    size_t num_users = 0;
+    uint64_t num_users = 0;
     /// Is the page dirty?
     bool is_dirty = false;
     /// Is locked exclusively?
@@ -65,7 +65,7 @@ class FileSystemBufferFrame {
 
    public:
     /// Constructor
-    FileSystemBufferFrame(uint64_t frame_id, size_t size, list_position fifo_position, list_position lru_position);
+    FileSystemBufferFrame(uint64_t frame_id, uint64_t size, list_position fifo_position, list_position lru_position);
     /// Get number of users
     auto GetUserCount() const { return num_users; }
     /// Returns a pointer to this page data
@@ -83,13 +83,13 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle;
         /// The file size
-        size_t file_size;
+        uint64_t file_size;
         /// The required file size.
         /// We grow files on flush if the user wrote past the end.
         /// For that purpose, we maintain a required file size here that can be bumped through RequireFileSize.
-        size_t file_size_required;
+        uint64_t file_size_required;
         /// The references
-        size_t references;
+        uint64_t references;
 
         /// Constructor
         RegisteredFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
@@ -167,14 +167,14 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         /// Mark as dirty
         void MarkAsDirty() { frame_->is_dirty = true; }
         /// Require a frame size
-        void RequireSize(size_t n);
+        void RequireSize(uint64_t n);
     };
 
    protected:
     /// The page size
-    const size_t page_size_bits;
+    const uint64_t page_size_bits;
     /// The page capacity
-    const size_t page_capacity;
+    const uint64_t page_capacity;
 
     /// The actual filesystem
     std::shared_ptr<duckdb::FileSystem> filesystem;
@@ -199,7 +199,7 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     /// Grow a file if required
     void GrowFileIfRequired(RegisteredFile& file);
     /// Require the file size to be at lest bytes large
-    void RequireFileSize(RegisteredFile& file, size_t bytes);
+    void RequireFileSize(RegisteredFile& file, uint64_t bytes);
     /// Release a file ref
     void ReleaseFile(RegisteredFile& file);
     /// Loads the page from disk
@@ -216,29 +216,29 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     /// Takes a `FileSystemBufferFrame` reference that was returned by an earlier call to
     /// `FixPage()` and unfixes it. When `is_dirty` is / true, the page is
     /// written back to disk eventually.
-    void UnfixPage(size_t frame_id, bool is_dirty);
+    void UnfixPage(uint64_t frame_id, bool is_dirty);
 
    public:
     /// Constructor.
-    /// Use 10 * 8KiB pages by default (1 << 13)
+    /// Use 10 * 16KiB pages by default (1 << 14)
     FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
-                     size_t page_capacity = 10, size_t page_size_bits = 13);
+                     uint64_t page_capacity = 10, uint64_t page_size_bits = 14);
     /// Destructor
     virtual ~FileSystemBuffer();
 
     /// Get the filesystem
     auto& GetFileSystem() { return filesystem; }
     /// Get the page size
-    size_t GetPageSize() const { return 1 << page_size_bits; }
+    uint64_t GetPageSize() const { return 1 << page_size_bits; }
     /// Get the page shift
     auto GetPageSizeShift() const { return page_size_bits; }
     /// Get a page id from an offset
-    size_t GetPageIDFromOffset(size_t offset) { return offset >> page_size_bits; }
+    uint64_t GetPageIDFromOffset(uint64_t offset) { return offset >> page_size_bits; }
 
     /// Open a file
     FileRef OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
     /// Get The file size
-    size_t GetFileSize(const FileRef& file);
+    uint64_t GetFileSize(const FileRef& file);
 
     /// Returns a reference to a `FileSystemBufferFrame` object for a given page id. When
     /// the page is not loaded into memory, it is read from disk. Otherwise the
@@ -252,11 +252,11 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     void Flush();
 
     /// Read at most n bytes
-    size_t Read(const FileRef& file, void* buffer, size_t n, size_t offset);
+    uint64_t Read(const FileRef& file, void* buffer, uint64_t n, duckdb::idx_t offset);
     /// Write at most n bytes
-    size_t Write(const FileRef& file, const void* buffer, size_t n, size_t offset);
+    uint64_t Write(const FileRef& file, const void* buffer, uint64_t n, duckdb::idx_t offset);
     /// Truncate the file
-    void Truncate(const FileRef& file, size_t new_size);
+    void Truncate(const FileRef& file, uint64_t new_size);
 
     /// Returns the page ids of all pages that are in the FIFO list in FIFO order.
     std::vector<uint64_t> GetFIFOList() const;

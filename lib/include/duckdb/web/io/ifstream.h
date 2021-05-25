@@ -68,7 +68,7 @@ class InputFileStreamBuffer : public std::streambuf {
         setg(data.data(), data.data(), data.data() + data.size());
     }
     /// Scan a slice of the file
-    void Slice(size_t offset, size_t size);
+    void Slice(uint64_t offset, uint64_t size);
 };
 
 class InputFileStream : public std::istream {
@@ -85,7 +85,7 @@ class InputFileStream : public std::istream {
     /// Scan a slice of the file
     void Rewind() { buffer_.Slice(0, 0); }
     /// Scan a slice of the file
-    void Slice(size_t offset, size_t size = 0) { buffer_.Slice(offset, size); }
+    void Slice(uint64_t offset, uint64_t size = 0) { buffer_.Slice(offset, size); }
 };
 
 }  // namespace io

@@ -15,7 +15,7 @@ class WebFileHandle : public duckdb::FileHandle {
     /// The file id
     size_t file_id;
     /// The position
-    size_t position_;
+    uint64_t position_;
 
     /// Close the file
     void Close() override;
