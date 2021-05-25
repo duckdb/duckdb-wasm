@@ -8,8 +8,12 @@ function gaussSum(n: number): number {
     return Math.trunc(0.5 * n * (n + 1));
 }
 
-export async function benchmarkCompetitions(dbs: DBWrapper[], basedir: string) {
-    for (const tupleCount of [100, 1000, 10000]) {
+export async function benchmarkCompetitions(
+    dbs: DBWrapper[],
+    basedir: string,
+    dataFetch: (path: string) => Promise<any>,
+) {
+    /*for (const tupleCount of [100, 1000, 10000]) {
         console.log('Setting up tables');
         /////////////////////////////////////////////
 
@@ -30,20 +34,25 @@ export async function benchmarkCompetitions(dbs: DBWrapper[], basedir: string) {
 
             await db.load(`test_table${tupleCount}`, plain_rows);
 
-            scans.push(
-                add(db.name, async () => {
-                    await db.scan_int(`test_table${tupleCount}`);
-                }),
-            );
-            sums.push(
-                add(db.name, async () => {
-                    const val = await db.sum(`test_table${tupleCount}`, 'a_value');
+            if (db.implements('scanInt')) {
+                scans.push(
+                    add(db.name, async () => {
+                        await db.scanInt(`test_table${tupleCount}`);
+                    }),
+                );
+            }
 
-                    if (val != gaussSum(tupleCount)) {
-                        throw db.name + ' mismatch';
-                    }
-                }),
-            );
+            if (db.implements('sum')) {
+                sums.push(
+                    add(db.name, async () => {
+                        const val = await db.sum(`test_table${tupleCount}`, 'a_value');
+
+                        if (val != gaussSum(tupleCount)) {
+                            throw db.name + ' mismatch';
+                        }
+                    }),
+                );
+            }
         }
 
         await suite(
@@ -71,13 +80,26 @@ export async function benchmarkCompetitions(dbs: DBWrapper[], basedir: string) {
         for (let db of dbs) {
             await db.close();
         }
-    }
+    }*/
 
-    //     for (let db of dbs) {
-    //         await db.init();
-    //
-    //         await db.importCSV('csv_table', `${basedir}/nation.tbl`, '|');
-    //
-    //         await db.close();
-    //     }
+    const imports = [];
+    let i = 0;
+    for (let db of dbs) {
+        await db.init();
+        if (db.implements('importCSV')) {
+            imports.push(
+                add(db.name, async () => {
+                    await db.importCSV(`csv_table${i++}`, `${basedir}/tpch/0_01/tbl/lineitem.tbl`, '|', dataFetch);
+                }),
+            );
+        }
+    }
+    await suite(
+        `CSV Import`,
+        ...imports,
+        cycle((result: any, _summary: any) => {
+            const duration = result.details.median;
+            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
+        }),
+    );
 }

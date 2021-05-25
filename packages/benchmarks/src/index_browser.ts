@@ -49,7 +49,10 @@ async function main() {
             new SQLjsWrapper(sqlDb),
             new PlainJSWrapper(),
         ],
-        '/bench_data/',
+        '/data',
+        async (path: string) => {
+            return new Uint8Array(await (await fetch(path)).arrayBuffer());
+        },
     );
     // benchmarkFormat(() => db!);
     // benchmarkIterator(() => db!);

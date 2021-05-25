@@ -3,6 +3,7 @@ import * as duckdb_parallel from '@duckdb/duckdb-wasm/src/targets/duckdb-node-pa
 import path from 'path';
 import Worker from 'web-worker';
 import initSqlJs from 'sql.js';
+import fs from 'fs';
 
 import { benchmarkFormat } from './format_benchmark';
 import { benchmarkIterator } from './iterator_benchmark';
@@ -52,7 +53,10 @@ async function main() {
             new SQLjsWrapper(sqlDb),
             new PlainJSWrapper(),
         ],
-        path.resolve(__dirname, '../data'),
+        path.resolve(__dirname, '../../../data'),
+        async (path: string) => {
+            return fs.readFileSync(path);
+        },
     );
     // benchmarkFormat(() => db!);
     // benchmarkIterator(() => db!);
