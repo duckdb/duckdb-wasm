@@ -116,6 +116,16 @@ lib_debug: lib
 benchmarks:
 	yarn workspace @duckdb/benchmarks build
 
+# Run node benchmarks
+.PHONY: benchmarks_node
+benchmarks_node:
+	yarn workspace @duckdb/benchmarks run:node
+
+# Run browser benchmarks
+.PHONY: benchmarks_browser
+benchmarks_browser:
+	yarn workspace @duckdb/benchmarks run:browser
+
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches
 wasm_caches:
