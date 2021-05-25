@@ -114,6 +114,7 @@ lib_debug: lib
 # Build the benchmarks
 .PHONY: benchmarks
 benchmarks:
+	yarn workspace @duckdb/benny build
 	yarn workspace @duckdb/benchmarks build
 
 # Run node benchmarks

@@ -1,5 +1,6 @@
 {
   "name": "@duckdb/benny",
+  "private": true,
   "version": "3.6.15",
   "main": "lib/index.js",
   "license": "ISC",
