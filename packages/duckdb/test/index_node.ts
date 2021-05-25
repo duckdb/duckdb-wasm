@@ -7,8 +7,6 @@ import fs from 'fs';
 // Loading debug symbols, especially for WASM take insanely long so we just disable the test timeout
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
-console.assert(duckdb_serial.checkPlatform());
-
 // Resolve a buffer by fetching from disk
 const dataDir = path.resolve(__dirname, '../../../data');
 const resolveBuffer = (url: string) => {
