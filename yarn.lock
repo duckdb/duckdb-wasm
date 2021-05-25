@@ -7372,6 +7372,11 @@ warning@^4.0.0, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
+wasm-check@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/wasm-check/-/wasm-check-2.0.2.tgz#203dd1a4b89f9cefeb1fce47fea448f4c9e7ab3a"
+  integrity sha512-5mlFaQVLJDXVvea9RzD/tVs1NWJso+YTLn6D51BaFtEablRnO/PnRBFmjIHqC6xLyojG5Gwp/7LbcWZKR3+2vQ==
+
 watchpack@^2.0.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/watchpack/-/watchpack-2.1.1.tgz#e99630550fca07df9f90a06056987baa40a689c7"
