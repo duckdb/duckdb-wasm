@@ -37,25 +37,29 @@ function sqlCreate(table: string, columns: { [key: string]: string }): string {
 }
 
 function sqlInsert(table: string, data: { [key: string]: any }[]): string {
-    let query = `INSERT INTO ${table}(`;
-    const keys = Object.getOwnPropertyNames(data[0]);
-    for (let i = 0; i < keys.length; i++) {
-        query += keys[i];
-        if (i < keys.length - 1) query += ',';
-    }
-    query += ') VALUES ';
-
-    for (let i = 0; i < data.length; i++) {
-        query += '(';
-        for (let j = 0; j < keys.length; j++) {
-            query += JSON.stringify(data[i][keys[j]]);
-            if (j < keys.length - 1) query += ',';
+    let result = '';
+    for (let i = 0; i < data.length; i += 1000) {
+        let query = `INSERT INTO ${table}(`;
+        const keys = Object.getOwnPropertyNames(data[0]);
+        for (let k = 0; k < keys.length; k++) {
+            query += keys[k];
+            if (k < keys.length - 1) query += ',';
         }
-        query += ')';
-        if (i < data.length - 1) query += ',';
+        query += ') VALUES ';
+        const maxVal = Math.min(i + 1000, data.length);
+        for (let j = i; j < maxVal; j++) {
+            query += '(';
+            for (let k = 0; k < keys.length; k++) {
+                query += JSON.stringify(data[j][keys[k]]);
+                if (k < keys.length - 1) query += ',';
+            }
+            query += ')';
+            if (j < maxVal - 1) query += ',';
+        }
+        result += query + ';';
     }
 
-    return query;
+    return result;
 }
 
 export class DuckDBSyncMatWrapper implements DBWrapper {
@@ -300,8 +304,10 @@ export class LovefieldWrapper implements DBWrapper {
         return Promise.resolve();
     }
     close(): Promise<void> {
-        this.db!.close();
-        this.db = undefined;
+        if (this.db) {
+            this.db!.close();
+            this.db = undefined;
+        }
         return Promise.resolve();
     }
     create(table: string, columns: { [key: string]: string }): Promise<void> {
