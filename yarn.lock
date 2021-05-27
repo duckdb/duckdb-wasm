@@ -717,10 +717,10 @@
   resolved "https://registry.yarnpkg.com/@types/invariant/-/invariant-2.2.34.tgz#05e4f79f465c2007884374d4795452f995720bbe"
   integrity sha512-lYUtmJ9BqUN688fGY1U1HZoWT1/Jrmgigx2loq4ZcJpICECm/Om3V314BxdzypO0u5PORKGMM6x0OXaljV1YFg==
 
-"@types/jasmine@^3.7.4":
-  version "3.7.4"
-  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.7.4.tgz#99a49aa9a5f8dc86fc249ed13ed59552c6ce862d"
-  integrity sha512-L3FKeEwMm8e8hqGvt7cSesVmGtavpRyHV1FNDq+Pm5pS4x5eFmE70ZERXCSBWAiLQqXBcZRUrwV59FZLQl/GxQ==
+"@types/jasmine@^3.7.5":
+  version "3.7.5"
+  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.7.5.tgz#c0b2c3e4cf19f7f2db6ddf27d27552f6de1a264d"
+  integrity sha512-BVi20hbOxJvPGOgK7Hpsr4Hc9O4BUxq4liNl8i/8spbPsBJgRp6KhHDORFaMIdLVGdjiakrDQWRQEaQoUe3LIw==
 
 "@types/json-schema@*", "@types/json-schema@^7.0.3", "@types/json-schema@^7.0.6":
   version "7.0.7"
@@ -887,7 +887,7 @@
   dependencies:
     "@types/node" "*"
 
-"@typescript-eslint/eslint-plugin@^4.23.0", "@typescript-eslint/eslint-plugin@^4.25.0":
+"@typescript-eslint/eslint-plugin@^4.25.0":
   version "4.25.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-4.25.0.tgz#d82657b6ab4caa4c3f888ff923175fadc2f31f2a"
   integrity sha512-Qfs3dWkTMKkKwt78xp2O/KZQB8MPS1UQ5D3YW2s6LQWBE1074BE+Rym+b1pXZIX3M3fSvPUDaCvZLKV2ylVYYQ==
@@ -913,7 +913,7 @@
     eslint-scope "^5.0.0"
     eslint-utils "^2.0.0"
 
-"@typescript-eslint/parser@^4.23.0", "@typescript-eslint/parser@^4.25.0":
+"@typescript-eslint/parser@^4.25.0":
   version "4.25.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/parser/-/parser-4.25.0.tgz#6b2cb6285aa3d55bfb263c650739091b0f19aceb"
   integrity sha512-OZFa1SKyEJpAhDx8FcbWyX+vLwh7OEtzoo2iQaeWwxucyfbi0mT4DijbOSsTgPKzGHr6GrF2V5p/CEpUH/VBxg==
@@ -2693,7 +2693,7 @@ esbuild-css-modules-plugin@^1.0.6:
     postcss-modules "^4.0.0"
     tmp "^0.2.1"
 
-esbuild@^0.12.1, esbuild@^0.12.2:
+esbuild@^0.12.2:
   version "0.12.3"
   resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.12.3.tgz#9d978e8aa700034c3e3316e47df1c142ef290a72"
   integrity sha512-0kuxNbGLGli8DYMHebJ4pk+RQ9ORYL1PmCSrSQpna1ioHvm+fzCAs99jwRYXGSfCNed1mj0vFSM9LbBm6YVbIQ==
