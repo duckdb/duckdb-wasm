@@ -887,7 +887,7 @@
   dependencies:
     "@types/node" "*"
 
-"@typescript-eslint/eslint-plugin@^4.23.0", "@typescript-eslint/eslint-plugin@^4.25.0":
+"@typescript-eslint/eslint-plugin@^4.25.0":
   version "4.25.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-4.25.0.tgz#d82657b6ab4caa4c3f888ff923175fadc2f31f2a"
   integrity sha512-Qfs3dWkTMKkKwt78xp2O/KZQB8MPS1UQ5D3YW2s6LQWBE1074BE+Rym+b1pXZIX3M3fSvPUDaCvZLKV2ylVYYQ==
@@ -913,7 +913,7 @@
     eslint-scope "^5.0.0"
     eslint-utils "^2.0.0"
 
-"@typescript-eslint/parser@^4.23.0", "@typescript-eslint/parser@^4.25.0":
+"@typescript-eslint/parser@^4.25.0":
   version "4.25.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/parser/-/parser-4.25.0.tgz#6b2cb6285aa3d55bfb263c650739091b0f19aceb"
   integrity sha512-OZFa1SKyEJpAhDx8FcbWyX+vLwh7OEtzoo2iQaeWwxucyfbi0mT4DijbOSsTgPKzGHr6GrF2V5p/CEpUH/VBxg==
@@ -2693,7 +2693,7 @@ esbuild-css-modules-plugin@^1.0.6:
     postcss-modules "^4.0.0"
     tmp "^0.2.1"
 
-esbuild@^0.12.1, esbuild@^0.12.2:
+esbuild@^0.12.2:
   version "0.12.3"
   resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.12.3.tgz#9d978e8aa700034c3e3316e47df1c142ef290a72"
   integrity sha512-0kuxNbGLGli8DYMHebJ4pk+RQ9ORYL1PmCSrSQpna1ioHvm+fzCAs99jwRYXGSfCNed1mj0vFSM9LbBm6YVbIQ==
@@ -7192,10 +7192,10 @@ typescript-plugin-css-modules@^3.2.0:
     stylus "^0.54.7"
     tsconfig-paths "^3.9.0"
 
-typescript@^4.2.4:
-  version "4.2.4"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.4.tgz#8610b59747de028fda898a8aef0e103f156d0961"
-  integrity sha512-V+evlYHZnQkaz8TRBuxTA92yZBPotr5H+WhQ7bD3hZUndx5tGOa1fuCgeSjxAzM1RiN5IzvadIXTVefuuwZCRg==
+typescript@^4.3.2:
+  version "4.3.2"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.2.tgz#399ab18aac45802d6f2498de5054fcbbe716a805"
+  integrity sha512-zZ4hShnmnoVnAHpVHWpTcxdv7dWP60S2FsydQLV8V5PbS3FifjWFFRiHSWpDJahly88PRyV5teTSLoq4eG7mKw==
 
 typical@^4.0.0:
   version "4.0.0"
