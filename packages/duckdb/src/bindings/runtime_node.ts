@@ -24,7 +24,10 @@ function tmpFile() {
 // Always open with WRITE for now.
 // Buffer manager will have to do that anyway.
 const openFile = (path: string) => {
-    const fd = fs.openSync(path, 'w');
+    const fd = fs.openSync(
+        path,
+        fs.constants.O_CREAT | fs.constants.O_RDWR | fs.constants.S_IRUSR | fs.constants.S_IWUSR,
+    );
     const stat = fs.fstatSync(fd);
     const fileID = NodeRuntime.nextFileID++;
     const newFile: NodeRuntimeFile = {
