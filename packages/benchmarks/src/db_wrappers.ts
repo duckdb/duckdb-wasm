@@ -91,8 +91,8 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
     }
 
     sum(table: string, column: string): Promise<number> {
-        const result = this.conn!.runQuery<{ sum_v: arrow.Int32 }>(
-            `SELECT sum(${column})::INTEGER as sum_v FROM ${table}`,
+        const result = this.conn!.runQuery<{ sum_v: arrow.Float64 }>(
+            `SELECT sum(${column})::DOUBLE as sum_v FROM ${table}`,
         );
         return Promise.resolve(result.getColumnAt(0)!.get(0));
     }
@@ -157,8 +157,8 @@ export class DuckDBAsyncStreamWrapper implements DBWrapper {
     }
 
     async sum(table: string, column: string): Promise<number> {
-        const result = await this.conn!.runQuery<{ sum_v: arrow.Int32 }>(
-            `SELECT sum(${column})::INTEGER as sum_v FROM ${table}`,
+        const result = await this.conn!.runQuery<{ sum_v: arrow.Float64 }>(
+            `SELECT sum(${column})::DOUBLE as sum_v FROM ${table}`,
         );
         return result.getColumnAt(0)!.get(0);
     }
