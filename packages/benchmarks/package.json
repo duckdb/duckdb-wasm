@@ -5,8 +5,8 @@
     "private": true,
     "dependencies": {
         "@arrows/dispatch": "^1.0.3",
-        "@duckdb/duckdb-wasm": "^0.0.35",
         "@duckdb/benny": "*",
+        "@duckdb/duckdb-wasm": "^0.0.35",
         "@nano-sql/core": "^2.3.7",
         "alasql": "^1.7.2",
         "arquero": "^4.3.0",
@@ -22,7 +22,6 @@
         "@types/sql.js": "^1.4.2",
         "@typescript-eslint/eslint-plugin": "^4.26.0",
         "@typescript-eslint/parser": "^4.26.0",
-        "stats-median": "^1.0.1",
         "assert": "^2.0.0",
         "eslint": "^7.27.0",
         "eslint-plugin-prettier": "^3.3.1",

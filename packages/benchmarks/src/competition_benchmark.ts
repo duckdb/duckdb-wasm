@@ -1,7 +1,7 @@
 import { add, suite, cycle } from '@duckdb/benny';
 import kleur from 'kleur';
 import * as format from './utils/format';
-
+import * as arrow from 'apache-arrow';
 import { DBWrapper } from './db_wrappers';
 
 function gaussSum(n: number): number {
@@ -11,15 +11,17 @@ function gaussSum(n: number): number {
 export async function benchmarkCompetitions(
     dbs: DBWrapper[],
     basedir: string,
-    dataFetch: (path: string) => Promise<any>,
+    tableFetch: (path: string) => Promise<arrow.Table>,
 ) {
     const tupleCount = 10000;
     /////////////////////////////////////////////
 
-    let plain_rows: { a_value: number }[] = [];
+    let col = [];
     for (let i = 0; i <= tupleCount; i++) {
-        plain_rows.push({ a_value: i });
+        col.push(i);
     }
+
+    const table = arrow.Table.new([arrow.Int32Vector.from(col)], ['a_value']);
 
     const scans = [];
     const sums = [];
@@ -31,12 +33,11 @@ export async function benchmarkCompetitions(
             a_value: 'INTEGER',
         });
 
-        await db.load(`test_table${tupleCount}`, plain_rows);
+        await db.load(`test_table${tupleCount}`, table);
 
         if (db.implements('scanInt')) {
             scans.push(
                 add(db.name, async () => {
-                    console.log(db.name);
                     await db.scanInt(`test_table${tupleCount}`);
                 }),
             );
@@ -82,30 +83,4 @@ export async function benchmarkCompetitions(
     }
 
     /////////////////////////////////////////////
-
-    const imports = [];
-    let i = 0;
-    for (let db of dbs) {
-        await db.init();
-
-        if (db.implements('importCSV')) {
-            imports.push(
-                add(db.name, async () => {
-                    await db.importCSV(`csv_table${i++}`, `${basedir}/tpch/0_01/tbl/lineitem.tbl`, '|', dataFetch);
-                }),
-            );
-        }
-    }
-    await suite(
-        `CSV Import`,
-        ...imports,
-        cycle((result: any, _summary: any) => {
-            const duration = result.details.median;
-            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
-        }),
-    );
-
-    for (let db of dbs) {
-        await db.close();
-    }
 }

@@ -2,6 +2,7 @@ import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-s
 import * as duckdb_parallel from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-parallel';
 import Worker from 'web-worker';
 import sqljs from 'sql.js';
+import * as arrow from 'apache-arrow';
 
 import { benchmarkFormat } from './format_benchmark';
 import { benchmarkIterator } from './iterator_benchmark';
@@ -15,7 +16,6 @@ import {
     DuckDBAsyncStreamWrapper,
     LovefieldWrapper,
     NanoSQLWrapper,
-    PlainJSWrapper,
     SQLjsWrapper,
 } from './db_wrappers';
 
@@ -44,14 +44,17 @@ async function main() {
             new DuckDBAsyncStreamWrapper(adb),
             new ArqueroWrapper(),
             new LovefieldWrapper(),
+            new SQLjsWrapper(sqlDb),
             new NanoSQLWrapper(),
             new AlaSQLWrapper(),
-            new SQLjsWrapper(sqlDb),
-            new PlainJSWrapper(),
         ],
         '/data',
         async (path: string) => {
-            return new Uint8Array(await (await fetch(path)).arrayBuffer());
+            let conn = await adb!.connect();
+            await adb!.addFileBlob(path, await (await fetch(path)).blob);
+            const table = await conn.runQuery(`SELECT * FROM parquet_scan('${path}')`);
+            await conn.disconnect();
+            return table;
         },
     );
     // benchmarkFormat(() => db!);

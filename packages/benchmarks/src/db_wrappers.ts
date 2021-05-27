@@ -15,15 +15,9 @@ export interface DBWrapper {
     init(): Promise<void>;
     close(): Promise<void>;
     create(table: string, columns: { [key: string]: string }): Promise<void>;
-    load(table: string, data: { [key: string]: any }[]): Promise<void>;
+    load(table: string, data: arrow.Table): Promise<void>;
     scanInt(table: string): Promise<void>;
     sum(table: string, column: string): Promise<number>;
-    importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void>;
 }
 
 function noop() {}
@@ -36,22 +30,17 @@ function sqlCreate(table: string, columns: { [key: string]: string }): string {
     return sql.substr(0, sql.length - 1) + ')';
 }
 
-function sqlInsert(table: string, data: { [key: string]: any }[]): string {
+function sqlInsert(table: string, data: arrow.Table): string {
     let result = '';
     for (let i = 0; i < data.length; i += 1000) {
-        let query = `INSERT INTO ${table}(`;
-        const keys = Object.getOwnPropertyNames(data[0]);
-        for (let k = 0; k < keys.length; k++) {
-            query += keys[k];
-            if (k < keys.length - 1) query += ',';
-        }
-        query += ') VALUES ';
+        let query = `INSERT INTO ${table} VALUES `;
         const maxVal = Math.min(i + 1000, data.length);
         for (let j = i; j < maxVal; j++) {
+            const row = data.get(j);
             query += '(';
-            for (let k = 0; k < keys.length; k++) {
-                query += JSON.stringify(data[j][keys[k]]);
-                if (k < keys.length - 1) query += ',';
+            for (let k = 0; k < data.numCols; k++) {
+                query += JSON.stringify(row[0]);
+                if (k < data.numCols - 1) query += ',';
             }
             query += ')';
             if (j < maxVal - 1) query += ',';
@@ -72,34 +61,27 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
         this.db = db;
     }
 
-    async importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        this.db.addFileBuffer(csv_path, await dataFetcher(csv_path));
-        this.conn!.importCSVFromPath(csv_path, { name: table });
-        return Promise.resolve();
-    }
-
     init(): Promise<void> {
         this.conn = this.db.connect();
         return Promise.resolve();
     }
+
     close(): Promise<void> {
         this.conn!.disconnect();
         return Promise.resolve();
     }
+
     create(table: string, columns: { [key: string]: string }): Promise<void> {
         this.conn!.runQuery(`DROP TABLE IF EXISTS ${table}`);
         this.conn!.runQuery(sqlCreate(table, columns));
         return Promise.resolve();
     }
-    load(table: string, data: { [key: string]: any }[]): Promise<void> {
+
+    load(table: string, data: arrow.Table): Promise<void> {
         this.conn!.runQuery(sqlInsert(table, data));
         return Promise.resolve();
     }
+
     scanInt(table: string): Promise<void> {
         const results = this.conn!.runQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
         for (const v of results.getColumnAt(0)!) {
@@ -107,12 +89,14 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
         }
         return Promise.resolve();
     }
+
     sum(table: string, column: string): Promise<number> {
         const result = this.conn!.runQuery<{ sum_v: arrow.Int32 }>(
             `SELECT sum(${column})::INTEGER as sum_v FROM ${table}`,
         );
         return Promise.resolve(result.getColumnAt(0)!.get(0));
     }
+
     implements(func: string): boolean {
         return true;
     }
@@ -123,6 +107,7 @@ export class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
         super(db);
         this.name = 'DuckDB-stream';
     }
+
     scanInt(table: string): Promise<void> {
         const results = this.conn!.sendQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
         for (const batch of results) {
@@ -144,28 +129,24 @@ export class DuckDBAsyncStreamWrapper implements DBWrapper {
         this.db = db;
         this.name = 'DuckDB-async';
     }
+
     async init(): Promise<void> {
         this.conn = await this.db.connect();
     }
+
     async close(): Promise<void> {
         await this.conn?.disconnect();
     }
+
     async create(table: string, columns: { [key: string]: string }): Promise<void> {
         await this.conn!.runQuery(`DROP TABLE IF EXISTS ${table}`);
         await this.conn!.runQuery(sqlCreate(table, columns));
     }
-    async load(table: string, data: { [key: string]: any }[]): Promise<void> {
+
+    async load(table: string, data: arrow.Table): Promise<void> {
         await this.conn!.runQuery(sqlInsert(table, data));
     }
-    async importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        await this.db.addFileBuffer(csv_path, await dataFetcher(csv_path));
-        await this.conn!.importCSVFromPath(csv_path, { name: table });
-    }
+
     async scanInt(table: string): Promise<void> {
         const results = await this.conn!.sendQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
         for await (const batch of results) {
@@ -174,12 +155,14 @@ export class DuckDBAsyncStreamWrapper implements DBWrapper {
             }
         }
     }
+
     async sum(table: string, column: string): Promise<number> {
         const result = await this.conn!.runQuery<{ sum_v: arrow.Int32 }>(
             `SELECT sum(${column})::INTEGER as sum_v FROM ${table}`,
         );
         return result.getColumnAt(0)!.get(0);
     }
+
     implements(func: string): boolean {
         return true;
     }
@@ -193,30 +176,26 @@ export class SQLjsWrapper implements DBWrapper {
         this.name = 'sql.js';
         this.db = db;
     }
-    importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        return Promise.resolve();
-    }
 
     init(): Promise<void> {
         return Promise.resolve();
     }
+
     close(): Promise<void> {
         return Promise.resolve();
     }
+
     create(table: string, columns: { [key: string]: string }): Promise<void> {
         this.db.run(`DROP TABLE IF EXISTS ${table}`);
         this.db.run(sqlCreate(table, columns));
         return Promise.resolve();
     }
-    load(table: string, data: { [key: string]: any }[]): Promise<void> {
+
+    load(table: string, data: arrow.Table): Promise<void> {
         this.db.run(sqlInsert(table, data));
         return Promise.resolve();
     }
+
     scanInt(table: string): Promise<void> {
         const results = this.db.exec(`SELECT a_value FROM ${table}`);
         for (const row of results[0].values) {
@@ -224,12 +203,14 @@ export class SQLjsWrapper implements DBWrapper {
         }
         return Promise.resolve();
     }
+
     sum(table: string, column: string): Promise<number> {
         const results = this.db.exec(`SELECT sum(${column}) as a_value FROM ${table}`);
         return Promise.resolve(<number>results[0].values[0][0]);
     }
+
     implements(func: string): boolean {
-        return func != 'importCSV';
+        return true;
     }
 }
 
@@ -239,23 +220,13 @@ export class AlaSQLWrapper implements DBWrapper {
     constructor() {
         this.name = 'AlaSQL';
     }
+
     init(): Promise<void> {
         return Promise.resolve();
     }
+
     close(): Promise<void> {
         return Promise.resolve();
-    }
-
-    async importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        await alasql.promise(
-            `CREATE TABLE IF NOT EXISTS ${table};
-            SELECT * INTO ${table} FROM CSV("${csv_path}", {separator:""});`,
-        );
     }
 
     create(table: string, columns: { [key: string]: string }): Promise<void> {
@@ -263,10 +234,12 @@ export class AlaSQLWrapper implements DBWrapper {
         alasql(sqlCreate(table, columns));
         return Promise.resolve();
     }
-    load(table: string, data: { [key: string]: any }[]): Promise<void> {
+
+    load(table: string, data: arrow.Table): Promise<void> {
         alasql(sqlInsert(table, data));
         return Promise.resolve();
     }
+
     scanInt(table: string): Promise<void> {
         const rows = alasql(`SELECT a_value FROM ${table}`);
         for (const row of rows) {
@@ -274,10 +247,12 @@ export class AlaSQLWrapper implements DBWrapper {
         }
         return Promise.resolve();
     }
+
     sum(table: string, column: string): Promise<number> {
         const rows = alasql(`SELECT sum(${column}) as a_value FROM ${table}`);
         return rows[0][column];
     }
+
     implements(func: string): boolean {
         return true;
     }
@@ -291,18 +266,12 @@ export class LovefieldWrapper implements DBWrapper {
     constructor() {
         this.name = 'Lovefield';
     }
-    importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        return Promise.resolve();
-    }
+
     init(): Promise<void> {
         this.builder = lf.schema.create('test_schema', 1);
         return Promise.resolve();
     }
+
     close(): Promise<void> {
         if (this.db) {
             this.db!.close();
@@ -310,6 +279,7 @@ export class LovefieldWrapper implements DBWrapper {
         }
         return Promise.resolve();
     }
+
     create(table: string, columns: { [key: string]: string }): Promise<void> {
         if (this.db) {
             throw 'Schema is fixed after first insert.';
@@ -331,7 +301,8 @@ export class LovefieldWrapper implements DBWrapper {
         }
         return Promise.resolve();
     }
-    async load(table: string, data: { [key: string]: any }[]): Promise<void> {
+
+    async load(table: string, data: arrow.Table): Promise<void> {
         if (!this.db) {
             this.db = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
         }
@@ -343,6 +314,7 @@ export class LovefieldWrapper implements DBWrapper {
 
         await this.db!.insert().into(t).values(rows).exec();
     }
+
     async scanInt(table: string): Promise<void> {
         const rows = <{ a_value: Promise<number> }[]>(
             await this.db!.select().from(this.db!.getSchema().table(table)).exec()
@@ -351,6 +323,7 @@ export class LovefieldWrapper implements DBWrapper {
             noop();
         }
     }
+
     async sum(table: string, column: string): Promise<number> {
         const tbl = this.db!.getSchema().table(table);
         const rows = <{ a_value: number }[]>await this.db!.select(lf.fn.sum(tbl.col(column)).as(column))
@@ -358,8 +331,9 @@ export class LovefieldWrapper implements DBWrapper {
             .exec();
         return rows[0].a_value;
     }
+
     implements(func: string): boolean {
-        return func != 'importCSV';
+        return true;
     }
 }
 
@@ -370,15 +344,6 @@ export class ArqueroWrapper implements DBWrapper {
 
     constructor() {
         this.name = 'Arquero';
-    }
-
-    async importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        this.tables[table] = aq.fromCSV(textDecoder.decode(await dataFetcher(csv_path)), { delimiter: delimiter });
     }
 
     init(): Promise<void> {
@@ -396,28 +361,8 @@ export class ArqueroWrapper implements DBWrapper {
         return Promise.resolve();
     }
 
-    load(table: string, data: { [key: string]: any }[]): Promise<void> {
-        let cols: { [key: string]: any } = {};
-        const keys = Object.getOwnPropertyNames(data[0]);
-        for (const k of keys) {
-            cols[k] = [];
-        }
-        for (const row of data) {
-            for (const k of keys) {
-                (<any[]>cols[k]).push(row[k]);
-            }
-        }
-        for (const k of keys) {
-            switch (this.schemas[table][k]) {
-                case 'INTEGER': {
-                    cols[k] = new Int32Array(<number[]>cols[k]);
-                    break;
-                }
-                default:
-                    throw 'Unhandled type ' + this.schemas[table][k];
-            }
-        }
-        this.tables[table] = aq.table(cols);
+    load(table: string, data: arrow.Table): Promise<void> {
+        this.tables[table] = aq.fromArrow(data);
         return Promise.resolve();
     }
 
@@ -444,14 +389,7 @@ export class NanoSQLWrapper implements DBWrapper {
     constructor() {
         this.name = 'nanoSQL';
     }
-    async importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        return Promise.resolve();
-    }
+
     async init(): Promise<void> {
         await nSQL().createDatabase({
             id: 'test_schema',
@@ -459,9 +397,11 @@ export class NanoSQLWrapper implements DBWrapper {
         });
         nSQL().useDatabase('test_schema');
     }
+
     async close(): Promise<void> {
         await nSQL().disconnect();
     }
+
     async create(table: string, columns: { [key: string]: string }): Promise<void> {
         let model: any = {};
         for (const k of Object.getOwnPropertyNames(columns)) {
@@ -476,14 +416,19 @@ export class NanoSQLWrapper implements DBWrapper {
         }
         await nSQL().query('create table', { name: table, model: model }).exec();
     }
-    async load(table: string, data: { [key: string]: any }[]): Promise<void> {
-        await nSQL(table).loadJS(data);
+
+    async load(table: string, data: arrow.Table): Promise<void> {
+        const rows = [];
+        for (const row of data) rows.push(row);
+        await nSQL(table).loadJS(rows);
     }
+
     async scanInt(table: string): Promise<void> {
         for (const row of await nSQL(table).query('select', ['a_value']).exec()) {
             noop();
         }
     }
+
     async sum(table: string, column: string): Promise<number> {
         const rows = await nSQL(table)
             .query('select', [`SUM(${column}) as sum_v`])
@@ -492,53 +437,6 @@ export class NanoSQLWrapper implements DBWrapper {
     }
 
     implements(func: string): boolean {
-        return func != 'importCSV';
-    }
-}
-
-export class PlainJSWrapper implements DBWrapper {
-    name: string;
-    tables: { [key: string]: { [key: string]: any }[] } = {};
-
-    constructor() {
-        this.name = 'Plain JS';
-    }
-    importCSV(
-        table: string,
-        csv_path: string,
-        delimiter: string,
-        dataFetcher: (path: string) => Promise<any>,
-    ): Promise<void> {
-        return Promise.resolve();
-    }
-    init(): Promise<void> {
-        return Promise.resolve();
-    }
-    close(): Promise<void> {
-        this.tables = {};
-        return Promise.resolve();
-    }
-    create(table: string, columns: { [key: string]: string }): Promise<void> {
-        return Promise.resolve();
-    }
-    load(table: string, data: { [key: string]: any }[]): Promise<void> {
-        this.tables[table] = data;
-        return Promise.resolve();
-    }
-    scanInt(table: string): Promise<void> {
-        for (const row of this.tables[table]) {
-            noop();
-        }
-        return Promise.resolve();
-    }
-    sum(table: string, column: string): Promise<number> {
-        let sum = 0;
-        for (const row of this.tables[table]) {
-            sum += <number>row[column];
-        }
-        return Promise.resolve(sum);
-    }
-    implements(func: string): boolean {
-        return func != 'importCSV';
+        return true;
     }
 }
