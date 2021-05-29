@@ -13,7 +13,7 @@ export async function benchmarkCompetitions(
     basedir: string,
     tableFetch: (path: string) => Promise<arrow.Table>,
 ) {
-    const tupleCount = 10000;
+    /*const tupleCount = 10000;
     /////////////////////////////////////////////
 
     let col = [];
@@ -31,9 +31,9 @@ export async function benchmarkCompetitions(
 
         await db.create(`test_table${tupleCount}`, {
             a_value: 'INTEGER',
-        });
+        }, [[]]);
 
-        await db.load(`test_table${tupleCount}`, table);
+        await db.load(`test_table${tupleCount}`, null, table);
 
         if (db.implements('scanInt')) {
             scans.push(
@@ -80,7 +80,43 @@ export async function benchmarkCompetitions(
 
     for (let db of dbs) {
         await db.close();
-    }
+    }*/
 
     /////////////////////////////////////////////
+
+    const lineitem = await tableFetch(`${basedir}/tpch/0_005/parquet/lineitem.parquet`);
+    const orders = await tableFetch(`${basedir}/tpch/0_005/parquet/orders.parquet`);
+
+    const primaryJoins = [];
+    console.log('Importing TPCH data');
+    for (let db of dbs) {
+        if (!db.implements('join')) continue;
+
+        console.log(db.name);
+        await db.init();
+
+        await db.create('lineitem', lineitem, [['l_orderkey', 'l_linenumber']]);
+        await db.create('orders', orders, [['o_orderkey']]);
+        await db.load('lineitem', `${basedir}/tpch/0_005/parquet/lineitem.parquet`, lineitem);
+        await db.load('orders', `${basedir}/tpch/0_005/parquet/orders.parquet`, orders);
+
+        primaryJoins.push(
+            add(db.name, async () => {
+                await db.join(['orders', 'o_orderkey'], ['lineitem', 'l_orderkey']);
+            }),
+        );
+    }
+
+    await suite(
+        `Simple primary key join`,
+        ...primaryJoins,
+        cycle((result: any, _summary: any) => {
+            const duration = result.details.median;
+            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
+        }),
+    );
+
+    for (let db of dbs) {
+        await db.close();
+    }
 }

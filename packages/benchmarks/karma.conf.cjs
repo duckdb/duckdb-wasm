@@ -37,11 +37,12 @@ module.exports = function (config) {
         logLevel: config.LOG_INFO,
         autoWatch: true,
         singleRun: true,
-        browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
+        // browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
+        browsers: ['ChromeHeadlessNoSandbox'],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
-                flags: ['--no-sandbox'],
+                flags: ['--no-sandbox', '--js-flags="--experimental-wasm-eh"'],
             },
         },
         client: {

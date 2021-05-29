@@ -21,12 +21,15 @@ import {
 
 async function main() {
     let db: duckdb_serial.DuckDB | null = null;
+    let db1: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_parallel.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
 
     const logger = new duckdb_serial.VoidLogger();
     db = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, '/static/duckdb.wasm');
     await db.open();
+    db1 = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, '/static/duckdb.wasm');
+    await db1.open();
 
     worker = new Worker('/static/duckdb-browser-parallel.worker.js');
     adb = new duckdb_parallel.AsyncDuckDB(logger, worker);
@@ -40,8 +43,12 @@ async function main() {
     await benchmarkCompetitions(
         [
             new DuckDBSyncMatWrapper(db),
-            new DuckDBSyncStreamWrapper(db),
-            new DuckDBAsyncStreamWrapper(adb),
+            new DuckDBSyncStreamWrapper(db1),
+            new (class extends DuckDBAsyncStreamWrapper {
+                async registerFile(path: string): Promise<void> {
+                    this.db.addFileBlob(path, await (await fetch(path)).blob());
+                }
+            })(adb),
             new ArqueroWrapper(),
             new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
