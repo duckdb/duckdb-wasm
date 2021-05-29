@@ -37,8 +37,8 @@
     },
     "scripts": {
         "build": "webpack && node ./bundle.mjs && tsc",
-        "lint": "eslint src types",
-        "run:node": "node ./dist/bench-node.js",
+        "lint": "yarn run eslint src types",
+        "run:node": "node --experimental-wasm-eh ./dist/bench-node.js",
         "run:browser": "karma start karma.conf.cjs"
     }
 }
