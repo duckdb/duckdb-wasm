@@ -29,16 +29,16 @@ export async function benchmarkCompetitions(
     for (let db of dbs) {
         await db.init();
 
-        await db.create(`test_table${tupleCount}`, {
+        await db.create(`scan_table`, {
             a_value: 'INTEGER',
         }, [[]]);
 
-        await db.load(`test_table${tupleCount}`, null, table);
+        await db.load(`scan_table`, null, table);
 
         if (db.implements('scanInt')) {
             scans.push(
                 add(db.name, async () => {
-                    await db.scanInt(`test_table${tupleCount}`);
+                    await db.scanInt();
                 }),
             );
         }
@@ -46,7 +46,7 @@ export async function benchmarkCompetitions(
         if (db.implements('sum')) {
             sums.push(
                 add(db.name, async () => {
-                    const val = await db.sum(`test_table${tupleCount}`, 'a_value');
+                    const val = await db.sum();
 
                     if (val != gaussSum(tupleCount)) {
                         throw db.name + ' mismatch';
@@ -84,32 +84,69 @@ export async function benchmarkCompetitions(
 
     /////////////////////////////////////////////
 
-    const lineitem = await tableFetch(`${basedir}/tpch/0_005/parquet/lineitem.parquet`);
-    const orders = await tableFetch(`${basedir}/tpch/0_005/parquet/orders.parquet`);
+    const sf = '0_005';
+
+    const keys: { [key: string]: string[][] } = {
+        customer: [['c_custkey']],
+        lineitem: [['l_orderkey', 'l_linenumber']],
+        region: [['r_regionkey']],
+        orders: [['o_orderkey']],
+        nation: [['n_nationkey']],
+        part: [['p_partkey']],
+        partsupp: [],
+        supplier: [['s_suppkey']],
+    };
+
+    let tables: { [key: string]: arrow.Table } = {};
+    for (const k of Object.keys(keys)) {
+        tables[k] = await tableFetch(`${basedir}/tpch/${sf}/parquet/${k}.parquet`);
+    }
 
     const primaryJoins = [];
+    const tpchs = [];
     console.log('Importing TPCH data');
     for (let db of dbs) {
-        if (!db.implements('join')) continue;
+        if (!db.implements('simpleJoin')) continue;
 
         console.log(db.name);
         await db.init();
 
-        await db.create('lineitem', lineitem, [['l_orderkey', 'l_linenumber']]);
-        await db.create('orders', orders, [['o_orderkey']]);
-        await db.load('lineitem', `${basedir}/tpch/0_005/parquet/lineitem.parquet`, lineitem);
-        await db.load('orders', `${basedir}/tpch/0_005/parquet/orders.parquet`, orders);
+        for (const [k, v] of Object.entries(tables)) {
+            await db.create(k, v, keys[k]);
+        }
+
+        for (const [k, v] of Object.entries(tables)) {
+            console.log(k);
+            await db.load(k, `${basedir}/tpch/${sf}/parquet/${k}.parquet`, v);
+        }
 
         primaryJoins.push(
             add(db.name, async () => {
-                await db.join(['orders', 'o_orderkey'], ['lineitem', 'l_orderkey']);
+                await db.join();
             }),
         );
+
+        if (db.implements('tpch')) {
+            tpchs.push(
+                add(db.name, async () => {
+                    await db.tpch();
+                }),
+            );
+        }
     }
 
     await suite(
         `Simple primary key join`,
         ...primaryJoins,
+        cycle((result: any, _summary: any) => {
+            const duration = result.details.median;
+            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
+        }),
+    );
+
+    await suite(
+        `TPCH query`,
+        ...tpchs,
         cycle((result: any, _summary: any) => {
             const duration = result.details.median;
             console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);

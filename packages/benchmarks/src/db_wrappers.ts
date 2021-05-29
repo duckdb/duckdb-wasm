@@ -16,9 +16,41 @@ export interface DBWrapper {
     close(): Promise<void>;
     create(table: string, data: arrow.Table, keys: string[][]): Promise<void>;
     load(table: string, path: string | null, data: arrow.Table): Promise<void>;
-    scanInt(table: string): Promise<void>;
-    sum(table: string, column: string): Promise<number>;
-    join(from: string[], to: string[]): Promise<number>;
+
+    // Perform a no-op scan matching this:
+    //// SELECT a FROM scan_table
+    scanInt(): Promise<void>;
+    // Perform a sum matching this:
+    //// SELECT sum(a) as sum_v FROM scan_table
+    sum(): Promise<number>;
+    // Perform a simple join matching this:
+    //// SELECT count(*) as cnt FROM orders
+    //// INNER JOIN lineitem ON (orders.o_orderkey = lineitem.l_orderkey)
+    join(): Promise<number>;
+    // Perform a TPCH-2 OLAP query and materialize all rows:
+    //// select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment
+    //// from part, supplier, partsupp, nation, region
+    //// where
+    ////     p_partkey = ps_partkey
+    ////     and s_suppkey = ps_suppkey
+    ////     and p_size = 15
+    ////     and p_type like '%BRASS'
+    ////     and s_nationkey = n_nationkey
+    ////     and n_regionkey = r_regionkey
+    ////     and r_name = 'EUROPE'
+    ////     and ps_supplycost = (
+    ////         select min(ps_supplycost)
+    ////         from partsupp, supplier, nation, region
+    ////         where
+    ////             p_partkey = ps_partkey
+    ////             and s_suppkey = ps_suppkey
+    ////             and s_nationkey = n_nationkey
+    ////             and n_regionkey = r_regionkey
+    ////             and r_name = 'EUROPE'
+    ////     )
+    //// order by s_acctbal desc, n_name, s_name, p_partkey
+    //// limit 100;
+    tpch(): Promise<void>;
 }
 
 function noop() {}
@@ -53,9 +85,9 @@ export function sqlCreate(table: string, data: arrow.Table, keys: string[][]): s
             sql += keys[0][i];
             if (i < keys[0].length - 1) sql += ',';
         }
-        sql += ')';
+        sql += '),';
     }
-    return sql + ')';
+    return sql.substr(0, sql.length - 1) + ')';
 }
 
 export function* sqlInsert(table: string, data: arrow.Table) {
@@ -123,28 +155,54 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
         return Promise.resolve();
     }
 
-    scanInt(table: string): Promise<void> {
-        const results = this.conn!.runQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
+    scanInt(): Promise<void> {
+        const results = this.conn!.runQuery<{ a: arrow.Int32 }>(`SELECT a FROM scan_table`);
         for (const v of results.getColumnAt(0)!) {
             noop();
         }
         return Promise.resolve();
     }
 
-    sum(table: string, column: string): Promise<number> {
-        const result = this.conn!.runQuery<{ sum_v: arrow.Float64 }>(
-            `SELECT sum(${column})::DOUBLE as sum_v FROM ${table}`,
-        );
+    sum(): Promise<number> {
+        const result = this.conn!.runQuery<{ sum_v: arrow.Float64 }>(`SELECT sum(a)::DOUBLE as sum_v FROM scan_table`);
         return Promise.resolve(result.getColumnAt(0)!.get(0));
     }
 
-    join(from: string[], to: string[]): Promise<number> {
+    join(): Promise<number> {
         const result = this.conn!.runQuery<{ cnt: arrow.Int32 }>(
-            `SELECT count(*)::INTEGER as cnt FROM ${from[0]} a
-            INNER JOIN ${to[0]} b ON (a.${from[1]} = b.${to[1]})`,
+            `SELECT count(*)::INTEGER as cnt FROM orders
+            INNER JOIN lineitem ON (o_orderkey = l_orderkey)`,
         );
 
         return Promise.resolve(result.getColumnAt(0)!.get(0));
+    }
+
+    tpch(): Promise<void> {
+        this.conn!.runQuery(
+            `select
+                l_returnflag,
+                l_linestatus,
+                sum(l_quantity) as sum_qty,
+                sum(l_extendedprice) as sum_base_price,
+                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+                avg(l_quantity) as avg_qty,
+                avg(l_extendedprice) as avg_price,
+                avg(l_discount) as avg_disc,
+                count(*) as count_order
+            from
+                lineitem
+            where
+                l_shipdate <= cast('1998-09-02' as date)
+            group by
+                l_returnflag,
+                l_linestatus
+            order by
+                l_returnflag,
+                l_linestatus;`,
+        );
+
+        return Promise.resolve();
     }
 
     implements(func: string): boolean {
@@ -158,8 +216,8 @@ export class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
         this.name = 'DuckDB-stream';
     }
 
-    scanInt(table: string): Promise<void> {
-        const results = this.conn!.sendQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
+    scanInt(): Promise<void> {
+        const results = this.conn!.sendQuery<{ a: arrow.Int32 }>('SELECT a FROM scan_table');
         for (const batch of results) {
             for (const v of batch.getChildAt(0)!) {
                 noop();
@@ -204,8 +262,8 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
 
     abstract registerFile(path: string): Promise<void>;
 
-    async scanInt(table: string): Promise<void> {
-        const results = await this.conn!.sendQuery<{ a_value: arrow.Int32 }>(`SELECT a_value FROM ${table}`);
+    async scanInt(): Promise<void> {
+        const results = await this.conn!.sendQuery<{ a: arrow.Int32 }>('SELECT a FROM scan_table');
         for await (const batch of results) {
             for (const v of batch.getChildAt(0)!) {
                 noop();
@@ -213,20 +271,46 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
         }
     }
 
-    async sum(table: string, column: string): Promise<number> {
+    async sum(): Promise<number> {
         const result = await this.conn!.runQuery<{ sum_v: arrow.Float64 }>(
-            `SELECT sum(${column})::DOUBLE as sum_v FROM ${table}`,
+            'SELECT sum(a)::DOUBLE as sum_v FROM scan_table',
         );
         return result.getColumnAt(0)!.get(0);
     }
 
-    async join(from: string[], to: string[]): Promise<number> {
+    async join(): Promise<number> {
         const result = await this.conn!.runQuery<{ cnt: arrow.Int32 }>(
-            `SELECT count(*)::INTEGER FROM ${from[0]} a
-            INNER JOIN ${to[0]} b ON (a.${from[1]} = b.${to[1]})`,
+            `SELECT count(*)::INTEGER FROM orders
+            INNER JOIN lineitem ON (o_orderkey = l_orderkey)`,
         );
 
         return result.getColumnAt(0)!.get(0);
+    }
+
+    async tpch(): Promise<void> {
+        await this.conn!.runQuery(
+            `select
+                l_returnflag,
+                l_linestatus,
+                sum(l_quantity) as sum_qty,
+                sum(l_extendedprice) as sum_base_price,
+                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+                avg(l_quantity) as avg_qty,
+                avg(l_extendedprice) as avg_price,
+                avg(l_discount) as avg_disc,
+                count(*) as count_order
+            from
+                lineitem
+            where
+                l_shipdate <= cast('1998-09-02' as date)
+            group by
+                l_returnflag,
+                l_linestatus
+            order by
+                l_returnflag,
+                l_linestatus;`,
+        );
     }
 
     implements(func: string): boolean {
@@ -262,26 +346,54 @@ export class SQLjsWrapper implements DBWrapper {
         return Promise.resolve();
     }
 
-    scanInt(table: string): Promise<void> {
-        const results = this.db.exec(`SELECT a_value FROM ${table}`);
+    scanInt(): Promise<void> {
+        const results = this.db.exec('SELECT a FROM scan_table');
         for (const row of results[0].values) {
             noop();
         }
         return Promise.resolve();
     }
 
-    sum(table: string, column: string): Promise<number> {
-        const results = this.db.exec(`SELECT sum(${column}) as a_value FROM ${table}`);
+    sum(): Promise<number> {
+        const results = this.db.exec('SELECT sum(a) as sum_v FROM scan_table');
         return Promise.resolve(<number>results[0].values[0][0]);
     }
 
-    join(from: string[], to: string[]): Promise<number> {
+    join(): Promise<number> {
         const results = this.db.exec(
-            `SELECT count(*) FROM ${from[0]} a
-            INNER JOIN ${to[0]} b ON (a.${from[1]} == b.${to[1]})`,
+            `SELECT count(*) FROM orders
+            INNER JOIN lineitem ON (o_orderkey = l_orderkey)`,
         );
 
         return Promise.resolve(<number>results[0].values[0][0]);
+    }
+
+    tpch(): Promise<void> {
+        this.db.exec(
+            `select
+                l_returnflag,
+                l_linestatus,
+                sum(l_quantity) as sum_qty,
+                sum(l_extendedprice) as sum_base_price,
+                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+                avg(l_quantity) as avg_qty,
+                avg(l_extendedprice) as avg_price,
+                avg(l_discount) as avg_disc,
+                count(*) as count_order
+            from
+                lineitem
+            where
+                l_shipdate <= cast('1998-09-02' as date)
+            group by
+                l_returnflag,
+                l_linestatus
+            order by
+                l_returnflag,
+                l_linestatus;`,
+        );
+
+        return Promise.resolve();
     }
 
     implements(func: string): boolean {
@@ -315,23 +427,53 @@ export class AlaSQLWrapper implements DBWrapper {
         return Promise.resolve();
     }
 
-    scanInt(table: string): Promise<void> {
-        const rows = alasql(`SELECT a_value FROM ${table}`);
+    scanInt(): Promise<void> {
+        const rows = alasql('SELECT a FROM scan_table');
         for (const row of rows) {
             noop();
         }
         return Promise.resolve();
     }
 
-    sum(table: string, column: string): Promise<number> {
-        const rows = alasql(`SELECT sum(${column}) as a_value FROM ${table}`);
-        return rows[0][column];
+    sum(): Promise<number> {
+        const rows = alasql(`SELECT sum(a) as sum_v FROM scan_table`);
+        return rows[0]['sum_v'];
     }
 
-    join(from: string[], to: string[]): Promise<number> {
-        const rows = alasql(`SELECT count(*) as cnt FROM ${from[0]} a
-        INNER JOIN ${to[0]} b ON (a.${from[1]} = b.${to[1]})`);
+    join(): Promise<number> {
+        const rows = alasql(
+            `SELECT count(*) as cnt FROM orders
+            INNER JOIN lineitem ON (o_orderkey = l_orderkey)`,
+        );
         return rows[0]['cnt'];
+    }
+
+    tpch(): Promise<void> {
+        alasql(
+            `select
+                l_returnflag,
+                l_linestatus,
+                sum(l_quantity) as sum_qty,
+                sum(l_extendedprice) as sum_base_price,
+                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+                avg(l_quantity) as avg_qty,
+                avg(l_extendedprice) as avg_price,
+                avg(l_discount) as avg_disc,
+                count(*) as count_order
+            from
+                lineitem
+            where
+                l_shipdate <= cast('1998-09-02' as date)
+            group by
+                l_returnflag,
+                l_linestatus
+            order by
+                l_returnflag,
+                l_linestatus;`,
+        );
+
+        return Promise.resolve();
     }
 
     implements(func: string): boolean {
@@ -409,34 +551,49 @@ export class LovefieldWrapper implements DBWrapper {
         await this.db!.insert().into(t).values(rows).exec();
     }
 
-    async scanInt(table: string): Promise<void> {
-        const rows = <{ a_value: Promise<number> }[]>(
-            await this.db!.select().from(this.db!.getSchema().table(table)).exec()
+    async scanInt(): Promise<void> {
+        const rows = <{ a: Promise<number> }[]>(
+            await this.db!.select().from(this.db!.getSchema().table('scan_table')).exec()
         );
         for (const row of rows) {
             noop();
         }
     }
 
-    async sum(table: string, column: string): Promise<number> {
-        const tbl = this.db!.getSchema().table(table);
-        const rows = <{ a_value: number }[]>await this.db!.select(lf.fn.sum(tbl.col(column)).as(column))
+    async sum(): Promise<number> {
+        const tbl = this.db!.getSchema().table('scan_table');
+        const rows = <{ sum_v: number }[]>await this.db!.select(lf.fn.sum(tbl.col('a')).as('sum_v'))
             .from(tbl)
             .exec();
-        return rows[0].a_value;
+        return rows[0].sum_v;
     }
 
-    async join(from: string[], to: string[]): Promise<number> {
-        const a = this.db!.getSchema().table(from[0]);
-        const b = this.db!.getSchema().table(to[0]);
-        const rows = <{ cnt: number }[]>await this.db!.select(lf.fn.count().as('cnt'))
+    async join(): Promise<number> {
+        const schema = this.db!.getSchema();
+        const a = schema.table('orders');
+        const b = schema.table('lineitem');
+        let builder = this.db!.select(lf.fn.count().as('cnt'))
             .from(a)
-            .innerJoin(b, a.col(from[1]).eq(b.col(to[1])))
-            .exec();
+            .innerJoin(b, a.col('o_orderkey').eq(b.col('l_orderkey')));
+
+        const rows = <{ cnt: number }[]>await builder.exec();
         return rows[0].cnt;
     }
 
+    async tpch(): Promise<void> {
+        /*const schema = this.db!.getSchema();
+        const l = schema.table('lineitem');
+        let builder = this.db!.select(
+            l.col('l_returnflag'),
+            l.col('l_linestatus'),
+            lf.fn.sum(l.col('l_quantity')).as('sum_qty'),
+            lf.fn.sum(l.col('l_extendedprice')).as('sum_base_price'),
+            lf.fn.sum(<any>(l.col('l_extendedprice') * (1 - l.col('l_discount')))).as('l_extendedprice'),
+        );*/
+    }
+
     implements(func: string): boolean {
+        if (func == 'tpch') return false;
         return true;
     }
 }
@@ -469,24 +626,31 @@ export class ArqueroWrapper implements DBWrapper {
         return Promise.resolve();
     }
 
-    scanInt(table: string): Promise<void> {
-        for (const row of this.tables[table].objects()) {
+    scanInt(): Promise<void> {
+        for (const row of this.tables['scan_table'].objects()) {
             noop();
         }
         return Promise.resolve();
     }
 
-    sum(table: string, column: string): Promise<number> {
-        const rows = this.tables[table].rollup({ sum_v: `aq.op.sum(d['${column}'])` }).objects();
+    sum(): Promise<number> {
+        const rows = this.tables['scan_table'].rollup({ sum_v: `aq.op.sum(d['a'])` }).objects();
         return Promise.resolve(rows[0].sum_v);
     }
 
-    join(from: string[], to: string[]): Promise<number> {
-        const rows = this.tables[from[0]].join(this.tables[to[0]], [from[1], to[1]]).count().objects();
-        return Promise.resolve(rows[0].count);
+    join(): Promise<number> {
+        return Promise.resolve(
+            this.tables['orders'].join(this.tables['lineitem'], ['o_orderkey', 'l_orderkey']).count().objects()[0]
+                .count,
+        );
+    }
+
+    async tpch(): Promise<void> {
+        return Promise.resolve();
     }
 
     implements(func: string): boolean {
+        if (func == 'tpch') return false;
         return true;
     }
 }
@@ -557,33 +721,35 @@ export class NanoSQLWrapper implements DBWrapper {
         });
     }
 
-    async scanInt(table: string): Promise<void> {
-        for (const row of await nSQL(table).query('select', ['a_value']).exec()) {
+    async scanInt(): Promise<void> {
+        for (const row of await nSQL('scan_table').query('select', ['a']).exec()) {
             noop();
         }
     }
 
-    async sum(table: string, column: string): Promise<number> {
-        const rows = await nSQL(table)
-            .query('select', [`SUM(${column}) as sum_v`])
-            .exec();
+    async sum(): Promise<number> {
+        const rows = await nSQL('scan_table').query('select', ['SUM(a) as sum_v']).exec();
         return rows[0].sum_v;
     }
 
-    async join(from: string[], to: string[]): Promise<number> {
-        const rows = await nSQL(from[0])
+    async join(): Promise<number> {
+        let builder = nSQL('orders')
             .query('select', ['COUNT(*) as cnt'])
             .join({
                 type: 'inner',
-                with: { table: to[0] },
-                on: [from.join('.'), '=', to.join('.')],
-            })
-            .exec();
-        return rows[0].cnt;
+                with: { table: 'lineitem' },
+                on: ['orders.o_orderkey', '=', 'lineitem.l_orderkey'],
+            });
+        return (await builder.exec())[0].cnt;
+    }
+
+    async tpch(): Promise<void> {
+        // not even implementing it after seeing how slow join was
     }
 
     implements(func: string): boolean {
-        if (func == 'join') return false; // Holy shit nanoSQL is fucking slow. 118s for a 0.005 SF simple join.
+        if (func == 'simpleJoin') return false; // Holy shit nanoSQL is fucking slow. 118s for a 0.005 SF simple join.
+        if (func == 'tpch') return false;
         return true;
     }
 }
