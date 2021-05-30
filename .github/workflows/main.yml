@@ -185,7 +185,7 @@ jobs:
                       emmake make \
                           -C./lib/build/wasm/release \
                           -j`nproc` \
-                          duckdb_wasm duckdb_wasm_node
+                          duckdb_wasm
 
                       ccache -s
 
