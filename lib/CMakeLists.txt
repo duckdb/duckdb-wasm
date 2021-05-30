@@ -129,54 +129,49 @@ if(EMSCRIPTEN)
     set(ADDITIONAL_LINKER_FLAGS -Os)
   endif()
 
-  set(DUCKDB_WASM_LINKER_FLAGS
-      " \
-        -s WARN_ON_UNDEFINED_SYMBOLS=0 \
-        -s ALLOW_MEMORY_GROWTH=1 \
-        -s USE_PTHREADS=0 \
-        -s MODULARIZE=1 \
-        -s FILESYSTEM=0 \
-        -s EXPORT_ES6=1 \
-        -s EXPORT_NAME='DuckDB' \
-        -s EXPORTED_FUNCTIONS='[ \
-            _main, \
-            _malloc, \
-            _free, \
-            _duckdb_web_get_version, \
-            _duckdb_web_clear_response, \
-            _duckdb_web_flush_files, \
-            _duckdb_web_flush_file, \
-            _duckdb_web_connect, \
-            _duckdb_web_disconnect, \
-            _duckdb_web_fs_directory_list_files_callback, \
-            _duckdb_web_fs_glob_callback, \
-            _duckdb_web_query_fetch_results, \
-            _duckdb_web_query_run, \
-            _duckdb_web_query_send, \
-            _duckdb_web_import_csv_table, \
-            _duckdb_web_import_json_table, \
-            _duckdb_web_zip_load_file, \
-            _duckdb_web_zip_read_entry_count, \
-            _duckdb_web_zip_read_entry_info, \
-            _duckdb_web_zip_extract_entry_to_path, \
-            _duckdb_web_zip_extract_path_to_path \
-        ]' \
-        -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
-        --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js \
-        ${ADDITIONAL_LINKER_FLAGS} \
+  set(DUCKDB_WASM_LINKER_FLAGS " \
         ")
 
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
   target_link_libraries(duckdb_wasm duckdb_web spdlog)
   set_target_properties(
-    duckdb_wasm PROPERTIES LINK_FLAGS
-                           "${DUCKDB_WASM_LINKER_FLAGS} -s ENVIRONMENT='web'")
-
-  add_executable(duckdb_wasm_node ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
-  target_link_libraries(duckdb_wasm_node duckdb_web spdlog)
-  set_target_properties(
-    duckdb_wasm_node
-    PROPERTIES LINK_FLAGS "${DUCKDB_WASM_LINKER_FLAGS} -s ENVIRONMENT='node'")
+    duckdb_wasm
+    PROPERTIES
+      LINK_FLAGS
+      "-s ENVIRONMENT='web,node' \
+      -s WARN_ON_UNDEFINED_SYMBOLS=0 \
+      -s ALLOW_MEMORY_GROWTH=1 \
+      -s USE_PTHREADS=0 \
+      -s MODULARIZE=1 \
+      -s FILESYSTEM=0 \
+      -s EXPORT_ES6=1 \
+      -s EXPORT_NAME='DuckDB' \
+      -s EXPORTED_FUNCTIONS='[ \
+          _main, \
+          _malloc, \
+          _free, \
+          _duckdb_web_get_version, \
+          _duckdb_web_clear_response, \
+          _duckdb_web_flush_files, \
+          _duckdb_web_flush_file, \
+          _duckdb_web_connect, \
+          _duckdb_web_disconnect, \
+          _duckdb_web_fs_directory_list_files_callback, \
+          _duckdb_web_fs_glob_callback, \
+          _duckdb_web_query_fetch_results, \
+          _duckdb_web_query_run, \
+          _duckdb_web_query_send, \
+          _duckdb_web_import_csv_table, \
+          _duckdb_web_import_json_table, \
+          _duckdb_web_zip_load_file, \
+          _duckdb_web_zip_read_entry_count, \
+          _duckdb_web_zip_read_entry_info, \
+          _duckdb_web_zip_extract_entry_to_path, \
+          _duckdb_web_zip_extract_path_to_path \
+      ]' \
+      -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
+      --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js \
+      ${ADDITIONAL_LINKER_FLAGS}")
 else()
 
 endif()

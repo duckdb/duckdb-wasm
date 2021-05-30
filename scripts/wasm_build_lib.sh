@@ -42,6 +42,6 @@ emcmake cmake \
 emmake make \
     -C"${CPP_SOURCE_DIR}/build/wasm/${MODE}" \
     -j${CORES} \
-    duckdb_wasm duckdb_wasm_node
+    duckdb_wasm
 
 cp ${CPP_SOURCE_DIR}/build/wasm/${MODE}/duckdb_*.{wasm,js} "${DUCKDB_LIB_DIR}"
