@@ -44,7 +44,7 @@ namespace io {
 /// Constructor
 FileSystemBufferFrame::FileSystemBufferFrame(uint64_t frame_id, uint64_t size, list_position fifo_position,
                                              list_position lru_position)
-    : frame_id(frame_id), fifo_position(fifo_position), lru_position(lru_position) {}
+    : frame_id(frame_id), frame_latch(), fifo_position(fifo_position), lru_position(lru_position) {}
 
 /// Lock the frame
 void FileSystemBufferFrame::Lock(bool exclusive) {
@@ -372,8 +372,10 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
     // Create a new page and don't insert it in the queues, yet.
     assert(frames.find(frame_id) == frames.end());
     auto buffer = AllocateFrameBuffer();
-    auto& frame =
-        frames.insert({frame_id, FileSystemBufferFrame{frame_id, GetPageSize(), fifo.end(), lru.end()}}).first->second;
+    auto [iter, ok] = frames.emplace(std::piecewise_construct, std::forward_as_tuple(frame_id),
+                                     std::forward_as_tuple(frame_id, GetPageSize(), fifo.end(), lru.end()));
+    assert(ok);
+    auto& frame = iter->second;
     frame.buffer = std::move(buffer);
     frame.fifo_position = fifo.insert(fifo.end(), &frame);
     frame.Lock(exclusive);
