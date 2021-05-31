@@ -1,10 +1,10 @@
-import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel/';
+import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel';
+import { DuckDB } from '../bindings/bindings_browser_eh';
 import { DuckDBBindings } from '../bindings';
-import { DuckDB } from '../bindings/bindings_node';
-import Runtime from '../bindings/runtime_node';
+import Runtime from '../bindings/runtime_browser';
 
-/** The duckdb worker API for node.js workers */
-class NodeWorker extends AsyncDuckDBDispatcher {
+/** The duckdb worker API for web workers */
+class WebWorker extends AsyncDuckDBDispatcher {
     /** Post a response back to the main thread */
     protected postMessage(response: WorkerResponseVariant, transfer: ArrayBuffer[]) {
         globalThis.postMessage(response, transfer);
@@ -20,7 +20,7 @@ class NodeWorker extends AsyncDuckDBDispatcher {
 
 /** Register the worker */
 export function registerWorker(): void {
-    const api = new NodeWorker();
+    const api = new WebWorker();
     globalThis.onmessage = async (event: MessageEvent<WorkerRequestVariant>) => {
         await api.onMessage(event.data);
     };

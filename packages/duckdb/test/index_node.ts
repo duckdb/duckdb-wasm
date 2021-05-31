@@ -1,4 +1,4 @@
-import * as duckdb_serial from '../src/targets/duckdb-node-serial';
+import * as duckdb_serial from '../src/targets/duckdb-node-serial-eh';
 import * as duckdb_parallel from '../src/targets/duckdb-node-parallel';
 import path from 'path';
 import Worker from 'web-worker';
@@ -40,12 +40,12 @@ let worker: Worker | null = null;
 
 beforeAll(async () => {
     const logger = new duckdb_serial.VoidLogger();
-    db = new duckdb_serial.DuckDB(logger, duckdb_serial.NodeRuntime, path.resolve(__dirname, './duckdb.wasm'));
+    db = new duckdb_serial.DuckDB(logger, duckdb_serial.NodeRuntime, path.resolve(__dirname, './duckdb_eh.wasm'));
     await db.open();
 
-    worker = new Worker(path.resolve(__dirname, './duckdb-node-parallel.worker.js'));
+    worker = new Worker(path.resolve(__dirname, './duckdb-node-parallel-eh.worker.js'));
     adb = new duckdb_parallel.AsyncDuckDB(logger, worker);
-    await adb.open(path.resolve(__dirname, './duckdb.wasm'));
+    await adb.open(path.resolve(__dirname, './duckdb_eh.wasm'));
 });
 
 afterAll(async () => {
