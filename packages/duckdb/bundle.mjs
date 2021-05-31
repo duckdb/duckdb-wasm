@@ -27,8 +27,8 @@ rimraf.sync(dist + '/*.js.map');
 
 const src = path.resolve(__dirname, 'src');
 fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm.wasm'), path.resolve(dist, 'duckdb.wasm'), printErr);
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh.wasm'), path.resolve(dist, 'duckdb_eh.wasm'), printErr);
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh_mt.wasm'), path.resolve(dist, 'duckdb_eh_mt.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh.wasm'), path.resolve(dist, 'duckdb-eh.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh_mt.wasm'), path.resolve(dist, 'duckdb-eh-mt.wasm'), printErr);
 
 // -------------------------------
 // ESM
@@ -246,7 +246,7 @@ fs.writeFile(
     printErr,
 );
 fs.writeFile(
-    path.join(dist, 'duckdb-node-async-eh.d.ts'),
-    "export * from './types/src/targets/duckdb-node-async-eh';",
+    path.join(dist, 'duckdb-node-async.d.ts'),
+    "export * from './types/src/targets/duckdb-node-async';",
     printErr,
 );
