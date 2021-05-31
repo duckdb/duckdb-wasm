@@ -5,7 +5,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "arrow/json/api.h"
 #include "arrow/table.h"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/arrow_ifstream.h"
