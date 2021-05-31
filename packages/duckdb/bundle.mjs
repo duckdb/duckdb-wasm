@@ -19,6 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(__dirname, 'dist');
 mkdir.sync(dist);
 rimraf.sync(dist + '/*.wasm');
+rimraf.sync(dist + '/*.d.ts');
 rimraf.sync(dist + '/*.js');
 rimraf.sync(dist + '/*.js.map');
 
@@ -137,10 +138,10 @@ esbuild.build({
 // -------------------------------
 // NODE
 
-console.log('[ ESBUILD ] duckdb-node-eh.js');
+console.log('[ ESBUILD ] duckdb-node-sync-eh.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-node-sync-eh.ts'],
-    outfile: 'dist/duckdb-node.js',
+    outfile: 'dist/duckdb-node-sync-eh.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
