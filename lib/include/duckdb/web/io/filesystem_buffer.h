@@ -39,13 +39,20 @@ class FileSystemBufferFrame {
     /// A position in the LRU queue
     using list_position = std::list<FileSystemBufferFrame*>::iterator;
 
+    /// The frame state
+    enum State { NEW, LOADING, LOADED, EVICTING, RELOADED };
+
     /// The frame id
     uint64_t frame_id;
+    /// The frame latch
+    std::shared_mutex frame_latch;
+    /// The frame state
+    State frame_state;
+
     /// The data buffer
     std::vector<char> buffer;
     /// The data size
     size_t data_size = 0;
-
     /// How many times this page has been fixed
     uint64_t num_users = 0;
     /// Is the page dirty?
@@ -82,6 +89,8 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         std::string path;
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle;
+        /// This latch ensures that truncation is executed atomically.
+        std::mutex file_latch;
         /// The file size as present on disk
         uint64_t file_size_persisted;
         /// The buffered file size.
@@ -178,6 +187,10 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
 
     /// The actual filesystem
     std::shared_ptr<duckdb::FileSystem> filesystem;
+
+    /// Latch that protects all of the following member variables
+    std::mutex directory_latch;
+
     /// Maps file ids to their file infos
     std::unordered_map<uint16_t, std::unique_ptr<SegmentFile>> segments = {};
     /// The file ids
