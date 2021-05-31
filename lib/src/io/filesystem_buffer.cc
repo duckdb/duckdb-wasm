@@ -62,12 +62,12 @@ void FileSystemBufferFrame::Unlock() {
 }
 
 /// Constructor
-FileSystemBuffer::RegisteredFile::RegisteredFile(uint16_t file_id, std::string_view path,
-                                                 std::unique_ptr<duckdb::FileHandle> handle)
-    : file_id(file_id), path(path), handle(std::move(handle)), references(0) {}
+FileSystemBuffer::SegmentFile::SegmentFile(uint16_t file_id, std::string_view path,
+                                           std::unique_ptr<duckdb::FileHandle> handle)
+    : segment_id(file_id), path(path), handle(std::move(handle)), references(0) {}
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(std::shared_ptr<FileSystemBuffer> buffer_manager, RegisteredFile& file)
+FileSystemBuffer::FileRef::FileRef(std::shared_ptr<FileSystemBuffer> buffer_manager, SegmentFile& file)
     : buffer_manager_(std::move(buffer_manager)), file_(&file) {
     ++file.references;
 }
@@ -169,8 +169,8 @@ void FileSystemBuffer::BufferRef::RequireSize(uint64_t n) {
     auto frame_id = frame_->frame_id;
     auto page_id = GetPageID(frame_id);
     auto file_id = GetFileID(frame_id);
-    auto file_iter = buffer_manager_->files.find(file_id);
-    if (file_iter == buffer_manager_->files.end()) return;
+    auto file_iter = buffer_manager_->segments.find(file_id);
+    if (file_iter == buffer_manager_->segments.end()) return;
     auto required = page_id * buffer_manager_->GetPageSize() + n;
     buffer_manager_->RequireFileSize(*file_iter->second, required);
     frame_->data_size = std::max<uint64_t>(n, frame_->data_size);
@@ -192,38 +192,38 @@ FileSystemBuffer::~FileSystemBuffer() {
 FileSystemBuffer::FileRef FileSystemBuffer::OpenFile(std::string_view path,
                                                      std::unique_ptr<duckdb::FileHandle> handle) {
     // Already added?
-    if (auto iter = files_by_path.find(path); iter != files_by_path.end()) {
-        return FileRef{shared_from_this(), *files.at(iter->second)};
+    if (auto iter = segments_by_path.find(path); iter != segments_by_path.end()) {
+        return FileRef{shared_from_this(), *segments.at(iter->second)};
     }
     // File id overflow?
-    if (allocated_file_ids == std::numeric_limits<uint16_t>::max()) {
+    if (allocated_segment_ids == std::numeric_limits<uint16_t>::max()) {
         // XXX User wants to open more than 65535 files at the same time.
         //     We don't support that.
         throw std::runtime_error("cannot open more than 65535 files");
     }
     // Allocate file id
     uint16_t file_id;
-    if (!free_file_ids.empty()) {
-        file_id = free_file_ids.top();
-        free_file_ids.pop();
+    if (!free_segment_ids.empty()) {
+        file_id = free_segment_ids.top();
+        free_segment_ids.pop();
     } else {
-        file_id = allocated_file_ids++;
+        file_id = allocated_segment_ids++;
     }
     // Create file
-    auto file_ptr = std::make_unique<RegisteredFile>(file_id, path, std::move(handle));
+    auto file_ptr = std::make_unique<SegmentFile>(file_id, path, std::move(handle));
     auto& file = *file_ptr;
-    files.insert({file_id, std::move(file_ptr)});
+    segments.insert({file_id, std::move(file_ptr)});
     if (!file.handle) {
         file.handle = filesystem->OpenFile(
             file.path.c_str(), duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE);
     }
-    file.file_size = filesystem->GetFileSize(*file.handle);
-    file.file_size_required = file.file_size;
+    file.file_size_persisted = filesystem->GetFileSize(*file.handle);
+    file.file_size_buffered = file.file_size_persisted;
     return FileRef{shared_from_this(), file};
 }
 
-void FileSystemBuffer::EvictFileFrames(RegisteredFile& file) {
-    auto file_id = file.file_id;
+void FileSystemBuffer::EvictFileFrames(SegmentFile& file) {
+    auto file_id = file.segment_id;
     auto lb = frames.lower_bound(BuildFrameID(file_id));
     auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
     for (auto iter = lb; iter != ub; ++iter) {
@@ -238,17 +238,17 @@ void FileSystemBuffer::EvictFileFrames(RegisteredFile& file) {
     frames.erase(lb, ub);
 }
 
-void FileSystemBuffer::RequireFileSize(RegisteredFile& file, uint64_t bytes) {
-    file.file_size_required = std::max<uint64_t>(file.file_size_required, bytes);
+void FileSystemBuffer::RequireFileSize(SegmentFile& file, uint64_t bytes) {
+    file.file_size_buffered = std::max<uint64_t>(file.file_size_buffered, bytes);
 }
 
-void FileSystemBuffer::GrowFileIfRequired(RegisteredFile& file) {
-    if (file.file_size_required <= file.file_size) return;
-    filesystem->Truncate(*file.handle, file.file_size_required);
-    file.file_size = file.file_size_required;
+void FileSystemBuffer::GrowFileIfRequired(SegmentFile& file) {
+    if (file.file_size_buffered <= file.file_size_persisted) return;
+    filesystem->Truncate(*file.handle, file.file_size_buffered);
+    file.file_size_persisted = file.file_size_buffered;
 }
 
-void FileSystemBuffer::ReleaseFile(RegisteredFile& file) {
+void FileSystemBuffer::ReleaseFile(SegmentFile& file) {
     // Any open file references?
     assert(file.references > 0);
     --file.references;
@@ -258,10 +258,10 @@ void FileSystemBuffer::ReleaseFile(RegisteredFile& file) {
     EvictFileFrames(file);
 
     // Release file id
-    files_by_path.erase(file.path);
-    auto file_id = file.file_id;
-    files.erase(file_id);
-    free_file_ids.push(file_id);
+    segments_by_path.erase(file.path);
+    auto file_id = file.segment_id;
+    segments.erase(file_id);
+    free_segment_ids.push(file_id);
 }
 
 void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame) {
@@ -270,9 +270,9 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame) {
     auto page_size = GetPageSize();
 
     // Determine the actual size of the frame
-    assert(files.count(file_id));
-    auto& file = *files.at(file_id);
-    frame.data_size = std::min<uint64_t>(file.file_size - page_id * page_size, GetPageSize());
+    assert(segments.count(file_id));
+    auto& file = *segments.at(file_id);
+    frame.data_size = std::min<uint64_t>(file.file_size_persisted - page_id * page_size, GetPageSize());
     frame.is_dirty = false;
 
     // Read data into frame
@@ -287,8 +287,8 @@ void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame) {
     if (!frame.is_dirty) return;
 
     // Write data from frame
-    assert(files.count(file_id));
-    auto& file = *files.at(file_id);
+    assert(segments.count(file_id));
+    auto& file = *segments.at(file_id);
     GrowFileIfRequired(file);
 
     DEBUG_DUMP_BYTES(frame.GetData());
@@ -344,13 +344,13 @@ std::vector<char> FileSystemBuffer::AllocateFrameBuffer() {
 }
 
 /// Get the file size
-uint64_t FileSystemBuffer::GetFileSize(const FileRef& file) { return file.file_->file_size; }
+uint64_t FileSystemBuffer::GetFileSize(const FileRef& file) { return file.file_->file_size_persisted; }
 
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, uint64_t page_id, bool exclusive) {
     // Does the page exist?
     assert(file_ref.file_ != nullptr);
-    auto file_id = file_ref.file_->file_id;
+    auto file_id = file_ref.file_->segment_id;
     auto frame_id = BuildFrameID(file_id, page_id);
     if (auto it = frames.find(frame_id); it != frames.end()) {
         auto& frame = it->second;
@@ -392,7 +392,7 @@ void FileSystemBuffer::UnfixPage(uint64_t frame_id, bool is_dirty) {
 }
 
 void FileSystemBuffer::FlushFile(const FileRef& file_ref) {
-    auto file_id = file_ref.file_->file_id;
+    auto file_id = file_ref.file_->segment_id;
     auto lb = frames.lower_bound(BuildFrameID(file_id));
     auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
     for (auto iter = lb; iter != ub; ++iter) {
@@ -401,7 +401,7 @@ void FileSystemBuffer::FlushFile(const FileRef& file_ref) {
 }
 
 void FileSystemBuffer::FlushFile(std::string_view path) {
-    if (auto file = files_by_path.find(path); file != files_by_path.end()) {
+    if (auto file = segments_by_path.find(path); file != segments_by_path.end()) {
         auto lb = frames.lower_bound(BuildFrameID(file->second));
         auto ub = frames.lower_bound(BuildFrameID(file->second + 1));
         for (auto iter = lb; iter != ub; ++iter) {
@@ -418,7 +418,7 @@ void FileSystemBuffer::Flush() {
 
 uint64_t FileSystemBuffer::Read(const FileRef& file, void* out, uint64_t n, duckdb::idx_t offset) {
     // Check upper file boundary first
-    auto read_end = std::min<uint64_t>(file.file_->file_size_required, offset + n);
+    auto read_end = std::min<uint64_t>(file.file_->file_size_buffered, offset + n);
     auto read_max = std::min<uint64_t>(n, std::max<uint64_t>(read_end, offset) - offset);
     if (read_max == 0) return 0;
 
@@ -455,8 +455,8 @@ void FileSystemBuffer::Truncate(const FileRef& file_ref, uint64_t new_size) {
     auto* file = file_ref.file_;
     EvictFileFrames(*file);
     filesystem->Truncate(*file->handle, new_size);
-    file->file_size = new_size;
-    file->file_size_required = file->file_size;
+    file->file_size_persisted = new_size;
+    file->file_size_buffered = file->file_size_persisted;
 }
 
 std::vector<uint64_t> FileSystemBuffer::GetFIFOList() const {

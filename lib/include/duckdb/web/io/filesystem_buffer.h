@@ -74,25 +74,25 @@ class FileSystemBufferFrame {
 
 class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
    protected:
-    /// A registered file
-    struct RegisteredFile {
+    /// A segment
+    struct SegmentFile {
         /// The file id
-        uint16_t file_id;
+        uint16_t segment_id;
         /// The path
         std::string path;
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle;
-        /// The file size
-        uint64_t file_size;
-        /// The required file size.
+        /// The file size as present on disk
+        uint64_t file_size_persisted;
+        /// The buffered file size.
         /// We grow files on flush if the user wrote past the end.
         /// For that purpose, we maintain a required file size here that can be bumped through RequireFileSize.
-        uint64_t file_size_required;
+        uint64_t file_size_buffered;
         /// The references
         uint64_t references;
 
         /// Constructor
-        RegisteredFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
+        SegmentFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
     };
 
    public:
@@ -104,9 +104,9 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         /// The buffer manager
         std::shared_ptr<FileSystemBuffer> buffer_manager_;
         /// The file
-        RegisteredFile* file_;
+        SegmentFile* file_;
         /// The constructor
-        explicit FileRef(std::shared_ptr<FileSystemBuffer> buffer_manager, RegisteredFile& file);
+        explicit FileRef(std::shared_ptr<FileSystemBuffer> buffer_manager, SegmentFile& file);
 
        public:
         /// Copy constructor
@@ -122,13 +122,13 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         /// Is set?
         operator bool() const { return !!file_; }
         /// Get file id
-        auto& GetFileID() const { return file_->file_id; }
+        auto& GetFileID() const { return file_->segment_id; }
         /// Get path
         auto& GetPath() const { return file_->path; }
         /// Get handle
         auto& GetHandle() const { return *file_->handle; }
         /// Get the size
-        auto GetSize() const { return file_->file_size_required; }
+        auto GetSize() const { return file_->file_size_buffered; }
         /// Release the file ref
         void Release();
     };
@@ -178,14 +178,14 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
 
     /// The actual filesystem
     std::shared_ptr<duckdb::FileSystem> filesystem;
-    /// Maps frame ids to their files
-    std::unordered_map<uint16_t, std::unique_ptr<RegisteredFile>> files = {};
+    /// Maps file ids to their file infos
+    std::unordered_map<uint16_t, std::unique_ptr<SegmentFile>> segments = {};
     /// The file ids
-    std::unordered_map<std::string_view, uint16_t> files_by_path = {};
+    std::unordered_map<std::string_view, uint16_t> segments_by_path = {};
     /// The free file ids
-    std::stack<uint16_t> free_file_ids = {};
+    std::stack<uint16_t> free_segment_ids = {};
     /// The next allocated file ids
-    uint16_t allocated_file_ids = 0;
+    uint16_t allocated_segment_ids = 0;
 
     /// Maps page_ids to FileSystemBufferFrame objects of all pages that are currently in memory
     std::map<uint64_t, FileSystemBufferFrame> frames = {};
@@ -195,13 +195,13 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     std::list<FileSystemBufferFrame*> lru = {};
 
     /// Evict all file frames
-    void EvictFileFrames(RegisteredFile& file);
+    void EvictFileFrames(SegmentFile& file);
     /// Grow a file if required
-    void GrowFileIfRequired(RegisteredFile& file);
+    void GrowFileIfRequired(SegmentFile& file);
     /// Require the file size to be at lest bytes large
-    void RequireFileSize(RegisteredFile& file, uint64_t bytes);
+    void RequireFileSize(SegmentFile& file, uint64_t bytes);
     /// Release a file ref
-    void ReleaseFile(RegisteredFile& file);
+    void ReleaseFile(SegmentFile& file);
     /// Loads the page from disk
     void LoadFrame(FileSystemBufferFrame& frame);
     /// Writes the page to disk if it is dirty
