@@ -42,13 +42,14 @@ if(EMSCRIPTEN)
   endif()
 
   if(WITH_WASM_EXCEPTIONS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -fwasm-exceptions -DWEBDB_FAST_EXCEPTIONS=1")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0")
   endif()
 
   if(WITH_WASM_THREADS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1 -DWEBDB_THREADS=1")
     set(DUCKDB_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
     set(WASM_LINK_FLAGS "-sUSE_PTHREADS=1")
   else()
@@ -58,6 +59,9 @@ if(EMSCRIPTEN)
     set(WASM_LINK_FLAGS "-sUSE_PTHREADS=0")
     set(THREAD_LIBS)
   endif()
+else()
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -DWEBDB_FAST_EXCEPTIONS=1 -DWEBDB_THREADS=1")
 endif()
 
 # ---------------------------------------------------------------------------

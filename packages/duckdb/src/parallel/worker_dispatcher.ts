@@ -106,6 +106,17 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                         [],
                     );
                     break;
+                case WorkerRequestType.GET_FEATURE_FLAGS:
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.FEATURE_FLAGS,
+                            data: this._bindings.getFeatureFlags(),
+                        },
+                        [],
+                    );
+                    break;
                 case WorkerRequestType.RESET:
                     this._bindings = null;
                     this.sendOK(request);

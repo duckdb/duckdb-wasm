@@ -176,7 +176,7 @@ jobs:
                       ./scripts/wasm_build_lib.sh release default
                       ccache -s
 
-            - name: Build WASM module +EH
+            - name: Build WASM module +eh
               uses: ./actions/image
               with:
                   script: |-
@@ -184,7 +184,7 @@ jobs:
                       ./scripts/wasm_build_lib.sh release eh
                       ccache -s
 
-            - name: Build WASM module +EH +MT
+            - name: Build WASM module +eh +mt
               uses: ./actions/image
               with:
                   script: |-

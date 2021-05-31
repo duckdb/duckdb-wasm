@@ -45,6 +45,8 @@ void duckdb_web_get_version(WASMResponse* packed) {
     auto& webdb = WebDB::GetInstance();
     WASMResponseBuffer::GetInstance().Store(*packed, webdb.GetVersion());
 }
+/// Get the duckdb feature flags
+uint32_t duckdb_web_get_feature_flags() { return WebDB::GetInstance().GetFeatureFlags(); }
 /// Run a query
 void duckdb_web_query_run(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
