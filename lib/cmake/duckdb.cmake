@@ -7,7 +7,6 @@ if(EMSCRIPTEN)
   set(DUCKDB_BUILD_TYPE Release)
 endif()
 
-set(DUCKDB_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_NO_THREADS=1")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
 ExternalProject_Add(
