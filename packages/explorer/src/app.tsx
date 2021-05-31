@@ -1,6 +1,6 @@
 import { embed } from './embed';
 
-const worker = new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-parallel.worker.js', import.meta.url);
+const worker = new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url);
 
 const doc = document.getElementById('root');
 if (!doc) {

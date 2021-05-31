@@ -4,6 +4,6 @@ export interface AppConfig {
 
 export function createDefaultConfig(): AppConfig {
     return {
-        workerURL: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-parallel.worker.js', import.meta.url),
+        workerURL: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url),
     };
 }

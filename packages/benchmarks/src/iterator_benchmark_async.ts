@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Worker from 'web-worker';
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-node-parallel.js';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-node-async.js';
 import * as utils from './utils';
 import * as benny from 'benny';
 import kleur from 'kleur';
 
 import path from 'path';
-const workerPath = path.resolve(__dirname, '../../duckdb/dist/duckdb-node-parallel.worker.js');
+const workerPath = path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js');
 const wasmPath = path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm');
 
 const noop = () => {};

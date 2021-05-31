@@ -1,4 +1,4 @@
-import * as duckdb from '../../duckdb/dist/duckdb-node.js';
+import * as duckdb from '../../duckdb/dist/duckdb-node-sync-eh.js';
 import * as utils from './utils';
 import * as benny from 'benny';
 import * as arrow from 'apache-arrow';
