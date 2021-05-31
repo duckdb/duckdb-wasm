@@ -48,17 +48,26 @@ FileSystemBufferFrame::FileSystemBufferFrame(uint64_t frame_id, uint64_t size, l
 
 /// Lock the frame
 void FileSystemBufferFrame::Lock(bool exclusive) {
-    if (exclusive && num_users > 0 && locked_exclusively) {
-        // XXX throw, would have been a deadlock
+    if (exclusive) {
+        frame_latch.lock();
+        assert(!locked_exclusively);
+        locked_exclusively = true;
+    } else {
+        frame_latch.lock_shared();
     }
-    locked_exclusively = exclusive;
     ++num_users;
 }
 
 /// Unlock the frame
 void FileSystemBufferFrame::Unlock() {
-    locked_exclusively = false;
+    assert(num_users > 0);
     --num_users;
+    if (locked_exclusively) {
+        frame_latch.unlock();
+        locked_exclusively = false;
+    } else {
+        frame_latch.unlock_shared();
+    }
 }
 
 /// Constructor
