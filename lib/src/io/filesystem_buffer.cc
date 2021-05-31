@@ -144,7 +144,7 @@ FileSystemBuffer::BufferRef::BufferRef(BufferRef&& other)
 /// Copy Constructor
 FileSystemBuffer::BufferRef& FileSystemBuffer::BufferRef::operator=(const BufferRef& other) {
     Release();
-    assert(!frame_->locked_exclusively); // Copy assignment of exclusive lock is undefined
+    assert(!frame_->locked_exclusively);  // Copy assignment of exclusive lock is undefined
     buffer_manager_ = other.buffer_manager_;
     frame_ = other.frame_;
     frame_->Lock(false);
@@ -264,7 +264,7 @@ void FileSystemBuffer::EvictFileFrames(SegmentFile& file, std::unique_lock<std::
         tmp.push_back(it);
     }
     // Flush all frames
-    for (auto it: tmp) {
+    for (auto it : tmp) {
         FlushFrame(it->second, latch);
         if (it->second.lru_position != lru.end()) {
             lru.erase(it->second.lru_position);
@@ -383,7 +383,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std:
         // Flush the frame
         FlushFrame(*frame, latch);
 
-        // Frame must either be evicting or reloaded 
+        // Frame must either be evicting or reloaded
         assert(frame->frame_state == FileSystemBufferFrame::State::EVICTING ||
                frame->frame_state == FileSystemBufferFrame::State::RELOADED);
         if (frame->frame_state == FileSystemBufferFrame::State::EVICTING) {
@@ -504,7 +504,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
     // Create a new page and don't insert it in the queues, yet.
     assert(frames.find(frame_id) == frames.end());
     auto [it, ok] = frames.emplace(std::piecewise_construct, std::forward_as_tuple(frame_id),
-                                     std::forward_as_tuple(frame_id, fifo.end(), lru.end()));
+                                   std::forward_as_tuple(frame_id, fifo.end(), lru.end()));
     assert(ok);
     auto& frame = it->second;
     ++frame.num_users;
