@@ -76,6 +76,7 @@
         "worker_threads": false,
         "perf_hooks": false,
         "fs": false,
+        "os": false,
         "path": false,
         "buffer": false
     }

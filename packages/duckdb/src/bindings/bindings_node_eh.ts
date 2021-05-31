@@ -1,9 +1,9 @@
-import DuckDBWasm from './duckdb_wasm.js';
+import DuckDBWasm from './duckdb_wasm_eh.js';
 import { DuckDBModule } from './duckdb_module';
 import { DuckDBBindings } from './bindings';
+import { DuckDBRuntime } from './runtime_base';
 import { Logger } from '../log';
 import fs from 'fs';
-import { DuckDBRuntime } from './runtime_base';
 
 declare global {
     // eslint-disable-next-line no-var
@@ -12,16 +12,16 @@ declare global {
 
 /** DuckDB bindings for node.js */
 export class DuckDB extends DuckDBBindings {
-    /// The path of the wasm module
+    /** The path of the wasm module */
     protected path: string;
 
-    /// Constructor
+    /** Constructor */
     public constructor(logger: Logger, runtime: DuckDBRuntime, path: string) {
         super(logger, runtime);
         this.path = path;
     }
 
-    /// Instantiate the wasm module
+    /** Instantiate the wasm module */
     protected instantiateWasm(
         // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
         imports: any,

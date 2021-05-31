@@ -27,6 +27,8 @@ rimraf.sync(dist + '/*.js.map');
 
 const src = path.resolve(__dirname, 'src');
 fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm.wasm'), path.resolve(dist, 'duckdb.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh.wasm'), path.resolve(dist, 'duckdb_eh.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh_mt.wasm'), path.resolve(dist, 'duckdb_eh_mt.wasm'), printErr);
 
 // -------------------------------
 // ESM
@@ -36,11 +38,7 @@ const EXTERNALS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob'];
 
 console.log('[ ESBUILD ] duckdb.module.js');
 esbuild.build({
-    entryPoints: [
-        './src/targets/duckdb.module.ts',
-        './src/targets/duckdb-browser.module.ts',
-        './src/targets/duckdb-node.module.ts',
-    ],
+    entryPoints: ['./src/targets/duckdb.module.ts'],
     entryNames: '[name]',
     outdir: './dist',
     platform: 'neutral',
@@ -60,6 +58,20 @@ console.log('[ ESBUILD ] duckdb-browser.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-browser-serial.ts'],
     outfile: 'dist/duckdb-browser.js',
+    platform: 'browser',
+    format: 'iife',
+    globalName: 'duckdb',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    define: { 'process.env.NODE_ENV': '"production"' },
+    sourcemap: 'external',
+});
+
+console.log('[ ESBUILD ] duckdb-browser-eh.js');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-browser-serial-eh.ts'],
+    outfile: 'dist/duckdb-browser-eh.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -96,12 +108,38 @@ esbuild.build({
     sourcemap: 'external',
 });
 
+console.log('[ ESBUILD ] duckdb-browser-parallel-eh.worker.js');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-browser-parallel-eh.worker.ts'],
+    outfile: 'dist/duckdb-browser-parallel-eh.worker.js',
+    platform: 'browser',
+    format: 'iife',
+    globalName: 'duckdb',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    sourcemap: 'external',
+});
+
+console.log('[ ESBUILD ] duckdb-browser-parallel-eh-mt.worker.js');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-browser-parallel-eh-mt.worker.ts'],
+    outfile: 'dist/duckdb-browser-parallel-eh-mt.worker.js',
+    platform: 'browser',
+    format: 'iife',
+    globalName: 'duckdb',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    sourcemap: 'external',
+});
+
 // -------------------------------
 // NODE
 
-console.log('[ ESBUILD ] duckdb-node.js');
+console.log('[ ESBUILD ] duckdb-node-eh.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node-serial.ts'],
+    entryPoints: ['./src/targets/duckdb-node-serial-eh.ts'],
     outfile: 'dist/duckdb-node.js',
     platform: 'node',
     format: 'cjs',
@@ -125,10 +163,10 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] duckdb-node-parallel.worker.js');
+console.log('[ ESBUILD ] duckdb-node-parallel-eh.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node-parallel.worker.ts'],
-    outfile: 'dist/duckdb-node-parallel.worker.js',
+    entryPoints: ['./src/targets/duckdb-node-parallel-eh.worker.ts'],
+    outfile: 'dist/duckdb-node-parallel-eh.worker.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -173,16 +211,6 @@ esbuild.build({
 
 // ESM declarations
 fs.writeFile(path.join(dist, 'duckdb.module.d.ts'), "export * from './types/src/';", printErr);
-fs.writeFile(
-    path.join(dist, 'duckdb-browser.module.d.ts'),
-    "export * from './types/src/targets/duckdb-browser.module';",
-    printErr,
-);
-fs.writeFile(
-    path.join(dist, 'duckdb-node.module.d.ts'),
-    "export * from './types/src/targets/duckdb-node.module';",
-    printErr,
-);
 
 // Browser declarations
 fs.writeFile(
