@@ -263,7 +263,6 @@ void FileSystemBuffer::EvictFileFrames(SegmentFile& file, std::unique_lock<std::
         ++it->second.num_users;
         tmp.push_back(it);
     }
-
     // Flush all frames
     for (auto it: tmp) {
         FlushFrame(it->second, latch);
@@ -325,24 +324,32 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<
 }
 
 void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& latch) {
+    if (!frame.is_dirty) return;
     auto segment_id = GetSegmentID(frame.frame_id);
     auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
 
-    if (!frame.is_dirty) return;
+    // Dump frame bytes
+    DEBUG_DUMP_BYTES(frame.GetData());
 
     // Write data from frame
     assert(segments.count(segment_id));
     auto& file = *segments.at(segment_id);
     GrowFileIfRequired(file, latch);
 
-    // Dump frame bytes
-    DEBUG_DUMP_BYTES(frame.GetData());
-
-    // Write page to disk
+    // Register as user to safely release the directory latch.
+    // Lock frame as shared.
+    ++frame.num_users;
     latch.unlock();
+    frame.Lock(false);
+
+    // Write frame to file
     filesystem->Write(*file.handle, frame.buffer.get(), frame.data_size, page_id * page_size);
+
+    // Unlock frame to acquire latch
+    frame.Unlock();
     latch.lock();
+    --frame.num_users;
     frame.is_dirty = false;
 }
 
@@ -373,29 +380,10 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std:
         frame->frame_state = FileSystemBufferFrame::State::EVICTING;
         if (!frame->is_dirty) break;
 
-        // Write the frame with read lock
-        {
-            auto& file = *segments.at(GetSegmentID(frame->frame_id));
-            GrowFileIfRequired(file, latch);
+        // Flush the frame
+        FlushFrame(*frame, latch);
 
-            // Register as user to safely release the directory latch.
-            // Lock frame as shared.
-            ++frame->num_users;
-            latch.unlock();
-            frame->Lock(false);
-
-            // Write frame to file
-            auto data = frame->GetData();
-            auto data_ofs = GetPageID(frame->frame_id) * GetPageSize();
-            filesystem->Write(*file.handle, data.data(), data.size(), data_ofs);
-
-            // Unlock frame to acquire latch
-            frame->Unlock();
-            latch.lock();
-            --frame->num_users;
-            frame->is_dirty = false;
-        }
-
+        // Frame must either be evicting or reloaded 
         assert(frame->frame_state == FileSystemBufferFrame::State::EVICTING ||
                frame->frame_state == FileSystemBufferFrame::State::RELOADED);
         if (frame->frame_state == FileSystemBufferFrame::State::EVICTING) {
@@ -604,7 +592,6 @@ void FileSystemBuffer::Flush() {
     for (auto it = frames.begin(); it != frames.end(); ++it) {
         tmp.push_back(it);
     }
-
     // Flush frames
     for (auto& it : tmp) {
         FlushFrame(it->second, latch);
