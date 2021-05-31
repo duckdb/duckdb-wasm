@@ -172,24 +172,25 @@ jobs:
               uses: ./actions/image
               with:
                   script: |-
-                      emcmake cmake \
-                          -S./lib/ \
-                          -B./lib/build/wasm/release \
-                          -DCMAKE_BUILD_TYPE=Release \
-                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-                          -DBOOST_ARCHIVE=/opt/boost.tar.gz
-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release default
                       ccache -s
 
-                      emmake make \
-                          -C./lib/build/wasm/release \
-                          -j`nproc` \
-                          duckdb_wasm
-
+            - name: Build WASM module +EH
+              uses: ./actions/image
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release eh
                       ccache -s
 
-                      cp ./lib/build/wasm/release/duckdb_*.{wasm,js} ./packages/duckdb/src/bindings/
+            - name: Build WASM module +EH +MT
+              uses: ./actions/image
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release eh_mt
+                      ccache -s
 
             - name: Build @duckdb/duckdb-wasm
               uses: ./actions/image

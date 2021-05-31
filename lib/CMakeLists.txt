@@ -16,15 +16,6 @@ if(NOT EMSCRIPTEN)
       "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
 endif()
 
-if(EMSCRIPTEN)
-  if(CMAKE_BUILD_TYPE MATCHES Release)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
-  endif()
-  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0
-  # -fexceptions -sUSE_PTHREADS=0" )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions -sUSE_PTHREADS=0")
-endif()
-
 # ---------------------------------------------------------------------------
 # Ccache
 
@@ -41,6 +32,33 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 set(THREAD_LIBS Threads::Threads)
+
+# ---------------------------------------------------------------------------
+# Emscripten settings
+
+if(EMSCRIPTEN)
+  if(CMAKE_BUILD_TYPE MATCHES Release)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
+  endif()
+
+  if(WITH_WASM_EXCEPTIONS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0")
+  endif()
+
+  if(WITH_WASM_THREADS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
+    set(DUCKDB_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
+    set(WASM_LINK_FLAGS "-sUSE_PTHREADS=1")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=0")
+    set(DUCKDB_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=0 -DDUCKDB_NO_THREADS=1")
+    set(WASM_LINK_FLAGS "-sUSE_PTHREADS=0")
+    set(THREAD_LIBS)
+  endif()
+endif()
 
 # ---------------------------------------------------------------------------
 # Parallelism
@@ -114,7 +132,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
-target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson)
+target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson ${THREAD_LIBS})
 
 # ---------------------------------------------------------------------------
 # Emscripten
@@ -122,26 +140,22 @@ target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson)
 # We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our
 # own imports.
 if(EMSCRIPTEN)
-  set(ADDITIONAL_LINKER_FLAGS)
   if(WASM_FAST_LINKING)
-    set(ADDITIONAL_LINKER_FLAGS -O0)
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
   else()
-    set(ADDITIONAL_LINKER_FLAGS -Os)
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Os")
   endif()
 
-  set(DUCKDB_WASM_LINKER_FLAGS " \
-        ")
-
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
-  target_link_libraries(duckdb_wasm duckdb_web spdlog)
+  target_link_libraries(duckdb_wasm duckdb_web spdlog ${THREAD_LIBS})
   set_target_properties(
     duckdb_wasm
     PROPERTIES
       LINK_FLAGS
-      "-s ENVIRONMENT='web,node' \
+      "${WASM_LINK_FLAGS} \
+      -s ENVIRONMENT='web,node' \
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
-      -s USE_PTHREADS=0 \
       -s MODULARIZE=1 \
       -s FILESYSTEM=0 \
       -s EXPORT_ES6=1 \
@@ -170,9 +184,7 @@ if(EMSCRIPTEN)
           _duckdb_web_zip_extract_path_to_path \
       ]' \
       -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
-      --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js \
-      ${ADDITIONAL_LINKER_FLAGS}")
-else()
+      --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")
 
 endif()
 
