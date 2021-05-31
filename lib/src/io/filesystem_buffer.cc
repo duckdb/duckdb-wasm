@@ -373,28 +373,29 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std:
         frame->frame_state = FileSystemBufferFrame::State::EVICTING;
         if (!frame->is_dirty) break;
 
-        // Create a copy of the page that is written to disk.
-        // That allows other threads to access the page while it is being written.
+        // Write the frame with read lock
         {
-            // Copy data to temporary buffer
-            auto data = frame->GetData();
-            auto data_size = frame->data_size;
-            auto data_ofs = GetPageID(frame->frame_id) * GetPageSize();
-            auto buffer = std::unique_ptr<char[]>(new char[data_size]);
-            std::memcpy(buffer.get(), data.data(), data.size());
-
-            // Grow file if required
             auto& file = *segments.at(GetSegmentID(frame->frame_id));
             GrowFileIfRequired(file, latch);
 
-            // Write the buffer to disk
+            // Register as user to safely release the directory latch.
+            // Lock frame as shared.
+            ++frame->num_users;
             latch.unlock();
-            filesystem->Write(*file.handle, buffer.get(), data_size, data_ofs);
-            latch.lock();
+            frame->Lock(false);
 
-            // Frame is no longer dirty
+            // Write frame to file
+            auto data = frame->GetData();
+            auto data_ofs = GetPageID(frame->frame_id) * GetPageSize();
+            filesystem->Write(*file.handle, data.data(), data.size(), data_ofs);
+
+            // Unlock frame to acquire latch
+            frame->Unlock();
+            latch.lock();
+            --frame->num_users;
             frame->is_dirty = false;
         }
+
         assert(frame->frame_state == FileSystemBufferFrame::State::EVICTING ||
                frame->frame_state == FileSystemBufferFrame::State::RELOADED);
         if (frame->frame_state == FileSystemBufferFrame::State::EVICTING) {
