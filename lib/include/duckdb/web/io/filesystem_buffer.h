@@ -13,8 +13,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <iostream>
-
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/web_filesystem.h"
