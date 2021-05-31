@@ -34,7 +34,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh_mt.wasm'), path.resolv
 // ESM
 
 const TARGET = 'es2020';
-const EXTERNALS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob'];
+const EXTERNALS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-check'];
 
 console.log('[ ESBUILD ] duckdb.module.js');
 esbuild.build({

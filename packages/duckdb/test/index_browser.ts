@@ -1,5 +1,34 @@
 import * as duckdb_sync from '../src/targets/duckdb-browser-sync';
 import * as duckdb_async from '../src/targets/duckdb-browser-async';
+import * as check from 'wasm-check';
+
+// Configure the worker
+const WORKER_BUNDLES = {
+    worker: '/static/duckdb-browser-async.worker.js',
+    workerEH: '/static/duckdb-browser-async-eh.worker.js',
+    workerEHMT: '/static/duckdb-browser-async-eh-mt.worker.js',
+    wasm: '/static/duckdb.wasm',
+    wasmEH: '/static/duckdb-eh.wasm',
+    wasmEHMT: '/static/duckdb-eh-mt.wasm',
+};
+const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
+
+describe('wasm check', () => {
+    it('worker and wasm urls', () => {
+        if (check.feature.exceptions && check.feature.threads) {
+            expect(WORKER_CONFIG.workerURL).toEqual(WORKER_BUNDLES.workerEHMT);
+            expect(WORKER_CONFIG.wasmURL).toEqual(WORKER_BUNDLES.wasmEHMT);
+        }
+        if (check.feature.exceptions && !check.feature.threads) {
+            expect(WORKER_CONFIG.workerURL).toEqual(WORKER_BUNDLES.workerEH);
+            expect(WORKER_CONFIG.wasmURL).toEqual(WORKER_BUNDLES.wasmEH);
+        }
+        if (!check.feature.exceptions) {
+            expect(WORKER_CONFIG.workerURL).toEqual(WORKER_BUNDLES.worker);
+            expect(WORKER_CONFIG.wasmURL).toEqual(WORKER_BUNDLES.wasm);
+        }
+    });
+});
 
 // Loading debug symbols, especially for WASM take insanely long so we just disable the test timeout
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
@@ -39,9 +68,9 @@ beforeAll(async () => {
     db = new duckdb_sync.DuckDB(logger, duckdb_sync.BrowserRuntime, '/static/duckdb.wasm');
     await db.open();
 
-    worker = new Worker('/static/duckdb-browser-async.worker.js');
+    worker = new Worker(WORKER_CONFIG.workerURL);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.open('/static/duckdb.wasm');
+    await adb.open(WORKER_CONFIG.wasmURL.toString());
 });
 
 afterAll(async () => {
