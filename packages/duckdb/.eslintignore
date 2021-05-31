@@ -1,2 +1,3 @@
-karma.*.cjs
-coverage.mjs
+/*.cjs
+/*.js
+/*.mjs

@@ -1,5 +1,5 @@
-import * as duckdb_serial from '../src/targets/duckdb-node-serial-eh';
-import * as duckdb_parallel from '../src/targets/duckdb-node-parallel';
+import * as duckdb_sync from '../src/targets/duckdb-node-sync-eh';
+import * as duckdb_async from '../src/targets/duckdb-node-async';
 import path from 'path';
 import Worker from 'web-worker';
 import fs from 'fs';
@@ -34,17 +34,17 @@ const resolveData = async (url: string) => {
 };
 
 // Test environment
-let db: duckdb_serial.DuckDB | null = null;
-let adb: duckdb_parallel.AsyncDuckDB | null = null;
+let db: duckdb_sync.DuckDB | null = null;
+let adb: duckdb_async.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
-    const logger = new duckdb_serial.VoidLogger();
-    db = new duckdb_serial.DuckDB(logger, duckdb_serial.NodeRuntime, path.resolve(__dirname, './duckdb_eh.wasm'));
+    const logger = new duckdb_sync.VoidLogger();
+    db = new duckdb_sync.DuckDB(logger, duckdb_sync.NodeRuntime, path.resolve(__dirname, './duckdb_eh.wasm'));
     await db.open();
 
-    worker = new Worker(path.resolve(__dirname, './duckdb-node-parallel-eh.worker.js'));
-    adb = new duckdb_parallel.AsyncDuckDB(logger, worker);
+    worker = new Worker(path.resolve(__dirname, './duckdb-node-async-eh.worker.js'));
+    adb = new duckdb_async.AsyncDuckDB(logger, worker);
     await adb.open(path.resolve(__dirname, './duckdb_eh.wasm'));
 });
 
