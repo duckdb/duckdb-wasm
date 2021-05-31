@@ -16,6 +16,13 @@ using namespace std;
 
 namespace {
 
+TEST(WebDB, NativeFeatures) {
+    auto db = make_shared<WebDB>();
+    auto features = db->GetFeatureFlags();
+    ASSERT_TRUE((features & (~(1 << WebDBFeature::FAST_EXCEPTIONS))) > 0);
+    ASSERT_TRUE((features & (~(1 << WebDBFeature::THREADS))) > 0);
+}
+
 TEST(WebDB, InvalidSQL) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};

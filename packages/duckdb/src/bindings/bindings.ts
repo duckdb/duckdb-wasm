@@ -5,7 +5,13 @@ import { StatusCode } from '../status';
 import { DuckDBRuntime } from './runtime_base';
 import { CSVTableOptions } from './table_options';
 
-/// The proxy for either the browser- order node-based DuckDB API
+/** A DuckDB Feature */
+export enum DuckDBFeature {
+    FAST_EXCEPTIONS = 1 << 0,
+    THREADS = 1 << 1,
+}
+
+/** The proxy for either the browser- order node-based DuckDB API */
 export abstract class DuckDBBindings {
     /** The logger */
     private _logger: Logger;
@@ -161,6 +167,11 @@ export abstract class DuckDBBindings {
         const version = this.readString(d, n);
         this.dropResponseBuffers();
         return version;
+    }
+
+    /** Get the feature flags */
+    public getFeatureFlags(): number {
+        return this._instance!.ccall('duckdb_web_get_feature_flags', 'number', [], []);
     }
 
     /** Connect to database */

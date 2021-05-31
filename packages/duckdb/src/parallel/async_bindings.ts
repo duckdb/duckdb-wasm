@@ -134,7 +134,12 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-
+            case WorkerRequestType.GET_FEATURE_FLAGS:
+                if (response.type == WorkerResponseType.FEATURE_FLAGS) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.RESET:
             case WorkerRequestType.PING:
             case WorkerRequestType.OPEN:
@@ -294,6 +299,16 @@ export class AsyncDuckDB {
     /** Get the version */
     public async getVersion(): Promise<string> {
         const task = new WorkerTask<WorkerRequestType.GET_VERSION, null, string>(WorkerRequestType.GET_VERSION, null);
+        const version = await this.postTask(task);
+        return version;
+    }
+
+    /** Get the feature flags */
+    public async getFeatureFlags(): Promise<string> {
+        const task = new WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>(
+            WorkerRequestType.GET_FEATURE_FLAGS,
+            null,
+        );
         const version = await this.postTask(task);
         return version;
     }
