@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <iostream>
+
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/web_filesystem.h"
@@ -33,6 +35,11 @@ namespace io {
 
 class FileSystemBuffer;
 
+class FileSystemBufferFullError : public std::exception {
+   public:
+    [[nodiscard]] const char* what() const noexcept override { return "buffer is full"; }
+};
+
 class FileSystemBufferFrame {
    protected:
     friend class FileSystemBuffer;
@@ -43,18 +50,19 @@ class FileSystemBufferFrame {
     enum State { NEW, LOADING, LOADED, EVICTING, RELOADED };
 
     /// The frame id
-    uint64_t frame_id;
+    uint64_t frame_id = -1;
+    /// How many times this page has been fixed.
+    /// This member is protected by the directory latch!
+    uint64_t num_users = 0;
+
     /// The frame latch
     std::shared_mutex frame_latch;
     /// The frame state
-    State frame_state;
-
+    State frame_state = State::NEW;
     /// The data buffer (constant size)
-    std::unique_ptr<char[]> buffer;
+    std::unique_ptr<char[]> buffer = nullptr;
     /// The data size
     size_t data_size = 0;
-    /// How many times this page has been fixed
-    uint64_t num_users = 0;
     /// Is the page dirty?
     bool is_dirty = false;
     /// Is locked exclusively?
@@ -72,7 +80,7 @@ class FileSystemBufferFrame {
 
    public:
     /// Constructor
-    FileSystemBufferFrame(uint64_t frame_id, uint64_t size, list_position fifo_position, list_position lru_position);
+    FileSystemBufferFrame(uint64_t frame_id, list_position fifo_position, list_position lru_position);
     /// Get number of users
     auto GetUserCount() const { return num_users; }
     /// Returns a pointer to this page data
@@ -208,28 +216,25 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     std::list<FileSystemBufferFrame*> lru = {};
 
     /// Evict all file frames
-    void EvictFileFrames(SegmentFile& file);
+    void EvictFileFrames(SegmentFile& file, std::unique_lock<std::mutex>& latch);
     /// Grow a file if required
-    void GrowFileIfRequired(SegmentFile& file);
-    /// Require the file size to be at lest bytes large
-    void RequireFileSize(SegmentFile& file, uint64_t bytes);
+    void GrowFileIfRequired(SegmentFile& file, std::unique_lock<std::mutex>& latch);
     /// Release a file ref
-    void ReleaseFile(SegmentFile& file);
+    void ReleaseFile(SegmentFile& file, std::unique_lock<std::mutex>& latch);
     /// Loads the page from disk
-    void LoadFrame(FileSystemBufferFrame& frame);
+    void LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& latch);
     /// Writes the page to disk if it is dirty
-    void FlushFrame(FileSystemBufferFrame& frame);
+    void FlushFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& latch);
     /// Returns the next page that can be evicted.
     /// Returns nullptr, when no page can be evicted.
-    FileSystemBufferFrame* FindFrameToEvict();
+    std::unique_ptr<char[]> EvictBufferFrame(std::unique_lock<std::mutex>& latch);
     /// Allocate a buffer for a frame.
     /// Evicts a page if neccessary
-    std::unique_ptr<char[]> AllocateFrameBuffer();
+    std::unique_ptr<char[]> AllocateFrameBuffer(std::unique_lock<std::mutex>& latch);
 
-    /// Takes a `FileSystemBufferFrame` reference that was returned by an earlier call to
-    /// `FixPage()` and unfixes it. When `is_dirty` is / true, the page is
-    /// written back to disk eventually.
-    void UnfixPage(uint64_t frame_id, bool is_dirty);
+    /// Unfix a frame.
+    /// The frame is written back eventually when is_dirty is passed.
+    void UnfixPage(FileSystemBufferFrame& frame, bool is_dirty);
 
    public:
     /// Constructor.
