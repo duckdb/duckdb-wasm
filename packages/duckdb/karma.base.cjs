@@ -39,7 +39,7 @@ module.exports = function (config) {
         autoWatch: true,
         singleRun: true,
         //browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
-        browsers: ['ChromeHeadlessNoSandbox'],
+        browsers: ['ChromeHeadlessNoSandbox', 'ChromeHeadlessNoSandboxEH'],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
