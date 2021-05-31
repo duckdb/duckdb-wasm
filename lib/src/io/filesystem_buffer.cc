@@ -277,7 +277,7 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame) {
 
     // Read data into frame
     assert(frame.data_size <= GetPageSize());
-    filesystem->Read(*file.handle, frame.buffer.data(), frame.data_size, page_id * page_size);
+    filesystem->Read(*file.handle, frame.buffer.get(), frame.data_size, page_id * page_size);
 }
 
 void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame) {
@@ -294,7 +294,7 @@ void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame) {
     DEBUG_DUMP_BYTES(frame.GetData());
 
     // Write page to disk
-    filesystem->Write(*file.handle, frame.buffer.data(), frame.data_size, page_id * page_size);
+    filesystem->Write(*file.handle, frame.buffer.get(), frame.data_size, page_id * page_size);
     frame.is_dirty = false;
 }
 
@@ -310,20 +310,16 @@ FileSystemBufferFrame* FileSystemBuffer::FindFrameToEvict() {
     return nullptr;
 }
 
-std::vector<char> FileSystemBuffer::AllocateFrameBuffer() {
+std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer() {
     // Still capacity?
     auto page_size = GetPageSize();
     if (frames.size() < page_capacity) {
-        std::vector<char> buffer;
-        buffer.resize(page_size);
-        return buffer;
+        return std::unique_ptr<char[]>{new char[page_size]};
     }
     // Otherwise find a page to evict
     auto* page_to_evict = FindFrameToEvict();
     if (page_to_evict == nullptr) {
-        std::vector<char> buffer;
-        buffer.resize(page_size);
-        return buffer;
+        return std::unique_ptr<char[]>{new char[page_size]};
     }
     // Is dirty? Flush the page
     if (page_to_evict->is_dirty) {

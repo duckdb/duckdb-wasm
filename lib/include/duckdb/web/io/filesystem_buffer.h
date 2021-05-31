@@ -49,8 +49,8 @@ class FileSystemBufferFrame {
     /// The frame state
     State frame_state;
 
-    /// The data buffer
-    std::vector<char> buffer;
+    /// The data buffer (constant size)
+    std::unique_ptr<char[]> buffer;
     /// The data size
     size_t data_size = 0;
     /// How many times this page has been fixed
@@ -76,7 +76,7 @@ class FileSystemBufferFrame {
     /// Get number of users
     auto GetUserCount() const { return num_users; }
     /// Returns a pointer to this page data
-    nonstd::span<char> GetData() { return {buffer.data(), data_size}; }
+    nonstd::span<char> GetData() { return {buffer.get(), data_size}; }
 };
 
 class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
@@ -224,7 +224,7 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     FileSystemBufferFrame* FindFrameToEvict();
     /// Allocate a buffer for a frame.
     /// Evicts a page if neccessary
-    std::vector<char> AllocateFrameBuffer();
+    std::unique_ptr<char[]> AllocateFrameBuffer();
 
     /// Takes a `FileSystemBufferFrame` reference that was returned by an earlier call to
     /// `FixPage()` and unfixes it. When `is_dirty` is / true, the page is
