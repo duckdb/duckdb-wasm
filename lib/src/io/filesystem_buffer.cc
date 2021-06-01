@@ -73,22 +73,20 @@ FileSystemBuffer::SegmentFile::SegmentFile(uint16_t segment_id, std::string_view
     : segment_id(segment_id), path(path), handle(std::move(handle)) {}
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(std::shared_ptr<FileSystemBuffer> buffer_manager, SegmentFile& file)
-    : buffer_manager_(std::move(buffer_manager)), file_(&file) {
+FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer_manager, SegmentFile& file)
+    : buffer_manager_(buffer_manager), file_(&file) {
     // Is always constructed with directory latch
     ++file.file_refs;
 }
 
 /// Constructor
 FileSystemBuffer::FileRef::FileRef(const FileRef& other) : buffer_manager_(other.buffer_manager_), file_(other.file_) {
-    std::unique_lock<std::mutex> dir_latch{buffer_manager_->directory_latch};
+    std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
     ++file_->file_refs;
 }
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(FileRef&& other)
-    : buffer_manager_(std::move(other.buffer_manager_)), file_(other.file_) {
-    other.buffer_manager_ = nullptr;
+FileSystemBuffer::FileRef::FileRef(FileRef&& other) : buffer_manager_(other.buffer_manager_), file_(other.file_) {
     other.file_ = nullptr;
 }
 
@@ -98,9 +96,8 @@ FileSystemBuffer::FileRef::~FileRef() { Release(); }
 /// Release the file ref
 void FileSystemBuffer::FileRef::Release() {
     if (!!file_) {
-        std::unique_lock<std::mutex> dir_latch{buffer_manager_->directory_latch};
-        buffer_manager_->ReleaseFile(*file_, dir_latch);
-        buffer_manager_ = nullptr;
+        std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
+        buffer_manager_.ReleaseFile(*file_, dir_latch);
         file_ = nullptr;
     }
 }
@@ -108,9 +105,9 @@ void FileSystemBuffer::FileRef::Release() {
 /// Copy assignment
 FileSystemBuffer::FileRef& FileSystemBuffer::FileRef::operator=(const FileRef& other) {
     Release();
-    buffer_manager_ = other.buffer_manager_;
+    assert(&buffer_manager_ == &other.buffer_manager_);
     file_ = other.file_;
-    std::unique_lock<std::mutex> dir_latch{buffer_manager_->directory_latch};
+    std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
     ++file_->file_refs;
     return *this;
 }
@@ -118,7 +115,7 @@ FileSystemBuffer::FileRef& FileSystemBuffer::FileRef::operator=(const FileRef& o
 /// Move assignment
 FileSystemBuffer::FileRef& FileSystemBuffer::FileRef::operator=(FileRef&& other) {
     Release();
-    buffer_manager_ = std::move(other.buffer_manager_);
+    assert(&buffer_manager_ == &other.buffer_manager_);
     file_ = other.file_;
     other.file_ = nullptr;
     return *this;
@@ -227,7 +224,7 @@ FileSystemBuffer::FileRef FileSystemBuffer::OpenFile(std::string_view path,
     std::unique_lock dir_latch{directory_latch};
     // Already added?
     if (auto it = segments_by_path.find(path); it != segments_by_path.end()) {
-        return FileRef{shared_from_this(), *segments.at(it->second)};
+        return FileRef{*this, *segments.at(it->second)};
     }
     // File id overflow?
     if (allocated_segment_ids == std::numeric_limits<uint16_t>::max()) {
@@ -253,7 +250,7 @@ FileSystemBuffer::FileRef FileSystemBuffer::OpenFile(std::string_view path,
     }
     file.file_size_persisted = filesystem->GetFileSize(*file.handle);
     file.file_size_buffered = file.file_size_persisted;
-    return FileRef{shared_from_this(), file};
+    return FileRef{*this, file};
 }
 
 void FileSystemBuffer::EvictFileFrames(SegmentFile& file, std::unique_lock<std::mutex>& latch) {
