@@ -285,7 +285,7 @@ void FileSystemBuffer::GrowFileIfRequired(SegmentFile& file, std::unique_lock<st
     }
 }
 
-void FileSystemBuffer::ReleaseFile(SegmentFile& file, std::unique_lock<std::mutex>& latch) {
+void FileSystemBuffer::ReleaseFile(SegmentFile& file, std::unique_lock<std::mutex>& dir_latch) {
     // Any open file references?
     assert(file.file_refs > file.file_refs_released);
     auto ref_releases = ++file.file_refs_released;
@@ -300,7 +300,7 @@ void FileSystemBuffer::ReleaseFile(SegmentFile& file, std::unique_lock<std::mute
     auto it = lb;
     while (it != ub && it != frames.end()) {
         auto next = it++;
-        FlushFrame(next->second, latch);
+        FlushFrame(next->second, dir_latch);
     }
 
     // References while we released the directory latch?
