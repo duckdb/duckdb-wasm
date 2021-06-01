@@ -27,15 +27,13 @@ namespace io {
 /// The buffer manager is tailored towards WASM in the following points:
 ///
 /// - The only goal is to buffer the interop with js.
-/// - We're complementing the actual buffer management of DuckDB and therefore allocate only few I/O buffers.
-/// - We maintain the few I/O buffers with the 2 Queue buffer replacement strategy to talk to js as rarely as possible.
+/// - We're complementing the actual buffer management of DuckDB.
+///   We do not fail if the buffer capacity is reached but over-allocate new buffers instead.
+///   (Memory management is not our business, we're only caching I/O buffers)
+/// - We maintain few I/O buffers with the 2-Queue buffer replacement strategy to differentiate sequential scans
+///   from hot pages.
 
 class FileSystemBuffer;
-
-class FileSystemBufferFullError : public std::exception {
-   public:
-    [[nodiscard]] const char* what() const noexcept override { return "buffer is full"; }
-};
 
 class FileSystemBufferFrame {
    protected:
@@ -58,6 +56,8 @@ class FileSystemBufferFrame {
     uint32_t data_size = 0;
     /// Is the page dirty?
     bool is_dirty = false;
+    /// Flush in progress?
+    bool flush_in_progress = false;
     /// Position of this page in the FIFO list
     list_position fifo_position;
     /// Position of this page in the LRU list
@@ -104,7 +104,7 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         uint64_t file_size_buffered = 0;
         /// The truncation lock.
         std::mutex truncation_lock = {};
-        /// This latch ensures that truncation is executed atomically.
+        /// This latch ensures that reads and writes are blocked during truncation.
         std::shared_mutex file_access = {};
 
         /// Constructor
