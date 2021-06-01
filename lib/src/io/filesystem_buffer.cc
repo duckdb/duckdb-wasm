@@ -11,8 +11,6 @@
 #include <tuple>
 #include <utility>
 
-static constexpr size_t MAX_OVER_ALLOCATION = 100;
-
 /// Build a frame id
 static constexpr uint64_t BuildFrameID(uint16_t segment_id, uint64_t page_id = 0) {
     assert(page_id < (1ull << 48));
@@ -349,7 +347,8 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<
 }
 
 void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& dir_latch) {
-    if (!frame.is_dirty) return;
+    if (!frame.is_dirty || frame.flush_in_progress) return;
+    frame.flush_in_progress = true;
     auto segment_id = GetSegmentID(frame.frame_id);
     auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
@@ -363,7 +362,7 @@ void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock
     GrowFileIfRequired(file, dir_latch);
 
     // Register as user to safely release the directory latch.
-    // Lock frame as shared.
+    // Lock frame as shared during flushing.
     ++frame.num_users;
     dir_latch.unlock();
     frame.LockFrame(false);
@@ -379,6 +378,7 @@ void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock
     dir_latch.lock();
     --frame.num_users;
     frame.is_dirty = false;
+    frame.flush_in_progress = false;
 }
 
 std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std::mutex>& latch) {
@@ -420,7 +420,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std:
             break;
         }
 
-        // Mark as loaded and retry
+        // Mark as loaded again and retry
         frame->frame_state = FileSystemBufferFrame::LOADED;
     }
 
@@ -438,18 +438,17 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std:
 }
 
 std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(std::unique_lock<std::mutex>& latch) {
-    if (frames.size() >= page_capacity) {
-        // Evict a frame if we execeeded the capacity
-        if (auto buffer = EvictBufferFrame(latch); buffer) {
-            return buffer;
-        }
-        // Exceeds threshold?
-        if ((frames.size() - page_capacity) > MAX_OVER_ALLOCATION) {
-            return nullptr;
+    std::unique_ptr<char[]> buffer = nullptr;
+    while (frames.size() >= page_capacity) {
+        auto evicted = EvictBufferFrame(latch);
+        if (evicted) {
+            buffer = std::move(evicted);
         }
     }
-    // Allocate a new frame buffer
-    return std::unique_ptr<char[]>{new char[GetPageSize()]};
+    if (!buffer) {
+        buffer = std::unique_ptr<char[]>{new char[GetPageSize()]};
+    }
+    return buffer;
 }
 
 /// Get the file size
@@ -525,8 +524,8 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
         break;
     }
 
-    // Couldn't find requested frame.
-    // Allocate a new one.
+    // Allocate a buffer frame.
+    // Note that this will always succeed since we're (over-)allocating a new buffer if necessary.
     auto buffer = AllocateFrameBuffer(latch);
 
     // Create a new frame but don't insert it in the queues, yet.
@@ -541,17 +540,6 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
     // I.e. see earlier condition.
     ++frame.num_users;
     frame.LockFrame(true);
-
-    // Allocation failed?
-    if (buffer == nullptr) {
-        --frame.num_users;
-        frame.UnlockFrame();
-        if (frame.num_users == 0) {
-            assert(frame.fifo_position == fifo.end() && frame.lru_position == lru.end());
-            frames.erase(frame_id);
-        }
-        throw FileSystemBufferFullError();
-    }
 
     // Load the data into the frame
     frame.frame_state = FileSystemBufferFrame::State::LOADING;
