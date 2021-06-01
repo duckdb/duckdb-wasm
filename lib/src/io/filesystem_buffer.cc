@@ -122,15 +122,15 @@ FileSystemBuffer::FileRef& FileSystemBuffer::FileRef::operator=(FileRef&& other)
 }
 
 /// Constructor
-FileSystemBuffer::BufferRef::BufferRef(std::shared_ptr<FileSystemBuffer> buffer_manager, FileSystemBufferFrame& frame)
-    : buffer_manager_(std::move(buffer_manager)), frame_(&frame) {}
+FileSystemBuffer::BufferRef::BufferRef(FileSystemBuffer& buffer_manager, FileSystemBufferFrame& frame)
+    : buffer_manager_(buffer_manager), frame_(&frame) {}
 
 /// Copy Constructor
 FileSystemBuffer::BufferRef::BufferRef(const BufferRef& other)
     : buffer_manager_(other.buffer_manager_), frame_(other.frame_) {
     assert(!frame_->locked_exclusively);
     {
-        std::unique_lock<std::mutex> dir_latch{buffer_manager_->directory_latch};
+        std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
         frame_->num_users++;
     }
     frame_->LockFrame(false);
@@ -138,8 +138,7 @@ FileSystemBuffer::BufferRef::BufferRef(const BufferRef& other)
 
 /// Move Constructor
 FileSystemBuffer::BufferRef::BufferRef(BufferRef&& other)
-    : buffer_manager_(std::move(other.buffer_manager_)), frame_(std::move(other.frame_)) {
-    other.buffer_manager_ = nullptr;
+    : buffer_manager_(other.buffer_manager_), frame_(std::move(other.frame_)) {
     other.frame_ = nullptr;
 }
 
@@ -147,10 +146,10 @@ FileSystemBuffer::BufferRef::BufferRef(BufferRef&& other)
 FileSystemBuffer::BufferRef& FileSystemBuffer::BufferRef::operator=(const BufferRef& other) {
     Release();
     assert(!frame_->locked_exclusively);  // Copy assignment of exclusive lock is undefined
-    buffer_manager_ = other.buffer_manager_;
+    assert(&buffer_manager_ == &other.buffer_manager_);
     frame_ = other.frame_;
     {
-        std::unique_lock<std::mutex> dir_latch{buffer_manager_->directory_latch};
+        std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
         frame_->num_users++;
     }
     frame_->LockFrame(false);
@@ -160,9 +159,8 @@ FileSystemBuffer::BufferRef& FileSystemBuffer::BufferRef::operator=(const Buffer
 /// Move Constructor
 FileSystemBuffer::BufferRef& FileSystemBuffer::BufferRef::operator=(BufferRef&& other) {
     Release();
-    buffer_manager_ = std::move(other.buffer_manager_);
+    assert(&buffer_manager_ == &other.buffer_manager_);
     frame_ = other.frame_;
-    other.buffer_manager_ = nullptr;
     other.frame_ = nullptr;
     return *this;
 }
@@ -172,8 +170,7 @@ FileSystemBuffer::BufferRef::~BufferRef() { Release(); }
 /// Constructor
 void FileSystemBuffer::BufferRef::Release() {
     if (!!frame_) {
-        buffer_manager_->UnfixPage(*frame_, frame_->is_dirty);
-        buffer_manager_ = nullptr;
+        buffer_manager_.UnfixPage(*frame_, frame_->is_dirty);
         frame_ = nullptr;
     }
 }
@@ -181,23 +178,23 @@ void FileSystemBuffer::BufferRef::Release() {
 /// Require a buffer frame to be of a certain size
 void FileSystemBuffer::BufferRef::RequireSize(uint64_t n) {
     if (!frame_) return;
-    std::unique_lock<std::mutex> dir_latch{buffer_manager_->directory_latch};
+    std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
     if (n < frame_->data_size) return;
 
     // Protect the segment with the directory latch
-    n = std::min<uint64_t>(n, buffer_manager_->GetPageSize());
+    n = std::min<uint64_t>(n, buffer_manager_.GetPageSize());
     auto frame_id = frame_->frame_id;
     auto page_id = GetPageID(frame_id);
     auto segment_id = GetSegmentID(frame_id);
-    auto file_it = buffer_manager_->segments.find(segment_id);
+    auto file_it = buffer_manager_.segments.find(segment_id);
 
     // Segment not found?
     // This is weird and should not happen.
     // (Frame without attached file makes no sense)
-    assert(file_it != buffer_manager_->segments.end());
+    assert(file_it != buffer_manager_.segments.end());
 
     // Increase the buffered file size
-    auto required = page_id * buffer_manager_->GetPageSize() + n;
+    auto required = page_id * buffer_manager_.GetPageSize() + n;
     file_it->second->file_size_buffered = std::max<uint64_t>(file_it->second->file_size_buffered, required);
     frame_->data_size = std::max<uint64_t>(n, frame_->data_size);
 }
@@ -517,7 +514,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
             // Release directory latch and lock frame
             dir_latch.unlock();
             frame.LockFrame(exclusive);
-            return BufferRef{shared_from_this(), frame};
+            return BufferRef{*this, frame};
         }
         break;
     }
@@ -555,7 +552,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, u
     }
 
     // Load the data
-    return BufferRef{shared_from_this(), frame};
+    return BufferRef{*this, frame};
 }
 
 void FileSystemBuffer::UnfixPage(FileSystemBufferFrame& frame, bool is_dirty) {

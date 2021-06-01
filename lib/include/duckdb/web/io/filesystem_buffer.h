@@ -160,11 +160,11 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
 
        protected:
         /// The buffer manager
-        std::shared_ptr<FileSystemBuffer> buffer_manager_;
+        FileSystemBuffer& buffer_manager_;
         /// The file
         FileSystemBufferFrame* frame_;
         /// The constructor
-        explicit BufferRef(std::shared_ptr<FileSystemBuffer> buffer_manager, FileSystemBufferFrame& frame);
+        explicit BufferRef(FileSystemBuffer& buffer_manager, FileSystemBufferFrame& frame);
 
        public:
         /// Copy constructor
