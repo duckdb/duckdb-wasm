@@ -1,6 +1,7 @@
 #ifndef INCLUDE_DUCKDB_WEB_IO_FILESYSTEM_BUFFER_H
 #define INCLUDE_DUCKDB_WEB_IO_FILESYSTEM_BUFFER_H
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -26,8 +27,6 @@ namespace io {
 /// The buffer manager is tailored towards WASM in the following points:
 ///
 /// - The only goal is to buffer the interop with js.
-/// - The buffer manager does not need to be thread-safe since DuckDB.wasm is single-threaded at the moment.
-///   (Cross-Origin Isolation of SharedArrayBuffers holds us back)
 /// - We're complementing the actual buffer management of DuckDB and therefore allocate only few I/O buffers.
 /// - We maintain the few I/O buffers with the 2 Queue buffer replacement strategy to talk to js as rarely as possible.
 
@@ -49,32 +48,31 @@ class FileSystemBufferFrame {
 
     /// The frame id
     uint64_t frame_id = -1;
-    /// How many times this page has been fixed.
-    /// This member is protected by the directory latch!
-    uint64_t num_users = 0;
-
-    /// The frame latch
-    std::shared_mutex frame_latch;
-    /// The frame state
+    /// The frame state.
     State frame_state = State::NEW;
-    /// The data buffer (constant size)
+    /// The data buffer (constant page size)
     std::unique_ptr<char[]> buffer = nullptr;
+    /// How many times this page has been fixed
+    uint64_t num_users = 0;
     /// The data size
-    size_t data_size = 0;
+    /// Written with directory latch, read sometimes without
+    uint32_t data_size = 0;
     /// Is the page dirty?
     bool is_dirty = false;
-    /// Is locked exclusively?
-    bool locked_exclusively = false;
-
     /// Position of this page in the FIFO list
     list_position fifo_position;
     /// Position of this page in the LRU list
     list_position lru_position;
 
-    /// Lock a buffer frame
-    void Lock(bool exclusive);
+    /// The frame latch
+    std::shared_mutex access_latch;
+    /// Is locked exclusively?
+    bool locked_exclusively = false;
+
+    /// Lock a buffer frame.
+    void LockFrame(bool exclusive);
     /// Unlock a buffer frame
-    void Unlock();
+    void UnlockFrame();
 
    public:
     /// Constructor
@@ -95,19 +93,26 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         std::string path;
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle;
-        /// This latch ensures that truncation is executed atomically.
-        std::mutex file_latch;
-        /// The file size as present on disk
-        uint64_t file_size_persisted;
+        /// The file references.
+        uint64_t file_refs = 0;
+        /// The released file refs
+        uint64_t file_refs_released = 0;
+        /// The file size as present on disk.
+        uint64_t file_size_persisted = 0;
         /// The buffered file size.
         /// We grow files on flush if the user wrote past the end.
         /// For that purpose, we maintain a required file size here that can be bumped through RequireFileSize.
-        uint64_t file_size_buffered;
-        /// The references
-        uint64_t references;
+        uint64_t file_size_buffered = 0;
+        /// This latch ensures that truncation is executed atomically.
+        std::shared_mutex file_access;
 
         /// Constructor
         SegmentFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
+
+        /// Access the file for reads or writes
+        auto AccessFile() { return std::shared_lock{file_access}; }
+        /// Block the file access for truncation
+        auto BlockFileAccess() { return std::unique_lock{file_access}; }
     };
 
    public:
@@ -196,7 +201,6 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
 
     /// Latch that protects all of the following member variables
     std::mutex directory_latch;
-
     /// Maps file ids to their file infos
     std::unordered_map<uint16_t, std::unique_ptr<SegmentFile>> segments = {};
     /// The file ids
