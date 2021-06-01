@@ -85,10 +85,10 @@ class FileSystemBufferFrame {
 
 class FileSystemBuffer {
    protected:
-    /// A segment
-    struct SegmentFile {
+    /// A buffered file
+    struct BufferedFile {
         /// The file id
-        uint16_t segment_id = 0;
+        uint16_t file_id = 0;
         /// The path
         std::string path = {};
         /// The file
@@ -109,7 +109,7 @@ class FileSystemBuffer {
         std::shared_mutex file_access = {};
 
         /// Constructor
-        SegmentFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
+        BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
 
         /// Access the file for reads or writes
         auto AccessFile() { return std::shared_lock{file_access}; }
@@ -126,9 +126,9 @@ class FileSystemBuffer {
         /// The buffer manager
         FileSystemBuffer& buffer_manager_;
         /// The file
-        SegmentFile* file_;
+        BufferedFile* file_;
         /// The constructor
-        explicit FileRef(FileSystemBuffer& buffer_manager, SegmentFile& file);
+        explicit FileRef(FileSystemBuffer& buffer_manager, BufferedFile& file);
 
        public:
         /// Copy constructor
@@ -144,7 +144,7 @@ class FileSystemBuffer {
         /// Is set?
         operator bool() const { return !!file_; }
         /// Get file id
-        auto& GetFileID() const { return file_->segment_id; }
+        auto& GetFileID() const { return file_->file_id; }
         /// Get path
         auto& GetPath() const { return file_->path; }
         /// Get handle
@@ -203,28 +203,29 @@ class FileSystemBuffer {
 
     /// Latch that protects all of the following member variables
     std::mutex directory_latch;
-    /// Maps file ids to their file infos
-    std::unordered_map<uint16_t, std::unique_ptr<SegmentFile>> segments = {};
-    /// The file ids
-    std::unordered_map<std::string_view, uint16_t> segments_by_path = {};
-    /// The free file ids
-    std::stack<uint16_t> free_segment_ids = {};
-    /// The next allocated file ids
-    uint16_t allocated_segment_ids = 0;
 
-    /// Maps page_ids to FileSystemBufferFrame objects of all pages that are currently in memory
+    /// Maps file ids to their file infos
+    std::unordered_map<uint16_t, std::unique_ptr<BufferedFile>> files = {};
+    /// The file ids
+    std::unordered_map<std::string_view, uint16_t> files_by_path = {};
+    /// The free file ids
+    std::stack<uint16_t> free_file_ids = {};
+    /// The next allocated file ids
+    uint16_t allocated_file_ids = 0;
+
+    /// Maps frame ids to frames
     std::map<uint64_t, FileSystemBufferFrame> frames = {};
-    /// FIFO list of pages
+    /// FIFO list of frames
     std::list<FileSystemBufferFrame*> fifo = {};
-    /// LRU list of pages
+    /// LRU list of frames
     std::list<FileSystemBufferFrame*> lru = {};
 
     /// Evict all file frames
-    void EvictFileFrames(SegmentFile& file, std::unique_lock<std::mutex>& latch);
+    void EvictFileFrames(BufferedFile& file, std::unique_lock<std::mutex>& latch);
     /// Grow a file if required
-    void GrowFileIfRequired(SegmentFile& file, std::unique_lock<std::mutex>& latch);
+    void GrowFileIfRequired(BufferedFile& file, std::unique_lock<std::mutex>& latch);
     /// Release a file ref
-    void ReleaseFile(SegmentFile& file, std::unique_lock<std::mutex>& latch);
+    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& latch);
     /// Loads the page from disk
     void LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& latch);
     /// Writes the page to disk if it is dirty
