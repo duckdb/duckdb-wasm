@@ -123,11 +123,11 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
 
        protected:
         /// The buffer manager
-        std::shared_ptr<FileSystemBuffer> buffer_manager_;
+        FileSystemBuffer& buffer_manager_;
         /// The file
         SegmentFile* file_;
         /// The constructor
-        explicit FileRef(std::shared_ptr<FileSystemBuffer> buffer_manager, SegmentFile& file);
+        explicit FileRef(FileSystemBuffer& buffer_manager, SegmentFile& file);
 
        public:
         /// Copy constructor
