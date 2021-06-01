@@ -18,7 +18,7 @@ static constexpr uint64_t BuildFrameID(uint16_t file_id, uint64_t page_id = 0) {
 }
 /// Returns the file id for a given frame id which is contained in the 16
 /// most significant bits of the page id.
-static constexpr uint16_t GetSegmentID(uint64_t frame_id) { return frame_id >> 48; }
+static constexpr uint16_t GetFileID(uint64_t frame_id) { return frame_id >> 48; }
 /// Returns the page id within its file for a given frame id. This
 /// corresponds to the 48 least significant bits of the page id.
 static constexpr uint64_t GetPageID(uint64_t frame_id) { return frame_id & ((1ull << 48) - 1); }
@@ -185,7 +185,7 @@ void FileSystemBuffer::BufferRef::RequireSize(uint64_t n) {
     n = std::min<uint64_t>(n, buffer_manager_.GetPageSize());
     auto frame_id = frame_->frame_id;
     auto page_id = GetPageID(frame_id);
-    auto file_id = GetSegmentID(frame_id);
+    auto file_id = GetFileID(frame_id);
     auto file_it = buffer_manager_.files.find(file_id);
 
     // Segment not found?
@@ -317,7 +317,7 @@ void FileSystemBuffer::ReleaseFile(BufferedFile& file, std::unique_lock<std::mut
 
 void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& dir_latch) {
     assert(frame.frame_state == FileSystemBufferFrame::LOADING);
-    auto file_id = GetSegmentID(frame.frame_id);
+    auto file_id = GetFileID(frame.frame_id);
     auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
 
@@ -344,7 +344,7 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<
 void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& dir_latch) {
     if (!frame.is_dirty || frame.flush_in_progress) return;
     frame.flush_in_progress = true;
-    auto file_id = GetSegmentID(frame.frame_id);
+    auto file_id = GetFileID(frame.frame_id);
     auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
 
