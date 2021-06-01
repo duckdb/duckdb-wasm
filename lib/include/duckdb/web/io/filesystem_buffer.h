@@ -32,6 +32,7 @@ namespace io {
 ///   (Memory management is not our business, we're only caching I/O buffers)
 /// - We maintain few I/O buffers with the 2-Queue buffer replacement strategy to differentiate sequential scans
 ///   from hot pages.
+/// - We still never hold the global directory latch while doing IO since reads/writes might go to disk.
 
 class FileSystemBuffer;
 
@@ -92,7 +93,7 @@ class FileSystemBuffer {
         std::string path = {};
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
-        /// The file references.
+        /// The file references
         uint64_t file_refs = 0;
         /// The released file refs
         uint64_t file_refs_released = 0;
