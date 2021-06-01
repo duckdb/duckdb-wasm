@@ -12,6 +12,7 @@ export async function benchmarkCompetitions(
     dbs: DBWrapper[],
     basedir: string,
     tableFetch: (path: string) => Promise<arrow.Table>,
+    tpchScale: string,
 ) {
     /*const tupleCount = 10000;
     /////////////////////////////////////////////
@@ -84,22 +85,20 @@ export async function benchmarkCompetitions(
 
     /////////////////////////////////////////////
 
-    const sf = '0_005';
-
     const keys: { [key: string]: string[][] } = {
-        customer: [['c_custkey']],
+        // customer: [['c_custkey']],
         lineitem: [['l_orderkey', 'l_linenumber']],
-        region: [['r_regionkey']],
+        // region: [['r_regionkey']],
         orders: [['o_orderkey']],
-        nation: [['n_nationkey']],
-        part: [['p_partkey']],
-        partsupp: [],
-        supplier: [['s_suppkey']],
+        // nation: [['n_nationkey']],
+        // part: [['p_partkey']],
+        // partsupp: [],
+        // supplier: [['s_suppkey']],
     };
 
     let tables: { [key: string]: arrow.Table } = {};
     for (const k of Object.keys(keys)) {
-        tables[k] = await tableFetch(`${basedir}/tpch/${sf}/parquet/${k}.parquet`);
+        tables[k] = await tableFetch(`${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`);
     }
 
     const primaryJoins = [];
@@ -117,7 +116,7 @@ export async function benchmarkCompetitions(
 
         for (const [k, v] of Object.entries(tables)) {
             console.log(k);
-            await db.load(k, `${basedir}/tpch/${sf}/parquet/${k}.parquet`, v);
+            await db.load(k, `${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`, v);
         }
 
         primaryJoins.push(
@@ -139,8 +138,9 @@ export async function benchmarkCompetitions(
         `Simple primary key join`,
         ...primaryJoins,
         cycle((result: any, _summary: any) => {
-            const duration = result.details.median;
-            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
+            const duration = result.details.mean.toFixed(5);
+            const margin = result.margin.toFixed(2);
+            console.log(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
         }),
     );
 
@@ -148,8 +148,9 @@ export async function benchmarkCompetitions(
         `TPCH query`,
         ...tpchs,
         cycle((result: any, _summary: any) => {
-            const duration = result.details.median;
-            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
+            const duration = result.details.mean.toFixed(5);
+            const margin = result.margin.toFixed(2);
+            console.log(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
         }),
     );
 

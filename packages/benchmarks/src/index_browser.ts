@@ -35,18 +35,30 @@ async function main() {
     adb = new duckdb_parallel.AsyncDuckDB(logger, worker);
     await adb.open('/static/duckdb.wasm');
 
+    const tpchScale = '0_1';
+
     const SQL = await sqljs({
         locateFile: file => `/sqljs/${file}`,
     });
-    let sqlDb = new SQL.Database();
+    let sqlDb = new SQL.Database(
+        new Uint8Array(await (await fetch(`/data/tpch/${tpchScale}/sqlite.db`)).arrayBuffer()),
+    );
 
     await benchmarkCompetitions(
         [
-            new DuckDBSyncMatWrapper(db),
-            new DuckDBSyncStreamWrapper(db1),
+            // new (class extends DuckDBSyncMatWrapper {
+            //     async registerFile(path: string): Promise<void> {
+            //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+            //     }
+            // })(db),
+            // new (class extends DuckDBSyncStreamWrapper {
+            //     async registerFile(path: string): Promise<void> {
+            //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+            //     }
+            // })(db1),
             new (class extends DuckDBAsyncStreamWrapper {
                 async registerFile(path: string): Promise<void> {
-                    this.db.addFileBlob(path, await (await fetch(path)).blob());
+                    await this.db.addFileBlob(path, await (await fetch(path)).blob());
                 }
             })(adb),
             new ArqueroWrapper(),
@@ -63,6 +75,7 @@ async function main() {
             await conn.disconnect();
             return table;
         },
+        tpchScale,
     );
     // benchmarkFormat(() => db!);
     // benchmarkIterator(() => db!);

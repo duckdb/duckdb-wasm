@@ -14,6 +14,7 @@ DUCKDB_SHELL="${DUCKDB_BUILD_DIR}/duckdb"
 
 SCALE_FACTOR=${1:-0.01}
 SCALE_FACTOR_DIR=${SCALE_FACTOR/./_}
+TABLES=(customer lineitem nation orders partsupp part region supplier)
 
 TPCH_DIR=${PROJECT_ROOT}/data/tpch
 TPCH_SF_OUT=${TPCH_DIR}/${SCALE_FACTOR_DIR}
@@ -25,6 +26,8 @@ TPCH_SF_OUT_DUCKDB_DB=${TPCH_SF_OUT_DUCKDB}/db
 DUCKDB_SCRIPT_FILE=${TPCH_SF_OUT_DUCKDB}/script.sql
 
 ${PROJECT_ROOT}/scripts/build_duckdb_shell.sh
+
+TPCH_SF_OUT_SQLITE=${TPCH_SF_OUT}/sqlite.db
 
 echo "SCALE_FACTOR=${SCALE_FACTOR}"
 
@@ -74,3 +77,21 @@ checkpoint;
 END
 ${DUCKDB_BUILD_DIR}/duckdb --echo < ${DUCKDB_SCRIPT_FILE}
 echo "TPCH_SF_OUT_DUCKDB=${TPCH_SF_OUT_DUCKDB}/db"
+
+rm -f ${TPCH_SF_OUT_SQLITE}
+sqlite3 "${TPCH_SF_OUT_SQLITE}" < ${PROJECT_ROOT}/data/sqlite-tpch-schema.sql
+
+for table in ${TABLES[@]}; do
+    echo "Importing table '${table}'..." >&2
+    data_file="${TPCH_SF_OUT_TBL}/${table}.tbl"
+    fifo=$(mktemp -u)
+	mkfifo ${fifo}
+	sed -e 's/|$//' < "${data_file}" > "${fifo}" &
+	(
+		echo ".mode csv";
+		echo ".separator |";
+		echo -n ".import ${fifo} ";
+		echo $table | tr a-z A-Z;
+	) | sqlite3 "${TPCH_SF_OUT_SQLITE}"
+	rm $fifo
+done

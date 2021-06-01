@@ -20,6 +20,7 @@ module.exports = function (config) {
             { pattern: 'node_modules/sql.js/dist/*.wasm', included: false, watched: false, served: true },
             { pattern: 'data/**/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/**/*.tbl', included: false, watched: false, served: true },
+            { pattern: 'data/**/*.db', included: false, watched: false, served: true },
             { pattern: 'data/**/*.zip', included: false, watched: false, served: true },
         ],
         preprocessors: {

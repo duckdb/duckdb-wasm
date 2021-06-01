@@ -8,6 +8,8 @@ import * as lf from 'lovefield-ts/dist/es6/lf.js';
 
 const textDecoder = new TextDecoder();
 
+const tpchTables = ['customer', 'lineitem', 'nation', 'orders', 'partsupp', 'part', 'region', 'supplier'];
+
 export interface DBWrapper {
     name: string;
 
@@ -124,7 +126,7 @@ export function* sqlInsert(table: string, data: arrow.Table) {
     }
 }
 
-export class DuckDBSyncMatWrapper implements DBWrapper {
+export abstract class DuckDBSyncMatWrapper implements DBWrapper {
     public name: string;
     protected conn?: duckdb.DuckDBConnection;
     protected db: duckdb.DuckDBBindings;
@@ -151,9 +153,16 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
     }
 
     async load(table: string, path: string | null, data: arrow.Table): Promise<void> {
-        for (const query of sqlInsert(table, data)) this.conn!.runQuery(query);
+        if (path) {
+            await this.registerFile(path);
+            await this.conn!.runQuery(`INSERT INTO ${table} SELECT * FROM parquet_scan('${path}')`);
+        } else {
+            for (const query of sqlInsert(table, data)) this.conn!.runQuery(query);
+        }
         return Promise.resolve();
     }
+
+    abstract registerFile(path: string): Promise<void>;
 
     scanInt(): Promise<void> {
         const results = this.conn!.runQuery<{ a: arrow.Int32 }>(`SELECT a FROM scan_table`);
@@ -210,7 +219,7 @@ export class DuckDBSyncMatWrapper implements DBWrapper {
     }
 }
 
-export class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
+export abstract class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
     constructor(db: duckdb.DuckDBBindings) {
         super(db);
         this.name = 'DuckDB-stream';
@@ -336,12 +345,18 @@ export class SQLjsWrapper implements DBWrapper {
     }
 
     create(table: string, data: arrow.Table, keys: string[][]): Promise<void> {
+        // TPCH is preloaded
+        if (tpchTables.includes(table)) return Promise.resolve();
+
         this.db.run(`DROP TABLE IF EXISTS ${table}`);
         this.db.run(sqlCreate(table, data, keys));
         return Promise.resolve();
     }
 
     load(table: string, path: string | null, data: arrow.Table): Promise<void> {
+        // TPCH is preloaded
+        if (tpchTables.includes(table)) return Promise.resolve();
+
         for (const query of sqlInsert(table, data)) this.db.run(query);
         return Promise.resolve();
     }

@@ -4,6 +4,7 @@ import path from 'path';
 import Worker from 'web-worker';
 import initSqlJs from 'sql.js';
 import * as arrow from 'apache-arrow';
+import fs from 'fs';
 
 import { benchmarkFormat } from './format_benchmark';
 import { benchmarkIterator } from './iterator_benchmark';
@@ -22,7 +23,6 @@ import {
 
 async function main() {
     let db: duckdb_serial.DuckDB | null = null;
-    let db1: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_parallel.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
 
@@ -33,43 +33,48 @@ async function main() {
         path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm'),
     );
     await db.open();
-    db1 = new duckdb_serial.DuckDB(
-        logger,
-        duckdb_serial.NodeRuntime,
-        path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm'),
-    );
-    await db1.open();
 
     worker = new Worker(path.resolve(__dirname, '../../duckdb/dist/duckdb-node-parallel.worker.js'));
     adb = new duckdb_parallel.AsyncDuckDB(logger, worker);
     await adb.open(path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm'));
 
+    const tpchScale = '0_5';
+
     const SQL = await initSqlJs();
-    let sqlDb = new SQL.Database();
+    let sqlDb = new SQL.Database(fs.readFileSync(path.resolve(__dirname, `../../../data/tpch/${tpchScale}/sqlite.db`)));
 
     await benchmarkCompetitions(
         [
-            new DuckDBSyncMatWrapper(db),
-            new DuckDBSyncStreamWrapper(db1),
-            new (class extends DuckDBAsyncStreamWrapper {
+            new (class extends DuckDBSyncMatWrapper {
                 async registerFile(path: string): Promise<void> {
                     await this.db.addFilePath(path, path);
                 }
-            })(adb),
-            new ArqueroWrapper(),
-            new LovefieldWrapper(),
+            })(db),
+            // new (class extends DuckDBSyncStreamWrapper {
+            //     async registerFile(path: string): Promise<void> {
+            //         await this.db.addFilePath(path, path);
+            //     }
+            // })(db1),
+            // new (class extends DuckDBAsyncStreamWrapper {
+            //     async registerFile(path: string): Promise<void> {
+            //         await this.db.addFilePath(path, path);
+            //     }
+            // })(adb),
+            // new ArqueroWrapper(),
+            // new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            new NanoSQLWrapper(),
-            new AlaSQLWrapper(),
+            // new NanoSQLWrapper(),
+            // new AlaSQLWrapper(),
         ],
         path.resolve(__dirname, '../../../data'),
-        async (path: string) => {
-            let conn = await adb!.connect();
-            await adb!.addFilePath(path, path);
-            const table = await conn.runQuery(`SELECT * FROM parquet_scan('${path}')`);
-            await conn.disconnect();
-            return table;
+        (path: string) => {
+            let conn = db!.connect();
+            db!.addFilePath(path, path);
+            const table = conn.runQuery(`SELECT * FROM parquet_scan('${path}') LIMIT 1`);
+            conn.disconnect();
+            return Promise.resolve(table);
         },
+        tpchScale,
     );
     // benchmarkFormat(() => db!);
     // benchmarkIterator(() => db!);
