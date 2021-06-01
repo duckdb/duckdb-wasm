@@ -12,9 +12,9 @@
 #include <utility>
 
 /// Build a frame id
-static constexpr uint64_t BuildFrameID(uint16_t segment_id, uint64_t page_id = 0) {
+static constexpr uint64_t BuildFrameID(uint16_t file_id, uint64_t page_id = 0) {
     assert(page_id < (1ull << 48));
-    return (page_id & ((1ull << 48) - 1)) | (static_cast<uint64_t>(segment_id) << 48);
+    return (page_id & ((1ull << 48) - 1)) | (static_cast<uint64_t>(file_id) << 48);
 }
 /// Returns the file id for a given frame id which is contained in the 16
 /// most significant bits of the page id.
@@ -68,12 +68,12 @@ void FileSystemBufferFrame::UnlockFrame() {
 }
 
 /// Constructor
-FileSystemBuffer::SegmentFile::SegmentFile(uint16_t segment_id, std::string_view path,
-                                           std::unique_ptr<duckdb::FileHandle> handle)
-    : segment_id(segment_id), path(path), handle(std::move(handle)) {}
+FileSystemBuffer::BufferedFile::BufferedFile(uint16_t file_id, std::string_view path,
+                                             std::unique_ptr<duckdb::FileHandle> handle)
+    : file_id(file_id), path(path), handle(std::move(handle)) {}
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer_manager, SegmentFile& file)
+FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer_manager, BufferedFile& file)
     : buffer_manager_(buffer_manager), file_(&file) {
     // Is always constructed with directory latch
     ++file.file_refs;
@@ -181,17 +181,17 @@ void FileSystemBuffer::BufferRef::RequireSize(uint64_t n) {
     std::unique_lock<std::mutex> dir_latch{buffer_manager_.directory_latch};
     if (n < frame_->data_size) return;
 
-    // Protect the segment with the directory latch
+    // Protect the file with the directory latch
     n = std::min<uint64_t>(n, buffer_manager_.GetPageSize());
     auto frame_id = frame_->frame_id;
     auto page_id = GetPageID(frame_id);
-    auto segment_id = GetSegmentID(frame_id);
-    auto file_it = buffer_manager_.segments.find(segment_id);
+    auto file_id = GetSegmentID(frame_id);
+    auto file_it = buffer_manager_.files.find(file_id);
 
     // Segment not found?
     // This is weird and should not happen.
     // (Frame without attached file makes no sense)
-    assert(file_it != buffer_manager_.segments.end());
+    assert(file_it != buffer_manager_.files.end());
 
     // Increase the buffered file size
     auto required = page_id * buffer_manager_.GetPageSize() + n;
@@ -220,27 +220,27 @@ FileSystemBuffer::FileRef FileSystemBuffer::OpenFile(std::string_view path,
     // Secure directory access
     std::unique_lock dir_latch{directory_latch};
     // Already added?
-    if (auto it = segments_by_path.find(path); it != segments_by_path.end()) {
-        return FileRef{*this, *segments.at(it->second)};
+    if (auto it = files_by_path.find(path); it != files_by_path.end()) {
+        return FileRef{*this, *files.at(it->second)};
     }
     // File id overflow?
-    if (allocated_segment_ids == std::numeric_limits<uint16_t>::max()) {
+    if (allocated_file_ids == std::numeric_limits<uint16_t>::max()) {
         // XXX User wants to open more than 65535 files at the same time.
         //     We don't support that.
         throw std::runtime_error("cannot open more than 65535 files");
     }
     // Allocate file id
-    uint16_t segment_id;
-    if (!free_segment_ids.empty()) {
-        segment_id = free_segment_ids.top();
-        free_segment_ids.pop();
+    uint16_t file_id;
+    if (!free_file_ids.empty()) {
+        file_id = free_file_ids.top();
+        free_file_ids.pop();
     } else {
-        segment_id = allocated_segment_ids++;
+        file_id = allocated_file_ids++;
     }
     // Create file
-    auto file_ptr = std::make_unique<SegmentFile>(segment_id, path, std::move(handle));
+    auto file_ptr = std::make_unique<BufferedFile>(file_id, path, std::move(handle));
     auto& file = *file_ptr;
-    segments.insert({segment_id, std::move(file_ptr)});
+    files.insert({file_id, std::move(file_ptr)});
     if (!file.handle) {
         file.handle = filesystem->OpenFile(
             file.path.c_str(), duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE);
@@ -250,15 +250,15 @@ FileSystemBuffer::FileRef FileSystemBuffer::OpenFile(std::string_view path,
     return FileRef{*this, file};
 }
 
-void FileSystemBuffer::EvictFileFrames(SegmentFile& file, std::unique_lock<std::mutex>& latch) {
-    auto segment_id = file.segment_id;
-    auto lb = frames.lower_bound(BuildFrameID(segment_id));
-    auto ub = frames.lower_bound(BuildFrameID(segment_id + 1));
+void FileSystemBuffer::EvictFileFrames(BufferedFile& file, std::unique_lock<std::mutex>& dir_latch) {
+    auto file_id = file.file_id;
+    auto lb = frames.lower_bound(BuildFrameID(file_id));
+    auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
 
     auto it = lb;
     while (it != ub && it != frames.end()) {
         auto next = it++;
-        FlushFrame(next->second, latch);
+        FlushFrame(next->second, dir_latch);
 
         if (it->second.num_users != 0) continue;
         if (next->second.lru_position != lru.end()) {
@@ -271,21 +271,21 @@ void FileSystemBuffer::EvictFileFrames(SegmentFile& file, std::unique_lock<std::
     }
 }
 
-void FileSystemBuffer::GrowFileIfRequired(SegmentFile& file, std::unique_lock<std::mutex>& latch) {
+void FileSystemBuffer::GrowFileIfRequired(BufferedFile& file, std::unique_lock<std::mutex>& dir_latch) {
     if (file.file_size_buffered <= file.file_size_persisted) return;
     auto before_truncation = file.file_size_persisted;
-    latch.unlock();
+    dir_latch.unlock();
     {
         auto block_access = file.BlockFileAccess();
         filesystem->Truncate(*file.handle, file.file_size_buffered);
     }
-    latch.lock();
+    dir_latch.lock();
     if (file.file_size_persisted == before_truncation) {
         file.file_size_persisted = file.file_size_buffered;
     }
 }
 
-void FileSystemBuffer::ReleaseFile(SegmentFile& file, std::unique_lock<std::mutex>& dir_latch) {
+void FileSystemBuffer::ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_latch) {
     // Any open file references?
     assert(file.file_refs > file.file_refs_released);
     auto ref_releases = ++file.file_refs_released;
@@ -294,9 +294,9 @@ void FileSystemBuffer::ReleaseFile(SegmentFile& file, std::unique_lock<std::mute
 
     // Flush all file frames.
     // Resolve the next iterator before flushing a frame since we might release the directory latch.
-    auto segment_id = file.segment_id;
-    auto lb = frames.lower_bound(BuildFrameID(segment_id));
-    auto ub = frames.lower_bound(BuildFrameID(segment_id + 1));
+    auto file_id = file.file_id;
+    auto lb = frames.lower_bound(BuildFrameID(file_id));
+    auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
     auto it = lb;
     while (it != ub && it != frames.end()) {
         auto next = it++;
@@ -309,21 +309,21 @@ void FileSystemBuffer::ReleaseFile(SegmentFile& file, std::unique_lock<std::mute
     // Erase all file frames
     frames.erase(lb, ub);
 
-    // Erase segment
-    segments_by_path.erase(file.path);
-    segments.erase(segment_id);
-    free_segment_ids.push(segment_id);
+    // Erase file
+    files_by_path.erase(file.path);
+    files.erase(file_id);
+    free_file_ids.push(file_id);
 }
 
 void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& dir_latch) {
     assert(frame.frame_state == FileSystemBufferFrame::LOADING);
-    auto segment_id = GetSegmentID(frame.frame_id);
+    auto file_id = GetSegmentID(frame.frame_id);
     auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
 
     // Determine the actual size of the frame
-    assert(segments.count(segment_id));
-    auto& file = *segments.at(segment_id);
+    assert(files.count(file_id));
+    auto& file = *files.at(file_id);
     frame.data_size = std::min<uint64_t>(file.file_size_persisted - page_id * page_size, GetPageSize());
     frame.is_dirty = false;
 
@@ -344,7 +344,7 @@ void FileSystemBuffer::LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<
 void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& dir_latch) {
     if (!frame.is_dirty || frame.flush_in_progress) return;
     frame.flush_in_progress = true;
-    auto segment_id = GetSegmentID(frame.frame_id);
+    auto file_id = GetSegmentID(frame.frame_id);
     auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
 
@@ -352,8 +352,8 @@ void FileSystemBuffer::FlushFrame(FileSystemBufferFrame& frame, std::unique_lock
     DEBUG_DUMP_BYTES(frame.GetData());
 
     // Write data from frame
-    assert(segments.count(segment_id));
-    auto& file = *segments.at(segment_id);
+    assert(files.count(file_id));
+    auto& file = *files.at(file_id);
     GrowFileIfRequired(file, dir_latch);
 
     // Register as user to safely release the directory latch.
@@ -453,8 +453,8 @@ uint64_t FileSystemBuffer::GetFileSize(const FileRef& file) { return file.file_-
 FileSystemBuffer::BufferRef FileSystemBuffer::FixPage(const FileRef& file_ref, uint64_t page_id, bool exclusive) {
     // Build the frame id
     assert(file_ref.file_ != nullptr);
-    auto segment_id = file_ref.file_->segment_id;
-    auto frame_id = BuildFrameID(segment_id, page_id);
+    auto file_id = file_ref.file_->file_id;
+    auto frame_id = BuildFrameID(file_id, page_id);
 
     // Protect directory access
     std::unique_lock dir_latch{directory_latch};
@@ -566,12 +566,12 @@ void FileSystemBuffer::UnfixPage(FileSystemBufferFrame& frame, bool is_dirty) {
 
 void FileSystemBuffer::FlushFile(const FileRef& file_ref) {
     std::unique_lock<std::mutex> dir_latch{directory_latch};
-    auto segment_id = file_ref.file_->segment_id;
+    auto file_id = file_ref.file_->file_id;
 
     // Flush all frames.
     // Resolve the next iterator before flushing a frame since we might release the directory latch.
-    auto lb = frames.lower_bound(BuildFrameID(segment_id));
-    auto ub = frames.lower_bound(BuildFrameID(segment_id + 1));
+    auto lb = frames.lower_bound(BuildFrameID(file_id));
+    auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
     auto it = lb;
     while (it != ub && it != frames.end()) {
         auto next = it++;
@@ -581,7 +581,7 @@ void FileSystemBuffer::FlushFile(const FileRef& file_ref) {
 
 void FileSystemBuffer::FlushFile(std::string_view path) {
     std::unique_lock<std::mutex> dir_latch{directory_latch};
-    if (auto file = segments_by_path.find(path); file != segments_by_path.end()) {
+    if (auto file = files_by_path.find(path); file != files_by_path.end()) {
         // Collect frame ids
         auto lb = frames.lower_bound(BuildFrameID(file->second));
         auto ub = frames.lower_bound(BuildFrameID(file->second + 1));
@@ -664,9 +664,9 @@ void FileSystemBuffer::Truncate(const FileRef& file_ref, uint64_t new_size) {
     file->file_size_buffered = new_size;
 
     // Update all file frames
-    auto segment_id = file_ref.file_->segment_id;
-    auto lb = frames.lower_bound(BuildFrameID(segment_id));
-    auto ub = frames.lower_bound(BuildFrameID(segment_id + 1));
+    auto file_id = file_ref.file_->file_id;
+    auto lb = frames.lower_bound(BuildFrameID(file_id));
+    auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
     for (auto it = lb; it != ub; ++it) {
         auto& frame = it->second;
         auto page_id = GetPageID(frame.frame_id);
