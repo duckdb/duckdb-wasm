@@ -55,7 +55,6 @@ class FileSystemBufferFrame {
     /// How many times this page has been fixed
     uint64_t num_users = 0;
     /// The data size
-    /// Written with directory latch, read sometimes without
     uint32_t data_size = 0;
     /// Is the page dirty?
     bool is_dirty = false;
@@ -88,11 +87,11 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     /// A segment
     struct SegmentFile {
         /// The file id
-        uint16_t segment_id;
+        uint16_t segment_id = 0;
         /// The path
-        std::string path;
+        std::string path = {};
         /// The file
-        std::unique_ptr<duckdb::FileHandle> handle;
+        std::unique_ptr<duckdb::FileHandle> handle = nullptr;
         /// The file references.
         uint64_t file_refs = 0;
         /// The released file refs
@@ -103,8 +102,10 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         /// We grow files on flush if the user wrote past the end.
         /// For that purpose, we maintain a required file size here that can be bumped through RequireFileSize.
         uint64_t file_size_buffered = 0;
+        /// The truncation lock.
+        std::mutex truncation_lock = {};
         /// This latch ensures that truncation is executed atomically.
-        std::shared_mutex file_access;
+        std::shared_mutex file_access = {};
 
         /// Constructor
         SegmentFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);

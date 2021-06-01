@@ -667,25 +667,28 @@ uint64_t FileSystemBuffer::Write(const FileRef& file, const void* in, uint64_t b
 }
 
 void FileSystemBuffer::Truncate(const FileRef& file_ref, uint64_t new_size) {
-    // Lock directory for frame eviction
-    std::unique_lock<std::mutex> latch{directory_latch};
-
-    // Evict all frames before truncation
+    // Lock out concurrent truncations
     auto* file = file_ref.file_;
-    EvictFileFrames(*file, latch);
-    auto before_truncation = file->file_size_persisted;
-    latch.unlock();
+    std::unique_lock<std::mutex> truncation{file->truncation_lock};
 
-    // Truncate the file
+    // Block all file accesses
     {
         auto block_access = file->BlockFileAccess();
         filesystem->Truncate(*file->handle, new_size);
     }
+    file->file_size_persisted = new_size;
+    file->file_size_buffered = new_size;
 
-    latch.lock();
-    if (file->file_size_persisted == before_truncation) {
-        file->file_size_persisted = new_size;
-        file->file_size_buffered = new_size;
+    // Update all frame sizes of the file
+    std::unique_lock<std::mutex> latch{directory_latch};
+    auto segment_id = file_ref.file_->segment_id;
+    auto lb = frames.lower_bound(BuildFrameID(segment_id));
+    auto ub = frames.lower_bound(BuildFrameID(segment_id + 1));
+    for (auto it = lb; it != ub; ++it) {
+        auto& frame = it->second;
+        auto page_id = GetPageID(frame.frame_id);
+        auto page_begin = page_id * GetPageSize();
+        frame.data_size = std::max<size_t>(new_size, page_begin) - page_begin;
     }
 }
 
