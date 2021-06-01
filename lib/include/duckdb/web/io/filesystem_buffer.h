@@ -82,7 +82,7 @@ class FileSystemBufferFrame {
     nonstd::span<char> GetData() { return {buffer.get(), data_size}; }
 };
 
-class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
+class FileSystemBuffer {
    protected:
     /// A segment
     struct SegmentFile {
