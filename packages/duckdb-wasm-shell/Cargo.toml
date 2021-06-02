@@ -1,0 +1,35 @@
+[package]
+name = "duckdb-wasm-shell"
+version = "0.1.0"
+authors = ["Andre Kohn <kohn.a@outlook.com>"]
+edition = "2018"
+publish = false
+
+workspace = "../.."
+
+[dependencies.web-sys]
+version = "0.3.37"
+features = [
+  'console',
+  'Crypto',
+  'Document',
+  'Element',
+  'Node',
+  'NodeList',
+  'Window',
+  'MouseEvent',
+  'KeyboardEvent',
+  'HtmlTextAreaElement',
+  'HtmlCanvasElement',
+  'WebSocket',
+]
+
+[dependencies]
+wasm-bindgen = "0.2.62"
+js-sys = "0.3.39"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.12"
+
+[profile.release]
+opt-level = "s"
