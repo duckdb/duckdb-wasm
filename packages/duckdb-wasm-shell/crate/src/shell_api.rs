@@ -1,3 +1,5 @@
+use crate::duckdb::AsyncDuckDB;
+use crate::duckdb::AsyncDuckDBBindings;
 use crate::shell;
 use crate::shell_options;
 use crate::xterm::addons::fit::FitAddon;
@@ -34,9 +36,16 @@ pub fn embed_shell(
     addon_fit.fit();
 
     shell::Shell::global_mut(|ref mut s| {
-        s.attach(terminal);
+        s.attach_terminal(terminal);
         s.write_greeter();
         s.focus();
     });
     Ok(())
+}
+
+#[wasm_bindgen(js_name = "attachAsyncDatabase")]
+pub fn attach_async_database(db: AsyncDuckDBBindings) {
+    shell::Shell::global_mut(|ref mut s| {
+        s.attach_async_database(AsyncDuckDB::from_bindings(db));
+    })
 }
