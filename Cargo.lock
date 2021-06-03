@@ -255,6 +255,7 @@ dependencies = [
  "arrow",
  "console_error_panic_hook",
  "js-sys",
+ "lazy_static",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
