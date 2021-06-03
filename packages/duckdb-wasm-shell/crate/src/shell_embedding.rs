@@ -1,5 +1,6 @@
 use crate::codes;
 use crate::print;
+use crate::shell;
 use crate::shell_options;
 use crate::xterm::addons::fit::FitAddon;
 use crate::xterm::addons::webgl::WebglAddon;
@@ -7,11 +8,11 @@ use crate::xterm::{OnKeyEvent, Terminal, TerminalOptions, Theme};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-#[wasm_bindgen]
-pub fn embed(
+#[wasm_bindgen(js_name = "embed")]
+pub fn embed_shell(
     elem: web_sys::HtmlElement,
     props: shell_options::ShellOptions,
-) -> Result<Terminal, JsValue> {
+) -> Result<(), JsValue> {
     let terminal = Terminal::new(
         TerminalOptions::new()
             .with_rows(100)
@@ -91,5 +92,7 @@ pub fn embed(
 
     print::prompt_nobreak(&terminal);
     terminal.focus();
-    Ok(terminal)
+
+    shell::Shell::global_mut(|ref mut s| s.attach(terminal));
+    Ok(())
 }
