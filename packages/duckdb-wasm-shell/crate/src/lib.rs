@@ -1,3 +1,5 @@
+pub mod bindings;
+pub mod codes;
 pub mod embed;
 pub mod options;
 pub mod print;

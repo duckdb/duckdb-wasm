@@ -1,3 +1,4 @@
+use crate::codes;
 use crate::options;
 use crate::print;
 use crate::xterm::addons::fit::FitAddon;
@@ -5,18 +6,6 @@ use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{OnKeyEvent, Terminal, TerminalOptions, Theme};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-
-// Keyboard keys
-// https://notes.burke.libbey.me/ansi-escape-codes/
-const KEY_ENTER: u32 = 13;
-const KEY_BACKSPACE: u32 = 8;
-const KEY_LEFT_ARROW: u32 = 37;
-const KEY_RIGHT_ARROW: u32 = 39;
-const KEY_C: u32 = 67;
-const KEY_L: u32 = 76;
-
-const CURSOR_LEFT: &str = "\x1b[D";
-const CURSOR_RIGHT: &str = "\x1b[C";
 
 #[wasm_bindgen]
 pub fn embed(
@@ -53,7 +42,7 @@ pub fn embed(
     let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {
         let event = e.dom_event();
         match event.key_code() {
-            KEY_ENTER => {
+            codes::KEY_ENTER => {
                 if !line.is_empty() {
                     term.writeln("");
                     term.writeln(&format!("You entered {} characters '{}'", line.len(), line));
@@ -62,27 +51,27 @@ pub fn embed(
                 }
                 print::prompt(&term);
             }
-            KEY_BACKSPACE => {
+            codes::KEY_BACKSPACE => {
                 if cursor_col > 0 {
                     term.write("\u{0008} \u{0008}");
                     line.pop();
                     cursor_col -= 1;
                 }
             }
-            KEY_LEFT_ARROW => {
+            codes::KEY_LEFT_ARROW => {
                 if cursor_col > 0 {
-                    term.write(CURSOR_LEFT);
+                    term.write(codes::CURSOR_LEFT);
                     cursor_col -= 1;
                 }
             }
-            KEY_RIGHT_ARROW => {
+            codes::KEY_RIGHT_ARROW => {
                 if cursor_col < line.len() {
-                    term.write(CURSOR_RIGHT);
+                    term.write(codes::CURSOR_RIGHT);
                     cursor_col += 1;
                 }
             }
-            KEY_L if event.ctrl_key() => term.clear(),
-            KEY_C if event.ctrl_key() => {
+            codes::KEY_L if event.ctrl_key() => term.clear(),
+            codes::KEY_C if event.ctrl_key() => {
                 print::prompt(&term);
                 line.clear();
                 cursor_col = 0;
