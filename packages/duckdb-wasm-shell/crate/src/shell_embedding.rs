@@ -1,7 +1,7 @@
-use crate::codes;
-use crate::print;
 use crate::shell;
 use crate::shell_options;
+use crate::term_codes;
+use crate::term_printing;
 use crate::xterm::addons::fit::FitAddon;
 use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{OnKeyEvent, Terminal, TerminalOptions, Theme};
@@ -43,37 +43,37 @@ pub fn embed_shell(
     let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {
         let event = e.dom_event();
         match event.key_code() {
-            codes::KEY_ENTER => {
+            term_codes::KEY_ENTER => {
                 if !line.is_empty() {
                     term.writeln("");
                     term.writeln(&format!("You entered {} characters '{}'", line.len(), line));
                     line.clear();
                     cursor_col = 0;
                 }
-                print::prompt(&term);
+                term_printing::prompt(&term);
             }
-            codes::KEY_BACKSPACE => {
+            term_codes::KEY_BACKSPACE => {
                 if cursor_col > 0 {
                     term.write("\u{0008} \u{0008}");
                     line.pop();
                     cursor_col -= 1;
                 }
             }
-            codes::KEY_LEFT_ARROW => {
+            term_codes::KEY_LEFT_ARROW => {
                 if cursor_col > 0 {
-                    term.write(codes::CURSOR_LEFT);
+                    term.write(term_codes::CURSOR_LEFT);
                     cursor_col -= 1;
                 }
             }
-            codes::KEY_RIGHT_ARROW => {
+            term_codes::KEY_RIGHT_ARROW => {
                 if cursor_col < line.len() {
-                    term.write(codes::CURSOR_RIGHT);
+                    term.write(term_codes::CURSOR_RIGHT);
                     cursor_col += 1;
                 }
             }
-            codes::KEY_L if event.ctrl_key() => term.clear(),
-            codes::KEY_C if event.ctrl_key() => {
-                print::prompt(&term);
+            term_codes::KEY_L if event.ctrl_key() => term.clear(),
+            term_codes::KEY_C if event.ctrl_key() => {
+                term_printing::prompt(&term);
                 line.clear();
                 cursor_col = 0;
             }
@@ -90,7 +90,7 @@ pub fn embed_shell(
     terminal.on_key(callback.as_ref().unchecked_ref());
     callback.forget();
 
-    print::prompt_nobreak(&terminal);
+    term_printing::prompt_nobreak(&terminal);
     terminal.focus();
 
     shell::Shell::global_mut(|ref mut s| s.attach(terminal));
