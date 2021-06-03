@@ -38,7 +38,9 @@ class Shell extends React.Component<Props> {
 
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
-            shell.embed(this.termContainer.current);
+            shell.embed(this.termContainer.current, {
+                backgroundColor: '#333',
+            });
             // TODO Instantiate the wasm module
         }
     }

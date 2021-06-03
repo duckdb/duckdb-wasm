@@ -1,3 +1,4 @@
+pub mod options;
 pub mod xterm;
 
 use crate::xterm::addons::fit::FitAddon;
@@ -40,7 +41,7 @@ pub fn main() {
 }
 
 #[wasm_bindgen]
-pub fn embed(elem: web_sys::HtmlElement) -> Result<(), JsValue> {
+pub fn embed(elem: web_sys::HtmlElement, props: options::ShellOptions) -> Result<(), JsValue> {
     let terminal: Terminal = Terminal::new(
         TerminalOptions::new()
             .with_rows(100)
@@ -52,7 +53,7 @@ pub fn embed(elem: web_sys::HtmlElement) -> Result<(), JsValue> {
             .with_theme(
                 Theme::new()
                     .with_foreground("#FFFFFF")
-                    .with_background("#000000"),
+                    .with_background(&props.get_bg()),
             ),
     );
     terminal.open(elem);
@@ -116,11 +117,9 @@ pub fn embed(elem: web_sys::HtmlElement) -> Result<(), JsValue> {
     }) as Box<dyn FnMut(_)>);
 
     terminal.on_key(callback.as_ref().unchecked_ref());
-
     callback.forget();
 
     terminal.write(PROMPT);
     terminal.focus();
-
     Ok(())
 }
