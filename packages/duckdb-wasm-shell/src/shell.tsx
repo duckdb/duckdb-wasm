@@ -15,6 +15,8 @@ interface Props {
 class Shell extends React.Component<Props> {
     /// The terminal container
     protected termContainer: React.RefObject<HTMLDivElement>;
+    /// The terminal
+    protected term: any;
 
     /// Constructor
     constructor(props: Props) {
@@ -38,7 +40,7 @@ class Shell extends React.Component<Props> {
 
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
-            shell.embed(this.termContainer.current, {
+            this.term = shell.embed(this.termContainer.current, {
                 backgroundColor: '#333',
             });
             // TODO Instantiate the wasm module
