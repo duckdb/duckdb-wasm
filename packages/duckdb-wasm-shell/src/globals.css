@@ -1,0 +1,11 @@
+:root {
+    --nav_bar_bg: rgb(30, 30, 30);
+    --nav_bar_button_height: 48px;
+    --nav_bar_button_margin: 4px 8px;
+    --nav_bar_width: 64px;
+    --nav_logo_height: 56px;
+    --nav_tab_bg: transparent;
+    --nav_tab_bg_active: rgb(20, 20, 20);
+    --nav_tab_fg: rgb(255, 255, 255);
+    --nav_tab_fg_active: rgb(255, 255, 255);
+}

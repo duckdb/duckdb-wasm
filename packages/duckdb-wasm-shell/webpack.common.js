@@ -52,8 +52,16 @@ export function configure(params) {
                     ],
                 },
                 {
-                    test: /.*\.wasm$/,
+                    test: /.*shell_bg\.wasm$/,
                     type: 'webassembly/async',
+                },
+                {
+                    test: /.*duckdb(|-eh|-eh-mt)\.wasm$/,
+                    type: 'javascript/auto',
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/wasm/[contenthash].[ext]',
+                    },
                 },
                 {
                     test: /\.(sql)$/i,
