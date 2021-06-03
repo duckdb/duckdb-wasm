@@ -26,7 +26,8 @@ function tmpFile() {
 const openFile = (path: string) => {
     const fd = fs.openSync(
         path,
-        fs.constants.O_CREAT | fs.constants.O_RDWR | fs.constants.S_IRUSR | fs.constants.S_IWUSR,
+        fs.constants.O_CREAT | fs.constants.O_RDWR,
+        fs.constants.S_IRUSR | fs.constants.S_IWUSR,
     );
     const stat = fs.fstatSync(fd);
     const fileID = NodeRuntime.nextFileID++;
