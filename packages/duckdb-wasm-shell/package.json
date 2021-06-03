@@ -1,0 +1,76 @@
+{
+    "name": "@duckdb/duckdb-wasm-shell",
+    "version": "0.1.0",
+    "description": "",
+    "author": "Andre Kohn <kohn.a@outlook.com>",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "start": "webpack serve --config webpack.debug.js",
+        "build:debug": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.debug.js",
+        "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.release.js",
+        "analyze:debug": "webpack --config webpack.debug.js --analyze",
+        "analyze:release": "webpack --config webpack.release.js --analyze",
+        "lint": "yarn run eslint src types"
+    },
+    "engines": {
+        "node": ">=14.13"
+    },
+    "dependencies": {
+        "@duckdb/duckdb-wasm": "^0.0.28",
+        "classnames": "^2.3.1",
+        "react": "^17.0.2",
+        "react-dom": "^17.0.2",
+        "react-dropzone": "^11.3.2",
+        "react-router-dom": "^5.2.0",
+        "redux": "^4.1.0",
+        "xterm": "^4.5.0",
+        "xterm-addon-fit": "^0.3.0",
+        "xterm-addon-ligatures": "^0.5.0",
+        "xterm-addon-unicode11": "^0.2.0",
+        "xterm-addon-webgl": "^0.11.1"
+    },
+    "devDependencies": {
+        "@types/classnames": "^2.3.1",
+        "@types/node": "^15.6.1",
+        "@types/react-dom": "^17.0.5",
+        "@types/react-router-dom": "^5.1.7",
+        "@types/react-virtualized": "^9.21.11",
+        "@wasm-tool/wasm-pack-plugin": "^1.4.0",
+        "css-loader": "^5.2.6",
+        "esbuild-css-modules-plugin": "^1.0.6",
+        "eslint": "^7.27.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-jasmine": "^4.1.2",
+        "eslint-plugin-react": "^7.24.0",
+        "file-loader": "^6.2.0",
+        "html-webpack-plugin": "^5.3.1",
+        "jasmine-spec-reporter": "^7.0.0",
+        "karma": "^6.3.2",
+        "karma-chrome-launcher": "^3.1.0",
+        "karma-firefox-launcher": "^2.1.0",
+        "karma-jasmine": "^4.0.1",
+        "karma-spec-reporter": "^0.0.32",
+        "karma-webpack": "^5.0.0",
+        "mini-css-extract-plugin": "^1.6.0",
+        "source-map-loader": "^3.0.0",
+        "style-loader": "^2.0.0",
+        "ts-loader": "^9.2.2",
+        "typescript": "^4.3.2",
+        "typescript-plugin-css-modules": "^3.3.0",
+        "webpack": "^5.38.1",
+        "webpack-bundle-analyzer": "^4.4.1",
+        "webpack-cli": "^4.7.0",
+        "webpack-dev-server": "^3.11.2",
+        "webpackbar": "^5.0.0-3"
+    },
+    "peerDependencies": {
+        "@types/react": "^17.0.3",
+        "react": "^17.0.2",
+        "react-dom": "^17.0.2"
+    },
+    "optionalDependencies": {
+        "fsevents": "*"
+    },
+    "type": "module"
+}
