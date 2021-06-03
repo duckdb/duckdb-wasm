@@ -314,10 +314,15 @@ export class AsyncDuckDB {
     }
 
     /** Connect to the database */
-    public async connect(): Promise<AsyncDuckDBConnection> {
+    public async connectInternal(): Promise<number> {
         const task = new WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>(WorkerRequestType.CONNECT, null);
-        const conn = await this.postTask(task);
-        return new AsyncDuckDBConnection(this, conn);
+        return await this.postTask(task);
+    }
+
+    /** Connect to the database */
+    public async connect(): Promise<AsyncDuckDBConnection> {
+        const cid = await this.connectInternal();
+        return new AsyncDuckDBConnection(this, cid);
     }
 
     /** Disconnect from the database */

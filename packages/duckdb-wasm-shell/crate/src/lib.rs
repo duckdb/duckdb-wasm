@@ -1,6 +1,6 @@
 pub mod duckdb;
 pub mod shell;
-pub mod shell_embedding;
+pub mod shell_api;
 pub mod shell_options;
 pub mod term_codes;
 pub mod xterm;

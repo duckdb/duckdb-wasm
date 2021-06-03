@@ -1,6 +1,9 @@
+use crate::duckdb;
+use crate::duckdb::AsyncDuckDB;
 use crate::term_codes;
 use crate::xterm::{OnKeyEvent, Terminal};
 use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -19,6 +22,10 @@ pub struct Shell {
     line: String,
     /// The cursor column
     cursor_column: usize,
+    /// The database (if any)
+    db: Option<Rc<RefCell<duckdb::AsyncDuckDB>>>,
+    /// The connection (if any)
+    db_conn: Option<duckdb::AsyncDuckDBConnection>,
 }
 
 impl Shell {
@@ -28,6 +35,8 @@ impl Shell {
             terminal: Terminal::construct(None),
             line: String::new(),
             cursor_column: 0,
+            db: None,
+            db_conn: None,
         }
     }
 
@@ -84,7 +93,7 @@ impl Shell {
     }
 
     /// Attach to a terminal
-    pub fn attach(&mut self, term: Terminal) {
+    pub fn attach_terminal(&mut self, term: Terminal) {
         self.terminal = term;
 
         // Register on_key callback
@@ -93,6 +102,16 @@ impl Shell {
         }) as Box<dyn FnMut(_)>);
         self.terminal.on_key(callback.as_ref().unchecked_ref());
         callback.forget();
+    }
+
+    /// Attach to a database
+    pub fn attach_async_database(&mut self, db: AsyncDuckDB) {
+        // Teardown state (if there is any)
+        if self.db_conn.is_some() {
+            // XXX disconnect
+        }
+        self.db_conn = None;
+        self.db = Some(Rc::new(RefCell::new(db)));
     }
 
     /// Write the DuckDB logo

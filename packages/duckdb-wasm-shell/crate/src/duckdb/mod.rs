@@ -1,1 +1,3 @@
-pub mod async_duckdb;
+mod async_duckdb;
+
+pub use async_duckdb::*;
