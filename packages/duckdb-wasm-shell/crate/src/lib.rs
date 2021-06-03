@@ -1,8 +1,9 @@
 pub mod bindings;
 pub mod codes;
-pub mod embed;
-pub mod options;
 pub mod print;
+pub mod shell;
+pub mod shell_embedding;
+pub mod shell_options;
 pub mod xterm;
 
 use wasm_bindgen::prelude::*;
