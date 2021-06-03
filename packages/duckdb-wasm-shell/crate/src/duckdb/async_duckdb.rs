@@ -34,10 +34,12 @@ pub struct AsyncDuckDB {
 }
 
 impl AsyncDuckDB {
+    /// Create an async DuckDB from bindings
     pub fn from_bindings(bindings: AsyncDuckDBBindings) -> Self {
         Self { bindings }
     }
 
+    /// Get the DuckDB version
     pub async fn get_version(&self) -> Result<String, JsValue> {
         Ok(self
             .bindings
@@ -47,6 +49,7 @@ impl AsyncDuckDB {
             .unwrap_or("?".to_string()))
     }
 
+    /// Get the DuckDB feature flags
     pub async fn get_feature_flags(&self) -> Result<u32, JsValue> {
         Ok(self
             .bindings
@@ -67,6 +70,7 @@ pub struct AsyncDuckDBConnection {
 }
 
 impl AsyncDuckDBConnection {
+    /// Run a query
     pub async fn run_query(&self, text: &str) -> Result<Uint8Array, JsValue> {
         Ok(self
             .duckdb
@@ -77,6 +81,7 @@ impl AsyncDuckDBConnection {
             .into())
     }
 
+    /// Fetch query result s
     pub async fn fetch_query_results(&self) -> Result<Uint8Array, JsValue> {
         Ok(self
             .duckdb

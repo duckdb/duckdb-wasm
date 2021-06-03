@@ -2,15 +2,15 @@ use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
 use crate::term_codes;
 use crate::xterm::{OnKeyEvent, Terminal};
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 const PROMPT: &str = "duckdb> ";
 
 thread_local! {
-    static SHELL: RefCell<Shell> = RefCell::new(Shell::default());
+    static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
 }
 
 /// The shell is the primary entrypoint for the Javascript api.
@@ -23,7 +23,7 @@ pub struct Shell {
     /// The cursor column
     cursor_column: usize,
     /// The database (if any)
-    db: Option<Rc<RefCell<duckdb::AsyncDuckDB>>>,
+    db: Option<Arc<Mutex<duckdb::AsyncDuckDB>>>,
     /// The connection (if any)
     db_conn: Option<duckdb::AsyncDuckDBConnection>,
 }
@@ -98,20 +98,24 @@ impl Shell {
 
         // Register on_key callback
         let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {
-            Shell::global_mut(|s| s.on_key(e));
+            Shell::global().lock().unwrap().on_key(e);
         }) as Box<dyn FnMut(_)>);
         self.terminal.on_key(callback.as_ref().unchecked_ref());
         callback.forget();
     }
 
     /// Attach to a database
-    pub fn attach_async_database(&mut self, db: AsyncDuckDB) {
+    pub async fn attach_async_database(&mut self, db: AsyncDuckDB) {
         // Teardown state (if there is any)
         if self.db_conn.is_some() {
             // XXX disconnect
         }
+
+        let version = db.get_version().await.unwrap();
+        self.terminal.write(&version);
+
         self.db_conn = None;
-        self.db = Some(Rc::new(RefCell::new(db)));
+        self.db = Some(Arc::new(Mutex::new(db)));
     }
 
     /// Write the DuckDB logo
@@ -135,23 +139,12 @@ impl Shell {
         self.terminal.write(PROMPT);
     }
 
+    /// Focus on the terminal
     pub fn focus(&self) {
         self.terminal.focus();
     }
 
-    /// Access the global shell object
-    pub fn global<F, R>(f: F) -> R
-    where
-        F: FnOnce(&Shell) -> R,
-    {
-        SHELL.with(|r| f(&r.borrow()))
-    }
-
-    /// Access the global shell object mutably
-    pub fn global_mut<F, R>(f: F) -> R
-    where
-        F: FnOnce(&mut Shell) -> R,
-    {
-        SHELL.with(|r| f(&mut r.borrow_mut()))
+    pub fn global() -> Arc<Mutex<Shell>> {
+        SHELL.with(|s| s.clone())
     }
 }

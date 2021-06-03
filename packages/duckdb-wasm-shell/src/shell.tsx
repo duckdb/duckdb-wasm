@@ -4,6 +4,10 @@ import * as shell from '../crate/pkg';
 import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
 
+const duckdbWorker = new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url);
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
+
 interface Props {
     workerURL?: string;
 
@@ -41,6 +45,12 @@ class Shell extends React.Component<Props> {
             shell.embed(this.termContainer.current, {
                 backgroundColor: '#333',
             });
+
+            // Open database
+            const logger = new duckdb.ConsoleLogger();
+            const worker = new Worker(duckdbWorker);
+            const db = new duckdb.AsyncDuckDB(logger, worker);
+            db.open(duckdb_wasm).then(_ => shell.attachAsyncDatabase(db));
             // TODO Instantiate the wasm module
         }
     }

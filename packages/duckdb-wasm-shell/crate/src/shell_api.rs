@@ -7,6 +7,7 @@ use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{Terminal, TerminalOptions, Theme};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
 
 #[wasm_bindgen(js_name = "embed")]
 pub fn embed_shell(
@@ -35,17 +36,21 @@ pub fn embed_shell(
     terminal.load_addon(addon_webgl.clone().dyn_into::<WebglAddon>()?.into());
     addon_fit.fit();
 
-    shell::Shell::global_mut(|ref mut s| {
-        s.attach_terminal(terminal);
-        s.write_greeter();
-        s.focus();
-    });
+    let foo = shell::Shell::global();
+    let mut s = foo.lock().unwrap();
+    s.attach_terminal(terminal);
+    s.write_greeter();
+    s.focus();
     Ok(())
 }
 
 #[wasm_bindgen(js_name = "attachAsyncDatabase")]
-pub fn attach_async_database(db: AsyncDuckDBBindings) {
-    shell::Shell::global_mut(|ref mut s| {
-        s.attach_async_database(AsyncDuckDB::from_bindings(db));
-    })
+pub async fn attach_async_database(db: AsyncDuckDBBindings) {
+    let foo = shell::Shell::global();
+    let mut s = foo.lock().unwrap();
+    s.attach_async_database(AsyncDuckDB::from_bindings(db))
+        .await;
+    //let foo = shell::Shell::global().clone();
+    //let s = foo.lock().unwrap();
+    //spawn_local(s.attach_async_database(AsyncDuckDB::from_bindings(db)))
 }
