@@ -38,7 +38,7 @@ set(THREAD_LIBS Threads::Threads)
 
 if(EMSCRIPTEN)
   if(CMAKE_BUILD_TYPE MATCHES Release)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
   endif()
 
   if(WITH_WASM_EXCEPTIONS)
@@ -147,7 +147,7 @@ if(EMSCRIPTEN)
   if(WASM_FAST_LINKING)
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
   else()
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Os")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
   endif()
 
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
