@@ -2,5 +2,5 @@
 
 members = [
     "tools/parquetgen",
-    "packages/duckdb-wasm-shell",
+    "packages/duckdb-wasm-shell/crate",
 ]

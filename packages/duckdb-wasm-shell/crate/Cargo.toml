@@ -5,7 +5,10 @@ authors = ["Andre Kohn <kohn.a@outlook.com>"]
 edition = "2018"
 publish = false
 
-workspace = "../.."
+workspace = "../../../"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies.web-sys]
 version = "0.3.37"
@@ -25,11 +28,14 @@ features = [
 ]
 
 [dependencies]
+console_error_panic_hook = "0.1.6"
 wasm-bindgen = "0.2.62"
 js-sys = "0.3.39"
+arrow = { version = "4.1.0" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.12"
 
 [profile.release]
+lto = true
 opt-level = "s"

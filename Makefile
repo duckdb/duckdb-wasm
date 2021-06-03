@@ -176,6 +176,14 @@ duckdb_tests_node: duckdb
 explorer_release:
 	yarn workspace @duckdb/explorer build:release
 
+# Start the shell dev server
+shell_start:
+	yarn workspace @duckdb/duckdb-wasm-shell start
+
+# Build the shell
+shell:
+	yarn workspace @duckdb/duckdb-wasm-shell build:release
+
 # Build pages
 pages:
 	${ROOT_DIR}/scripts/build_pages.sh

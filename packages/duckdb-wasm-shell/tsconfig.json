@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "outDir": "./build/ts/",
+        "target": "es5",
+        "module": "es2020",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "esModuleInterop": true,
+        "downlevelIteration": true,
+        "strict": true,
+        "types": ["node"],
+        "jsx": "react",
+        "plugins": [{ "name": "typescript-plugin-css-modules" }],
+        "baseUrl": ".",
+        "lib": ["es6", "es2020", "dom"]
+    },
+    "exclude": ["./test/**/*.ts", "./node_modules"],
+    "include": ["./src/**/*", "./types/*.d.ts"]
+}
