@@ -1,9 +1,9 @@
-pub mod bindings;
-pub mod codes;
-pub mod print;
+pub mod duckdb;
 pub mod shell;
 pub mod shell_embedding;
 pub mod shell_options;
+pub mod term_codes;
+pub mod term_printing;
 pub mod xterm;
 
 use wasm_bindgen::prelude::*;
