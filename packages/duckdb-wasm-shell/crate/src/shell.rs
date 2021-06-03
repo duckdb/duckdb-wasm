@@ -2,6 +2,7 @@ use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
 use crate::term_codes;
 use crate::xterm::{OnKeyEvent, Terminal};
+use indoc::indoc;
 use std::sync::Arc;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
@@ -120,12 +121,14 @@ impl Shell {
 
     /// Write the DuckDB logo
     pub fn write_logo(&self) {
-        self.terminal.writeln("   ▄▄███▄▄           ");
-        self.terminal.writeln(" ███████████         ");
-        self.terminal.writeln("█████████████  ███▄  ");
-        self.terminal.writeln("█████████████  ███▀  ");
-        self.terminal.writeln(" ███████████         ");
-        self.terminal.writeln("   ▀▀███▀▀           ");
+        self.terminal.writeln(indoc! {"
+               ▄▄███▄▄
+             ███████████         
+            █████████████  ███▄  
+            █████████████  ███▀  
+             ███████████         
+               ▀▀███▀▀           
+        "});
     }
 
     /// Write a prompt
