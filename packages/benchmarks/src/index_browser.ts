@@ -1,5 +1,5 @@
-import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-serial';
-import * as duckdb_parallel from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-parallel';
+import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-sync';
+import * as duckdb_async from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-async';
 import Worker from 'web-worker';
 import sqljs from 'sql.js';
 import * as arrow from 'apache-arrow';
@@ -19,10 +19,21 @@ import {
     SQLjsWrapper,
 } from './db_wrappers';
 
+// Configure the worker
+const WORKER_BUNDLES = {
+    worker: '/static/duckdb-browser-async.worker.js',
+    workerEH: '/static/duckdb-browser-async-eh.worker.js',
+    workerEHMT: '/static/duckdb-browser-async-eh-mt.worker.js',
+    wasm: '/static/duckdb.wasm',
+    wasmEH: '/static/duckdb-eh.wasm',
+    wasmEHMT: '/static/duckdb-eh-mt.wasm',
+};
+const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
+
 async function main() {
     let db: duckdb_serial.DuckDB | null = null;
     let db1: duckdb_serial.DuckDB | null = null;
-    let adb: duckdb_parallel.AsyncDuckDB | null = null;
+    let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
 
     const logger = new duckdb_serial.VoidLogger();
@@ -31,9 +42,9 @@ async function main() {
     db1 = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, '/static/duckdb.wasm');
     await db1.open();
 
-    worker = new Worker('/static/duckdb-browser-parallel.worker.js');
-    adb = new duckdb_parallel.AsyncDuckDB(logger, worker);
-    await adb.open('/static/duckdb.wasm');
+    worker = new Worker(WORKER_CONFIG.workerURL);
+    adb = new duckdb_async.AsyncDuckDB(logger, worker);
+    await adb.open(WORKER_CONFIG.wasmURL.toString());
 
     const tpchScale = '0_1';
 
