@@ -16,14 +16,23 @@ interface Props {
     borderRadius?: number[];
 }
 
+class ShellRuntime {
+    public openFileExplorer(this: ShellRuntime): void {
+        console.log('Open file explorer');
+    }
+}
+
 class Shell extends React.Component<Props> {
     /// The terminal container
     protected termContainer: React.RefObject<HTMLDivElement>;
+    /// The runtime
+    protected runtime: ShellRuntime;
 
     /// Constructor
     constructor(props: Props) {
         super(props);
         this.termContainer = React.createRef();
+        this.runtime = new ShellRuntime();
     }
 
     /// Render the demo
@@ -42,7 +51,7 @@ class Shell extends React.Component<Props> {
 
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
-            shell.embed(this.termContainer.current, {
+            shell.embed(this.termContainer.current, this.runtime, {
                 backgroundColor: '#333',
             });
 
