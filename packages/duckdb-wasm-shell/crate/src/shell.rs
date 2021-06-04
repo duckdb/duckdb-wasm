@@ -17,9 +17,22 @@ thread_local! {
     static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
 }
 
+struct ShellSettings {
+    /// Enable query timer
+    timer: bool,
+}
+
+impl ShellSettings {
+    fn default() -> Self {
+        Self { timer: false }
+    }
+}
+
 /// The shell is the primary entrypoint for the Javascript api.
 /// It is stored as thread_local singleton and maintains all the state for the interactions with DuckDB
 pub struct Shell {
+    /// The shell settings
+    settings: ShellSettings,
     /// The actual xterm terminal instance
     terminal: Terminal,
     /// The current line buffer
@@ -36,6 +49,7 @@ impl Shell {
     /// Construct a shell
     fn default() -> Self {
         Self {
+            settings: ShellSettings::default(),
             terminal: Terminal::construct(None),
             input: String::new(),
             cursor_column: 0,
@@ -47,9 +61,27 @@ impl Shell {
     /// Command handler
     pub async fn on_command(text: String) {
         let shellg = Shell::global().clone();
-        let shell = shellg.lock().unwrap();
-
-        shell.writeln(&format!("received command: {}", text));
+        let mut shell = shellg.lock().unwrap();
+        let trimmed = text.trim();
+        match &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())] {
+            ".help" => shell.writeln("Not implemented yet"),
+            ".config" => shell.writeln("Not implemented yet"),
+            ".quit" => shell.writeln("Not implemented yet"),
+            ".timer" => {
+                if trimmed.ends_with("on") {
+                    shell.settings.timer = true;
+                    shell.writeln("Timer enabled");
+                } else if trimmed.ends_with("off") {
+                    shell.settings.timer = false;
+                    shell.writeln("Timer disabled");
+                } else {
+                    shell.writeln("Usage: .timer [on/off]")
+                }
+            }
+            ".show" => shell.writeln("Not implemented yet"),
+            ".load" => shell.writeln("Not implemented yet"),
+            cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
+        }
 
         shell.write_prompt();
     }
@@ -58,6 +90,8 @@ impl Shell {
     pub async fn on_sql(text: String) {
         let shellg = Shell::global().clone();
         let shell = shellg.lock().unwrap();
+
+        // Get the connection
         let conn = match shell.db_conn {
             Some(ref conn) => conn.lock().unwrap(),
             None => {
@@ -66,7 +100,9 @@ impl Shell {
                 return;
             }
         };
-        let before = now();
+
+        // Run the query
+        let start = now();
         let batches = match conn.run_query(&text).await {
             Ok(batches) => batches,
             Err(e) => {
@@ -76,16 +112,27 @@ impl Shell {
                 return;
             }
         };
-        let elapsed = Duration::milliseconds((now() - before) as i64);
-        let table = pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
-        shell.write(&table);
-        shell.writeln(&format!(
-            "{bold}Elapsed:{normal} {elapsed} {endl}",
-            elapsed = pretty_elapsed(&elapsed),
-            bold = vt100::MODE_BOLD,
-            normal = vt100::MODES_OFF,
-            endl = vt100::ENDLINE
-        ));
+        let elapsed = if shell.settings.timer {
+            Duration::milliseconds((now() - start) as i64)
+        } else {
+            Duration::milliseconds(0)
+        };
+
+        // Print the table
+        let pretty_table =
+            pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
+        shell.write(&pretty_table);
+
+        // Print elapsed time (if requested)
+        if shell.settings.timer {
+            shell.writeln(&format!(
+                "{bold}Elapsed:{normal} {elapsed}",
+                elapsed = pretty_elapsed(&elapsed),
+                bold = vt100::MODE_BOLD,
+                normal = vt100::MODES_OFF,
+            ));
+        }
+        shell.writeln("");
         shell.write_prompt();
     }
 
