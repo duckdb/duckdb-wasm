@@ -50,7 +50,7 @@ class Shell extends React.Component<Props> {
             const logger = new duckdb.ConsoleLogger();
             const worker = new Worker(duckdbWorker);
             const db = new duckdb.AsyncDuckDB(logger, worker);
-            db.open(duckdb_wasm).then(_ => shell.attachAsyncDatabase(db));
+            db.open(duckdb_wasm).then(_ => shell.configureDatabase(db));
             // TODO Instantiate the wasm module
         }
     }

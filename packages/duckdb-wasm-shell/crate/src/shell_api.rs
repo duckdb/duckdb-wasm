@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 #[wasm_bindgen(js_name = "embed")]
-pub fn embed_shell(
+pub fn embed(
     elem: web_sys::HtmlElement,
     props: shell_options::ShellOptions,
 ) -> Result<(), JsValue> {
@@ -42,12 +42,11 @@ pub fn embed_shell(
     Ok(())
 }
 
-#[wasm_bindgen(js_name = "attachAsyncDatabase")]
-pub async fn attach_async_database(db: AsyncDuckDBBindings) {
+#[wasm_bindgen(js_name = "configureDatabase")]
+pub async fn configure_database(db: AsyncDuckDBBindings) {
     let foo = shell::Shell::global();
     let mut s = foo.lock().unwrap();
-    s.attach_async_database(AsyncDuckDB::from_bindings(db))
-        .await;
+    s.configure_database(AsyncDuckDB::from_bindings(db)).await;
     //let foo = shell::Shell::global().clone();
     //let s = foo.lock().unwrap();
     //spawn_local(s.attach_async_database(AsyncDuckDB::from_bindings(db)))
