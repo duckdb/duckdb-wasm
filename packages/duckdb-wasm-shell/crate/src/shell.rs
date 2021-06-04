@@ -37,6 +37,8 @@ pub struct Shell {
     terminal: Terminal,
     /// The current line buffer
     input: String,
+    /// Is the input enabled?
+    input_enabled: bool,
     /// The cursor column
     cursor_column: usize,
     /// The database (if any)
@@ -52,10 +54,17 @@ impl Shell {
             settings: ShellSettings::default(),
             terminal: Terminal::construct(None),
             input: String::new(),
+            input_enabled: false,
             cursor_column: 0,
             db: None,
             db_conn: None,
         }
+    }
+
+    /// Block all input
+    pub fn will_consume_input(&mut self) {
+        self.input_enabled = false;
+        self.terminal.write(vt100::ENDLINE);
     }
 
     /// Command handler
@@ -78,79 +87,79 @@ impl Shell {
                     shell.writeln("Usage: .timer [on/off]")
                 }
             }
-            ".show" => shell.writeln("Not implemented yet"),
-            ".load" => shell.writeln("Not implemented yet"),
+            ".files" => shell.writeln("Not implemented yet"),
             cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
         }
-
-        shell.write_prompt();
+        shell.prompt();
     }
 
     /// Command handler
     pub async fn on_sql(text: String) {
         let shellg = Shell::global().clone();
-        let shell = shellg.lock().unwrap();
+        let mut shell = shellg.lock().unwrap();
+        {
+            // Get the connection
+            let conn = match shell.db_conn {
+                Some(ref conn) => conn.lock().unwrap(),
+                None => {
+                    shell.writeln("Error: connection not set");
+                    return;
+                }
+            };
 
-        // Get the connection
-        let conn = match shell.db_conn {
-            Some(ref conn) => conn.lock().unwrap(),
-            None => {
-                shell.writeln("Error: connection not set");
-                shell.write_prompt();
-                return;
+            // Run the query
+            let start = now();
+            let batches = match conn.run_query(&text).await {
+                Ok(batches) => batches,
+                Err(e) => {
+                    let msg: String = e.message().into();
+                    shell.writeln(&format!("Error: {}", &msg));
+                    return;
+                }
+            };
+            let elapsed = if shell.settings.timer {
+                Duration::milliseconds((now() - start) as i64)
+            } else {
+                Duration::milliseconds(0)
+            };
+
+            // Print the table
+            let pretty_table =
+                pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
+            shell.write(&pretty_table);
+
+            // Print elapsed time (if requested)
+            if shell.settings.timer {
+                shell.writeln(&format!(
+                    "{bold}Elapsed:{normal} {elapsed}",
+                    elapsed = pretty_elapsed(&elapsed),
+                    bold = vt100::MODE_BOLD,
+                    normal = vt100::MODES_OFF,
+                ));
             }
-        };
-
-        // Run the query
-        let start = now();
-        let batches = match conn.run_query(&text).await {
-            Ok(batches) => batches,
-            Err(e) => {
-                let msg: String = e.message().into();
-                shell.writeln(&format!("Error: {}", &msg));
-                shell.write_prompt();
-                return;
-            }
-        };
-        let elapsed = if shell.settings.timer {
-            Duration::milliseconds((now() - start) as i64)
-        } else {
-            Duration::milliseconds(0)
-        };
-
-        // Print the table
-        let pretty_table =
-            pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
-        shell.write(&pretty_table);
-
-        // Print elapsed time (if requested)
-        if shell.settings.timer {
-            shell.writeln(&format!(
-                "{bold}Elapsed:{normal} {elapsed}",
-                elapsed = pretty_elapsed(&elapsed),
-                bold = vt100::MODE_BOLD,
-                normal = vt100::MODES_OFF,
-            ));
         }
         shell.writeln("");
-        shell.write_prompt();
+        shell.prompt();
     }
 
     /// Process on-key event
     pub fn on_key(&mut self, e: OnKeyEvent) {
+        if !self.input_enabled {
+            return;
+        }
         let event = e.dom_event();
         match event.key_code() {
             vt100::KEY_ENTER => {
                 // Is a command?
                 if self.input.trim_start().starts_with(".") {
-                    self.terminal.writeln("");
+                    self.will_consume_input();
                     let mut text = String::new();
                     swap(&mut text, &mut self.input);
                     spawn_local(Shell::on_command(text));
                 } else {
                     // Ends with semicolon?
                     if self.input.trim_end().ends_with(";") {
-                        self.terminal.writeln("");
+                        self.will_consume_input();
                         let mut text = String::new();
                         swap(&mut text, &mut self.input);
                         spawn_local(Shell::on_sql(text));
@@ -182,7 +191,7 @@ impl Shell {
             }
             vt100::KEY_L if event.ctrl_key() => self.terminal.clear(),
             vt100::KEY_C if event.ctrl_key() => {
-                self.write_prompt();
+                self.prompt();
                 self.input.clear();
                 self.cursor_column = 0;
             }
@@ -227,9 +236,8 @@ impl Shell {
         self.write_connection_ready();
 
         // Write the first prompt and set focus
-        self.write_prompt();
+        self.prompt();
         self.focus();
-
         Ok(())
     }
 
@@ -240,7 +248,7 @@ impl Shell {
 
     /// Write directly to the terminal with newline
     pub fn writeln(&self, text: &str) {
-        self.terminal.writeln(text);
+        self.terminal.write(&format!("{}{}", text, vt100::ENDLINE));
     }
 
     /// Write greeter
@@ -286,31 +294,27 @@ impl Shell {
     }
 
     /// Write before the current prompt
-    pub fn write_before(&self, text: &str) {
+    pub fn write_before(&mut self, text: &str) {
         self.terminal.write(&format!(
-            "{}{}{}{}{}{}",
-            vt100::CLEAR_LINE,
-            vt100::REWIND,
-            text,
-            vt100::ENDLINE,
-            self.prompt(),
-            &self.input,
+            "{clear_line}{rewind}{text}{endl}",
+            clear_line = vt100::CLEAR_LINE,
+            rewind = vt100::REWIND,
+            text = text,
+            endl = vt100::ENDLINE,
         ));
+        self.prompt();
+        self.write(&self.input);
     }
 
-    /// Get the prompt
-    pub fn prompt(&self) -> String {
-        return format!(
+    /// Write the prompt
+    pub fn prompt(&mut self) {
+        self.write(&format!(
             "{bold}{prompt}{normal}> ",
             prompt = "duckdb",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
-        );
-    }
-
-    /// Write the prompt
-    pub fn write_prompt(&self) {
-        self.write(&self.prompt());
+        ));
+        self.input_enabled = true;
     }
 
     /// Focus on the terminal

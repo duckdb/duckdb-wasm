@@ -12,7 +12,7 @@ pub const KEY_L: u32 = 76;
 pub const CURSOR_LEFT: &str = "\x1b[D";
 pub const CURSOR_RIGHT: &str = "\x1b[C";
 pub const REWIND: &str = "\r";
-pub const ENDLINE: &str = "\n\r";
+pub const ENDLINE: &str = "\r\n";
 
 pub const CLEAR_LINE_CURSOR_RIGHT: &str = "\x1b[0K";
 pub const CLEAR_LINE_CURSOR_LEFT: &str = "\x1b[1K";
