@@ -47,6 +47,5 @@ pub async fn configure_database(db: AsyncDuckDBBindings) -> Result<(), js_sys::E
     let foo = shell::Shell::global();
     let mut s = foo.lock().unwrap();
     s.configure_database(AsyncDuckDB::from_bindings(db)).await?;
-
     Ok(())
 }
