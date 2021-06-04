@@ -7,7 +7,7 @@ import { withNavBar } from './components/navbar';
 
 import './globals.css';
 
-const PaddedShell = () => <Shell padding={[12]} backgroundColor="#333" />;
+const PaddedShell = () => <Shell padding={[16, 20]} backgroundColor="#333" />;
 
 const element = document.getElementById('root');
 ReactDOM.render(
