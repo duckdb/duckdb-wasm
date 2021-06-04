@@ -1,6 +1,7 @@
+use crate::arrow_printer::pretty_format_batches_fmt;
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
-use crate::duckdb::AsyncDuckDBConnection;
+use crate::prettytable::format::consts::FORMAT_BOX_CHARS;
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
 use std::sync::Arc;
@@ -123,13 +124,30 @@ impl Shell {
 
         // Write the first prompt and set focus
         self.write_prompt();
-        self.focus();
+        self.writeln("select 1;");
 
+        // Test a simple table printing
         let conn = match self.db_conn {
             Some(ref conn) => conn.lock().unwrap(),
             None => return Ok(()),
         };
         let results = conn.run_query("select 1").await?;
+        let text = pretty_format_batches_fmt(&results, &FORMAT_BOX_CHARS).unwrap_or_default();
+        self.write(&text);
+        self.writeln(&format!(
+            "{bold}Elapsed:{normal} {elapsed} {bold}Rows:{normal} {rows} {bold}Batches:{normal} {batches} {bold}Bytes:{normal} {bytes}{endl}",
+            elapsed="-",
+            rows=1,
+            batches=1,
+            bytes="-",
+            bold=vt100::MODE_BOLD,
+            normal=vt100::MODES_OFF,
+            endl=vt100::ENDLINE
+        ));
+
+        // Write the first prompt and set focus
+        self.write_prompt();
+        self.focus();
 
         Ok(())
     }
@@ -137,6 +155,11 @@ impl Shell {
     /// Write directly to the terminal
     pub fn write(&self, text: &str) {
         self.terminal.write(text);
+    }
+
+    /// Write directly to the terminal with newline
+    pub fn writeln(&self, text: &str) {
+        self.terminal.writeln(text);
     }
 
     /// Write greeter
