@@ -32,28 +32,25 @@ const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
 
 async function main() {
     let db: duckdb_serial.DuckDB | null = null;
-    let db1: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
 
     const logger = new duckdb_serial.VoidLogger();
     db = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, '/static/duckdb.wasm');
     await db.open();
-    db1 = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, '/static/duckdb.wasm');
-    await db1.open();
 
     worker = new Worker(WORKER_CONFIG.workerURL);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
     await adb.open(WORKER_CONFIG.wasmURL.toString());
 
-    const tpchScale = '0_1';
+    const tpchScale = '0_5';
 
     const SQL = await sqljs({
         locateFile: file => `/sqljs/${file}`,
     });
-    let sqlDb = new SQL.Database(
-        new Uint8Array(await (await fetch(`/data/tpch/${tpchScale}/sqlite.db`)).arrayBuffer()),
-    );
+    // let sqlDb = new SQL.Database(
+    //     new Uint8Array(await (await fetch(`/data/tpch/${tpchScale}/sqlite.db`)).arrayBuffer()),
+    // );
 
     await benchmarkCompetitions(
         [
@@ -72,16 +69,16 @@ async function main() {
                     await this.db.addFileBlob(path, await (await fetch(path)).blob());
                 }
             })(adb),
-            new ArqueroWrapper(),
-            new LovefieldWrapper(),
-            new SQLjsWrapper(sqlDb),
-            new NanoSQLWrapper(),
-            new AlaSQLWrapper(),
+            // new ArqueroWrapper(),
+            // new LovefieldWrapper(),
+            // new SQLjsWrapper(sqlDb),
+            // new NanoSQLWrapper(),
+            // new AlaSQLWrapper(),
         ],
         '/data',
         async (path: string) => {
             let conn = await adb!.connect();
-            await adb!.addFileBlob(path, await (await fetch(path)).blob);
+            await adb!.addFileBlob(path, await (await fetch(path)).blob());
             const table = await conn.runQuery(`SELECT * FROM parquet_scan('${path}')`);
             await conn.disconnect();
             return table;

@@ -18,10 +18,7 @@ module.exports = function (config) {
             { pattern: 'packages/benchmarks/dist/bench-browser.js.map', included: false, watched: false, served: true },
             { pattern: 'packages/duckdb/dist/*', included: false, watched: false, served: true },
             { pattern: 'node_modules/sql.js/dist/*.wasm', included: false, watched: false, served: true },
-            { pattern: 'data/**/*.parquet', included: false, watched: false, served: true },
-            { pattern: 'data/**/*.tbl', included: false, watched: false, served: true },
-            { pattern: 'data/**/*.db', included: false, watched: false, served: true },
-            { pattern: 'data/**/*.zip', included: false, watched: false, served: true },
+            { pattern: 'data/**/*', included: false, watched: false, served: true, nocache: true },
         ],
         preprocessors: {
             '**/*.js': ['sourcemap'],
@@ -37,7 +34,7 @@ module.exports = function (config) {
         colors: true,
         logLevel: config.LOG_INFO,
         autoWatch: true,
-        singleRun: true,
+        singleRun: false,
         // browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
         browsers: ['ChromeHeadlessNoSandbox'],
         customLaunchers: {
