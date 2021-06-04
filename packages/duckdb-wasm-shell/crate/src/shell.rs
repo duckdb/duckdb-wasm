@@ -24,7 +24,7 @@ pub struct Shell {
     /// The database (if any)
     db: Option<Arc<Mutex<duckdb::AsyncDuckDB>>>,
     /// The connection (if any)
-    db_conn: Option<duckdb::AsyncDuckDBConnection>,
+    db_conn: Option<Arc<Mutex<duckdb::AsyncDuckDBConnection>>>,
 }
 
 impl Shell {
@@ -116,12 +116,21 @@ impl Shell {
         self.write_version_info().await;
 
         // Create connection
-        self.db_conn = Some(AsyncDuckDB::connect(self.db.clone().unwrap().clone()).await?);
+        self.db_conn = Some(Arc::new(Mutex::new(
+            AsyncDuckDB::connect(self.db.clone().unwrap().clone()).await?,
+        )));
         self.write_connection_ready();
 
         // Write the first prompt and set focus
         self.write_prompt();
         self.focus();
+
+        let conn = match self.db_conn {
+            Some(ref conn) => conn.lock().unwrap(),
+            None => return Ok(()),
+        };
+        let results = conn.run_query("select 1").await?;
+
         Ok(())
     }
 
