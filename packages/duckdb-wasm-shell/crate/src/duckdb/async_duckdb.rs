@@ -1,4 +1,4 @@
-use crate::arrow_stream::ArrowStreamReader;
+use crate::arrow_reader::ArrowStreamReader;
 use arrow::ipc::reader::FileReader;
 use js_sys::Uint8Array;
 use std::cell::RefCell;
