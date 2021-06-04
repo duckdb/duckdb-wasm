@@ -79,6 +79,7 @@
         "fs": false,
         "os": false,
         "path": false,
-        "buffer": false
+        "buffer": false,
+        "crypto": false
     }
 }
