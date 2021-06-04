@@ -104,23 +104,25 @@ impl Shell {
     }
 
     /// Attach to a database
-    pub async fn configure_database(&mut self, db: AsyncDuckDB) {
+    pub async fn configure_database(&mut self, db: AsyncDuckDB) -> Result<(), js_sys::Error> {
         // Teardown state (if there is any)
         if self.db_conn.is_some() {
             // XXX disconnect
         }
 
+        // Store database
         self.db_conn = None;
         self.db = Some(Arc::new(Mutex::new(db)));
-        self.write_greeter().await;
+        self.write_version_info().await;
+
+        // Create connection
+        self.db_conn = Some(AsyncDuckDB::connect(self.db.clone().unwrap().clone()).await?);
+        self.write_connection_ready();
+
+        // Write the first prompt and set focus
         self.write_prompt();
         self.focus();
-
-        let conn = AsyncDuckDB::connect(self.db.clone().unwrap().clone())
-            .await
-            .unwrap();
-        let results = conn.run_query("select 1;").await.unwrap();
-        self.write(&format!("results={}", results.len()));
+        Ok(())
     }
 
     /// Write directly to the terminal
@@ -129,7 +131,7 @@ impl Shell {
     }
 
     /// Write greeter
-    pub async fn write_greeter(&self) {
+    pub async fn write_version_info(&self) {
         let db = match self.db {
             Some(ref db) => db.lock().unwrap(),
             None => return,
@@ -160,7 +162,9 @@ impl Shell {
             threads = if (features & 0b10) != 0 { "on" } else { "off" },
             endl = vt100::ENDLINE
         ));
+    }
 
+    pub fn write_connection_ready(&self) {
         self.write(&format!("Connected to a {bold}transient in-browser database{normal}.{endl}Enter \".help\" for usage hints.{endl}{endl}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
