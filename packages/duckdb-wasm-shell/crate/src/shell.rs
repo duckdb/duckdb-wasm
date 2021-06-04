@@ -153,6 +153,12 @@ impl Shell {
             threads = if (features & 0b10) != 0 { "on" } else { "off" },
             endl = vt100::ENDLINE
         ));
+
+        self.write(&format!("Connected to a {bold}transient in-browser database{normal}.{endl}Enter \".help\" for usage hints.{endl}{endl}",
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+            endl = vt100::ENDLINE
+        ));
     }
 
     /// Write the DuckDB logo
