@@ -1,4 +1,4 @@
-pub mod arrow_stream;
+pub mod arrow_reader;
 pub mod duckdb;
 pub mod error;
 pub mod shell;
