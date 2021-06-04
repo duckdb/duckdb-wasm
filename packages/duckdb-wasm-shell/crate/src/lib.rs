@@ -1,3 +1,4 @@
+pub mod arrow_printer;
 pub mod arrow_reader;
 pub mod duckdb;
 pub mod error;

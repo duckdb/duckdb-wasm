@@ -23,8 +23,8 @@
 
 use arrow::{array::ArrayRef, record_batch::RecordBatch};
 
-use prettytable::format;
-use prettytable::{Cell, Row, Table};
+use crate::prettytable::format;
+use crate::prettytable::{Cell, Row, Table};
 
 use arrow::error::Result;
 
@@ -38,18 +38,6 @@ pub fn pretty_format_batches(results: &[RecordBatch]) -> Result<String> {
 ///! Create a visual representation of columns
 pub fn pretty_format_columns(col_name: &str, results: &[ArrayRef]) -> Result<String> {
     Ok(create_column(col_name, results)?.to_string())
-}
-
-///! Prints a visual representation of record batches to stdout
-pub fn print_batches(results: &[RecordBatch]) -> Result<()> {
-    create_table(results)?.printstd();
-    Ok(())
-}
-
-///! Prints a visual representation of a list of column to stdout
-pub fn print_columns(col_name: &str, results: &[ArrayRef]) -> Result<()> {
-    create_column(col_name, results)?.printstd();
-    Ok(())
 }
 
 ///! Convert a series of record batches into a table
@@ -106,7 +94,7 @@ fn create_column(field: &str, columns: &[ArrayRef]) -> Result<Table> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
+    use arrow::{
         array::{
             self, new_null_array, Array, Date32Array, Date64Array, PrimitiveBuilder, StringBuilder,
             StringDictionaryBuilder, Time32MillisecondArray, Time32SecondArray,
@@ -117,7 +105,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::array::{DecimalBuilder, Int32Array};
+    use arrow::array::{DecimalBuilder, Int32Array};
     use std::sync::Arc;
 
     #[test]
