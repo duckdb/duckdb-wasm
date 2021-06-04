@@ -103,7 +103,7 @@ impl Shell {
     }
 
     /// Attach to a database
-    pub async fn attach_async_database(&mut self, db: AsyncDuckDB) {
+    pub async fn configure_database(&mut self, db: AsyncDuckDB) {
         // Teardown state (if there is any)
         if self.db_conn.is_some() {
             // XXX disconnect
