@@ -1,5 +1,6 @@
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
+use crate::duckdb::AsyncDuckDBConnection;
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
 use std::sync::Arc;
@@ -114,6 +115,12 @@ impl Shell {
         self.write_greeter().await;
         self.write_prompt();
         self.focus();
+
+        let conn = AsyncDuckDB::connect(self.db.clone().unwrap().clone())
+            .await
+            .unwrap();
+        let results = conn.run_query("select 1;").await.unwrap();
+        self.write(&format!("results={}", results.len()));
     }
 
     /// Write directly to the terminal
