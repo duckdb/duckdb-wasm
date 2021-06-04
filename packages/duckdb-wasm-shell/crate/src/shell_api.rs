@@ -43,11 +43,10 @@ pub fn embed(
 }
 
 #[wasm_bindgen(js_name = "configureDatabase")]
-pub async fn configure_database(db: AsyncDuckDBBindings) {
+pub async fn configure_database(db: AsyncDuckDBBindings) -> Result<(), js_sys::Error> {
     let foo = shell::Shell::global();
     let mut s = foo.lock().unwrap();
-    s.configure_database(AsyncDuckDB::from_bindings(db)).await;
-    //let foo = shell::Shell::global().clone();
-    //let s = foo.lock().unwrap();
-    //spawn_local(s.attach_async_database(AsyncDuckDB::from_bindings(db)))
+    s.configure_database(AsyncDuckDB::from_bindings(db)).await?;
+
+    Ok(())
 }
