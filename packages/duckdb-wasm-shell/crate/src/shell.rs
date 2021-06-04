@@ -2,8 +2,10 @@ use crate::arrow_printer::pretty_format_batches_fmt;
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
 use crate::prettytable::format::consts::FORMAT_BOX_CHARS;
+use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
+use chrono::Duration;
 use std::mem::swap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -43,17 +45,48 @@ impl Shell {
     }
 
     /// Command handler
-    pub fn on_command(&mut self, text: String) {
-        self.writeln(&format!("received command: {}", text));
+    pub async fn on_command(text: String) {
+        let shellg = Shell::global().clone();
+        let shell = shellg.lock().unwrap();
 
-        self.write_prompt();
+        shell.writeln(&format!("received command: {}", text));
+
+        shell.write_prompt();
     }
 
     /// Command handler
-    pub fn on_sql(&mut self, text: String) {
-        self.writeln(&format!("received sql: {}", text));
-
-        self.write_prompt();
+    pub async fn on_sql(text: String) {
+        let shellg = Shell::global().clone();
+        let shell = shellg.lock().unwrap();
+        let conn = match shell.db_conn {
+            Some(ref conn) => conn.lock().unwrap(),
+            None => {
+                shell.writeln("Error: connection not set");
+                shell.write_prompt();
+                return;
+            }
+        };
+        let before = now();
+        let batches = match conn.run_query(&text).await {
+            Ok(batches) => batches,
+            Err(e) => {
+                let msg: String = e.message().into();
+                shell.writeln(&format!("Error: {}", &msg));
+                shell.write_prompt();
+                return;
+            }
+        };
+        let elapsed = Duration::milliseconds((now() - before) as i64);
+        let table = pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
+        shell.write(&table);
+        shell.writeln(&format!(
+            "{bold}Elapsed:{normal} {elapsed} {endl}",
+            elapsed = pretty_elapsed(&elapsed),
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+            endl = vt100::ENDLINE
+        ));
+        shell.write_prompt();
     }
 
     /// Process on-key event
@@ -66,14 +99,14 @@ impl Shell {
                     self.terminal.writeln("");
                     let mut text = String::new();
                     swap(&mut text, &mut self.input);
-                    self.on_command(text);
+                    spawn_local(Shell::on_command(text));
                 } else {
                     // Ends with semicolon?
                     if self.input.trim_end().ends_with(";") {
                         self.terminal.writeln("");
                         let mut text = String::new();
                         swap(&mut text, &mut self.input);
-                        self.on_sql(text);
+                        spawn_local(Shell::on_sql(text));
                     } else {
                         // Otherwise we wait it
                         self.input += "\r\n";
@@ -145,29 +178,6 @@ impl Shell {
             AsyncDuckDB::connect(self.db.clone().unwrap().clone()).await?,
         )));
         self.write_connection_ready();
-
-        // Write the first prompt and set focus
-        self.write_prompt();
-        self.writeln("select 1;");
-
-        // Test a simple table printing
-        let conn = match self.db_conn {
-            Some(ref conn) => conn.lock().unwrap(),
-            None => return Ok(()),
-        };
-        let results = conn.run_query("select 1").await?;
-        let text = pretty_format_batches_fmt(&results, &FORMAT_BOX_CHARS).unwrap_or_default();
-        self.write(&text);
-        self.writeln(&format!(
-            "{bold}Elapsed:{normal} {elapsed} {bold}Rows:{normal} {rows} {bold}Batches:{normal} {batches} {bold}Bytes:{normal} {bytes}{endl}",
-            elapsed="-",
-            rows=1,
-            batches=1,
-            bytes="-",
-            bold=vt100::MODE_BOLD,
-            normal=vt100::MODES_OFF,
-            endl=vt100::ENDLINE
-        ));
 
         // Write the first prompt and set focus
         self.write_prompt();
