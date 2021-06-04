@@ -4,10 +4,12 @@ use crate::duckdb::AsyncDuckDB;
 use crate::prettytable::format::consts::FORMAT_BOX_CHARS;
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
+use std::mem::swap;
 use std::sync::Arc;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
 
 thread_local! {
     static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
@@ -19,7 +21,7 @@ pub struct Shell {
     /// The actual xterm terminal instance
     terminal: Terminal,
     /// The current line buffer
-    line: String,
+    input: String,
     /// The cursor column
     cursor_column: usize,
     /// The database (if any)
@@ -33,11 +35,25 @@ impl Shell {
     fn default() -> Self {
         Self {
             terminal: Terminal::construct(None),
-            line: String::new(),
+            input: String::new(),
             cursor_column: 0,
             db: None,
             db_conn: None,
         }
+    }
+
+    /// Command handler
+    pub fn on_command(&mut self, text: String) {
+        self.writeln(&format!("received command: {}", text));
+
+        self.write_prompt();
+    }
+
+    /// Command handler
+    pub fn on_sql(&mut self, text: String) {
+        self.writeln(&format!("received sql: {}", text));
+
+        self.write_prompt();
     }
 
     /// Process on-key event
@@ -45,22 +61,30 @@ impl Shell {
         let event = e.dom_event();
         match event.key_code() {
             vt100::KEY_ENTER => {
-                if !self.line.is_empty() {
+                // Is a command?
+                if self.input.trim_start().starts_with(".") {
                     self.terminal.writeln("");
-                    self.terminal.writeln(&format!(
-                        "You entered {} characters '{}'",
-                        self.line.len(),
-                        self.line
-                    ));
-                    self.line.clear();
-                    self.cursor_column = 0;
+                    let mut text = String::new();
+                    swap(&mut text, &mut self.input);
+                    self.on_command(text);
+                } else {
+                    // Ends with semicolon?
+                    if self.input.trim_end().ends_with(";") {
+                        self.terminal.writeln("");
+                        let mut text = String::new();
+                        swap(&mut text, &mut self.input);
+                        self.on_sql(text);
+                    } else {
+                        // Otherwise we wait it
+                        self.input += "\r\n";
+                        self.terminal.write("\r\n   ...> ");
+                    }
                 }
-                self.write_prompt();
             }
             vt100::KEY_BACKSPACE => {
                 if self.cursor_column > 0 {
                     self.terminal.write("\u{0008} \u{0008}");
-                    self.line.pop();
+                    self.input.pop();
                     self.cursor_column -= 1;
                 }
             }
@@ -71,7 +95,7 @@ impl Shell {
                 }
             }
             vt100::KEY_RIGHT_ARROW => {
-                if self.cursor_column < self.line.len() {
+                if self.cursor_column < self.input.len() {
                     self.terminal.write(vt100::CURSOR_RIGHT);
                     self.cursor_column += 1;
                 }
@@ -79,13 +103,13 @@ impl Shell {
             vt100::KEY_L if event.ctrl_key() => self.terminal.clear(),
             vt100::KEY_C if event.ctrl_key() => {
                 self.write_prompt();
-                self.line.clear();
+                self.input.clear();
                 self.cursor_column = 0;
             }
             _ => {
                 if !event.alt_key() && !event.alt_key() && !event.ctrl_key() && !event.meta_key() {
                     self.terminal.write(&event.key());
-                    self.line.push_str(&e.key());
+                    self.input.push_str(&e.key());
                     self.cursor_column += 1;
                 }
             }
@@ -213,7 +237,7 @@ impl Shell {
             text,
             vt100::ENDLINE,
             self.prompt(),
-            &self.line,
+            &self.input,
         ));
     }
 
