@@ -2,6 +2,7 @@ use crate::arrow_printer::pretty_format_batches_fmt;
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
 use crate::prettytable::format::consts::FORMAT_BOX_CHARS;
+use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
@@ -35,6 +36,8 @@ pub struct Shell {
     settings: ShellSettings,
     /// The actual xterm terminal instance
     terminal: Terminal,
+    /// The runtime
+    runtime: Option<ShellRuntime>,
     /// The current line buffer
     input: String,
     /// Is the input enabled?
@@ -53,6 +56,7 @@ impl Shell {
         Self {
             settings: ShellSettings::default(),
             terminal: Terminal::construct(None),
+            runtime: None,
             input: String::new(),
             input_enabled: false,
             cursor_column: 0,
@@ -87,7 +91,14 @@ impl Shell {
                     shell.writeln("Usage: .timer [on/off]")
                 }
             }
-            ".files" => shell.writeln("Not implemented yet"),
+            ".files" => match shell.runtime {
+                Some(ref rt) => {
+                    rt.open_file_explorer();
+                }
+                None => {
+                    shell.writeln("Shell runtime not set");
+                }
+            },
             cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
         }
         shell.prompt();
@@ -206,8 +217,9 @@ impl Shell {
     }
 
     /// Attach to a terminal
-    pub fn attach_terminal(&mut self, term: Terminal) {
+    pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime) {
         self.terminal = term;
+        self.runtime = Some(runtime);
 
         // Register on_key callback
         let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {

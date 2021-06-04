@@ -2,6 +2,7 @@ use crate::duckdb::AsyncDuckDB;
 use crate::duckdb::AsyncDuckDBBindings;
 use crate::shell;
 use crate::shell_options;
+use crate::shell_runtime;
 use crate::xterm::addons::fit::FitAddon;
 use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{Terminal, TerminalOptions, Theme};
@@ -11,7 +12,8 @@ use wasm_bindgen::JsCast;
 #[wasm_bindgen(js_name = "embed")]
 pub fn embed(
     elem: web_sys::HtmlElement,
-    props: shell_options::ShellOptions,
+    runtime: shell_runtime::ShellRuntime,
+    options: shell_options::ShellOptions,
 ) -> Result<(), JsValue> {
     let terminal = Terminal::new(
         TerminalOptions::new()
@@ -24,7 +26,7 @@ pub fn embed(
             .with_theme(
                 Theme::new()
                     .with_foreground("#FFFFFF")
-                    .with_background(&props.get_bg()),
+                    .with_background(&options.get_bg()),
             ),
     );
     terminal.set_any_option("cursorBlink", true.into());
@@ -38,7 +40,7 @@ pub fn embed(
 
     let foo = shell::Shell::global();
     let mut s = foo.lock().unwrap();
-    s.attach_terminal(terminal);
+    s.attach(terminal, runtime);
     Ok(())
 }
 
