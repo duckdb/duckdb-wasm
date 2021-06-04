@@ -4,7 +4,7 @@ pub mod error;
 pub mod shell;
 pub mod shell_api;
 pub mod shell_options;
-pub mod term_codes;
+pub mod vt100;
 pub mod xterm;
 
 use wasm_bindgen::prelude::*;

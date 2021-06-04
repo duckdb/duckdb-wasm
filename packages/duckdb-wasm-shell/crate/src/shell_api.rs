@@ -27,6 +27,7 @@ pub fn embed_shell(
                     .with_background(&props.get_bg()),
             ),
     );
+    terminal.set_any_option("cursorBlink", true.into());
     terminal.open(elem);
 
     let addon_fit = FitAddon::new();
@@ -38,8 +39,6 @@ pub fn embed_shell(
     let foo = shell::Shell::global();
     let mut s = foo.lock().unwrap();
     s.attach_terminal(terminal);
-    s.write_greeter();
-    s.focus();
     Ok(())
 }
 
