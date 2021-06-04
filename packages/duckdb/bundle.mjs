@@ -138,6 +138,19 @@ esbuild.build({
 // -------------------------------
 // NODE
 
+console.log('[ ESBUILD ] duckdb-node-sync.js');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-node-sync.ts'],
+    outfile: 'dist/duckdb-node-sync.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    sourcemap: 'external',
+    external: EXTERNALS,
+});
+
 console.log('[ ESBUILD ] duckdb-node-sync-eh.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-node-sync-eh.ts'],
@@ -155,6 +168,19 @@ console.log('[ ESBUILD ] duckdb-node-async.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-node-async.ts'],
     outfile: 'dist/duckdb-node-async.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    sourcemap: 'external',
+    external: EXTERNALS,
+});
+
+console.log('[ ESBUILD ] duckdb-node-async.worker.js');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-node-async.worker.ts'],
+    outfile: 'dist/duckdb-node-async.worker.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -241,6 +267,11 @@ fs.writeFile(
 );
 
 // Node declarations
+fs.writeFile(
+    path.join(dist, 'duckdb-node-sync.d.ts'),
+    "export * from './types/src/targets/duckdb-node-sync';",
+    printErr,
+);
 fs.writeFile(
     path.join(dist, 'duckdb-node-sync-eh.d.ts'),
     "export * from './types/src/targets/duckdb-node-sync-eh';",
