@@ -34,7 +34,8 @@ wasm-bindgen-futures = "0.4.24"
 js-sys = "0.3.51"
 arrow = "4.1.0"
 lazy_static = "1.4.0"
-indoc = "1.0"
+encode_unicode = "0.3.6"
+unicode-width = "0.1.8"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.12"

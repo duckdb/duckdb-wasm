@@ -1,6 +1,7 @@
 pub mod arrow_reader;
 pub mod duckdb;
 pub mod error;
+pub mod prettytable;
 pub mod shell;
 pub mod shell_api;
 pub mod shell_options;
