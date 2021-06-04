@@ -161,16 +161,6 @@ impl Shell {
         ));
     }
 
-    /// Write the DuckDB logo
-    pub fn write_logo(&self) {
-        self.terminal.write("  ▄▄█████▄▄\n\r");
-        self.terminal.write(" ███████████\n\r");
-        self.terminal.write("█████████████  ███▄\n\r");
-        self.terminal.write("█████████████  ███▀\n\r");
-        self.terminal.write(" ███████████\n\r");
-        self.terminal.write("  ▀▀█████▀▀\n\r");
-    }
-
     /// Write before the current prompt
     pub fn write_before(&self, text: &str) {
         self.terminal.write(&format!(
