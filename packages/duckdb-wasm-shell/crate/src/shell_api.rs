@@ -18,7 +18,7 @@ pub fn embed(
             .with_rows(100)
             .with_cursor_blink(true)
             .with_cursor_width(10)
-            .with_font_size(20)
+            .with_font_size(18)
             .with_draw_bold_text_in_bright_colors(true)
             .with_right_click_selects_word(true)
             .with_theme(

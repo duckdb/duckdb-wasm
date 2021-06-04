@@ -32,7 +32,15 @@ use arrow::util::display::array_value_to_string;
 
 ///! Create a visual representation of record batches
 pub fn pretty_format_batches(results: &[RecordBatch]) -> Result<String> {
-    Ok(create_table(results)?.to_string())
+    Ok(create_table(results, &format::consts::FORMAT_NO_LINESEP_WITH_TITLE)?.to_string())
+}
+
+///! Create a visual representation of record batches
+pub fn pretty_format_batches_fmt(
+    results: &[RecordBatch],
+    fmt: &format::TableFormat,
+) -> Result<String> {
+    Ok(create_table(results, fmt)?.to_string())
 }
 
 ///! Create a visual representation of columns
@@ -41,9 +49,9 @@ pub fn pretty_format_columns(col_name: &str, results: &[ArrayRef]) -> Result<Str
 }
 
 ///! Convert a series of record batches into a table
-fn create_table(results: &[RecordBatch]) -> Result<Table> {
+fn create_table(results: &[RecordBatch], format: &format::TableFormat) -> Result<Table> {
     let mut table = Table::new();
-    table.set_format(*format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
+    table.set_format(*format);
 
     if results.is_empty() {
         return Ok(table);
