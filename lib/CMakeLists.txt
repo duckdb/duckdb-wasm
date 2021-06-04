@@ -169,6 +169,7 @@ if(EMSCRIPTEN)
           _malloc, \
           _free, \
           _duckdb_web_get_version, \
+          _duckdb_web_get_feature_flags, \
           _duckdb_web_clear_response, \
           _duckdb_web_get_feature_flags, \
           _duckdb_web_flush_files, \

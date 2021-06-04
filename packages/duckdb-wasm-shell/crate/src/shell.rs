@@ -1,14 +1,11 @@
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
-use crate::term_codes;
+use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
-use indoc::indoc;
 use std::sync::Arc;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-
-const PROMPT: &str = "duckdb> ";
 
 thread_local! {
     static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
@@ -45,7 +42,7 @@ impl Shell {
     pub fn on_key(&mut self, e: OnKeyEvent) {
         let event = e.dom_event();
         match event.key_code() {
-            term_codes::KEY_ENTER => {
+            vt100::KEY_ENTER => {
                 if !self.line.is_empty() {
                     self.terminal.writeln("");
                     self.terminal.writeln(&format!(
@@ -58,27 +55,27 @@ impl Shell {
                 }
                 self.write_prompt();
             }
-            term_codes::KEY_BACKSPACE => {
+            vt100::KEY_BACKSPACE => {
                 if self.cursor_column > 0 {
                     self.terminal.write("\u{0008} \u{0008}");
                     self.line.pop();
                     self.cursor_column -= 1;
                 }
             }
-            term_codes::KEY_LEFT_ARROW => {
+            vt100::KEY_LEFT_ARROW => {
                 if self.cursor_column > 0 {
-                    self.terminal.write(term_codes::CURSOR_LEFT);
+                    self.terminal.write(vt100::CURSOR_LEFT);
                     self.cursor_column -= 1;
                 }
             }
-            term_codes::KEY_RIGHT_ARROW => {
+            vt100::KEY_RIGHT_ARROW => {
                 if self.cursor_column < self.line.len() {
-                    self.terminal.write(term_codes::CURSOR_RIGHT);
+                    self.terminal.write(vt100::CURSOR_RIGHT);
                     self.cursor_column += 1;
                 }
             }
-            term_codes::KEY_L if event.ctrl_key() => self.terminal.clear(),
-            term_codes::KEY_C if event.ctrl_key() => {
+            vt100::KEY_L if event.ctrl_key() => self.terminal.clear(),
+            vt100::KEY_C if event.ctrl_key() => {
                 self.write_prompt();
                 self.line.clear();
                 self.cursor_column = 0;
@@ -112,34 +109,88 @@ impl Shell {
             // XXX disconnect
         }
 
-        let version = db.get_version().await.unwrap();
-        self.terminal.write(&version);
-
         self.db_conn = None;
         self.db = Some(Arc::new(Mutex::new(db)));
+        self.write_greeter().await;
+        self.write_prompt();
+        self.focus();
+    }
+
+    /// Write directly to the terminal
+    pub fn write(&self, text: &str) {
+        self.terminal.write(text);
+    }
+
+    /// Write greeter
+    pub async fn write_greeter(&self) {
+        let db = match self.db {
+            Some(ref db) => db.lock().unwrap(),
+            None => return,
+        };
+        self.write(&format!(
+            "{clear_screen}{reset_cursor}{bold}DuckDB Web Shell{normal}{endl}",
+            reset_cursor = vt100::CURSOR_HOME,
+            clear_screen = vt100::CLEAR_SCREEN,
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+            endl = vt100::ENDLINE
+        ));
+
+        let version = db.get_version().await.unwrap();
+        self.write(&format!(
+            "Version:  {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}",
+            version = version,
+            package = "@duckdb/duckdb-wasm@0.0.1",
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+            endl = vt100::ENDLINE
+        ));
+
+        let features = db.get_feature_flags().await.unwrap();
+        self.write(&format!(
+            "Features: wasm-eh={eh} wasm-threads={threads}{endl}{endl}",
+            eh = if (features & 0b1) != 0 { "on" } else { "off" },
+            threads = if (features & 0b10) != 0 { "on" } else { "off" },
+            endl = vt100::ENDLINE
+        ));
     }
 
     /// Write the DuckDB logo
     pub fn write_logo(&self) {
-        self.terminal.writeln(indoc! {"
-              ▄▄█████▄▄
-             ███████████
-            █████████████  ███▄
-            █████████████  ███▀
-             ███████████
-              ▀▀█████▀▀
-        "});
+        self.terminal.write("  ▄▄█████▄▄\n\r");
+        self.terminal.write(" ███████████\n\r");
+        self.terminal.write("█████████████  ███▄\n\r");
+        self.terminal.write("█████████████  ███▀\n\r");
+        self.terminal.write(" ███████████\n\r");
+        self.terminal.write("  ▀▀█████▀▀\n\r");
     }
 
-    /// Write a prompt
+    /// Write before the current prompt
+    pub fn write_before(&self, text: &str) {
+        self.terminal.write(&format!(
+            "{}{}{}{}{}{}",
+            vt100::CLEAR_LINE,
+            vt100::REWIND,
+            text,
+            vt100::ENDLINE,
+            self.prompt(),
+            &self.line,
+        ));
+    }
+
+    /// Get the prompt
+    pub fn prompt(&self) -> String {
+        return format!(
+            "{bold}{prompt}{normal}> ",
+            prompt = "duckdb",
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+        );
+    }
+
+    /// Write the prompt
     pub fn write_prompt(&self) {
-        self.terminal.writeln("");
-        self.terminal.write(PROMPT);
-    }
-
-    /// Write the initial greeter
-    pub fn write_greeter(&self) {
-        self.terminal.write(PROMPT);
+        self.write(&self.prompt());
     }
 
     /// Focus on the terminal
