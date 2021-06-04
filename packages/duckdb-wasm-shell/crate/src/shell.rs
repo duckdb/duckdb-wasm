@@ -18,6 +18,11 @@ thread_local! {
     static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
 }
 
+#[wasm_bindgen]
+pub enum ShellInputContext {
+    FileInput = 0,
+}
+
 struct ShellSettings {
     /// Enable query timer
     timer: bool,
@@ -71,6 +76,12 @@ impl Shell {
         self.terminal.write(vt100::ENDLINE);
     }
 
+    /// Resume after user input
+    pub fn resume_after_input(&mut self, _ctx: ShellInputContext) {
+        self.writeln("Resume after input");
+        self.prompt();
+    }
+
     /// Command handler
     pub async fn on_command(text: String) {
         let shellg = Shell::global().clone();
@@ -94,6 +105,7 @@ impl Shell {
             ".files" => match shell.runtime {
                 Some(ref rt) => {
                     rt.open_file_explorer();
+                    return;
                 }
                 None => {
                     shell.writeln("Shell runtime not set");

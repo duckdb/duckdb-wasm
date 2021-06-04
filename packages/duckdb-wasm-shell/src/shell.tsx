@@ -19,6 +19,7 @@ interface Props {
 class ShellRuntime {
     public openFileExplorer(this: ShellRuntime): void {
         console.log('Open file explorer');
+        shell.resumeAfterInput(shell.ShellInputContext.FileInput);
     }
 }
 

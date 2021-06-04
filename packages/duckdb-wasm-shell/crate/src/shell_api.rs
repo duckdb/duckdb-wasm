@@ -46,8 +46,16 @@ pub fn embed(
 
 #[wasm_bindgen(js_name = "configureDatabase")]
 pub async fn configure_database(db: AsyncDuckDBBindings) -> Result<(), js_sys::Error> {
-    let foo = shell::Shell::global();
-    let mut s = foo.lock().unwrap();
+    let sa = shell::Shell::global();
+    let mut s = sa.lock().unwrap();
     s.configure_database(AsyncDuckDB::from_bindings(db)).await?;
+    Ok(())
+}
+
+#[wasm_bindgen(js_name = "resumeAfterInput")]
+pub async fn resume_after_input(ctx: shell::ShellInputContext) -> Result<(), js_sys::Error> {
+    let sa = shell::Shell::global();
+    let mut s = sa.lock().unwrap();
+    s.resume_after_input(ctx);
     Ok(())
 }
