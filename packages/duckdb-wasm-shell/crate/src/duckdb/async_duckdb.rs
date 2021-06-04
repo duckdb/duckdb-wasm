@@ -1,9 +1,9 @@
 use crate::arrow_reader::ArrowStreamReader;
 use arrow::ipc::reader::FileReader;
 use js_sys::Uint8Array;
-use std::cell::RefCell;
 use std::io::Cursor;
-use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 type ConnectionID = u32;
@@ -62,19 +62,33 @@ impl AsyncDuckDB {
             .unwrap_or(0.0) as u32)
     }
 
-    pub async fn connect(&self) -> Result<f64, JsValue> {
-        Ok(self.bindings.connect().await?.as_f64().unwrap_or(0.0))
+    /// Create a new connection
+    pub async fn connect(selfm: Arc<Mutex<Self>>) -> Result<AsyncDuckDBConnection, js_sys::Error> {
+        let db = selfm.lock().unwrap();
+        let cid: u32 = match db.bindings.connect().await?.as_f64() {
+            Some(c) => c as u32,
+            None => return Err(js_sys::Error::new("invalid connection id")),
+        };
+        Ok(AsyncDuckDBConnection::new(selfm.clone(), cid))
     }
 }
 
 pub struct AsyncDuckDBConnection {
-    duckdb: Rc<RefCell<AsyncDuckDB>>,
+    duckdb: Arc<Mutex<AsyncDuckDB>>,
     connection: u32,
 
     result_stream: Option<ArrowStreamReader>,
 }
 
 impl AsyncDuckDBConnection {
+    pub fn new(db: Arc<Mutex<AsyncDuckDB>>, cid: u32) -> Self {
+        Self {
+            duckdb: db,
+            connection: cid,
+            result_stream: None,
+        }
+    }
+
     /// Run a query
     pub async fn run_query(
         &self,
@@ -82,7 +96,8 @@ impl AsyncDuckDBConnection {
     ) -> Result<Vec<arrow::record_batch::RecordBatch>, js_sys::Error> {
         let ui8array: Uint8Array = self
             .duckdb
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .bindings
             .run_query(self.connection, text)
             .await?
@@ -114,7 +129,8 @@ impl AsyncDuckDBConnection {
         };
         let ui8array: Uint8Array = self
             .duckdb
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .bindings
             .fetch_query_results(self.connection)
             .await?
