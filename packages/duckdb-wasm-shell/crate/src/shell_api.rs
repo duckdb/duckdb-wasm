@@ -7,7 +7,6 @@ use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{Terminal, TerminalOptions, Theme};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::spawn_local;
 
 #[wasm_bindgen(js_name = "embed")]
 pub fn embed_shell(

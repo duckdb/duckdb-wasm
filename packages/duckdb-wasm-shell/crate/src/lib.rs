@@ -1,4 +1,6 @@
+pub mod arrow_stream;
 pub mod duckdb;
+pub mod error;
 pub mod shell;
 pub mod shell_api;
 pub mod shell_options;
