@@ -6,6 +6,7 @@ pub mod prettytable;
 pub mod shell;
 pub mod shell_api;
 pub mod shell_options;
+pub mod utils;
 pub mod vt100;
 pub mod xterm;
 
