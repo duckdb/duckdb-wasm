@@ -147,7 +147,7 @@ impl Shell {
 
         let version = db.get_version().await.unwrap();
         self.write(&format!(
-            "Version:  {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}",
+            "Database: {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}",
             version = version,
             package = "@duckdb/duckdb-wasm@0.0.1",
             bold = vt100::MODE_BOLD,
@@ -157,7 +157,7 @@ impl Shell {
 
         let features = db.get_feature_flags().await.unwrap();
         self.write(&format!(
-            "Features: wasm-eh={eh} wasm-threads={threads}{endl}{endl}",
+            "Features: wasm-eh={eh} wasm-threads={threads} parquet=on{endl}{endl}",
             eh = if (features & 0b1) != 0 { "on" } else { "off" },
             threads = if (features & 0b10) != 0 { "on" } else { "off" },
             endl = vt100::ENDLINE
