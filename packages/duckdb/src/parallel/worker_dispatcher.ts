@@ -282,6 +282,19 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.sendOK(request);
                     break;
                 }
+                case WorkerRequestType.TOKENIZE: {
+                    const result = this._bindings.tokenize(request.data);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.SCRIPT_TOKENS,
+                            data: result,
+                        },
+                        [],
+                    );
+                    break;
+                }
             }
         } catch (e) {
             return this.failWith(request, e);

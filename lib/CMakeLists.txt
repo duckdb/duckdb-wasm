@@ -174,6 +174,7 @@ if(EMSCRIPTEN)
           _duckdb_web_get_feature_flags, \
           _duckdb_web_flush_files, \
           _duckdb_web_flush_file, \
+          _duckdb_web_tokenize, \
           _duckdb_web_connect, \
           _duckdb_web_disconnect, \
           _duckdb_web_fs_directory_list_files_callback, \
