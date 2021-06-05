@@ -258,6 +258,7 @@ dependencies = [
  "encode_unicode",
  "js-sys",
  "lazy_static",
+ "ropey",
  "unicode-width",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -729,6 +730,15 @@ name = "regex-syntax"
 version = "0.6.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
+
+[[package]]
+name = "ropey"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0f3ef16589fdbb3e8fbce3dca944c08e61f39c7f16064b21a257d68ea911a83"
+dependencies = [
+ "smallvec",
+]
 
 [[package]]
 name = "ryu"
