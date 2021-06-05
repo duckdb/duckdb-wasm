@@ -182,12 +182,14 @@ impl Shell {
                         self.block_input();
                         spawn_local(Shell::on_sql(input));
                     } else {
-                        self.input.consume(event, &self.terminal);
+                        self.input.consume(event);
+                        self.input.flush(&self.terminal);
                     }
                 }
             }
             _ => {
-                self.input.consume(event, &self.terminal);
+                self.input.consume(event);
+                self.input.flush(&self.terminal);
             }
         }
     }
@@ -196,6 +198,7 @@ impl Shell {
     pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime) {
         self.terminal = term;
         self.runtime = Some(runtime);
+        self.input.configure(&self.terminal);
 
         // Register on_key callback
         let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {
@@ -283,7 +286,8 @@ impl Shell {
 
     /// Write the prompt
     pub fn prompt(&mut self) {
-        self.input.reset(&self.terminal);
+        self.input.reset();
+        self.input.flush(&self.terminal);
         self.input_enabled = true;
     }
 
