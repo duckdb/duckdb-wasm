@@ -56,7 +56,7 @@ impl PromptBuffer {
     }
 
     /// Reset the prompt
-    pub fn reset(&mut self) {
+    pub fn start_new(&mut self) {
         self.output_buffer.clear();
         self.text_buffer = Rope::new();
         self.cursor = 0;
@@ -64,8 +64,9 @@ impl PromptBuffer {
     }
 
     /// Insert a newline at the cursor.
-    /// Writes the prompt continuation string.
+    /// Writes the prompt continuation string and reflows if the cursor is not at the end.
     fn insert_newline(&mut self) {
+        // Insert a newline character
         self.text_buffer.insert_char(self.cursor, '\n');
         write!(
             self.output_buffer,
@@ -75,23 +76,13 @@ impl PromptBuffer {
         )
         .unwrap();
         self.cursor += 1;
-    }
 
-    /// Insert an artificial newline as line wrap at the cursor.
-    /// The rope interprets the paragraph separator as newline.
-    /// We can therefore use the character as 'artificial' newline character and skip it during reflows.
-    /// Writes the prompt continuation string.
-    fn insert_linewrap(&mut self) {
-        self.text_buffer
-            .insert_char(self.cursor, vt100::PARAGRAPH_SEPERATOR);
-        write!(
-            self.output_buffer,
-            "{endl}{prompt_cont}",
-            endl = vt100::CRLF,
-            prompt_cont = PROMPT_CONT
-        )
-        .unwrap();
-        self.cursor += 1;
+        // Reflow if cursor is not at end
+        let pos = self.cursor;
+        if pos != self.text_buffer.len_chars() {
+            self.reflow(|_| ());
+            self.move_cursor_to(pos);
+        }
     }
 
     /// Clear the output
@@ -124,7 +115,7 @@ impl PromptBuffer {
     }
 
     /// Move cursor to position in prompt text
-    fn move_to(&mut self, pos: usize) {
+    fn move_cursor_to(&mut self, pos: usize) {
         let src_line_id = self.text_buffer.char_to_line(self.cursor);
         let dst_line_id = self.text_buffer.char_to_line(pos);
         if src_line_id < dst_line_id {
@@ -140,6 +131,75 @@ impl PromptBuffer {
             vt100::cursor_left(&mut self.output_buffer, src_col - dst_col);
         }
         self.cursor = pos;
+    }
+
+    // Move the cursor 1 to the left
+    fn move_cursor_left(&mut self) {
+        let mut iter = self.text_buffer.chars_at(self.cursor);
+        match iter.prev() {
+            Some(c) => {
+                match c {
+                    // Move to end of previous line?
+                    '\n' | vt100::PARAGRAPH_SEPERATOR => {
+                        let line_id = self.text_buffer.char_to_line(self.cursor - 1);
+                        let line = self.text_buffer.line(line_id);
+                        write!(
+                            self.output_buffer,
+                            "{rewind}{cursor_up}",
+                            rewind = vt100::CR,
+                            cursor_up = vt100::CURSOR_UP
+                        )
+                        .unwrap();
+                        vt100::cursor_right(
+                            &mut self.output_buffer,
+                            PROMPT_WIDTH + line.len_chars() - 1,
+                        );
+                    }
+                    // Just cursor one to the left
+                    _ => write!(
+                        self.output_buffer,
+                        "{cursor_left}",
+                        cursor_left = vt100::CURSOR_LEFT
+                    )
+                    .unwrap(),
+                }
+                self.cursor -= 1;
+            }
+            // Reached beginning of input
+            None => return,
+        }
+    }
+
+    // Move the cursor 1 to the right
+    fn move_cursor_right(&mut self) {
+        let mut iter = self.text_buffer.chars_at(self.cursor);
+        match iter.next() {
+            Some(c) => {
+                match c {
+                    // Move to beginning of previous line?
+                    '\n' | vt100::PARAGRAPH_SEPERATOR => {
+                        write!(
+                            self.output_buffer,
+                            "{rewind}{cursor_down}",
+                            rewind = vt100::CR,
+                            cursor_down = vt100::CURSOR_DOWN
+                        )
+                        .unwrap();
+                        vt100::cursor_right(&mut self.output_buffer, PROMPT_WIDTH);
+                    }
+                    // Just cursor one to the right
+                    _ => write!(
+                        self.output_buffer,
+                        "{cursor_right}",
+                        cursor_right = vt100::CURSOR_RIGHT
+                    )
+                    .unwrap(),
+                }
+                self.cursor += 1;
+            }
+            // Reached end of input
+            None => return,
+        }
     }
 
     /// Reflow the text buffer
@@ -215,7 +275,19 @@ impl PromptBuffer {
                 None => return,
             };
             if (PROMPT_WIDTH + line.len_chars() + 1) >= self.terminal_width {
-                self.insert_linewrap();
+                // Insert an artificial newline as line wrap at the cursor.
+                // The rope interprets the paragraph separator as newline.
+                // We can therefore use the character as 'artificial' newline character and skip it during reflows.
+                self.text_buffer
+                    .insert_char(self.cursor, vt100::PARAGRAPH_SEPERATOR);
+                write!(
+                    self.output_buffer,
+                    "{endl}{prompt_cont}",
+                    endl = vt100::CRLF,
+                    prompt_cont = PROMPT_CONT
+                )
+                .unwrap();
+                self.cursor += 1;
             }
             self.text_buffer.insert_char(self.cursor, c);
             self.cursor += 1;
@@ -224,121 +296,54 @@ impl PromptBuffer {
             // Otherwise reflow since we might need new line-wraps
             let pos = self.cursor;
             self.reflow(|buffer| buffer.insert_char(pos, c));
-            self.move_to(pos + 1);
+            self.move_cursor_to(pos + 1);
+        }
+    }
+
+    /// Erase the previous character
+    fn erase_previous_char(&mut self) {
+        let mut iter = self.text_buffer.chars_at(self.cursor);
+        match iter.prev() {
+            Some(c) => {
+                match c {
+                    // Remove explicit newline?
+                    // Removing newlines is expensive since we have to reflow the following lines.
+                    '\n' => {
+                        let pos = self.cursor;
+                        self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
+                        self.move_cursor_to(pos - 1);
+                    }
+
+                    // Previous character is an artificial line wrap?
+                    // In that case, we'll delete the character before that character.
+                    vt100::PARAGRAPH_SEPERATOR => {}
+
+                    // In all other cases, just remove the character
+                    _ => {
+                        let pos = self.cursor;
+                        if pos == self.text_buffer.len_chars() {
+                            write!(self.output_buffer, "{}", "\u{0008} \u{0008}").unwrap();
+                            self.text_buffer.remove((self.cursor - 1)..(self.cursor));
+                            self.cursor -= 1;
+                        } else {
+                            self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
+                            self.move_cursor_to(pos - 1);
+                        }
+                    }
+                }
+            }
+            None => return,
         }
     }
 
     /// Process key event
     pub fn consume(&mut self, event: KeyboardEvent) {
         match event.key_code() {
-            vt100::KEY_ENTER => {
-                // Insert a newline
-                self.insert_newline();
-                // Reflow if cursor is not at end
-                let pos = self.cursor;
-                if pos != self.text_buffer.len_chars() {
-                    self.reflow(|_| ());
-                    self.move_to(pos);
-                }
-            }
-            vt100::KEY_BACKSPACE => {
-                let mut iter = self.text_buffer.chars_at(self.cursor);
-                match iter.prev() {
-                    Some(c) => {
-                        match c {
-                            // Remove explicit newline?
-                            // Removing newlines is expensive since we have to reflow the following lines.
-                            '\n' => {
-                                let pos = self.cursor;
-                                self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
-                                self.move_to(pos - 1);
-                            }
-
-                            // Previous character is an artificial line wrap?
-                            // In that case, we'll delete the character before that character.
-                            vt100::PARAGRAPH_SEPERATOR => {}
-
-                            // In all other cases, just remove the character
-                            _ => {
-                                let pos = self.cursor;
-                                if pos == self.text_buffer.len_chars() {
-                                    write!(self.output_buffer, "{}", "\u{0008} \u{0008}").unwrap();
-                                    self.text_buffer.remove((self.cursor - 1)..(self.cursor));
-                                    self.cursor -= 1;
-                                } else {
-                                    self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
-                                    self.move_to(pos - 1);
-                                }
-                            }
-                        }
-                    }
-                    None => return,
-                }
-            }
+            vt100::KEY_ENTER => self.insert_newline(),
+            vt100::KEY_BACKSPACE => self.erase_previous_char(),
             vt100::KEY_ARROW_UP | vt100::KEY_ARROW_DOWN => return,
-            vt100::KEY_ARROW_LEFT => {
-                let mut iter = self.text_buffer.chars_at(self.cursor);
-                match iter.prev() {
-                    Some(c) => {
-                        match c {
-                            // Move to end of previous line?
-                            '\n' | vt100::PARAGRAPH_SEPERATOR => {
-                                let line_id = self.text_buffer.char_to_line(self.cursor - 1);
-                                let line = self.text_buffer.line(line_id);
-                                write!(
-                                    self.output_buffer,
-                                    "{rewind}{cursor_up}",
-                                    rewind = vt100::CR,
-                                    cursor_up = vt100::CURSOR_UP
-                                )
-                                .unwrap();
-                                vt100::cursor_right(
-                                    &mut self.output_buffer,
-                                    PROMPT_WIDTH + line.len_chars() - 1,
-                                );
-                            }
-                            _ => write!(
-                                self.output_buffer,
-                                "{cursor_left}",
-                                cursor_left = vt100::CURSOR_LEFT
-                            )
-                            .unwrap(),
-                        }
-                        self.cursor -= 1;
-                    }
-                    // Reached beginning of input
-                    None => return,
-                }
-            }
-            vt100::KEY_ARROW_RIGHT => {
-                let mut iter = self.text_buffer.chars_at(self.cursor);
-                match iter.next() {
-                    Some(c) => {
-                        match c {
-                            // Move to beginning of previous line?
-                            '\n' | vt100::PARAGRAPH_SEPERATOR => {
-                                write!(
-                                    self.output_buffer,
-                                    "{rewind}{cursor_down}",
-                                    rewind = vt100::CR,
-                                    cursor_down = vt100::CURSOR_DOWN
-                                )
-                                .unwrap();
-                                vt100::cursor_right(&mut self.output_buffer, PROMPT_WIDTH);
-                            }
-                            _ => write!(
-                                self.output_buffer,
-                                "{cursor_right}",
-                                cursor_right = vt100::CURSOR_RIGHT
-                            )
-                            .unwrap(),
-                        }
-                        self.cursor += 1;
-                    }
-                    // Reached end of input
-                    None => return,
-                }
-            }
+            vt100::KEY_ARROW_LEFT => self.move_cursor_left(),
+            vt100::KEY_ARROW_RIGHT => self.move_cursor_right(),
             _ => {
                 if !event.alt_key() && !event.alt_key() && !event.ctrl_key() && !event.meta_key() {
                     self.insert_char(event.key().chars().next().unwrap());
