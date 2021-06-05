@@ -1,5 +1,6 @@
 import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 import { LogEntryVariant } from '../log';
+import { ScriptTokens } from 'src/bindings/tokens';
 
 export type ConnectionID = number;
 
@@ -8,6 +9,7 @@ export enum WorkerRequestType {
     GET_FEATURE_FLAGS = 'GET_FEATURE_FLAGS',
     RESET = 'RESET',
     PING = 'PING',
+    TOKENIZE = 'TOKENIZE',
     DROP_FILE = 'DROP_FILE',
     DROP_FILES = 'DROP_FILES',
     FLUSH_FILES = 'FLUSH_FILES',
@@ -30,6 +32,7 @@ export enum WorkerRequestType {
 export enum WorkerResponseType {
     VERSION_STRING = 'VERSION_STRING',
     FEATURE_FLAGS = 'FEATURE_FLAGS',
+    SCRIPT_TOKENS = 'SCRIPT_TOKENS',
     LOG = 'LOG',
     OK = 'OK',
     ERROR = 'ERROR',
@@ -83,63 +86,69 @@ export interface ZipExtractToFileArgs {
 }
 
 export type WorkerRequestVariant =
-    | WorkerRequest<WorkerRequestType.GET_VERSION, null>
-    | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
-    | WorkerRequest<WorkerRequestType.RESET, null>
-    | WorkerRequest<WorkerRequestType.PING, null>
-    | WorkerRequest<WorkerRequestType.DROP_FILE, string>
-    | WorkerRequest<WorkerRequestType.DROP_FILES, null>
-    | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
-    | WorkerRequest<WorkerRequestType.ADD_FILE_PATH, [string, string]>
     | WorkerRequest<WorkerRequestType.ADD_FILE_BLOB, [string, any]>
     | WorkerRequest<WorkerRequestType.ADD_FILE_BUFFER, [string, Uint8Array]>
-    | WorkerRequest<WorkerRequestType.GET_FILE_OBJECT_URL, number>
-    | WorkerRequest<WorkerRequestType.GET_FILE_BUFFER, number>
-    | WorkerRequest<WorkerRequestType.OPEN, string>
+    | WorkerRequest<WorkerRequestType.ADD_FILE_PATH, [string, string]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
+    | WorkerRequest<WorkerRequestType.DROP_FILE, string>
+    | WorkerRequest<WorkerRequestType.DROP_FILES, null>
+    | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
+    | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
+    | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
+    | WorkerRequest<WorkerRequestType.GET_FILE_BUFFER, number>
+    | WorkerRequest<WorkerRequestType.GET_FILE_OBJECT_URL, number>
+    | WorkerRequest<WorkerRequestType.GET_VERSION, null>
+    | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
+    | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>
+    | WorkerRequest<WorkerRequestType.OPEN, string>
+    | WorkerRequest<WorkerRequestType.PING, null>
+    | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.SEND_QUERY, [number, string]>
-    | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
+    | WorkerRequest<WorkerRequestType.TOKENIZE, string>
     | WorkerRequest<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs>
-    | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
-    | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>;
+    ;
 
 export type WorkerResponseVariant =
-    | WorkerResponse<WorkerResponseType.VERSION_STRING, string>
-    | WorkerResponse<WorkerResponseType.FEATURE_FLAGS, number>
-    | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
-    | WorkerResponse<WorkerResponseType.OK, null>
+    | WorkerResponse<WorkerResponseType.CONNECTION_INFO, number>
     | WorkerResponse<WorkerResponseType.ERROR, any>
-    | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
-    | WorkerResponse<WorkerResponseType.REGISTERED_FILE, number>
+    | WorkerResponse<WorkerResponseType.FEATURE_FLAGS, number>
     | WorkerResponse<WorkerResponseType.FILE_BUFFER, Uint8Array | null>
     | WorkerResponse<WorkerResponseType.FILE_OBJECT_URL, string | null>
-    | WorkerResponse<WorkerResponseType.CONNECTION_INFO, number>
+    | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
+    | WorkerResponse<WorkerResponseType.OK, null>
+    | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT_CHUNK, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_START, Uint8Array>
-    | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>;
+    | WorkerResponse<WorkerResponseType.REGISTERED_FILE, number>
+    | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
+    | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
+    | WorkerResponse<WorkerResponseType.VERSION_STRING, string>
+    ;
 
 export type WorkerTaskVariant =
-    | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
-    | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
-    | WorkerTask<WorkerRequestType.RESET, null, null>
-    | WorkerTask<WorkerRequestType.PING, null, null>
-    | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
-    | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
-    | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
-    | WorkerTask<WorkerRequestType.ADD_FILE_PATH, [string, string], number>
     | WorkerTask<WorkerRequestType.ADD_FILE_BLOB, [string, any], number>
     | WorkerTask<WorkerRequestType.ADD_FILE_BUFFER, [string, Uint8Array], number>
-    | WorkerTask<WorkerRequestType.GET_FILE_OBJECT_URL, number, string | null>
-    | WorkerTask<WorkerRequestType.GET_FILE_BUFFER, number, Uint8Array | null>
-    | WorkerTask<WorkerRequestType.OPEN, string | null, null>
+    | WorkerTask<WorkerRequestType.ADD_FILE_PATH, [string, string], number>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
-    | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
-    | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
+    | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
+    | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>
-    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>
+    | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
+    | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
+    | WorkerTask<WorkerRequestType.GET_FILE_BUFFER, number, Uint8Array | null>
+    | WorkerTask<WorkerRequestType.GET_FILE_OBJECT_URL, number, string | null>
+    | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
-    | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>;
+    | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>
+    | WorkerTask<WorkerRequestType.OPEN, string | null, null>
+    | WorkerTask<WorkerRequestType.PING, null, null>
+    | WorkerTask<WorkerRequestType.RESET, null, null>
+    | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
+    | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
+    | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>
+    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>
+    ;

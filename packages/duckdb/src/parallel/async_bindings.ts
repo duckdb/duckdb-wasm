@@ -10,6 +10,7 @@ import {
 import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
 import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
+import { ScriptTokens } from 'src/bindings/tokens';
 
 export class AsyncDuckDB {
     /** The message handler */
@@ -136,6 +137,12 @@ export class AsyncDuckDB {
                 break;
             case WorkerRequestType.GET_FEATURE_FLAGS:
                 if (response.type == WorkerResponseType.FEATURE_FLAGS) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.TOKENIZE:
+                if (response.type == WorkerResponseType.SCRIPT_TOKENS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -311,6 +318,16 @@ export class AsyncDuckDB {
         );
         const version = await this.postTask(task);
         return version;
+    }
+
+    /** Tokenize a script text */
+    public async tokenize(text: string): Promise<ScriptTokens> {
+        const task = new WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>(
+            WorkerRequestType.TOKENIZE,
+            text,
+        );
+        const tokens = await this.postTask(task);
+        return tokens;
     }
 
     /** Connect to the database */

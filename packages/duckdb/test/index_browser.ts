@@ -84,6 +84,7 @@ import { testFilesystem } from './filesystem.test';
 import { testZip, testZipAsync } from './zip.test';
 import { testJSONImport, testJSONImportAsync } from './import_json.test';
 import { testCSVImport, testCSVImportAsync } from './import_csv.test';
+import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 
 testBindings(() => db!);
 testBatchStream(() => db!);
@@ -95,3 +96,5 @@ testJSONImport(() => db!);
 testJSONImportAsync(() => adb!);
 testCSVImport(() => db!);
 testCSVImportAsync(() => adb!);
+testTokenization(() => db!);
+testTokenizationAsync(() => adb!);

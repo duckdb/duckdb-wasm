@@ -4,6 +4,7 @@ import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
 import { DuckDBRuntime } from './runtime_base';
 import { CSVTableOptions } from './table_options';
+import { ScriptTokens } from './tokens';
 
 /** A DuckDB Feature */
 export enum DuckDBFeature {
@@ -151,6 +152,17 @@ export abstract class DuckDBBindings {
         const copy = new Uint8Array(new ArrayBuffer(buffer.byteLength));
         copy.set(buffer);
         return copy;
+    }
+
+    /** Tokenize a script */
+    public tokenize(text: string): ScriptTokens {
+        const [s, d, n] = this.callSRet('duckdb_web_tokenize', ['string'], [text]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(this.readString(d, n));
+        }
+        const res = this.readString(d, n);
+        this.dropResponseBuffers();
+        return JSON.parse(res) as ScriptTokens;
     }
 
     /** Flush all files */
