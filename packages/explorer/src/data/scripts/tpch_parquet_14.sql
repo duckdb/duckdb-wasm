@@ -9,5 +9,5 @@ from
     'part.parquet'
 where
     l_partkey = p_partkey
-    and l_shipdate >= date '1995-09-01'
+    and l_shipdate >= cast('1995-09-01' as date)
     and l_shipdate < cast('1995-10-01' as date);
