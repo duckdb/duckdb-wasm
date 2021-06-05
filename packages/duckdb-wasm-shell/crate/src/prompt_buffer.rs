@@ -121,14 +121,20 @@ impl PromptBuffer {
                 let mut iter = self.text_buffer.chars_at(self.cursor);
                 match iter.prev() {
                     Some(c) => {
-                        // Remove line break?
-                        if c == '\n' {
-                            // XXX
-                            //
-                        } else {
-                            write!(self.output_buffer, "{}", "\u{0008} \u{0008}").unwrap();
-                            self.text_buffer.remove((self.cursor - 1)..(self.cursor));
-                            self.cursor -= 1;
+                        match c {
+                            // Remove explicit newline?
+                            '\n' => {}
+
+                            // Previous character is an artificial line wrap?
+                            // In that case, we'll delete the character before that character.
+                            vt100::PARAGRAPH_SEPERATOR => {}
+
+                            // In all other cases, just remove the character
+                            _ => {
+                                write!(self.output_buffer, "{}", '\u{0008}').unwrap();
+                                self.text_buffer.remove((self.cursor - 1)..(self.cursor));
+                                self.cursor -= 1;
+                            }
                         }
                     }
                     None => return,
