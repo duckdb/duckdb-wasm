@@ -37,7 +37,14 @@ impl PromptBuffer {
 
     /// Get input string
     pub fn get_input(&mut self) -> String {
-        let buffer: String = self.text_buffer.slice(..).into();
+        let buffer: String = self
+            .text_buffer
+            .chars()
+            .map(|c| match c {
+                vt100::PARAGRAPH_SEPERATOR => '\n',
+                c => c,
+            })
+            .collect();
         buffer
     }
 
@@ -55,13 +62,27 @@ impl PromptBuffer {
         write!(self.output_buffer, "{}", PROMPT_INIT).unwrap();
     }
 
-    // Insert a newline at the cursor
+    /// Insert a newline at the cursor
     fn insert_newline(&mut self) {
         self.text_buffer.insert_char(self.cursor, '\n');
         write!(
             self.output_buffer,
             "{endl}{prompt_cont}",
-            endl = vt100::ENDLINE,
+            endl = vt100::CRLF,
+            prompt_cont = PROMPT_CONT
+        )
+        .unwrap();
+        self.cursor += 1;
+    }
+
+    /// Insert an artificial newline as line wrap at the cursor
+    fn insert_linewrap(&mut self) {
+        self.text_buffer
+            .insert_char(self.cursor, vt100::PARAGRAPH_SEPERATOR);
+        write!(
+            self.output_buffer,
+            "{endl}{prompt_cont}",
+            endl = vt100::CRLF,
             prompt_cont = PROMPT_CONT
         )
         .unwrap();
@@ -76,7 +97,7 @@ impl PromptBuffer {
             None => return,
         };
         if (PROMPT_WIDTH + line.len_chars()) >= self.terminal_width {
-            self.insert_newline();
+            self.insert_linewrap();
         }
         self.text_buffer.insert_char(self.cursor, c);
         self.cursor += 1;

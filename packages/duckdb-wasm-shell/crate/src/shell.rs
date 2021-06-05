@@ -239,7 +239,7 @@ impl Shell {
 
     /// Write directly to the terminal with newline
     pub fn writeln(&self, text: &str) {
-        self.terminal.write(&format!("{}{}", text, vt100::ENDLINE));
+        self.terminal.write(&format!("{}{}", text, vt100::CRLF));
     }
 
     /// Write greeter
@@ -254,7 +254,7 @@ impl Shell {
             clear_screen = vt100::CLEAR_SCREEN,
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
-            endl = vt100::ENDLINE
+            endl = vt100::CRLF
         ));
 
         let version = db.get_version().await.unwrap();
@@ -264,7 +264,7 @@ impl Shell {
             package = "@duckdb/duckdb-wasm@0.0.1",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
-            endl = vt100::ENDLINE
+            endl = vt100::CRLF
         ));
 
         let features = db.get_feature_flags().await.unwrap();
@@ -272,7 +272,7 @@ impl Shell {
             "Features: wasm-eh={eh} wasm-threads={threads} parquet=on{endl}{endl}",
             eh = if (features & 0b1) != 0 { "on" } else { "off" },
             threads = if (features & 0b10) != 0 { "on" } else { "off" },
-            endl = vt100::ENDLINE
+            endl = vt100::CRLF
         ));
     }
 
@@ -280,7 +280,7 @@ impl Shell {
         self.write(&format!("Connected to a {bold}transient in-browser database{normal}.{endl}Enter \".help\" for usage hints.{endl}{endl}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
-            endl = vt100::ENDLINE
+            endl = vt100::CRLF
         ));
     }
 

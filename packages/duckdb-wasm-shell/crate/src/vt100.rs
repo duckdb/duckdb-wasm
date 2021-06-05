@@ -14,7 +14,9 @@ pub const CURSOR_DOWN: &str = "\x1b[B";
 pub const CURSOR_LEFT: &str = "\x1b[D";
 pub const CURSOR_RIGHT: &str = "\x1b[C";
 pub const REWIND: &str = "\r";
-pub const ENDLINE: &str = "\r\n";
+pub const CRLF: &str = "\r\n";
+pub const PARAGRAPH_SEPERATOR: char = '\u{2029}';
+pub const NEXT_LINE: char = '\u{0085}';
 
 pub fn cursor_right<Buffer>(out: &mut Buffer, n: usize)
 where
