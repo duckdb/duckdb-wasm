@@ -5,7 +5,8 @@ use std::fmt::Write;
 use web_sys::KeyboardEvent;
 
 const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
-const PROMPT_CONT: &'static str = "\x1b[1m   ...\x1b[m> ";
+const PROMPT_ENDL: &'static str = "\x1b[1m   ...\x1b[m> ";
+const PROMPT_WRAP: &'static str = "\x1b[1m   ..\x1b[m>> ";
 const PROMPT_WIDTH: usize = 8;
 
 pub struct PromptBuffer {
@@ -72,7 +73,7 @@ impl PromptBuffer {
             self.output_buffer,
             "{endl}{prompt_cont}",
             endl = vt100::CRLF,
-            prompt_cont = PROMPT_CONT
+            prompt_cont = PROMPT_ENDL
         )
         .unwrap();
         self.cursor += 1;
@@ -215,7 +216,7 @@ impl PromptBuffer {
         // Rebuild text and output
         let mut reflowed_txt = String::new();
         let mut reflowed_out = String::new();
-        let mut line_length = PROMPT_INIT.len();
+        let mut line_length = PROMPT_WIDTH;
         write!(&mut reflowed_out, "{}", PROMPT_INIT).unwrap();
 
         // Write all chars in the rope
@@ -231,10 +232,10 @@ impl PromptBuffer {
                         &mut reflowed_out,
                         "{endl}{prompt_cont}",
                         endl = vt100::CRLF,
-                        prompt_cont = PROMPT_CONT
+                        prompt_cont = PROMPT_ENDL
                     )
                     .unwrap();
-                    line_length = PROMPT_CONT.len();
+                    line_length = PROMPT_WIDTH;
                 }
 
                 // Write all other characters and wrap lines if necessary
@@ -246,12 +247,12 @@ impl PromptBuffer {
                         reflowed_txt.push(vt100::PARAGRAPH_SEPERATOR);
                         write!(
                             reflowed_out,
-                            "{endl}{prompt_cont}",
+                            "{endl}{prompt_wrap}",
                             endl = vt100::CRLF,
-                            prompt_cont = PROMPT_CONT
+                            prompt_wrap = PROMPT_WRAP
                         )
                         .unwrap();
-                        line_length = 0;
+                        line_length = PROMPT_WIDTH;
                     }
                 }
             }
@@ -282,9 +283,9 @@ impl PromptBuffer {
                     .insert_char(self.cursor, vt100::PARAGRAPH_SEPERATOR);
                 write!(
                     self.output_buffer,
-                    "{endl}{prompt_cont}",
+                    "{endl}{prompt_wrap}",
                     endl = vt100::CRLF,
-                    prompt_cont = PROMPT_CONT
+                    prompt_wrap = PROMPT_WRAP
                 )
                 .unwrap();
                 self.cursor += 1;
@@ -310,13 +311,18 @@ impl PromptBuffer {
                     // Removing newlines is expensive since we have to reflow the following lines.
                     '\n' => {
                         let pos = self.cursor;
-                        self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
+                        self.reflow(|buffer| buffer.remove((pos - 1)..pos));
                         self.move_cursor_to(pos - 1);
                     }
 
                     // Previous character is an artificial line wrap?
                     // In that case, we'll delete the character before that character.
-                    vt100::PARAGRAPH_SEPERATOR => {}
+                    vt100::PARAGRAPH_SEPERATOR => {
+                        let pos = self.cursor;
+                        let begin = std::cmp::max(pos, 2) - 2;
+                        self.reflow(|buffer| buffer.remove(begin..pos));
+                        self.move_cursor_to(begin);
+                    }
 
                     // In all other cases, just remove the character
                     _ => {
