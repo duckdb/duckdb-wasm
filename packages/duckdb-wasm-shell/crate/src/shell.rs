@@ -2,12 +2,12 @@ use crate::arrow_printer::pretty_format_batches_fmt;
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
 use crate::prettytable::format::consts::FORMAT_BOX_CHARS;
+use crate::prompt_buffer::PromptBuffer;
 use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
 use chrono::Duration;
-use std::mem::swap;
 use std::sync::Arc;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
@@ -18,11 +18,13 @@ thread_local! {
     static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
 }
 
+/// A shell input context
 #[wasm_bindgen]
 pub enum ShellInputContext {
     FileInput = 0,
 }
 
+/// Shell settings
 struct ShellSettings {
     /// Enable query timer
     timer: bool,
@@ -44,11 +46,9 @@ pub struct Shell {
     /// The runtime
     runtime: Option<ShellRuntime>,
     /// The current line buffer
-    input: String,
-    /// Is the input enabled?
+    input: PromptBuffer,
+    /// The input is enabled
     input_enabled: bool,
-    /// The cursor column
-    cursor_column: usize,
     /// The database (if any)
     db: Option<Arc<Mutex<duckdb::AsyncDuckDB>>>,
     /// The connection (if any)
@@ -62,18 +62,16 @@ impl Shell {
             settings: ShellSettings::default(),
             terminal: Terminal::construct(None),
             runtime: None,
-            input: String::new(),
+            input: PromptBuffer::default(),
             input_enabled: false,
-            cursor_column: 0,
             db: None,
             db_conn: None,
         }
     }
 
     /// Block all input
-    pub fn will_consume_input(&mut self) {
+    pub fn block_input(&mut self) {
         self.input_enabled = false;
-        self.terminal.write(vt100::ENDLINE);
     }
 
     /// Resume after user input
@@ -174,56 +172,22 @@ impl Shell {
         match event.key_code() {
             vt100::KEY_ENTER => {
                 // Is a command?
-                if self.input.trim_start().starts_with(".") {
-                    self.will_consume_input();
-                    let mut text = String::new();
-                    swap(&mut text, &mut self.input);
-                    spawn_local(Shell::on_command(text));
+                let input = self.input.get_input();
+                if input.trim_start().starts_with(".") {
+                    self.block_input();
+                    spawn_local(Shell::on_command(input));
                 } else {
                     // Ends with semicolon?
-                    if self.input.trim_end().ends_with(";") {
-                        self.will_consume_input();
-                        let mut text = String::new();
-                        swap(&mut text, &mut self.input);
-                        spawn_local(Shell::on_sql(text));
+                    if input.trim_end().ends_with(";") {
+                        self.block_input();
+                        spawn_local(Shell::on_sql(input));
                     } else {
-                        // Otherwise we wait it
-                        self.input += "\r\n";
-                        self.terminal.write("\r\n   ...> ");
+                        self.input.consume(event, &self.terminal);
                     }
                 }
             }
-            vt100::KEY_BACKSPACE => {
-                if self.cursor_column > 0 {
-                    self.terminal.write("\u{0008} \u{0008}");
-                    self.input.pop();
-                    self.cursor_column -= 1;
-                }
-            }
-            vt100::KEY_LEFT_ARROW => {
-                if self.cursor_column > 0 {
-                    self.terminal.write(vt100::CURSOR_LEFT);
-                    self.cursor_column -= 1;
-                }
-            }
-            vt100::KEY_RIGHT_ARROW => {
-                if self.cursor_column < self.input.len() {
-                    self.terminal.write(vt100::CURSOR_RIGHT);
-                    self.cursor_column += 1;
-                }
-            }
-            vt100::KEY_L if event.ctrl_key() => self.terminal.clear(),
-            vt100::KEY_C if event.ctrl_key() => {
-                self.prompt();
-                self.input.clear();
-                self.cursor_column = 0;
-            }
             _ => {
-                if !event.alt_key() && !event.alt_key() && !event.ctrl_key() && !event.meta_key() {
-                    self.terminal.write(&event.key());
-                    self.input.push_str(&e.key());
-                    self.cursor_column += 1;
-                }
+                self.input.consume(event, &self.terminal);
             }
         }
     }
@@ -317,27 +281,9 @@ impl Shell {
         ));
     }
 
-    /// Write before the current prompt
-    pub fn write_before(&mut self, text: &str) {
-        self.terminal.write(&format!(
-            "{clear_line}{rewind}{text}{endl}",
-            clear_line = vt100::CLEAR_LINE,
-            rewind = vt100::REWIND,
-            text = text,
-            endl = vt100::ENDLINE,
-        ));
-        self.prompt();
-        self.write(&self.input);
-    }
-
     /// Write the prompt
     pub fn prompt(&mut self) {
-        self.write(&format!(
-            "{bold}{prompt}{normal}> ",
-            prompt = "duckdb",
-            bold = vt100::MODE_BOLD,
-            normal = vt100::MODES_OFF,
-        ));
+        self.input.reset(&self.terminal);
         self.input_enabled = true;
     }
 

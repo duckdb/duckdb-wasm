@@ -38,6 +38,7 @@ arrow = "4.1.0"
 lazy_static = "1.4.0"
 encode_unicode = "0.3.6"
 unicode-width = "0.1.8"
+ropey = "1.2.0"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.12"
