@@ -1,4 +1,5 @@
 use crate::arrow_reader::ArrowStreamReader;
+use super::tokens::{ScriptTokens, JsScriptTokens};
 use arrow::ipc::reader::FileReader;
 use js_sys::Uint8Array;
 use std::io::Cursor;
@@ -7,27 +8,6 @@ use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 type ConnectionID = u32;
-
-#[wasm_bindgen]
-pub enum TokenType {
-    Identifier = 0,
-    NumericConstant = 1,
-    StringConstant = 2,
-    Operator = 3,
-    Keyword = 4,
-    Comment = 5,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_name = "ScriptTokens")]
-    pub type ScriptTokens;
-
-    #[wasm_bindgen(method, getter, js_name = "offsets")]
-    pub fn get_offsets(this: &ScriptTokens) -> Vec<u64>;
-    #[wasm_bindgen(method, getter, js_name = "types")]
-    pub fn get_types(this: &ScriptTokens) -> Vec<u8>;
-}
 
 #[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
 extern "C" {
@@ -87,11 +67,12 @@ impl AsyncDuckDB {
 
     /// Tokenize a script text
     pub async fn tokenize(&self, text: &str) -> Result<ScriptTokens, js_sys::Error> {
-        Ok(self
+        let tokens: JsScriptTokens = self
             .bindings
             .tokenize(text)
             .await?
-            .into())
+            .into();
+        Ok(tokens.into())
     }
 
     /// Create a new connection
