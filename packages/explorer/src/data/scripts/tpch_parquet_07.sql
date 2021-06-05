@@ -28,7 +28,7 @@ from
         or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')
       )
       and l_shipdate between cast('1995-01-01' as date)
-      and cast('1996-12-31' as date)) as shipping
+      and cast('1996-12-31' as date) as shipping
   ) as shipping
 group by
   supp_nation,
