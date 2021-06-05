@@ -8,6 +8,27 @@ use wasm_bindgen::prelude::*;
 
 type ConnectionID = u32;
 
+#[wasm_bindgen]
+pub enum TokenType {
+    Identifier = 0,
+    NumericConstant = 1,
+    StringConstant = 2,
+    Operator = 3,
+    Keyword = 4,
+    Comment = 5,
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_name = "ScriptTokens")]
+    pub type ScriptTokens;
+
+    #[wasm_bindgen(method, getter, js_name = "offsets")]
+    pub fn get_offsets(this: &ScriptTokens) -> Vec<u64>;
+    #[wasm_bindgen(method, getter, js_name = "types")]
+    pub fn get_types(this: &ScriptTokens) -> Vec<u8>;
+}
+
 #[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
 extern "C" {
     #[wasm_bindgen(js_name = "AsyncDuckDB")]
@@ -19,6 +40,8 @@ extern "C" {
     async fn get_feature_flags(this: &AsyncDuckDBBindings) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "connectInternal")]
     async fn connect(this: &AsyncDuckDBBindings) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "tokenize")]
+    async fn tokenize(this: &AsyncDuckDBBindings, text: &str) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "runQuery")]
     async fn run_query(
         this: &AsyncDuckDBBindings,
@@ -60,6 +83,15 @@ impl AsyncDuckDB {
             .await?
             .as_f64()
             .unwrap_or(0.0) as u32)
+    }
+
+    /// Tokenize a script text
+    pub async fn tokenize(&self, text: &str) -> Result<ScriptTokens, js_sys::Error> {
+        Ok(self
+            .bindings
+            .tokenize(text)
+            .await?
+            .into())
     }
 
     /// Create a new connection
