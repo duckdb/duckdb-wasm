@@ -1,5 +1,6 @@
 // http://www.climagic.org/mirrors/VT100_Escape_Codes.html
 
+pub const KEY_TAB: u32 = 9;
 pub const KEY_ENTER: u32 = 13;
 pub const KEY_BACKSPACE: u32 = 8;
 pub const KEY_ARROW_LEFT: u32 = 37;

@@ -8,6 +8,7 @@ const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
 const PROMPT_ENDL: &'static str = "\x1b[1m   ...\x1b[m> ";
 const PROMPT_WRAP: &'static str = "\x1b[1m   ..\x1b[m>> ";
 const PROMPT_WIDTH: usize = 8;
+const TAB_WIDTH: usize = 2;
 
 pub struct PromptBuffer {
     /// The pending output buffer
@@ -342,9 +343,22 @@ impl PromptBuffer {
         }
     }
 
+    /// Insert 4 spaces without line wraps
+    pub fn insert_tab(&mut self) {
+        let line = self.text_buffer.char_to_line(self.cursor);
+        let col = PROMPT_WIDTH + self.cursor - self.text_buffer.line_to_char(line);
+        let ub = self.terminal_width - 1;
+        for _ in 0..(std::cmp::min(ub - col, TAB_WIDTH)) {
+            self.text_buffer.insert_char(self.cursor, ' ');
+            self.cursor += 1;
+            self.output_buffer.push(' ');
+        }
+    }
+
     /// Process key event
     pub fn consume(&mut self, event: KeyboardEvent) {
         match event.key_code() {
+            vt100::KEY_TAB => self.insert_tab(),
             vt100::KEY_ENTER => self.insert_newline(),
             vt100::KEY_BACKSPACE => self.erase_previous_char(),
             vt100::KEY_ARROW_UP | vt100::KEY_ARROW_DOWN => return,
