@@ -172,7 +172,7 @@ impl Shell {
         match event.key_code() {
             vt100::KEY_ENTER => {
                 // Is a command?
-                let input = self.input.get_input();
+                let input = self.input.collect();
                 if input.trim_start().starts_with(".") {
                     self.block_input();
                     spawn_local(Shell::on_command(input));
