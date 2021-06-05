@@ -35,8 +35,15 @@ impl PromptBuffer {
         self.terminal_width = term.get_cols() as usize;
     }
 
-    /// Get input string
-    pub fn get_input(&mut self) -> String {
+    /// Flush output buffer to the terminal
+    pub fn flush(&mut self, term: &Terminal) {
+        term.write(&self.output_buffer);
+        self.output_buffer.clear();
+    }
+
+    /// Collect as string.
+    /// We replace all paragraph separators with real line feeds for the user.
+    pub fn collect(&mut self) -> String {
         let buffer: String = self
             .text_buffer
             .chars()
@@ -48,13 +55,7 @@ impl PromptBuffer {
         buffer
     }
 
-    /// Flush to output buffer
-    pub fn flush(&mut self, term: &Terminal) {
-        term.write(&self.output_buffer);
-        self.output_buffer.clear();
-    }
-
-    /// Start new prompt
+    /// Reset the prompt
     pub fn reset(&mut self) {
         self.output_buffer.clear();
         self.text_buffer = Rope::new();
@@ -62,7 +63,8 @@ impl PromptBuffer {
         write!(self.output_buffer, "{}", PROMPT_INIT).unwrap();
     }
 
-    /// Insert a newline at the cursor
+    /// Insert a newline at the cursor.
+    /// Writes the prompt continuation string.
     fn insert_newline(&mut self) {
         self.text_buffer.insert_char(self.cursor, '\n');
         write!(
@@ -75,7 +77,10 @@ impl PromptBuffer {
         self.cursor += 1;
     }
 
-    /// Insert an artificial newline as line wrap at the cursor
+    /// Insert an artificial newline as line wrap at the cursor.
+    /// The rope interprets the paragraph separator as newline.
+    /// We can therefore use the character as 'artificial' newline character and skip it during reflows.
+    /// Writes the prompt continuation string.
     fn insert_linewrap(&mut self) {
         self.text_buffer
             .insert_char(self.cursor, vt100::PARAGRAPH_SEPERATOR);
@@ -89,7 +94,9 @@ impl PromptBuffer {
         self.cursor += 1;
     }
 
-    /// Insert a character at the cursor
+    /// Insert a character at the cursor.
+    /// Insert a single character at the cursor.
+    /// Takes care of line wrapping if necessary
     fn insert_char(&mut self, c: char) {
         let line_id = self.text_buffer.char_to_line(self.cursor);
         let line = match self.text_buffer.lines_at(line_id).next() {
