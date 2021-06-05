@@ -13,7 +13,7 @@ pub const CURSOR_UP: &str = "\x1b[A";
 pub const CURSOR_DOWN: &str = "\x1b[B";
 pub const CURSOR_LEFT: &str = "\x1b[D";
 pub const CURSOR_RIGHT: &str = "\x1b[C";
-pub const REWIND: &str = "\r";
+pub const CR: char = '\r';
 pub const CRLF: &str = "\r\n";
 pub const PARAGRAPH_SEPERATOR: char = '\u{2029}';
 pub const NEXT_LINE: char = '\u{0085}';
@@ -23,6 +23,24 @@ where
     Buffer: std::fmt::Write,
 {
     write!(out, "\x1b[{}C", n).unwrap();
+}
+pub fn cursor_left<Buffer>(out: &mut Buffer, n: usize)
+where
+    Buffer: std::fmt::Write,
+{
+    write!(out, "\x1b[{}D", n).unwrap();
+}
+pub fn cursor_up<Buffer>(out: &mut Buffer, n: usize)
+where
+    Buffer: std::fmt::Write,
+{
+    write!(out, "\x1b[{}A", n).unwrap();
+}
+pub fn cursor_down<Buffer>(out: &mut Buffer, n: usize)
+where
+    Buffer: std::fmt::Write,
+{
+    write!(out, "\x1b[{}B", n).unwrap();
 }
 
 pub const CLEAR_LINE_CURSOR_RIGHT: &str = "\x1b[0K";
