@@ -85,7 +85,8 @@ impl PromptBuffer {
                     None => return,
                 }
             }
-            vt100::KEY_LEFT_ARROW => {
+            vt100::KEY_ARROW_UP | vt100::KEY_ARROW_DOWN => return,
+            vt100::KEY_ARROW_LEFT => {
                 let mut iter = self.text_buffer.chars_at(self.cursor);
                 match iter.prev() {
                     Some(c) => {
@@ -115,7 +116,7 @@ impl PromptBuffer {
                     None => return,
                 }
             }
-            vt100::KEY_RIGHT_ARROW => {
+            vt100::KEY_ARROW_RIGHT => {
                 let mut iter = self.text_buffer.chars_at(self.cursor);
                 match iter.next() {
                     Some(c) => {
@@ -145,7 +146,10 @@ impl PromptBuffer {
             }
             _ => {
                 if !event.alt_key() && !event.alt_key() && !event.ctrl_key() && !event.meta_key() {
-                    self.write_char(event.key().chars().next().unwrap());
+                    //self.write_char(event.key().chars().next().unwrap());
+                    //self.write_char(event.key().chars().next().unwrap());
+                    let line_count = self.text_buffer.len_lines();
+                    write!(self.output_buffer, "{line_count}", line_count = line_count).unwrap()
                 }
             }
         }
