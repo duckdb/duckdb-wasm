@@ -6,6 +6,7 @@ use web_sys::KeyboardEvent;
 
 const PROMPT_INIT: &'static str = "duckdb> ";
 const PROMPT_CONT: &'static str = "   ...> ";
+const PROMPT_WIDTH: usize = 8;
 
 pub struct PromptBuffer {
     /// The pending output buffer
@@ -14,6 +15,8 @@ pub struct PromptBuffer {
     text_buffer: Rope,
     /// The iterator
     cursor: usize,
+    /// The terminal width
+    terminal_width: usize,
 }
 
 impl PromptBuffer {
@@ -23,7 +26,13 @@ impl PromptBuffer {
             output_buffer: String::new(),
             text_buffer: Rope::new(),
             cursor: 0,
+            terminal_width: 0,
         }
+    }
+
+    /// Configure the terminal
+    pub fn configure(&mut self, term: &Terminal) {
+        self.terminal_width = term.get_cols() as usize;
     }
 
     /// Get input string
@@ -33,40 +42,52 @@ impl PromptBuffer {
     }
 
     /// Flush to output buffer
-    fn flush(&mut self, term: &Terminal) {
+    pub fn flush(&mut self, term: &Terminal) {
         term.write(&self.output_buffer);
         self.output_buffer.clear();
     }
 
     /// Start new prompt
-    pub fn reset(&mut self, term: &Terminal) {
+    pub fn reset(&mut self) {
         self.output_buffer.clear();
         self.text_buffer = Rope::new();
         self.cursor = 0;
         write!(self.output_buffer, "{}", PROMPT_INIT).unwrap();
-        self.flush(term);
     }
 
-    /// Write a char
-    pub fn write_char(&mut self, c: char) {
-        write!(self.output_buffer, "{}", c).unwrap();
-        self.text_buffer.insert_char(self.cursor, c);
+    // Insert a newline at the cursor
+    fn insert_newline(&mut self) {
+        self.text_buffer.insert_char(self.cursor, '\n');
+        write!(
+            self.output_buffer,
+            "{endl}{prompt_cont}",
+            endl = vt100::ENDLINE,
+            prompt_cont = PROMPT_CONT
+        )
+        .unwrap();
         self.cursor += 1;
     }
 
+    /// Insert a character at the cursor
+    fn insert_char(&mut self, c: char) {
+        let line_id = self.text_buffer.char_to_line(self.cursor);
+        let line = match self.text_buffer.lines_at(line_id).next() {
+            Some(rope) => rope,
+            None => return,
+        };
+        if (PROMPT_WIDTH + line.len_chars()) >= self.terminal_width {
+            self.insert_newline();
+        }
+        self.text_buffer.insert_char(self.cursor, c);
+        self.cursor += 1;
+        write!(self.output_buffer, "{}", self.text_buffer.len_lines()).unwrap();
+    }
+
     /// Process key event
-    pub fn consume(&mut self, event: KeyboardEvent, term: &Terminal) {
+    pub fn consume(&mut self, event: KeyboardEvent) {
         match event.key_code() {
             vt100::KEY_ENTER => {
-                self.text_buffer.insert_char(self.cursor, '\n');
-                write!(
-                    self.output_buffer,
-                    "{endl}{prompt_cont}",
-                    endl = vt100::ENDLINE,
-                    prompt_cont = PROMPT_CONT
-                )
-                .unwrap();
-                self.cursor += 1;
+                self.insert_newline();
             }
             vt100::KEY_BACKSPACE => {
                 let mut iter = self.text_buffer.chars_at(self.cursor);
@@ -146,13 +167,9 @@ impl PromptBuffer {
             }
             _ => {
                 if !event.alt_key() && !event.alt_key() && !event.ctrl_key() && !event.meta_key() {
-                    //self.write_char(event.key().chars().next().unwrap());
-                    //self.write_char(event.key().chars().next().unwrap());
-                    let line_count = self.text_buffer.len_lines();
-                    write!(self.output_buffer, "{line_count}", line_count = line_count).unwrap()
+                    self.insert_char(event.key().chars().next().unwrap());
                 }
             }
         }
-        self.flush(term);
     }
 }
