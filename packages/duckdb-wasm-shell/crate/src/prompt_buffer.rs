@@ -147,16 +147,14 @@ impl PromptBuffer {
     where
         F: Fn(&mut Rope) -> (),
     {
-        // First erase the prompt since we need a text buffer for clearing the prompt
+        // First erase the prompt since we need a valid text buffer for clearing
         self.erase_prompt();
-        // Then adjust the rope
+        // Then adjust the rope with the provided function
         modify(&mut self.text_buffer);
 
         // Rebuild text and output
         let mut reflowed_txt = String::new();
         let mut reflowed_out = String::new();
-
-        // Write initial prompt
         let mut line_length = PROMPT_INIT.len();
         write!(&mut reflowed_out, "{}", PROMPT_INIT).unwrap();
 
@@ -239,7 +237,7 @@ impl PromptBuffer {
                 // Reflow if cursor is not at end
                 let pos = self.cursor;
                 if pos != self.text_buffer.len_chars() {
-                    self.reflow(|buffer| ());
+                    self.reflow(|_| ());
                     //self.move_to(pos);
                 }
             }
