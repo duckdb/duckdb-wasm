@@ -143,8 +143,16 @@ impl PromptBuffer {
     }
 
     /// Reflow the text buffer
-    fn reflow(&mut self) {
-        // Write reflowed text and output commands
+    fn reflow<F>(&mut self, modify: F)
+    where
+        F: Fn(&mut Rope) -> (),
+    {
+        // First erase the prompt since we need a text buffer for clearing the prompt
+        self.erase_prompt();
+        // Then adjust the rope
+        modify(&mut self.text_buffer);
+
+        // Rebuild text and output
         let mut reflowed_txt = String::new();
         let mut reflowed_out = String::new();
 
@@ -176,7 +184,7 @@ impl PromptBuffer {
                     reflowed_txt.push(c);
                     reflowed_out.push(c);
                     line_length += 1;
-                    if line_length >= self.terminal_width {
+                    if (line_length + 1) >= self.terminal_width {
                         reflowed_txt.push(vt100::PARAGRAPH_SEPERATOR);
                         write!(
                             reflowed_out,
@@ -194,12 +202,11 @@ impl PromptBuffer {
         // Rewrite the entire prompt
         self.output_buffer.push_str(&reflowed_out);
         self.text_buffer = Rope::from_str(&reflowed_txt);
-        self.cursor = reflowed_txt.len();
+        self.cursor = self.text_buffer.len_chars();
     }
 
-    /// Insert a character at the cursor.
     /// Insert a single character at the cursor.
-    /// Takes care of line wrapping if necessary
+    /// Takes care of line wrapping, if necessary
     fn insert_char(&mut self, c: char) {
         // Cursor is at end?
         // We short-circuit that case since we don't need to take care of following lines.
@@ -209,7 +216,7 @@ impl PromptBuffer {
                 Some(rope) => rope,
                 None => return,
             };
-            if (PROMPT_WIDTH + line.len_chars()) >= self.terminal_width {
+            if (PROMPT_WIDTH + line.len_chars() + 1) >= self.terminal_width {
                 self.insert_linewrap();
             }
             self.text_buffer.insert_char(self.cursor, c);
@@ -218,10 +225,8 @@ impl PromptBuffer {
         } else {
             // Otherwise reflow since we might need new line-wraps
             let pos = self.cursor;
-            self.erase_prompt();
-            self.text_buffer.insert_char(pos, c);
-            self.reflow();
-            self.move_to(pos + 1);
+            self.reflow(|buffer| buffer.insert_char(pos, c));
+            //self.move_to(pos + 1);
         }
     }
 
@@ -234,9 +239,8 @@ impl PromptBuffer {
                 // Reflow if cursor is not at end
                 let pos = self.cursor;
                 if pos != self.text_buffer.len_chars() {
-                    self.erase_prompt();
-                    self.reflow();
-                    self.move_to(pos);
+                    self.reflow(|buffer| ());
+                    //self.move_to(pos);
                 }
             }
             vt100::KEY_BACKSPACE => {
@@ -245,14 +249,11 @@ impl PromptBuffer {
                     Some(c) => {
                         match c {
                             // Remove explicit newline?
-                            // Remove newlines is expensive since we might have to introduce
-                            // artifical line wraps for the following lines.
+                            // Removing newlines is expensive since we have to reflow the following lines.
                             '\n' => {
                                 let pos = self.cursor;
-                                self.erase_prompt();
-                                self.text_buffer.remove((pos - 1)..(pos));
-                                self.reflow();
-                                self.move_to(pos - 1);
+                                self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
+                                //self.move_to(pos - 1);
                             }
 
                             // Previous character is an artificial line wrap?
@@ -261,9 +262,15 @@ impl PromptBuffer {
 
                             // In all other cases, just remove the character
                             _ => {
-                                write!(self.output_buffer, "{}", "\u{0008} \u{0008}").unwrap();
-                                self.text_buffer.remove((self.cursor - 1)..(self.cursor));
-                                self.cursor -= 1;
+                                let pos = self.cursor;
+                                if pos == self.text_buffer.len_chars() {
+                                    write!(self.output_buffer, "{}", "\u{0008} \u{0008}").unwrap();
+                                    self.text_buffer.remove((self.cursor - 1)..(self.cursor));
+                                    self.cursor -= 1;
+                                } else {
+                                    self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
+                                    //self.move_to(pos - 1);
+                                }
                             }
                         }
                     }
