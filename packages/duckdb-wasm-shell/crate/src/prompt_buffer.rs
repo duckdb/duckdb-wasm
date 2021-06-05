@@ -224,7 +224,7 @@ impl PromptBuffer {
             // Otherwise reflow since we might need new line-wraps
             let pos = self.cursor;
             self.reflow(|buffer| buffer.insert_char(pos, c));
-            //self.move_to(pos + 1);
+            self.move_to(pos + 1);
         }
     }
 
@@ -238,7 +238,7 @@ impl PromptBuffer {
                 let pos = self.cursor;
                 if pos != self.text_buffer.len_chars() {
                     self.reflow(|_| ());
-                    //self.move_to(pos);
+                    self.move_to(pos);
                 }
             }
             vt100::KEY_BACKSPACE => {
@@ -251,7 +251,7 @@ impl PromptBuffer {
                             '\n' => {
                                 let pos = self.cursor;
                                 self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
-                                //self.move_to(pos - 1);
+                                self.move_to(pos - 1);
                             }
 
                             // Previous character is an artificial line wrap?
@@ -267,7 +267,7 @@ impl PromptBuffer {
                                     self.cursor -= 1;
                                 } else {
                                     self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
-                                    //self.move_to(pos - 1);
+                                    self.move_to(pos - 1);
                                 }
                             }
                         }
