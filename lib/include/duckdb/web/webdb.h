@@ -14,6 +14,7 @@
 #include "arrow/ipc/writer.h"
 #include "duckdb.hpp"
 #include "duckdb/main/query_result.hpp"
+#include "duckdb/parser/parser.hpp"
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/default_filesystem.h"
@@ -91,6 +92,8 @@ class WebDB {
     std::string_view GetVersion();
     /// Get the feature flags
     uint32_t GetFeatureFlags() { return WEBDB_FEATURES; }
+    /// Tokenize a script and return tokens as json
+    std::string Tokenize(std::string_view text);
     /// Create a connection
     Connection* Connect();
     /// End a connection

@@ -47,6 +47,11 @@ void duckdb_web_get_version(WASMResponse* packed) {
 }
 /// Get the duckdb feature flags
 uint32_t duckdb_web_get_feature_flags() { return WebDB::GetInstance().GetFeatureFlags(); }
+/// Tokenize a query
+void duckdb_web_tokenize(WASMResponse* packed, const char* query) {
+    auto tokens = WebDB::GetInstance().Tokenize(query);
+    WASMResponseBuffer::GetInstance().Store(*packed, arrow::Result(std::move(tokens)));
+}
 /// Run a query
 void duckdb_web_query_run(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
