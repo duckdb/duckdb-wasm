@@ -4,8 +4,8 @@ use ropey::Rope;
 use std::fmt::Write;
 use web_sys::KeyboardEvent;
 
-const PROMPT_INIT: &'static str = "duckdb> ";
-const PROMPT_CONT: &'static str = "   ...> ";
+const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
+const PROMPT_CONT: &'static str = "\x1b[1m   ...\x1b[m> ";
 const PROMPT_WIDTH: usize = 8;
 
 pub struct PromptBuffer {
