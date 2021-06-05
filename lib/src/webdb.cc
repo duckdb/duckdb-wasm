@@ -1,6 +1,9 @@
 #include "duckdb/web/webdb.h"
 
+#include <rapidjson/rapidjson.h>
+
 #include <cstdio>
+#include <duckdb/parser/parser.hpp>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -30,6 +33,8 @@
 #include "duckdb/web/json_table_options.h"
 #include "parquet-extension.hpp"
 #include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 namespace duckdb {
 namespace web {
@@ -202,6 +207,27 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs)
     database_ = std::make_shared<duckdb::DuckDB>(nullptr, &db_config_);
     database_->LoadExtension<duckdb::ParquetExtension>();
     zip_ = std::make_unique<Zipper>(filesystem_buffer_);
+}
+
+/// Tokenize a script and return tokens as json
+std::string WebDB::Tokenize(std::string_view text) {
+    duckdb::Parser parser;
+    auto tokens = parser.Tokenize(std::string{text});
+    rapidjson::Document doc;
+    doc.SetObject();
+    auto& allocator = doc.GetAllocator();
+    rapidjson::Value offsets(rapidjson::kArrayType);
+    rapidjson::Value types(rapidjson::kArrayType);
+    for (auto token: tokens) {
+         offsets.PushBack(token.start, allocator);
+         types.PushBack(static_cast<uint8_t>(token.type), allocator);
+    }
+    doc.AddMember("offsets", offsets, allocator);
+    doc.AddMember("types", types, allocator);
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+    doc.Accept(writer);
+    return strbuf.GetString();
 }
 
 /// Get the version
