@@ -69,131 +69,6 @@ impl Shell {
         }
     }
 
-    /// Block all input
-    pub fn block_input(&mut self) {
-        self.input_enabled = false;
-    }
-
-    /// Resume after user input
-    pub fn resume_after_input(&mut self, _ctx: ShellInputContext) {
-        self.writeln("Resume after input");
-        self.prompt();
-    }
-
-    /// Command handler
-    pub async fn on_command(text: String) {
-        let shellg = Shell::global().clone();
-        let mut shell = shellg.lock().unwrap();
-        let trimmed = text.trim();
-        match &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())] {
-            ".help" => shell.writeln("Not implemented yet"),
-            ".config" => shell.writeln("Not implemented yet"),
-            ".quit" => shell.writeln("Not implemented yet"),
-            ".timer" => {
-                if trimmed.ends_with("on") {
-                    shell.settings.timer = true;
-                    shell.writeln("Timer enabled");
-                } else if trimmed.ends_with("off") {
-                    shell.settings.timer = false;
-                    shell.writeln("Timer disabled");
-                } else {
-                    shell.writeln("Usage: .timer [on/off]")
-                }
-            }
-            ".files" => match shell.runtime {
-                Some(ref rt) => {
-                    rt.open_file_explorer();
-                    return;
-                }
-                None => {
-                    shell.writeln("Shell runtime not set");
-                }
-            },
-            cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
-        }
-        shell.prompt();
-    }
-
-    /// Command handler
-    pub async fn on_sql(text: String) {
-        let shellg = Shell::global().clone();
-        let mut shell = shellg.lock().unwrap();
-        {
-            // Get the connection
-            let conn = match shell.db_conn {
-                Some(ref conn) => conn.lock().unwrap(),
-                None => {
-                    shell.writeln("Error: connection not set");
-                    return;
-                }
-            };
-
-            // Run the query
-            let start = now();
-            let batches = match conn.run_query(&text).await {
-                Ok(batches) => batches,
-                Err(e) => {
-                    let msg: String = e.message().into();
-                    shell.writeln(&format!("Error: {}", &msg));
-                    return;
-                }
-            };
-            let elapsed = if shell.settings.timer {
-                Duration::milliseconds((now() - start) as i64)
-            } else {
-                Duration::milliseconds(0)
-            };
-
-            // Print the table
-            let pretty_table =
-                pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
-            shell.write(&pretty_table);
-
-            // Print elapsed time (if requested)
-            if shell.settings.timer {
-                shell.writeln(&format!(
-                    "{bold}Elapsed:{normal} {elapsed}",
-                    elapsed = pretty_elapsed(&elapsed),
-                    bold = vt100::MODE_BOLD,
-                    normal = vt100::MODES_OFF,
-                ));
-            }
-        }
-        shell.writeln("");
-        shell.prompt();
-    }
-
-    /// Process on-key event
-    pub fn on_key(&mut self, e: OnKeyEvent) {
-        if !self.input_enabled {
-            return;
-        }
-        let event = e.dom_event();
-        match event.key_code() {
-            vt100::KEY_ENTER => {
-                // Is a command?
-                let input = self.input.collect();
-                if input.trim_start().starts_with(".") {
-                    self.block_input();
-                    spawn_local(Shell::on_command(input));
-                } else {
-                    // Ends with semicolon?
-                    if input.trim_end().ends_with(";") {
-                        self.block_input();
-                        spawn_local(Shell::on_sql(input));
-                    } else {
-                        self.input.consume(event);
-                        self.input.flush(&self.terminal);
-                    }
-                }
-            }
-            _ => {
-                self.input.consume(event);
-                self.input.flush(&self.terminal);
-            }
-        }
-    }
-
     /// Attach to a terminal
     pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime) {
         self.terminal = term;
@@ -233,17 +108,163 @@ impl Shell {
     }
 
     /// Write directly to the terminal
-    pub fn write(&self, text: &str) {
+    fn write(&self, text: &str) {
         self.terminal.write(text);
     }
 
     /// Write directly to the terminal with newline
-    pub fn writeln(&self, text: &str) {
+    fn writeln(&self, text: &str) {
         self.terminal.write(&format!("{}{}", text, vt100::CRLF));
     }
 
+    /// Clear the screen
+    pub fn clear(&mut self) {
+        self.terminal.write(&format!(
+            "{clear_screen}{cursor_home}",
+            clear_screen = vt100::CLEAR_SCREEN,
+            cursor_home = vt100::CURSOR_HOME
+        ));
+        self.prompt();
+    }
+
+    /// Block all input
+    pub fn block_input(&mut self) {
+        self.input_enabled = false;
+    }
+
+    /// Resume after user input
+    pub fn resume_after_input(&mut self, _ctx: ShellInputContext) {
+        self.writeln("Resume after input");
+        self.prompt();
+    }
+
+    /// Command handler
+    pub async fn on_command(text: String) {
+        let shellg = Shell::global().clone();
+        let mut shell = shellg.lock().unwrap();
+        let trimmed = text.trim();
+        shell.writeln(""); // XXX We could validate the input first and preserve the prompt
+
+        match &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())] {
+            ".clear" => {
+                shell.clear();
+                return;
+            }
+            ".help" => shell.writeln("Not implemented yet"),
+            ".config" => shell.writeln("Not implemented yet"),
+            ".quit" => shell.writeln("Not implemented yet"),
+            ".timer" => {
+                if trimmed.ends_with("on") {
+                    shell.settings.timer = true;
+                    shell.writeln("Timer enabled");
+                } else if trimmed.ends_with("off") {
+                    shell.settings.timer = false;
+                    shell.writeln("Timer disabled");
+                } else {
+                    shell.writeln("Usage: .timer [on/off]")
+                }
+            }
+            ".files" => match shell.runtime {
+                Some(ref rt) => {
+                    rt.open_file_explorer();
+                    return;
+                }
+                None => {
+                    shell.writeln("Shell runtime not set");
+                }
+            },
+            cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
+        }
+        shell.prompt();
+    }
+
+    /// Command handler
+    async fn on_sql(text: String) {
+        let shellg = Shell::global().clone();
+        let mut shell = shellg.lock().unwrap();
+        shell.writeln(""); // XXX We could validate the input first and preserve the prompt
+
+        // Get the connection
+        let maybe_conn = shell.db_conn.clone();
+        let conn = match maybe_conn {
+            Some(ref conn) => conn.lock().unwrap(),
+            None => {
+                shell.writeln("Error: connection not set");
+                shell.prompt();
+                return;
+            }
+        };
+
+        // Run the query
+        let start = now();
+        let batches = match conn.run_query(&text).await {
+            Ok(batches) => batches,
+            Err(e) => {
+                let mut msg: String = e.message().into();
+                msg = msg.replace("\n", "\r\n");
+                shell.writeln(&format!("Error: {}", &msg));
+                shell.prompt();
+                return;
+            }
+        };
+        let elapsed = if shell.settings.timer {
+            Duration::milliseconds((now() - start) as i64)
+        } else {
+            Duration::milliseconds(0)
+        };
+
+        // Print the table
+        let pretty_table =
+            pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
+        shell.write(&pretty_table);
+
+        // Print elapsed time (if requested)
+        if shell.settings.timer {
+            shell.writeln(&format!(
+                "{bold}Elapsed:{normal} {elapsed}",
+                elapsed = pretty_elapsed(&elapsed),
+                bold = vt100::MODE_BOLD,
+                normal = vt100::MODES_OFF,
+            ));
+        }
+
+        shell.writeln("");
+        shell.prompt();
+    }
+
+    /// Process on-key event
+    fn on_key(&mut self, e: OnKeyEvent) {
+        if !self.input_enabled {
+            return;
+        }
+        let event = e.dom_event();
+        match event.key_code() {
+            vt100::KEY_ENTER => {
+                // Is a command?
+                let input = self.input.collect();
+                if input.trim_start().starts_with(".") {
+                    self.block_input();
+                    spawn_local(Shell::on_command(input));
+                } else {
+                    // Ends with semicolon?
+                    if input.trim_end().ends_with(";") {
+                        self.block_input();
+                        spawn_local(Shell::on_sql(input));
+                    } else {
+                        self.input.consume(event);
+                        self.input.flush(&self.terminal);
+                    }
+                }
+            }
+            _ => {
+                self.input.consume(event);
+                self.input.flush(&self.terminal);
+            }
+        }
+    }
+
     /// Write greeter
-    pub async fn write_version_info(&self) {
+    async fn write_version_info(&self) {
         let db = match self.db {
             Some(ref db) => db.lock().unwrap(),
             None => return,
@@ -276,7 +297,7 @@ impl Shell {
         ));
     }
 
-    pub fn write_connection_ready(&self) {
+    fn write_connection_ready(&self) {
         self.write(&format!("Connected to a {bold}transient in-browser database{normal}.{endl}Enter \".help\" for usage hints.{endl}{endl}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
@@ -285,8 +306,8 @@ impl Shell {
     }
 
     /// Write the prompt
-    pub fn prompt(&mut self) {
-        self.input.reset();
+    fn prompt(&mut self) {
+        self.input.start_new();
         self.input.flush(&self.terminal);
         self.input_enabled = true;
     }
