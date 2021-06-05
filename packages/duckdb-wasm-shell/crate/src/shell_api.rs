@@ -1,5 +1,5 @@
 use crate::duckdb::AsyncDuckDB;
-use crate::duckdb::AsyncDuckDBBindings;
+use crate::duckdb::JsAsyncDuckDB;
 use crate::shell;
 use crate::shell_options;
 use crate::shell_runtime;
@@ -45,7 +45,7 @@ pub fn embed(
 }
 
 #[wasm_bindgen(js_name = "configureDatabase")]
-pub async fn configure_database(db: AsyncDuckDBBindings) -> Result<(), js_sys::Error> {
+pub async fn configure_database(db: JsAsyncDuckDB) -> Result<(), js_sys::Error> {
     let sa = shell::Shell::global();
     let mut s = sa.lock().unwrap();
     s.configure_database(AsyncDuckDB::from_bindings(db)).await?;

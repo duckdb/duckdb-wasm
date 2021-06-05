@@ -12,36 +12,36 @@ type ConnectionID = u32;
 #[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
 extern "C" {
     #[wasm_bindgen(js_name = "AsyncDuckDB")]
-    pub type AsyncDuckDBBindings;
+    pub type JsAsyncDuckDB;
 
     #[wasm_bindgen(catch, method, js_name = "getVersion")]
-    async fn get_version(this: &AsyncDuckDBBindings) -> Result<JsValue, JsValue>;
+    async fn get_version(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "getFeatureFlags")]
-    async fn get_feature_flags(this: &AsyncDuckDBBindings) -> Result<JsValue, JsValue>;
+    async fn get_feature_flags(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "connectInternal")]
-    async fn connect(this: &AsyncDuckDBBindings) -> Result<JsValue, JsValue>;
+    async fn connect(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "tokenize")]
-    async fn tokenize(this: &AsyncDuckDBBindings, text: &str) -> Result<JsValue, JsValue>;
+    async fn tokenize(this: &JsAsyncDuckDB, text: &str) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "runQuery")]
     async fn run_query(
-        this: &AsyncDuckDBBindings,
+        this: &JsAsyncDuckDB,
         conn: ConnectionID,
         text: &str,
     ) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "fetchQueryResults")]
     async fn fetch_query_results(
-        this: &AsyncDuckDBBindings,
+        this: &JsAsyncDuckDB,
         conn: ConnectionID,
     ) -> Result<JsValue, JsValue>;
 }
 
 pub struct AsyncDuckDB {
-    bindings: AsyncDuckDBBindings,
+    bindings: JsAsyncDuckDB,
 }
 
 impl AsyncDuckDB {
     /// Create an async DuckDB from bindings
-    pub fn from_bindings(bindings: AsyncDuckDBBindings) -> Self {
+    pub fn from_bindings(bindings: JsAsyncDuckDB) -> Self {
         Self { bindings }
     }
 
