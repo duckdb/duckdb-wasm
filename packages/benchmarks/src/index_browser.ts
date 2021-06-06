@@ -17,6 +17,7 @@ import {
     LovefieldWrapper,
     NanoSQLWrapper,
     SQLjsWrapper,
+    loadTPCHSQL,
 } from './db_wrappers';
 
 // Configure the worker
@@ -29,6 +30,8 @@ const WORKER_BUNDLES = {
     wasmEHMT: '/static/duckdb-eh-mt.wasm',
 };
 const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
+
+const decoder = new TextDecoder();
 
 async function main() {
     let db: duckdb_serial.DuckDB | null = null;
@@ -43,14 +46,20 @@ async function main() {
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
     await adb.open(WORKER_CONFIG.wasmURL.toString());
 
-    const tpchScale = '0_5';
+    // Can't load files bigger than 512MB in karma.. need to find a solution.
+    const tpchScale = '0_1';
 
     const SQL = await sqljs({
         locateFile: file => `/sqljs/${file}`,
     });
-    // let sqlDb = new SQL.Database(
-    //     new Uint8Array(await (await fetch(`/data/tpch/${tpchScale}/sqlite.db`)).arrayBuffer()),
-    // );
+
+    let sqlDb = new SQL.Database(
+        new Uint8Array(await (await fetch(`/data/tpch/${tpchScale}/sqlite.db`)).arrayBuffer()),
+    );
+
+    await loadTPCHSQL(async (filename: string) => {
+        return await (await fetch(`/scripts/${filename}`)).text();
+    });
 
     await benchmarkCompetitions(
         [
@@ -71,7 +80,7 @@ async function main() {
             })(adb),
             // new ArqueroWrapper(),
             // new LovefieldWrapper(),
-            // new SQLjsWrapper(sqlDb),
+            new SQLjsWrapper(sqlDb),
             // new NanoSQLWrapper(),
             // new AlaSQLWrapper(),
         ],

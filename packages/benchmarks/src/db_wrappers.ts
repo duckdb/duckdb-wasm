@@ -6,9 +6,11 @@ import * as aq from 'arquero';
 import { nSQL } from '@nano-sql/core';
 import * as lf from 'lovefield-ts/dist/es6/lf.js';
 
-const textDecoder = new TextDecoder();
+function noop() {}
 
 const tpchTables = ['customer', 'lineitem', 'nation', 'orders', 'partsupp', 'part', 'region', 'supplier'];
+
+const tpchQueries: string[] = [];
 
 export interface DBWrapper {
     name: string;
@@ -29,33 +31,9 @@ export interface DBWrapper {
     //// SELECT count(*) as cnt FROM orders
     //// INNER JOIN lineitem ON (orders.o_orderkey = lineitem.l_orderkey)
     join(): Promise<number>;
-    // Perform a TPCH-2 OLAP query and materialize all rows:
-    //// select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment
-    //// from part, supplier, partsupp, nation, region
-    //// where
-    ////     p_partkey = ps_partkey
-    ////     and s_suppkey = ps_suppkey
-    ////     and p_size = 15
-    ////     and p_type like '%BRASS'
-    ////     and s_nationkey = n_nationkey
-    ////     and n_regionkey = r_regionkey
-    ////     and r_name = 'EUROPE'
-    ////     and ps_supplycost = (
-    ////         select min(ps_supplycost)
-    ////         from partsupp, supplier, nation, region
-    ////         where
-    ////             p_partkey = ps_partkey
-    ////             and s_suppkey = ps_suppkey
-    ////             and s_nationkey = n_nationkey
-    ////             and n_regionkey = r_regionkey
-    ////             and r_name = 'EUROPE'
-    ////     )
-    //// order by s_acctbal desc, n_name, s_name, p_partkey
-    //// limit 100;
-    tpch(): Promise<void>;
+    // Perform the specified TPCH OLAP query (1-22) and materialize all rows
+    tpch(query: number): Promise<void>;
 }
-
-function noop() {}
 
 export function sqlCreate(table: string, data: arrow.Table, keys: string[][]): string {
     let sql = `CREATE TABLE IF NOT EXISTS ${table} (`;
@@ -126,14 +104,20 @@ export function* sqlInsert(table: string, data: arrow.Table) {
     }
 }
 
+export async function loadTPCHSQL(dataFetcher: (filename: string) => Promise<string>) {
+    for (let i = 1; i <= 22; i++) {
+        tpchQueries[i] = await dataFetcher(`tpch_${i.toString().padStart(2, '0')}.sql`);
+    }
+}
+
 export abstract class DuckDBSyncMatWrapper implements DBWrapper {
     public name: string;
     protected conn?: duckdb.DuckDBConnection;
     protected db: duckdb.DuckDBBindings;
 
     constructor(db: duckdb.DuckDBBindings) {
-        this.name = 'DuckDB';
         this.db = db;
+        this.name = 'DuckDB';
     }
 
     init(): Promise<void> {
@@ -186,31 +170,8 @@ export abstract class DuckDBSyncMatWrapper implements DBWrapper {
         return Promise.resolve(result.getColumnAt(0)!.get(0));
     }
 
-    tpch(): Promise<void> {
-        this.conn!.runQuery(
-            `select
-                l_returnflag,
-                l_linestatus,
-                sum(l_quantity) as sum_qty,
-                sum(l_extendedprice) as sum_base_price,
-                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
-                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
-                avg(l_quantity) as avg_qty,
-                avg(l_extendedprice) as avg_price,
-                avg(l_discount) as avg_disc,
-                count(*) as count_order
-            from
-                lineitem
-            where
-                l_shipdate <= cast('1998-09-02' as date)
-            group by
-                l_returnflag,
-                l_linestatus
-            order by
-                l_returnflag,
-                l_linestatus;`,
-        );
-
+    tpch(query: number): Promise<void> {
+        this.conn!.runQuery(tpchQueries[query]);
         return Promise.resolve();
     }
 
@@ -234,6 +195,13 @@ export abstract class DuckDBSyncStreamWrapper extends DuckDBSyncMatWrapper {
         }
 
         return Promise.resolve();
+    }
+
+    implements(func: string): boolean {
+        // Don't run these, no difference to materialized
+        if (func == 'join') return false;
+        if (func == 'tpch') return false;
+        return true;
     }
 }
 
@@ -296,30 +264,8 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
         return result.getColumnAt(0)!.get(0);
     }
 
-    async tpch(): Promise<void> {
-        await this.conn!.runQuery(
-            `select
-                l_returnflag,
-                l_linestatus,
-                sum(l_quantity) as sum_qty,
-                sum(l_extendedprice) as sum_base_price,
-                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
-                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
-                avg(l_quantity) as avg_qty,
-                avg(l_extendedprice) as avg_price,
-                avg(l_discount) as avg_disc,
-                count(*) as count_order
-            from
-                lineitem
-            where
-                l_shipdate <= cast('1998-09-02' as date)
-            group by
-                l_returnflag,
-                l_linestatus
-            order by
-                l_returnflag,
-                l_linestatus;`,
-        );
+    async tpch(query: number): Promise<void> {
+        await this.conn!.runQuery(tpchQueries[query]);
     }
 
     implements(func: string): boolean {
@@ -383,36 +329,22 @@ export class SQLjsWrapper implements DBWrapper {
         return Promise.resolve(<number>results[0].values[0][0]);
     }
 
-    tpch(): Promise<void> {
-        this.db.exec(
-            `select
-                l_returnflag,
-                l_linestatus,
-                sum(l_quantity) as sum_qty,
-                sum(l_extendedprice) as sum_base_price,
-                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
-                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
-                avg(l_quantity) as avg_qty,
-                avg(l_extendedprice) as avg_price,
-                avg(l_discount) as avg_disc,
-                count(*) as count_order
-            from
-                lineitem
-            where
-                l_shipdate <= cast('1998-09-02' as date)
-            group by
-                l_returnflag,
-                l_linestatus
-            order by
-                l_returnflag,
-                l_linestatus;`,
-        );
-
+    tpch(query: number): Promise<void> {
+        this.db.exec(tpchQueries[query]);
         return Promise.resolve();
     }
 
     implements(func: string): boolean {
-        return true;
+        const non_supported = [
+            // SQLite does not support extract(... from ...)
+            'tpch-7',
+            'tpch-8',
+            'tpch-9',
+            // SQLite does not support substring(... from ...)
+            'tpch-22',
+        ];
+
+        return !non_supported.includes(func);
     }
 }
 
@@ -463,30 +395,8 @@ export class AlaSQLWrapper implements DBWrapper {
         return rows[0]['cnt'];
     }
 
-    tpch(): Promise<void> {
-        alasql(
-            `select
-                l_returnflag,
-                l_linestatus,
-                sum(l_quantity) as sum_qty,
-                sum(l_extendedprice) as sum_base_price,
-                sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
-                sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
-                avg(l_quantity) as avg_qty,
-                avg(l_extendedprice) as avg_price,
-                avg(l_discount) as avg_disc,
-                count(*) as count_order
-            from
-                lineitem
-            where
-                l_shipdate <= cast('1998-09-02' as date)
-            group by
-                l_returnflag,
-                l_linestatus
-            order by
-                l_returnflag,
-                l_linestatus;`,
-        );
+    tpch(query: number): Promise<void> {
+        alasql(tpchQueries[query]);
 
         return Promise.resolve();
     }
@@ -595,7 +505,7 @@ export class LovefieldWrapper implements DBWrapper {
         return rows[0].cnt;
     }
 
-    async tpch(): Promise<void> {
+    async tpch(query: number): Promise<void> {
         /*const schema = this.db!.getSchema();
         const l = schema.table('lineitem');
         let builder = this.db!.select(
@@ -660,7 +570,7 @@ export class ArqueroWrapper implements DBWrapper {
         );
     }
 
-    async tpch(): Promise<void> {
+    async tpch(query: number): Promise<void> {
         return Promise.resolve();
     }
 
@@ -758,7 +668,7 @@ export class NanoSQLWrapper implements DBWrapper {
         return (await builder.exec())[0].cnt;
     }
 
-    async tpch(): Promise<void> {
+    async tpch(query: number): Promise<void> {
         // not even implementing it after seeing how slow join was
     }
 

@@ -1,4 +1,4 @@
-import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-node-sync-eh';
+import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-node-sync';
 import * as duckdb_async from '@duckdb/duckdb-wasm/src/targets/duckdb-node-async';
 import path from 'path';
 import Worker from 'web-worker';
@@ -19,13 +19,18 @@ import {
     LovefieldWrapper,
     NanoSQLWrapper,
     SQLjsWrapper,
+    loadTPCHSQL,
 } from './db_wrappers';
 
 // Configure the worker
 const WORKER_CONFIG = duckdb_async.configure({
-    worker: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js'),
-    wasm: path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
+    worker: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async.worker.js'),
+    workerEH: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js'),
+    wasm: path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm'),
+    wasmEH: path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
 });
+
+const decoder = new TextDecoder();
 
 async function main() {
     let db: duckdb_serial.DuckDB | null = null;
@@ -33,11 +38,7 @@ async function main() {
     let worker: Worker | null = null;
 
     const logger = new duckdb_serial.VoidLogger();
-    db = new duckdb_serial.DuckDB(
-        logger,
-        duckdb_serial.NodeRuntime,
-        path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
-    );
+    db = new duckdb_serial.DuckDB(logger, duckdb_serial.NodeRuntime, WORKER_CONFIG.wasmURL);
     await db.open();
 
     worker = new Worker(WORKER_CONFIG.workerURL);
@@ -48,6 +49,10 @@ async function main() {
 
     const SQL = await initSqlJs();
     let sqlDb = new SQL.Database(fs.readFileSync(path.resolve(__dirname, `../../../data/tpch/${tpchScale}/sqlite.db`)));
+
+    await loadTPCHSQL(async (file: string) => {
+        return decoder.decode(fs.readFileSync(path.resolve(__dirname, `../src/scripts/${file}`)));
+    });
 
     await benchmarkCompetitions(
         [
@@ -60,7 +65,7 @@ async function main() {
             //     async registerFile(path: string): Promise<void> {
             //         await this.db.addFilePath(path, path);
             //     }
-            // })(db1),
+            // })(db),
             // new (class extends DuckDBAsyncStreamWrapper {
             //     async registerFile(path: string): Promise<void> {
             //         await this.db.addFilePath(path, path);
@@ -76,7 +81,7 @@ async function main() {
         (path: string) => {
             let conn = db!.connect();
             db!.addFilePath(path, path);
-            const table = conn.runQuery(`SELECT * FROM parquet_scan('${path}') LIMIT 1`);
+            const table = conn.runQuery(`SELECT * FROM parquet_scan('${path}')`);
             conn.disconnect();
             return Promise.resolve(table);
         },

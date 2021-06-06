@@ -255,7 +255,7 @@ yarn_install:
 .PHONY: compile_commands
 compile_commands: 
 	mkdir -p ${LIB_DEBUG_DIR}
-	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
+	${EXEC_ENVIRONMENT} cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
 		-GNinja \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=1

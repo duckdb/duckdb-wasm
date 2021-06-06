@@ -86,14 +86,14 @@ export async function benchmarkCompetitions(
     /////////////////////////////////////////////
 
     const keys: { [key: string]: string[][] } = {
-        // customer: [['c_custkey']],
+        customer: [['c_custkey']],
         lineitem: [['l_orderkey', 'l_linenumber']],
-        // region: [['r_regionkey']],
+        region: [['r_regionkey']],
         orders: [['o_orderkey']],
-        // nation: [['n_nationkey']],
-        // part: [['p_partkey']],
-        // partsupp: [],
-        // supplier: [['s_suppkey']],
+        nation: [['n_nationkey']],
+        part: [['p_partkey']],
+        partsupp: [],
+        supplier: [['s_suppkey']],
     };
 
     let tables: { [key: string]: arrow.Table } = {};
@@ -101,8 +101,11 @@ export async function benchmarkCompetitions(
         tables[k] = await tableFetch(`${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`);
     }
 
-    const primaryJoins = [];
-    const tpchs = [];
+    const primaryJoins: any[] = [];
+    const tpchs: any[][] = [];
+    for (let i = 1; i <= 22; i++) {
+        tpchs[i] = [];
+    }
     console.log('Importing TPCH data');
     for (let db of dbs) {
         if (!db.implements('simpleJoin')) continue;
@@ -126,11 +129,16 @@ export async function benchmarkCompetitions(
         );
 
         if (db.implements('tpch')) {
-            tpchs.push(
-                add(db.name, async () => {
-                    await db.tpch();
-                }),
-            );
+            for (let i = 1; i <= 22; i++) {
+                if (db.implements(`tpch-${i}`)) {
+                    tpchs[i].push(
+                        add(db.name, async () => {
+                            console.log(db.name, 'tpch', i);
+                            await db.tpch(i);
+                        }),
+                    );
+                }
+            }
         }
     }
 
@@ -144,15 +152,19 @@ export async function benchmarkCompetitions(
         }),
     );
 
-    await suite(
-        `TPCH query`,
-        ...tpchs,
-        cycle((result: any, _summary: any) => {
-            const duration = result.details.mean.toFixed(5);
-            const margin = result.margin.toFixed(2);
-            console.log(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
-        }),
-    );
+    for (const i in tpchs) {
+        if (tpchs[i].length > 0) {
+            await suite(
+                `TPCH-${i} query`,
+                ...tpchs[i],
+                cycle((result: any, _summary: any) => {
+                    const duration = result.details.mean.toFixed(5);
+                    const margin = result.margin.toFixed(2);
+                    console.log(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
+                }),
+            );
+        }
+    }
 
     for (let db of dbs) {
         await db.close();
