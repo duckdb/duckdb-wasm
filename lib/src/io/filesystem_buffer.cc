@@ -288,26 +288,12 @@ void FileSystemBuffer::GrowFileIfRequired(BufferedFile& file, std::unique_lock<s
 void FileSystemBuffer::ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_latch) {
     // Any open file references?
     assert(file.file_refs > file.file_refs_released);
+    auto file_id = file.file_id;
     auto ref_releases = ++file.file_refs_released;
     auto refs = file.file_refs;
     if (refs > ref_releases) return;
 
-    // Flush all file frames.
-    // Resolve the next iterator before flushing a frame since we might release the directory latch.
-    auto file_id = file.file_id;
-    auto lb = frames.lower_bound(BuildFrameID(file_id));
-    auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
-    auto it = lb;
-    while (it != ub && it != frames.end()) {
-        auto next = it++;
-        FlushFrame(next->second, dir_latch);
-    }
-
-    // References while we released the directory latch?
-    if (file.file_refs > refs) return;
-
-    // Erase all file frames
-    frames.erase(lb, ub);
+    EvictFileFrames(file, dir_latch);
 
     // Erase file
     files_by_path.erase(file.path);
