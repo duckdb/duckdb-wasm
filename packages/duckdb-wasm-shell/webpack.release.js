@@ -5,18 +5,20 @@ import WasmPackPlugin from '@wasm-tool/wasm-pack-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default {
-    ...configure({
-        buildDir: path.resolve(__dirname, './build/release'),
-        tsLoaderOptions: {
-            compilerOptions: {
-                configFile: './tsconfig.json',
-                sourceMap: false,
-            },
+const base = configure({
+    buildDir: path.resolve(__dirname, './build/release'),
+    tsLoaderOptions: {
+        compilerOptions: {
+            configFile: './tsconfig.json',
+            sourceMap: false,
         },
-        extractCss: true,
-        cssIdentifier: '[hash:base64]',
-    }),
+    },
+    extractCss: true,
+    cssIdentifier: '[hash:base64]',
+});
+
+export default {
+    ...base,
     mode: 'production',
     devtool: false,
     plugins: [
