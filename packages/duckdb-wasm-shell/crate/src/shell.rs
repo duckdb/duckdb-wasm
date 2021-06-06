@@ -49,6 +49,8 @@ pub struct Shell {
     input: PromptBuffer,
     /// The input is enabled
     input_enabled: bool,
+    /// The input clock
+    input_clock: u64,
     /// The database (if any)
     db: Option<Arc<Mutex<duckdb::AsyncDuckDB>>>,
     /// The connection (if any)
@@ -64,6 +66,7 @@ impl Shell {
             runtime: None,
             input: PromptBuffer::default(),
             input_enabled: false,
+            input_clock: 0,
             db: None,
             db_conn: None,
         }
@@ -140,8 +143,8 @@ impl Shell {
 
     /// Command handler
     pub async fn on_command(text: String) {
-        let shellg = Shell::global().clone();
-        let mut shell = shellg.lock().unwrap();
+        let shell_ptr = Shell::global().clone();
+        let mut shell = shell_ptr.lock().unwrap();
         let trimmed = text.trim();
         shell.writeln(""); // XXX We could validate the input first and preserve the prompt
 
@@ -180,8 +183,8 @@ impl Shell {
 
     /// Command handler
     async fn on_sql(text: String) {
-        let shellg = Shell::global().clone();
-        let mut shell = shellg.lock().unwrap();
+        let shell_ptr = Shell::global().clone();
+        let mut shell = shell_ptr.lock().unwrap();
         shell.writeln(""); // XXX We could validate the input first and preserve the prompt
 
         // Get the connection
@@ -232,6 +235,39 @@ impl Shell {
         shell.prompt();
     }
 
+    /// Highlight sql prompt
+    async fn highlight_sql(input: String, input_clock: u64) {
+        let dba = {
+            let shell_ptr = Shell::global().clone();
+            let shell = shell_ptr.lock().unwrap();
+            match shell.db {
+                Some(ref db) => db.clone(),
+                None => return,
+            }
+        };
+        let db = dba.lock().unwrap();
+        let tokens = match db.tokenize(&input).await {
+            Ok(t) => t,
+            Err(_) => return,
+        };
+        let shell_ptr = Shell::global().clone();
+        let mut shell = shell_ptr.lock().unwrap();
+        if shell.input_clock != input_clock {
+            return;
+        }
+        shell.input.highlight_sql(tokens);
+    }
+
+    /// Highlight input text (if sql)
+    fn highlight_input(&mut self) {
+        let input = self.input.collect();
+        let clock = self.input_clock;
+        if !input.trim_start().starts_with(".") {
+            return;
+        }
+        spawn_local(Shell::highlight_sql(input, clock));
+    }
+
     /// Process on-key event
     fn on_key(&mut self, e: OnKeyEvent) {
         if !self.input_enabled {
@@ -252,13 +288,16 @@ impl Shell {
                         spawn_local(Shell::on_sql(input));
                     } else {
                         self.input.consume(event);
+                        self.input_clock += 1;
                         self.input.flush(&self.terminal);
                     }
                 }
             }
             _ => {
                 self.input.consume(event);
+                self.input_clock += 1;
                 self.input.flush(&self.terminal);
+                self.highlight_input();
             }
         }
     }
