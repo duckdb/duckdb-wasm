@@ -5,6 +5,7 @@ import Shell from './shell';
 import { Route, BrowserRouter, Redirect } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 
+import '../static/fonts/fonts.module.css';
 import './globals.css';
 
 const PaddedShell = () => <Shell padding={[16, 20]} backgroundColor="#333" />;
