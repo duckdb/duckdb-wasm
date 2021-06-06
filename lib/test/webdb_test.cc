@@ -50,8 +50,7 @@ TEST(WebDB, Tokenize) {
     auto db = make_shared<WebDB>();
     ASSERT_EQ(db->Tokenize("SELECT 1"), "{\"offsets\":[0,7],\"types\":[4,1]}");
     ASSERT_EQ(db->Tokenize("SELECT * FROM region"), "{\"offsets\":[0,7,9,14],\"types\":[4,3,4,0]}");
-    ASSERT_EQ(db->Tokenize("SELECT * FROM region, nation"),
-              "{\"offsets\":[0,7,9,14,20,22],\"types\":[4,3,4,0,3,0]}");
+    ASSERT_EQ(db->Tokenize("SELECT * FROM region, nation"), "{\"offsets\":[0,7,9,14,20,22],\"types\":[4,3,4,0,3,0]}");
 }
 
 }  // namespace

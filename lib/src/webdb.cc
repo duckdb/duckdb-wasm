@@ -218,9 +218,9 @@ std::string WebDB::Tokenize(std::string_view text) {
     auto& allocator = doc.GetAllocator();
     rapidjson::Value offsets(rapidjson::kArrayType);
     rapidjson::Value types(rapidjson::kArrayType);
-    for (auto token: tokens) {
-         offsets.PushBack(token.start, allocator);
-         types.PushBack(static_cast<uint8_t>(token.type), allocator);
+    for (auto token : tokens) {
+        offsets.PushBack(token.start, allocator);
+        types.PushBack(static_cast<uint8_t>(token.type), allocator);
     }
     doc.AddMember("offsets", offsets, allocator);
     doc.AddMember("types", types, allocator);
