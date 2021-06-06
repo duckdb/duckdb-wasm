@@ -20,7 +20,7 @@ git read-tree --prefix=.pages origin/gh-pages
 git reset .pages
 
 if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
-    echo "[ RUN ] Install @duckdb/explorer to ${PAGES_DIR}/"
+    echo "[ RUN ] Install @duckdb/duckdb-wasm-shell to ${PAGES_DIR}/"
 
     find ${PAGES_DIR} \
         -mindepth 1 \
@@ -30,12 +30,12 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
         -exec echo rm -rf '{}' \;
 
 
-    cp -r ${PROJECT_ROOT}/packages/explorer/build/release/* ${PAGES_DIR}
+    cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release/* ${PAGES_DIR}
 else
     TARGET_DIR="${PAGES_DIR}/branches/${CURRENT_BRANCH}"
-    echo "[ RUN ] Install @duckdb/explorer to ${TARGET_DIR}/"
+    echo "[ RUN ] Install @duckdb/duckdb-wasm-shell to ${TARGET_DIR}/"
 
     rm -rf ${TARGET_DIR}
     mkdir -p ${PAGES_DIR}/branches
-    cp -r ${PROJECT_ROOT}/packages/explorer/build/release ${TARGET_DIR}
+    cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release ${TARGET_DIR}
 fi
