@@ -2,6 +2,7 @@ use wasm_bindgen::prelude::*;
 
 /// A token type
 #[repr(u8)]
+#[derive(Clone, Copy)]
 pub enum TokenType {
     Identifier = 0,
     NumericConstant = 1,

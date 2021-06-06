@@ -1,4 +1,4 @@
-use crate::duckdb::tokens::ScriptTokens;
+use crate::duckdb::tokens::{ScriptTokens, TokenType};
 use crate::vt100;
 use crate::xterm::Terminal;
 use ropey::Rope;
@@ -357,8 +357,43 @@ impl PromptBuffer {
     }
 
     /// Highlight prompt as sql
-    pub fn highlight_sql(&mut self, _tokens: ScriptTokens) {
+    pub fn highlight_sql(&mut self, tokens: ScriptTokens) {
+        assert_eq!(tokens.offsets.len(), tokens.types.len());
+        let mut chars_iter = self.text_buffer.chars().enumerate();
 
+        // Emit a character
+        let emit = |c: char, out: &mut String| match c {
+            '\n' | vt100::PARAGRAPH_SEPERATOR => out.push_str(vt100::CRLF),
+            c => out.push(c)
+        };
+        // Iterate over tokens
+        for t in 0..tokens.offsets.len() {
+            let token_ofs = tokens.offsets[t];
+            let token_type = tokens.types[t];
+            for (i, c) in &mut chars_iter {
+                if (i as u64) == token_ofs {
+                    match token_type {
+                        TokenType::Keyword => self.output_buffer.push_str(vt100::MODE_BOLD),
+                        TokenType::NumericConstant => (),
+                        TokenType::StringConstant => (),
+                        TokenType::Identifier => (),
+                        TokenType::Comment => (),
+                        TokenType::Operator => (),
+                    }
+                }
+                emit(c, &mut self.output_buffer);
+
+                // XXX Is the whitespace delimiter sufficient?
+                if (i as u64) > token_ofs && c == ' ' { 
+                    self.output_buffer.push_str(vt100::MODES_OFF);
+                    break;
+                }
+            }
+        }
+        // Write remainder
+        for (_, c) in &mut chars_iter {
+            emit(c, &mut self.output_buffer);
+        }
     }
 
     /// Process key event

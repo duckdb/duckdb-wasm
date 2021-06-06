@@ -236,7 +236,7 @@ impl Shell {
     }
 
     /// Highlight sql prompt
-    async fn highlight_sql(input: String, input_clock: u64) {
+    async fn highlight_sql(input: String, expected_clock: u64) {
         let dba = {
             let shell_ptr = Shell::global().clone();
             let shell = shell_ptr.lock().unwrap();
@@ -252,7 +252,7 @@ impl Shell {
         };
         let shell_ptr = Shell::global().clone();
         let mut shell = shell_ptr.lock().unwrap();
-        if shell.input_clock != input_clock {
+        if shell.input_clock != expected_clock {
             return;
         }
         shell.input.highlight_sql(tokens);
