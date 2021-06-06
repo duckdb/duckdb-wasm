@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <sstream>
 
 #include "duckdb/common/types/date.hpp"
@@ -12,6 +13,7 @@
 
 using namespace duckdb::web;
 using namespace std;
+namespace fs = std::filesystem;
 
 namespace {
 
@@ -75,6 +77,21 @@ INTEGER	VARCHAR	INTEGER
 29555	Feuerbach	2	
 
 )TXT");
+}
+
+TEST(FileSystemBufferTest, FlushFrameMemoryBugRegression) {
+    auto db = make_shared<WebDB>();
+    WebDB::Connection conn{*db};
+    std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
+    for (const auto& f : files) {
+        std::stringstream ss;
+        auto data = test::SOURCE_DIR / ".." / "data" / "tpch" / "0_1" / "parquet" / (f + ".parquet");
+        if (!fs::exists(data)) GTEST_SKIP_(": Missing SF 0.1 TPCH files");
+
+        ss << "CREATE TABLE " << f << " AS SELECT * FROM parquet_scan('" << data.string() << "');";
+        auto query = ss.str();
+        auto result = conn.connection().Query(query);
+    }
 }
 
 }  // namespace
