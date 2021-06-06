@@ -16,7 +16,7 @@ export function configure(params) {
             filename: 'static/js/[name].[contenthash].js',
             chunkFilename: 'static/js/[name].[contenthash].js',
             assetModuleFilename: 'static/assets/[name].[contenthash].[ext]',
-            webassemblyModuleFilename: 'static/wasm/.[hash].wasm',
+            webassemblyModuleFilename: 'static/wasm/[hash].wasm',
             clean: true,
         },
         resolve: {
