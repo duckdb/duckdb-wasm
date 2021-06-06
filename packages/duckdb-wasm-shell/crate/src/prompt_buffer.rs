@@ -5,9 +5,9 @@ use ropey::Rope;
 use std::fmt::Write;
 use web_sys::KeyboardEvent;
 
-const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
-const PROMPT_ENDL: &'static str = "\x1b[1m   ...\x1b[m> ";
-const PROMPT_WRAP: &'static str = "\x1b[1m   ..\x1b[m>> ";
+const PROMPT_INIT: &'static str = "duckdb> ";
+const PROMPT_ENDL: &'static str = "   ...> ";
+const PROMPT_WRAP: &'static str = "   ..>> ";
 const PROMPT_WIDTH: usize = 8;
 const TAB_WIDTH: usize = 2;
 
@@ -209,13 +209,13 @@ impl PromptBuffer {
 
         // Rebuild text and output
         let mut reflowed_txt = String::new();
-        let mut reflowed_out = String::new();
-        reflowed_out.reserve(self.text_buffer.len_chars() * 2);
+        self.output_buffer
+            .reserve(self.output_buffer.len() + self.text_buffer.len_chars() * 2);
         reflowed_txt.reserve(self.text_buffer.len_chars() * 3 / 2);
 
         // Write initial prompt
         let mut line_length = PROMPT_WIDTH;
-        write!(&mut reflowed_out, "{}", PROMPT_INIT).unwrap();
+        write!(&mut self.output_buffer, "{}", PROMPT_INIT).unwrap();
 
         // Write all chars in the rope
         for c in self.text_buffer.chars() {
@@ -227,7 +227,7 @@ impl PromptBuffer {
                 '\n' => {
                     reflowed_txt.push('\n');
                     write!(
-                        &mut reflowed_out,
+                        &mut self.output_buffer,
                         "{endl}{prompt_cont}",
                         endl = vt100::CRLF,
                         prompt_cont = PROMPT_ENDL
@@ -239,12 +239,12 @@ impl PromptBuffer {
                 // Write all other characters and wrap lines if necessary
                 _ => {
                     reflowed_txt.push(c);
-                    reflowed_out.push(c);
+                    self.output_buffer.push(c);
                     line_length += 1;
                     if (line_length + 1) >= self.terminal_width {
                         reflowed_txt.push(vt100::PARAGRAPH_SEPERATOR);
                         write!(
-                            reflowed_out,
+                            &mut self.output_buffer,
                             "{endl}{prompt_wrap}",
                             endl = vt100::CRLF,
                             prompt_wrap = PROMPT_WRAP
@@ -257,7 +257,6 @@ impl PromptBuffer {
         }
 
         // Rewrite the entire prompt
-        self.output_buffer.push_str(&reflowed_out);
         self.text_buffer = Rope::from_str(&reflowed_txt);
         self.cursor = self.text_buffer.len_chars();
     }
@@ -289,8 +288,8 @@ impl PromptBuffer {
                 self.cursor += 1;
             }
             self.text_buffer.insert_char(self.cursor, c);
-            self.cursor += 1;
             self.output_buffer.push(c);
+            self.cursor += 1;
         } else {
             // Otherwise reflow since we might need new line-wraps
             let pos = self.cursor;
@@ -355,8 +354,8 @@ impl PromptBuffer {
     /// Highlight prompt as sql
     pub fn highlight_sql(&mut self, tokens: ScriptTokens) {
         assert_eq!(tokens.offsets.len(), tokens.types.len());
+        // Erase the prompt
         self.erase_prompt();
-
         // Emit a character
         self.output_buffer.reserve(
             self.output_buffer.len() + (self.text_buffer.len_chars() + tokens.offsets.len()) * 2,
@@ -407,11 +406,12 @@ impl PromptBuffer {
                         TokenType::Operator => (),
                     }
                 }
-                emit(c, &mut self.output_buffer);
                 if (i as u32) > token_ofs && !c.is_alphanumeric() {
                     self.output_buffer.push_str(vt100::MODES_OFF);
+                    emit(c, &mut self.output_buffer);
                     break;
                 }
+                emit(c, &mut self.output_buffer);
             }
         }
         // Write remainder

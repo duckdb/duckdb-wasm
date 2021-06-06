@@ -128,6 +128,7 @@ export function configure(params) {
                 args: '--log-level info',
                 outDir: path.resolve(__dirname, 'crate', 'pkg'),
                 outName: 'shell',
+                forceMode: 'production',
             }),
             new HtmlWebpackPlugin({
                 template: './static/index.html',
