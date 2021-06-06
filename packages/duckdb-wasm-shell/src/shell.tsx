@@ -1,6 +1,7 @@
 import React from 'react';
 
 import Overlay from './components/overlay';
+import FilesystemViewer from './components/filesystem_viewer';
 import * as shell from '../crate/pkg';
 import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
@@ -47,7 +48,7 @@ class Shell extends React.Component<Props> {
         return (
             <div className={styles.root} style={style}>
                 <Overlay>
-                    <span>foo</span>
+                    <FilesystemViewer />
                 </Overlay>
                 <div ref={this.termContainer} className={styles.term_container}></div>
             </div>
