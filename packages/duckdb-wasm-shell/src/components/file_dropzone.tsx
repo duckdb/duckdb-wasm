@@ -9,7 +9,6 @@ interface Props {
 
 export function FileDropzone(props: Props): React.ReactElement {
     const { getRootProps, getInputProps } = useDropzone({ onDrop: props.onDrop });
-
     return (
         <div {...getRootProps({ className: styles.root })}>
             <input {...getInputProps()} />

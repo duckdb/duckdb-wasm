@@ -3,13 +3,15 @@ import { FileInfo } from './files';
 import { OverlayContent } from './overlay';
 
 export interface AppState {
+    /// The overlay
     overlay: OverlayContent | null;
-    files: Immutable.Map<string, FileInfo>;
+    /// The registered files
+    registeredFiles: Immutable.Map<string, FileInfo>;
 }
 
 export function createDefaultState(): AppState {
     return {
         overlay: null,
-        files: Immutable.Map(),
+        registeredFiles: Immutable.Map(),
     };
 }
