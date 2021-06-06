@@ -17,10 +17,19 @@
 
     display: grid;
     align-items: center;
+    grid-template-columns: auto 80px;
 }
 
 .header_title {
+    grid-row: 1;
+    grid-column: 1;
     padding: 0px 16px;
     display: grid;
     align-items: center;
+}
+
+.header_action {
+    grid-row: 1;
+    grid-column: 2;
+    margin: 0px 8px;
 }
