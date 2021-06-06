@@ -1,8 +1,10 @@
-import React from 'react';
-
-import Overlay from './components/overlay';
-import FilesystemViewer from './components/filesystem_viewer';
+import * as model from './model';
 import * as shell from '../crate/pkg';
+import FileExplorer from './components/file_explorer';
+import Overlay from './components/overlay';
+import React from 'react';
+import { connect } from 'react-redux';
+
 import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
 
@@ -16,11 +18,18 @@ interface Props {
     backgroundColor?: string;
     padding?: number[];
     borderRadius?: number[];
+
+    overlay: model.OverlayContent | null;
+    openFileViewer: () => void;
 }
 
 class ShellRuntime {
+    public _openFileExplorer: (() => void) | null = null;
+
     public openFileExplorer(this: ShellRuntime): void {
-        console.log('Open file explorer');
+        if (this._openFileExplorer) {
+            this._openFileExplorer();
+        }
         shell.resumeAfterInput(shell.ShellInputContext.FileInput);
     }
 }
@@ -47,16 +56,19 @@ class Shell extends React.Component<Props> {
         };
         return (
             <div className={styles.root} style={style}>
-                <Overlay>
-                    <FilesystemViewer />
-                </Overlay>
                 <div ref={this.termContainer} className={styles.term_container}></div>
+                {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
+                    <Overlay>
+                        <FileExplorer />
+                    </Overlay>
+                )}
             </div>
         );
     }
 
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
+            this.runtime._openFileExplorer = this.props.openFileViewer;
             shell.embed(this.termContainer.current, this.runtime, {
                 backgroundColor: '#333',
             });
@@ -73,4 +85,16 @@ class Shell extends React.Component<Props> {
     public componentWillUnmount(): void {}
 }
 
-export default Shell;
+const mapStateToProps = (state: model.AppState) => ({
+    overlay: state.overlay,
+});
+
+const mapDispatchToProps = (dispatch: model.Dispatch) => ({
+    openFileViewer: () =>
+        dispatch({
+            type: model.StateMutationType.OVERLAY_OPEN,
+            data: model.OverlayContent.FILE_EXPLORER,
+        }),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(Shell);
