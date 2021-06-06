@@ -29,7 +29,9 @@
         "xterm-addon-ligatures": "^0.5.0",
         "xterm-addon-unicode11": "^0.2.0",
         "xterm-addon-webgl": "^0.11.1",
-        "framer-motion": "^4.1.17"
+        "framer-motion": "^4.1.17",
+        "react-bootstrap": "^1.6.0",
+        "bootstrap": "^5.0.1"
     },
     "devDependencies": {
         "@types/classnames": "^2.3.1",
