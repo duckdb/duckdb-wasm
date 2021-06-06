@@ -3,6 +3,7 @@ import * as shell from '../crate/pkg';
 import FileExplorer from './components/file_explorer';
 import Overlay from './components/overlay';
 import React from 'react';
+import { FileRejection, DropEvent } from 'react-dropzone';
 import { connect } from 'react-redux';
 
 import styles from './shell.module.css';
@@ -11,6 +12,7 @@ import 'xterm/css/xterm.css';
 const duckdbWorker = new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url);
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
+import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 
 interface Props {
     workerURL?: string;
@@ -18,9 +20,10 @@ interface Props {
     backgroundColor?: string;
     padding?: number[];
     borderRadius?: number[];
-
     overlay: model.OverlayContent | null;
+
     openFileViewer: () => void;
+    registerFiles: (files: model.FileInfo[]) => void;
 }
 
 class ShellRuntime {
@@ -40,12 +43,33 @@ class Shell extends React.Component<Props> {
     protected termContainer: React.RefObject<HTMLDivElement>;
     /// The runtime
     protected runtime: ShellRuntime;
+    /// The database
+    protected database: AsyncDuckDB | null;
+    /// The drop file handler
+    protected dropFileHandler = this.dropFiles.bind(this);
 
     /// Constructor
     constructor(props: Props) {
         super(props);
         this.termContainer = React.createRef();
         this.runtime = new ShellRuntime();
+        this.database = null;
+    }
+
+    /// Drop files
+    public async dropFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
+        if (!this.database) return;
+        for (const file of acceptedFiles) {
+            await this.database.addFileBlob(file.name, file);
+        }
+        const fileInfos = acceptedFiles.map(f => ({
+            name: f.name,
+            url: `file://${f.name}`,
+            size: 0,
+            downloadProgress: 1.0,
+        }));
+        console.log(fileInfos.toString());
+        this.props.registerFiles(fileInfos);
     }
 
     /// Render the demo
@@ -60,7 +84,7 @@ class Shell extends React.Component<Props> {
                 <div ref={this.termContainer} className={styles.term_container}></div>
                 {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
                     <Overlay>
-                        <FileExplorer />
+                        <FileExplorer database={this.database} onDrop={this.dropFileHandler} />
                     </Overlay>
                 )}
             </div>
@@ -77,9 +101,8 @@ class Shell extends React.Component<Props> {
             // Open database
             const logger = new duckdb.ConsoleLogger();
             const worker = new Worker(duckdbWorker);
-            const db = new duckdb.AsyncDuckDB(logger, worker);
-            db.open(duckdb_wasm).then(_ => shell.configureDatabase(db));
-            // TODO Instantiate the wasm module
+            this.database = new duckdb.AsyncDuckDB(logger, worker);
+            this.database.open(duckdb_wasm).then(_ => shell.configureDatabase(this.database));
         }
     }
 
@@ -95,6 +118,11 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
         dispatch({
             type: model.StateMutationType.OVERLAY_OPEN,
             data: model.OverlayContent.FILE_EXPLORER,
+        }),
+    registerFiles: (files: model.FileInfo[]) =>
+        dispatch({
+            type: model.StateMutationType.REGISTER_FILES,
+            data: files,
         }),
 });
 
