@@ -79,7 +79,7 @@ INTEGER	VARCHAR	INTEGER
 )TXT");
 }
 
-TEST(FileSystemBufferTest, FlushFrameMemoryBugRegression) {
+TEST(ParquetImportTest, FlushFrameMemoryBugRegression) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};
     std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
