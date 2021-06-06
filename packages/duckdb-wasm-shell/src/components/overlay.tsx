@@ -15,13 +15,13 @@ class Overlay extends React.Component<Props> {
                     className={styles.overlay_container}
                     initial={{ backgroundColor: 'rgba(0,0,0,0.2)' }}
                     animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-                    transition={{ duration: 0.4 }}
+                    transition={{ duration: 0.2 }}
                 >
                     <motion.div
                         className={styles.overlay}
-                        initial={{ translateY: 100 }}
+                        initial={{ translateY: 80 }}
                         animate={{ translateY: 0 }}
-                        transition={{ duration: 0.4 }}
+                        transition={{ duration: 0.2 }}
                     >
                         {this.props.children}
                     </motion.div>

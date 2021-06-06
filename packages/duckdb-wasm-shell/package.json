@@ -19,6 +19,7 @@
     "dependencies": {
         "@duckdb/duckdb-wasm": "^0.0.28",
         "classnames": "^2.3.1",
+        "immutable": "^4.0.0-rc.12",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
         "react-dropzone": "^11.3.2",
