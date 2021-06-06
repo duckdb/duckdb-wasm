@@ -235,9 +235,14 @@ impl Shell {
         shell.prompt();
     }
 
+    /// Flush output buffer to the terminal
+    pub fn flush(&mut self) {
+        self.input.flush(&self.terminal);
+    }
+
     /// Highlight sql prompt
     async fn highlight_sql(input: String, expected_clock: u64) {
-        let dba = {
+        let db_ptr = {
             let shell_ptr = Shell::global().clone();
             let shell = shell_ptr.lock().unwrap();
             match shell.db {
@@ -245,7 +250,7 @@ impl Shell {
                 None => return,
             }
         };
-        let db = dba.lock().unwrap();
+        let db = db_ptr.lock().unwrap();
         let tokens = match db.tokenize(&input).await {
             Ok(t) => t,
             Err(_) => return,
@@ -256,16 +261,16 @@ impl Shell {
             return;
         }
         shell.input.highlight_sql(tokens);
+        shell.flush();
     }
 
     /// Highlight input text (if sql)
     fn highlight_input(&mut self) {
         let input = self.input.collect();
-        let clock = self.input_clock;
-        if !input.trim_start().starts_with(".") {
+        if input.trim_start().starts_with(".") {
             return;
         }
-        spawn_local(Shell::highlight_sql(input, clock));
+        spawn_local(Shell::highlight_sql(input, self.input_clock));
     }
 
     /// Process on-key event
@@ -276,6 +281,7 @@ impl Shell {
         let event = e.dom_event();
         match event.key_code() {
             vt100::KEY_ENTER => {
+                self.input_clock += 1;
                 // Is a command?
                 let input = self.input.collect();
                 if input.trim_start().starts_with(".") {
@@ -288,14 +294,13 @@ impl Shell {
                         spawn_local(Shell::on_sql(input));
                     } else {
                         self.input.consume(event);
-                        self.input_clock += 1;
                         self.input.flush(&self.terminal);
                     }
                 }
             }
             _ => {
-                self.input.consume(event);
                 self.input_clock += 1;
+                self.input.consume(event);
                 self.input.flush(&self.terminal);
                 self.highlight_input();
             }
