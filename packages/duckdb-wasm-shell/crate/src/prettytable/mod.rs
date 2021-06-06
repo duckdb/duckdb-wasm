@@ -458,9 +458,7 @@ macro_rules! ptable {
 mod tests {
     use super::utils::StringWriter;
     use super::{format, Cell, Row, Slice, Table};
-    use format::consts::{
-        FORMAT_BOX_CHARS, FORMAT_CLEAN, FORMAT_DEFAULT, FORMAT_NO_COLSEP, FORMAT_NO_LINESEP,
-    };
+    use format::consts::{FORMAT_BOX_CHARS, FORMAT_CLEAN, FORMAT_DEFAULT, FORMAT_NO_LINESEP};
 
     #[test]
     fn table() {
