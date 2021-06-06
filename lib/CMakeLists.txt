@@ -171,7 +171,6 @@ if(EMSCRIPTEN)
           _duckdb_web_get_version, \
           _duckdb_web_get_feature_flags, \
           _duckdb_web_clear_response, \
-          _duckdb_web_get_feature_flags, \
           _duckdb_web_flush_files, \
           _duckdb_web_flush_file, \
           _duckdb_web_tokenize, \
