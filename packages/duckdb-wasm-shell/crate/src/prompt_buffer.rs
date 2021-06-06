@@ -1,3 +1,4 @@
+use crate::duckdb::tokens::ScriptTokens;
 use crate::vt100;
 use crate::xterm::Terminal;
 use ropey::Rope;
@@ -353,6 +354,11 @@ impl PromptBuffer {
             self.cursor += 1;
             self.output_buffer.push(' ');
         }
+    }
+
+    /// Highlight prompt as sql
+    pub fn highlight_sql(&mut self, _tokens: ScriptTokens) {
+
     }
 
     /// Process key event
