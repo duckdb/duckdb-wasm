@@ -210,6 +210,10 @@ impl PromptBuffer {
         // Rebuild text and output
         let mut reflowed_txt = String::new();
         let mut reflowed_out = String::new();
+        reflowed_out.reserve(self.text_buffer.len_chars() * 2);
+        reflowed_txt.reserve(self.text_buffer.len_chars() * 3 / 2);
+
+        // Write initial prompt
         let mut line_length = PROMPT_WIDTH;
         write!(&mut reflowed_out, "{}", PROMPT_INIT).unwrap();
 
@@ -354,8 +358,9 @@ impl PromptBuffer {
         self.erase_prompt();
 
         // Emit a character
-        self.output_buffer
-            .reserve((self.text_buffer.len_chars() + tokens.offsets.len()) * 2);
+        self.output_buffer.reserve(
+            self.output_buffer.len() + (self.text_buffer.len_chars() + tokens.offsets.len()) * 2,
+        );
         self.output_buffer.push_str(PROMPT_INIT);
         let emit = |c: char, out: &mut String| match c {
             '\n' => {
