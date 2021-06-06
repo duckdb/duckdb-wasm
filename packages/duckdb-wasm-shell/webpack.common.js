@@ -1,8 +1,6 @@
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import WasmPackPlugin from '@wasm-tool/wasm-pack-plugin';
 import path from 'path';
-import webpack from 'webpack';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -123,13 +121,6 @@ export function configure(params) {
             },
         },
         plugins: [
-            new WasmPackPlugin({
-                crateDirectory: path.resolve(__dirname, 'crate'),
-                args: '--log-level info',
-                outDir: path.resolve(__dirname, 'crate', 'pkg'),
-                outName: 'shell',
-                forceMode: 'production',
-            }),
             new HtmlWebpackPlugin({
                 template: './static/index.html',
                 filename: './index.html',
