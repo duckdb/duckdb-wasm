@@ -205,7 +205,7 @@ impl Shell {
             Err(e) => {
                 let mut msg: String = e.message().into();
                 msg = msg.replace("\n", "\r\n");
-                shell.writeln(&format!("Error: {}", &msg));
+                shell.writeln(&format!("Error: {}{}", &msg, vt100::CRLF));
                 shell.prompt();
                 return;
             }
@@ -291,6 +291,15 @@ impl Shell {
                         shell.flush();
                     }
                 }
+            }
+            vt100::KEY_BACKSPACE
+            | vt100::KEY_ARROW_DOWN
+            | vt100::KEY_ARROW_LEFT
+            | vt100::KEY_ARROW_RIGHT
+            | vt100::KEY_ARROW_UP => {
+                shell.input_clock += 1;
+                shell.input.consume(event);
+                shell.flush();
             }
             _ => {
                 shell.input_clock += 1;
