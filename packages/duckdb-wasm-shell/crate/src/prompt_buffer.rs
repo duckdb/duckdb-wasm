@@ -47,15 +47,7 @@ impl PromptBuffer {
     /// Collect as string.
     /// We replace all paragraph separators with real line feeds for the user.
     pub fn collect(&mut self) -> String {
-        let buffer: String = self
-            .text_buffer
-            .chars()
-            .map(|c| match c {
-                vt100::PARAGRAPH_SEPERATOR => '\n',
-                c => c,
-            })
-            .collect();
-        buffer
+        String::from(&self.text_buffer).replace(&vt100::PARAGRAPH_SEPERATOR.to_string(), "\n")
     }
 
     /// Reset the prompt
@@ -359,19 +351,40 @@ impl PromptBuffer {
     /// Highlight prompt as sql
     pub fn highlight_sql(&mut self, tokens: ScriptTokens) {
         assert_eq!(tokens.offsets.len(), tokens.types.len());
-        let mut chars_iter = self.text_buffer.chars().enumerate();
+        self.erase_prompt();
 
         // Emit a character
+        self.output_buffer
+            .reserve((self.text_buffer.len_chars() + tokens.offsets.len()) * 2);
+        self.output_buffer.push_str(PROMPT_INIT);
         let emit = |c: char, out: &mut String| match c {
-            '\n' | vt100::PARAGRAPH_SEPERATOR => out.push_str(vt100::CRLF),
-            c => out.push(c)
+            '\n' => {
+                write!(
+                    out,
+                    "{endl}{prompt_endl}",
+                    endl = vt100::CRLF,
+                    prompt_endl = PROMPT_ENDL
+                )
+                .unwrap();
+            }
+            vt100::PARAGRAPH_SEPERATOR => {
+                write!(
+                    out,
+                    "{endl}{prompt_wrap}",
+                    endl = vt100::CRLF,
+                    prompt_wrap = PROMPT_WRAP
+                )
+                .unwrap();
+            }
+            c => out.push(c),
         };
         // Iterate over tokens
+        let mut chars_iter = self.text_buffer.chars().enumerate();
         for t in 0..tokens.offsets.len() {
             let token_ofs = tokens.offsets[t];
             let token_type = tokens.types[t];
             for (i, c) in &mut chars_iter {
-                if (i as u64) == token_ofs {
+                if (i as u32) == token_ofs {
                     match token_type {
                         TokenType::Keyword => self.output_buffer.push_str(vt100::MODE_BOLD),
                         TokenType::NumericConstant => (),
@@ -382,9 +395,7 @@ impl PromptBuffer {
                     }
                 }
                 emit(c, &mut self.output_buffer);
-
-                // XXX Is the whitespace delimiter sufficient?
-                if (i as u64) > token_ofs && c == ' ' { 
+                if (i as u32) > token_ofs && c == ' ' {
                     self.output_buffer.push_str(vt100::MODES_OFF);
                     break;
                 }
@@ -394,6 +405,7 @@ impl PromptBuffer {
         for (_, c) in &mut chars_iter {
             emit(c, &mut self.output_buffer);
         }
+        self.cursor = self.text_buffer.len_chars();
     }
 
     /// Process key event
