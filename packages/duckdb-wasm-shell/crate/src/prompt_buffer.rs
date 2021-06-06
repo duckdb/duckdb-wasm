@@ -391,7 +391,15 @@ impl PromptBuffer {
             for (i, c) in &mut chars_iter {
                 if (i as u32) == token_ofs {
                     match token_type {
-                        TokenType::Keyword => self.output_buffer.push_str(vt100::MODE_BOLD),
+                        TokenType::Keyword => {
+                            write!(
+                                self.output_buffer,
+                                "{fg_green}{bold}",
+                                fg_green = vt100::COLOR_FG_GREEN,
+                                bold = vt100::MODE_BOLD
+                            )
+                            .unwrap();
+                        }
                         TokenType::NumericConstant => (),
                         TokenType::StringConstant => (),
                         TokenType::Identifier => (),
@@ -400,7 +408,7 @@ impl PromptBuffer {
                     }
                 }
                 emit(c, &mut self.output_buffer);
-                if (i as u32) > token_ofs && c == ' ' {
+                if (i as u32) > token_ofs && !c.is_alphanumeric() {
                     self.output_buffer.push_str(vt100::MODES_OFF);
                     break;
                 }
@@ -410,6 +418,7 @@ impl PromptBuffer {
         for (_, c) in &mut chars_iter {
             emit(c, &mut self.output_buffer);
         }
+        self.output_buffer.push_str(vt100::MODES_OFF);
         self.cursor = self.text_buffer.len_chars();
     }
 
