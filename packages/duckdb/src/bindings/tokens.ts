@@ -4,8 +4,8 @@ export enum TokenType {
     STRING_CONSTANT = 2,
     OPERATOR = 3,
     KEYWORD = 4,
-    COMMENT = 5
-};
+    COMMENT = 5,
+}
 
 export interface ScriptTokens {
     offsets: number[];

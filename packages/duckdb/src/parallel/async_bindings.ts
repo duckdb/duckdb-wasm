@@ -322,10 +322,7 @@ export class AsyncDuckDB {
 
     /** Tokenize a script text */
     public async tokenize(text: string): Promise<ScriptTokens> {
-        const task = new WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>(
-            WorkerRequestType.TOKENIZE,
-            text,
-        );
+        const task = new WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>(WorkerRequestType.TOKENIZE, text);
         const tokens = await this.postTask(task);
         return tokens;
     }
