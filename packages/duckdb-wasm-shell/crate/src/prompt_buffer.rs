@@ -110,7 +110,7 @@ impl PromptBuffer {
     }
 
     /// Move cursor to position in prompt text
-    fn move_cursor_to(&mut self, pos: usize) {
+    pub fn move_cursor_to(&mut self, pos: usize) {
         let src_line_id = self.text_buffer.char_to_line(self.cursor);
         let dst_line_id = self.text_buffer.char_to_line(pos);
         if src_line_id < dst_line_id {
@@ -354,6 +354,8 @@ impl PromptBuffer {
     /// Highlight prompt as sql
     pub fn highlight_sql(&mut self, tokens: ScriptTokens) {
         assert_eq!(tokens.offsets.len(), tokens.types.len());
+        // Get cursor
+        let cursor = self.cursor;
         // Erase the prompt
         self.erase_prompt();
         // Emit a character
@@ -420,6 +422,7 @@ impl PromptBuffer {
         }
         self.output_buffer.push_str(vt100::MODES_OFF);
         self.cursor = self.text_buffer.len_chars();
+        self.move_cursor_to(cursor);
     }
 
     /// Process key event
