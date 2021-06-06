@@ -29,8 +29,9 @@ class ShellRuntime {
     public openFileExplorer(this: ShellRuntime): void {
         if (this._openFileExplorer) {
             this._openFileExplorer();
+        } else {
+            shell.resumeAfterInput(shell.ShellInputContext.FileInput);
         }
-        shell.resumeAfterInput(shell.ShellInputContext.FileInput);
     }
 }
 

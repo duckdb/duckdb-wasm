@@ -137,7 +137,6 @@ impl Shell {
 
     /// Resume after user input
     pub fn resume_after_input(&mut self, _ctx: ShellInputContext) {
-        self.writeln("Resume after input");
         self.prompt();
     }
 
