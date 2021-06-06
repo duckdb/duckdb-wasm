@@ -198,17 +198,17 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm build
 
+            - name: Build @duckdb/duckdb-wasm-shell
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm-shell build:release
+
             - name: Build @duckdb/benchmarks
               uses: ./actions/image
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
-
-            - name: Build @duckdb/explorer
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/explorer build:release
 
             - name: Test @duckdb/duckdb-wasm
               uses: ./actions/image
