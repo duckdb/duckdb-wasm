@@ -39,7 +39,7 @@
     "scripts": {
         "build": "webpack && node ./bundle.mjs && tsc",
         "lint": "yarn run eslint src types",
-        "run:node": "node --inspect-brk --max-old-space-size=4096 --experimental-wasm-eh ./dist/bench-node.js",
-        "run:browser": "node --max-old-space-size=4096 ./node_modules/.bin/karma start karma.conf.cjs"
+        "run:node": "node --experimental-wasm-eh ./dist/bench-node.js",
+        "run:browser": "node ./node_modules/.bin/karma start karma.conf.cjs"
     }
 }
