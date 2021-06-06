@@ -2,6 +2,8 @@ import * as model from '../model';
 import React from 'react';
 import styles from './file_explorer.module.css';
 import Button from 'react-bootstrap/Button';
+import FileDropzone from './file_dropzone';
+import { FileRejection, DropEvent } from 'react-dropzone';
 import { connect } from 'react-redux';
 
 interface Props {
@@ -24,6 +26,9 @@ class FileExplorer extends React.Component<Props> {
                         Done
                     </Button>
                 </div>
+                <FileDropzone
+                    onDrop={(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {}}
+                />
             </div>
         );
     }

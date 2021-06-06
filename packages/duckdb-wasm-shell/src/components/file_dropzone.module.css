@@ -1,0 +1,18 @@
+.root {
+    margin: 16px;
+
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    border-width: 2px;
+    border-radius: 2px;
+    border-color: #cccccc;
+    border-style: dashed;
+    background-color: #e9e9e9;
+    color: #888888;
+    outline: none;
+    transition: border 0.24s ease-in-out;
+}
