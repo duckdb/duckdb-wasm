@@ -10,6 +10,8 @@ pub const KEY_ARROW_DOWN: u32 = 40;
 pub const KEY_C: u32 = 67;
 pub const KEY_L: u32 = 76;
 
+pub const COLOR_FG_GREEN: &str = "\x1b[32m";
+
 pub const CURSOR_UP: &str = "\x1b[A";
 pub const CURSOR_DOWN: &str = "\x1b[B";
 pub const CURSOR_LEFT: &str = "\x1b[D";
