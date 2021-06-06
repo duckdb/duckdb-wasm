@@ -107,8 +107,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.SEND_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.TOKENIZE, string>
-    | WorkerRequest<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs>
-    ;
+    | WorkerRequest<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs>;
 
 export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.CONNECTION_INFO, number>
@@ -125,8 +124,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.REGISTERED_FILE, number>
     | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
     | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
-    | WorkerResponse<WorkerResponseType.VERSION_STRING, string>
-    ;
+    | WorkerResponse<WorkerResponseType.VERSION_STRING, string>;
 
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.ADD_FILE_BLOB, [string, any], number>
@@ -150,5 +148,4 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>
-    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>
-    ;
+    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>;
