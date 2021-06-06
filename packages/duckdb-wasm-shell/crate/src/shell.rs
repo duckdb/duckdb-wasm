@@ -9,7 +9,7 @@ use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
 use chrono::Duration;
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
@@ -80,7 +80,7 @@ impl Shell {
 
         // Register on_key callback
         let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {
-            Shell::global().lock().unwrap().on_key(e);
+            Shell::on_key(Shell::global().lock().unwrap(), e);
         }) as Box<dyn FnMut(_)>);
         self.terminal.on_key(callback.as_ref().unchecked_ref());
         callback.forget();
@@ -240,69 +240,63 @@ impl Shell {
         self.input.flush(&self.terminal);
     }
 
-    /// Highlight sql prompt
-    async fn highlight_sql(input: String, expected_clock: u64) {
-        let db_ptr = {
-            let shell_ptr = Shell::global().clone();
-            let shell = shell_ptr.lock().unwrap();
-            match shell.db {
-                Some(ref db) => db.clone(),
-                None => return,
-            }
-        };
-        let db = db_ptr.lock().unwrap();
-        let tokens = match db.tokenize(&input).await {
-            Ok(t) => t,
-            Err(_) => return,
-        };
-        let shell_ptr = Shell::global().clone();
-        let mut shell = shell_ptr.lock().unwrap();
-        if shell.input_clock != expected_clock {
-            return;
-        }
-        shell.input.highlight_sql(tokens);
-        shell.flush();
-    }
-
     /// Highlight input text (if sql)
-    fn highlight_input(&mut self) {
-        let input = self.input.collect();
+    fn highlight_input(mut shell: MutexGuard<Shell>) {
+        let input = shell.input.collect();
         if input.trim_start().starts_with(".") {
             return;
         }
-        spawn_local(Shell::highlight_sql(input, self.input_clock));
+        let db_ptr = shell.db.clone().unwrap();
+        let expected_clock = shell.input_clock;
+        drop(shell);
+        spawn_local(async move {
+            let db = db_ptr.lock().unwrap();
+            let tokens = match db.tokenize(&input).await {
+                Ok(t) => t,
+                Err(_) => return,
+            };
+            let shell_ptr = Shell::global().clone();
+            let mut shell = shell_ptr.lock().unwrap();
+            if shell.input_clock != expected_clock {
+                return;
+            }
+            shell.input.highlight_sql(tokens);
+            shell.flush();
+        });
     }
 
     /// Process on-key event
-    fn on_key(&mut self, e: OnKeyEvent) {
-        if !self.input_enabled {
+    fn on_key(mut shell: MutexGuard<Shell>, e: OnKeyEvent) {
+        if !shell.input_enabled {
             return;
         }
         let event = e.dom_event();
         match event.key_code() {
             vt100::KEY_ENTER => {
-                self.input_clock += 1;
+                shell.input_clock += 1;
                 // Is a command?
-                let input = self.input.collect();
+                let input = shell.input.collect();
                 if input.trim_start().starts_with(".") {
-                    self.block_input();
+                    shell.block_input();
+                    drop(shell);
                     spawn_local(Shell::on_command(input));
                 } else {
                     // Ends with semicolon?
                     if input.trim_end().ends_with(";") {
-                        self.block_input();
+                        shell.block_input();
+                        drop(shell);
                         spawn_local(Shell::on_sql(input));
                     } else {
-                        self.input.consume(event);
-                        self.input.flush(&self.terminal);
+                        shell.input.consume(event);
+                        shell.flush();
                     }
                 }
             }
             _ => {
-                self.input_clock += 1;
-                self.input.consume(event);
-                self.input.flush(&self.terminal);
-                self.highlight_input();
+                shell.input_clock += 1;
+                shell.input.consume(event);
+                shell.flush();
+                Shell::highlight_input(shell);
             }
         }
     }
