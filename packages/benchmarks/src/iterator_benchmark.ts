@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import * as duckdb from '../../duckdb/dist/duckdb-node-sync-eh.js';
+import * as duckdb from '../../duckdb-wasm/dist/duckdb-node-sync-eh.js';
 import * as utils from './utils';
 import * as benny from 'benny';
 import kleur from 'kleur';

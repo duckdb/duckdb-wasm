@@ -6,8 +6,8 @@ import * as benny from 'benny';
 import kleur from 'kleur';
 
 import path from 'path';
-const workerPath = path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js');
-const wasmPath = path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm');
+const workerPath = path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js');
+const wasmPath = path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm');
 
 const noop = () => {};
 
