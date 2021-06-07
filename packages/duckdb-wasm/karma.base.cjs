@@ -18,9 +18,9 @@ module.exports = function (config) {
         ],
         frameworks: ['jasmine'],
         files: [
-            { pattern: 'packages/duckdb/dist/tests-browser.js' },
-            { pattern: 'packages/duckdb/dist/*.wasm', included: false, watched: false, served: true },
-            { pattern: 'packages/duckdb/dist/*.js', included: false, watched: false, served: true },
+            { pattern: 'packages/duckdb-wasm/dist/tests-browser.js' },
+            { pattern: 'packages/duckdb-wasm/dist/*.wasm', included: false, watched: false, served: true },
+            { pattern: 'packages/duckdb-wasm/dist/*.js', included: false, watched: false, served: true },
             { pattern: 'data/tpch/0*/parquet/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/uni/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/**/*.zip', included: false, watched: false, served: true },
@@ -29,7 +29,7 @@ module.exports = function (config) {
             '**/tests-*.js': ['sourcemap', 'coverage'],
         },
         proxies: {
-            '/static/': '/base/packages/duckdb/dist/',
+            '/static/': '/base/packages/duckdb-wasm/dist/',
             '/data/': '/base/data/',
         },
         exclude: [],
@@ -69,7 +69,7 @@ module.exports = function (config) {
         },
         coverageReporter: {
             type: 'json',
-            dir: './packages/duckdb/coverage/',
+            dir: './packages/duckdb-wasm/coverage/',
             subdir: function (browser) {
                 return browser.toLowerCase().split(/[ /-]/)[0];
             },
