@@ -242,4 +242,65 @@ TEST(FileSystemBufferTest, LRUEviction) {
     EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
 }
 
+// NOLINTNEXTLINE
+TEST(BufferManagerTest, MultithreadParallelFix) {
+    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto filepath = CreateTestFile();
+    std::ofstream(filepath).close();
+    fs::resize_file(filepath, 10 * buffer->GetPageSize());
+    auto file = buffer->OpenFile(filepath.c_str());
+
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < 4; ++i) {
+        threads.emplace_back([i, &buffer, &file] {
+            // NOLINTNEXTLINE
+            ASSERT_NO_THROW(auto page1 = buffer->FixPage(file, i, false);
+                            auto page2 = buffer->FixPage(file, i + 4, false); page2.Release(); page1.Release(););
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    auto fifo_list = buffer->GetFIFOList();
+    std::sort(fifo_list.begin(), fifo_list.end());
+    std::vector<uint64_t> expected_fifo{0, 1, 2, 3, 4, 5, 6, 7};
+    EXPECT_EQ(expected_fifo, fifo_list);
+    EXPECT_TRUE(buffer->GetLRUList().empty());
+}
+
+// NOLINTNEXTLINE
+TEST(BufferManagerTest, MultithreadExclusiveAccess) {
+    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto filepath = CreateTestFile();
+    std::ofstream(filepath).close();
+    fs::resize_file(filepath, 10 * buffer->GetPageSize());
+    auto file = buffer->OpenFile(filepath.c_str());
+    {
+        auto page = buffer->FixPage(file, 0, true);
+        auto page_data = page.GetData();
+        ASSERT_EQ(page_data.size(), buffer->GetPageSize());
+        std::memset(page_data.data(), 0, buffer->GetPageSize());
+    }
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < 4; ++i) {
+        threads.emplace_back([&buffer, &file] {
+            for (size_t j = 0; j < 1000; ++j) {
+                auto page = buffer->FixPage(file, 0, true);
+                auto page_data = page.GetData();
+                uint64_t& value = *reinterpret_cast<uint64_t*>(page_data.data());
+                ++value;
+            }
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    EXPECT_TRUE(buffer->GetFIFOList().empty());
+    EXPECT_EQ(std::vector<uint64_t>{0}, buffer->GetLRUList());
+    auto page = buffer->FixPage(file, 0, false);
+    auto page_data = page.GetData();
+    uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
+    EXPECT_EQ(4000, value);
+}
+
 }  // namespace
