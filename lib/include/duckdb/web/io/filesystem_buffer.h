@@ -36,53 +36,6 @@ namespace io {
 
 class FileSystemBuffer;
 
-class FileSystemBufferFrame {
-   protected:
-    friend class FileSystemBuffer;
-    /// A position in the LRU queue
-    using list_position = std::list<FileSystemBufferFrame*>::iterator;
-
-    /// The frame state
-    enum State { NEW, LOADING, LOADED, EVICTING, RELOADED };
-
-    /// The frame id
-    uint64_t frame_id = -1;
-    /// The frame state.
-    State frame_state = State::NEW;
-    /// The data buffer (constant page size)
-    std::unique_ptr<char[]> buffer = nullptr;
-    /// How many times this page has been fixed
-    uint64_t num_users = 0;
-    /// The data size
-    uint32_t data_size = 0;
-    /// Is the page dirty?
-    bool is_dirty = false;
-    /// Flush in progress?
-    bool flush_in_progress = false;
-    /// Position of this page in the FIFO list
-    list_position fifo_position;
-    /// Position of this page in the LRU list
-    list_position lru_position;
-
-    /// The frame latch
-    std::shared_mutex access_latch;
-    /// Is locked exclusively?
-    bool locked_exclusively = false;
-
-    /// Lock a buffer frame.
-    void LockFrame(bool exclusive);
-    /// Unlock a buffer frame
-    void UnlockFrame();
-
-   public:
-    /// Constructor
-    FileSystemBufferFrame(uint64_t frame_id, list_position fifo_position, list_position lru_position);
-    /// Get number of users
-    auto GetUserCount() const { return num_users; }
-    /// Returns a pointer to this page data
-    nonstd::span<char> GetData() { return {buffer.get(), data_size}; }
-};
-
 class FileSystemBuffer {
    protected:
     /// A buffered file
@@ -93,28 +46,28 @@ class FileSystemBuffer {
         std::string path = {};
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
-        /// The file references
-        uint64_t file_refs = 0;
-        /// The released file refs
-        uint64_t file_refs_released = 0;
+        /// This latch ensures that reads and writes are blocked during truncation.
+        std::shared_mutex file_file_access = {};
+        /// The user references (frames + users)
+        int64_t file_users = 0;
+        /// The frame references (frames + users)
+        int64_t file_frames = 0;
         /// The file size as present on disk.
         uint64_t file_size_persisted = 0;
         /// The buffered file size.
         /// We grow files on flush if the user wrote past the end.
         /// For that purpose, we maintain a required file size here that can be bumped through RequireFileSize.
         uint64_t file_size_buffered = 0;
-        /// The truncation lock.
-        std::mutex truncation_lock = {};
-        /// This latch ensures that reads and writes are blocked during truncation.
-        std::shared_mutex file_access = {};
 
         /// Constructor
         BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
 
-        /// Access the file for reads or writes
-        auto AccessFile() { return std::shared_lock{file_access}; }
+        /// Get the file references
+        auto GetFileRefs() const { return file_users + file_frames; }
+        /// Access the file file
+        auto AccessFileShared() { return std::shared_lock{file_file_access}; }
         /// Block the file access for truncation
-        auto BlockFileAccess() { return std::unique_lock{file_access}; }
+        auto AccessFileExclusively() { return std::unique_lock{file_file_access}; }
     };
 
    public:
@@ -127,10 +80,12 @@ class FileSystemBuffer {
         FileSystemBuffer& buffer_manager_;
         /// The file
         BufferedFile* file_;
-        /// The constructor
-        explicit FileRef(FileSystemBuffer& buffer_manager, BufferedFile& file);
 
        public:
+        /// The constructor
+        explicit FileRef(FileSystemBuffer& buffer_manager);
+        /// The constructor
+        explicit FileRef(FileSystemBuffer& buffer_manager, BufferedFile& file);
         /// Copy constructor
         FileRef(const FileRef& other);
         /// Move constructor
@@ -155,6 +110,51 @@ class FileSystemBuffer {
         void Release();
     };
 
+    class BufferFrame {
+       protected:
+        friend class FileSystemBuffer;
+        /// A position in the LRU queue
+        using list_position = std::list<BufferFrame*>::iterator;
+
+        /// The frame state
+        enum State { NEW, LOADING, LOADED, EVICTING, RELOADED };
+
+        /// The frame id
+        uint64_t frame_id = -1;
+        /// The frame state.
+        State frame_state = State::NEW;
+        /// The data buffer (constant page size)
+        std::unique_ptr<char[]> buffer = nullptr;
+        /// How many times this page has been fixed
+        uint64_t num_users = 0;
+        /// The data size
+        uint32_t data_size = 0;
+        /// Is the page dirty?
+        std::atomic<bool> is_dirty = false;
+        /// Position of this page in the FIFO list
+        list_position fifo_position;
+        /// Position of this page in the LRU list
+        list_position lru_position;
+
+        /// The frame latch
+        std::shared_mutex access_latch;
+        /// Is locked exclusively?
+        bool locked_exclusively = false;
+
+        /// Lock a buffer frame.
+        void LockFrame(bool exclusive);
+        /// Unlock a buffer frame
+        void UnlockFrame();
+
+       public:
+        /// Constructor
+        BufferFrame(uint64_t frame_id, list_position fifo_position, list_position lru_position);
+        /// Get number of users
+        auto GetUserCount() const { return num_users; }
+        /// Returns a pointer to this page data
+        nonstd::span<char> GetData() { return {buffer.get(), data_size}; }
+    };
+
     /// A buffer reference
     class BufferRef {
         friend class FileSystemBuffer;
@@ -163,9 +163,12 @@ class FileSystemBuffer {
         /// The buffer manager
         FileSystemBuffer& buffer_manager_;
         /// The file
-        FileSystemBufferFrame* frame_;
+        BufferFrame* frame_;
+        /// The file file lock
+        std::shared_lock<std::shared_mutex> file_lock_;
         /// The constructor
-        explicit BufferRef(FileSystemBuffer& buffer_manager, FileSystemBufferFrame& frame);
+        explicit BufferRef(FileSystemBuffer& buffer_manager, BufferFrame& frame,
+                           std::shared_lock<std::shared_mutex> file_lock);
 
        public:
         /// Copy constructor
@@ -214,32 +217,30 @@ class FileSystemBuffer {
     uint16_t allocated_file_ids = 0;
 
     /// Maps frame ids to frames
-    std::map<uint64_t, FileSystemBufferFrame> frames = {};
+    std::map<uint64_t, BufferFrame> frames = {};
     /// FIFO list of frames
-    std::list<FileSystemBufferFrame*> fifo = {};
+    std::list<BufferFrame*> fifo = {};
     /// LRU list of frames
-    std::list<FileSystemBufferFrame*> lru = {};
+    std::list<BufferFrame*> lru = {};
 
-    /// Evict all file frames
-    void EvictFileFrames(BufferedFile& file, std::unique_lock<std::mutex>& latch);
-    /// Grow a file if required
-    void GrowFileIfRequired(BufferedFile& file, std::unique_lock<std::mutex>& latch);
     /// Release a file ref
-    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& latch);
+    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& directory_latch);
     /// Loads the page from disk
-    void LoadFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& latch);
+    void LoadFrame(BufferFrame& frame, std::shared_lock<std::shared_mutex>& file_latch,
+                   std::unique_lock<std::mutex>& directory_latch);
     /// Writes the page to disk if it is dirty
-    void FlushFrame(FileSystemBufferFrame& frame, std::unique_lock<std::mutex>& latch);
+    void FlushFrame(BufferFrame& frame, std::unique_lock<std::shared_mutex>* file_latch,
+                    std::unique_lock<std::mutex>& directory_latch);
     /// Returns the next page that can be evicted.
     /// Returns nullptr, when no page can be evicted.
-    std::unique_ptr<char[]> EvictBufferFrame(std::unique_lock<std::mutex>& latch);
+    std::unique_ptr<char[]> EvictAnyBufferFrame(std::unique_lock<std::mutex>& directory_latch);
     /// Allocate a buffer for a frame.
     /// Evicts a page if neccessary
-    std::unique_ptr<char[]> AllocateFrameBuffer(std::unique_lock<std::mutex>& latch);
+    std::unique_ptr<char[]> AllocateFrameBuffer(std::unique_lock<std::mutex>& directory_latch);
 
     /// Unfix a frame.
     /// The frame is written back eventually when is_dirty is passed.
-    void UnfixPage(FileSystemBufferFrame& frame, bool is_dirty);
+    void UnfixPage(BufferFrame& frame, bool is_dirty);
 
    public:
     /// Constructor.
@@ -268,7 +269,7 @@ class FileSystemBuffer {
     /// loaded page is used.
     BufferRef FixPage(const FileRef& file, uint64_t page_id, bool exclusive);
     /// Flush all file frames to disk
-    void FlushFile(const FileRef& file);
+    void FlushFile(const FileRef& file, std::unique_lock<std::shared_mutex>* file_latch = nullptr);
     /// Flush file matching name to disk
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
