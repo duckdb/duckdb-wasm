@@ -47,12 +47,12 @@ class FileExplorer extends React.Component<Props> {
                         Done
                     </Button>
                 </div>
-                <FileDropzone onDrop={this.props.onDrop} />
                 <div className={styles.registeredFileList}>
                     {this.props.registeredFiles
                         .toArray()
                         .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}
                 </div>
+                <FileDropzone onDrop={this.props.onDrop} />
             </div>
         );
     }
