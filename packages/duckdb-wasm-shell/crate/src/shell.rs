@@ -79,9 +79,13 @@ impl Shell {
         self.input.configure(&self.terminal);
 
         // Register on_key callback
-        let callback = Closure::wrap(Box::new(move |e: OnKeyEvent| {
-            Shell::on_key(Shell::global().lock().unwrap(), e);
-        }) as Box<dyn FnMut(_)>);
+        let callback =
+            Closure::wrap(
+                Box::new(move |e: OnKeyEvent| match Shell::global().try_lock() {
+                    Ok(s) => Shell::on_key(s, e),
+                    Err(_) => return,
+                }) as Box<dyn FnMut(_)>,
+            );
         self.terminal.on_key(callback.as_ref().unchecked_ref());
         callback.forget();
     }
