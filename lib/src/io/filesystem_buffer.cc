@@ -241,6 +241,7 @@ FileSystemBuffer::FileRef FileSystemBuffer::OpenFile(std::string_view path,
     auto file_ptr = std::make_unique<BufferedFile>(file_id, path, std::move(handle));
     auto& file = *file_ptr;
     files.insert({file_id, std::move(file_ptr)});
+    files_by_path.insert({file.path, file_id});
     if (!file.handle) {
         file.handle = filesystem->OpenFile(
             file.path.c_str(), duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE);
@@ -287,26 +288,56 @@ void FileSystemBuffer::GrowFileIfRequired(BufferedFile& file, std::unique_lock<s
 
 void FileSystemBuffer::ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_latch) {
     // Any open file references?
+    // If there are outstanding release calls, we just skip the release.
     assert(file.file_refs > file.file_refs_released);
-    auto ref_releases = ++file.file_refs_released;
-    auto refs = file.file_refs;
-    if (refs > ref_releases) return;
 
-    // Flush all file frames.
-    // Resolve the next iterator before flushing a frame since we might release the directory latch.
     auto file_id = file.file_id;
-    auto lb = frames.lower_bound(BuildFrameID(file_id));
-    auto ub = frames.lower_bound(BuildFrameID(file_id + 1));
-    auto it = lb;
-    while (it != ub && it != frames.end()) {
-        auto next = it++;
-        FlushFrame(next->second, dir_latch);
+    uint64_t file_refs;
+    std::map<uint64_t, FileSystemBufferFrame>::iterator lb;
+    std::map<uint64_t, FileSystemBufferFrame>::iterator ub;
+    while (true) {
+        // Still has other file refs?
+        // Stop releasing the file.
+        file_refs = file.file_refs;
+        if (file_refs > (file.file_refs_released + 1)) {
+            ++file.file_refs_released;
+            return;
+        }
+
+        // Flush all file frames.
+        // Resolve the next iterator before flushing a frame since we might need to release the directory latch.
+        lb = frames.lower_bound(BuildFrameID(file_id));
+        ub = frames.lower_bound(BuildFrameID(file_id + 1));
+        auto it = lb;
+        while (it != ub && it != frames.end()) {
+            auto next = it++;
+            FlushFrame(next->second, dir_latch);
+        }
+
+        // Someone might have opened the file while we flushed the file frames.
+        // In that case, we retry the flushing.
+        if (file.file_refs != file_refs) continue;
+
+        // Otherwise we know the exact number of file refs and flushed everything.
+        // If we're the last one, we can clean up.
+        break;
     }
 
-    // References while we released the directory latch?
-    if (file.file_refs > refs) return;
+    // No longer responsible for cleanup?
+    // Might happen if someone opens the file while we flush frames.
+    // The release call of that file will cleanup memory.
+    if (file_refs != ++file.file_refs_released) return;
 
-    // Erase all file frames
+    // Erase all frames.
+    // The previous ref latch ensures, that we're the only one that is currently working with the file.
+    // It is therefore safe to drop all file frames here.
+    for (auto it = lb; it != ub && it != frames.end(); ++it) {
+        if (it->second.lru_position != lru.end()) {
+            lru.erase(it->second.lru_position);
+        } else if (it->second.fifo_position != fifo.end()) {
+            fifo.erase(it->second.fifo_position);
+        }
+    }
     frames.erase(lb, ub);
 
     // Erase file
@@ -422,8 +453,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictBufferFrame(std::unique_lock<std:
     // Erase from queues
     if (frame->lru_position != lru.end()) {
         lru.erase(frame->lru_position);
-    } else {
-        assert(frame->fifo_position != fifo.end());
+    } else if (frame->fifo_position != fifo.end()) {
         fifo.erase(frame->fifo_position);
     }
     // Erase from dictionary
