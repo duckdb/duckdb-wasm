@@ -32,7 +32,7 @@
     },
     "devDependencies": {
         "@types/classnames": "^2.3.1",
-        "@types/node": "^15.6.1",
+        "@types/node": "^15.12.1",
         "@types/react-dom": "^17.0.5",
         "@types/react-router-dom": "^5.1.7",
         "@types/react-virtualized": "^9.21.11",
