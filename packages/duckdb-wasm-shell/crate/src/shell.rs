@@ -1,7 +1,6 @@
-use crate::arrow_printer::pretty_format_batches_fmt;
+use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
-use crate::prettytable::format::consts::FORMAT_BOX_CHARS;
 use crate::prompt_buffer::PromptBuffer;
 use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
@@ -43,6 +42,8 @@ pub struct Shell {
     settings: ShellSettings,
     /// The actual xterm terminal instance
     terminal: Terminal,
+    /// The terminal width
+    terminal_width: usize,
     /// The runtime
     runtime: Option<ShellRuntime>,
     /// The current line buffer
@@ -63,6 +64,7 @@ impl Shell {
         Self {
             settings: ShellSettings::default(),
             terminal: Terminal::construct(None),
+            terminal_width: 100,
             runtime: None,
             input: PromptBuffer::default(),
             input_enabled: false,
@@ -75,8 +77,9 @@ impl Shell {
     /// Attach to a terminal
     pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime) {
         self.terminal = term;
+        self.terminal_width = self.terminal.get_cols() as usize;
         self.runtime = Some(runtime);
-        self.input.configure(&self.terminal);
+        self.input.configure(self.terminal_width);
 
         // Register on_key callback
         let callback =
@@ -220,8 +223,12 @@ impl Shell {
         };
 
         // Print the table
-        let pretty_table =
-            pretty_format_batches_fmt(&batches, &FORMAT_BOX_CHARS).unwrap_or_default();
+        let pretty_table = pretty_format_batches(
+            &batches,
+            shell.terminal_width as u16,
+            UTF8_BORDERS_NO_HORIZONTAL,
+        )
+        .unwrap_or_default();
         shell.write(&pretty_table);
 
         // Print elapsed time (if requested)

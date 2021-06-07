@@ -21,37 +21,32 @@
 //! Utilities for printing record batches. Note this module is not
 //! available unless `feature = "prettyprint"` is enabled.
 
-use arrow::{array::ArrayRef, record_batch::RecordBatch};
+use arrow::record_batch::RecordBatch;
 
-use crate::prettytable::format;
-use crate::prettytable::{Cell, Row, Table};
+pub use crate::comfy::presets::ASCII_BORDERS_NO_HORIZONTAL;
+pub use crate::comfy::presets::UTF8_BORDERS_NO_HORIZONTAL;
+pub use crate::comfy::ContentArrangement;
+use crate::comfy::{Cell, Row, Table};
 
 use arrow::error::Result;
 
 use arrow::util::display::array_value_to_string;
 
 ///! Create a visual representation of record batches
-pub fn pretty_format_batches(results: &[RecordBatch]) -> Result<String> {
-    Ok(create_table(results, &format::consts::FORMAT_NO_LINESEP_WITH_TITLE)?.to_string())
-}
-
-///! Create a visual representation of record batches
-pub fn pretty_format_batches_fmt(
+pub fn pretty_format_batches(
     results: &[RecordBatch],
-    fmt: &format::TableFormat,
+    table_width: u16,
+    presets: &str,
 ) -> Result<String> {
-    Ok(create_table(results, fmt)?.to_string())
-}
-
-///! Create a visual representation of columns
-pub fn pretty_format_columns(col_name: &str, results: &[ArrayRef]) -> Result<String> {
-    Ok(create_column(col_name, results)?.to_string())
+    Ok(create_table(results, table_width, presets)?.to_string())
 }
 
 ///! Convert a series of record batches into a table
-fn create_table(results: &[RecordBatch], format: &format::TableFormat) -> Result<Table> {
+fn create_table(results: &[RecordBatch], table_width: u16, presets: &str) -> Result<Table> {
     let mut table = Table::new();
-    table.set_format(*format);
+    table.load_preset(presets);
+    table.set_table_width(table_width);
+    table.set_content_arrangement(ContentArrangement::Dynamic);
 
     if results.is_empty() {
         return Ok(table);
@@ -61,9 +56,9 @@ fn create_table(results: &[RecordBatch], format: &format::TableFormat) -> Result
 
     let mut header = Vec::new();
     for field in schema.fields() {
-        header.push(Cell::new(&field.name()));
+        header.push(Cell::new(field.name().as_str()));
     }
-    table.set_titles(Row::new(header));
+    table.set_header(Row::from(header));
 
     for batch in results {
         for row in 0..batch.num_rows() {
@@ -72,28 +67,7 @@ fn create_table(results: &[RecordBatch], format: &format::TableFormat) -> Result
                 let column = batch.column(col);
                 cells.push(Cell::new(&array_value_to_string(&column, row)?));
             }
-            table.add_row(Row::new(cells));
-        }
-    }
-
-    Ok(table)
-}
-
-fn create_column(field: &str, columns: &[ArrayRef]) -> Result<Table> {
-    let mut table = Table::new();
-    table.set_format(*format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
-
-    if columns.is_empty() {
-        return Ok(table);
-    }
-
-    let header = vec![Cell::new(field)];
-    table.set_titles(Row::new(header));
-
-    for col in columns {
-        for row in 0..col.len() {
-            let cells = vec![Cell::new(&array_value_to_string(&col, row)?)];
-            table.add_row(Row::new(cells));
+            table.add_row(Row::from(cells));
         }
     }
 
@@ -104,8 +78,8 @@ fn create_column(field: &str, columns: &[ArrayRef]) -> Result<Table> {
 mod tests {
     use arrow::{
         array::{
-            self, new_null_array, Array, Date32Array, Date64Array, PrimitiveBuilder, StringBuilder,
-            StringDictionaryBuilder, Time32MillisecondArray, Time32SecondArray,
+            self, new_null_array, Array, ArrayRef, Date32Array, Date64Array, PrimitiveBuilder,
+            StringBuilder, StringDictionaryBuilder, Time32MillisecondArray, Time32SecondArray,
             Time64MicrosecondArray, Time64NanosecondArray, TimestampMicrosecondArray,
             TimestampMillisecondArray, TimestampNanosecondArray, TimestampSecondArray,
         },
@@ -143,43 +117,17 @@ mod tests {
             ],
         )?;
 
-        let table = pretty_format_batches(&[batch])?;
+        let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL)?;
 
         let expected = vec![
             "+---+-----+",
             "| a | b   |",
-            "+---+-----+",
+            "+===+=====+",
             "| a | 1   |",
             "| b |     |",
             "|   | 10  |",
             "| d | 100 |",
             "+---+-----+",
-        ];
-
-        let actual: Vec<&str> = table.lines().collect();
-
-        assert_eq!(expected, actual, "Actual result:\n{}", table);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_pretty_format_columns() -> Result<()> {
-        let columns = vec![
-            Arc::new(array::StringArray::from(vec![
-                Some("a"),
-                Some("b"),
-                None,
-                Some("d"),
-            ])) as ArrayRef,
-            Arc::new(array::StringArray::from(vec![Some("e"), None, Some("g")])),
-        ];
-
-        let table = pretty_format_columns("a", &columns)?;
-
-        let expected = vec![
-            "+---+", "| a |", "+---+", "| a |", "| b |", "|   |", "| d |", "| e |", "|   |",
-            "| g |", "+---+",
         ];
 
         let actual: Vec<&str> = table.lines().collect();
@@ -207,12 +155,12 @@ mod tests {
         // define data (null)
         let batch = RecordBatch::try_new(schema, arrays).unwrap();
 
-        let table = pretty_format_batches(&[batch]).unwrap();
+        let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL).unwrap();
 
         let expected = vec![
             "+---+---+---+",
             "| a | b | c |",
-            "+---+---+---+",
+            "+===+===+===+",
             "|   |   |   |",
             "|   |   |   |",
             "|   |   |   |",
@@ -242,12 +190,12 @@ mod tests {
 
         let batch = RecordBatch::try_new(schema, vec![array])?;
 
-        let table = pretty_format_batches(&[batch])?;
+        let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL)?;
 
         let expected = vec![
             "+-------+",
             "| d1    |",
-            "+-------+",
+            "+=======+",
             "| one   |",
             "|       |",
             "| three |",
@@ -278,7 +226,8 @@ mod tests {
             )]));
             let batch = RecordBatch::try_new(schema, vec![Arc::new(array)]).unwrap();
 
-            let table = pretty_format_batches(&[batch]).expect("formatting batches");
+            let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL)
+                .expect("formatting batches");
 
             let expected = $EXPECTED_RESULT;
             let actual: Vec<&str> = table.lines().collect();
@@ -292,7 +241,7 @@ mod tests {
         let expected = vec![
             "+---------------------+",
             "| f                   |",
-            "+---------------------+",
+            "+=====================+",
             "| 1970-05-09 14:25:11 |",
             "|                     |",
             "+---------------------+",
@@ -305,7 +254,7 @@ mod tests {
         let expected = vec![
             "+-------------------------+",
             "| f                       |",
-            "+-------------------------+",
+            "+=========================+",
             "| 1970-01-01 03:05:11.111 |",
             "|                         |",
             "+-------------------------+",
@@ -318,7 +267,7 @@ mod tests {
         let expected = vec![
             "+----------------------------+",
             "| f                          |",
-            "+----------------------------+",
+            "+============================+",
             "| 1970-01-01 00:00:11.111111 |",
             "|                            |",
             "+----------------------------+",
@@ -331,7 +280,7 @@ mod tests {
         let expected = vec![
             "+-------------------------------+",
             "| f                             |",
-            "+-------------------------------+",
+            "+===============================+",
             "| 1970-01-01 00:00:00.011111111 |",
             "|                               |",
             "+-------------------------------+",
@@ -344,7 +293,7 @@ mod tests {
         let expected = vec![
             "+------------+",
             "| f          |",
-            "+------------+",
+            "+============+",
             "| 1973-05-19 |",
             "|            |",
             "+------------+",
@@ -357,7 +306,7 @@ mod tests {
         let expected = vec![
             "+------------+",
             "| f          |",
-            "+------------+",
+            "+============+",
             "| 2005-03-18 |",
             "|            |",
             "+------------+",
@@ -370,7 +319,7 @@ mod tests {
         let expected = vec![
             "+----------+",
             "| f        |",
-            "+----------+",
+            "+==========+",
             "| 00:18:31 |",
             "|          |",
             "+----------+",
@@ -383,7 +332,7 @@ mod tests {
         let expected = vec![
             "+--------------+",
             "| f            |",
-            "+--------------+",
+            "+==============+",
             "| 03:05:11.111 |",
             "|              |",
             "+--------------+",
@@ -396,7 +345,7 @@ mod tests {
         let expected = vec![
             "+-----------------+",
             "| f               |",
-            "+-----------------+",
+            "+=================+",
             "| 00:00:11.111111 |",
             "|                 |",
             "+-----------------+",
@@ -409,7 +358,7 @@ mod tests {
         let expected = vec![
             "+--------------------+",
             "| f                  |",
-            "+--------------------+",
+            "+====================+",
             "| 00:00:00.011111111 |",
             "|                    |",
             "+--------------------+",
@@ -452,12 +401,12 @@ mod tests {
 
         let batch = RecordBatch::try_new(schema, vec![dm])?;
 
-        let table = pretty_format_batches(&[batch])?;
+        let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL)?;
 
         let expected = vec![
             "+-------+",
             "| f     |",
-            "+-------+",
+            "+=======+",
             "| 1.01  |",
             "|       |",
             "| 2.00  |",
@@ -493,9 +442,9 @@ mod tests {
 
         let batch = RecordBatch::try_new(schema, vec![dm])?;
 
-        let table = pretty_format_batches(&[batch])?;
+        let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL)?;
         let expected = vec![
-            "+------+", "| f    |", "+------+", "| 101  |", "|      |", "| 200  |", "| 3040 |",
+            "+------+", "| f    |", "+======+", "| 101  |", "|      |", "| 200  |", "| 3040 |",
             "+------+",
         ];
 

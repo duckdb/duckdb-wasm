@@ -39,6 +39,8 @@ lazy_static = "1.4.0"
 encode_unicode = "0.3.6"
 unicode-width = "0.1.8"
 ropey = "1.2.0"
+strum = "^0.20"
+strum_macros = "^0.20"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.12"
