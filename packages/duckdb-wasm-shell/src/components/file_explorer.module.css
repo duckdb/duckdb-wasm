@@ -34,11 +34,11 @@
     margin: 0px 8px;
 }
 
-.registeredFileList {
+.registered_file_list {
     padding: 8px 0px;
 }
 
-.registeredFileListEntry {
+.registered_file_list_entry {
     padding: 4px 16px 4px 24px;
     display: grid;
     width: 100%;
@@ -46,11 +46,11 @@
     grid-template-rows: 32px;
 }
 
-.registeredFileListEntry:hover {
+.registered_file_list_entry:hover {
     background-color: rgb(200, 200, 200);
 }
 
-.registeredFileListEntryIcon {
+.registered_file_list_entryIcon {
     grid-row: 1;
     grid-column: 1;
     display: grid;
@@ -58,7 +58,7 @@
     align-items: center;
 }
 
-.registeredFileListEntryHeader {
+.registered_file_list_entry_header {
     grid-column: 2;
     font-size: 0.95rem;
     display: grid;

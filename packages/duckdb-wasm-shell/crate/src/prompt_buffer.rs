@@ -34,8 +34,8 @@ impl PromptBuffer {
     }
 
     /// Configure the terminal
-    pub fn configure(&mut self, term: &Terminal) {
-        self.terminal_width = term.get_cols() as usize;
+    pub fn configure(&mut self, width: usize) {
+        self.terminal_width = width;
     }
 
     /// Flush output buffer to the terminal

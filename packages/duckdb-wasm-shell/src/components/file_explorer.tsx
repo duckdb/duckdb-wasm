@@ -22,13 +22,13 @@ interface Props {
 class FileExplorer extends React.Component<Props> {
     public renderLoadedFileEntry(metadata: model.FileInfo) {
         return (
-            <div key={metadata.name} className={styles.registeredFileListEntry}>
-                <div className={styles.registeredFileListEntryIcon}>
+            <div key={metadata.name} className={styles.registered_file_list_entry}>
+                <div className={styles.registered_file_list_entryIcon}>
                     <svg width="20px" height="20px">
                         <use xlinkHref={`${icon_file}#sym`} />
                     </svg>
                 </div>
-                <div className={styles.registeredFileListEntryHeader}>{metadata.name}</div>
+                <div className={styles.registered_file_list_entry_header}>{metadata.name}</div>
             </div>
         );
     }
@@ -47,7 +47,7 @@ class FileExplorer extends React.Component<Props> {
                         Done
                     </Button>
                 </div>
-                <div className={styles.registeredFileList}>
+                <div className={styles.registered_file_list}>
                     {this.props.registeredFiles
                         .toArray()
                         .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}
