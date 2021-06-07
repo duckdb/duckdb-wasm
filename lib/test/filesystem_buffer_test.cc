@@ -243,7 +243,7 @@ TEST(FileSystemBufferTest, LRUEviction) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferManagerTest, MultithreadParallelFix) {
+TEST(BufferManagerTest, ParallelFix) {
     auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto filepath = CreateTestFile();
     std::ofstream(filepath).close();
@@ -269,7 +269,7 @@ TEST(BufferManagerTest, MultithreadParallelFix) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferManagerTest, MultithreadExclusiveAccess) {
+TEST(BufferManagerTest, ParallelExclusiveAccess) {
     auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto filepath = CreateTestFile();
     std::ofstream(filepath).close();
@@ -280,6 +280,7 @@ TEST(BufferManagerTest, MultithreadExclusiveAccess) {
         auto page_data = page.GetData();
         ASSERT_EQ(page_data.size(), buffer->GetPageSize());
         std::memset(page_data.data(), 0, buffer->GetPageSize());
+        page.MarkAsDirty();
     }
     std::vector<std::thread> threads;
     for (size_t i = 0; i < 4; ++i) {
@@ -289,6 +290,7 @@ TEST(BufferManagerTest, MultithreadExclusiveAccess) {
                 auto page_data = page.GetData();
                 uint64_t& value = *reinterpret_cast<uint64_t*>(page_data.data());
                 ++value;
+                page.MarkAsDirty();
             }
         });
     }
@@ -301,6 +303,182 @@ TEST(BufferManagerTest, MultithreadExclusiveAccess) {
     auto page_data = page.GetData();
     uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
     EXPECT_EQ(4000, value);
+}
+
+// NOLINTNEXTLINE
+TEST(BufferManagerTest, ParallelScans) {
+    constexpr size_t PageCount = 100;
+    constexpr size_t ThreadCount = 12;
+
+    // Prepare test files
+    std::vector<std::filesystem::path> test_files{
+        CreateTestFile(),
+        CreateTestFile(),
+        CreateTestFile(),
+        CreateTestFile(),
+    };
+    {
+        auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+        for (auto& file_path : test_files) {
+            // Open file
+            std::ofstream(file_path).close();
+            fs::resize_file(file_path, PageCount * buffer->GetPageSize());
+            auto file_ref = buffer->OpenFile(file_path.c_str());
+
+            // Zero out pages
+            for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
+                auto page = buffer->FixPage(file_ref, page_id, true);
+                auto page_data = page.GetData();
+                ASSERT_EQ(page_data.size(), buffer->GetPageSize());
+                std::memset(page_data.data(), 0, buffer->GetPageSize());
+                page.MarkAsDirty();
+            }
+        }
+        // Let the buffer manager be destroyed here so that the caches are
+        // empty before running the actual test.
+    }
+
+    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    std::vector<std::thread> threads;
+
+    for (size_t i = 0; i < 4; ++i) {
+        threads.emplace_back([i, &buffer, &test_files] {
+            std::mt19937_64 engine{i};
+            // Out of 20 accesses, 12 are from segment 0, 5 from segment 1,
+            // 2 from segment 2, and 1 from segment 3.
+            std::discrete_distribution<uint16_t> segment_distr{12.0, 5.0, 2.0, 1.0};
+
+            for (size_t j = 0; j < 100; ++j) {
+                // Open a file
+                uint16_t file_id = segment_distr(engine);
+                auto file = buffer->OpenFile(test_files[file_id].c_str());
+
+                // Scan all pages
+                uint64_t scan_sum = 0;
+                for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
+                    auto page = buffer->FixPage(file, page_id, false);
+                    auto page_data = page.GetData();
+                    uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
+                    ASSERT_EQ(value, 0) << "j=" << j << " page=" << page_id;
+                }
+            }
+        });
+    }
+
+    // Join all threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
+}
+
+// NOLINTNEXTLINE
+TEST(BufferManagerTest, ParallelReaderWriter) {
+    constexpr size_t PageCount = 10;
+    constexpr size_t ThreadCount = 4;
+
+    // Prepare test files
+    std::vector<std::filesystem::path> test_files{
+        CreateTestFile(),
+        CreateTestFile(),
+        CreateTestFile(),
+        CreateTestFile(),
+    };
+    {
+        auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+        for (auto& file_path : test_files) {
+            // Open file
+            std::ofstream(file_path).close();
+            fs::resize_file(file_path, PageCount * buffer->GetPageSize());
+            auto file_ref = buffer->OpenFile(file_path.c_str());
+
+            // Zero out pages
+            for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
+                auto page = buffer->FixPage(file_ref, page_id, true);
+                auto page_data = page.GetData();
+                ASSERT_EQ(page_data.size(), buffer->GetPageSize());
+                std::memset(page_data.data(), 0, buffer->GetPageSize());
+                page.MarkAsDirty();
+            }
+        }
+        // Let the buffer manager be destroyed here so that the caches are
+        // empty before running the actual test.
+    }
+
+    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    std::vector<std::thread> threads;
+
+    for (size_t i = 0; i < ThreadCount; ++i) {
+        threads.emplace_back([i, &buffer, &test_files] {
+            std::mt19937_64 engine{i};
+            // 5% of queries are scans.
+            std::bernoulli_distribution scan_distr{0.05};
+            // Number of pages accessed by a point query is geometrically
+            // distributed.
+            std::geometric_distribution<size_t> num_pages_distr{0.5};
+            // 60% of point queries are reads.
+            std::bernoulli_distribution reads_distr{0.6};
+            // Out of 20 accesses, 12 are from segment 0, 5 from segment 1,
+            // 2 from segment 2, and 1 from segment 3.
+            std::discrete_distribution<uint16_t> segment_distr{12.0, 5.0, 2.0, 1.0};
+            // Page accesses for point queries are uniformly distributed in
+            // [0, 100].
+            std::uniform_int_distribution<uint64_t> page_distr{0, PageCount};
+            // Track the sums that we saw during scans.
+            // These sums must increase monotonically per thread.
+            std::vector<uint64_t> scan_sums(test_files.size(), 0);
+
+            for (size_t j = 0; j < 100; ++j) {
+                // Open a file
+                uint16_t file_id = segment_distr(engine);
+                auto file = buffer->OpenFile(test_files[file_id].c_str());
+
+                // Run a table scan?
+                if (scan_distr(engine)) {
+                    // Scan all pages
+                    uint64_t scan_sum = 0;
+                    for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
+                        auto page = buffer->FixPage(file, page_id, false);
+                        auto page_data = page.GetData();
+                        uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
+                        scan_sum += value;
+                    }
+                    EXPECT_GE(scan_sum, scan_sums[file_id]);
+                    scan_sums[file_id] = scan_sum;
+                } else {
+                    // Otherwise run a point query
+                    auto num_pages = num_pages_distr(engine) + 1;
+                    // For point queries all accesses but the last are always
+                    // reads. Only the last is potentially a write. Also,
+                    // all pages but the last are held for the entire duration
+                    // of the query.
+                    std::vector<TestableFileSystemBuffer::BufferRef> pages;
+                    for (size_t page_number = 0; page_number < num_pages - 1; ++page_number) {
+                        pages.push_back(buffer->FixPage(file, page_distr(engine), false));
+                    }
+                    // Unfix all pages before accessing the last one
+                    // (potentially exclusively) to avoid deadlocks.
+                    pages.clear();
+                    // Either read or write the page
+                    if (reads_distr(engine)) {
+                        // Simulate a read of the page
+                        buffer->FixPage(file, page_distr(engine), false);
+                    } else {
+                        // Increment the value within the page
+                        auto page = buffer->FixPage(file, page_distr(engine), true);
+                        auto page_data = page.GetData();
+                        uint64_t& value = *reinterpret_cast<uint64_t*>(page_data.data());
+                        ++value;
+                        page.MarkAsDirty();
+                    }
+                }
+            }
+        });
+    }
+
+    // Join all threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
 }
 
 }  // namespace

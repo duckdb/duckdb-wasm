@@ -82,12 +82,12 @@ lib_perf: lib_relwithdebinfo
 # Test the core library
 .PHONY: lib_tests
 lib_tests: lib
-	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
+	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*BufferManagerTest.ParallelScans
 
 # Debug the core library
 .PHONY: lib_tests
 lib_tests_lldb: lib
-	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
+	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*ParallelScans*
 
 # Debug the core library
 .PHONY: lib_tests
