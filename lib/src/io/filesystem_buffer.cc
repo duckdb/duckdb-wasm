@@ -287,10 +287,15 @@ void FileSystemBuffer::GrowFileIfRequired(BufferedFile& file, std::unique_lock<s
 }
 
 void FileSystemBuffer::ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_latch) {
-    // Any open file references?
-    // If there are outstanding release calls, we just skip the release.
     assert(file.file_refs > file.file_refs_released);
 
+    // First try to flush all file frames concurrently.
+    // This part is a little bit brittle since we don't want to hold the directory latch while flushing file frames.
+    // In theory, a thread *could* starve here if someone plays the thread really badly.
+    // (I.e. opening & closing files in quick succession while the releasing thread keeps flushing frames)
+    //
+    // We just don't care here as its very likely that the starving thread will just break out with the exit condition.
+    // (Flushing already flushed frames will hold the directory latch)
     auto file_id = file.file_id;
     uint64_t file_refs;
     std::map<uint64_t, FileSystemBufferFrame>::iterator lb;
