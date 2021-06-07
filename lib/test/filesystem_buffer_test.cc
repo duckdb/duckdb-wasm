@@ -309,6 +309,7 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
 TEST(BufferManagerTest, ParallelScans) {
     constexpr size_t PageCount = 100;
     constexpr size_t ThreadCount = 12;
+    constexpr size_t JobCount = 100;
 
     // Prepare test files
     std::vector<std::filesystem::path> test_files{
@@ -348,7 +349,7 @@ TEST(BufferManagerTest, ParallelScans) {
             // 2 from segment 2, and 1 from segment 3.
             std::discrete_distribution<uint16_t> segment_distr{12.0, 5.0, 2.0, 1.0};
 
-            for (size_t j = 0; j < 100; ++j) {
+            for (size_t j = 0; j < JobCount; ++j) {
                 // Open a file
                 uint16_t file_id = segment_distr(engine);
                 auto file = buffer->OpenFile(test_files[file_id].c_str());
@@ -375,6 +376,7 @@ TEST(BufferManagerTest, ParallelScans) {
 TEST(BufferManagerTest, ParallelReaderWriter) {
     constexpr size_t PageCount = 10;
     constexpr size_t ThreadCount = 4;
+    constexpr size_t JobCount = 100;
 
     // Prepare test files
     std::vector<std::filesystem::path> test_files{
@@ -427,7 +429,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
             // These sums must increase monotonically per thread.
             std::vector<uint64_t> scan_sums(test_files.size(), 0);
 
-            for (size_t j = 0; j < 100; ++j) {
+            for (size_t j = 0; j < JobCount; ++j) {
                 // Open a file
                 uint16_t file_id = segment_distr(engine);
                 auto file = buffer->OpenFile(test_files[file_id].c_str());
