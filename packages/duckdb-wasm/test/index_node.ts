@@ -4,14 +4,6 @@ import path from 'path';
 import Worker from 'web-worker';
 import fs from 'fs';
 
-// Configure the worker
-const WORKER_CONFIG = duckdb_async.configure({
-    worker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
-    workerEH: path.resolve(__dirname, './duckdb-node-async-eh.worker.js'),
-    wasm: path.resolve(__dirname, './duckdb.wasm'),
-    wasmEH: path.resolve(__dirname, './duckdb-eh.wasm'),
-});
-
 // Loading debug symbols, especially for WASM take insanely long so we just disable the test timeout
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
@@ -47,6 +39,14 @@ let adb: duckdb_async.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
+    // Configure the worker
+    const WORKER_CONFIG = await duckdb_async.configure({
+        worker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
+        workerEH: path.resolve(__dirname, './duckdb-node-async-eh.worker.js'),
+        wasm: path.resolve(__dirname, './duckdb.wasm'),
+        wasmEH: path.resolve(__dirname, './duckdb-eh.wasm'),
+    });
+
     const logger = new duckdb_sync.VoidLogger();
     db = new duckdb_sync.DuckDB(logger, duckdb_sync.NodeRuntime, path.resolve(__dirname, './duckdb-eh.wasm'));
     await db.open();
