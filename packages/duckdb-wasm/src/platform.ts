@@ -1,4 +1,4 @@
-import * as check from 'wasm-check';
+import * as check from 'wasm-feature-detect';
 
 export interface DuckDBBundles {
     worker: string;
@@ -14,9 +14,9 @@ export interface DuckDBConfig {
     workerURL: string;
 }
 
-export function configure(bundles: DuckDBBundles): DuckDBConfig {
-    if (check.feature.exceptions) {
-        if (check.feature.threads && bundles.workerEHMT && bundles.wasmEHMT) {
+export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
+    if (await check.exceptions()) {
+        if ((await check.threads()) && bundles.workerEHMT && bundles.wasmEHMT) {
             return {
                 workerURL: bundles.workerEHMT,
                 wasmURL: bundles.wasmEHMT,
