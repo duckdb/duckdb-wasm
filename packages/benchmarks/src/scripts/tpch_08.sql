@@ -1,13 +1,19 @@
 select
     o_year,
-    sum(case
-        when nation = 'BRAZIL' then volume
-        else 0
-    end) / sum(volume) as mkt_share
+    sum(
+        case
+            when nation = 'BRAZIL' then volume
+            else 0
+        end
+    ) / sum(volume) as mkt_share
 from
     (
         select
-            extract(year from o_orderdate) as o_year,
+            extract(
+                year
+                from
+                    o_orderdate
+            ) as o_year,
             l_extendedprice * (1 - l_discount) as volume,
             n2.n_name as nation
         from
@@ -28,8 +34,8 @@ from
             and n1.n_regionkey = r_regionkey
             and r_name = 'AMERICA'
             and s_nationkey = n2.n_nationkey
-            and o_orderdate between cast('1995-01-01' as date)
-            and cast('1996-12-31' as date)
+            and o_orderdate between '1995-01-01'
+            and '1996-12-31'
     ) as all_nations
 group by
     o_year

@@ -12,7 +12,7 @@ select
 from
     lineitem
 where
-    l_shipdate <= cast('1998-09-02' as date)
+    l_shipdate <= '1998-09-02'
 group by
     l_returnflag,
     l_linestatus
