@@ -67,6 +67,21 @@ class InputFileStreamBuffer : public std::streambuf {
         auto data = buffer_.GetData();
         setg(data.data(), data.data(), data.data() + data.size());
     }
+    /// Constructor
+    InputFileStreamBuffer(const InputFileStreamBuffer& other)
+        : filesystem_buffer_(other.filesystem_buffer_),
+          file_(other.file_.Clone()),
+          buffer_(other.buffer_),
+          data_end_(other.data_end_),
+          next_page_id_(other.next_page_id_) {}
+    /// Constructor
+    InputFileStreamBuffer(InputFileStreamBuffer&& other)
+        : filesystem_buffer_(std::move(other.filesystem_buffer_)),
+          file_(std::move(other.file_)),
+          buffer_(std::move(other.buffer_)),
+          data_end_(other.data_end_),
+          next_page_id_(other.next_page_id_) {}
+
     /// Scan a slice of the file
     void Slice(uint64_t offset, uint64_t size);
 };
