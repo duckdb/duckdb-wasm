@@ -2,6 +2,8 @@ const puppeteer = require('puppeteer');
 
 process.env.CHROME_BIN = puppeteer.executablePath();
 
+const JS_TIMEOUT = 90000000;
+
 module.exports = function (config) {
     config.set({
         basePath: '../..',
@@ -38,9 +40,9 @@ module.exports = function (config) {
         logLevel: config.LOG_INFO,
         autoWatch: true,
         singleRun: false,
-        browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
+        // browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
         // browsers: ['ChromeHeadlessNoSandbox'],
-        // browsers: [],
+        browsers: [],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
@@ -50,9 +52,11 @@ module.exports = function (config) {
         client: {
             captureConsole: true,
         },
-
-        concurrency: 1, // only one browser at a time
-        browserNoActivityTimeout: 999999999,
-        pingTimeout: 999999999,
+        captureTimeout: JS_TIMEOUT,
+        browserDisconnectTimeout: JS_TIMEOUT,
+        browserDisconnectTolerance: 1,
+        browserNoActivityTimeout: JS_TIMEOUT,
+        processKillTimeout: JS_TIMEOUT,
+        concurrency: 1,
     });
 };

@@ -35,16 +35,16 @@ export async function benchmarkCompetitions(
         await db.load(`scan_table`, null, table);
 
         if (db.implements('scanInt')) {
-            scans.push(
-                add(db.name, async () => {
+            await scans.push(
+                await add(db.name, async () => {
                     await db.scanInt();
                 }),
             );
         }
 
         if (db.implements('sum')) {
-            sums.push(
-                add(db.name, async () => {
+            await sums.push(
+                await add(db.name, async () => {
                     const val = await db.sum();
 
                     if (val != gaussSum(tupleCount)) {
@@ -106,7 +106,7 @@ export async function benchmarkCompetitions(
     }
     console.log('Importing TPCH data');
     for (let db of dbs) {
-        if (!db.implements('simpleJoin')) continue;
+        if (!db.implements('join')) continue;
 
         console.log(db.name);
         await db.init();
@@ -120,8 +120,8 @@ export async function benchmarkCompetitions(
             await db.load(k, `${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`, v);
         }
 
-        primaryJoins.push(
-            add(db.name, async () => {
+        await primaryJoins.push(
+            await add(db.name, async () => {
                 await db.join();
             }),
         );
@@ -130,8 +130,8 @@ export async function benchmarkCompetitions(
     for (let i = 1; i <= 22; i++) {
         for (let db of dbs) {
             if (db.implements('tpch') && db.implements(`tpch-${i}`)) {
-                tpchs[i].push(
-                    add(db.name, async () => {
+                await tpchs[i].push(
+                    await add(db.name, async () => {
                         await db.tpch(i);
                     }),
                 );

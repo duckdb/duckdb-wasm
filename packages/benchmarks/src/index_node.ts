@@ -75,7 +75,7 @@ async function main() {
             //         await this.db.addFilePath(path, path);
             //     }
             // })(adb),
-            // new ArqueroWrapper(),
+            new ArqueroWrapper(),
             // new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
             // new NanoSQLWrapper(),

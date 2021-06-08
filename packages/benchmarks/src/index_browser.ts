@@ -38,7 +38,7 @@ async function main() {
     let worker: Worker | null = null;
 
     const logger = new duckdb_serial.VoidLogger();
-    db = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, '/static/duckdb.wasm');
+    db = new duckdb_serial.DuckDB(logger, duckdb_serial.BrowserRuntime, WORKER_CONFIG.wasmURL.toString());
     await db.open();
 
     worker = new Worker(WORKER_CONFIG.workerURL);
@@ -62,11 +62,11 @@ async function main() {
 
     await benchmarkCompetitions(
         [
-            new (class extends DuckDBSyncMatWrapper {
-                async registerFile(path: string): Promise<void> {
-                    await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
-                }
-            })(db),
+            // new (class extends DuckDBSyncMatWrapper {
+            //     async registerFile(path: string): Promise<void> {
+            //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+            //     }
+            // })(db),
             // new (class extends DuckDBSyncStreamWrapper {
             //     async registerFile(path: string): Promise<void> {
             //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));

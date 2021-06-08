@@ -475,7 +475,10 @@ export class AlaSQLWrapper implements DBWrapper {
 
     tpch(query: number): Promise<void> {
         const rows: any[] = alasql(tpchQueries[query]);
-        console.table(rows.slice(0, Math.min(rows.length, 10)));
+        if (!this.tpchRuns.has(query)) {
+            console.table(rows.slice(0, Math.min(rows.length, 10)));
+            this.tpchRuns.add(query);
+        }
         return Promise.resolve();
     }
 
@@ -595,9 +598,11 @@ export class ArqueroWrapper implements DBWrapper {
     name: string;
     schemas: { [key: string]: { [key: string]: string } } = {};
     tables: { [key: string]: aq.internal.Table } = {};
+    private tpchRuns: Set<number>;
 
     constructor() {
         this.name = 'Arquero';
+        this.tpchRuns = new Set<number>();
     }
 
     init(): Promise<void> {
@@ -639,11 +644,60 @@ export class ArqueroWrapper implements DBWrapper {
     }
 
     async tpch(query: number): Promise<void> {
-        return Promise.resolve();
+        if (query == 1) {
+            const result = this.tables['lineitem']
+                .filter((d: any) => d.l_shipdate <= aq.op.timestamp('1998-09-02'))
+                .groupby('l_returnflag', 'l_linestatus')
+                .derive({
+                    disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    charge: (d: any) => d.l_extendedprice * (1 - d.l_discount) * (1 + d.l_tax),
+                })
+                .rollup({
+                    sum_qty: (d: any) => aq.op.sum(d.l_quantity),
+                    sum_base_price: (d: any) => aq.op.sum(d.l_extendedprice),
+                    sum_disc_price: (d: any) => aq.op.sum(d.disc_price),
+                    sum_charge: (d: any) => aq.op.sum(d.charge),
+                    avg_qty: (d: any) => aq.op.average(d.l_quantity),
+                    avg_price: (d: any) => aq.op.average(d.l_extendedprice),
+                    avg_disc: (d: any) => aq.op.average(d.l_discount),
+                    count_order: (d: any) => aq.op.count(),
+                })
+                .orderby('l_returnflag', 'l_linestatus')
+                .objects();
+
+            if (!this.tpchRuns.has(query)) {
+                console.log(`${this.name}: TPCH-${query}`);
+                console.table(result);
+                this.tpchRuns.add(query);
+            }
+        } else if (query == 17) {
+            const a = this.tables['lineitem'];
+            const b = this.tables['part'];
+
+            const subquery = a.groupby('l_partkey').rollup({
+                l_avg: (d: any) => 0.2 * aq.op.average(d.l_quantity),
+            });
+
+            const result = a
+                .join(b, ['l_partkey', 'p_partkey'])
+                .join(subquery, ['l_partkey', 'l_partkey'])
+                .filter((d: any) => d.p_brand == 'Brand#23' && d.p_container == 'MED BOX' && d.l_quantity < d.l_avg)
+                .rollup({
+                    avg_yearly: (d: any) => aq.op.sum(d.l_extendedprice) / 7.0,
+                })
+                .objects();
+
+            if (!this.tpchRuns.has(query)) {
+                console.log(`${this.name}: TPCH-${query}`);
+                console.table(result);
+                this.tpchRuns.add(query);
+            }
+        }
     }
 
     implements(func: string): boolean {
-        if (func == 'tpch') return false;
+        if (func == 'tpch') return true;
+        if (func.startsWith('tpch')) return ['tpch-1', 'tpch-17'].includes(func);
         return true;
     }
 }
@@ -741,7 +795,7 @@ export class NanoSQLWrapper implements DBWrapper {
     }
 
     implements(func: string): boolean {
-        // if (func == 'simpleJoin') return false; // Holy shit nanoSQL is fucking slow. 118s for a 0.005 SF simple join.
+        if (func == 'join') return false; // Holy shit nanoSQL is fucking slow. 118s for a 0.005 SF simple join.
         if (func == 'tpch') return false;
         return true;
     }
