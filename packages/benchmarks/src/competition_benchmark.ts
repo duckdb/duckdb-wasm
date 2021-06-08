@@ -14,7 +14,7 @@ export async function benchmarkCompetitions(
     tableFetch: (path: string) => Promise<arrow.Table>,
     tpchScale: string,
 ) {
-    const tupleCount = 10000;
+    /*const tupleCount = 10000;
     /////////////////////////////////////////////
 
     let col = [];
@@ -79,7 +79,7 @@ export async function benchmarkCompetitions(
 
     for (let db of dbs) {
         await db.close();
-    }
+    }*/
 
     /////////////////////////////////////////////
 

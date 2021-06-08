@@ -75,11 +75,11 @@ async function main() {
             //         await this.db.addFilePath(path, path);
             //     }
             // })(adb),
-            new ArqueroWrapper(),
-            new LovefieldWrapper(),
+            // new ArqueroWrapper(),
+            // new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            new NanoSQLWrapper(),
-            new AlaSQLWrapper(),
+            // new NanoSQLWrapper(),
+            // new AlaSQLWrapper(),
         ],
         path.resolve(__dirname, '../../../data'),
         (path: string) => {
