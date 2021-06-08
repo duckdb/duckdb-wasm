@@ -9,9 +9,11 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <stack>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include "duckdb/common/file_system.hpp"
@@ -34,9 +36,19 @@ namespace io {
 ///   from hot pages.
 /// - We still never hold the global directory latch while doing IO since reads/writes might go to disk.
 
-class FileSystemBuffer;
-
 class FileSystemBuffer {
+   public:
+    /// A file guard
+    using FileGuard = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
+    /// A frame guard
+    using FrameGuard = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
+    /// Exclusive
+    enum ExclusiveTag { Exclusive };
+    /// Exclusive
+    enum SharedTag { Shared };
+    /// Forward declare file ref
+    class FileRef;
+
    protected:
     /// A buffered file
     struct BufferedFile {
@@ -47,69 +59,27 @@ class FileSystemBuffer {
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
         /// This latch ensures that reads and writes are blocked during truncation.
-        std::shared_mutex file_file_access = {};
-        /// The user references (frames + users)
-        int64_t file_users = 0;
-        /// The frame references (frames + users)
-        int64_t file_frames = 0;
-        /// The file size as present on disk.
-        uint64_t file_size_persisted = 0;
-        /// The buffered file size.
-        /// We grow files on flush if the user wrote past the end.
-        /// For that purpose, we maintain a required file size here that can be bumped through RequireFileSize.
-        uint64_t file_size_buffered = 0;
+        std::shared_mutex file_latch = {};
+        /// The user references
+        int64_t num_users = 0;
+        /// The frame references
+        int64_t num_frames = 0;
+        /// The file size
+        uint64_t file_size = 0;
 
         /// Constructor
-        BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
+        BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr)
+            : file_id(file_id), path(path), handle(std::move(file)) {}
 
-        /// Get the file references
-        auto GetFileRefs() const { return file_users + file_frames; }
-        /// Access the file file
-        auto AccessFileShared() { return std::shared_lock{file_file_access}; }
-        /// Block the file access for truncation
-        auto AccessFileExclusively() { return std::unique_lock{file_file_access}; }
+        /// Get the number of references
+        auto GetReferenceCount() const { return num_users + num_frames; }
+        /// Lock the file shared
+        auto Lock(SharedTag) { return std::shared_lock{file_latch}; }
+        /// Lock the file exclusively
+        auto Lock(ExclusiveTag) { return std::unique_lock{file_latch}; }
     };
 
-   public:
-    /// A file reference
-    class FileRef {
-        friend class FileSystemBuffer;
-
-       protected:
-        /// The buffer manager
-        FileSystemBuffer& buffer_manager_;
-        /// The file
-        BufferedFile* file_;
-
-       public:
-        /// The constructor
-        explicit FileRef(FileSystemBuffer& buffer_manager);
-        /// The constructor
-        explicit FileRef(FileSystemBuffer& buffer_manager, BufferedFile& file);
-        /// Copy constructor
-        FileRef(const FileRef& other);
-        /// Move constructor
-        FileRef(FileRef&& other);
-        /// Destructor
-        ~FileRef();
-        /// Copy assignment
-        FileRef& operator=(const FileRef& other);
-        /// Move assignment
-        FileRef& operator=(FileRef&& other);
-        /// Is set?
-        operator bool() const { return !!file_; }
-        /// Get file id
-        auto& GetFileID() const { return file_->file_id; }
-        /// Get path
-        auto& GetPath() const { return file_->path; }
-        /// Get handle
-        auto& GetHandle() const { return *file_->handle; }
-        /// Get the size
-        auto GetSize() const { return file_->file_size_buffered; }
-        /// Release the file ref
-        void Release();
-    };
-
+    /// A buffer frame, the central data structure to hold data
     class BufferFrame {
        protected:
         friend class FileSystemBuffer;
@@ -119,6 +89,8 @@ class FileSystemBuffer {
         /// The frame state
         enum State { NEW, LOADING, LOADED, EVICTING, RELOADED };
 
+        /// The buffered file
+        BufferedFile& file;
         /// The frame id
         uint64_t frame_id = -1;
         /// The frame state.
@@ -130,69 +102,133 @@ class FileSystemBuffer {
         /// The data size
         uint32_t data_size = 0;
         /// Is the page dirty?
-        std::atomic<bool> is_dirty = false;
+        bool is_dirty = false;
         /// Position of this page in the FIFO list
         list_position fifo_position;
         /// Position of this page in the LRU list
         list_position lru_position;
-
         /// The frame latch
-        std::shared_mutex access_latch;
-        /// Is locked exclusively?
-        bool locked_exclusively = false;
-
-        /// Lock a buffer frame.
-        void LockFrame(bool exclusive);
-        /// Unlock a buffer frame
-        void UnlockFrame();
+        std::shared_mutex frame_latch;
 
        public:
         /// Constructor
-        BufferFrame(uint64_t frame_id, list_position fifo_position, list_position lru_position);
-        /// Get number of users
-        auto GetUserCount() const { return num_users; }
+        BufferFrame(BufferedFile& file, uint64_t frame_id, list_position fifo_position, list_position lru_position);
+        /// ~Destructor
+        ~BufferFrame() { --file.num_frames; }
+        /// Delete copy constructor
+        BufferFrame(const BufferFrame& other) = delete;
+        /// Delete copy assignment
+        BufferFrame& operator=(const BufferFrame& other) = delete;
+
         /// Returns a pointer to this page data
         nonstd::span<char> GetData() { return {buffer.get(), data_size}; }
+        /// Lock the frame exclusively
+        auto Lock(ExclusiveTag) { return std::shared_lock{frame_latch}; }
+        /// Lock the frame shared
+        auto Lock(SharedTag) { return std::unique_lock{frame_latch}; }
     };
 
-    /// A buffer reference
+   public:
+    /// The buffer ref base class
     class BufferRef {
         friend class FileSystemBuffer;
 
        protected:
-        /// The buffer manager
-        FileSystemBuffer& buffer_manager_;
         /// The file
+        std::shared_ptr<FileRef> file_;
+        /// The frame
         BufferFrame* frame_;
-        /// The file file lock
-        std::shared_lock<std::shared_mutex> file_lock_;
+        /// The frame guard
+        FrameGuard frame_guard_;
+
         /// The constructor
-        explicit BufferRef(FileSystemBuffer& buffer_manager, BufferFrame& frame,
-                           std::shared_lock<std::shared_mutex> file_lock);
+        explicit BufferRef(std::shared_ptr<FileRef> file, BufferFrame& frame, FrameGuard frame_guard);
 
        public:
-        /// Copy constructor
-        BufferRef(const BufferRef& other);
         /// Move constructor
-        BufferRef(BufferRef&& other);
+        BufferRef(BufferRef&& other) : file_(other.file_), frame_(other.frame_) {
+            other.file_ = nullptr;
+            other.frame_ = nullptr;
+        }
         /// Destructor
-        ~BufferRef();
-        /// Copy assignment
-        BufferRef& operator=(const BufferRef& other);
+        ~BufferRef() { Release(); }
         /// Move assignment
-        BufferRef& operator=(BufferRef&& other);
+        BufferRef& operator=(BufferRef&& other) {
+            Release();
+            file_ = other.file_;
+            other.frame_ = nullptr;
+            return *this;
+        }
         /// Is set?
         operator bool() const { return !!frame_; }
-        /// Clone the buffer ref
-        auto Clone();
         /// Access the data
         auto GetData() { return frame_->GetData(); }
-        /// Release the file ref
-        void Release();
         /// Mark as dirty
         void MarkAsDirty() { frame_->is_dirty = true; }
-        /// Require a frame size
-        void RequireSize(uint64_t n);
+        /// Release the file ref
+        void Release();
+    };
+
+    /// A file reference
+    class FileRef : public std::enable_shared_from_this<FileRef> {
+        friend class FileSystemBuffer;
+
+       protected:
+        /// The buffer manager
+        FileSystemBuffer& buffer_;
+        /// The file
+        BufferedFile* file_;
+        /// The current file lock.
+        std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>, std::monostate>
+            file_guard_;
+        /// The number of buffer refs of this user
+        size_t buffer_refs_;
+
+        /// Flush a buffer frame
+        void FlushFrame(FileSystemBuffer::BufferFrame& frame);
+        /// Flush a buffer frame
+        void FlushFrame(FileSystemBuffer::BufferFrame& frame, std::unique_lock<std::mutex>& dir_guard);
+        /// Loads the page from disk
+        void LoadFrame(BufferFrame& frame, std::unique_lock<std::mutex>& dir_guard);
+
+       public:
+        /// Constructor
+        explicit FileRef(FileSystemBuffer& buffer);
+        /// The constructor
+        explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file) {
+            // Is always constructed with directory latch
+            ++file.num_users;
+        }
+        /// Move constructor
+        FileRef(FileRef&& other) : buffer_(other.buffer_), file_(other.file_) { other.file_ = nullptr; }
+        /// Destructor
+        ~FileRef() { Release(); }
+        /// Is set?
+        operator bool() const { return !!file_; }
+        /// Get file id
+        auto& GetFileID() const { return file_->file_id; }
+        /// Get path
+        auto& GetPath() const { return file_->path; }
+        /// Get handle
+        auto& GetHandle() const { return *file_->handle; }
+        /// Get the size
+        auto GetSize() const { return file_->file_size; }
+        /// Release the file ref
+        void Release();
+
+        /// Fix file exclusively
+        BufferRef FixPage(size_t page_id, bool exclusive);
+        /// Unfix a buffer frame
+        void Unfix(BufferRef&& ref, bool is_dirty);
+
+        /// Read at most n bytes
+        uint64_t Read(void* buffer, uint64_t n, duckdb::idx_t offset);
+        /// Write at most n bytes
+        uint64_t Write(const void* buffer, uint64_t n, duckdb::idx_t offset);
+        /// Truncate the file
+        void Truncate(uint64_t new_size);
+        /// Flush the file
+        void Flush();
     };
 
    protected:
@@ -223,24 +259,19 @@ class FileSystemBuffer {
     /// LRU list of frames
     std::list<BufferFrame*> lru = {};
 
-    /// Release a file ref
-    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& directory_latch);
-    /// Loads the page from disk
-    void LoadFrame(BufferFrame& frame, std::shared_lock<std::shared_mutex>& file_latch,
-                   std::unique_lock<std::mutex>& directory_latch);
-    /// Writes the page to disk if it is dirty
-    void FlushFrame(BufferFrame& frame, std::unique_lock<std::shared_mutex>* file_latch,
-                    std::unique_lock<std::mutex>& directory_latch);
     /// Returns the next page that can be evicted.
     /// Returns nullptr, when no page can be evicted.
-    std::unique_ptr<char[]> EvictAnyBufferFrame(std::unique_lock<std::mutex>& directory_latch);
+    std::unique_ptr<char[]> EvictAnyBufferFrame(std::unique_lock<std::mutex>& dir_guard);
     /// Allocate a buffer for a frame.
     /// Evicts a page if neccessary
-    std::unique_ptr<char[]> AllocateFrameBuffer(std::unique_lock<std::mutex>& directory_latch);
+    std::unique_ptr<char[]> AllocateFrameBuffer(std::unique_lock<std::mutex>& dir_guard);
 
-    /// Unfix a frame.
-    /// The frame is written back eventually when is_dirty is passed.
-    void UnfixPage(BufferFrame& frame, bool is_dirty);
+    /// Fix a page
+    BufferRef FixPage(std::shared_ptr<FileRef>& file_ref, size_t page_id, FileGuard& file_guard);
+    /// Flush a frame
+    void FlushFrame(BufferFrame& file, std::unique_lock<std::mutex>& dir_guard, FileGuard& file_guard);
+    /// Releases a file
+    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_guard, FileGuard file_guard);
 
    public:
     /// Constructor.
@@ -260,27 +291,13 @@ class FileSystemBuffer {
     uint64_t GetPageIDFromOffset(uint64_t offset) { return offset >> page_size_bits; }
 
     /// Open a file
-    FileRef OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
-    /// Get The file size
-    uint64_t GetFileSize(const FileRef& file);
-
-    /// Returns a reference to a `FileSystemBufferFrame` object for a given page id. When
-    /// the page is not loaded into memory, it is read from disk. Otherwise the
-    /// loaded page is used.
-    BufferRef FixPage(const FileRef& file, uint64_t page_id, bool exclusive);
-    /// Flush all file frames to disk
-    void FlushFile(const FileRef& file, std::unique_lock<std::shared_mutex>* file_latch = nullptr);
+    std::shared_ptr<FileRef> OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
     /// Flush file matching name to disk
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
     void Flush();
-
-    /// Read at most n bytes
-    uint64_t Read(const FileRef& file, void* buffer, uint64_t n, duckdb::idx_t offset);
-    /// Write at most n bytes
-    uint64_t Write(const FileRef& file, const void* buffer, uint64_t n, duckdb::idx_t offset);
-    /// Truncate the file
-    void Truncate(const FileRef& file, uint64_t new_size);
+    /// Release a file
+    void Release(BufferedFile& file);
 
     /// Returns the page ids of all pages that are in the FIFO list in FIFO order.
     std::vector<uint64_t> GetFIFOList() const;
