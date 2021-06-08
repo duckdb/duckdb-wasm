@@ -114,10 +114,12 @@ export abstract class DuckDBSyncMatWrapper implements DBWrapper {
     public name: string;
     protected conn?: duckdb.DuckDBConnection;
     protected db: duckdb.DuckDBBindings;
+    private tpchRuns: Set<number>;
 
     constructor(db: duckdb.DuckDBBindings) {
         this.db = db;
         this.name = 'DuckDB';
+        this.tpchRuns = new Set<number>();
     }
 
     init(): Promise<void> {
@@ -171,7 +173,30 @@ export abstract class DuckDBSyncMatWrapper implements DBWrapper {
     }
 
     tpch(query: number): Promise<void> {
-        this.conn!.runQuery(tpchQueries[query]);
+        const result = this.conn!.runQuery(tpchQueries[query]);
+        if (!this.tpchRuns.has(query)) {
+            console.log(`${this.name}: TPCH-${query}`);
+            const rows: any[][] = [];
+            for (const row of result) {
+                const vals: any = {};
+                for (const k of result.schema.fields) {
+                    vals[k.name] = row[k.name].valueOf ? row[k.name].valueOf() : row[k.name];
+                }
+                rows.push(vals);
+
+                // Ellipsis
+                if (rows.length == 10 && result.length > 10) {
+                    const v = { ...vals };
+                    for (const k in v) {
+                        v[k] = '...';
+                    }
+                    rows.push(v);
+                    break;
+                }
+            }
+            console.table(rows);
+            this.tpchRuns.add(query);
+        }
         return Promise.resolve();
     }
 
@@ -209,10 +234,12 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
     public name: string;
     protected conn?: duckdb.AsyncDuckDBConnection;
     protected db: duckdb.AsyncDuckDB;
+    private tpchRuns: Set<number>;
 
     constructor(db: duckdb.AsyncDuckDB) {
         this.db = db;
         this.name = 'DuckDB-async';
+        this.tpchRuns = new Set<number>();
     }
 
     async init(): Promise<void> {
@@ -265,7 +292,30 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
     }
 
     async tpch(query: number): Promise<void> {
-        await this.conn!.runQuery(tpchQueries[query]);
+        const result = await this.conn!.runQuery(tpchQueries[query]);
+        if (!this.tpchRuns.has(query)) {
+            console.log(`${this.name}: TPCH-${query}`);
+            const rows: any[][] = [];
+            for (const row of result) {
+                const vals: any = {};
+                for (const k in row) {
+                    vals[k] = row[k];
+                }
+                rows.push(vals);
+
+                // Ellipsis
+                if (rows.length == 10 && result.length > 10) {
+                    const v = { ...vals };
+                    for (const k in v) {
+                        v[k] = '...';
+                    }
+                    rows.push(v);
+                    break;
+                }
+            }
+            console.table(rows);
+            this.tpchRuns.add(query);
+        }
     }
 
     implements(func: string): boolean {
@@ -276,10 +326,12 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
 export class SQLjsWrapper implements DBWrapper {
     name: string;
     db: SQL.Database;
+    private tpchRuns: Set<number>;
 
     constructor(db: SQL.Database) {
         this.name = 'sql.js';
         this.db = db;
+        this.tpchRuns = new Set<number>();
     }
 
     init(): Promise<void> {
@@ -330,7 +382,31 @@ export class SQLjsWrapper implements DBWrapper {
     }
 
     tpch(query: number): Promise<void> {
-        this.db.exec(tpchQueries[query]);
+        const result = this.db.exec(tpchQueries[query])[0];
+        if (!this.tpchRuns.has(query)) {
+            console.log(`${this.name}: TPCH-${query}`);
+            const rows: any[] = [];
+            for (const row of result.values) {
+                const vals: any = {};
+                for (let i = 0; i < row.length; i++) {
+                    vals[result.columns[i]] = row[i];
+                }
+                rows.push(vals);
+
+                // Ellipsis
+                if (rows.length == 10 && result.values.length > 10) {
+                    const v = { ...vals };
+                    for (const k in v) {
+                        v[k] = '...';
+                    }
+                    rows.push(v);
+                    break;
+                }
+            }
+            console.table(rows);
+            this.tpchRuns.add(query);
+        }
+
         return Promise.resolve();
     }
 
@@ -350,9 +426,11 @@ export class SQLjsWrapper implements DBWrapper {
 
 export class AlaSQLWrapper implements DBWrapper {
     name: string;
+    private tpchRuns: Set<number>;
 
     constructor() {
         this.name = 'AlaSQL';
+        this.tpchRuns = new Set<number>();
     }
 
     init(): Promise<void> {
@@ -396,8 +474,8 @@ export class AlaSQLWrapper implements DBWrapper {
     }
 
     tpch(query: number): Promise<void> {
-        alasql(tpchQueries[query]);
-
+        const rows: any[] = alasql(tpchQueries[query]);
+        console.table(rows.slice(0, Math.min(rows.length, 10)));
         return Promise.resolve();
     }
 
@@ -505,17 +583,7 @@ export class LovefieldWrapper implements DBWrapper {
         return rows[0].cnt;
     }
 
-    async tpch(query: number): Promise<void> {
-        /*const schema = this.db!.getSchema();
-        const l = schema.table('lineitem');
-        let builder = this.db!.select(
-            l.col('l_returnflag'),
-            l.col('l_linestatus'),
-            lf.fn.sum(l.col('l_quantity')).as('sum_qty'),
-            lf.fn.sum(l.col('l_extendedprice')).as('sum_base_price'),
-            lf.fn.sum(<any>(l.col('l_extendedprice') * (1 - l.col('l_discount')))).as('l_extendedprice'),
-        );*/
-    }
+    async tpch(query: number): Promise<void> {}
 
     implements(func: string): boolean {
         if (func == 'tpch') return false;
@@ -673,7 +741,7 @@ export class NanoSQLWrapper implements DBWrapper {
     }
 
     implements(func: string): boolean {
-        if (func == 'simpleJoin') return false; // Holy shit nanoSQL is fucking slow. 118s for a 0.005 SF simple join.
+        // if (func == 'simpleJoin') return false; // Holy shit nanoSQL is fucking slow. 118s for a 0.005 SF simple join.
         if (func == 'tpch') return false;
         return true;
     }

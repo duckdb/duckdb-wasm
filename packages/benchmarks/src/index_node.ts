@@ -3,7 +3,6 @@ import * as duckdb_async from '@duckdb/duckdb-wasm/src/targets/duckdb-node-async
 import path from 'path';
 import Worker from 'web-worker';
 import initSqlJs from 'sql.js';
-import * as arrow from 'apache-arrow';
 import fs from 'fs';
 
 import { benchmarkFormat } from './format_benchmark';
@@ -23,16 +22,21 @@ import {
 } from './db_wrappers';
 
 // Configure the worker
+
+// wasm-check seems bugged, reports exceptions: false with experimental flag specified
+// Using -eh variant for base
 const WORKER_CONFIG = duckdb_async.configure({
-    worker: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async.worker.js'),
+    worker: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js'),
     workerEH: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js'),
-    wasm: path.resolve(__dirname, '../../duckdb/dist/duckdb.wasm'),
+    wasm: path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
     wasmEH: path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
 });
 
 const decoder = new TextDecoder();
 
 async function main() {
+    console.log('Selected DuckDB: ' + WORKER_CONFIG.wasmURL);
+
     let db: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
@@ -71,11 +75,11 @@ async function main() {
             //         await this.db.addFilePath(path, path);
             //     }
             // })(adb),
-            // new ArqueroWrapper(),
-            // new LovefieldWrapper(),
+            new ArqueroWrapper(),
+            new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            // new NanoSQLWrapper(),
-            // new AlaSQLWrapper(),
+            new NanoSQLWrapper(),
+            new AlaSQLWrapper(),
         ],
         path.resolve(__dirname, '../../../data'),
         (path: string) => {

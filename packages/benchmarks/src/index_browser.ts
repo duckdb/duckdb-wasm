@@ -2,7 +2,6 @@ import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-s
 import * as duckdb_async from '@duckdb/duckdb-wasm/src/targets/duckdb-browser-async';
 import Worker from 'web-worker';
 import sqljs from 'sql.js';
-import * as arrow from 'apache-arrow';
 
 import { benchmarkFormat } from './format_benchmark';
 import { benchmarkIterator } from './iterator_benchmark';
@@ -31,9 +30,9 @@ const WORKER_BUNDLES = {
 };
 const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
 
-const decoder = new TextDecoder();
-
 async function main() {
+    console.log('Selected DuckDB: ' + WORKER_CONFIG.wasmURL);
+
     let db: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
@@ -63,26 +62,26 @@ async function main() {
 
     await benchmarkCompetitions(
         [
-            // new (class extends DuckDBSyncMatWrapper {
-            //     async registerFile(path: string): Promise<void> {
-            //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
-            //     }
-            // })(db),
+            new (class extends DuckDBSyncMatWrapper {
+                async registerFile(path: string): Promise<void> {
+                    await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+                }
+            })(db),
             // new (class extends DuckDBSyncStreamWrapper {
             //     async registerFile(path: string): Promise<void> {
             //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
             //     }
-            // })(db1),
+            // })(db),
             new (class extends DuckDBAsyncStreamWrapper {
                 async registerFile(path: string): Promise<void> {
                     await this.db.addFileBlob(path, await (await fetch(path)).blob());
                 }
             })(adb),
-            // new ArqueroWrapper(),
-            // new LovefieldWrapper(),
+            new ArqueroWrapper(),
+            new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            // new NanoSQLWrapper(),
-            // new AlaSQLWrapper(),
+            new NanoSQLWrapper(),
+            new AlaSQLWrapper(),
         ],
         '/data',
         async (path: string) => {

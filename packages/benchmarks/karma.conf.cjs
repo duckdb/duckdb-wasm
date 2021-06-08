@@ -1,44 +1,4 @@
 const puppeteer = require('puppeteer');
-/*const fs = require('fs');
-const path = require('path');
-
-function LargeFilesMiddlewareFactory(filesPromise, serveFile, basePath, urlRoot) {
-    return function (request, response, next) {
-        const requestedFilePath = request.url
-            .replace(urlRoot, '/')
-            .replace(/\?.*$/, '')
-            .replace(/^\/absolute/, '')
-            .replace(/^\/base/, basePath);
-
-        request.pause();
-
-        return filesPromise.then(function (files) {
-            const file = Array.from(files.served).find(file => file.path === requestedFilePath);
-            if (file && file.path.endsWith('.db')) {
-                console.log(`Large-Files: Serving ${requestedFilePath}`);
-                const acceptEncodingHeader = request.headers['accept-encoding'];
-                const matchedEncoding = Object.keys(file.encodings).find(encoding =>
-                    new RegExp(`(^|.*, ?)${encoding}(,|$)`).test(acceptEncodingHeader),
-                );
-                const content = file.encodings[matchedEncoding] || file.content;
-                serveFile(
-                    file.contentPath || file.path,
-                    request.headers.range,
-                    response,
-                    null,
-                    content,
-                    file.doNotCache,
-                );
-            } else {
-                next();
-            }
-
-            request.resume();
-        });
-    };
-}
-
-LargeFilesMiddlewareFactory.$inject = ['filesPromise', 'serveFile', 'config.basePath', 'config.urlRoot'];*/
 
 process.env.CHROME_BIN = puppeteer.executablePath();
 
@@ -51,9 +11,7 @@ module.exports = function (config) {
             'karma-sourcemap-loader',
             'karma-spec-reporter',
             'karma-custom',
-            // { 'middleware:largeFiles': ['factory', LargeFilesMiddlewareFactory] },
         ],
-        // beforeMiddleware: ['largeFiles'],
         frameworks: ['custom'],
         files: [
             { pattern: 'packages/benchmarks/dist/bench-browser.js' },
@@ -80,9 +38,9 @@ module.exports = function (config) {
         logLevel: config.LOG_INFO,
         autoWatch: true,
         singleRun: false,
-        // browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
+        browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
         // browsers: ['ChromeHeadlessNoSandbox'],
-        browsers: [],
+        // browsers: [],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',

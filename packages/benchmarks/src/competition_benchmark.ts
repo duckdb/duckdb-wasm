@@ -14,7 +14,7 @@ export async function benchmarkCompetitions(
     tableFetch: (path: string) => Promise<arrow.Table>,
     tpchScale: string,
 ) {
-    /*const tupleCount = 10000;
+    const tupleCount = 10000;
     /////////////////////////////////////////////
 
     let col = [];
@@ -22,7 +22,7 @@ export async function benchmarkCompetitions(
         col.push(i);
     }
 
-    const table = arrow.Table.new([arrow.Int32Vector.from(col)], ['a_value']);
+    const table = arrow.Table.new([arrow.Int32Vector.from(col)], ['a']);
 
     const scans = [];
     const sums = [];
@@ -30,9 +30,7 @@ export async function benchmarkCompetitions(
     for (let db of dbs) {
         await db.init();
 
-        await db.create(`scan_table`, {
-            a_value: 'INTEGER',
-        }, [[]]);
+        await db.create(`scan_table`, table, []);
 
         await db.load(`scan_table`, null, table);
 
@@ -81,7 +79,7 @@ export async function benchmarkCompetitions(
 
     for (let db of dbs) {
         await db.close();
-    }*/
+    }
 
     /////////////////////////////////////////////
 
@@ -127,17 +125,16 @@ export async function benchmarkCompetitions(
                 await db.join();
             }),
         );
+    }
 
-        if (db.implements('tpch')) {
-            for (let i = 1; i <= 22; i++) {
-                if (db.implements(`tpch-${i}`)) {
-                    tpchs[i].push(
-                        add(db.name, async () => {
-                            console.log(db.name, 'tpch', i);
-                            await db.tpch(i);
-                        }),
-                    );
-                }
+    for (let i = 1; i <= 22; i++) {
+        for (let db of dbs) {
+            if (db.implements('tpch') && db.implements(`tpch-${i}`)) {
+                tpchs[i].push(
+                    add(db.name, async () => {
+                        await db.tpch(i);
+                    }),
+                );
             }
         }
     }
