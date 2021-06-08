@@ -26,10 +26,10 @@ import {
 // wasm-check seems bugged, reports exceptions: false with experimental flag specified
 // Using -eh variant for base
 const WORKER_CONFIG = duckdb_async.configure({
-    worker: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js'),
-    workerEH: path.resolve(__dirname, '../../duckdb/dist/duckdb-node-async-eh.worker.js'),
-    wasm: path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
-    wasmEH: path.resolve(__dirname, '../../duckdb/dist/duckdb-eh.wasm'),
+    worker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js'),
+    workerEH: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js'),
+    wasm: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
+    wasmEH: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
 });
 
 const decoder = new TextDecoder();

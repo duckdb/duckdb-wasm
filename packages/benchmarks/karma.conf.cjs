@@ -16,7 +16,7 @@ module.exports = function (config) {
         files: [
             { pattern: 'packages/benchmarks/dist/bench-browser.js' },
             { pattern: 'packages/benchmarks/dist/bench-browser.js.map', included: false, watched: false, served: true },
-            { pattern: 'packages/duckdb/dist/*', included: false, watched: false, served: true },
+            { pattern: 'packages/duckdb-wasm/dist/*', included: false, watched: false, served: true },
             { pattern: 'node_modules/sql.js/dist/*.wasm', included: false, watched: false, served: true },
             { pattern: 'data/uni/*', included: false, watched: false, served: true },
             { pattern: 'data/tpch/0_1/**/*', included: false, watched: false, served: true },
@@ -26,7 +26,7 @@ module.exports = function (config) {
             '**/*.js': ['sourcemap'],
         },
         proxies: {
-            '/static/': '/base/packages/duckdb/dist/',
+            '/static/': '/base/packages/duckdb-wasm/dist/',
             '/sqljs/': '/base/node_modules/sql.js/dist/',
             '/data/': '/base/data/',
             '/scripts/': '/base/packages/benchmarks/src/scripts/',
