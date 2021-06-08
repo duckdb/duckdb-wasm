@@ -6760,10 +6760,10 @@ warning@^4.0.0, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-wasm-check@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/wasm-check/-/wasm-check-2.0.2.tgz#203dd1a4b89f9cefeb1fce47fea448f4c9e7ab3a"
-  integrity sha512-5mlFaQVLJDXVvea9RzD/tVs1NWJso+YTLn6D51BaFtEablRnO/PnRBFmjIHqC6xLyojG5Gwp/7LbcWZKR3+2vQ==
+wasm-check@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/wasm-check/-/wasm-check-2.0.3.tgz#3fcc90353a0512edc9539970f0762089d5757cf0"
+  integrity sha512-UbZqpDMO4TZskoVKDH3B9NqY+yJllDJX8I9lUU4nuQjBGeU57jCjjgCslP3r8xiE+yf5GTIfeGvznvubgCdbhw==
 
 watchpack-chokidar2@^2.0.1:
   version "2.0.1"
