@@ -23,10 +23,10 @@ import {
 const WORKER_BUNDLES = {
     worker: '/static/duckdb-browser-async.worker.js',
     workerEH: '/static/duckdb-browser-async-eh.worker.js',
-    workerEHMT: '/static/duckdb-browser-async-eh-mt.worker.js',
+    // workerEHMT: '/static/duckdb-browser-async-eh-mt.worker.js',
     wasm: '/static/duckdb.wasm',
     wasmEH: '/static/duckdb-eh.wasm',
-    wasmEHMT: '/static/duckdb-eh-mt.wasm',
+    // wasmEHMT: '/static/duckdb-eh-mt.wasm',
 };
 const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
 
@@ -77,11 +77,11 @@ async function main() {
                     await this.db.addFileBlob(path, await (await fetch(path)).blob());
                 }
             })(adb),
-            new ArqueroWrapper(),
-            new LovefieldWrapper(),
+            // new ArqueroWrapper(),
+            // new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            new NanoSQLWrapper(),
-            new AlaSQLWrapper(),
+            // new NanoSQLWrapper(),
+            // new AlaSQLWrapper(),
         ],
         '/data',
         async (path: string) => {
