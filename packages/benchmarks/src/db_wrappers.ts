@@ -180,7 +180,7 @@ export abstract class DuckDBSyncMatWrapper implements DBWrapper {
             for (const row of result) {
                 const vals: any = {};
                 for (const k of result.schema.fields) {
-                    vals[k.name] = row[k.name].valueOf ? row[k.name].valueOf() : row[k.name];
+                    vals[k.name] = !!row[k.name] && row[k.name].valueOf ? row[k.name].valueOf() : row[k.name];
                 }
                 rows.push(vals);
 
@@ -298,8 +298,8 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
             const rows: any[][] = [];
             for (const row of result) {
                 const vals: any = {};
-                for (const k in row) {
-                    vals[k] = row[k];
+                for (const k of result.schema.fields) {
+                    vals[k.name] = !!row[k.name] && row[k.name].valueOf ? row[k.name].valueOf() : row[k.name];
                 }
                 rows.push(vals);
 
