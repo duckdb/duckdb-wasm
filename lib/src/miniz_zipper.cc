@@ -151,12 +151,12 @@ struct ExtractToFileSystemBufferState {
     /// The buffer manager
     io::FileSystemBuffer& buffer_manager;
     /// The file
-    std::shared_ptr<io::FileSystemBuffer::FileRef> file;
+    std::unique_ptr<io::FileSystemBuffer::FileRef> file;
 
     /// Constructor
     ExtractToFileSystemBufferState(io::FileSystemBuffer& buffer_manager,
-                                   std::shared_ptr<io::FileSystemBuffer::FileRef> file)
-        : buffer_manager(buffer_manager), file(file) {}
+                                   std::unique_ptr<io::FileSystemBuffer::FileRef> file)
+        : buffer_manager(buffer_manager), file(std::move(file)) {}
 };
 
 size_t extractToFileSystemBuffer(void* p_opaque, duckdb_miniz::mz_uint64 file_ofs, const void* p_buf, size_t n) {
@@ -176,7 +176,7 @@ arrow::Result<size_t> Zipper::ExtractEntryToPath(size_t entryID, std::string_vie
     out->Truncate(stat.m_uncomp_size);
 
     // Extract file
-    ExtractToFileSystemBufferState extract_state{*buffer_manager_, out};
+    ExtractToFileSystemBufferState extract_state{*buffer_manager_, std::move(out)};
     auto ok = duckdb_miniz::mz_zip_reader_extract_to_callback(&current_reader_->archive, entryID,
                                                               &extractToFileSystemBuffer, &extract_state, 0);
     if (!ok) {
@@ -206,7 +206,7 @@ arrow::Result<size_t> Zipper::ExtractPathToPath(const char* in, std::string_view
     out_file->Truncate(stat.m_uncomp_size);
 
     // Extract file
-    ExtractToFileSystemBufferState extract_state{*buffer_manager_, out_file};
+    ExtractToFileSystemBufferState extract_state{*buffer_manager_, std::move(out_file)};
     auto ok = duckdb_miniz::mz_zip_reader_extract_to_callback(&current_reader_->archive, file_index,
                                                               &extractToFileSystemBuffer, &extract_state, 0);
     if (!ok) {

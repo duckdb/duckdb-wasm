@@ -14,7 +14,7 @@ class InputFileStreamBuffer : public std::streambuf {
     /// The buffer manager
     std::shared_ptr<FileSystemBuffer> filesystem_buffer_;
     /// The file
-    std::shared_ptr<FileSystemBuffer::FileRef> file_;
+    std::unique_ptr<FileSystemBuffer::FileRef> file_;
     /// The buffer
     FileSystemBuffer::BufferRef buffer_;
     /// The end of the readable data (might be smaller than the actual file size if the stream is sliced)
@@ -70,7 +70,7 @@ class InputFileStreamBuffer : public std::streambuf {
     /// Constructor
     InputFileStreamBuffer(const InputFileStreamBuffer& other)
         : filesystem_buffer_(other.filesystem_buffer_),
-          file_(other.file_),
+          file_(other.filesystem_buffer_->OpenFile(other.file_->GetPath())),
           buffer_(other.file_->FixPage(other.buffer_.GetPageIDOrDefault(), false)),
           data_end_(other.data_end_),
           next_page_id_(other.next_page_id_) {}
