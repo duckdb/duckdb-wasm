@@ -82,17 +82,17 @@ lib_perf: lib_relwithdebinfo
 # Test the core library
 .PHONY: lib_tests
 lib_tests: lib
-	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*ParallelExclusiveAccess*
+	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
 
 # Debug the core library
 .PHONY: lib_tests
 lib_tests_lldb: lib
-	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*ParallelExclusiveAccess*
+	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
 
 # Debug the core library
 .PHONY: lib_tests
 lib_tests_gdb: lib
-	gdb --args ${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*FixSingle*
+	gdb --args ${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
 
 # Test the core library
 .PHONY: lib_tests_relwithdebinfo

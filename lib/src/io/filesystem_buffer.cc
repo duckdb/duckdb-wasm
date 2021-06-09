@@ -56,40 +56,36 @@ FileSystemBuffer::BufferFrame::BufferFrame(BufferedFile& file, uint64_t frame_id
 }
 
 /// Constructor
-FileSystemBuffer::BufferRef::BufferRef(SharedFileGuard&& file, BufferFrame& frame, FrameGuardVariant frame_guard)
-    : file_(std::move(file)), frame_(&frame), frame_guard_(std::move(frame_guard)) {
-    assert(!file.get() || file.get()->lock_type_ == LockType::Shared);
-}
+FileSystemBuffer::BufferRef::BufferRef(FileRef& file, SharedFileGuard&& file_guard, BufferFrame& frame,
+                                       FrameGuardVariant frame_guard)
+    : file_(&file), file_guard_(std::move(file_guard)), frame_(&frame), frame_guard_(std::move(frame_guard)) {}
 
 /// Get the page id
 uint64_t FileSystemBuffer::BufferRef::GetPageIDOrDefault() const { return frame_ ? ::GetPageID(frame_->frame_id) : 0; }
 /// Mark a buffer ref as dirty
 void FileSystemBuffer::BufferRef::MarkAsDirty() {
-    auto dir_guard = file_.get()->buffer_.Lock();
+    auto dir_guard = file_->buffer_.Lock();
     frame_->is_dirty = true;
 }
 /// Release a buffer ref
 void FileSystemBuffer::BufferRef::Release() {
     if (!frame_) return;
     // Decrease user count and mark as dirty with directory latch
-    auto dir_guard = file_.get()->buffer_.Lock();
+    auto dir_guard = file_->buffer_.Lock();
     --frame_->num_users;
     frame_ = nullptr;
 }
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer)
-    : buffer_(buffer), file_(nullptr), lock_type_(LockType::None), lock_refs_(0) {}
+FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer) : buffer_(buffer), file_(nullptr) {}
 
 /// Flush the file ref
 void FileSystemBuffer::FileRef::FlushFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard) {
-    assert(lock_type_ != LockType::None && "FlushFrame requires file to be locked");
     buffer_.FlushFrameUnsafe(frame, dir_guard);
 }
 
 /// Load a frame
 void FileSystemBuffer::FileRef::LoadFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard) {
-    assert(lock_type_ != LockType::None && "LoadFrame requires file to be locked");
     assert(frame.frame_state == FileSystemBuffer::BufferFrame::LOADING);
     auto file_id = ::GetFileID(frame.frame_id);
     auto page_id = ::GetPageID(frame.frame_id);
@@ -119,7 +115,6 @@ void FileSystemBuffer::FileRef::Release() {
     auto dir_guard = buffer_.Lock();
 
     // Test assertions
-    assert(lock_type_ == LockType::None && "Release requires file to be unlocked");
     assert(file_->GetReferenceCount() > 0 && "File must store own reference");
 
     // Is the file referenced by someone else?
@@ -166,15 +161,12 @@ void FileSystemBuffer::FileRef::Release() {
 
 /// Flush file with guard
 void FileSystemBuffer::FileRef::Flush() {
-    assert(lock_type_ != LockType::Exclusive && "Flushing cannot be done with exclusive lock");
     auto file_guard = Lock(Shared);
     FlushUnsafe();
 }
 
 /// Flush file without guard
 void FileSystemBuffer::FileRef::FlushUnsafe() {
-    assert(lock_type_ != LockType::None && "LoadFrame requires file to be locked");
-
     // Flush all frames.
     // Resolve the next iterator before flushing a frame since we might release the directory latch.
     auto dir_guard = buffer_.Lock();
@@ -313,25 +305,6 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
     return buffer;
 }
 
-/// Lock a file exclusively
-FileSystemBuffer::UniqueFileGuard FileSystemBuffer::FileRef::Lock(ExclusiveTag) {
-    assert(lock_type_ == LockType::None && "Exclusive file lock would deadlock");
-    std::unique_lock<std::shared_mutex> lock{file_->file_latch};
-    ++lock_refs_;
-    lock_type_ = LockType::Exclusive;
-    return FileGuard(*this, std::move(lock));
-}
-
-/// Lock a file shared
-FileSystemBuffer::SharedFileGuard FileSystemBuffer::FileRef::Lock(SharedTag) {
-    assert(lock_type_ != LockType::Exclusive && "Shared file lock would deadlock");
-    std::shared_lock<std::shared_mutex> lock{file_->file_latch};
-    ++lock_refs_;
-    std::cout << "LOCK SHARED " << lock_refs_ << std::endl;
-    lock_type_ = LockType::Shared;
-    return FileGuard(*this, std::move(lock));
-}
-
 /// Unfix a page
 void FileSystemBuffer::FileRef::Unfix(BufferRef&& buffer, bool is_dirty) {
     // Decrease user cound and mark as dirty with directory latch
@@ -411,7 +384,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
             } else {
                 frame_guard = frame.Lock(Shared);
             }
-            return BufferRef{std::move(file_guard), frame, std::move(frame_guard)};
+            return BufferRef{*this, std::move(file_guard), frame, std::move(frame_guard)};
         }
 
         // Allocate a buffer frame.
@@ -451,8 +424,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     } else {
         dir_guard.unlock();
     }
-    assert(lock_type_ == LockType::Shared);
-    return BufferRef{std::move(file_guard), frame, std::move(frame_guard)};
+    return BufferRef{*this, std::move(file_guard), frame, std::move(frame_guard)};
 }
 
 uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t offset) {

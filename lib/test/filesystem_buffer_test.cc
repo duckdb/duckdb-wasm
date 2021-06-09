@@ -108,25 +108,20 @@ TEST(FileSystemBufferTest, PersistentRestart) {
     files[2]->Truncate(PageCount * buffer->GetPageSize());
 
     for (uint16_t file_id = 0; file_id < 3; ++file_id) {
-        std::cout << "FILE " << file_id << std::endl;
         for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
-            std::cout << "PAGE " << page_id << std::endl;
             auto page = files[file_id]->FixPage(page_id, true);
             auto& value = *reinterpret_cast<uint64_t*>(page.GetData().data());
             value = file_id * 10 + page_id;
             page.MarkAsDirty();
         }
     }
-    std::cout << "FLUSH" << std::endl;
     buffer->Flush();
-    std::cout << "CLEAR" << std::endl;
     files.clear();
     ASSERT_EQ(fs::file_size(file1_path), PageCount * page_size);
     ASSERT_EQ(fs::file_size(file2_path), PageCount * page_size);
     ASSERT_EQ(fs::file_size(file3_path), PageCount * page_size);
 
     // Destroy the buffer manager and create a new one.
-    std::cout << "NEW" << std::endl;
     buffer = std::make_shared<TestableFileSystemBuffer>();
     files.push_back(buffer->OpenFile(file1_path.c_str()));
     files.push_back(buffer->OpenFile(file2_path.c_str()));
@@ -389,7 +384,7 @@ TEST(BufferManagerTest, ParallelScans) {
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelReaderWriter) {
     constexpr size_t PageCount = 100;
-    constexpr size_t ThreadCount = 10;
+    constexpr size_t ThreadCount = 20;
     constexpr size_t JobCount = 100;
 
     // Prepare test files
