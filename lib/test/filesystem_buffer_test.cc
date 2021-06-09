@@ -108,10 +108,12 @@ TEST(FileSystemBufferTest, PersistentRestart) {
     files[2]->Truncate(PageCount * buffer->GetPageSize());
 
     for (uint16_t file_id = 0; file_id < 3; ++file_id) {
+        std::cout << "FILE " << file_id << std::endl;
         for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
+            std::cout << "PAGE " << page_id << std::endl;
             auto page = files[file_id]->FixPage(page_id, true);
             auto& value = *reinterpret_cast<uint64_t*>(page.GetData().data());
-            value = file_id * 10 + page_id;
+            value = file_id * PageCount + page_id;
             page.MarkAsDirty();
         }
     }
