@@ -95,7 +95,7 @@ TEST(FileSystemBufferTest, PersistentRestart) {
     std::filesystem::resize_file(file2_path, 10 * page_size);
     std::filesystem::resize_file(file3_path, 10 * page_size);
 
-    std::vector<std::shared_ptr<io::FileSystemBuffer::FileRef>> files;
+    std::vector<std::unique_ptr<io::FileSystemBuffer::FileRef>> files;
     files.push_back(buffer->OpenFile(file1_path.c_str()));
     files.push_back(buffer->OpenFile(file2_path.c_str()));
     files.push_back(buffer->OpenFile(file3_path.c_str()));
@@ -118,14 +118,15 @@ TEST(FileSystemBufferTest, PersistentRestart) {
         }
     }
     std::cout << "FLUSH" << std::endl;
-
     buffer->Flush();
+    std::cout << "CLEAR" << std::endl;
     files.clear();
     ASSERT_EQ(fs::file_size(file1_path), PageCount * page_size);
     ASSERT_EQ(fs::file_size(file2_path), PageCount * page_size);
     ASSERT_EQ(fs::file_size(file3_path), PageCount * page_size);
 
     // Destroy the buffer manager and create a new one.
+    std::cout << "NEW" << std::endl;
     buffer = std::make_shared<TestableFileSystemBuffer>();
     files.push_back(buffer->OpenFile(file1_path.c_str()));
     files.push_back(buffer->OpenFile(file2_path.c_str()));

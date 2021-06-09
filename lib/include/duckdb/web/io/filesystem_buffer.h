@@ -37,7 +37,7 @@ namespace io {
 ///   from hot pages.
 /// - We still never hold the global directory latch while doing IO since reads/writes might touch js or go to disk.
 
-class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
+class FileSystemBuffer {
    public:
     /// A directory guard
     using DirectoryGuard = std::unique_lock<std::mutex>;
@@ -133,7 +133,7 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     /// A file guard
     template <typename LockGuard> class FileGuard {
         /// The file ref
-        std::shared_ptr<FileRef> file_ref_;
+        FileRef* file_ref_;
         /// The lock
         LockGuard lock_;
 
@@ -141,12 +141,13 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
         /// Default constructor
         FileGuard() : file_ref_(nullptr), lock_() {}
         /// Constructor
-        FileGuard(std::shared_ptr<FileRef> file, LockGuard&& lock)
-            : file_ref_(std::move(file)), lock_(std::move(lock)) {}
+        FileGuard(FileRef& file, LockGuard&& lock) : file_ref_(&file), lock_(std::move(lock)) {}
         /// Delete copy constructor
         FileGuard(const FileGuard& other) = delete;
         /// Delete copy constructor
-        FileGuard(FileGuard&& other) : file_ref_(std::move(other.file_ref_)), lock_(std::move(other.lock_)) {}
+        FileGuard(FileGuard&& other) : file_ref_(std::move(other.file_ref_)), lock_(std::move(other.lock_)) {
+            other.file_ref_ = nullptr;
+        }
         /// Delete move constructor
         FileGuard& operator=(const FileGuard& other) = delete;
         /// Delete move constructor
@@ -154,6 +155,7 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
             Release();
             file_ref_ = std::move(other.file_ref_);
             lock_ = std::move(other.lock_);
+            other.file_ref_ = nullptr;
             return *this;
         }
         /// Release a file guard
@@ -226,12 +228,12 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     };
 
     /// A file reference
-    class FileRef : public std::enable_shared_from_this<FileRef> {
+    class FileRef {
         friend class FileSystemBuffer;
 
        protected:
         /// The buffer manager
-        std::shared_ptr<FileSystemBuffer> buffer_;
+        FileSystemBuffer& buffer_;
         /// The file
         BufferedFile* file_ = nullptr;
         /// The current lock
@@ -252,15 +254,16 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
 
        public:
         /// Constructor
-        explicit FileRef(std::shared_ptr<FileSystemBuffer> buffer);
+        explicit FileRef(FileSystemBuffer& buffer);
         /// The constructor
-        explicit FileRef(std::shared_ptr<FileSystemBuffer> buffer, BufferedFile& file)
-            : buffer_(std::move(buffer)), file_(&file) {
+        explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file), lock_refs_(0) {
             // Is always constructed with directory latch
             ++file.num_users;
         }
         /// Move constructor
-        FileRef(FileRef&& other) : buffer_(other.buffer_), file_(other.file_) { other.file_ = nullptr; }
+        FileRef(FileRef&& other) : buffer_(other.buffer_), file_(other.file_), lock_refs_(other.lock_refs_) {
+            other.file_ = nullptr;
+        }
         /// Destructor
         ~FileRef() { Release(); }
         /// Is set?
@@ -360,7 +363,7 @@ class FileSystemBuffer : public std::enable_shared_from_this<FileSystemBuffer> {
     uint64_t GetPageIDFromOffset(uint64_t offset) { return offset >> page_size_bits; }
 
     /// Open a file
-    std::shared_ptr<FileRef> OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
+    std::unique_ptr<FileRef> OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
     /// Flush file matching name to disk
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk

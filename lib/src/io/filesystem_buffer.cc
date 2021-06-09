@@ -15,6 +15,8 @@
 #include <utility>
 #include <variant>
 
+#include "duckdb/web/scope_guard.h"
+
 /// Build a frame id
 static constexpr uint64_t BuildFrameID(uint16_t file_id, uint64_t page_id = 0) {
     assert(page_id < (1ull << 48));
@@ -55,32 +57,34 @@ FileSystemBuffer::BufferFrame::BufferFrame(BufferedFile& file, uint64_t frame_id
 
 /// Constructor
 FileSystemBuffer::BufferRef::BufferRef(SharedFileGuard&& file, BufferFrame& frame, FrameGuardVariant frame_guard)
-    : file_(std::move(file)), frame_(&frame), frame_guard_(std::move(frame_guard)) {}
+    : file_(std::move(file)), frame_(&frame), frame_guard_(std::move(frame_guard)) {
+    assert(!file.get() || file.get()->lock_type_ == LockType::Shared);
+}
 
 /// Get the page id
 uint64_t FileSystemBuffer::BufferRef::GetPageIDOrDefault() const { return frame_ ? ::GetPageID(frame_->frame_id) : 0; }
 /// Mark a buffer ref as dirty
 void FileSystemBuffer::BufferRef::MarkAsDirty() {
-    auto dir_guard = file_.get()->buffer_->Lock();
+    auto dir_guard = file_.get()->buffer_.Lock();
     frame_->is_dirty = true;
 }
 /// Release a buffer ref
 void FileSystemBuffer::BufferRef::Release() {
     if (!frame_) return;
     // Decrease user count and mark as dirty with directory latch
-    auto dir_guard = file_.get()->buffer_->Lock();
+    auto dir_guard = file_.get()->buffer_.Lock();
     --frame_->num_users;
     frame_ = nullptr;
 }
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(std::shared_ptr<FileSystemBuffer> buffer)
-    : buffer_(std::move(buffer)), file_(nullptr), lock_type_(LockType::None), lock_refs_(0) {}
+FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer)
+    : buffer_(buffer), file_(nullptr), lock_type_(LockType::None), lock_refs_(0) {}
 
 /// Flush the file ref
 void FileSystemBuffer::FileRef::FlushFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard) {
     assert(lock_type_ != LockType::None && "FlushFrame requires file to be locked");
-    buffer_->FlushFrameUnsafe(frame, dir_guard);
+    buffer_.FlushFrameUnsafe(frame, dir_guard);
 }
 
 /// Load a frame
@@ -89,16 +93,16 @@ void FileSystemBuffer::FileRef::LoadFrameUnsafe(FileSystemBuffer::BufferFrame& f
     assert(frame.frame_state == FileSystemBuffer::BufferFrame::LOADING);
     auto file_id = ::GetFileID(frame.frame_id);
     auto page_id = ::GetPageID(frame.frame_id);
-    auto page_size = buffer_->GetPageSize();
+    auto page_size = buffer_.GetPageSize();
 
     // Determine the actual size of the frame
-    frame.data_size = std::min<uint64_t>(file_->file_size - page_id * page_size, buffer_->GetPageSize());
+    frame.data_size = std::min<uint64_t>(file_->file_size - page_id * page_size, buffer_.GetPageSize());
     frame.is_dirty = false;
 
     // Read data into frame
-    assert(frame.data_size <= buffer_->GetPageSize());
+    assert(frame.data_size <= buffer_.GetPageSize());
     dir_guard.unlock();
-    buffer_->filesystem->Read(*file_->handle, frame.buffer.get(), frame.data_size, page_id * page_size);
+    buffer_.filesystem->Read(*file_->handle, frame.buffer.get(), frame.data_size, page_id * page_size);
     dir_guard.lock();
 
     // Register as loaded
@@ -109,8 +113,10 @@ void FileSystemBuffer::FileRef::LoadFrameUnsafe(FileSystemBuffer::BufferFrame& f
 void FileSystemBuffer::FileRef::Release() {
     // Already released?
     if (!file_) return;
+    auto release_file = sg::make_scope_guard([&]() { file_ = nullptr; });
+
     // Protect with directory latch
-    auto dir_guard = buffer_->Lock();
+    auto dir_guard = buffer_.Lock();
 
     // Test assertions
     assert(lock_type_ == LockType::None && "Release requires file to be unlocked");
@@ -119,7 +125,6 @@ void FileSystemBuffer::FileRef::Release() {
     // Is the file referenced by someone else?
     if (file_->GetReferenceCount() > 1) {
         --file_->num_users;
-        file_ = nullptr;
         return;
     }
     // Have to release the file, acquire exclusive file lock
@@ -131,38 +136,37 @@ void FileSystemBuffer::FileRef::Release() {
     --file_->num_users;
     // Someone opened the file in the meantime?
     if (file_->GetReferenceCount() > 0) {
-        file_ = nullptr;
         return;
     }
 
     // Flush all file frames
     auto file_id = file_->file_id;
-    auto lb = buffer_->frames.lower_bound(BuildFrameID(file_id));
-    auto ub = buffer_->frames.lower_bound(BuildFrameID(file_id + 1));
+    auto lb = buffer_.frames.lower_bound(BuildFrameID(file_id));
+    auto ub = buffer_.frames.lower_bound(BuildFrameID(file_id + 1));
     auto it = lb;
-    while (it != ub && it != buffer_->frames.end() && ::GetFileID(it->first) == file_id) {
+    while (it != ub && it != buffer_.frames.end() && ::GetFileID(it->first) == file_id) {
         auto next = it++;
         FlushFrameUnsafe(next->second, dir_guard);
         // The number of users MUST be 0.
         // We hold an exclusive lock on the file and there is nobody referencing it.
         // => There's no way someone can see the frame
         assert(it->second.GetUserCount() == 0);
-        if (next->second.lru_position != buffer_->lru.end()) {
-            buffer_->lru.erase(next->second.lru_position);
-        } else if (next->second.fifo_position != buffer_->fifo.end()) {
-            buffer_->fifo.erase(next->second.fifo_position);
+        if (next->second.lru_position != buffer_.lru.end()) {
+            buffer_.lru.erase(next->second.lru_position);
+        } else if (next->second.fifo_position != buffer_.fifo.end()) {
+            buffer_.fifo.erase(next->second.fifo_position);
         }
-        buffer_->frames.erase(next);
+        buffer_.frames.erase(next);
     }
     // Erase file
-    buffer_->files_by_path.erase(file_->path);
-    buffer_->free_file_ids.push(file_->file_id);
-    buffer_->files.erase(file_->file_id);
-    file_ = nullptr;
+    buffer_.files_by_path.erase(file_->path);
+    buffer_.free_file_ids.push(file_->file_id);
+    buffer_.files.erase(file_->file_id);
 }
 
 /// Flush file with guard
 void FileSystemBuffer::FileRef::Flush() {
+    assert(lock_type_ != LockType::Exclusive && "Flushing cannot be done with exclusive lock");
     auto file_guard = Lock(Shared);
     FlushUnsafe();
 }
@@ -173,12 +177,12 @@ void FileSystemBuffer::FileRef::FlushUnsafe() {
 
     // Flush all frames.
     // Resolve the next iterator before flushing a frame since we might release the directory latch.
-    auto dir_guard = buffer_->Lock();
+    auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
-    auto lb = buffer_->frames.find(BuildFrameID(file_id));
-    auto ub = buffer_->frames.find(BuildFrameID(file_id + 1));
+    auto lb = buffer_.frames.find(BuildFrameID(file_id));
+    auto ub = buffer_.frames.find(BuildFrameID(file_id + 1));
     auto it = lb;
-    while (it != ub && it != buffer_->frames.end() && ::GetFileID(it->first) != file_id) {
+    while (it != ub && it != buffer_.frames.end() && ::GetFileID(it->first) == file_id) {
         auto next = it++;
         FlushFrameUnsafe(next->second, dir_guard);
     }
@@ -192,13 +196,13 @@ FileSystemBuffer::FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesyste
 /// Destructor
 FileSystemBuffer::~FileSystemBuffer() { Flush(); }
 
-std::shared_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
+std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
                                                                       std::unique_ptr<duckdb::FileHandle> handle) {
     // Secure directory access
     auto dir_guard = Lock();
     // Already added?
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
-        return std::make_shared<FileRef>(shared_from_this(), *files.at(it->second));
+        return std::make_unique<FileRef>(*this, *files.at(it->second));
     }
     // Allocate file id
     uint16_t file_id;
@@ -224,7 +228,7 @@ std::shared_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::strin
             file.path.c_str(), duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE);
     }
     file.file_size = filesystem->GetFileSize(*file.handle);
-    return std::make_shared<FileRef>(shared_from_this(), file);
+    return std::make_unique<FileRef>(*this, file);
 }
 
 std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
@@ -315,7 +319,7 @@ FileSystemBuffer::UniqueFileGuard FileSystemBuffer::FileRef::Lock(ExclusiveTag) 
     std::unique_lock<std::shared_mutex> lock{file_->file_latch};
     ++lock_refs_;
     lock_type_ = LockType::Exclusive;
-    return FileGuard(shared_from_this(), std::move(lock));
+    return FileGuard(*this, std::move(lock));
 }
 
 /// Lock a file shared
@@ -325,13 +329,13 @@ FileSystemBuffer::SharedFileGuard FileSystemBuffer::FileRef::Lock(SharedTag) {
     ++lock_refs_;
     std::cout << "LOCK SHARED " << lock_refs_ << std::endl;
     lock_type_ = LockType::Shared;
-    return FileGuard(shared_from_this(), std::move(lock));
+    return FileGuard(*this, std::move(lock));
 }
 
 /// Unfix a page
 void FileSystemBuffer::FileRef::Unfix(BufferRef&& buffer, bool is_dirty) {
     // Decrease user cound and mark as dirty with directory latch
-    DirectoryGuard dir_guard{buffer_->directory_latch};
+    DirectoryGuard dir_guard{buffer_.directory_latch};
     buffer.frame_->is_dirty = buffer.frame_->is_dirty || is_dirty;
     --buffer.frame_->num_users;
 }
@@ -342,7 +346,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     auto file_guard = Lock(Shared);
 
     // Protect directory access
-    auto dir_guard = buffer_->Lock();
+    auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
     auto frame_id = BuildFrameID(file_id, page_id);
 
@@ -352,7 +356,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     std::unique_ptr<char[]> buffer;
     while (true) {
         // Does the frame exist already?
-        if (auto it = buffer_->frames.find(frame_id); it != buffer_->frames.end()) {
+        if (auto it = buffer_.frames.find(frame_id); it != buffer_.frames.end()) {
             // Increase number of users to prevent eviction when releasing the directory latch.
             auto& frame = it->second;
             ++frame.num_users;
@@ -372,8 +376,8 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
                     // Give up on that frame
                     --frame.num_users;
                     if (frame.GetUserCount() == 0) {
-                        assert(frame.fifo_position == buffer_->fifo.end() && frame.lru_position == buffer_->lru.end());
-                        buffer_->frames.erase(it);
+                        assert(frame.fifo_position == buffer_.fifo.end() && frame.lru_position == buffer_.lru.end());
+                        buffer_.frames.erase(it);
                     }
 
                     // Try again until we're the one that fails
@@ -387,16 +391,16 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
             }
 
             // Is page in LRU queue?
-            if (frame.lru_position != buffer_->lru.end()) {
+            if (frame.lru_position != buffer_.lru.end()) {
                 // Update the queue and move it to the end.
-                buffer_->lru.erase(frame.lru_position);
-                frame.lru_position = buffer_->lru.insert(buffer_->lru.end(), &frame);
+                buffer_.lru.erase(frame.lru_position);
+                frame.lru_position = buffer_.lru.insert(buffer_.lru.end(), &frame);
             } else {
                 // Page was in FIFO queue and was fixed again, move it to LRU
-                assert(frame.fifo_position != buffer_->fifo.end());
-                buffer_->fifo.erase(frame.fifo_position);
-                frame.fifo_position = buffer_->fifo.end();
-                frame.lru_position = buffer_->lru.insert(buffer_->lru.end(), &frame);
+                assert(frame.fifo_position != buffer_.fifo.end());
+                buffer_.fifo.erase(frame.fifo_position);
+                frame.fifo_position = buffer_.fifo.end();
+                frame.lru_position = buffer_.lru.insert(buffer_.lru.end(), &frame);
             }
 
             // Release directory latch and lock frame
@@ -412,18 +416,18 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
 
         // Allocate a buffer frame.
         // Note that this will always succeed since we're (over-)allocating a new buffer if necessary.
-        buffer = buffer_->AllocateFrameBuffer(dir_guard);
+        buffer = buffer_.AllocateFrameBuffer(dir_guard);
 
         // Someone allocated the frame while we were allocating a buffer frame?
-        if (auto it = buffer_->frames.find(frame_id); it != buffer_->frames.end()) continue;
+        if (auto it = buffer_.frames.find(frame_id); it != buffer_.frames.end()) continue;
         break;
     }
 
     // Create a new frame but don't insert it in the queues, yet.
-    assert(buffer_->frames.find(frame_id) == buffer_->frames.end());
+    assert(buffer_.frames.find(frame_id) == buffer_.frames.end());
     auto [it, ok] =
-        buffer_->frames.emplace(std::piecewise_construct, std::forward_as_tuple(frame_id),
-                                std::forward_as_tuple(*file_, frame_id, buffer_->fifo.end(), buffer_->lru.end()));
+        buffer_.frames.emplace(std::piecewise_construct, std::forward_as_tuple(frame_id),
+                               std::forward_as_tuple(*file_, frame_id, buffer_.fifo.end(), buffer_.lru.end()));
     assert(ok);
     auto& frame = it->second;
 
@@ -436,7 +440,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     // Load the data into the frame
     frame.frame_state = FileSystemBuffer::BufferFrame::State::LOADING;
     frame.buffer = std::move(buffer);
-    frame.fifo_position = buffer_->fifo.insert(buffer_->fifo.end(), &frame);
+    frame.fifo_position = buffer_.fifo.insert(buffer_.fifo.end(), &frame);
     LoadFrameUnsafe(frame, dir_guard);
 
     // Downgrade the lock (if necessary)
@@ -447,6 +451,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     } else {
         dir_guard.unlock();
     }
+    assert(lock_type_ == LockType::Shared);
     return BufferRef{std::move(file_guard), frame, std::move(frame_guard)};
 }
 
@@ -457,9 +462,9 @@ uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t of
     if (read_max == 0) return 0;
 
     // Determine page & offset
-    auto page_id = offset >> buffer_->GetPageSizeShift();
-    auto skip_here = offset - page_id * buffer_->GetPageSize();
-    auto read_here = std::min<uint64_t>(read_max, buffer_->GetPageSize() - skip_here);
+    auto page_id = offset >> buffer_.GetPageSizeShift();
+    auto skip_here = offset - page_id * buffer_.GetPageSize();
+    auto read_here = std::min<uint64_t>(read_max, buffer_.GetPageSize() - skip_here);
 
     // Fix page
     auto page = FixPage(page_id, false);
@@ -472,13 +477,13 @@ uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t of
 
 uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::idx_t offset) {
     // Determine page & offset
-    auto page_id = offset >> buffer_->GetPageSizeShift();
-    auto skip_here = offset - page_id * buffer_->GetPageSize();
-    auto write_here = std::min<uint64_t>(bytes, buffer_->GetPageSize() - skip_here);
+    auto page_id = offset >> buffer_.GetPageSizeShift();
+    auto skip_here = offset - page_id * buffer_.GetPageSize();
+    auto write_here = std::min<uint64_t>(bytes, buffer_.GetPageSize() - skip_here);
 
     // Fix page
     auto page = FixPage(page_id, true);
-    write_here = std::min<uint64_t>(write_here, buffer_->GetPageSize());
+    write_here = std::min<uint64_t>(write_here, buffer_.GetPageSize());
 
     // Copy data to page
     auto data = page.GetData();
@@ -491,7 +496,7 @@ uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb
 void FileSystemBuffer::FlushFile(std::string_view path) {
     // We need to find the file first
     auto dir_guard = Lock();
-    auto file_ref = std::make_shared<FileRef>(shared_from_this());
+    auto file_ref = std::make_shared<FileRef>(*this);
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
         file_ref->file_ = files.at(it->second).get();
     } else {
@@ -510,15 +515,13 @@ void FileSystemBuffer::Flush() {
     auto dir_guard = Lock();
     std::vector<std::shared_ptr<FileRef>> file_refs;
     for (auto& [file_id, file] : files) {
-        file_refs.push_back(std::make_shared<FileRef>(shared_from_this(), *file));
+        file_refs.push_back(std::make_shared<FileRef>(*this, *file));
     }
     dir_guard.unlock();
 
     // Flush files
     for (auto& file_ref : file_refs) {
-        assert(file_ref->lock_type_ == LockType::None && "Release requires file to be unlocked");
-        auto file_guard = file_ref->Lock(Shared);
-        file_ref->FlushUnsafe();
+        file_ref->Flush();
     }
 }
 
@@ -537,8 +540,8 @@ void FileSystemBuffer::FlushFrame(BufferFrame& frame, DirectoryGuard& dir_guard,
 void FileSystemBuffer::FlushFrameUnsafe(BufferFrame& frame, DirectoryGuard& dir_guard) {
     if (!frame.is_dirty) return;
     auto& file = frame.file;
-    auto file_id = ::GetFileID(frame.frame_id);
-    auto page_id = ::GetPageID(frame.frame_id);
+    auto file_id = GetFileID(frame.frame_id);
+    auto page_id = GetPageID(frame.frame_id);
     auto page_size = GetPageSize();
 
     // Dump frame bytes
@@ -611,19 +614,19 @@ void FileSystemBuffer::FileRef::Truncate(uint64_t new_size) {
 
     // Block all file accesses
     if (file->file_size != new_size) {
-        buffer_->filesystem->Truncate(*file->handle, new_size);
+        buffer_.filesystem->Truncate(*file->handle, new_size);
         file->file_size = new_size;
     }
 
     // Update all file frames
-    auto dir_guard = buffer_->Lock();
+    auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
-    auto lb = buffer_->frames.lower_bound(BuildFrameID(file_id));
-    auto ub = buffer_->frames.lower_bound(BuildFrameID(file_id + 1));
+    auto lb = buffer_.frames.lower_bound(BuildFrameID(file_id));
+    auto ub = buffer_.frames.lower_bound(BuildFrameID(file_id + 1));
     for (auto it = lb; it != ub; ++it) {
         auto& frame = it->second;
         auto page_id = GetPageID(frame.frame_id);
-        auto page_begin = page_id * buffer_->GetPageSize();
+        auto page_begin = page_id * buffer_.GetPageSize();
         frame.data_size = std::max<size_t>(new_size, page_begin) - page_begin;
     }
 }
