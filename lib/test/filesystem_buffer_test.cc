@@ -113,10 +113,12 @@ TEST(FileSystemBufferTest, PersistentRestart) {
             std::cout << "PAGE " << page_id << std::endl;
             auto page = files[file_id]->FixPage(page_id, true);
             auto& value = *reinterpret_cast<uint64_t*>(page.GetData().data());
-            value = file_id * PageCount + page_id;
+            value = file_id * 10 + page_id;
             page.MarkAsDirty();
         }
     }
+    std::cout << "FLUSH" << std::endl;
+
     buffer->Flush();
     files.clear();
     ASSERT_EQ(fs::file_size(file1_path), PageCount * page_size);
