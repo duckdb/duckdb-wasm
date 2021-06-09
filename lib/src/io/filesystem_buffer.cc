@@ -190,8 +190,7 @@ FileSystemBuffer::FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesyste
     : page_size_bits(page_size_bits), page_capacity(page_capacity), filesystem(std::move(filesystem)) {}
 
 /// Destructor
-FileSystemBuffer::~FileSystemBuffer() {  // *** call flush
-}
+FileSystemBuffer::~FileSystemBuffer() { Flush(); }
 
 std::shared_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
                                                                       std::unique_ptr<duckdb::FileHandle> handle) {
