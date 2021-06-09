@@ -130,63 +130,10 @@ class FileSystemBuffer {
     };
 
    public:
-    /// A file guard
-    template <typename LockGuard> class FileGuard {
-        /// The file ref
-        FileRef* file_ref_;
-        /// The lock
-        LockGuard lock_;
-
-       public:
-        /// Default constructor
-        FileGuard() : file_ref_(nullptr), lock_() {}
-        /// Constructor
-        FileGuard(FileRef& file, LockGuard&& lock) : file_ref_(&file), lock_(std::move(lock)) {}
-        /// Delete copy constructor
-        FileGuard(const FileGuard& other) = delete;
-        /// Delete copy constructor
-        FileGuard(FileGuard&& other) : file_ref_(std::move(other.file_ref_)), lock_(std::move(other.lock_)) {
-            other.file_ref_ = nullptr;
-        }
-        /// Delete move constructor
-        FileGuard& operator=(const FileGuard& other) = delete;
-        /// Delete move constructor
-        FileGuard& operator=(FileGuard&& other) {
-            Release();
-            file_ref_ = std::move(other.file_ref_);
-            lock_ = std::move(other.lock_);
-            other.file_ref_ = nullptr;
-            return *this;
-        }
-        /// Release a file guard
-        void Release() {
-            if (!file_ref_) return;
-            if constexpr (std::is_same_v<LockGuard, std::unique_lock<std::shared_mutex>>) {
-                assert(file_ref_->lock_type_ == LockType::Exclusive);
-                assert(file_ref_->lock_refs_ == 1);
-                std::cout << "FILE RELEASE EXCLUSIVE " << (file_ref_->lock_refs_ - 1) << std::endl;
-                file_ref_->lock_type_ = LockType::None;
-                file_ref_->lock_refs_ = 0;
-            }
-            if constexpr (std::is_same_v<LockGuard, std::shared_lock<std::shared_mutex>>) {
-                assert(file_ref_->lock_type_ == LockType::Shared);
-                assert(file_ref_->lock_refs_ >= 1);
-                std::cout << "FILE RELEASE SHARED " << (file_ref_->lock_refs_ - 1) << std::endl;
-                if (--file_ref_->lock_refs_ == 0) {
-                    file_ref_->lock_type_ = LockType::None;
-                }
-            }
-            file_ref_ = nullptr;
-        }
-        /// Destructor
-        ~FileGuard() { Release(); }
-        /// Get the file
-        auto& get() { return file_ref_; }
-    };
     /// A shared file guard
-    using SharedFileGuard = FileGuard<std::shared_lock<std::shared_mutex>>;
+    using SharedFileGuard = std::shared_lock<std::shared_mutex>;
     /// A unique file guard
-    using UniqueFileGuard = FileGuard<std::unique_lock<std::shared_mutex>>;
+    using UniqueFileGuard = std::unique_lock<std::shared_mutex>;
 
     /// The buffer ref base class
     class BufferRef {
@@ -194,24 +141,38 @@ class FileSystemBuffer {
 
        protected:
         /// The file
-        SharedFileGuard file_;
+        FileRef* file_;
+        /// The file
+        SharedFileGuard file_guard_;
         /// The frame
         BufferFrame* frame_;
         /// The frame guard
         FrameGuardVariant frame_guard_;
 
         /// The constructor
-        explicit BufferRef(SharedFileGuard&& file_guard, BufferFrame& frame, FrameGuardVariant frame_guard);
+        explicit BufferRef(FileRef& file_ref, SharedFileGuard&& file_guard, BufferFrame& frame,
+                           FrameGuardVariant frame_guard);
 
        public:
         /// Move constructor
-        BufferRef(BufferRef&& other) : file_(std::move(other.file_)), frame_(other.frame_) { other.frame_ = nullptr; }
+        BufferRef(BufferRef&& other)
+            : file_(other.file_),
+              file_guard_(std::move(other.file_guard_)),
+              frame_(other.frame_),
+              frame_guard_(std::move(other.frame_guard_)) {
+            other.file_ = nullptr;
+            other.frame_ = nullptr;
+        }
         /// Destructor
         ~BufferRef() { Release(); }
         /// Move assignment
         BufferRef& operator=(BufferRef&& other) {
             Release();
             file_ = std::move(other.file_);
+            file_guard_ = std::move(other.file_guard_);
+            frame_ = std::move(other.frame_);
+            frame_guard_ = std::move(other.frame_guard_);
+            other.file_ = nullptr;
             other.frame_ = nullptr;
             return *this;
         }
@@ -236,15 +197,11 @@ class FileSystemBuffer {
         FileSystemBuffer& buffer_;
         /// The file
         BufferedFile* file_ = nullptr;
-        /// The current lock
-        LockType lock_type_ = LockType::None;
-        /// The current lock refs
-        size_t lock_refs_ = 0;
 
         /// Lock a file exclusively
-        UniqueFileGuard Lock(ExclusiveTag);
+        UniqueFileGuard Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{file_->file_latch}; }
         /// Lock a file shared
-        SharedFileGuard Lock(SharedTag);
+        SharedFileGuard Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{file_->file_latch}; }
         /// Flush the file
         void FlushUnsafe();
         /// Flush a buffer frame
@@ -256,14 +213,12 @@ class FileSystemBuffer {
         /// Constructor
         explicit FileRef(FileSystemBuffer& buffer);
         /// The constructor
-        explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file), lock_refs_(0) {
+        explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file) {
             // Is always constructed with directory latch
             ++file.num_users;
         }
         /// Move constructor
-        FileRef(FileRef&& other) : buffer_(other.buffer_), file_(other.file_), lock_refs_(other.lock_refs_) {
-            other.file_ = nullptr;
-        }
+        FileRef(FileRef&& other) : buffer_(other.buffer_), file_(other.file_) { other.file_ = nullptr; }
         /// Destructor
         ~FileRef() { Release(); }
         /// Is set?
