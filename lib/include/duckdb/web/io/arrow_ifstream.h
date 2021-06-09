@@ -36,7 +36,7 @@ class ArrowInputFileStream : virtual public arrow::io::InputStream {
     /// The file system
     std::shared_ptr<FileSystemBuffer> filesystem_buffer_;
     /// The file id
-    FileSystemBuffer::FileRef file_;
+    std::shared_ptr<FileSystemBuffer::FileRef> file_;
     /// The file position
     size_t file_position_ = 0;
     /// The temporarily fixed page

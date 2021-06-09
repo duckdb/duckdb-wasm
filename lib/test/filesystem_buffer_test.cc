@@ -36,7 +36,7 @@ std::filesystem::path CreateTestFile() {
 
     auto cwd = fs::current_path();
     auto tmp = cwd / ".tmp";
-    auto file = tmp / (std::string("test_filesystem_buffer_") + std::to_string(NEXT_TEST_FILE++));
+    auto file = tmp / (std::string("test_buffer_") + std::to_string(NEXT_TEST_FILE++));
     if (!fs::is_directory(tmp) || !fs::exists(tmp)) fs::create_directory(tmp);
     if (fs::exists(file)) fs::remove(file);
     std::ofstream output(file);
@@ -45,49 +45,49 @@ std::filesystem::path CreateTestFile() {
 
 // NOLINTNEXTLINE
 TEST(FileSystemBufferTest, FixSingle) {
-    auto filesystem_buffer = std::make_shared<TestableFileSystemBuffer>();
-    auto filepath = CreateTestFile();
-    auto page_size = filesystem_buffer->GetPageSize();
+    auto buffer = std::make_shared<TestableFileSystemBuffer>();
+    auto file_path = CreateTestFile();
+    auto page_size = buffer->GetPageSize();
     auto entry_count = page_size / sizeof(uint64_t);
     auto data_size = entry_count * sizeof(uint64_t);
     std::vector<uint64_t> expected_values(entry_count, 123);
 
     // Write test values to page
-    auto file = filesystem_buffer->OpenFile(filepath.c_str());
-    ASSERT_EQ(file.GetFileID(), 0);
+    auto file = buffer->OpenFile(file_path.c_str());
+    file->Truncate(data_size);
+    ASSERT_EQ(file->GetFileID(), 0);
     {
-        auto page = filesystem_buffer->FixPage(file, 0, true);
-        ASSERT_EQ(page.GetData().size(), 0);
-        page.RequireSize(data_size);
+        auto page = file->FixPage(0, true);
+        ASSERT_EQ(page.GetData().size(), buffer->GetPageSize());
         std::memcpy(page.GetData().data(), expected_values.data(), data_size);
         page.MarkAsDirty();
     }
-    filesystem_buffer->FlushFile(file);
+    file->Flush();
 
     // Check buffer manager state
-    ASSERT_EQ(filesystem_buffer->GetFrames().size(), 1);
-    ASSERT_EQ(filesystem_buffer->GetFrames().begin()->second.GetUserCount(), 0);
-    ASSERT_EQ(std::vector<uint64_t>{0}, filesystem_buffer->GetFIFOList());
-    ASSERT_TRUE(filesystem_buffer->GetLRUList().empty());
+    ASSERT_EQ(buffer->GetFrames().size(), 1);
+    ASSERT_EQ(buffer->GetFrames().begin()->second.GetUserCount(), 0);
+    ASSERT_EQ(std::vector<uint64_t>{0}, buffer->GetFIFOList());
+    ASSERT_TRUE(buffer->GetLRUList().empty());
 
     // Read test values from disk
     std::vector<uint64_t> values(entry_count);
     {
-        auto page = filesystem_buffer->FixPage(file, 0, false);
+        auto page = file->FixPage(0, false);
         ASSERT_EQ(page.GetData().size(), data_size);
         std::memcpy(values.data(), page.GetData().data(), data_size);
     }
 
     // Check buffer manager state
-    ASSERT_TRUE(filesystem_buffer->GetFIFOList().empty());
-    ASSERT_EQ(std::vector<uint64_t>{0}, filesystem_buffer->GetLRUList());
+    ASSERT_TRUE(buffer->GetFIFOList().empty());
+    ASSERT_EQ(std::vector<uint64_t>{0}, buffer->GetLRUList());
     ASSERT_EQ(expected_values, values);
 }
 
 // NOLINTNEXTLINE
 TEST(FileSystemBufferTest, PersistentRestart) {
-    auto filesystem_buffer = std::make_shared<TestableFileSystemBuffer>();
-    auto page_size = filesystem_buffer->GetPageSize();
+    auto buffer = std::make_shared<TestableFileSystemBuffer>();
+    auto page_size = buffer->GetPageSize();
     auto file1_path = CreateTestFile();
     auto file2_path = CreateTestFile();
     auto file3_path = CreateTestFile();
@@ -95,42 +95,45 @@ TEST(FileSystemBufferTest, PersistentRestart) {
     std::filesystem::resize_file(file2_path, 10 * page_size);
     std::filesystem::resize_file(file3_path, 10 * page_size);
 
-    std::vector<io::FileSystemBuffer::FileRef> files;
-    files.push_back(filesystem_buffer->OpenFile(file1_path.c_str()));
-    files.push_back(filesystem_buffer->OpenFile(file2_path.c_str()));
-    files.push_back(filesystem_buffer->OpenFile(file3_path.c_str()));
-    ASSERT_EQ(files[0].GetFileID(), 0);
-    ASSERT_EQ(files[1].GetFileID(), 1);
-    ASSERT_EQ(files[2].GetFileID(), 2);
+    std::vector<std::shared_ptr<io::FileSystemBuffer::FileRef>> files;
+    files.push_back(buffer->OpenFile(file1_path.c_str()));
+    files.push_back(buffer->OpenFile(file2_path.c_str()));
+    files.push_back(buffer->OpenFile(file3_path.c_str()));
+    ASSERT_EQ(files[0]->GetFileID(), 0);
+    ASSERT_EQ(files[1]->GetFileID(), 1);
+    ASSERT_EQ(files[2]->GetFileID(), 2);
+    constexpr size_t PageCount = 10;
+    files[0]->Truncate(PageCount * buffer->GetPageSize());
+    files[1]->Truncate(PageCount * buffer->GetPageSize());
+    files[2]->Truncate(PageCount * buffer->GetPageSize());
 
     for (uint16_t file_id = 0; file_id < 3; ++file_id) {
-        for (uint64_t page_id = 0; page_id < 10; ++page_id) {
-            auto page = filesystem_buffer->FixPage(files[file_id], page_id, true);
-            page.RequireSize(page_size);
+        for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
+            auto page = files[file_id]->FixPage(page_id, true);
             auto& value = *reinterpret_cast<uint64_t*>(page.GetData().data());
             value = file_id * 10 + page_id;
             page.MarkAsDirty();
         }
     }
-    filesystem_buffer->Flush();
+    buffer->Flush();
     files.clear();
-    ASSERT_EQ(fs::file_size(file1_path), 10 * page_size);
-    ASSERT_EQ(fs::file_size(file2_path), 10 * page_size);
-    ASSERT_EQ(fs::file_size(file3_path), 10 * page_size);
+    ASSERT_EQ(fs::file_size(file1_path), PageCount * page_size);
+    ASSERT_EQ(fs::file_size(file2_path), PageCount * page_size);
+    ASSERT_EQ(fs::file_size(file3_path), PageCount * page_size);
 
     // Destroy the buffer manager and create a new one.
-    filesystem_buffer = std::make_shared<TestableFileSystemBuffer>();
-    files.push_back(filesystem_buffer->OpenFile(file1_path.c_str()));
-    files.push_back(filesystem_buffer->OpenFile(file2_path.c_str()));
-    files.push_back(filesystem_buffer->OpenFile(file3_path.c_str()));
-    ASSERT_EQ(files[0].GetFileID(), 0);
-    ASSERT_EQ(files[1].GetFileID(), 1);
-    ASSERT_EQ(files[2].GetFileID(), 2);
+    buffer = std::make_shared<TestableFileSystemBuffer>();
+    files.push_back(buffer->OpenFile(file1_path.c_str()));
+    files.push_back(buffer->OpenFile(file2_path.c_str()));
+    files.push_back(buffer->OpenFile(file3_path.c_str()));
+    ASSERT_EQ(files[0]->GetFileID(), 0);
+    ASSERT_EQ(files[1]->GetFileID(), 1);
+    ASSERT_EQ(files[2]->GetFileID(), 2);
 
     // Read all pages back
     for (uint16_t file_id = 0; file_id < 3; ++file_id) {
         for (uint64_t page_id = 0; page_id < 10; ++page_id) {
-            auto page = filesystem_buffer->FixPage(files[file_id], page_id, false);
+            auto page = files[file_id]->FixPage(page_id, false);
             EXPECT_EQ(page.GetData().size(), page_size);
             auto& value = *reinterpret_cast<uint64_t*>(page.GetData().data());
             EXPECT_EQ(file_id * 10 + page_id, value);
@@ -141,121 +144,126 @@ TEST(FileSystemBufferTest, PersistentRestart) {
 
 // NOLINTNEXTLINE
 TEST(FileSystemBufferTest, FIFOEviction) {
-    auto filesystem_buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
-    auto filepath = CreateTestFile();
-    std::ofstream(filepath).close();
-    fs::resize_file(filepath, 10 * filesystem_buffer->GetPageSize());
-    auto file = filesystem_buffer->OpenFile(filepath.c_str());
+    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto file_path = CreateTestFile();
+    std::ofstream(file_path).close();
+    auto data_size = 10 * buffer->GetPageSize();
+    fs::resize_file(file_path, 10 * buffer->GetPageSize());
+    auto file = buffer->OpenFile(file_path.c_str());
+    file->Truncate(data_size);
 
     std::vector<uint64_t> expected_fifo;
 
     // Allocate first 10 pages in FIFO
     for (uint64_t i = 0; i < 10; ++i) {
-        filesystem_buffer->FixPage(file, i, false);
-        ASSERT_EQ(filesystem_buffer->GetFrames().size(), i + 1);
+        file->FixPage(i, false);
+        ASSERT_EQ(buffer->GetFrames().size(), i + 1);
     }
 
     expected_fifo = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_TRUE(filesystem_buffer->GetLRUList().empty());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_TRUE(buffer->GetLRUList().empty());
 
     // Fix page 10 and evict 0 in FIFO
-    filesystem_buffer->FixPage(file, 10, false);
+    file->FixPage(10, false);
     expected_fifo = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_TRUE(filesystem_buffer->GetLRUList().empty());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_TRUE(buffer->GetLRUList().empty());
 
     // Cycle all pages through FIFO
     for (uint64_t i = 0; i < 10; ++i) {
-        filesystem_buffer->FixPage(file, i, false);
+        file->FixPage(i, false);
     }
     expected_fifo = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_TRUE(filesystem_buffer->GetLRUList().empty());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_TRUE(buffer->GetLRUList().empty());
 }
 
 // NOLINTNEXTLINE
 TEST(FileSystemBufferTest, LRUEviction) {
-    auto filesystem_buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
-    auto filepath = CreateTestFile();
-    std::ofstream(filepath).close();
-    fs::resize_file(filepath, 10 * filesystem_buffer->GetPageSize());
-    auto file = filesystem_buffer->OpenFile(filepath.c_str());
+    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto file_path = CreateTestFile();
+    std::ofstream(file_path).close();
+    auto data_size = 11 * buffer->GetPageSize();
+    fs::resize_file(file_path, data_size);
+    auto file = buffer->OpenFile(file_path.c_str());
+    file->Truncate(data_size);
 
     std::vector<uint64_t> expected_fifo;
     std::vector<uint64_t> expected_lru;
 
     // Allocate first 10 pages in FIFO
     for (uint64_t i = 0; i < 10; ++i) {
-        filesystem_buffer->FixPage(file, i, false);
-        ASSERT_EQ(filesystem_buffer->GetFrames().size(), i + 1);
+        file->FixPage(i, false);
+        ASSERT_EQ(buffer->GetFrames().size(), i + 1);
     }
 
     expected_fifo = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_TRUE(filesystem_buffer->GetLRUList().empty());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_TRUE(buffer->GetLRUList().empty());
 
     // Fix page 0 again and move it to LRU
-    filesystem_buffer->FixPage(file, 0, false);
+    file->FixPage(0, false);
     expected_fifo = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     expected_lru = {0};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
     // Fix page 10 and evict 1 in FIFO
-    filesystem_buffer->FixPage(file, 10, false);
+    file->FixPage(10, false);
     expected_fifo = {2, 3, 4, 5, 6, 7, 8, 9, 10};
     expected_lru = {0};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
     // Cycle all pages through FIFO
     for (uint64_t i = 1; i < 10; ++i) {
-        filesystem_buffer->FixPage(file, i, false);
+        file->FixPage(i, false);
     }
     expected_fifo = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     expected_lru = {0};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
     // Move all pages to LRU
     for (uint64_t i = 1; i < 10; ++i) {
-        filesystem_buffer->FixPage(file, i, false);
+        file->FixPage(i, false);
     }
     expected_fifo = {};
     expected_lru = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
     // Fix page 10 and evict 1 in LRU
-    filesystem_buffer->FixPage(file, 10, false);
+    file->FixPage(10, false);
     expected_fifo = {10};
     expected_lru = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
     // Fix page 0
-    filesystem_buffer->FixPage(file, 0, false);
+    file->FixPage(0, false);
     expected_fifo = {0};
     expected_lru = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    EXPECT_EQ(expected_fifo, filesystem_buffer->GetFIFOList());
-    EXPECT_EQ(expected_lru, filesystem_buffer->GetLRUList());
+    EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
+    EXPECT_EQ(expected_lru, buffer->GetLRUList());
 }
 
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelFix) {
     auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
-    auto filepath = CreateTestFile();
-    std::ofstream(filepath).close();
-    fs::resize_file(filepath, 10 * buffer->GetPageSize());
-    auto file = buffer->OpenFile(filepath.c_str());
-
+    auto file_path = CreateTestFile();
+    auto data_size = 10 * buffer->GetPageSize();
+    std::ofstream(file_path).close();
+    fs::resize_file(file_path, data_size);
+    auto file = buffer->OpenFile(file_path.c_str());
+    file->Truncate(data_size);
     std::vector<std::thread> threads;
     for (size_t i = 0; i < 4; ++i) {
         threads.emplace_back([i, &buffer, &file] {
             // NOLINTNEXTLINE
-            ASSERT_NO_THROW(auto page1 = buffer->FixPage(file, i, false);
-                            auto page2 = buffer->FixPage(file, i + 4, false); page2.Release(); page1.Release(););
+            ASSERT_NO_THROW(auto page1 = file->FixPage(i, false); auto page2 = file->FixPage(i + 4, false);
+                            page2.Release(); page1.Release(););
         });
     }
     for (auto& thread : threads) {
@@ -271,12 +279,13 @@ TEST(BufferManagerTest, ParallelFix) {
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelExclusiveAccess) {
     auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
-    auto filepath = CreateTestFile();
-    std::ofstream(filepath).close();
-    fs::resize_file(filepath, 10 * buffer->GetPageSize());
-    auto file = buffer->OpenFile(filepath.c_str());
+    auto file_path = CreateTestFile();
+    auto data_size = 10 * buffer->GetPageSize();
+    std::ofstream(file_path).close();
+    fs::resize_file(file_path, data_size);
+    auto file = buffer->OpenFile(file_path.c_str());
     {
-        auto page = buffer->FixPage(file, 0, true);
+        auto page = file->FixPage(0, true);
         auto page_data = page.GetData();
         ASSERT_EQ(page_data.size(), buffer->GetPageSize());
         std::memset(page_data.data(), 0, buffer->GetPageSize());
@@ -286,7 +295,7 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
     for (size_t i = 0; i < 4; ++i) {
         threads.emplace_back([&buffer, &file] {
             for (size_t j = 0; j < 1000; ++j) {
-                auto page = buffer->FixPage(file, 0, true);
+                auto page = file->FixPage(0, true);
                 auto page_data = page.GetData();
                 uint64_t& value = *reinterpret_cast<uint64_t*>(page_data.data());
                 ++value;
@@ -299,7 +308,7 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
     }
     EXPECT_TRUE(buffer->GetFIFOList().empty());
     EXPECT_EQ(std::vector<uint64_t>{0}, buffer->GetLRUList());
-    auto page = buffer->FixPage(file, 0, false);
+    auto page = file->FixPage(0, false);
     auto page_data = page.GetData();
     uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
     EXPECT_EQ(4000, value);
@@ -328,7 +337,7 @@ TEST(BufferManagerTest, ParallelScans) {
 
             // Zero out pages
             for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
-                auto page = buffer->FixPage(file_ref, page_id, true);
+                auto page = file_ref->FixPage(page_id, true);
                 auto page_data = page.GetData();
                 ASSERT_EQ(page_data.size(), buffer->GetPageSize());
                 std::memset(page_data.data(), 0, buffer->GetPageSize());
@@ -357,7 +366,7 @@ TEST(BufferManagerTest, ParallelScans) {
                 // Scan all pages
                 uint64_t scan_sum = 0;
                 for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
-                    auto page = buffer->FixPage(file, page_id, false);
+                    auto page = file->FixPage(page_id, false);
                     auto page_data = page.GetData();
                     uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
                     ASSERT_EQ(value, 0) << "j=" << j << " page=" << page_id;
@@ -395,7 +404,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
 
             // Zero out pages
             for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
-                auto page = buffer->FixPage(file_ref, page_id, true);
+                auto page = file_ref->FixPage(page_id, true);
                 auto page_data = page.GetData();
                 ASSERT_EQ(page_data.size(), buffer->GetPageSize());
                 std::memset(page_data.data(), 0, buffer->GetPageSize());
@@ -439,7 +448,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
                     // Scan all pages
                     uint64_t scan_sum = 0;
                     for (uint64_t page_id = 0; page_id < PageCount; ++page_id) {
-                        auto page = buffer->FixPage(file, page_id, false);
+                        auto page = file->FixPage(page_id, false);
                         auto page_data = page.GetData();
                         uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
                         scan_sum += value;
@@ -455,7 +464,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
                     // of the query.
                     std::vector<TestableFileSystemBuffer::BufferRef> pages;
                     for (size_t page_number = 0; page_number < num_pages - 1; ++page_number) {
-                        pages.push_back(buffer->FixPage(file, page_distr(engine), false));
+                        pages.push_back(file->FixPage(page_distr(engine), false));
                     }
                     // Unfix all pages before accessing the last one
                     // (potentially exclusively) to avoid deadlocks.
@@ -463,10 +472,10 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
                     // Either read or write the page
                     if (reads_distr(engine)) {
                         // Simulate a read of the page
-                        buffer->FixPage(file, page_distr(engine), false);
+                        file->FixPage(page_distr(engine), false);
                     } else {
                         // Increment the value within the page
-                        auto page = buffer->FixPage(file, page_distr(engine), true);
+                        auto page = file->FixPage(page_distr(engine), true);
                         auto page_data = page.GetData();
                         uint64_t& value = *reinterpret_cast<uint64_t*>(page_data.data());
                         ++value;

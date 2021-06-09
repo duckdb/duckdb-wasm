@@ -18,19 +18,19 @@ ArrowInputFileStream::ArrowInputFileStream(std::shared_ptr<FileSystemBuffer> fil
 /// Destructor
 ArrowInputFileStream::~ArrowInputFileStream() {
     tmp_page_.reset();
-    file_.Release();
+    file_->Release();
 };
 
 /// Close the input file stream
 arrow::Status ArrowInputFileStream::Close() {
     tmp_page_.reset();
-    file_.Release();
+    file_->Release();
     return arrow::Status::OK();
 }
 
 /// Abort any operations on the input stream
 arrow::Status ArrowInputFileStream::Abort() {
-    file_.Release();
+    file_->Release();
     return arrow::Status::OK();
 }
 
@@ -42,7 +42,7 @@ bool ArrowInputFileStream::closed() const { return !static_cast<bool>(file_); }
 /// Read at most nbytes bytes from the file
 arrow::Result<int64_t> ArrowInputFileStream::Read(int64_t nbytes, void* out) {
     tmp_page_.reset();
-    auto n = filesystem_buffer_->Read(file_, out, nbytes, file_position_);
+    auto n = file_->Read(out, nbytes, file_position_);
     file_position_ += n;
     return n;
 }
@@ -55,7 +55,7 @@ arrow::Result<ArrowInputFileStream::PageView> ArrowInputFileStream::PeekView(int
     auto read_here = std::min<size_t>(nbytes, filesystem_buffer_->GetPageSize() - skip_here);
 
     // Read page
-    auto page = filesystem_buffer_->FixPage(file_, page_id, false);
+    auto page = file_->FixPage(page_id, false);
     assert(skip_here <= page.GetData().size());
     auto data = page.GetData().subspan(skip_here);
     return PageView{std::move(page), data};
