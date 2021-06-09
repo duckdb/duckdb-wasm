@@ -43,9 +43,9 @@ arrow::Status Zipper::LoadFromFile(std::string_view path) {
     size_t buffer_size = 0;
     {
         auto file = buffer_manager_->OpenFile(path);
-        buffer_size = buffer_manager_->GetFileSize(file);
+        buffer_size = file->GetSize();
         buffer = std::unique_ptr<char[]>(new char[buffer_size]());
-        buffer_manager_->Read(file, buffer.get(), buffer_size, 0);
+        file->Read(buffer.get(), buffer_size, 0);
     }
     if (buffer_size == 0) return arrow::Status::ExecutionError("couldn't read file");
 
@@ -151,17 +151,18 @@ struct ExtractToFileSystemBufferState {
     /// The buffer manager
     io::FileSystemBuffer& buffer_manager;
     /// The file
-    io::FileSystemBuffer::FileRef& file;
+    std::shared_ptr<io::FileSystemBuffer::FileRef> file;
 
     /// Constructor
-    ExtractToFileSystemBufferState(io::FileSystemBuffer& buffer_manager, io::FileSystemBuffer::FileRef& file)
+    ExtractToFileSystemBufferState(io::FileSystemBuffer& buffer_manager,
+                                   std::shared_ptr<io::FileSystemBuffer::FileRef> file)
         : buffer_manager(buffer_manager), file(file) {}
 };
 
 size_t extractToFileSystemBuffer(void* p_opaque, duckdb_miniz::mz_uint64 file_ofs, const void* p_buf, size_t n) {
     assert(p_opaque != nullptr);
     auto* state = reinterpret_cast<ExtractToFileSystemBufferState*>(p_opaque);
-    return state->buffer_manager.Write(state->file, p_buf, n, file_ofs);
+    return state->file->Write(p_buf, n, file_ofs);
 }
 
 /// Extract an entry to a file
@@ -172,7 +173,7 @@ arrow::Result<size_t> Zipper::ExtractEntryToPath(size_t entryID, std::string_vie
     duckdb_miniz::mz_zip_archive_file_stat stat;
     duckdb_miniz::mz_zip_reader_file_stat(&current_reader_->archive, entryID, &stat);
     auto out = buffer_manager_->OpenFile(path);
-    buffer_manager_->Truncate(out, stat.m_uncomp_size);
+    out->Truncate(stat.m_uncomp_size);
 
     // Extract file
     ExtractToFileSystemBufferState extract_state{*buffer_manager_, out};
@@ -202,7 +203,7 @@ arrow::Result<size_t> Zipper::ExtractPathToPath(const char* in, std::string_view
     duckdb_miniz::mz_zip_archive_file_stat stat;
     duckdb_miniz::mz_zip_reader_file_stat(&current_reader_->archive, file_index, &stat);
     auto out_file = buffer_manager_->OpenFile(out);
-    buffer_manager_->Truncate(out_file, stat.m_uncomp_size);
+    out_file->Truncate(stat.m_uncomp_size);
 
     // Extract file
     ExtractToFileSystemBufferState extract_state{*buffer_manager_, out_file};

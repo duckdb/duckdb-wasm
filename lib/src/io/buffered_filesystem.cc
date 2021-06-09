@@ -18,16 +18,17 @@ namespace web {
 namespace io {
 
 /// Constructor
-void BufferedFileHandle::Close() { file_buffers_.Release(); }
+void BufferedFileHandle::Close() { file_buffers_->Release(); }
 
 /// Constructor
-BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system, FileSystemBuffer::FileRef file_buffers)
-    : duckdb::FileHandle(file_system, std::string{file_buffers.GetPath()}),
+BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system,
+                                       std::shared_ptr<FileSystemBuffer::FileRef> file_buffers)
+    : duckdb::FileHandle(file_system, std::string{file_buffers->GetPath()}),
       file_buffers_(std::move(file_buffers)),
       file_position_(0) {}
 
 /// Constructor
-BufferedFileHandle::~BufferedFileHandle() { file_buffers_.Release(); }
+BufferedFileHandle::~BufferedFileHandle() { file_buffers_->Release(); }
 
 BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FileSystemBuffer> buffer_manager)
     : filesystem_buffer_(std::move(buffer_manager)), filesystem_(*filesystem_buffer_->GetFileSystem()) {}
@@ -46,9 +47,9 @@ void BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t 
     auto reader = static_cast<char *>(buffer);
 
     // Read page-wise
-    auto file_size = filesystem_buffer_->GetFileSize(file);
+    auto file_size = file->GetSize();
     while (nr_bytes > 0 && location < file_size) {
-        auto n = filesystem_buffer_->Read(file, reader, nr_bytes, location);
+        auto n = file->Read(reader, nr_bytes, location);
         reader += n;
         location += n;
         nr_bytes -= n;
@@ -67,9 +68,9 @@ void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t
     auto writer = static_cast<char *>(buffer);
 
     // Write page-wise
-    auto file_size = filesystem_buffer_->GetFileSize(file);
+    auto file_size = file->GetSize();
     while (nr_bytes > 0 && location < file_size) {
-        auto n = filesystem_buffer_->Write(file, writer, nr_bytes, location);
+        auto n = file->Write(writer, nr_bytes, location);
         writer += n;
         location += n;
         nr_bytes -= n;
@@ -86,7 +87,7 @@ void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t
 int64_t BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetBuffers();
-    auto n = filesystem_buffer_->Read(file, buffer, nr_bytes, file_hdl.file_position_);
+    auto n = file->Read(buffer, nr_bytes, file_hdl.file_position_);
     file_hdl.file_position_ += n;
     return n;
 }
@@ -94,7 +95,7 @@ int64_t BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64
 int64_t BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetBuffers();
-    auto n = filesystem_buffer_->Write(file, buffer, nr_bytes, file_hdl.file_position_);
+    auto n = file->Write(buffer, nr_bytes, file_hdl.file_position_);
     file_hdl.file_position_ += n;
     return n;
 }
@@ -103,13 +104,13 @@ int64_t BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int6
 void BufferedFileSystem::FileSync(duckdb::FileHandle &handle) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetBuffers();
-    filesystem_buffer_->FlushFile(file);
+    file->Flush();
 }
 
 /// Returns the file size of a file handle, returns -1 on error
 int64_t BufferedFileSystem::GetFileSize(duckdb::FileHandle &handle) {
     auto &buffered_hdl = static_cast<BufferedFileHandle &>(handle);
-    return filesystem_buffer_->GetFileSize(buffered_hdl.GetBuffers());
+    return buffered_hdl.GetBuffers()->GetSize();
 }
 
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
@@ -121,7 +122,7 @@ time_t BufferedFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
 /// the file
 void BufferedFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     auto &buffered_hdl = static_cast<BufferedFileHandle &>(handle);
-    return filesystem_buffer_->Truncate(buffered_hdl.GetBuffers(), new_size);
+    return buffered_hdl.GetBuffers()->Truncate(new_size);
 }
 /// Recursively remove a directory and all files in it
 void BufferedFileSystem::RemoveDirectory(const std::string &directory) {

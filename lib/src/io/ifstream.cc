@@ -10,7 +10,7 @@ bool InputFileStreamBuffer::NextPage() {
     auto page_id = next_page_id_++;
     if ((page_id << filesystem_buffer_->GetPageSizeShift()) >= data_end_) return false;
     buffer_.Release();
-    buffer_ = filesystem_buffer_->FixPage(file_, page_id, false);
+    buffer_ = file_->FixPage(page_id, false);
     auto data = buffer_.GetData();
     auto data_offset = page_id << filesystem_buffer_->GetPageSizeShift();
     assert(data_offset < data_end_);
@@ -21,8 +21,8 @@ bool InputFileStreamBuffer::NextPage() {
 
 std::streamsize InputFileStreamBuffer::xsgetn(char* out, std::streamsize want) {
     auto base = out;
-    auto left = std::min<uint64_t>(want, file_.GetSize() - GetPosition());
-    assert((egptr() - gptr()) <= (file_.GetSize() - GetPosition()));
+    auto left = std::min<uint64_t>(want, file_->GetSize() - GetPosition());
+    assert((egptr() - gptr()) <= (file_->GetSize() - GetPosition()));
     while (left > 0 && (gptr() < egptr() || NextPage())) {
         auto m = std::min<uint64_t>(egptr() - gptr(), left);
         std::memcpy(out, gptr(), m);
@@ -39,9 +39,9 @@ InputFileStreamBuffer::pos_type InputFileStreamBuffer::seekoff(off_type n, std::
     if (dir == std::ios_base::beg) {
         pos = n;
     } else if (dir == std::ios_base::end) {
-        pos = file_.GetSize() - n;
+        pos = file_->GetSize() - n;
     } else {
-        pos = std::min<uint64_t>(file_.GetSize(), pos + n);
+        pos = std::min<uint64_t>(file_->GetSize(), pos + n);
     }
     auto page_id = pos >> filesystem_buffer_->GetPageSizeShift();
     auto page_ofs = pos - (page_id << filesystem_buffer_->GetPageSizeShift());
@@ -62,7 +62,7 @@ InputFileStreamBuffer::pos_type InputFileStreamBuffer::seekpos(pos_type p, std::
 
 void InputFileStreamBuffer::Slice(uint64_t offset, uint64_t size) {
     // Determine range
-    auto file_size = file_.GetSize();
+    auto file_size = file_->GetSize();
     auto begin = std::min(file_size, offset);
     auto max_size = file_size - begin;
     auto end = begin + ((size == 0) ? max_size : std::min(max_size, size));

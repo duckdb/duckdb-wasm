@@ -38,10 +38,8 @@ namespace io {
 
 class FileSystemBuffer {
    public:
-    /// A file guard
-    using FileGuard = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
     /// A frame guard
-    using FrameGuard = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
+    using FrameGuardVariant = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
     /// Exclusive
     enum ExclusiveTag { Exclusive };
     /// Exclusive
@@ -120,42 +118,96 @@ class FileSystemBuffer {
         /// Delete copy assignment
         BufferFrame& operator=(const BufferFrame& other) = delete;
 
+        /// Get the user count
+        auto GetUserCount() { return num_users; }
         /// Returns a pointer to this page data
-        nonstd::span<char> GetData() { return {buffer.get(), data_size}; }
-        /// Lock the frame exclusively
-        auto Lock(ExclusiveTag) { return std::shared_lock{frame_latch}; }
-        /// Lock the frame shared
-        auto Lock(SharedTag) { return std::unique_lock{frame_latch}; }
+        auto GetData() { return nonstd::span<char>{buffer.get(), data_size}; }
+        /// Lock frame exclusively
+        auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{frame_latch}; }
+        /// Lock frame exclusively
+        auto Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{frame_latch}; }
     };
 
    public:
+    /// A lock type
+    enum class LockType { None, Shared, Exclusive };
+    /// A file guard
+    template <typename LockGuard> class FileGuard {
+        /// The file ref
+        std::shared_ptr<FileRef> file_ref_;
+        /// The lock
+        LockGuard lock_;
+
+       public:
+        /// Default constructor
+        FileGuard() : file_ref_(nullptr), lock_() {}
+        /// Constructor
+        FileGuard(std::shared_ptr<FileRef> file, LockGuard&& lock)
+            : file_ref_(std::move(file)), lock_(std::move(lock)) {}
+        /// Delete copy constructor
+        FileGuard(const FileGuard& other) = delete;
+        /// Delete copy constructor
+        FileGuard(FileGuard&& other) : file_ref_(std::move(other.file_ref_)), lock_(std::move(other.lock_)) {}
+        /// Delete move constructor
+        FileGuard& operator=(const FileGuard& other) = delete;
+        /// Delete move constructor
+        FileGuard& operator=(FileGuard&& other) {
+            Release();
+            file_ref_ = std::move(other.file_ref_);
+            lock_ = std::move(other.lock_);
+            return *this;
+        }
+        /// Release a file guard
+        void Release() {
+            if (!file_ref_) return;
+            if constexpr (std::is_same_v<LockType, std::unique_lock<std::shared_mutex>>) {
+                assert(file_ref_->lock_type_ == LockType::Exclusive);
+                assert(file_ref_->lock_refs_ == 1);
+                file_ref_->lock_type_ = LockType::None;
+                file_ref_->lock_refs_ = 0;
+            }
+            if constexpr (std::is_same_v<LockType, std::shared_lock<std::shared_mutex>>) {
+                assert(file_ref_->lock_type_ == LockType::Shared);
+                assert(file_ref_->lock_refs_ >= 1);
+                if (--file_ref_->lock_refs_ == 0) {
+                    file_ref_->lock_type_ = LockType::None;
+                }
+            }
+        }
+        /// Destructor
+        ~FileGuard() { Release(); }
+        /// Get the file
+        auto& get() { return file_ref_; }
+    };
+    /// A shared file guard
+    using SharedFileGuard = FileGuard<std::shared_lock<std::shared_mutex>>;
+    /// A unique file guard
+    using UniqueFileGuard = FileGuard<std::unique_lock<std::shared_mutex>>;
+
     /// The buffer ref base class
     class BufferRef {
         friend class FileSystemBuffer;
 
        protected:
         /// The file
-        std::shared_ptr<FileRef> file_;
+        SharedFileGuard file_;
         /// The frame
         BufferFrame* frame_;
         /// The frame guard
-        FrameGuard frame_guard_;
+        FrameGuardVariant frame_guard_;
 
         /// The constructor
-        explicit BufferRef(std::shared_ptr<FileRef> file, BufferFrame& frame, FrameGuard frame_guard);
+        explicit BufferRef(SharedFileGuard&& file_guard, BufferFrame& frame, FrameGuardVariant frame_guard);
 
        public:
         /// Move constructor
-        BufferRef(BufferRef&& other) : file_(other.file_), frame_(other.frame_) {
-            other.file_ = nullptr;
-            other.frame_ = nullptr;
-        }
+        BufferRef(BufferRef&& other) : file_(std::move(other.file_)), frame_(other.frame_) { other.frame_ = nullptr; }
         /// Destructor
         ~BufferRef() { Release(); }
         /// Move assignment
         BufferRef& operator=(BufferRef&& other) {
             Release();
-            file_ = other.file_;
+            file_ = std::move(other.file_);
             other.frame_ = nullptr;
             return *this;
         }
@@ -163,8 +215,13 @@ class FileSystemBuffer {
         operator bool() const { return !!frame_; }
         /// Access the data
         auto GetData() { return frame_->GetData(); }
+        /// Get the page id
+        uint64_t GetPageIDOrDefault() const;
         /// Mark as dirty
-        void MarkAsDirty() { frame_->is_dirty = true; }
+        void MarkAsDirty() {
+            auto dir_guard = file_.get()->buffer_.Lock();
+            frame_->is_dirty = true;
+        }
         /// Release the file ref
         void Release();
     };
@@ -177,13 +234,16 @@ class FileSystemBuffer {
         /// The buffer manager
         FileSystemBuffer& buffer_;
         /// The file
-        BufferedFile* file_;
-        /// The current file lock.
-        std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>, std::monostate>
-            file_guard_;
-        /// The number of buffer refs of this user
-        size_t buffer_refs_;
+        BufferedFile* file_ = nullptr;
+        /// The current lock
+        LockType lock_type_ = LockType::None;
+        /// The current lock refs
+        size_t lock_refs_ = 0;
 
+        /// Lock a file exclusively
+        UniqueFileGuard Lock(ExclusiveTag);
+        /// Lock a file shared
+        SharedFileGuard Lock(SharedTag);
         /// Flush a buffer frame
         void FlushFrame(FileSystemBuffer::BufferFrame& frame);
         /// Flush a buffer frame
@@ -220,7 +280,6 @@ class FileSystemBuffer {
         BufferRef FixPage(size_t page_id, bool exclusive);
         /// Unfix a buffer frame
         void Unfix(BufferRef&& ref, bool is_dirty);
-
         /// Read at most n bytes
         uint64_t Read(void* buffer, uint64_t n, duckdb::idx_t offset);
         /// Write at most n bytes
@@ -266,12 +325,18 @@ class FileSystemBuffer {
     /// Evicts a page if neccessary
     std::unique_ptr<char[]> AllocateFrameBuffer(std::unique_lock<std::mutex>& dir_guard);
 
-    /// Fix a page
-    BufferRef FixPage(std::shared_ptr<FileRef>& file_ref, size_t page_id, FileGuard& file_guard);
     /// Flush a frame
-    void FlushFrame(BufferFrame& file, std::unique_lock<std::mutex>& dir_guard, FileGuard& file_guard);
+    void FlushFrame(BufferFrame& frame, std::unique_lock<std::mutex>& dir_guard, UniqueFileGuard& file_guard);
+    /// Flush a frame
+    void FlushFrame(BufferFrame& frame, std::unique_lock<std::mutex>& dir_guard, SharedFileGuard& file_guard);
+    /// Flush a frame
+    void FlushFrameUnsafe(BufferFrame& frame, std::unique_lock<std::mutex>& dir_guard);
     /// Releases a file
-    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_guard, FileGuard file_guard);
+    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_guard, UniqueFileGuard&& file_guard);
+    /// Releases a file
+    void ReleaseFile(BufferedFile& file, std::unique_lock<std::mutex>& dir_guard, SharedFileGuard&& file_guard);
+    /// Releases a file
+    void ReleaseFileUnsafe(BufferedFile& file, std::unique_lock<std::mutex>& dir_guard);
 
    public:
     /// Constructor.
@@ -290,6 +355,8 @@ class FileSystemBuffer {
     /// Get a page id from an offset
     uint64_t GetPageIDFromOffset(uint64_t offset) { return offset >> page_size_bits; }
 
+    /// Lock the directory
+    auto Lock() { return std::unique_lock{directory_latch}; }
     /// Open a file
     std::shared_ptr<FileRef> OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
     /// Flush file matching name to disk
