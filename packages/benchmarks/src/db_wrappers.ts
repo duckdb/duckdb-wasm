@@ -11,6 +11,7 @@ function noop() {}
 const tpchTables = ['customer', 'lineitem', 'nation', 'orders', 'partsupp', 'part', 'region', 'supplier'];
 
 const tpchQueries: string[] = [];
+const tpchSqliteQueries: string[] = [];
 
 export interface DBWrapper {
     name: string;
@@ -107,6 +108,11 @@ export function* sqlInsert(table: string, data: arrow.Table) {
 export async function loadTPCHSQL(dataFetcher: (filename: string) => Promise<string>) {
     for (let i = 1; i <= 22; i++) {
         tpchQueries[i] = await dataFetcher(`tpch_${i.toString().padStart(2, '0')}.sql`);
+        if ([7, 8, 9, 22].includes(i)) {
+            tpchSqliteQueries[i] = await dataFetcher(`tpch_${i.toString().padStart(2, '0')}-sqlite.sql`);
+        } else {
+            tpchSqliteQueries[i] = tpchQueries[i];
+        }
     }
 }
 
@@ -382,7 +388,7 @@ export class SQLjsWrapper implements DBWrapper {
     }
 
     tpch(query: number): Promise<void> {
-        const result = this.db.exec(tpchQueries[query])[0];
+        const result = this.db.exec(tpchSqliteQueries[query])[0];
         if (!this.tpchRuns.has(query)) {
             console.log(`${this.name}: TPCH-${query}`);
             const rows: any[] = [];
