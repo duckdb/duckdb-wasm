@@ -100,7 +100,7 @@ export function* sqlInsert(table: string, data: arrow.Table) {
             if (j < maxVal - 1) query += ',';
         }
         i = maxVal;
-        console.log(Math.round((i / data.length) * 100) + '%');
+        console.info(Math.round((i / data.length) * 100) + '%');
         yield query;
     }
 }
@@ -181,7 +181,7 @@ export abstract class DuckDBSyncMatWrapper implements DBWrapper {
     tpch(query: number): Promise<void> {
         const result = this.conn!.runQuery(tpchQueries[query]);
         if (!this.tpchRuns.has(query)) {
-            console.log(`${this.name}: TPCH-${query}`);
+            console.info(`${this.name}: TPCH-${query}`);
             const rows: any[][] = [];
             for (const row of result) {
                 const vals: any = {};
@@ -300,7 +300,7 @@ export abstract class DuckDBAsyncStreamWrapper implements DBWrapper {
     async tpch(query: number): Promise<void> {
         const result = await this.conn!.runQuery(tpchQueries[query]);
         if (!this.tpchRuns.has(query)) {
-            console.log(`${this.name}: TPCH-${query}`);
+            console.info(`${this.name}: TPCH-${query}`);
             const rows: any[][] = [];
             for (const row of result) {
                 const vals: any = {};
@@ -387,10 +387,10 @@ export class SQLjsWrapper implements DBWrapper {
         return Promise.resolve(<number>results[0].values[0][0]);
     }
 
-    tpch(query: number): Promise<void> {
-        const result = this.db.exec(tpchSqliteQueries[query])[0];
+    async tpch(query: number): Promise<void> {
+        const result = await this.db.exec(tpchSqliteQueries[query])[0];
         if (!this.tpchRuns.has(query)) {
-            console.log(`${this.name}: TPCH-${query}`);
+            console.info(`${this.name}: TPCH-${query}`);
             const rows: any[] = [];
             for (const row of result.values) {
                 const vals: any = {};
@@ -417,16 +417,7 @@ export class SQLjsWrapper implements DBWrapper {
     }
 
     implements(func: string): boolean {
-        const non_supported = [
-            // SQLite does not support extract(... from ...)
-            'tpch-7',
-            'tpch-8',
-            'tpch-9',
-            // SQLite does not support substring(... from ...)
-            'tpch-22',
-        ];
-
-        return !non_supported.includes(func);
+        return true;
     }
 }
 
@@ -672,7 +663,7 @@ export class ArqueroWrapper implements DBWrapper {
                 .objects();
 
             if (!this.tpchRuns.has(query)) {
-                console.log(`${this.name}: TPCH-${query}`);
+                console.info(`${this.name}: TPCH-${query}`);
                 console.table(result);
                 this.tpchRuns.add(query);
             }
@@ -694,7 +685,7 @@ export class ArqueroWrapper implements DBWrapper {
                 .objects();
 
             if (!this.tpchRuns.has(query)) {
-                console.log(`${this.name}: TPCH-${query}`);
+                console.info(`${this.name}: TPCH-${query}`);
                 console.table(result);
                 this.tpchRuns.add(query);
             }
@@ -768,7 +759,7 @@ export class NanoSQLWrapper implements DBWrapper {
         await nSQL(table).loadJS(rows, progress => {
             let val = Math.round(progress);
             if (last != val) {
-                console.log(val + '%');
+                console.info(val + '%');
                 last = val;
             }
         });

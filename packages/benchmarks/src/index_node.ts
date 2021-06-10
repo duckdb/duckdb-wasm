@@ -23,19 +23,17 @@ import {
 
 // Configure the worker
 
-// wasm-check seems bugged, reports exceptions: false with experimental flag specified
-// Using -eh variant for base
 const WORKER_CONFIG = duckdb_async.configure({
-    worker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js'),
+    worker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async.worker.js'),
     workerEH: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js'),
-    wasm: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
+    wasm: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
     wasmEH: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
 });
 
 const decoder = new TextDecoder();
 
 async function main() {
-    console.log('Selected DuckDB: ' + WORKER_CONFIG.wasmURL);
+    console.info('Selected DuckDB: ' + WORKER_CONFIG.wasmURL);
 
     let db: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
@@ -65,21 +63,21 @@ async function main() {
                     await this.db.addFilePath(path, path);
                 }
             })(db),
-            // new (class extends DuckDBSyncStreamWrapper {
-            //     async registerFile(path: string): Promise<void> {
-            //         await this.db.addFilePath(path, path);
-            //     }
-            // })(db),
-            // new (class extends DuckDBAsyncStreamWrapper {
-            //     async registerFile(path: string): Promise<void> {
-            //         await this.db.addFilePath(path, path);
-            //     }
-            // })(adb),
+            new (class extends DuckDBSyncStreamWrapper {
+                async registerFile(path: string): Promise<void> {
+                    await this.db.addFilePath(path, path);
+                }
+            })(db),
+            new (class extends DuckDBAsyncStreamWrapper {
+                async registerFile(path: string): Promise<void> {
+                    await this.db.addFilePath(path, path);
+                }
+            })(adb),
             new ArqueroWrapper(),
-            // new LovefieldWrapper(),
+            new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            // new NanoSQLWrapper(),
-            // new AlaSQLWrapper(),
+            new NanoSQLWrapper(),
+            new AlaSQLWrapper(),
         ],
         path.resolve(__dirname, '../../../data'),
         (path: string) => {

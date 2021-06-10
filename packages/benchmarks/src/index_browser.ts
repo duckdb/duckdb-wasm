@@ -31,8 +31,6 @@ const WORKER_BUNDLES = {
 const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
 
 async function main() {
-    console.log('Selected DuckDB: ' + WORKER_CONFIG.wasmURL);
-
     let db: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
@@ -45,8 +43,7 @@ async function main() {
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
     await adb.open(WORKER_CONFIG.wasmURL.toString());
 
-    // Can't load files bigger than 512MB in karma.. need to find a solution.
-    const tpchScale = '0_1';
+    const tpchScale = '0_5';
 
     const SQL = await sqljs({
         locateFile: file => `/sqljs/${file}`,
@@ -72,11 +69,11 @@ async function main() {
             //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
             //     }
             // })(db),
-            new (class extends DuckDBAsyncStreamWrapper {
-                async registerFile(path: string): Promise<void> {
-                    await this.db.addFileBlob(path, await (await fetch(path)).blob());
-                }
-            })(adb),
+            // new (class extends DuckDBAsyncStreamWrapper {
+            //     async registerFile(path: string): Promise<void> {
+            //         await this.db.addFileBlob(path, await (await fetch(path)).blob());
+            //     }
+            // })(adb),
             // new ArqueroWrapper(),
             // new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),

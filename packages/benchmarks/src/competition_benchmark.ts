@@ -35,16 +35,16 @@ export async function benchmarkCompetitions(
         await db.load(`scan_table`, null, table);
 
         if (db.implements('scanInt')) {
-            await scans.push(
-                await add(db.name, async () => {
+            scans.push(() =>
+                add(db.name, async () => {
                     await db.scanInt();
                 }),
             );
         }
 
         if (db.implements('sum')) {
-            await sums.push(
-                await add(db.name, async () => {
+            sums.push(() =>
+                add(db.name, async () => {
                     const val = await db.sum();
 
                     if (val != gaussSum(tupleCount)) {
@@ -57,10 +57,10 @@ export async function benchmarkCompetitions(
 
     await suite(
         `Table Scan ${tupleCount} simple rows`,
-        ...scans,
+        ...scans.map(x => x()),
         cycle((result: any, _summary: any) => {
             const duration = result.details.median;
-            console.log(
+            console.info(
                 `${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s ${format.formatThousands(
                     tupleCount / duration,
                 )} rows/s`,
@@ -70,10 +70,10 @@ export async function benchmarkCompetitions(
 
     await suite(
         `Sum of ${tupleCount} int rows`,
-        ...sums,
+        ...sums.map(x => x()),
         cycle((result: any, _summary: any) => {
             const duration = result.details.median;
-            console.log(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
+            console.info(`${kleur.cyan(result.name)} t: ${duration.toFixed(5)}s`);
         }),
     );
 
@@ -104,11 +104,10 @@ export async function benchmarkCompetitions(
     for (let i = 1; i <= 22; i++) {
         tpchs[i] = [];
     }
-    console.log('Importing TPCH data');
     for (let db of dbs) {
         if (!db.implements('join')) continue;
-
         console.log(db.name);
+
         await db.init();
 
         for (const [k, v] of Object.entries(tables)) {
@@ -116,48 +115,41 @@ export async function benchmarkCompetitions(
         }
 
         for (const [k, v] of Object.entries(tables)) {
-            console.log(k);
             await db.load(k, `${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`, v);
         }
-
-        await primaryJoins.push(
-            await add(db.name, async () => {
-                await db.join();
-            }),
-        );
+        await primaryJoins.push(() => add(db.name, async () => await db.join()));
     }
 
     for (let i = 1; i <= 22; i++) {
         for (let db of dbs) {
             if (db.implements('tpch') && db.implements(`tpch-${i}`)) {
-                await tpchs[i].push(
-                    await add(db.name, async () => {
-                        await db.tpch(i);
-                    }),
-                );
+                tpchs[i].push(() => add(db.name, async () => await db.tpch(i)));
             }
         }
     }
 
-    await suite(
-        `Simple primary key join`,
-        ...primaryJoins,
-        cycle((result: any, _summary: any) => {
-            const duration = result.details.mean.toFixed(5);
-            const margin = result.margin.toFixed(2);
-            console.log(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
-        }),
-    );
+    if (primaryJoins.length > 0) {
+        await suite(
+            `Simple primary key join`,
+            ...primaryJoins.map(x => x()),
+            cycle((result: any, _summary: any) => {
+                const duration = result.details.mean.toFixed(5);
+                const margin = result.margin.toFixed(2);
+                console.info(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
+            }),
+        );
+    }
 
     for (const i in tpchs) {
         if (tpchs[i].length > 0) {
             await suite(
                 `TPCH-${i} query`,
-                ...tpchs[i],
+                // For some odd reason, we need to use functions in this scenario in headless browsers...
+                ...tpchs[i].map(x => x()),
                 cycle((result: any, _summary: any) => {
                     const duration = result.details.mean.toFixed(5);
                     const margin = result.margin.toFixed(2);
-                    console.log(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
+                    console.info(`${kleur.cyan(result.name)} t: ${duration}s ±${margin}% (${result.samples} samples)`);
                 }),
             );
         }
