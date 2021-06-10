@@ -66,7 +66,7 @@ TEST(FileSystemBufferTest, FixSingle) {
 
     // Check buffer manager state
     ASSERT_EQ(buffer->GetFrames().size(), 1);
-    ASSERT_EQ(buffer->GetFrames().begin()->second.GetUserCount(), 0);
+    ASSERT_EQ(buffer->GetFrames().begin()->second->GetUserCount(), 0);
     ASSERT_EQ(std::vector<uint64_t>{0}, buffer->GetFIFOList());
     ASSERT_TRUE(buffer->GetLRUList().empty());
 
@@ -317,7 +317,7 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelScans) {
     constexpr size_t PageCount = 100;
-    constexpr size_t ThreadCount = 12;
+    constexpr size_t ThreadCount = 2;
     constexpr size_t JobCount = 100;
 
     // Prepare test files
@@ -351,7 +351,7 @@ TEST(BufferManagerTest, ParallelScans) {
     auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     std::vector<std::thread> threads;
 
-    for (size_t i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < ThreadCount; ++i) {
         threads.emplace_back([i, &buffer, &test_files] {
             std::mt19937_64 engine{i};
             // Out of 20 accesses, 12 are from segment 0, 5 from segment 1,
