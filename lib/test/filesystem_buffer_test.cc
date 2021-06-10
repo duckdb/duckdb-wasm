@@ -316,7 +316,7 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
 
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelScans) {
-    constexpr size_t PageCount = 100;
+    constexpr size_t PageCount = 1000;
     constexpr size_t ThreadCount = 2;
     constexpr size_t JobCount = 100;
 
