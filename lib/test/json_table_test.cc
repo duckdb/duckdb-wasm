@@ -151,7 +151,7 @@ TEST_P(TableReaderTestSuite, DetectAndReadSingleBatch) {
     unsigned i = 0;
     for (;; ++i) {
         auto maybe_batch = reader->Next();
-        ASSERT_TRUE(maybe_batch.ok()) << maybe_batch.status().message();
+        ASSERT_TRUE(maybe_batch.ok()) << "i=" << i << ": " << maybe_batch.status().message();
 
         auto& batch = maybe_batch.ValueUnsafe();
         if (batch == nullptr) break;
