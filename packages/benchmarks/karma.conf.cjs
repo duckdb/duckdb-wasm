@@ -1,8 +1,49 @@
 const puppeteer = require('puppeteer');
+const zlib = require('zlib');
+
+const bytesToSize = bytes => {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes === 0) {
+        return '0 Byte';
+    }
+    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)), 10);
+    return Math.round(bytes / 1024 ** i, 2) + sizes[i];
+};
+// Preprocess files to provide a gzip compressed alternative version
+function GZIPPreprocessor(config, logger) {
+    const log = logger.create('preprocessor.gzip');
+
+    var pre = (content, file, done) => {
+        const originalSize = content.length;
+        // const contentBuffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
+
+        zlib.gzip(content, (err, gzippedContent) => {
+            if (err) {
+                log.error(err);
+                done(err);
+                return;
+            }
+
+            // eslint-disable-next-line no-param-reassign
+            file.encodings.gzip = gzippedContent;
+
+            log.info(
+                `compressed ${file.originalPath} [${bytesToSize(originalSize)} -> ${bytesToSize(
+                    gzippedContent.length,
+                )}]`,
+            );
+            done(null, content);
+        });
+    };
+    pre.handleBinaryFiles = true;
+    return pre;
+}
+
+GZIPPreprocessor.$inject = ['config.gzip', 'logger'];
 
 process.env.CHROME_BIN = puppeteer.executablePath();
 
-const JS_TIMEOUT = 90000000;
+const JS_TIMEOUT = 10000000;
 
 module.exports = function (config) {
     config.set({
@@ -13,6 +54,7 @@ module.exports = function (config) {
             'karma-sourcemap-loader',
             'karma-spec-reporter',
             'karma-custom',
+            { 'preprocessor:gzip': ['factory', GZIPPreprocessor] },
         ],
         frameworks: ['custom'],
         files: [
@@ -21,11 +63,17 @@ module.exports = function (config) {
             { pattern: 'packages/duckdb-wasm/dist/*', included: false, watched: false, served: true },
             { pattern: 'node_modules/sql.js/dist/*.wasm', included: false, watched: false, served: true },
             { pattern: 'data/uni/*', included: false, watched: false, served: true },
-            { pattern: 'data/tpch/0_1/**/*', included: false, watched: false, served: true },
+            // { pattern: 'data/tpch/0_1/parquet/*', included: false, watched: false, served: true },
+            // { pattern: 'data/tpch/0_1/*', included: false, watched: false, served: true },
+            { pattern: 'data/tpch/0_5/parquet/*', included: false, watched: false, served: true },
+            { pattern: 'data/tpch/0_5/*', included: false, watched: false, served: true },
             { pattern: 'packages/benchmarks/src/scripts/*.sql', included: false, watched: false, served: true },
         ],
         preprocessors: {
-            '**/*.js': ['sourcemap'],
+            '**/*.js': ['sourcemap', 'gzip'],
+            '**/*.wasm': ['gzip'],
+            '**/*.parquet': ['gzip'],
+            '**/*.db': ['gzip'],
         },
         proxies: {
             '/static/': '/base/packages/duckdb-wasm/dist/',
@@ -37,14 +85,19 @@ module.exports = function (config) {
         reporters: ['dots'],
         port: 9876,
         colors: true,
-        logLevel: config.LOG_INFO,
+        logLevel: config.LOG_DEBUG,
+        loggers: [{ type: 'console' }],
         autoWatch: true,
-        singleRun: false,
-        // browsers: ['ChromeHeadlessNoSandbox', 'FirefoxHeadless'],
+        singleRun: true,
+        browsers: ['ChromeHeadlessNoSandbox', 'ChromeHeadlessNoSandboxEH', 'FirefoxHeadless'],
         // browsers: ['ChromeHeadlessNoSandbox'],
-        browsers: [],
+        // browsers: [],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox'],
+            },
+            ChromeHeadlessNoSandboxEH: {
                 base: 'ChromeHeadless',
                 flags: ['--no-sandbox', '--js-flags="--experimental-wasm-eh"'],
             },
