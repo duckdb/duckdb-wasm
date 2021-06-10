@@ -14,6 +14,7 @@
 #include <shared_mutex>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -53,6 +54,8 @@ class FileSystemBuffer {
     class FileRef;
 
    protected:
+    /// Forward declare buffer frame
+    class BufferFrame;
     /// A buffered file
     struct BufferedFile {
         /// The file id
@@ -63,19 +66,19 @@ class FileSystemBuffer {
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
         /// This latch ensures that reads and writes are blocked during truncation.
         std::shared_mutex file_latch = {};
-        /// The user references
-        int64_t num_users = 0;
-        /// The frame references
-        int64_t num_frames = 0;
         /// The file size
         uint64_t file_size = 0;
+        /// The user references
+        int64_t num_users = 0;
+        /// The loaded frame
+        std::list<BufferFrame*> frames = {};
 
         /// Constructor
         BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr)
             : file_id(file_id), path(path), handle(std::move(file)) {}
 
         /// Get the number of references
-        auto GetReferenceCount() const { return num_users + num_frames; }
+        auto GetReferenceCount() const { return num_users + frames.size(); }
     };
 
     /// A buffer frame, the central data structure to hold data
@@ -102,18 +105,23 @@ class FileSystemBuffer {
         uint32_t data_size = 0;
         /// Is the page dirty?
         bool is_dirty = false;
+        /// Position in the file frame list
+        list_position file_frame_position;
         /// Position of this page in the FIFO list
         list_position fifo_position;
         /// Position of this page in the LRU list
         list_position lru_position;
         /// The frame latch
-        std::shared_mutex frame_latch;
+        std::shared_mutex frame_latch = {};
 
        public:
         /// Constructor
         BufferFrame(BufferedFile& file, uint64_t frame_id, list_position fifo_position, list_position lru_position);
         /// ~Destructor
-        ~BufferFrame() { --file.num_frames; }
+        ~BufferFrame() {
+            assert(num_users == 0);
+            file.frames.erase(file_frame_position);
+        }
         /// Delete copy constructor
         BufferFrame(const BufferFrame& other) = delete;
         /// Delete copy assignment
@@ -271,7 +279,7 @@ class FileSystemBuffer {
     uint16_t allocated_file_ids = 0;
 
     /// Maps frame ids to frames
-    std::map<uint64_t, BufferFrame> frames = {};
+    std::unordered_map<uint64_t, std::unique_ptr<BufferFrame>> frames = {};
     /// FIFO list of frames
     std::list<BufferFrame*> fifo = {};
     /// LRU list of frames

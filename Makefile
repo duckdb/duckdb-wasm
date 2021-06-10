@@ -25,6 +25,8 @@ EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_I
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
+GTEST_FILTER=*
+
 # ---------------------------------------------------------------------------
 # Formatting
 
@@ -82,27 +84,27 @@ lib_perf: lib_relwithdebinfo
 # Test the core library
 .PHONY: lib_tests
 lib_tests: lib
-	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
+	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Debug the core library
 .PHONY: lib_tests
 lib_tests_lldb: lib
-	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
+	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Debug the core library
 .PHONY: lib_tests
 lib_tests_gdb: lib
-	gdb --args ${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*
+	gdb --args ${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Test the core library
 .PHONY: lib_tests_relwithdebinfo
-lib_tests_relwithdebinfo: lib_relwithdebinfo
-	${LIB_RELWITHDEBINFO_DIR}/tester --source_dir ${LIB_SOURCE_DIR}
+lib_tests_rel: lib_relwithdebinfo
+	${LIB_RELWITHDEBINFO_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Test the core library
 .PHONY: lib_tests_relwithdebinfo_lldb
-lib_tests_relwithdebinfo_lldb: lib_relwithdebinfo
-	lldb ${LIB_RELWITHDEBINFO_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR}
+lib_tests_rel_lldb: lib_relwithdebinfo
+	lldb ${LIB_RELWITHDEBINFO_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Debug the library
 .PHONY: lib_debug
