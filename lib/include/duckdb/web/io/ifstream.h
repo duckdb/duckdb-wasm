@@ -71,9 +71,12 @@ class InputFileStreamBuffer : public std::streambuf {
     InputFileStreamBuffer(const InputFileStreamBuffer& other)
         : filesystem_buffer_(other.filesystem_buffer_),
           file_(other.filesystem_buffer_->OpenFile(other.file_->GetPath())),
-          buffer_(other.file_->FixPage(other.buffer_.GetPageIDOrDefault(), false)),
+          buffer_(other.file_->FixPage(other.next_page_id_ - 1, false)),
           data_end_(other.data_end_),
-          next_page_id_(other.next_page_id_) {}
+          next_page_id_(other.next_page_id_) {
+        auto data = buffer_.GetData();
+        setg(data.data(), data.data() + (other.gptr() - other.eback()), data.data() + (other.egptr() - other.eback()));
+    }
     /// Constructor
     InputFileStreamBuffer(InputFileStreamBuffer&& other)
         : filesystem_buffer_(std::move(other.filesystem_buffer_)),
