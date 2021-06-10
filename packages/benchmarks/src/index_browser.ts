@@ -31,6 +31,7 @@ const WORKER_BUNDLES = {
 const WORKER_CONFIG = duckdb_async.configure(WORKER_BUNDLES);
 
 async function main() {
+    console.info(WORKER_CONFIG.wasmURL);
     let db: duckdb_serial.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
@@ -99,6 +100,6 @@ async function main() {
 (window as any).karmaCustomEnv.execute = async function (karma: any, window: any) {
     await main();
 
-    karma.result({ success: true });
+    karma.result({ success: true, suite: [], log: [] });
     karma.complete({});
 };

@@ -14,7 +14,7 @@ export async function benchmarkCompetitions(
     tableFetch: (path: string) => Promise<arrow.Table>,
     tpchScale: string,
 ) {
-    /*const tupleCount = 10000;
+    const tupleCount = 10000;
     /////////////////////////////////////////////
 
     let col = [];
@@ -79,7 +79,7 @@ export async function benchmarkCompetitions(
 
     for (let db of dbs) {
         await db.close();
-    }*/
+    }
 
     /////////////////////////////////////////////
 
@@ -104,6 +104,8 @@ export async function benchmarkCompetitions(
     for (let i = 1; i <= 22; i++) {
         tpchs[i] = [];
     }
+
+    console.info('Loading TPCH');
     for (let db of dbs) {
         if (!db.implements('join')) continue;
         console.log(db.name);
@@ -117,7 +119,8 @@ export async function benchmarkCompetitions(
         for (const [k, v] of Object.entries(tables)) {
             await db.load(k, `${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`, v);
         }
-        await primaryJoins.push(() => add(db.name, async () => await db.join()));
+
+        primaryJoins.push(() => add(db.name, async () => await db.join()));
     }
 
     for (let i = 1; i <= 22; i++) {

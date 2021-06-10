@@ -82,10 +82,10 @@ module.exports = function (config) {
         port: 9876,
         colors: true,
         logLevel: config.LOG_INFO,
-        loggers: [{ type: 'console' }],
         autoWatch: true,
         singleRun: false,
-        browsers: ['ChromeHeadlessNoSandbox', 'ChromeHeadlessNoSandboxEH', 'FirefoxHeadless'],
+        // I don't know why but it doesnt work when trying to run multiple browsers in one go.
+        browsers: ['ChromeHeadlessNoSandbox' /*, 'ChromeHeadlessNoSandboxEH', 'FirefoxHeadless'*/],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
@@ -100,7 +100,11 @@ module.exports = function (config) {
             captureConsole: true,
         },
         concurrency: 1, // only one browser at a time
+        captureTimeout: 999999999,
+        browserDisconnectTimeout: 999999999,
+        browserDisconnectTolerance: 1,
         browserNoActivityTimeout: 999999999,
+        processKillTimeout: 999999999,
         pingTimeout: 999999999,
     });
 };
