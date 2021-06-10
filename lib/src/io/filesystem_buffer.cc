@@ -283,6 +283,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& di
     } else if (frame->fifo_position != fifo.end()) {
         fifo.erase(frame->fifo_position);
     }
+
     // Erase from dictionary
     auto buffer = std::move(frame->buffer);
     frames.erase(frame->frame_id);
