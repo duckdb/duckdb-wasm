@@ -61,8 +61,6 @@ FileSystemBuffer::BufferRef::BufferRef(FileRef& file, SharedFileGuard&& file_gua
                                        FrameGuardVariant frame_guard)
     : file_(&file), file_guard_(std::move(file_guard)), frame_(&frame), frame_guard_(std::move(frame_guard)) {}
 
-/// Get the page id
-uint64_t FileSystemBuffer::BufferRef::GetPageIDOrDefault() const { return frame_ ? ::GetPageID(frame_->frame_id) : 0; }
 /// Mark a buffer ref as dirty
 void FileSystemBuffer::BufferRef::MarkAsDirty() {
     auto dir_guard = file_->buffer_.Lock();
@@ -71,11 +69,14 @@ void FileSystemBuffer::BufferRef::MarkAsDirty() {
 /// Release a buffer ref
 void FileSystemBuffer::BufferRef::Release() {
     if (!frame_) return;
-    // Decrease user count and mark as dirty with directory latch
+    // Decrease user count and mark as dirty with directory latch.
+    // Destructor will then release the frame guard variant.
     auto dir_guard = file_->buffer_.Lock();
     assert(frame_->num_users > 0);
     --frame_->num_users;
     frame_ = nullptr;
+    // Unlock frame guard with directory latch
+    std::visit([&](auto& l) { l.unlock(); }, frame_guard_);
 }
 
 /// Constructor
@@ -111,20 +112,19 @@ void FileSystemBuffer::FileRef::LoadFrameUnsafe(FileSystemBuffer::BufferFrame& f
 void FileSystemBuffer::FileRef::Release() {
     // Already released?
     if (!file_) return;
+    // Clear file pointer eventually
     auto release_file = sg::make_scope_guard([&]() { file_ = nullptr; });
-
     // Protect with directory latch
     auto dir_guard = buffer_.Lock();
 
-    // Test assertions
-    assert(file_->GetReferenceCount() > 0 && "File must store own reference");
-
     // Is the file referenced by someone else?
+    assert(file_->GetReferenceCount() > 0 && "File must store own reference");
     if (file_->GetReferenceCount() > 1) {
         --file_->num_users;
         return;
     }
-    // Have to release the file, acquire exclusive file lock
+
+    // We have to release the file, acquire exclusive file lock
     dir_guard.unlock();
     auto file_guard = Lock(Exclusive);
     dir_guard.lock();
@@ -142,7 +142,6 @@ void FileSystemBuffer::FileRef::Release() {
 
         // Flush the frame
         FlushFrameUnsafe(frame, dir_guard);
-
         // The number of users MUST be 0.
         // We hold an exclusive lock on the file and there is nobody referencing it.
         // => There's no way someone can see the frame
@@ -152,10 +151,10 @@ void FileSystemBuffer::FileRef::Release() {
         } else if (frame.fifo_position != buffer_.fifo.end()) {
             buffer_.fifo.erase(frame.fifo_position);
         }
-
         // Erase the frame
         buffer_.frames.erase(frame.frame_id);
     }
+
     // Erase file
     buffer_.files_by_path.erase(file_->path);
     buffer_.free_file_ids.push(file_->file_id);
@@ -187,7 +186,6 @@ FileSystemBuffer::~FileSystemBuffer() { Flush(); }
 
 std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
                                                                       std::unique_ptr<duckdb::FileHandle> handle) {
-    // Secure directory access
     auto dir_guard = Lock();
     // Already added?
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
@@ -303,20 +301,9 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
     return buffer;
 }
 
-/// Unfix a page
-void FileSystemBuffer::FileRef::Unfix(BufferRef&& buffer, bool is_dirty) {
-    // Decrease user cound and mark as dirty with directory latch
-    DirectoryGuard dir_guard{buffer_.directory_latch};
-    buffer.frame_->is_dirty = buffer.frame_->is_dirty || is_dirty;
-    --buffer.frame_->num_users;
-}
-
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
-    // Fixing any page will require a shared file lock to protect against truncation
     auto file_guard = Lock(Shared);
-
-    // Protect directory access
     auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
     auto frame_id = BuildFrameID(file_id, page_id);
@@ -338,8 +325,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
                 // Wait for other thread to finish.
                 // We acquire the frame latch exclusively to block on the loading.
                 dir_guard.unlock();
-                frame->frame_latch.lock();
-                frame->frame_latch.unlock();
+                frame->Lock(Exclusive).unlock();
                 dir_guard.lock();
 
                 // Other thread failed to allocate a buffer for the frame?
@@ -395,25 +381,23 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
         break;
     }
 
-    // Create a new frame but don't insert it in the queues, yet.
+    // Create a new frame.
     assert(dir_guard.owns_lock());
     assert(buffer_.frames.find(frame_id) == buffer_.frames.end());
-    auto [it, ok] = buffer_.frames.insert(
-        {frame_id, std::make_unique<BufferFrame>(*file_, frame_id, buffer_.fifo.end(), buffer_.lru.end())});
-    assert(ok);
-    auto& frame = *it->second;
+    auto frame_ptr = std::make_unique<BufferFrame>(*file_, frame_id, buffer_.fifo.end(), buffer_.lru.end());
+    auto& frame = *frame_ptr;
+    frame.frame_state = FileSystemBuffer::BufferFrame::State::LOADING;
+    frame.buffer = std::move(buffer);
+    ++frame.num_users;
 
     // Lock the frame exclusively to secure the loading.
     // We might release the latch while allocating a buffer frame and other threads might see the new frame.
-    // I.e. see earlier condition.
-    ++frame.num_users;
     assert(frame.num_users == 1);
     FrameGuardVariant frame_guard = frame.Lock(Exclusive);
 
-    // Prepare the data loading
-    frame.frame_state = FileSystemBuffer::BufferFrame::State::LOADING;
-    frame.buffer = std::move(buffer);
+    // Insert into frames and queue
     frame.fifo_position = buffer_.fifo.insert(buffer_.fifo.end(), &frame);
+    buffer_.frames.insert({frame_id, std::move(frame_ptr)});
 
     // Load the data into the frame
     LoadFrameUnsafe(frame, dir_guard);
