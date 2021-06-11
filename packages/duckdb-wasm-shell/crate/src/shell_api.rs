@@ -4,6 +4,7 @@ use crate::shell;
 use crate::shell_options;
 use crate::shell_runtime;
 use crate::xterm::addons::fit::FitAddon;
+use crate::xterm::addons::web_links::WebLinksAddon;
 use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{Terminal, TerminalOptions, Theme};
 use wasm_bindgen::prelude::*;
@@ -34,8 +35,10 @@ pub fn embed(
 
     let addon_fit = FitAddon::new();
     let addon_webgl = WebglAddon::new(None);
+    let links_addon = WebLinksAddon::new(None, None, None);
     terminal.load_addon(addon_fit.clone().dyn_into::<FitAddon>()?.into());
     terminal.load_addon(addon_webgl.clone().dyn_into::<WebglAddon>()?.into());
+    terminal.load_addon(links_addon.clone().dyn_into::<WebLinksAddon>()?.into());
     addon_fit.fit();
 
     let foo = shell::Shell::global();
