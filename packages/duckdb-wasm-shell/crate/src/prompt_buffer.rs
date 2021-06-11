@@ -1,9 +1,9 @@
 use crate::duckdb::tokens::{ScriptTokens, TokenType};
+use crate::key_event::{Key, KeyEvent};
 use crate::vt100;
 use crate::xterm::Terminal;
 use ropey::Rope;
 use std::fmt::Write;
-use web_sys::KeyboardEvent;
 
 const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
 const PROMPT_ENDL: &'static str = "   ...> ";
@@ -426,19 +426,19 @@ impl PromptBuffer {
     }
 
     /// Process key event
-    pub fn consume(&mut self, event: KeyboardEvent) {
-        match event.key_code() {
-            vt100::KEY_TAB => self.insert_tab(),
-            vt100::KEY_ENTER => self.insert_newline(),
-            vt100::KEY_BACKSPACE => self.erase_previous_char(),
-            vt100::KEY_ARROW_UP | vt100::KEY_ARROW_DOWN => return,
-            vt100::KEY_ARROW_LEFT => self.move_cursor_left(),
-            vt100::KEY_ARROW_RIGHT => self.move_cursor_right(),
-            _ => {
-                if !event.alt_key() && !event.alt_key() && !event.ctrl_key() && !event.meta_key() {
-                    self.insert_char(event.key().chars().next().unwrap());
+    pub fn consume(&mut self, event: KeyEvent) {
+        match event.key {
+            Key::Tab => self.insert_tab(),
+            Key::Enter => self.insert_newline(),
+            Key::Backspace => self.erase_previous_char(),
+            Key::ArrowLeft => self.move_cursor_left(),
+            Key::ArrowRight => self.move_cursor_right(),
+            Key::Char(c) => {
+                if !c.is_ascii_control() {
+                    self.insert_char(c);
                 }
             }
+            _ => return,
         }
     }
 }

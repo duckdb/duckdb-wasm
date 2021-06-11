@@ -3,6 +3,7 @@ pub mod arrow_reader;
 pub mod comfy;
 pub mod duckdb;
 pub mod error;
+pub mod key_event;
 pub mod platform;
 pub mod prompt_buffer;
 pub mod shell;
