@@ -149,6 +149,31 @@ impl Shell {
         self.prompt();
     }
 
+    pub async fn platform_command(&mut self) {
+        let features = platform::PlatformFeatures::get().await;
+        let mut buffer = String::new();
+        let mut write_feature = |name: &str, value: bool| {
+            write!(
+                buffer,
+                "{bg}{value}{normal} {feature}{crlf}",
+                feature = name,
+                bg = if value {
+                    vt100::COLOR_BG_GREEN
+                } else {
+                    vt100::COLOR_BG_RED
+                },
+                value = if value { " ✓ " } else { " ✗ " },
+                crlf = vt100::CRLF,
+                normal = vt100::MODES_OFF,
+            )
+            .unwrap();
+        };
+        write_feature("Cross Origin Isolated", features.cross_origin_isolated);
+        write_feature("WebAssembly Threads", features.wasm_threads);
+        write_feature("WebAssembly Exceptions", features.wasm_exceptions);
+        self.writeln(&buffer);
+    }
+
     /// Command handler
     pub async fn on_command(text: String) {
         let shell_ptr = Shell::global().clone();
@@ -166,28 +191,7 @@ impl Shell {
             ".config" => shell.writeln("Not implemented yet"),
             ".quit" => shell.writeln("Not implemented yet"),
             ".platform" => {
-                let features = platform::PlatformFeatures::get().await;
-                let mut buffer = String::new();
-                let mut write_feature = |name: &str, value: bool| {
-                    write!(
-                        buffer,
-                        "{bg}{value}{normal} {feature}{crlf}",
-                        feature = name,
-                        bg = if value {
-                            vt100::COLOR_BG_GREEN
-                        } else {
-                            vt100::COLOR_BG_RED
-                        },
-                        value = if value { " ✓ " } else { " ✗ " },
-                        crlf = vt100::CRLF,
-                        normal = vt100::MODES_OFF,
-                    )
-                    .unwrap()
-                };
-                write_feature("Cross Origin Isolated", features.cross_origin_isolated);
-                write_feature("WebAssembly Threads", features.wasm_threads);
-                write_feature("WebAssembly Exceptions", features.wasm_exceptions);
-                shell.writeln(&buffer);
+                shell.platform_command().await;
             }
             ".timer" => {
                 if trimmed.ends_with("on") {
