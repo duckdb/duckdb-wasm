@@ -149,28 +149,72 @@ impl Shell {
         self.prompt();
     }
 
-    pub async fn platform_command(&mut self) {
-        let features = platform::PlatformFeatures::get().await;
+    pub async fn configure_command(&mut self) {
         let mut buffer = String::new();
-        let mut write_feature = |name: &str, value: bool| {
+        let write_feature = |buffer: &mut String, name: &str, description: &str, value: bool| {
             write!(
                 buffer,
-                "{bg}{value}{normal} {feature}{crlf}",
+                "{bg}{value}{normal} {feature:<22} ({description}){crlf}",
                 feature = name,
                 bg = if value {
                     vt100::COLOR_BG_GREEN
                 } else {
                     vt100::COLOR_BG_RED
                 },
+                description = description,
                 value = if value { " ✓ " } else { " ✗ " },
                 crlf = vt100::CRLF,
                 normal = vt100::MODES_OFF,
             )
             .unwrap();
         };
-        write_feature("Cross Origin Isolated", features.cross_origin_isolated);
-        write_feature("WebAssembly Threads", features.wasm_threads);
-        write_feature("WebAssembly Exceptions", features.wasm_exceptions);
+
+        let platform = platform::PlatformFeatures::get().await;
+        write!(buffer, "Platform Compatibility:{crlf}", crlf = vt100::CRLF).unwrap();
+        write_feature(
+            &mut buffer,
+            "WebAssembly Exceptions",
+            "https://chromestatus.com/feature/4756734233018368",
+            platform.wasm_exceptions,
+        );
+        write_feature(
+            &mut buffer,
+            "WebAssembly Threads",
+            "https://chromestatus.com/feature/5724132452859904",
+            platform.wasm_threads,
+        );
+        write_feature(
+            &mut buffer,
+            "Cross Origin Isolated",
+            "Cross Origin Policies allow use of SharedArrayBuffers",
+            platform.cross_origin_isolated,
+        );
+
+        let db = match self.db {
+            Some(ref db) => db.lock().unwrap(),
+            None => return,
+        };
+        let db_features = db.get_feature_flags().await.unwrap();
+        write!(buffer, "{crlf}DuckDB Features:{crlf}", crlf = vt100::CRLF).unwrap();
+        write_feature(
+            &mut buffer,
+            "WebAssembly Exceptions",
+            "DuckDB uses fast exception handling",
+            (db_features & 0b1) != 0,
+        );
+        write_feature(
+            &mut buffer,
+            "WebAssembly Threads",
+            "DuckDB uses multiple threads",
+            (db_features & 0b10) != 0,
+        );
+        write_feature(
+            &mut buffer,
+            "Parquet Extension",
+            "DuckDB supports reading parquet files",
+            true,
+        );
+
         self.writeln(&buffer);
     }
 
@@ -188,10 +232,9 @@ impl Shell {
                 return;
             }
             ".help" => shell.writeln("Not implemented yet"),
-            ".config" => shell.writeln("Not implemented yet"),
             ".quit" => shell.writeln("Not implemented yet"),
-            ".platform" => {
-                shell.platform_command().await;
+            ".config" => {
+                shell.configure_command().await;
             }
             ".timer" => {
                 if trimmed.ends_with("on") {
@@ -368,21 +411,12 @@ impl Shell {
 
         let version = db.get_version().await.unwrap();
         self.write(&format!(
-            "Database: {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}",
+            "Database: {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}{endl}",
             version = version,
             package = "@duckdb/duckdb-wasm@0.0.1",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
             endl = vt100::CRLF
-        ));
-
-        let features = db.get_feature_flags().await.unwrap();
-        self.write(&format!(
-            "Features: exceptions={eh} threads={threads} parquet={parquet}{endl}{endl}",
-            eh = ((features & 0b1) != 0),
-            threads = ((features & 0b10) != 0),
-            parquet = true,
-            endl = vt100::CRLF,
         ));
     }
 
