@@ -156,7 +156,8 @@ impl Shell {
         let trimmed = text.trim();
         shell.writeln(""); // XXX We could validate the input first and preserve the prompt
 
-        match &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())] {
+        let cmd = &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())];
+        match cmd {
             ".clear" => {
                 shell.clear();
                 return;
@@ -167,27 +168,25 @@ impl Shell {
             ".platform" => {
                 let features = platform::PlatformFeatures::get().await;
                 let mut buffer = String::new();
-                write!(
-                    buffer,
-                    "cross_origin_isolated={corp}{crlf}",
-                    crlf = vt100::CRLF,
-                    corp = features.cross_origin_isolated,
-                )
-                .unwrap();
-                write!(
-                    buffer,
-                    "wasm_threads={wasm_threads}{crlf}",
-                    crlf = vt100::CRLF,
-                    wasm_threads = features.wasm_threads,
-                )
-                .unwrap();
-                write!(
-                    buffer,
-                    "wasm_exceptions={wasm_exceptions}{crlf}",
-                    crlf = vt100::CRLF,
-                    wasm_exceptions = features.wasm_exceptions,
-                )
-                .unwrap();
+                let mut write_feature = |name: &str, value: bool| {
+                    write!(
+                        buffer,
+                        "{bg}{value}{normal} {feature}{crlf}",
+                        feature = name,
+                        bg = if value {
+                            vt100::COLOR_BG_GREEN
+                        } else {
+                            vt100::COLOR_BG_RED
+                        },
+                        value = if value { " ✓ " } else { " ✗ " },
+                        crlf = vt100::CRLF,
+                        normal = vt100::MODES_OFF,
+                    )
+                    .unwrap()
+                };
+                write_feature("Cross Origin Isolated", features.cross_origin_isolated);
+                write_feature("WebAssembly Threads", features.wasm_threads);
+                write_feature("WebAssembly Exceptions", features.wasm_exceptions);
                 shell.writeln(&buffer);
             }
             ".timer" => {
