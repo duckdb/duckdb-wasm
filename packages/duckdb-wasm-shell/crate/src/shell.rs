@@ -154,7 +154,7 @@ impl Shell {
         let write_feature = |buffer: &mut String, name: &str, description: &str, value: bool| {
             write!(
                 buffer,
-                "{bg}{value}{normal} {feature:<22} ({description}){crlf}",
+                "{bg}{value}{normal} {feature:<22} - {description}{crlf}",
                 feature = name,
                 bg = if value {
                     vt100::COLOR_BG_GREEN
@@ -186,7 +186,7 @@ impl Shell {
         write_feature(
             &mut buffer,
             "Cross Origin Isolated",
-            "Cross Origin Policies allow use of SharedArrayBuffers",
+            "Cross Origin policies allow multi-threading",
             platform.cross_origin_isolated,
         );
 
@@ -199,19 +199,19 @@ impl Shell {
         write_feature(
             &mut buffer,
             "WebAssembly Exceptions",
-            "DuckDB uses fast exception handling",
+            "Module uses native exceptions",
             (db_features & 0b1) != 0,
         );
         write_feature(
             &mut buffer,
             "WebAssembly Threads",
-            "DuckDB uses multiple threads",
+            "Module uses multiple web-workers",
             (db_features & 0b10) != 0,
         );
         write_feature(
             &mut buffer,
             "Parquet Extension",
-            "DuckDB supports reading parquet files",
+            "Module contains the Parquet extension",
             true,
         );
 
@@ -303,7 +303,7 @@ impl Shell {
             UTF8_BORDERS_NO_HORIZONTAL,
         )
         .unwrap_or_default();
-        shell.write(&pretty_table);
+        shell.writeln(&pretty_table);
 
         // Print elapsed time (if requested)
         if shell.settings.timer {
