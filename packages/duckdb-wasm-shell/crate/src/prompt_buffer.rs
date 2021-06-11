@@ -5,7 +5,7 @@ use ropey::Rope;
 use std::fmt::Write;
 use web_sys::KeyboardEvent;
 
-const PROMPT_INIT: &'static str = "duckdb> ";
+const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
 const PROMPT_ENDL: &'static str = "   ...> ";
 const PROMPT_WRAP: &'static str = "   ..>> ";
 const PROMPT_WIDTH: usize = 8;
