@@ -14,9 +14,38 @@ export interface DuckDBConfig {
     workerURL: string;
 }
 
+export interface PlatformFeatures {
+    crossOriginIsolated: boolean;
+    wasmExceptions: boolean;
+    wasmThreads: boolean;
+}
+
+let wasmExceptions: boolean | null = null;
+let wasmThreads: boolean | null = null;
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+declare namespace globalThis {
+    let crossOriginIsolated: boolean;
+}
+
+export async function getPlatformFeatures(): Promise<PlatformFeatures> {
+    if (wasmExceptions == null) {
+        wasmExceptions = await check.exceptions();
+    }
+    if (wasmThreads == null) {
+        wasmThreads = await check.threads();
+    }
+    return {
+        crossOriginIsolated: globalThis.crossOriginIsolated || false,
+        wasmExceptions: wasmExceptions!,
+        wasmThreads: wasmThreads!,
+    };
+}
+
 export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
-    if (await check.exceptions()) {
-        if ((await check.threads()) && bundles.workerEHMT && bundles.wasmEHMT) {
+    const platform = await getPlatformFeatures();
+    if (platform.wasmExceptions) {
+        if (platform.wasmThreads && bundles.workerEHMT && bundles.wasmEHMT) {
             return {
                 workerURL: bundles.workerEHMT,
                 wasmURL: bundles.wasmEHMT,

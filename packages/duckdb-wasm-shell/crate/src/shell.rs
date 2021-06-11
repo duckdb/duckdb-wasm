@@ -1,12 +1,14 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
+use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
 use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::{OnKeyEvent, Terminal};
 use chrono::Duration;
+use std::fmt::Write;
 use std::sync::Arc;
 use std::sync::{Mutex, MutexGuard};
 use wasm_bindgen::prelude::*;
@@ -118,12 +120,12 @@ impl Shell {
     }
 
     /// Write directly to the terminal
-    fn write(&self, text: &str) {
+    pub fn write(&self, text: &str) {
         self.terminal.write(text);
     }
 
     /// Write directly to the terminal with newline
-    fn writeln(&self, text: &str) {
+    pub fn writeln(&self, text: &str) {
         self.terminal.write(&format!("{}{}", text, vt100::CRLF));
     }
 
@@ -162,6 +164,32 @@ impl Shell {
             ".help" => shell.writeln("Not implemented yet"),
             ".config" => shell.writeln("Not implemented yet"),
             ".quit" => shell.writeln("Not implemented yet"),
+            ".platform" => {
+                let features = platform::PlatformFeatures::get().await;
+                let mut buffer = String::new();
+                write!(
+                    buffer,
+                    "cross_origin_isolated={corp}{crlf}",
+                    crlf = vt100::CRLF,
+                    corp = features.cross_origin_isolated,
+                )
+                .unwrap();
+                write!(
+                    buffer,
+                    "wasm_threads={wasm_threads}{crlf}",
+                    crlf = vt100::CRLF,
+                    wasm_threads = features.wasm_threads,
+                )
+                .unwrap();
+                write!(
+                    buffer,
+                    "wasm_exceptions={wasm_exceptions}{crlf}",
+                    crlf = vt100::CRLF,
+                    wasm_exceptions = features.wasm_exceptions,
+                )
+                .unwrap();
+                shell.writeln(&buffer);
+            }
             ".timer" => {
                 if trimmed.ends_with("on") {
                     shell.settings.timer = true;
@@ -347,10 +375,11 @@ impl Shell {
 
         let features = db.get_feature_flags().await.unwrap();
         self.write(&format!(
-            "Features: wasm-eh={eh} wasm-threads={threads} parquet=on{endl}{endl}",
-            eh = if (features & 0b1) != 0 { "on" } else { "off" },
-            threads = if (features & 0b10) != 0 { "on" } else { "off" },
-            endl = vt100::CRLF
+            "Features: exceptions={eh} threads={threads} parquet={parquet}{endl}{endl}",
+            eh = ((features & 0b1) != 0),
+            threads = ((features & 0b10) != 0),
+            parquet = true,
+            endl = vt100::CRLF,
         ));
     }
 
@@ -363,7 +392,7 @@ impl Shell {
     }
 
     /// Write the prompt
-    fn prompt(&mut self) {
+    pub fn prompt(&mut self) {
         self.input.start_new();
         self.input.flush(&self.terminal);
         self.input_enabled = true;
