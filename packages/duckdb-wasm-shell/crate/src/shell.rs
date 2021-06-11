@@ -186,7 +186,7 @@ impl Shell {
         write_feature(
             &mut buffer,
             "Cross Origin Isolated",
-            "Cross Origin policies allow multi-threading",
+            "Cross Origin policies allow for multi-threading",
             platform.cross_origin_isolated,
         );
 
