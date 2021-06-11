@@ -358,10 +358,17 @@ TEST(BufferManagerTest, ParallelScans) {
             // 2 from segment 2, and 1 from segment 3.
             std::discrete_distribution<uint16_t> segment_distr{12.0, 5.0, 2.0, 1.0};
 
+            // Open all files once per thread to isolate but
+            std::vector<std::unique_ptr<TestableFileSystemBuffer::FileRef>> file_refs;
+            for (auto& file_path : test_files) {
+                file_refs.push_back(buffer->OpenFile(file_path.c_str()));
+            }
+
+            // Run all scans
             for (size_t j = 0; j < JobCount; ++j) {
                 // Open a file
                 uint16_t file_id = segment_distr(engine);
-                auto file = buffer->OpenFile(test_files[file_id].c_str());
+                auto& file = file_refs[file_id];
 
                 // Scan all pages
                 uint64_t scan_sum = 0;

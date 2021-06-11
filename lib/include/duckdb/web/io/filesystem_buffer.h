@@ -132,9 +132,9 @@ class FileSystemBuffer {
         /// Returns a pointer to this page data
         auto GetData() { return nonstd::span<char>{buffer.get(), data_size}; }
         /// Lock frame exclusively
-        auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{frame_latch}; }
+        inline auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{frame_latch}; }
         /// Lock frame exclusively
-        auto Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{frame_latch}; }
+        inline auto Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{frame_latch}; }
     };
 
    public:
@@ -188,8 +188,6 @@ class FileSystemBuffer {
         operator bool() const { return !!frame_; }
         /// Access the data
         auto GetData() { return frame_->GetData(); }
-        /// Get the page id
-        uint64_t GetPageIDOrDefault() const;
         /// Mark as dirty
         void MarkAsDirty();
         /// Release the file ref
@@ -207,9 +205,9 @@ class FileSystemBuffer {
         BufferedFile* file_ = nullptr;
 
         /// Lock a file exclusively
-        UniqueFileGuard Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{file_->file_latch}; }
+        inline auto Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{file_->file_latch}; }
         /// Lock a file shared
-        SharedFileGuard Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{file_->file_latch}; }
+        inline auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{file_->file_latch}; }
         /// Flush the file
         void FlushUnsafe();
         /// Flush a buffer frame
@@ -244,8 +242,6 @@ class FileSystemBuffer {
 
         /// Fix file exclusively
         BufferRef FixPage(size_t page_id, bool exclusive);
-        /// Unfix a buffer frame
-        void Unfix(BufferRef&& ref, bool is_dirty);
         /// Flush the file
         void Flush();
         /// Truncate the file
@@ -286,7 +282,7 @@ class FileSystemBuffer {
     std::list<BufferFrame*> lru = {};
 
     /// Lock the directory
-    auto Lock() { return std::unique_lock{directory_latch}; }
+    inline auto Lock() { return std::unique_lock{directory_latch}; }
 
     /// Returns the next page that can be evicted.
     /// Returns nullptr, when no page can be evicted.
