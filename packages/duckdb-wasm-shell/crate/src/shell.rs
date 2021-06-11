@@ -1,12 +1,13 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
 use crate::duckdb;
 use crate::duckdb::AsyncDuckDB;
+use crate::key_event::{Key, KeyEvent};
 use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
 use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
-use crate::xterm::{OnKeyEvent, Terminal};
+use crate::xterm::Terminal;
 use chrono::Duration;
 use std::fmt::Write;
 use std::sync::Arc;
@@ -85,13 +86,14 @@ impl Shell {
 
         // Register on_key callback
         let callback =
-            Closure::wrap(
-                Box::new(move |e: OnKeyEvent| match Shell::global().try_lock() {
+            Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+                match Shell::global().try_lock() {
                     Ok(s) => Shell::on_key(s, e),
                     Err(_) => return,
-                }) as Box<dyn FnMut(_)>,
-            );
-        self.terminal.on_key(callback.as_ref().unchecked_ref());
+                }
+            }) as Box<dyn FnMut(_)>);
+        self.terminal
+            .attach_custom_key_event_handler(callback.as_ref().unchecked_ref());
         callback.forget();
     }
 
@@ -350,13 +352,17 @@ impl Shell {
     }
 
     /// Process on-key event
-    fn on_key(mut shell: MutexGuard<Shell>, e: OnKeyEvent) {
+    fn on_key(mut shell: MutexGuard<Shell>, event: web_sys::KeyboardEvent) {
         if !shell.input_enabled {
             return;
         }
-        let event = e.dom_event();
-        match event.key_code() {
-            vt100::KEY_ENTER => {
+        web_sys::console::log_1(&event);
+        if &event.type_() != "keydown" {
+            return;
+        }
+        let event = KeyEvent::from_event(event);
+        match event.key {
+            Key::Enter => {
                 shell.input_clock += 1;
                 // Is a command?
                 let input = shell.input.collect();
@@ -376,11 +382,7 @@ impl Shell {
                     }
                 }
             }
-            vt100::KEY_BACKSPACE
-            | vt100::KEY_ARROW_DOWN
-            | vt100::KEY_ARROW_LEFT
-            | vt100::KEY_ARROW_RIGHT
-            | vt100::KEY_ARROW_UP => {
+            Key::Backspace | Key::ArrowDown | Key::ArrowLeft | Key::ArrowRight | Key::ArrowUp => {
                 shell.input_clock += 1;
                 shell.input.consume(event);
                 shell.flush();
