@@ -356,7 +356,6 @@ impl Shell {
         if !shell.input_enabled {
             return;
         }
-        web_sys::console::log_1(&event);
         if &event.type_() != "keydown" {
             return;
         }
