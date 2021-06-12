@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <duckdb/common/constants.hpp>
 #include <exception>
 #include <iostream>
 #include <list>
@@ -44,6 +45,9 @@ class FileSystemBuffer {
     using DirectoryGuard = std::unique_lock<std::mutex>;
     /// A frame guard
     using FrameGuardVariant = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
+    /// A file guard reference variant
+    using FileGuardRefVariant = std::variant<std::reference_wrapper<std::unique_lock<std::shared_mutex>>,
+                                             std::reference_wrapper<std::shared_lock<std::shared_mutex>>>;
     /// Exclusive
     enum ExclusiveTag { Exclusive };
     /// Exclusive
@@ -214,6 +218,10 @@ class FileSystemBuffer {
         void FlushFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard);
         /// Loads the page from disk
         void LoadFrameUnsafe(BufferFrame& frame, DirectoryGuard& dir_guard);
+        /// Fix file with file lock
+        std::pair<BufferFrame*, FrameGuardVariant> FixPageUnsafe(uint64_t page_id, bool exclusive, bool load_data);
+        /// Append n bytes
+        void Append(const void* buffer, uint64_t n, UniqueFileGuard& file_guard);
 
        public:
         /// Constructor
@@ -251,6 +259,8 @@ class FileSystemBuffer {
         uint64_t Read(void* buffer, uint64_t n, duckdb::idx_t offset);
         /// Write at most n bytes
         uint64_t Write(const void* buffer, uint64_t n, duckdb::idx_t offset);
+        /// Append n bytes
+        void Append(const void* buffer, uint64_t n);
     };
 
    protected:
