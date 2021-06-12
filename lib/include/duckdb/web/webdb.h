@@ -77,7 +77,7 @@ class WebDB {
 
    public:
     /// Constructor
-    WebDB(std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem());
+    WebDB(std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem(), const char* path = nullptr);
 
     /// Get the filesystem
     auto& filesystem() { return database_->GetFileSystem(); }

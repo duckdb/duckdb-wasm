@@ -197,7 +197,7 @@ arrow::Status WebDB::Connection::ImportJSONTable(std::string_view path, std::str
 }
 
 /// Constructor
-WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs)
+WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
     : filesystem_buffer_(std::make_shared<io::FileSystemBuffer>(std::move(fs))),
       database_(),
       connections_(),
@@ -205,7 +205,7 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs)
     auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(filesystem_buffer_);
     db_config_.file_system = std::move(std::move(buffered_filesystem));
     db_config_.maximum_threads = 1;
-    database_ = std::make_shared<duckdb::DuckDB>(nullptr, &db_config_);
+    database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
     database_->LoadExtension<duckdb::ParquetExtension>();
     zip_ = std::make_unique<Zipper>(filesystem_buffer_);
 }
