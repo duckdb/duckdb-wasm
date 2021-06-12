@@ -312,8 +312,15 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
 
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
-    assert(file_ != nullptr);
     auto file_guard = Lock(Shared);
+    auto [frame_ptr, frame_guard] = FixPageUnsafe(page_id, exclusive, true);
+    return BufferRef{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
+}
+
+/// Fix a page with existing file lock
+std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> FileSystemBuffer::FileRef::FixPageUnsafe(
+    uint64_t page_id, bool exclusive, bool load_data) {
+    assert(file_ != nullptr);
     auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
     auto frame_id = BuildFrameID(file_id, page_id);
@@ -378,7 +385,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
             } else {
                 frame_guard = frame->Lock(Shared);
             }
-            return BufferRef{*this, std::move(file_guard), *frame, std::move(frame_guard)};
+            return {frame.get(), std::move(frame_guard)};
         }
 
         // Allocate a buffer frame.
@@ -409,9 +416,12 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     frame.fifo_position = buffer_.fifo.insert(buffer_.fifo.end(), &frame);
     buffer_.frames.insert({frame_id, std::move(frame_ptr)});
 
-    // Load the data into the frame
-    LoadFrameUnsafe(frame, dir_guard);
-    assert(dir_guard.owns_lock());
+    // Load data
+    if (load_data) {
+        // Load the data into the frame
+        LoadFrameUnsafe(frame, dir_guard);
+        assert(dir_guard.owns_lock());
+    }
 
     // Downgrade the lock (if necessary)
     if (!exclusive) {
@@ -421,7 +431,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
     } else {
         dir_guard.unlock();
     }
-    return BufferRef{*this, std::move(file_guard), frame, std::move(frame_guard)};
+    return {&frame, std::move(frame_guard)};
 }
 
 uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t offset) {
@@ -445,13 +455,25 @@ uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t of
 }
 
 uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::idx_t offset) {
+    // Append to file?
+    // Writing any bytes past the end offset if obviously a bad idea.
+    // We therefore always assume, that the user wants to append instead.
+    auto file_guard = Lock(Shared);
+    if (offset == file_->file_size) {
+        file_guard.unlock();
+        auto file_guard = Lock(Exclusive);
+        Append(in, bytes, file_guard);
+        return bytes;
+    }
+
     // Determine page & offset
     auto page_id = offset >> buffer_.GetPageSizeShift();
     auto skip_here = offset - page_id * buffer_.GetPageSize();
     auto write_here = std::min<uint64_t>(bytes, buffer_.GetPageSize() - skip_here);
 
     // Fix page
-    auto page = FixPage(page_id, true);
+    auto [frame_ptr, frame_guard] = FixPageUnsafe(page_id, true, true);
+    BufferRef page{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
     write_here = std::min<uint64_t>(write_here, buffer_.GetPageSize());
 
     // Copy data to page
@@ -459,6 +481,57 @@ uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb
     std::memcpy(data.data() + skip_here, static_cast<const char*>(in), write_here);
     page.MarkAsDirty();
     return write_here;
+}
+
+/// Append to the file
+void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t n) {
+    auto file_guard = Lock(Exclusive);
+    Append(buffer, n, file_guard);
+}
+
+void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, UniqueFileGuard& file_guard) {
+    auto in_reader = static_cast<const char*>(buffer);
+
+    // Increase file size
+    auto old_file_size = file_->file_size;
+    auto new_file_size = old_file_size + bytes;
+    buffer_.filesystem->Truncate(GetHandle(), new_file_size);
+    file_->file_size = new_file_size;
+
+    // Determine capacity of the last page
+    auto page_size = buffer_.GetPageSize();
+    auto last_page_id = old_file_size >> buffer_.GetPageSizeShift();
+    auto last_page_bytes = old_file_size - (last_page_id << buffer_.GetPageSizeShift());
+    auto last_page_capacity = buffer_.GetPageSize() - last_page_bytes;
+
+    // Write into that last page first
+    if (last_page_capacity > 0) {
+        auto [frame_ptr, frame_guard] = FixPageUnsafe(last_page_id, true, true);
+        auto write_here = std::min(last_page_capacity, bytes);
+        frame_ptr->data_size = last_page_bytes + write_here;
+        frame_ptr->is_dirty = true;
+        std::memcpy(frame_ptr->GetData().data() + last_page_bytes, in_reader, write_here);
+        assert(write_here <= bytes);
+        bytes -= write_here;
+        in_reader += write_here;
+        --frame_ptr->num_users;
+    }
+
+    // Write remaining pages.
+    // Do not load them from disk since we now that they're new.
+    auto page_id = last_page_id + 1;
+    while (bytes > 0) {
+        auto [frame_ptr, frame_guard] = FixPageUnsafe(page_id, true, false);
+        auto write_here = std::min(page_size, bytes);
+        frame_ptr->data_size = write_here;
+        frame_ptr->is_dirty = true;
+        std::memcpy(frame_ptr->GetData().data(), static_cast<const char*>(buffer), write_here);
+        assert(write_here <= bytes);
+        ++page_id;
+        bytes -= write_here;
+        in_reader += write_here;
+        --frame_ptr->num_users;
+    }
 }
 
 /// Flush a file at a path.

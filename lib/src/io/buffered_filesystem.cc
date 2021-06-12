@@ -28,7 +28,7 @@ BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system,
       file_position_(0) {}
 
 /// Constructor
-BufferedFileHandle::~BufferedFileHandle() { file_ref_->Release(); }
+BufferedFileHandle::~BufferedFileHandle() { Close(); }
 
 BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FileSystemBuffer> buffer_manager)
     : filesystem_buffer_(std::move(buffer_manager)), filesystem_(*filesystem_buffer_->GetFileSystem()) {}
@@ -95,9 +95,6 @@ int64_t BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64
 int64_t BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
-    if ((file_hdl.file_position_ + nr_bytes) > file->GetSize()) {
-        file->Truncate(file_hdl.file_position_ + nr_bytes);  // XXX this is probably a bad idea
-    }
     auto n = file->Write(buffer, nr_bytes, file_hdl.file_position_);
     file_hdl.file_position_ += n;
     return n;

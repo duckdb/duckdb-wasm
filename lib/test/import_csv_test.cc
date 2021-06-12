@@ -1,3 +1,5 @@
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 
 #include "duckdb/common/types/date.hpp"
@@ -10,8 +12,21 @@
 #include "gtest/gtest.h"
 
 using namespace duckdb::web;
+namespace fs = std::filesystem;
 
 namespace {
+
+std::filesystem::path CreateTestFile() {
+    static uint64_t NEXT_TEST_FILE = 0;
+
+    auto cwd = fs::current_path();
+    auto tmp = cwd / ".tmp";
+    auto file = tmp / (std::string("test_csv_") + std::to_string(NEXT_TEST_FILE++));
+    if (!fs::is_directory(tmp) || !fs::exists(tmp)) fs::create_directory(tmp);
+    if (fs::exists(file)) fs::remove(file);
+    std::ofstream output(file);
+    return file;
+}
 
 struct CSVImportTest {
     struct TestPrinter {
@@ -96,5 +111,39 @@ INTEGER	INTEGER	INTEGER
 
 INSTANTIATE_TEST_SUITE_P(CSVImportTest, CSVImportTestSuite, testing::ValuesIn(CSV_IMPORT_TEST),
                          CSVImportTest::TestPrinter());
+
+TEST(CSVExportTest, TestExport) {
+    auto path = duckdb::web::test::SOURCE_DIR / ".." / "data" / "test.csv";
+
+    // Import csv
+    auto db = std::make_shared<WebDB>();
+    WebDB::Connection conn{*db};
+    auto maybe_ok = conn.ImportCSVTable(path.c_str(), R"JSON({
+        "schema": "main",
+        "name": "foo"
+    })JSON");
+    ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
+
+    // Export to file
+    auto out_path = CreateTestFile();
+    conn.RunQuery(std::string("COPY foo TO '") + out_path.c_str() + "'  WITH (HEADER 1, DELIMITER ';', FORMAT CSV);")
+        .ok();
+
+    // Import csv again
+    maybe_ok = conn.ImportCSVTable(path.c_str(), R"JSON({
+        "schema": "main",
+        "name": "foo2"
+    })JSON");
+    auto result = conn.connection().Query("SELECT * FROM foo2");
+    ASSERT_STREQ(result->ToString().c_str(),
+                 R"TXT(a	b	c	
+INTEGER	INTEGER	INTEGER	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT");
+}
 
 }  // namespace
