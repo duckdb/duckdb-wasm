@@ -15,10 +15,10 @@ let WORKER_CONFIG: DuckDBConfig | null = null;
 
 describe('wasm check', () => {
     it('worker and wasm urls', async () => {
-        if ((await check.exceptions()) && (await check.threads())) {
-            expect(WORKER_CONFIG!.workerURL).toEqual(WORKER_BUNDLES.workerEHMT);
-            expect(WORKER_CONFIG!.wasmURL).toEqual(WORKER_BUNDLES.wasmEHMT);
-        }
+        //if ((await check.exceptions()) && (await check.threads())) {
+        //    expect(WORKER_CONFIG!.workerURL).toEqual(WORKER_BUNDLES.workerEHMT);
+        //    expect(WORKER_CONFIG!.wasmURL).toEqual(WORKER_BUNDLES.wasmEHMT);
+        //}
         if ((await check.exceptions()) && !(await check.threads())) {
             expect(WORKER_CONFIG!.workerURL).toEqual(WORKER_BUNDLES.workerEH);
             expect(WORKER_CONFIG!.wasmURL).toEqual(WORKER_BUNDLES.wasmEH);

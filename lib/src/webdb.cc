@@ -187,6 +187,7 @@ arrow::Status WebDB::Connection::ImportJSONTable(std::string_view path, std::str
         vector<Value> params;
         params.push_back(duckdb::Value::POINTER((uintptr_t)&table_reader));
         params.push_back(duckdb::Value::POINTER((uintptr_t)json::TableReader::CreateArrayStreamFromSharedPtrPtr));
+        params.push_back(duckdb::Value::UBIGINT(1000000));
         connection_.TableFunction("arrow_scan", params)->Create(schema_name, options.table_name);
 
     } catch (const std::exception& e) {

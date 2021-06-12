@@ -52,7 +52,7 @@ namespace io {
 FileSystemBuffer::BufferFrame::BufferFrame(BufferedFile& file, uint64_t frame_id, list_position fifo_position,
                                            list_position lru_position)
     : file(file), frame_id(frame_id), fifo_position(fifo_position), lru_position(lru_position), frame_latch() {
-    file.frames.push_front(this);
+    file.frames.insert(file.frames.begin(), this);
     file_frame_position = file.frames.begin();
 }
 
@@ -112,10 +112,10 @@ void FileSystemBuffer::FileRef::LoadFrameUnsafe(FileSystemBuffer::BufferFrame& f
 void FileSystemBuffer::FileRef::Release() {
     // Already released?
     if (!file_) return;
-    // Clear file pointer eventually
-    auto release_file = sg::make_scope_guard([&]() { file_ = nullptr; });
     // Protect with directory latch
     auto dir_guard = buffer_.Lock();
+    // Clear file pointer eventually
+    auto release_file = sg::make_scope_guard([&]() { file_ = nullptr; });
 
     // Is the file referenced by someone else?
     assert(file_->GetReferenceCount() > 0 && "File must store own reference");
@@ -129,15 +129,13 @@ void FileSystemBuffer::FileRef::Release() {
     auto file_guard = Lock(Exclusive);
     dir_guard.lock();
 
-    // Decrement user counter, likely to zero
-    --file_->num_users;
     // Someone opened the file in the meantime?
-    if (file_->GetReferenceCount() > 0) {
+    if (file_->GetReferenceCount() > 1) {
+        --file_->num_users;
         return;
     }
-
     // Flush all file frames
-    for (auto iter = file_->frames.begin(); iter != file_->frames.end(); ++iter) {
+    for (auto iter = file_->frames.begin(); iter != file_->frames.end();) {
         auto& frame = **iter;
 
         // Flush the frame
@@ -152,7 +150,18 @@ void FileSystemBuffer::FileRef::Release() {
             buffer_.fifo.erase(frame.fifo_position);
         }
         // Erase the frame
+        auto next = ++iter;
         buffer_.frames.erase(frame.frame_id);
+        iter = next;
+    }
+
+    // Decrement user counter, likely to zero
+    assert(file_->GetReferenceCount() > 0 && "File must store own reference");
+    --file_->num_users;
+
+    // Someone opened the file in the meantime?
+    if (file_->GetReferenceCount() > 0) {
+        return;
     }
 
     // Erase file
@@ -303,6 +312,7 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
 
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
+    assert(file_ != nullptr);
     auto file_guard = Lock(Shared);
     auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;

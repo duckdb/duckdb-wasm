@@ -45,12 +45,14 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions) {
-        if (platform.wasmThreads && bundles.workerEHMT && bundles.wasmEHMT) {
-            return {
-                workerURL: bundles.workerEHMT,
-                wasmURL: bundles.wasmEHMT,
-            };
-        }
+        // Threads are not ready yet.
+        //
+        // if (platform.wasmThreads && bundles.workerEHMT && bundles.wasmEHMT) {
+        //     return {
+        //         workerURL: bundles.workerEHMT,
+        //         wasmURL: bundles.wasmEHMT,
+        //     };
+        // }
         if (bundles.workerEH && bundles.wasmEH) {
             return {
                 workerURL: bundles.workerEH,
