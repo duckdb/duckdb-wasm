@@ -6,6 +6,7 @@ const decoder = new TextDecoder();
 export function testFilesystem(
     db: () => duckdb.AsyncDuckDB,
     resolveData: (url: string) => Promise<Uint8Array | null>,
+    baseDir: string,
 ): void {
     let conn: duckdb.AsyncDuckDBConnection;
 
@@ -151,6 +152,26 @@ export function testFilesystem(
             expect(table.getColumnAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
+        });
+    });
+
+    describe('File access', () => {
+        it('Small Parquet file', async () => {
+            await db().addFilePath(`${baseDir}/uni/studenten.parquet`);
+            const result = await conn.sendQuery(`SELECT matrnr FROM parquet_scan('${baseDir}/uni/studenten.parquet');`);
+            const table = await arrow.Table.from<{ matrnr: arrow.Int }>(result);
+            expect(table.getColumnAt(0)?.toArray()).toEqual(
+                new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
+            );
+        });
+
+        it('Large Parquet file', async () => {
+            await db().addFilePath(`${baseDir}/tpch/0_01/parquet/lineitem.parquet`);
+            const result = await conn.sendQuery(
+                `SELECT count(*)::INTEGER as cnt FROM parquet_scan('${baseDir}/tpch/0_01/parquet/lineitem.parquet');`,
+            );
+            const table = await arrow.Table.from<{ cnt: arrow.Int }>(result);
+            expect(table.getColumnAt(0)?.get(0)).toBeGreaterThan(60_000);
         });
     });
 }

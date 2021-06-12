@@ -31,7 +31,7 @@ export const MinimalRuntime: DuckDBRuntime & {
         MinimalRuntime.filesByID.clear();
         MinimalRuntime.filesByURL.clear();
     },
-    duckdb_web_add_file_path(url: string, path: string): number {
+    duckdb_web_add_file_path(path: string): number {
         throw Error('cannot register a file path');
     },
     duckdb_web_get_file_path: (fileId: number): string | null => {
