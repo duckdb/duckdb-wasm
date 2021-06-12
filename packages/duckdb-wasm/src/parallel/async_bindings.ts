@@ -385,10 +385,10 @@ export class AsyncDuckDB {
     }
 
     /** Register a file path. */
-    public async addFilePath(url: string, path: string): Promise<number> {
-        const task = new WorkerTask<WorkerRequestType.ADD_FILE_PATH, [string, string], number>(
+    public async addFilePath(path: string): Promise<number> {
+        const task = new WorkerTask<WorkerRequestType.ADD_FILE_PATH, string, number>(
             WorkerRequestType.ADD_FILE_PATH,
-            [url, path],
+            path,
         );
         return await this.postTask(task);
     }

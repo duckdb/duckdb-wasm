@@ -88,7 +88,7 @@ export interface ZipExtractToFileArgs {
 export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.ADD_FILE_BLOB, [string, any]>
     | WorkerRequest<WorkerRequestType.ADD_FILE_BUFFER, [string, Uint8Array]>
-    | WorkerRequest<WorkerRequestType.ADD_FILE_PATH, [string, string]>
+    | WorkerRequest<WorkerRequestType.ADD_FILE_PATH, string>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
     | WorkerRequest<WorkerRequestType.DROP_FILE, string>
@@ -129,7 +129,7 @@ export type WorkerResponseVariant =
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.ADD_FILE_BLOB, [string, any], number>
     | WorkerTask<WorkerRequestType.ADD_FILE_BUFFER, [string, Uint8Array], number>
-    | WorkerTask<WorkerRequestType.ADD_FILE_PATH, [string, string], number>
+    | WorkerTask<WorkerRequestType.ADD_FILE_PATH, string, number>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
     | WorkerTask<WorkerRequestType.DROP_FILE, string, null>

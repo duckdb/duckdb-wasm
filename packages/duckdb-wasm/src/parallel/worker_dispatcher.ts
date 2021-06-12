@@ -192,7 +192,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
                 }
                 case WorkerRequestType.ADD_FILE_PATH: {
-                    const fileID = await this._bindings.addFilePath(request.data[0], request.data[1]);
+                    const fileID = await this._bindings.addFilePath(request.data);
                     this.postMessage(
                         {
                             messageId: this._nextMessageId++,
