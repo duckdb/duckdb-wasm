@@ -76,9 +76,8 @@ class FileSystemBuffer {
         /// Constructor
         BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr)
             : file_id(file_id), path(path), handle(std::move(file)) {}
-
         /// Get the number of references
-        auto GetReferenceCount() const { return num_users + frames.size(); }
+        auto GetReferenceCount() const { return num_users; }
     };
 
     /// A buffer frame, the central data structure to hold data
@@ -120,6 +119,7 @@ class FileSystemBuffer {
         /// ~Destructor
         ~BufferFrame() {
             assert(num_users == 0);
+            assert(file_frame_position != file.frames.end());
             file.frames.erase(file_frame_position);
         }
         /// Delete copy constructor
@@ -241,7 +241,7 @@ class FileSystemBuffer {
         void Release();
 
         /// Fix file exclusively
-        BufferRef FixPage(size_t page_id, bool exclusive);
+        BufferRef FixPage(uint64_t page_id, bool exclusive);
         /// Flush the file
         void Flush();
         /// Truncate the file

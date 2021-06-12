@@ -18,7 +18,7 @@ class BufferedFileHandle : public duckdb::FileHandle {
 
    protected:
     /// The file buffers
-    std::shared_ptr<FileSystemBuffer::FileRef> file_buffers_;
+    std::shared_ptr<FileSystemBuffer::FileRef> file_ref_;
     /// The file position
     uint64_t file_position_;
 
@@ -34,9 +34,9 @@ class BufferedFileHandle : public duckdb::FileHandle {
     ~BufferedFileHandle() override;
 
     /// Get file
-    auto &GetFileHandle() { return file_buffers_->GetHandle(); }
+    auto &GetFileHandle() { return file_ref_->GetHandle(); }
     /// Get file buffers
-    auto &GetBuffers() { return file_buffers_; }
+    auto &GetFile() { return file_ref_; }
 };
 
 class BufferedFileSystem : public duckdb::FileSystem {

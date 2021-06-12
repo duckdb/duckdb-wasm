@@ -29,6 +29,7 @@ struct TestableFileSystemBuffer : public io::FileSystemBuffer {
         : io::FileSystemBuffer(std::move(filesystem), page_capacity, page_size_bits) {}
 
     auto& GetFrames() { return frames; }
+    auto& GetFiles() { return files; }
 };
 
 std::filesystem::path CreateTestFile() {
@@ -82,6 +83,12 @@ TEST(FileSystemBufferTest, FixSingle) {
     ASSERT_TRUE(buffer->GetFIFOList().empty());
     ASSERT_EQ(std::vector<uint64_t>{0}, buffer->GetLRUList());
     ASSERT_EQ(expected_values, values);
+
+    // Close the file.
+    // Since there's no more ref, the buffer manager should evict all frames
+    file->Release();
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -140,6 +147,10 @@ TEST(FileSystemBufferTest, PersistentRestart) {
         }
     }
     files.clear();
+
+    // Since there's no more ref, the buffer manager should evict all frames
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -177,6 +188,10 @@ TEST(FileSystemBufferTest, FIFOEviction) {
     expected_fifo = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
     EXPECT_TRUE(buffer->GetLRUList().empty());
+
+    file->Release();
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -247,6 +262,10 @@ TEST(FileSystemBufferTest, LRUEviction) {
     expected_lru = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
     EXPECT_EQ(expected_lru, buffer->GetLRUList());
+
+    file->Release();
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -274,6 +293,10 @@ TEST(BufferManagerTest, ParallelFix) {
     std::vector<uint64_t> expected_fifo{0, 1, 2, 3, 4, 5, 6, 7};
     EXPECT_EQ(expected_fifo, fifo_list);
     EXPECT_TRUE(buffer->GetLRUList().empty());
+
+    file->Release();
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -306,12 +329,17 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
     for (auto& thread : threads) {
         thread.join();
     }
-    EXPECT_TRUE(buffer->GetFIFOList().empty());
-    EXPECT_EQ(std::vector<uint64_t>{0}, buffer->GetLRUList());
-    auto page = file->FixPage(0, false);
-    auto page_data = page.GetData();
-    uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
-    EXPECT_EQ(4000, value);
+    {
+        EXPECT_TRUE(buffer->GetFIFOList().empty());
+        EXPECT_EQ(std::vector<uint64_t>{0}, buffer->GetLRUList());
+        auto page = file->FixPage(0, false);
+        auto page_data = page.GetData();
+        uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
+        EXPECT_EQ(4000, value);
+    }
+    file->Release();
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -386,6 +414,8 @@ TEST(BufferManagerTest, ParallelScans) {
     for (auto& thread : threads) {
         thread.join();
     }
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 // NOLINTNEXTLINE
@@ -497,6 +527,8 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
     for (auto& thread : threads) {
         thread.join();
     }
+    ASSERT_EQ(buffer->GetFiles().size(), 0);
+    ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
 
 }  // namespace
