@@ -58,10 +58,10 @@ void BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t 
 
     // Requested to read past end?
     if (location >= file_size && nr_bytes > 0) {
-        throw std::logic_error("tried to write past the end");
+        throw std::logic_error("tried to read past the end");
     }
 }
-/// Write exactly nr_bytes to the specified location in the file. Fails if nr_bytes could not be read.
+/// Write exactly nr_bytes to the specified location in the file.
 void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
@@ -69,18 +69,13 @@ void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t
 
     // Write page-wise
     auto file_size = file->GetSize();
-    while (nr_bytes > 0 && location < file_size) {
+    while (nr_bytes > 0) {
         auto n = file->Write(writer, nr_bytes, location);
         writer += n;
         location += n;
         nr_bytes -= n;
     }
     file_hdl.file_position_ = location;
-
-    // Requested to write past end?
-    if (location >= file_size && nr_bytes > 0) {
-        throw std::logic_error("tried to write past the end");
-    }
 }
 /// Read nr_bytes from the specified file into the buffer, moving the file pointer forward by nr_bytes. Returns the
 /// amount of bytes read.
