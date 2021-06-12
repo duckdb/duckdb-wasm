@@ -85,7 +85,7 @@ module.exports = function (config) {
         autoWatch: true,
         singleRun: false,
         // I don't know why but it doesnt work when trying to run multiple browsers in one go.
-        browsers: ['ChromeHeadlessNoSandbox' /*, 'ChromeHeadlessNoSandboxEH', 'FirefoxHeadless'*/],
+        browsers: ['ChromeHeadlessNoSandbox', 'ChromeHeadlessNoSandboxEH', 'FirefoxHeadless'],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
