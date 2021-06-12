@@ -42,7 +42,7 @@ export const BrowserRuntime: DuckDBRuntime & {
         if (file) return file.fileID;
 
         // Check if remote supports range requests
-        let headerRequest = new XMLHttpRequest();
+        const headerRequest = new XMLHttpRequest();
         headerRequest.open('HEAD', path, false);
         headerRequest.send(null);
         const rangeHeader = headerRequest.getResponseHeader('Accept-Ranges');
@@ -51,7 +51,7 @@ export const BrowserRuntime: DuckDBRuntime & {
         const fileID = BrowserRuntime.nextFileID++;
         if (!rangeHeader || rangeHeader === 'none' || !sizeHeader) {
             // No support or content length header missing, fetch full contents now
-            let request = new XMLHttpRequest();
+            const request = new XMLHttpRequest();
             request.open('GET', path, false);
             request.responseType = 'arraybuffer';
             request.send(null);
@@ -144,7 +144,7 @@ export const BrowserRuntime: DuckDBRuntime & {
             inst.HEAPU8.set(src, buf);
             return src.byteLength;
         } else {
-            let request = new XMLHttpRequest();
+            const request = new XMLHttpRequest();
             request.open('GET', file.url, false);
             request.responseType = 'arraybuffer';
             request.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
