@@ -6,7 +6,7 @@ interface IAsyncDuckDB {
     logger: Logger;
 
     addFile(url: string): Promise<number>;
-    addFilePath(url: string, path: string): Promise<number>;
+    addFilePath(path: string): Promise<number>;
     addFileBlob(url: string, blob: any): Promise<number>;
     addFileBuffer(url: string, buffer: Uint8Array): Promise<number>;
     getFileObjectURL(file_id: number): Promise<string | null>;

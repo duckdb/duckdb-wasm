@@ -71,7 +71,7 @@ import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 testBindings(() => db!);
 testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
-testFilesystem(() => adb!, resolveData);
+testFilesystem(() => adb!, resolveData, dataDir);
 testZip(() => db!, resolveData);
 testZipAsync(() => adb!, resolveData);
 testJSONImport(() => db!);

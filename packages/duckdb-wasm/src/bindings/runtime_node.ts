@@ -83,8 +83,8 @@ export const NodeRuntime: DuckDBRuntime & {
         NodeRuntime.filesByID.set(fileID, newFile);
         return fileID;
     },
-    duckdb_web_add_file_path: (url: string, path: string) => {
-        const file = NodeRuntime.filesByURL.get(url);
+    duckdb_web_add_file_path: (path: string) => {
+        const file = NodeRuntime.filesByURL.get(path);
         if (file) return file.fileID;
         return openFile(path);
     },

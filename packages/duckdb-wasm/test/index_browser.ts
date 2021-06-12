@@ -91,7 +91,7 @@ import { DuckDBConfig } from '../src/targets/duckdb-browser-async';
 testBindings(() => db!);
 testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
-testFilesystem(() => adb!, resolveData);
+testFilesystem(() => adb!, resolveData, '/data');
 testZip(() => db!, resolveData);
 testZipAsync(() => adb!, resolveData);
 testJSONImport(() => db!);

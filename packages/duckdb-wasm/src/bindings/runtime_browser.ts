@@ -10,6 +10,7 @@ interface BrowserRuntimeFile {
     buffer: Uint8Array | null;
     blob: Blob | null;
     lastModified: Date;
+    size: number;
 }
 
 export const BrowserRuntime: DuckDBRuntime & {
@@ -32,12 +33,54 @@ export const BrowserRuntime: DuckDBRuntime & {
         BrowserRuntime.filesByID.clear();
         BrowserRuntime.filesByURL.clear();
     },
-    duckdb_web_add_file_path: (_url: string, _path: string) => {
-        throw Error('cannot register a file path');
-    },
     duckdb_web_get_file_path: (fileId: number): string | null => {
         const file = BrowserRuntime.filesByID.get(fileId);
         return file ? file.url : null;
+    },
+    duckdb_web_add_file_path: (path: string) => {
+        const file = BrowserRuntime.filesByURL.get(path);
+        if (file) return file.fileID;
+
+        // Check if remote supports range requests
+        let headerRequest = new XMLHttpRequest();
+        headerRequest.open('HEAD', path, false);
+        headerRequest.send(null);
+        const rangeHeader = headerRequest.getResponseHeader('Accept-Ranges');
+        const sizeHeader = headerRequest.getResponseHeader('Content-Length');
+
+        const fileID = BrowserRuntime.nextFileID++;
+        if (!rangeHeader || rangeHeader === 'none' || !sizeHeader) {
+            // No support or content length header missing, fetch full contents now
+            let request = new XMLHttpRequest();
+            request.open('GET', path, false);
+            request.responseType = 'arraybuffer';
+            request.send(null);
+            const buffer = new Uint8Array(request.response);
+
+            const newFile: BrowserRuntimeFile = {
+                fileID,
+                url: path,
+                buffer,
+                blob: null,
+                lastModified: new Date(),
+                size: buffer.length,
+            };
+            BrowserRuntime.filesByURL.set(path, newFile);
+            BrowserRuntime.filesByID.set(fileID, newFile);
+        } else {
+            const size = parseInt(sizeHeader);
+            const newFile: BrowserRuntimeFile = {
+                fileID,
+                url: path,
+                buffer: null,
+                blob: null,
+                lastModified: new Date(),
+                size,
+            };
+            BrowserRuntime.filesByURL.set(path, newFile);
+            BrowserRuntime.filesByID.set(fileID, newFile);
+        }
+        return fileID;
     },
     duckdb_web_add_file_blob: (url: string, blob: any) => {
         const file = BrowserRuntime.filesByURL.get(url);
@@ -49,6 +92,7 @@ export const BrowserRuntime: DuckDBRuntime & {
             buffer: null,
             blob,
             lastModified: new Date(),
+            size: blob.size,
         };
         BrowserRuntime.filesByURL.set(url, newFile);
         BrowserRuntime.filesByID.set(fileID, newFile);
@@ -64,6 +108,7 @@ export const BrowserRuntime: DuckDBRuntime & {
             buffer,
             blob: null,
             lastModified: new Date(),
+            size: buffer.length,
         };
         BrowserRuntime.filesByURL.set(url, newFile);
         BrowserRuntime.filesByID.set(fileID, newFile);
@@ -93,11 +138,26 @@ export const BrowserRuntime: DuckDBRuntime & {
             const src = file.buffer.subarray(location, location + bytes);
             inst.HEAPU8.set(src, buf);
             return src.byteLength;
-        } else {
+        } else if (file.blob) {
             const blob = file.blob!.slice(location, location + bytes);
             const src = new Uint8Array(new FileReaderSync().readAsArrayBuffer(blob));
             inst.HEAPU8.set(src, buf);
             return src.byteLength;
+        } else {
+            let request = new XMLHttpRequest();
+            request.open('GET', file.url, false);
+            request.responseType = 'arraybuffer';
+            request.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
+            request.send(null);
+            if (request.status == 206 /* Partial content */) {
+                const src = new Uint8Array(request.response);
+                inst.HEAPU8.set(src, buf);
+                return src.byteLength;
+            } else {
+                throw Error(
+                    `Range request for ${file.url} returned non-success status: ${request.status} "${request.statusText}"`,
+                );
+            }
         }
     },
     duckdb_web_fs_write: (fileId: number, buf: number, bytes: number, location: number) => {
@@ -149,7 +209,7 @@ export const BrowserRuntime: DuckDBRuntime & {
     duckdb_web_fs_file_get_size: (fileId: number) => {
         const file = BrowserRuntime.filesByID.get(fileId);
         if (!file) return 0;
-        return file.buffer ? file.buffer.length : file.blob!.size;
+        return file.size;
     },
     duckdb_web_fs_file_truncate: (fileId: number, newSize: number) => {
         const file = BrowserRuntime.filesByID.get(fileId);

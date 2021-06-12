@@ -52,8 +52,8 @@ export abstract class DuckDBBindings {
         return this._runtime.duckdb_web_drop_files();
     }
     /// Add file path
-    public addFilePath(url: string, path: string): number {
-        return this._runtime.duckdb_web_add_file_path(url, path);
+    public addFilePath(path: string): number {
+        return this._runtime.duckdb_web_add_file_path(path);
     }
     /// Add file blob
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
