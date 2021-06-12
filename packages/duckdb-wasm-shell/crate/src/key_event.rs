@@ -42,7 +42,6 @@ impl FromStr for Key {
                 }
                 Err(())
             }
-            _ => Err(()),
         }
     }
 }
