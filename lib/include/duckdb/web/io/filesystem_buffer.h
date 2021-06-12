@@ -214,12 +214,11 @@ class FileSystemBuffer {
         inline auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{file_->file_latch}; }
         /// Flush the file
         void Flush(FileGuardRefVariant file_guard);
-        /// Flush a buffer frame
-        void FlushFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard);
         /// Loads the page from disk
-        void LoadFrameUnsafe(BufferFrame& frame, DirectoryGuard& dir_guard);
+        void LoadFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
         /// Fix file with file lock
-        std::pair<BufferFrame*, FrameGuardVariant> FixPageUnsafe(uint64_t page_id, bool exclusive, bool load_data);
+        std::pair<BufferFrame*, FrameGuardVariant> FixPage(uint64_t page_id, bool exclusive, bool load_data,
+                                                           FileGuardRefVariant file_guard);
         /// Append n bytes
         void Append(const void* buffer, uint64_t n, UniqueFileGuard& file_guard);
 
@@ -302,17 +301,9 @@ class FileSystemBuffer {
     std::unique_ptr<char[]> AllocateFrameBuffer(DirectoryGuard& dir_guard);
 
     /// Flush a frame
-    void FlushFrame(BufferFrame& frame, DirectoryGuard& dir_guard, UniqueFileGuard& file_guard);
-    /// Flush a frame
-    void FlushFrame(BufferFrame& frame, DirectoryGuard& dir_guard, SharedFileGuard& file_guard);
-    /// Flush a frame
-    void FlushFrameUnsafe(BufferFrame& frame, DirectoryGuard& dir_guard);
+    void FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
     /// Releases a file
-    void ReleaseFile(BufferedFile& file, DirectoryGuard& dir_guard, UniqueFileGuard&& file_guard);
-    /// Releases a file
-    void ReleaseFile(BufferedFile& file, DirectoryGuard& dir_guard, SharedFileGuard&& file_guard);
-    /// Releases a file
-    void ReleaseFileUnsafe(BufferedFile& file, DirectoryGuard& dir_guard);
+    void ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
 
    public:
     /// Constructor.

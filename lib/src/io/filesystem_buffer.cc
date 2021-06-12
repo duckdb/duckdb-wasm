@@ -82,13 +82,9 @@ void FileSystemBuffer::BufferRef::Release() {
 /// Constructor
 FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer) : buffer_(buffer), file_(nullptr) {}
 
-/// Flush the file ref
-void FileSystemBuffer::FileRef::FlushFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard) {
-    buffer_.FlushFrameUnsafe(frame, dir_guard);
-}
-
 /// Load a frame
-void FileSystemBuffer::FileRef::LoadFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard) {
+void FileSystemBuffer::FileRef::LoadFrame(FileSystemBuffer::BufferFrame& frame, FileGuardRefVariant file_guard,
+                                          DirectoryGuard& dir_guard) {
     assert(frame.frame_state == FileSystemBuffer::BufferFrame::LOADING);
     auto file_id = ::GetFileID(frame.frame_id);
     auto page_id = ::GetPageID(frame.frame_id);
@@ -139,7 +135,7 @@ void FileSystemBuffer::FileRef::Release() {
         auto& frame = **iter;
 
         // Flush the frame
-        FlushFrameUnsafe(frame, dir_guard);
+        buffer_.FlushFrame(frame, file_guard, dir_guard);
         // The number of users MUST be 0.
         // We hold an exclusive lock on the file and there is nobody referencing it.
         // => There's no way someone can see the frame
@@ -181,7 +177,7 @@ void FileSystemBuffer::FileRef::Flush(FileGuardRefVariant file_guard) {
     // Flush all frames.
     auto dir_guard = buffer_.Lock();
     for (auto iter = file_->frames.begin(); iter != file_->frames.end(); ++iter) {
-        FlushFrameUnsafe(**iter, dir_guard);
+        buffer_.FlushFrame(**iter, file_guard, dir_guard);
     }
 }
 
@@ -266,7 +262,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& di
 
         // Flush the frame
         ++frame->num_users;
-        FlushFrameUnsafe(*frame, dir_guard);
+        FlushFrame(*frame, file_guard, dir_guard);
 
         // Check if someone started using the page while we were flushing
         if (--frame->num_users > 0) continue;
@@ -313,13 +309,13 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
     auto file_guard = Lock(Shared);
-    auto [frame_ptr, frame_guard] = FixPageUnsafe(page_id, exclusive, true);
+    auto [frame_ptr, frame_guard] = FixPage(page_id, exclusive, true, file_guard);
     return BufferRef{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
 }
 
 /// Fix a page with existing file lock
-std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> FileSystemBuffer::FileRef::FixPageUnsafe(
-    uint64_t page_id, bool exclusive, bool load_data) {
+std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> FileSystemBuffer::FileRef::FixPage(
+    uint64_t page_id, bool exclusive, bool load_data, FileGuardRefVariant file_guard) {
     assert(file_ != nullptr);
     auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
@@ -419,7 +415,7 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
     // Load data
     if (load_data) {
         // Load the data into the frame
-        LoadFrameUnsafe(frame, dir_guard);
+        LoadFrame(frame, file_guard, dir_guard);
         assert(dir_guard.owns_lock());
     }
 
@@ -472,7 +468,7 @@ uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb
     auto write_here = std::min<uint64_t>(bytes, buffer_.GetPageSize() - skip_here);
 
     // Fix page
-    auto [frame_ptr, frame_guard] = FixPageUnsafe(page_id, true, true);
+    auto [frame_ptr, frame_guard] = FixPage(page_id, true, true, file_guard);
     BufferRef page{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
     write_here = std::min<uint64_t>(write_here, buffer_.GetPageSize());
 
@@ -506,7 +502,7 @@ void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, Uniqu
 
     // Write into that last page first
     if (last_page_capacity > 0) {
-        auto [frame_ptr, frame_guard] = FixPageUnsafe(last_page_id, true, true);
+        auto [frame_ptr, frame_guard] = FixPage(last_page_id, true, true, file_guard);
         auto write_here = std::min(last_page_capacity, bytes);
         frame_ptr->data_size = last_page_bytes + write_here;
         frame_ptr->is_dirty = true;
@@ -521,7 +517,7 @@ void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, Uniqu
     // Do not load them from disk since we now that they're new.
     auto page_id = last_page_id + 1;
     while (bytes > 0) {
-        auto [frame_ptr, frame_guard] = FixPageUnsafe(page_id, true, false);
+        auto [frame_ptr, frame_guard] = FixPage(page_id, true, false, file_guard);
         auto write_here = std::min(page_size, bytes);
         frame_ptr->data_size = write_here;
         frame_ptr->is_dirty = true;
@@ -567,19 +563,9 @@ void FileSystemBuffer::Flush() {
     }
 }
 
-/// Flush a frame
-void FileSystemBuffer::FlushFrame(BufferFrame& frame, DirectoryGuard& dir_guard, UniqueFileGuard& file_guard) {
-    FlushFrameUnsafe(frame, dir_guard);
-}
-
-/// Flush a frame
-void FileSystemBuffer::FlushFrame(BufferFrame& frame, DirectoryGuard& dir_guard, SharedFileGuard& file_guard) {
-    FlushFrameUnsafe(frame, dir_guard);
-}
-
 /// Flush a frame.
 /// Assumes that the file of the frame is under control.
-void FileSystemBuffer::FlushFrameUnsafe(BufferFrame& frame, DirectoryGuard& dir_guard) {
+void FileSystemBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
     if (!frame.is_dirty) return;
     auto& file = frame.file;
     auto file_id = GetFileID(frame.frame_id);
@@ -608,17 +594,7 @@ void FileSystemBuffer::FlushFrameUnsafe(BufferFrame& frame, DirectoryGuard& dir_
 }
 
 /// Release a file
-void FileSystemBuffer::ReleaseFile(BufferedFile& file, DirectoryGuard& dir_guard, UniqueFileGuard&& file_guard) {
-    ReleaseFileUnsafe(file, dir_guard);
-}
-
-/// Release a file
-void FileSystemBuffer::ReleaseFile(BufferedFile& file, DirectoryGuard& dir_guard, SharedFileGuard&& file_guard) {
-    ReleaseFileUnsafe(file, dir_guard);
-}
-
-/// Release a file
-void FileSystemBuffer::ReleaseFileUnsafe(BufferedFile& file, DirectoryGuard& dir_guard) {
+void FileSystemBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
     // Someone opened the file in the meantime?
     if (file.GetReferenceCount() > 1) return;
 
@@ -627,7 +603,7 @@ void FileSystemBuffer::ReleaseFileUnsafe(BufferedFile& file, DirectoryGuard& dir
         auto& frame = **iter;
 
         // Flush frame
-        FlushFrameUnsafe(frame, dir_guard);
+        FlushFrame(frame, file_guard, dir_guard);
 
         // The number of users MUST be 0.
         // We hold an exclusive lock on the file and there is nobody referencing it.
