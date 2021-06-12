@@ -168,6 +168,7 @@ export const BrowserRuntime: DuckDBRuntime & {
         // Copy entire blob on first write
         if (!file.buffer) {
             file.buffer = new Uint8Array(new FileReaderSync().readAsArrayBuffer(file.blob!));
+            file.size = file.buffer.length;
             file.blob = null;
         }
         const dst = file.buffer.subarray(location, location + bytes);
@@ -221,6 +222,7 @@ export const BrowserRuntime: DuckDBRuntime & {
         const newBuffer = new Uint8Array(newSize);
         newBuffer.set(buffer.subarray(0, Math.min(buffer.length, newSize)));
         file.buffer = newBuffer;
+        file.size = newSize;
         file.blob = null;
     },
     duckdb_web_fs_file_get_last_modified_time: (fileId: number) => {
