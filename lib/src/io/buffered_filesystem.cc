@@ -79,7 +79,7 @@ void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t
 
     // Requested to write past end?
     if (location >= file_size && nr_bytes > 0) {
-        throw std::logic_error("tried to read past the end");
+        throw std::logic_error("tried to write past the end");
     }
 }
 /// Read nr_bytes from the specified file into the buffer, moving the file pointer forward by nr_bytes. Returns the
