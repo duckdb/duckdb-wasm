@@ -173,11 +173,11 @@ void FileSystemBuffer::FileRef::Release() {
 /// Flush file with guard
 void FileSystemBuffer::FileRef::Flush() {
     auto file_guard = Lock(Shared);
-    FlushUnsafe();
+    Flush(file_guard);
 }
 
 /// Flush file without guard
-void FileSystemBuffer::FileRef::FlushUnsafe() {
+void FileSystemBuffer::FileRef::Flush(FileGuardRefVariant file_guard) {
     // Flush all frames.
     auto dir_guard = buffer_.Lock();
     for (auto iter = file_->frames.begin(); iter != file_->frames.end(); ++iter) {
@@ -547,8 +547,8 @@ void FileSystemBuffer::FlushFile(std::string_view path) {
     dir_guard.unlock();
 
     // Flush the file
-    file_ref->Lock(Shared);
-    file_ref->FlushUnsafe();
+    auto file_guard = file_ref->Lock(Shared);
+    file_ref->Flush(file_guard);
 }
 
 /// Flush all files in the buffer

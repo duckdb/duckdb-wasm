@@ -213,7 +213,7 @@ class FileSystemBuffer {
         /// Lock a file shared
         inline auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{file_->file_latch}; }
         /// Flush the file
-        void FlushUnsafe();
+        void Flush(FileGuardRefVariant file_guard);
         /// Flush a buffer frame
         void FlushFrameUnsafe(FileSystemBuffer::BufferFrame& frame, DirectoryGuard& dir_guard);
         /// Loads the page from disk
