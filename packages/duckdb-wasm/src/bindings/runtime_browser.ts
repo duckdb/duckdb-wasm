@@ -88,7 +88,6 @@ export const BrowserRuntime: DuckDBRuntime & {
         const file = BrowserRuntime.filesByID.get(fileId);
         if (!file) return 0;
         const inst = BrowserRuntime.bindings!.instance!;
-        console.log(`READ file=${file.url} bytes=${bytes} location=${location}`);
         // We copy the blob only if the file was written to
         if (file.buffer) {
             const src = file.buffer.subarray(location, location + bytes);
@@ -106,7 +105,6 @@ export const BrowserRuntime: DuckDBRuntime & {
         if (!file) return 0;
         const inst = BrowserRuntime.bindings!.instance!;
         const src = inst.HEAPU8.subarray(buf, buf + bytes);
-        console.log(`WRITE file=${file.url} bytes=${bytes} location=${location}`);
         // Copy entire blob on first write
         if (!file.buffer) {
             file.buffer = new Uint8Array(new FileReaderSync().readAsArrayBuffer(file.blob!));
