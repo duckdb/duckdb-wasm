@@ -1,41 +1,146 @@
 #ifndef INCLUDE_DUCKDB_WEB_IO_WEB_FILESYSTEM_H_
 #define INCLUDE_DUCKDB_WEB_IO_WEB_FILESYSTEM_H_
 
+#include <atomic>
+#include <shared_mutex>
+#include <stack>
+
+#include "arrow/result.h"
+#include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "nonstd/span.h"
 
 namespace duckdb {
 namespace web {
 namespace io {
 
-class WebFileHandle : public duckdb::FileHandle {
-    friend class WebFileSystem;
-
-   protected:
-    /// The file id
-    size_t file_id;
-    /// The position
-    uint64_t position_;
-
-    /// Close the file
-    void Close() override;
-
-   public:
-    /// Constructor
-    WebFileHandle(duckdb::FileSystem &file_system, std::string path, size_t file_id)
-        : duckdb::FileHandle(file_system, path), file_id(file_id), position_(0) {}
-    /// Delete copy constructor
-    WebFileHandle(const WebFileHandle &) = delete;
-    /// Destructor
-    virtual ~WebFileHandle() {}
-};
-
 class WebFileSystem : public duckdb::FileSystem {
    public:
+    /// A simple buffer.
+    /// It might be worth to make this chunked eventually.
+    class WebFileBuffer {
+       protected:
+        /// The data
+        std::unique_ptr<char[]> data_;
+        /// The size
+        size_t size_;
+        /// The capacity
+        size_t capacity_;
+
+       public:
+        /// Constructor
+        WebFileBuffer(std::unique_ptr<char[]> data, size_t size);
+        /// Get get span
+        auto Get() { return nonstd::span<char>{data_.get(), size_}; }
+        /// Get the capacity
+        auto Capacity() { return capacity_; }
+        /// Get the size
+        auto Size() { return size_; }
+        /// Grow the buffer so that it has a capacity of at least n
+        void Resize(size_t n);
+    };
+
+    class WebFile {
+        friend class WebFileSystem;
+
+       protected:
+        /// The file identifier
+        const uint32_t file_id_;
+        /// The file path
+        const std::string file_name_;
+        /// The handle count
+        size_t handle_count_;
+        /// The file mutex
+        std::shared_mutex file_mutex_ = {};
+        /// The data size
+        std::optional<uint64_t> data_size_ = std::nullopt;
+        /// The data buffer
+        /// XXX Make chunked to upgrade from url to cached version
+        std::optional<WebFileBuffer> data_buffer_ = std::nullopt;
+        /// The data file descriptor (if any)
+        std::optional<uint32_t> data_fd_ = std::nullopt;
+        /// The data URL (if any)
+        std::optional<std::string> data_url_ = std::nullopt;
+
+       public:
+        /// Constructor
+        WebFile(uint32_t file_id, std::string_view file_name)
+            : file_id_(file_id), file_name_(file_name), handle_count_(0) {}
+
+        /// Get the file info as json
+        std::string GetInfo() const;
+
+        /// Construct file of URL
+        static std::unique_ptr<WebFile> URL(uint32_t file_id, std::string_view file_name, std::string_view file_url);
+        /// Construct file of URL
+        static std::unique_ptr<WebFile> Buffer(uint32_t file_id, std::string_view file_name, WebFileBuffer buffer);
+    };
+
+    class WebFileHandle : public duckdb::FileHandle {
+        friend class WebFileSystem;
+
+       protected:
+        /// The filesystem
+        WebFileSystem &fs_;
+        /// The file
+        WebFile *file_;
+        /// The position
+        uint64_t position_;
+
+        /// Close the file
+        void Close() override;
+
+       public:
+        /// Constructor
+        WebFileHandle(WebFileSystem &file_system, std::string path, WebFile &file)
+            : duckdb::FileHandle(file_system, path), fs_(file_system), file_(&file), position_(0) {
+            ++file_->handle_count_;
+        }
+        /// Delete copy constructor
+        WebFileHandle(const WebFileHandle &) = delete;
+        /// Destructor
+        virtual ~WebFileHandle() { Close(); }
+    };
+
+   protected:
+    /// The filesystem mutex
+    std::mutex fs_mutex_ = {};
+    /// The files by id
+    std::unordered_map<uint32_t, std::unique_ptr<WebFile>> files_by_id_ = {};
+    /// The files by path
+    std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
+    /// The free file ids
+    std::stack<uint32_t> free_file_ids_ = {};
+    /// The next file id
+    uint32_t next_file_id_ = 0;
+
+    /// Allocate a file id
+    inline uint32_t AllocateFileID() {
+        if (free_file_ids_.empty()) {
+            auto id = free_file_ids_.top();
+            free_file_ids_.pop();
+            return id;
+        }
+        return ++next_file_id_;
+    }
+
+   public:
     /// Constructor
-    WebFileSystem() {}
+    WebFileSystem();
     /// Destructor
-    virtual ~WebFileSystem() {}
+    virtual ~WebFileSystem();
+    /// Delete copy constructor
+    WebFileSystem(const WebFileSystem &other) = delete;
+
+    /// Register a file URL
+    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url);
+    /// Register a file buffer
+    arrow::Status RegisterFileBuffer(std::string_view file_name, WebFileBuffer file_buffer);
+    /// Set a file descriptor
+    arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor);
+    /// Get a file info as JSON string
+    arrow::Result<std::string> GetFileInfo(uint32_t file_id);
 
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
