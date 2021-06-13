@@ -13,6 +13,10 @@ interface BrowserRuntimeFile {
     size: number;
 }
 
+// TODO make this independant of the environment:
+// Functions should have access to the heap through HeapU8
+// https://stackoverflow.com/questions/60106899/creating-an-array-at-a-known-heap-address-in-emscripten
+
 export const BrowserRuntime: DuckDBRuntime & {
     filesByURL: Map<string, BrowserRuntimeFile>;
     filesByID: Map<number, BrowserRuntimeFile>;
