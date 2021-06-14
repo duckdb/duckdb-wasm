@@ -16,7 +16,7 @@ export enum DuckDBFeature {
 function TextDecoderWrapper(): (input?: BufferSource) => string {
     const decoder = new TextDecoder();
     return (data: any) => {
-        if (data.buffer instanceof SharedArrayBuffer) {
+        if (typeof SharedArrayBuffer !== 'undefined' && data.buffer instanceof SharedArrayBuffer) {
             data = new Uint8Array(data);
         }
         return decoder.decode(data);
