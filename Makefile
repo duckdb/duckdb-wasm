@@ -143,10 +143,15 @@ wasm_release: wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release eh_mt
 
-# Build the duckdb library
+# Build the duckdb library in debug mode
 .PHONY: duckdb
-duckdb:
-	yarn workspace @duckdb/duckdb-wasm build
+duckdb_debug:
+	yarn workspace @duckdb/duckdb-wasm build:debug
+
+# Build the duckdb library in release mode
+.PHONY: duckdb
+duckdb_release:
+	yarn workspace @duckdb/duckdb-wasm build:release
 
 # Build the duckdb docs
 .PHONY: duckdb_docs

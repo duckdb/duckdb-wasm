@@ -99,7 +99,20 @@ export function configure(params) {
                 {
                     test: /\.js$/,
                     enforce: 'pre',
-                    use: ['source-map-loader'],
+                    use: [
+                        {
+                            loader: 'source-map-loader',
+                            options: {
+                                filterSourceMappingUrl: (url, resourcePath) => {
+                                    if (/\.worker\.js$/i.test(resourcePath)) {
+                                        return 'skip';
+                                    }
+
+                                    return true;
+                                },
+                            },
+                        },
+                    ],
                 },
             ],
         },

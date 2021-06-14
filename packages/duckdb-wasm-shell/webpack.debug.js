@@ -21,7 +21,6 @@ export default {
     ...base,
     output: {
         ...base.output,
-        devtoolModuleFilenameTemplate: 'file:///[absolute-resource-path]', // map to source with absolute file path not webpack:// protocol
     },
     mode: 'development',
     watchOptions: {
@@ -37,9 +36,6 @@ export default {
         watchContentBase: true,
         compress: true,
         port: 9002,
-        mimeTypes: {
-            'text/plain': ['dashql'],
-        },
         headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',

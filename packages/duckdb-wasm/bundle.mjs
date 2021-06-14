@@ -5,6 +5,15 @@ import rimraf from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
 
+let is_debug = false;
+let args = process.argv.slice(2);
+if (args.length == 0) {
+    console.warn('Usage: node bundle.mjs {debug/release}');
+} else {
+    if (args[0] == 'debug') is_debug = true;
+}
+console.log(`DEBUG=${is_debug}`);
+
 // Bundling node is a bit problematic right now.
 // The web worker ponyfill is commonjs (dynamic require) and prevents us from releasing an async node module.
 
@@ -48,7 +57,7 @@ esbuild.build({
     splitting: true,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: true,
     external: EXTERNALS,
 });
 
@@ -66,7 +75,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-eh.js');
@@ -80,7 +89,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async.js');
@@ -93,7 +102,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async.worker.js');
@@ -106,7 +115,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async-eh.worker.js');
@@ -119,7 +128,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async-eh-mt.worker.js');
@@ -132,7 +141,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 // -------------------------------
@@ -147,7 +156,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS,
 });
 
@@ -160,7 +169,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS,
 });
 
@@ -173,7 +182,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS,
 });
 
@@ -186,7 +195,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS,
 });
 
@@ -199,7 +208,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS,
 });
 
@@ -215,8 +224,7 @@ esbuild.build({
     globalName: 'duckdb',
     target: TARGET,
     bundle: true,
-    minify: true,
-    sourcemap: 'both',
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] tests-node.js');
@@ -228,7 +236,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: true,
-    sourcemap: 'external',
+    sourcemap: is_debug ? 'inline' : true,
     // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
     external: [...EXTERNALS, 'web-worker'],
 });

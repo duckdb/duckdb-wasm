@@ -47,7 +47,8 @@
         "fsevents": "*"
     },
     "scripts": {
-        "build": "node bundle.mjs && tsc --emitDeclarationOnly",
+        "build:debug": "node bundle.mjs debug && tsc --emitDeclarationOnly",
+        "build:release": "node bundle.mjs release && tsc --emitDeclarationOnly",
         "docs": "typedoc --out docs --excludeProtected --includeVersion src/index.ts",
         "report": "node ./coverage.mjs",
         "test:node": "node --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
