@@ -182,6 +182,10 @@ explorer_release:
 shell_start:
 	yarn workspace @duckdb/duckdb-wasm-shell start
 
+# Start the shell dev server with cross origin resource policies
+shell_start_corp:
+	yarn workspace @duckdb/duckdb-wasm-shell start:corp
+
 # Build the shell
 shell:
 	yarn workspace @duckdb/duckdb-wasm-shell build:release

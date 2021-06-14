@@ -7,6 +7,7 @@
     "private": true,
     "scripts": {
         "start": "webpack serve --config webpack.debug.js",
+        "start:corp": "webpack serve --config webpack.debug.corp.js",
         "build:debug": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.debug.js",
         "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.release.js",
         "analyze:debug": "webpack --config webpack.debug.js --analyze",
