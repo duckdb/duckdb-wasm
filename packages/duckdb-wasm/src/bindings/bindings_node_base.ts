@@ -7,7 +7,7 @@ import fs from 'fs';
 
 declare global {
     // eslint-disable-next-line no-var
-    var DuckDBTrampoline: any;
+    var DUCKDB_RUNTIME: any;
 }
 
 /** DuckDB bindings for node.js */
@@ -57,11 +57,11 @@ export class DuckDBNodeBindings extends DuckDBBindings {
         };
         const buf = fs.readFileSync(this.mainModulePath);
         WebAssembly.instantiate(buf, imports_rt).then(output => {
-            globalThis.DuckDBTrampoline = {};
+            globalThis.DUCKDB_RUNTIME = {};
 
             for (const func of Object.getOwnPropertyNames(this._runtime)) {
                 if (func == 'constructor') continue;
-                globalThis.DuckDBTrampoline[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
+                globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
             }
             success(output.instance, output.module);
         });

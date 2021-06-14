@@ -4,11 +4,6 @@ import { DuckDBNodeBindings } from './bindings_node_base.js';
 import { DuckDBRuntime } from './runtime_base';
 import { Logger } from '../log';
 
-declare global {
-    // eslint-disable-next-line no-var
-    var DuckDBTrampoline: any;
-}
-
 /** DuckDB bindings for node.js */
 export class DuckDB extends DuckDBNodeBindings {
     /** Constructor */

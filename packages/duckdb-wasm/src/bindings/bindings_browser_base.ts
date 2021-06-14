@@ -5,7 +5,7 @@ import { Logger } from '../log';
 
 declare global {
     // eslint-disable-next-line no-var
-    var DuckDBTrampoline: any;
+    var DUCKDB_RUNTIME: any;
 }
 
 /** DuckDB bindings for the browser */
@@ -51,11 +51,11 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindings {
         };
         if (WebAssembly.instantiateStreaming) {
             WebAssembly.instantiateStreaming(fetch(this.mainModuleURL), imports_rt).then(output => {
-                globalThis.DuckDBTrampoline = {};
+                globalThis.DUCKDB_RUNTIME = {};
 
                 for (const func of Object.getOwnPropertyNames(this._runtime)) {
                     if (func == 'constructor') continue;
-                    globalThis.DuckDBTrampoline[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
+                    globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
                 }
                 success(output.instance, output.module);
             });
@@ -64,11 +64,11 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindings {
                 .then(resp => resp.arrayBuffer())
                 .then(bytes =>
                     WebAssembly.instantiate(bytes, imports_rt).then(output => {
-                        globalThis.DuckDBTrampoline = {};
+                        globalThis.DUCKDB_RUNTIME = {};
 
                         for (const func of Object.getOwnPropertyNames(this._runtime)) {
                             if (func == 'constructor') continue;
-                            globalThis.DuckDBTrampoline[func] = Object.getOwnPropertyDescriptor(
+                            globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(
                                 this._runtime,
                                 func,
                             )!.value;
