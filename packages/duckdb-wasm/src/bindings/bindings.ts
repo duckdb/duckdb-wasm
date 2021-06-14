@@ -12,6 +12,17 @@ export enum DuckDBFeature {
     THREADS = 1 << 1,
 }
 
+/** Wrapper for TextDecoder to support shared array buffers */
+function TextDecoderWrapper(): (input?: BufferSource) => string {
+    const decoder = new TextDecoder();
+    return (data: any) => {
+        if (data.buffer instanceof SharedArrayBuffer) {
+            data = new Uint8Array(data);
+        }
+        return decoder.decode(data);
+    };
+}
+
 /** The proxy for either the browser- order node-based DuckDB API */
 export abstract class DuckDBBindings {
     /** The logger */
@@ -24,6 +35,8 @@ export abstract class DuckDBBindings {
     private _openPromiseResolver: () => void = () => {};
     /** Backend-dependent native-glue code for DuckDB */
     protected _runtime: DuckDBRuntime;
+    /** Wrapper for text decoder */
+    protected _decode = TextDecoderWrapper();
 
     constructor(logger: Logger, runtime: DuckDBRuntime) {
         this._logger = logger;
@@ -142,8 +155,7 @@ export abstract class DuckDBBindings {
 
     /** Decode a string */
     public readString(begin: number, length: number): string {
-        const decoder = new TextDecoder();
-        return decoder.decode(this.instance!.HEAPU8.subarray(begin, begin + length));
+        return this._decode(this.instance!.HEAPU8.subarray(begin, begin + length));
     }
 
     /** Copy a Uint8Array */

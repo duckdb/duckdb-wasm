@@ -3,29 +3,39 @@ import * as duckdb_async from '../src/targets/duckdb-browser-async';
 import * as check from 'wasm-feature-detect';
 
 // Configure the worker
-const WORKER_BUNDLES = {
-    worker: '/static/duckdb-browser-async.worker.js',
-    workerEH: '/static/duckdb-browser-async-eh.worker.js',
-    workerEHMT: '/static/duckdb-browser-async-eh-mt.worker.js',
-    wasm: '/static/duckdb.wasm',
-    wasmEH: '/static/duckdb-eh.wasm',
-    wasmEHMT: '/static/duckdb-eh-mt.wasm',
+const DUCKDB_BUNDLES: duckdb_async.DuckDBBundles = {
+    asyncDefault: {
+        mainModule: '/static/duckdb.wasm',
+        mainWorker: '/static/duckdb-browser-async.worker.js',
+    },
+    asyncEH: {
+        mainModule: '/static/duckdb-eh.wasm',
+        mainWorker: '/static/duckdb-browser-async-eh.worker.js',
+    },
+    asyncEHMT: {
+        mainModule: '/static/duckdb-eh-mt.wasm',
+        mainWorker: '/static/duckdb-browser-async-eh-mt.worker.js',
+        pthreadWorker: '/static/duckdb-browser-async-eh-mt.pthread.worker.js',
+    },
 };
-let WORKER_CONFIG: DuckDBConfig | null = null;
+let DUCKDB_CONFIG: DuckDBConfig | null = null;
 
 describe('wasm check', () => {
     it('worker and wasm urls', async () => {
-        //if ((await check.exceptions()) && (await check.threads())) {
-        //    expect(WORKER_CONFIG!.workerURL).toEqual(WORKER_BUNDLES.workerEHMT);
-        //    expect(WORKER_CONFIG!.wasmURL).toEqual(WORKER_BUNDLES.wasmEHMT);
-        //}
+        if ((await check.exceptions()) && (await check.threads())) {
+            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncEHMT!.mainModule);
+            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncEHMT!.mainWorker);
+            expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(DUCKDB_BUNDLES.asyncEHMT!.pthreadWorker);
+        }
         if ((await check.exceptions()) && !(await check.threads())) {
-            expect(WORKER_CONFIG!.workerURL).toEqual(WORKER_BUNDLES.workerEH);
-            expect(WORKER_CONFIG!.wasmURL).toEqual(WORKER_BUNDLES.wasmEH);
+            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncEH!.mainModule);
+            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncEH!.mainWorker);
+            expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(null);
         }
         if (!(await check.exceptions())) {
-            expect(WORKER_CONFIG!.workerURL).toEqual(WORKER_BUNDLES.worker);
-            expect(WORKER_CONFIG!.wasmURL).toEqual(WORKER_BUNDLES.wasm);
+            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncDefault!.mainModule);
+            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncDefault!.mainWorker);
+            expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(null);
         }
     });
 });
@@ -64,14 +74,14 @@ let adb: duckdb_async.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
-    WORKER_CONFIG = await duckdb_async.configure(WORKER_BUNDLES);
+    DUCKDB_CONFIG = await duckdb_async.configure(DUCKDB_BUNDLES);
     const logger = new duckdb_sync.VoidLogger();
     db = new duckdb_sync.DuckDB(logger, duckdb_sync.BrowserRuntime, '/static/duckdb.wasm');
     await db.open();
 
-    worker = new Worker(WORKER_CONFIG.workerURL);
+    worker = new Worker(DUCKDB_CONFIG.mainWorker!);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.open(WORKER_CONFIG.wasmURL.toString());
+    await adb.open(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
 });
 
 afterAll(async () => {

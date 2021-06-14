@@ -101,7 +101,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
     | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>
-    | WorkerRequest<WorkerRequestType.OPEN, string>
+    | WorkerRequest<WorkerRequestType.OPEN, [string, string | null]>
     | WorkerRequest<WorkerRequestType.PING, null>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
@@ -142,7 +142,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
     | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>
-    | WorkerTask<WorkerRequestType.OPEN, string | null, null>
+    | WorkerTask<WorkerRequestType.OPEN, [string, string | null], null>
     | WorkerTask<WorkerRequestType.PING, null, null>
     | WorkerTask<WorkerRequestType.RESET, null, null>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
