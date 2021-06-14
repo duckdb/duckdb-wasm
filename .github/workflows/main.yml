@@ -196,7 +196,7 @@ jobs:
               uses: ./actions/image
               with:
                   script: |-
-                      yarn workspace @duckdb/duckdb-wasm build
+                      yarn workspace @duckdb/duckdb-wasm build:release
 
             - name: Build @duckdb/duckdb-wasm-shell
               uses: ./actions/image
