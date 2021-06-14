@@ -157,7 +157,7 @@ if(EMSCRIPTEN)
     PROPERTIES
       LINK_FLAGS
       "${WASM_LINK_FLAGS} \
-      -s ENVIRONMENT='web,node' \
+      -s ENVIRONMENT='web,node,worker' \
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
       -s MODULARIZE=1 \
