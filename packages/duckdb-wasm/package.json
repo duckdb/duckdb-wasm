@@ -26,7 +26,7 @@
         "eslint-plugin-react": "^7.24.0",
         "jasmine": "3.7.0",
         "jasmine-spec-reporter": "^7.0.0",
-        "karma": "^6.3.3",
+        "karma": "^6.3.4",
         "karma-chrome-launcher": "^3.1.0",
         "karma-coverage": "^2.0.3",
         "karma-firefox-launcher": "^2.1.1",
