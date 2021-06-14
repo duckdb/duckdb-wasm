@@ -69,10 +69,10 @@ esbuild.build({
 // -------------------------------
 // Browser
 
-console.log('[ ESBUILD ] duckdb-browser.js');
+console.log('[ ESBUILD ] duckdb-browser-sync.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-browser-sync.ts'],
-    outfile: 'dist/duckdb-browser.js',
+    outfile: 'dist/duckdb-browser-sync.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -83,10 +83,10 @@ esbuild.build({
     sourcemap: is_debug ? 'inline' : true,
 });
 
-console.log('[ ESBUILD ] duckdb-browser-eh.js');
+console.log('[ ESBUILD ] duckdb-browser-sync-eh.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-browser-sync-eh.ts'],
-    outfile: 'dist/duckdb-browser-eh.js',
+    outfile: 'dist/duckdb-browser-sync-eh.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
