@@ -7,8 +7,13 @@ import { Logger } from '../log';
 /** DuckDB bindings for the browser */
 export class DuckDB extends DuckDBBrowserBindings {
     /** Constructor */
-    public constructor(logger: Logger, runtime: DuckDBRuntime, path: string) {
-        super(logger, runtime, path);
+    public constructor(
+        logger: Logger,
+        runtime: DuckDBRuntime,
+        mainModuleURL: string,
+        pthreadWorkerURL: string | null = null,
+    ) {
+        super(logger, runtime, mainModuleURL, pthreadWorkerURL);
     }
 
     /** Instantiate the bindings */
@@ -16,6 +21,9 @@ export class DuckDB extends DuckDBBrowserBindings {
         return DuckDBWasm({
             ...moduleOverrides,
             instantiateWasm: this.instantiateWasm.bind(this),
+            locateFile: this.locateFile.bind(this),
         });
     }
 }
+
+export default DuckDB;

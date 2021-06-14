@@ -40,20 +40,24 @@ let worker: Worker | null = null;
 
 beforeAll(async () => {
     // Configure the worker
-    const WORKER_CONFIG = await duckdb_async.configure({
-        worker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
-        workerEH: path.resolve(__dirname, './duckdb-node-async-eh.worker.js'),
-        wasm: path.resolve(__dirname, './duckdb.wasm'),
-        wasmEH: path.resolve(__dirname, './duckdb-eh.wasm'),
+    const DUCKDB_CONFIG = await duckdb_async.configure({
+        asyncDefault: {
+            mainModule: path.resolve(__dirname, './duckdb.wasm'),
+            mainWorker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
+        },
+        asyncEH: {
+            mainModule: path.resolve(__dirname, './duckdb-eh.wasm'),
+            mainWorker: path.resolve(__dirname, './duckdb-node-async-eh.worker.js'),
+        },
     });
 
     const logger = new duckdb_sync.VoidLogger();
     db = new duckdb_sync.DuckDB(logger, duckdb_sync.NodeRuntime, path.resolve(__dirname, './duckdb-eh.wasm'));
     await db.open();
 
-    worker = new Worker(WORKER_CONFIG.workerURL);
+    worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.open(WORKER_CONFIG.wasmURL);
+    await adb.open(DUCKDB_CONFIG.mainModule);
 });
 
 afterAll(async () => {

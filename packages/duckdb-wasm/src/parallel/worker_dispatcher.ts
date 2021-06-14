@@ -12,7 +12,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
     protected _nextMessageId = 0;
 
     /** Instantiate the wasm module */
-    protected abstract open(path: string): Promise<DuckDBBindings>;
+    protected abstract open(mainModule: string, pthreadWorker: string | null): Promise<DuckDBBindings>;
     /** Post a response to the main thread */
     protected abstract postMessage(response: WorkerResponseVariant, transfer: ArrayBuffer[]): void;
 
@@ -75,7 +75,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.failWith(request, new Error('duckdb already initialized'));
                 }
                 try {
-                    this._bindings = await this.open(request.data);
+                    this._bindings = await this.open(request.data[0], request.data[1]);
                     this._zip = new ZipBindings(this._bindings); // TODO: make optional
                     this.sendOK(request);
                 } catch (e) {

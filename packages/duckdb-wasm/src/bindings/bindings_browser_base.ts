@@ -1,4 +1,3 @@
-import DuckDBWasm from './duckdb_wasm.js';
 import { DuckDBModule } from './duckdb_module';
 import { DuckDBBindings } from './bindings';
 import { DuckDBRuntime } from './runtime_base';
@@ -10,21 +9,38 @@ declare global {
 }
 
 /** DuckDB bindings for the browser */
-export class DuckDBBrowserBindings extends DuckDBBindings {
+export abstract class DuckDBBrowserBindings extends DuckDBBindings {
     /** The path of the wasm module */
-    protected path: string;
+    protected mainModuleURL: string;
+    /** The path of the pthread worker script */
+    protected pthreadWorkerURL: string | null;
 
     /** Constructor */
-    public constructor(logger: Logger, runtime: DuckDBRuntime, path: string) {
+    public constructor(logger: Logger, runtime: DuckDBRuntime, mainModuleURL: string, pthreadWorkerURL: string | null) {
         super(logger, runtime);
-        this.path = path;
+        this.mainModuleURL = mainModuleURL;
+        this.pthreadWorkerURL = pthreadWorkerURL;
+    }
+
+    /** Locate a file */
+    protected locateFile(path: string, prefix: string): string {
+        if (path.endsWith('.wasm')) {
+            return this.mainModuleURL;
+        }
+        if (path.endsWith('.worker.js')) {
+            if (!this.pthreadWorkerURL) {
+                throw new Error('Missing DuckDB worker URL!');
+            }
+            return this.pthreadWorkerURL!;
+        }
+        throw new Error(`WASM instantiation requested unexpected file: prefix=${prefix} path=${path}`);
     }
 
     /** Instantiate the wasm module */
     protected instantiateWasm(
         // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
         imports: any,
-        success: (module: WebAssembly.Module) => void,
+        success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ): Emscripten.WebAssemblyExports {
         const imports_rt: WebAssembly.Imports = {
             ...imports,
@@ -34,17 +50,17 @@ export class DuckDBBrowserBindings extends DuckDBBindings {
             },
         };
         if (WebAssembly.instantiateStreaming) {
-            WebAssembly.instantiateStreaming(fetch(this.path), imports_rt).then(output => {
+            WebAssembly.instantiateStreaming(fetch(this.mainModuleURL), imports_rt).then(output => {
                 globalThis.DuckDBTrampoline = {};
 
                 for (const func of Object.getOwnPropertyNames(this._runtime)) {
                     if (func == 'constructor') continue;
                     globalThis.DuckDBTrampoline[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
                 }
-                success(output.instance);
+                success(output.instance, output.module);
             });
         } else {
-            fetch(this.path)
+            fetch(this.mainModuleURL)
                 .then(resp => resp.arrayBuffer())
                 .then(bytes =>
                     WebAssembly.instantiate(bytes, imports_rt).then(output => {
@@ -57,7 +73,7 @@ export class DuckDBBrowserBindings extends DuckDBBindings {
                                 func,
                             )!.value;
                         }
-                        success(output.instance);
+                        success(output.instance, output.module);
                     }),
                 )
                 .catch(error => {
@@ -67,11 +83,6 @@ export class DuckDBBrowserBindings extends DuckDBBindings {
         return [];
     }
 
-    /** Instantiate the bindings */
-    protected instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule> {
-        return DuckDBWasm({
-            ...moduleOverrides,
-            instantiateWasm: this.instantiateWasm.bind(this),
-        });
-    }
+    /// Instantiation must be done by the browser variants
+    protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
 }

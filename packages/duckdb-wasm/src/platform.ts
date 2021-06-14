@@ -1,17 +1,25 @@
 import * as check from 'wasm-feature-detect';
 
 export interface DuckDBBundles {
-    worker: string;
-    workerEH?: string;
-    workerEHMT?: string;
-    wasm: string;
-    wasmEH?: string;
-    wasmEHMT?: string;
+    asyncDefault: {
+        mainModule: string;
+        mainWorker: string;
+    };
+    asyncEH?: {
+        mainModule: string;
+        mainWorker: string;
+    };
+    asyncEHMT?: {
+        mainModule: string;
+        mainWorker: string;
+        pthreadWorker: string;
+    };
 }
 
 export interface DuckDBConfig {
-    wasmURL: string;
-    workerURL: string;
+    mainModule: string;
+    mainWorker: string | null;
+    pthreadWorker: string | null;
 }
 
 export interface PlatformFeatures {
@@ -45,23 +53,24 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions) {
-        // Threads are not ready yet.
-        //
-        // if (platform.wasmThreads && bundles.workerEHMT && bundles.wasmEHMT) {
-        //     return {
-        //         workerURL: bundles.workerEHMT,
-        //         wasmURL: bundles.wasmEHMT,
-        //     };
-        // }
-        if (bundles.workerEH && bundles.wasmEH) {
+        if (platform.wasmThreads && bundles.asyncEHMT) {
             return {
-                workerURL: bundles.workerEH,
-                wasmURL: bundles.wasmEH,
+                mainModule: bundles.asyncEHMT.mainModule,
+                mainWorker: bundles.asyncEHMT.mainWorker,
+                pthreadWorker: bundles.asyncEHMT.pthreadWorker,
+            };
+        }
+        if (bundles.asyncEH) {
+            return {
+                mainModule: bundles.asyncEH.mainModule,
+                mainWorker: bundles.asyncEH.mainWorker,
+                pthreadWorker: null,
             };
         }
     }
     return {
-        workerURL: bundles.worker,
-        wasmURL: bundles.wasm,
+        mainModule: bundles.asyncDefault.mainModule,
+        mainWorker: bundles.asyncDefault.mainWorker,
+        pthreadWorker: null,
     };
 }

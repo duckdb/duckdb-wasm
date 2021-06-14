@@ -298,8 +298,11 @@ export class AsyncDuckDB {
     }
 
     /** Open the database */
-    public async open(wasm: string | null): Promise<null> {
-        const task = new WorkerTask<WorkerRequestType.OPEN, string | null, null>(WorkerRequestType.OPEN, wasm);
+    public async open(mainModuleURL: string, pthreadWorkerURL: string | null = null): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.OPEN, [string, string | null], null>(WorkerRequestType.OPEN, [
+            mainModuleURL,
+            pthreadWorkerURL,
+        ]);
         return await this.postTask(task);
     }
 

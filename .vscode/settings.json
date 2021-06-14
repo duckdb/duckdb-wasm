@@ -49,5 +49,6 @@
         "**/.ccache": true,
         "**/.emscripten_cache": true,
         "**/lib/build": true
-    }
+    },
+    "debug.javascript.usePreview": false
 }

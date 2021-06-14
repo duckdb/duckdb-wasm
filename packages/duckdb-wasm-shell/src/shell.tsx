@@ -1,5 +1,6 @@
 import * as model from './model';
 import * as shell from '../crate/pkg';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import FileExplorer from './components/file_explorer';
 import Overlay from './components/overlay';
 import React from 'react';
@@ -9,10 +10,31 @@ import { connect } from 'react-redux';
 import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
 
-const duckdbWorker = new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url);
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
-import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
+import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
+import duckdb_wasm_eh_mt from '@duckdb/duckdb-wasm/dist/duckdb-eh-mt.wasm';
+
+const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
+    asyncDefault: {
+        mainModule: duckdb_wasm,
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url).toString(),
+    },
+    asyncEH: {
+        mainModule: duckdb_wasm_eh,
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async-eh.worker.js', import.meta.url).toString(),
+    },
+    asyncEHMT: {
+        mainModule: duckdb_wasm_eh_mt,
+        mainWorker: new URL(
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-eh-mt.worker.js',
+            import.meta.url,
+        ).toString(),
+        pthreadWorker: new URL(
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-eh-mt.pthread.worker.js',
+            import.meta.url,
+        ).toString(),
+    },
+};
 
 interface Props {
     workerURL?: string;
@@ -44,7 +66,7 @@ class Shell extends React.Component<Props> {
     /// The runtime
     protected runtime: ShellRuntime;
     /// The database
-    protected database: AsyncDuckDB | null;
+    protected database: duckdb.AsyncDuckDB | null;
     /// The drop file handler
     protected dropFileHandler = this.dropFiles.bind(this);
 
@@ -91,18 +113,21 @@ class Shell extends React.Component<Props> {
         );
     }
 
+    public async initDuckDB() {
+        const config = await duckdb.configure(DUCKDB_BUNDLES);
+        const worker = new Worker(config.mainWorker!);
+        const logger = new duckdb.ConsoleLogger();
+        this.database = new duckdb.AsyncDuckDB(logger, worker);
+        this.database.open(config.mainModule, config.pthreadWorker).then(_ => shell.configureDatabase(this.database));
+    }
+
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
             this.runtime._openFileExplorer = this.props.openFileViewer;
             shell.embed(this.termContainer.current, this.runtime, {
                 backgroundColor: '#333',
             });
-
-            // Open database
-            const logger = new duckdb.ConsoleLogger();
-            const worker = new Worker(duckdbWorker);
-            this.database = new duckdb.AsyncDuckDB(logger, worker);
-            this.database.open(duckdb_wasm).then(_ => shell.configureDatabase(this.database));
+            this.initDuckDB();
         }
     }
 
