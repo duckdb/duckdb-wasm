@@ -328,6 +328,10 @@ class FileSystemBuffer {
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
     void Flush();
+    /// Drop file matching name (if possible)
+    void DropFile(std::string_view path);
+    /// Drop all files that can be dropped
+    void DropFiles();
     /// Release a file
     void Release(BufferedFile& file);
 

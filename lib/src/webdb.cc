@@ -244,10 +244,58 @@ WebDB::Connection* WebDB::Connect() {
 
 /// End a session
 void WebDB::Disconnect(Connection* session) { connections_.erase(session); }
+
 /// Flush all file buffers
 void WebDB::FlushFiles() { filesystem_buffer_->Flush(); }
 /// Flush file by path
 void WebDB::FlushFile(std::string_view path) { filesystem_buffer_->FlushFile(path); }
+/// Drop all file buffers
+void WebDB::DropFiles() { filesystem_buffer_->DropFiles(); }
+/// Drop file by path
+void WebDB::DropFile(std::string_view path) { filesystem_buffer_->DropFile(path); }
+
+/// Copy a file to a buffer
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::CopyFileToBuffer(std::string_view path) {
+    constexpr auto FLAGS = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto& fs = filesystem();
+    auto src = fs.OpenFile(std::string{path}, FLAGS);
+    auto n = fs.GetFileSize(*src);
+    ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::AllocateResizableBuffer(n));
+
+    auto writer = buffer->mutable_data();
+    while (n > 0) {
+        auto m = fs.Read(*src, writer, n);
+        assert(m <= n);
+        writer += m;
+        if (m == 0) break;
+    }
+
+    ARROW_RETURN_NOT_OK(buffer->Resize(writer - buffer->data()));
+    return buffer;
+}
+
+/// Copy a file to a path
+arrow::Status WebDB::CopyFileToPath(std::string_view path, std::string_view out) {
+    constexpr auto FLAGS = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto& fs = filesystem();
+    auto src = fs.OpenFile(std::string{path}, FLAGS);
+    auto dst = fs.OpenFile(std::string{path}, FLAGS);
+
+    auto buffer_size = 16 * 1024;
+    std::unique_ptr<char[]> buffer{new char[buffer_size]};
+    while (true) {
+        auto buffered = fs.Read(*src, buffer.get(), buffer_size);
+        if (buffered == 0) break;
+        while (buffered > 0) {
+            auto written = fs.Write(*dst, buffer.get(), buffered);
+            assert(written <= buffered);
+            buffered -= written;
+        }
+    }
+    fs.FileSync(*dst);
+
+    return arrow::Status::OK();
+}
 
 }  // namespace web
 }  // namespace duckdb
