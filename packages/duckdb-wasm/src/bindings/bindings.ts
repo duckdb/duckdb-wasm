@@ -199,22 +199,6 @@ export abstract class DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
     }
-    /** Drop a file */
-    public dropFile(name: string): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_file', ['string'], [name]);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
-        }
-        dropResponseBuffers(this.mod);
-    }
-    /** Drop all file */
-    public dropFiles(): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_files', [], []);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
-        }
-        dropResponseBuffers(this.mod);
-    }
     /** Write a file to a path */
     public copyFileToPath(name: string, path: string): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_copy_file_to_path', ['string', 'string'], [name, path]);

@@ -138,7 +138,7 @@ std::string WebFileSystem::WebFile::GetInfo() const {
     doc.AddMember("file_id", rapidjson::Value{file_id_}, allocator);
     doc.AddMember("file_name",
                   rapidjson::Value{file_name_.c_str(), static_cast<rapidjson::SizeType>(file_name_.size())}, allocator);
-    doc.AddMember("data_protocol", static_cast<size_t>(data_protocol_), allocator);
+    doc.AddMember("data_protocol", static_cast<double>(data_protocol_), allocator);
     doc.AddMember("data_url", data_url, allocator);
     doc.AddMember("data_native_fd", data_fd, allocator);
 

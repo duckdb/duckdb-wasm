@@ -40,6 +40,16 @@ void duckdb_web_flush_file(const char* path) {
     auto& webdb = WebDB::Get();
     webdb.FlushFile(path);
 }
+/// Copy file buffer to path
+void duckdb_web_copy_file_to_buffer(WASMResponse* packed, const char* path) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.CopyFileToBuffer(path));
+}
+/// Copy file buffer to buffer
+void duckdb_web_copy_file_to_path(WASMResponse* packed, const char* path, const char* out) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.CopyFileToPath(path, out));
+}
 /// Get the duckdb version
 void duckdb_web_get_version(WASMResponse* packed) {
     auto& webdb = WebDB::Get();
