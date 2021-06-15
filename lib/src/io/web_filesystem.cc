@@ -17,12 +17,13 @@ static std::vector<std::string> *glob_results = {};
 #ifdef EMSCRIPTEN
 extern "C" {
 extern void duckdb_web_fs_file_open(size_t fileId);
+extern void duckdb_web_fs_file_sync(size_t fileId);
 extern void duckdb_web_fs_file_close(size_t fileId);
-extern void duckdb_web_fs_file_truncate(size_t fileId, double newSize);
 extern time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId);
 extern double duckdb_web_fs_file_get_size(size_t fileId);
-extern ssize_t duckdb_web_fs_read(size_t fileId, void *buffer, ssize_t bytes, double location);
-extern ssize_t duckdb_web_fs_write(size_t fileId, void *buffer, ssize_t bytes, double location);
+extern ssize_t duckdb_web_fs_file_read(size_t fileId, void *buffer, ssize_t bytes, double location);
+extern ssize_t duckdb_web_fs_file_write(size_t fileId, void *buffer, ssize_t bytes, double location);
+extern void duckdb_web_fs_file_truncate(size_t fileId, double newSize);
 
 extern void duckdb_web_fs_directory_remove(const char *path, size_t pathLen);
 extern bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen);
@@ -42,13 +43,13 @@ extern bool duckdb_web_fs_file_remove(const char *path, size_t pathLen);
 #else
 extern "C" {
 void duckdb_web_fs_file_open(size_t fileId) {}
+void duckdb_web_fs_file_sync(size_t fileId) {}
 void duckdb_web_fs_file_close(size_t fileId) {}
-void duckdb_web_fs_file_truncate(size_t fileId, double newSize) {}
 time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId) { return 0; }
 double duckdb_web_fs_file_get_size(size_t fileId) { return 0; }
-ssize_t duckdb_web_fs_read(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
-ssize_t duckdb_web_fs_write(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
-void duckdb_web_fs_file_sync(size_t fileId) {}
+ssize_t duckdb_web_fs_file_read(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
+ssize_t duckdb_web_fs_file_write(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
+void duckdb_web_fs_file_truncate(size_t fileId, double newSize) {}
 
 bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen) { return {}; };
 void duckdb_web_fs_directory_create(const char *path, size_t pathLen) {}
@@ -66,8 +67,7 @@ namespace web {
 namespace io {
 
 WebFileSystem::WebFileBuffer::WebFileBuffer(std::unique_ptr<char[]> data, size_t size)
-    : data_(std::move(data)), size_(size), capacity_(size) {
-}
+    : data_(std::move(data)), size_(size), capacity_(size) {}
 
 void WebFileSystem::WebFileBuffer::Resize(size_t n) {
     if (n > capacity_) {
@@ -123,8 +123,7 @@ void duckdb_web_fs_register_file_url(WASMResponse *packed, const char *file_name
 }
 
 /// Register a file buffer
-void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_name, char *data,
-                                        uint32_t data_length) {
+void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_name, char *data, uint32_t data_length) {
     auto data_ptr = std::unique_ptr<char[]>(data);
     WebFileSystem::WebFileBuffer file_buffer{std::move(data_ptr), data_length};
     if (!current_webfs) {
@@ -134,7 +133,6 @@ void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_n
     auto status = current_webfs->RegisterFileBuffer(file_name, std::move(file_buffer));
     WASMResponseBuffer::GetInstance().Store(*packed, status);
 }
-
 }
 
 /// Close a file handle
@@ -155,7 +153,7 @@ std::string WebFileSystem::WebFile::GetInfo() const {
     // Start the JSON document
     rapidjson::Document doc;
     doc.SetObject();
-    auto& allocator = doc.GetAllocator();
+    auto &allocator = doc.GetAllocator();
     rapidjson::Value data_fd{rapidjson::kNullType};
     rapidjson::Value data_url{rapidjson::kNullType};
     if (data_fd_) data_fd = rapidjson::Value{*data_fd_};
@@ -163,7 +161,8 @@ std::string WebFileSystem::WebFile::GetInfo() const {
 
     // Add the JSON document members
     doc.AddMember("file_id", rapidjson::Value{file_id_}, allocator);
-    doc.AddMember("file_name", rapidjson::Value{file_name_.c_str(), static_cast<rapidjson::SizeType>(file_name_.size())}, allocator);
+    doc.AddMember("file_name",
+                  rapidjson::Value{file_name_.c_str(), static_cast<rapidjson::SizeType>(file_name_.size())}, allocator);
     doc.AddMember("data_fd", data_fd, allocator);
     doc.AddMember("data_url", data_url, allocator);
 
@@ -223,7 +222,7 @@ arrow::Result<std::string> WebFileSystem::GetFileInfo(uint32_t file_id) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
     if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
-    auto& file = *iter->second;
+    auto &file = *iter->second;
     return file.GetInfo();
 }
 
@@ -282,7 +281,7 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         file_hdl.position_ += n;
         return n;
     } else {
-        auto n = duckdb_web_fs_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+        auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
         file_hdl.position_ += n;
         return n;
     }
@@ -307,7 +306,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
         file_hdl.position_ = end;
         return nr_bytes;
     } else {
-        auto n = duckdb_web_fs_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+        auto n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
         file_hdl.position_ = file_hdl.position_ + n;
         return n;
     }

@@ -1,7 +1,7 @@
 import DuckDBWasm from './duckdb_wasm_eh_mt.js';
 import { DuckDBBrowserBindings } from './bindings_browser_base';
 import { DuckDBModule } from './duckdb_module';
-import { DuckDBRuntime } from './runtime_base';
+import { DuckDBRuntime } from './runtime';
 import { Logger } from '../log';
 
 /** DuckDB bindings for the browser */

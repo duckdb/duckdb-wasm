@@ -1,7 +1,7 @@
 import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel';
 import { DuckDB } from '../bindings/bindings_browser';
 import { DuckDBBindings } from '../bindings';
-import Runtime from '../bindings/runtime_browser';
+import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
 
 /** The duckdb worker API for web workers */
 class WebWorker extends AsyncDuckDBDispatcher {
@@ -12,7 +12,7 @@ class WebWorker extends AsyncDuckDBDispatcher {
 
     /** Instantiate the wasm module */
     protected async open(mainModuleURL: string, pthreadWorkerURL: string | null): Promise<DuckDBBindings> {
-        const bindings = new DuckDB(this, Runtime, mainModuleURL, pthreadWorkerURL);
+        const bindings = new DuckDB(this, BROWSER_RUNTIME, mainModuleURL, pthreadWorkerURL);
         await bindings.open();
         return bindings;
     }
