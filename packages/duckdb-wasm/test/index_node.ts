@@ -52,7 +52,7 @@ beforeAll(async () => {
     });
 
     const logger = new duckdb_sync.VoidLogger();
-    db = new duckdb_sync.DuckDB(logger, duckdb_sync.NodeRuntime, path.resolve(__dirname, './duckdb-eh.wasm'));
+    db = new duckdb_sync.DuckDB(logger, duckdb_sync.NODE_RUNTIME, path.resolve(__dirname, './duckdb-eh.wasm'));
     await db.open();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);

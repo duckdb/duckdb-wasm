@@ -2,7 +2,7 @@ import DuckDBWasm from './duckdb_wasm.js';
 import { DuckDBNodeBindings } from './bindings_node_base.js';
 import { Logger } from '../log.js';
 import { DuckDBModule } from './duckdb_module';
-import { DuckDBRuntime } from './runtime_base';
+import { DuckDBRuntime } from './runtime';
 
 /** DuckDB bindings for node.js */
 export class DuckDB extends DuckDBNodeBindings {

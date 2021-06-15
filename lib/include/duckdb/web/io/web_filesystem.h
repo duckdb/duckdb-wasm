@@ -110,20 +110,13 @@ class WebFileSystem : public duckdb::FileSystem {
     std::unordered_map<uint32_t, std::unique_ptr<WebFile>> files_by_id_ = {};
     /// The files by path
     std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
-    /// The free file ids
-    std::stack<uint32_t> free_file_ids_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
 
-    /// Allocate a file id
-    inline uint32_t AllocateFileID() {
-        if (free_file_ids_.empty()) {
-            auto id = free_file_ids_.top();
-            free_file_ids_.pop();
-            return id;
-        }
-        return ++next_file_id_;
-    }
+    /// Allocate a file id.
+    /// XXX This could of course overflow....
+    /// Make this a uint64 with emscripten BigInts maybe.
+    inline uint32_t AllocateFileID() { return ++next_file_id_; }
 
    public:
     /// Constructor

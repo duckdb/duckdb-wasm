@@ -2,5 +2,5 @@ export * from '../log';
 export * from '../status';
 export * from '../bindings';
 export * from '../bindings/bindings_node_eh';
-export { NodeRuntime } from '../bindings/runtime_node';
-export { MinimalRuntime } from '../bindings/runtime_minimal';
+export { DEFAULT_RUNTIME } from '../bindings/runtime';
+export { NODE_RUNTIME } from '../bindings/runtime_node';

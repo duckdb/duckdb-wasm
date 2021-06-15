@@ -76,7 +76,7 @@ let worker: Worker | null = null;
 beforeAll(async () => {
     DUCKDB_CONFIG = await duckdb_async.configure(DUCKDB_BUNDLES);
     const logger = new duckdb_sync.VoidLogger();
-    db = new duckdb_sync.DuckDB(logger, duckdb_sync.BrowserRuntime, '/static/duckdb.wasm');
+    db = new duckdb_sync.DuckDB(logger, duckdb_sync.BROWSER_RUNTIME, '/static/duckdb.wasm');
     await db.open();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker!);
