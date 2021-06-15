@@ -1,9 +1,13 @@
 #include "duckdb/web/io/web_filesystem.h"
 
+#include <arrow/type_fwd.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include "arrow/buffer.h"
+#include "arrow/status.h"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/wasm_response.h"
@@ -148,10 +152,10 @@ void WebFileSystem::WebFileHandle::Close() {
     auto &file = *file_;
     file_ = nullptr;
     std::unique_lock<std::shared_mutex> file_guard{file.file_mutex_};
-    if (--file.handle_count_ > 0) return;
     std::unique_lock<std::mutex> fs_guard{fs_.fs_mutex_};
+    if (--file.handle_count_ > 0) return;
     duckdb_web_fs_file_close(file.file_id_);
-    fs_.files_by_url_.erase(file.file_name_);
+    fs_.files_by_name_.erase(file.file_name_);
     fs_.files_by_id_.erase(file.file_id_);
 }
 
@@ -193,26 +197,88 @@ WebFileSystem::~WebFileSystem() { WEBFS = nullptr; }
 /// Register a file URL
 arrow::Status WebFileSystem::RegisterFileURL(std::string_view file_name, std::string_view file_url) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_url_.find(file_name);
-    if (iter != files_by_url_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
+    auto iter = files_by_name_.find(file_name);
+    if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
     auto file_id = AllocateFileID();
     auto file = WebFile::URL(file_id, file_name, file_url);
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
-    files_by_url_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
+    files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
     return arrow::Status::OK();
 }
 
 /// Register a file buffer
 arrow::Status WebFileSystem::RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_url_.find(file_name);
-    if (iter != files_by_url_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
+    auto iter = files_by_name_.find(file_name);
+    if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
     auto file_id = AllocateFileID();
     auto file = WebFile::Buffer(file_id, file_name, std::move(file_buffer));
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
-    files_by_url_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
+    files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
+    return arrow::Status::OK();
+}
+
+/// Drop a file
+arrow::Status WebFileSystem::DropFile(std::string_view file_name) {
+    WebFile *file;
+    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    auto iter = files_by_name_.find(file_name);
+    if (iter == files_by_name_.end()) return arrow::Status::Invalid("Unkown file: ", file_name);
+    file = iter->second;
+    ++file->handle_count_;
+
+    fs_guard.unlock();
+    std::unique_lock<std::shared_mutex> file_guard{file->file_mutex_};
+    fs_guard.lock();
+    if (file->handle_count_ == 1) {
+        duckdb_web_fs_file_close(file->file_id_);
+        files_by_name_.erase(file->file_name_);
+        files_by_id_.erase(file->file_id_);
+        file_guard.release();
+        file = nullptr;
+    }
+    if (!file) return arrow::Status::Invalid("Cannot drop file: ", file_name);
+    return arrow::Status::OK();
+}
+
+/// Drop all files
+arrow::Status WebFileSystem::DropFiles() {
+    std::vector<WebFile *> files;
+    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    for (auto &[file_id, file] : files_by_id_) {
+        ++file->handle_count_;
+        files.push_back(file.get());
+    }
+    fs_guard.unlock();
+    for (auto *file : files) {
+        std::unique_lock<std::shared_mutex> file_guard{file->file_mutex_};
+        fs_guard.lock();
+        if (file->handle_count_ == 1) {
+            duckdb_web_fs_file_close(file->file_id_);
+            files_by_name_.erase(file->file_name_);
+            files_by_id_.erase(file->file_id_);
+            file_guard.release();
+            file = nullptr;
+        } else {
+            --file->handle_count_;
+        }
+    }
+    return arrow::Status::OK();
+}
+
+/// Copy a file to a path
+arrow::Status WebFileSystem::CopyFileToPath(std::string_view file_name, std::string_view out_path) {
+    // XXX
+    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    return arrow::Status::OK();
+}
+
+/// Copy a file to a path
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebFileSystem::CopyFileToBuffer(std::string_view file_name) {
+    // XXX
+    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     return arrow::Status::OK();
 }
 
@@ -220,7 +286,7 @@ arrow::Status WebFileSystem::RegisterFileBuffer(std::string_view file_name, Data
 arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
-    if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id", file_id);
+    if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
     iter->second->data_fd_ = file_descriptor;
     return arrow::Status::OK();
 }
@@ -242,11 +308,11 @@ static inline bool hasPrefix(std::string_view text, std::string_view prefix) {
 std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                             FileCompressionType compression) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_url_.find(url);
+    auto iter = files_by_name_.find(url);
 
     // Don't know that file yet?
     WebFile *file_ptr = nullptr;
-    if (iter != files_by_url_.end()) {
+    if (iter != files_by_name_.end()) {
         file_ptr = iter->second;
         return std::make_unique<WebFileHandle>(*this, url, *file_ptr);
     }
@@ -271,14 +337,14 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
     file_ptr = file.get();
     std::string_view file_name{file->file_name_};
     files_by_id_.insert({file_id, std::move(file)});
-    files_by_url_.insert({file_name, file.get()});
+    files_by_name_.insert({file_name, file.get()});
 
     // Try to open the file
     try {
         duckdb_web_fs_file_open(file_id);
     } catch (...) {
         files_by_id_.erase(file_id);
-        files_by_url_.erase(file_name);
+        files_by_name_.erase(file_name);
         throw;
     }
 
