@@ -18,9 +18,17 @@ namespace io {
 
 class WebFileSystem : public duckdb::FileSystem {
    public:
+    /// The data protocol
+    enum DataProtocol : uint8_t {
+        BUFFER = 0,
+        NATIVE = 1,
+        BLOB = 2,
+        HTTP = 3,
+    };
+
     /// A simple buffer.
     /// It might be worth to make this chunked eventually.
-    class WebFileBuffer {
+    class DataBuffer {
        protected:
         /// The data
         std::unique_ptr<char[]> data_;
@@ -31,7 +39,7 @@ class WebFileSystem : public duckdb::FileSystem {
 
        public:
         /// Constructor
-        WebFileBuffer(std::unique_ptr<char[]> data, size_t size);
+        DataBuffer(std::unique_ptr<char[]> data, size_t size);
         /// Get get span
         auto Get() { return nonstd::span<char>{data_.get(), size_}; }
         /// Get the capacity
@@ -50,6 +58,8 @@ class WebFileSystem : public duckdb::FileSystem {
         const uint32_t file_id_;
         /// The file path
         const std::string file_name_;
+        /// The data protocol
+        const DataProtocol data_protocol_;
         /// The handle count
         size_t handle_count_;
         /// The file mutex
@@ -58,7 +68,7 @@ class WebFileSystem : public duckdb::FileSystem {
         std::optional<uint64_t> data_size_ = std::nullopt;
         /// The data buffer
         /// XXX Make chunked to upgrade from url to cached version
-        std::optional<WebFileBuffer> data_buffer_ = std::nullopt;
+        std::optional<DataBuffer> data_buffer_ = std::nullopt;
         /// The data file descriptor (if any)
         std::optional<uint32_t> data_fd_ = std::nullopt;
         /// The data URL (if any)
@@ -66,8 +76,8 @@ class WebFileSystem : public duckdb::FileSystem {
 
        public:
         /// Constructor
-        WebFile(uint32_t file_id, std::string_view file_name)
-            : file_id_(file_id), file_name_(file_name), handle_count_(0) {}
+        WebFile(uint32_t file_id, std::string_view file_name, DataProtocol protocol)
+            : file_id_(file_id), file_name_(file_name), data_protocol_(protocol), handle_count_(0) {}
 
         /// Get the file info as json
         std::string GetInfo() const;
@@ -75,7 +85,7 @@ class WebFileSystem : public duckdb::FileSystem {
         /// Construct file of URL
         static std::unique_ptr<WebFile> URL(uint32_t file_id, std::string_view file_name, std::string_view file_url);
         /// Construct file of URL
-        static std::unique_ptr<WebFile> Buffer(uint32_t file_id, std::string_view file_name, WebFileBuffer buffer);
+        static std::unique_ptr<WebFile> Buffer(uint32_t file_id, std::string_view file_name, DataBuffer buffer);
     };
 
     class WebFileHandle : public duckdb::FileHandle {
@@ -110,7 +120,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// The files by id
     std::unordered_map<uint32_t, std::unique_ptr<WebFile>> files_by_id_ = {};
     /// The files by path
-    std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
+    std::unordered_map<std::string_view, WebFile *> files_by_url_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
 
@@ -135,7 +145,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url);
     /// Register a file buffer
-    arrow::Status RegisterFileBuffer(std::string_view file_name, WebFileBuffer file_buffer);
+    arrow::Status RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer);
     /// Drop a file
     arrow::Status DropFile(std::string_view drop_file);
     /// Drop all files
@@ -146,7 +156,7 @@ class WebFileSystem : public duckdb::FileSystem {
     arrow::Result<std::shared_ptr<arrow::Buffer>> CopyFileToBuffer(std::string_view file_name);
 
     /// Open a file
-    std::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
+    std::unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                  FileCompressionType compression) override;
     /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read. This is
     /// equivalent to calling SetFilePointer(location) followed by calling Read().

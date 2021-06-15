@@ -43,10 +43,10 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-WebFileSystem::WebFileBuffer::WebFileBuffer(std::unique_ptr<char[]> data, size_t size)
+WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
 
-void WebFileSystem::WebFileBuffer::Resize(size_t n) {
+void WebFileSystem::DataBuffer::Resize(size_t n) {
     if (n > capacity_) {
         auto cap = std::max(capacity_ + capacity_ + capacity_ / 4, n);
         auto next = std::unique_ptr<char[]>(new char[cap]);
@@ -64,81 +64,81 @@ void WebFileSystem::WebFileBuffer::Resize(size_t n) {
 
 namespace {
 /// The current web filesystem
-static WebFileSystem *current_webfs = nullptr;
+static WebFileSystem *WEBFS = nullptr;
 }  // namespace
 
 /// Lookup file info
 extern "C" void duckdb_web_fs_get_file_info(WASMResponse *packed, size_t file_id) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, std::string_view{""});
     } else {
-        auto info = current_webfs->GetFileInfo(file_id);
+        auto info = WEBFS->GetFileInfo(file_id);
         WASMResponseBuffer::Get().Store(*packed, std::move(info));
     }
 }
 /// Set a file descriptor of an existing file
 extern "C" void duckdb_web_fs_set_file_descriptor(WASMResponse *packed, uint32_t file_id, uint32_t file_descriptor) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->SetFileDescriptor(file_id, file_descriptor);
+    auto status = WEBFS->SetFileDescriptor(file_id, file_descriptor);
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 /// Register a file at a url
 extern "C" void duckdb_web_fs_register_file_url(WASMResponse *packed, const char *file_name, const char *file_url) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->RegisterFileURL(file_name, file_url);
+    auto status = WEBFS->RegisterFileURL(file_name, file_url);
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 /// Register a file buffer
 extern "C" void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_name, char *data,
                                                    uint32_t data_length) {
-    WebFileSystem::WebFileBuffer file_buffer{std::unique_ptr<char[]>(data), data_length};
-    if (!current_webfs) {
+    WebFileSystem::DataBuffer file_buffer{std::unique_ptr<char[]>(data), data_length};
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->RegisterFileBuffer(file_name, std::move(file_buffer));
+    auto status = WEBFS->RegisterFileBuffer(file_name, std::move(file_buffer));
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 /// Drop a file
 extern "C" void duckdb_web_fs_drop_file(WASMResponse *packed, const char *file_name) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->DropFile(file_name);
+    auto status = WEBFS->DropFile(file_name);
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 /// Drop all files
 extern "C" void duckdb_web_fs_drop_files(WASMResponse *packed) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->DropFiles();
+    auto status = WEBFS->DropFiles();
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 /// Copy a file to a path
 extern "C" void duckdb_web_fs_copy_file_to_path(WASMResponse *packed, const char *file_name, const char *file_path) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->CopyFileToPath(file_name, file_path);
+    auto status = WEBFS->CopyFileToPath(file_name, file_path);
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 /// Copy a file to a buffer
 extern "C" void duckdb_web_fs_copy_file_to_buffer(WASMResponse *packed, const char *file_name) {
-    if (!current_webfs) {
+    if (!WEBFS) {
         WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
-    auto status = current_webfs->CopyFileToBuffer(file_name);
+    auto status = WEBFS->CopyFileToBuffer(file_name);
     WASMResponseBuffer::Get().Store(*packed, status);
 }
 
@@ -151,7 +151,7 @@ void WebFileSystem::WebFileHandle::Close() {
     if (--file.handle_count_ > 0) return;
     std::unique_lock<std::mutex> fs_guard{fs_.fs_mutex_};
     duckdb_web_fs_file_close(file.file_id_);
-    fs_.files_by_name_.erase(file.file_name_);
+    fs_.files_by_url_.erase(file.file_name_);
     fs_.files_by_id_.erase(file.file_id_);
 }
 
@@ -170,8 +170,9 @@ std::string WebFileSystem::WebFile::GetInfo() const {
     doc.AddMember("file_id", rapidjson::Value{file_id_}, allocator);
     doc.AddMember("file_name",
                   rapidjson::Value{file_name_.c_str(), static_cast<rapidjson::SizeType>(file_name_.size())}, allocator);
-    doc.AddMember("data_fd", data_fd, allocator);
+    doc.AddMember("data_protocol", static_cast<size_t>(data_protocol_), allocator);
     doc.AddMember("data_url", data_url, allocator);
+    doc.AddMember("data_native_fd", data_fd, allocator);
 
     // Write to string
     rapidjson::StringBuffer strbuf;
@@ -182,36 +183,36 @@ std::string WebFileSystem::WebFile::GetInfo() const {
 
 /// Constructor
 WebFileSystem::WebFileSystem() {
-    assert(current_webfs == nullptr && "Can construct only one web filesystem at a time");
-    current_webfs = this;
+    assert(WEBFS == nullptr && "Can construct only one web filesystem at a time");
+    WEBFS = this;
 }
 
 /// Destructor
-WebFileSystem::~WebFileSystem() { current_webfs = nullptr; }
+WebFileSystem::~WebFileSystem() { WEBFS = nullptr; }
 
 /// Register a file URL
 arrow::Status WebFileSystem::RegisterFileURL(std::string_view file_name, std::string_view file_url) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_name_.find(file_name);
-    if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
+    auto iter = files_by_url_.find(file_name);
+    if (iter != files_by_url_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
     auto file_id = AllocateFileID();
     auto file = WebFile::URL(file_id, file_name, file_url);
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
-    files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
+    files_by_url_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
     return arrow::Status::OK();
 }
 
 /// Register a file buffer
-arrow::Status WebFileSystem::RegisterFileBuffer(std::string_view file_name, WebFileBuffer file_buffer) {
+arrow::Status WebFileSystem::RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_name_.find(file_name);
-    if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
+    auto iter = files_by_url_.find(file_name);
+    if (iter != files_by_url_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
     auto file_id = AllocateFileID();
     auto file = WebFile::Buffer(file_id, file_name, std::move(file_buffer));
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
-    files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
+    files_by_url_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
     return arrow::Status::OK();
 }
 
@@ -233,37 +234,56 @@ arrow::Result<std::string> WebFileSystem::GetFileInfo(uint32_t file_id) {
     return file.GetInfo();
 }
 
+static inline bool hasPrefix(std::string_view text, std::string_view prefix) {
+    return text.compare(0, prefix.size(), prefix) == 0;
+}
+
 /// Open a file
-std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
+std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                             FileCompressionType compression) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_name_.find(path);
+    auto iter = files_by_url_.find(url);
 
     // Don't know that file yet?
     WebFile *file_ptr = nullptr;
-    if (iter == files_by_name_.end()) {
-        // Create file
-        auto file = std::make_unique<WebFile>(AllocateFileID(), path);
-        auto file_id = file->file_id_;
-        file_ptr = file.get();
-        std::string_view file_name{file->file_name_};
-        files_by_id_.insert({file_id, std::move(file)});
-        files_by_name_.insert({file_name, file.get()});
-
-        // Try to open the file
-        try {
-            duckdb_web_fs_file_open(file_id);
-        } catch (...) {
-            files_by_id_.erase(file_id);
-            files_by_name_.erase(file_name);
-            throw;
-        }
-    } else {
+    if (iter != files_by_url_.end()) {
         file_ptr = iter->second;
+        return std::make_unique<WebFileHandle>(*this, url, *file_ptr);
     }
 
-    // Open the file
-    return std::make_unique<WebFileHandle>(*this, std::string(path), *file_ptr);
+    // Determine url type
+    std::string_view data_url = url;
+    DataProtocol data_proto = DataProtocol::BUFFER;
+    if (hasPrefix(url, "blob:")) {
+        data_proto = DataProtocol::BLOB;
+    } else if (hasPrefix(url, "http://") || hasPrefix(url, "https://")) {
+        data_proto = DataProtocol::HTTP;
+    } else if (hasPrefix(url, "file://")) {
+        data_url = std::string_view{url}.substr(7);
+        data_proto = DataProtocol::NATIVE;
+    } else {
+        data_proto = DataProtocol::NATIVE;
+    }
+
+    // Create file
+    auto file = std::make_unique<WebFile>(AllocateFileID(), data_url, data_proto);
+    auto file_id = file->file_id_;
+    file_ptr = file.get();
+    std::string_view file_name{file->file_name_};
+    files_by_id_.insert({file_id, std::move(file)});
+    files_by_url_.insert({file_name, file.get()});
+
+    // Try to open the file
+    try {
+        duckdb_web_fs_file_open(file_id);
+    } catch (...) {
+        files_by_id_.erase(file_id);
+        files_by_url_.erase(file_name);
+        throw;
+    }
+
+    // Build the handle
+    return std::make_unique<WebFileHandle>(*this, std::string{data_url}, *file_ptr);
 }
 
 void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
