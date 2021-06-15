@@ -120,7 +120,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// The files by id
     std::unordered_map<uint32_t, std::unique_ptr<WebFile>> files_by_id_ = {};
     /// The files by path
-    std::unordered_map<std::string_view, WebFile *> files_by_url_ = {};
+    std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
 
