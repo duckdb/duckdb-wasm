@@ -98,10 +98,19 @@ class WebDB {
     Connection* Connect();
     /// End a connection
     void Disconnect(Connection* connection);
+
     /// Flush all file buffers
     void FlushFiles();
     /// Flush file by path
     void FlushFile(std::string_view path);
+    /// Drop all file buffers
+    void DropFiles();
+    /// Drop file by path
+    void DropFile(std::string_view path);
+    /// Copy a file to a buffer
+    arrow::Result<std::shared_ptr<arrow::Buffer>> CopyFileToBuffer(std::string_view path);
+    /// Copy a file to a path
+    arrow::Status CopyFileToPath(std::string_view path, std::string_view out);
 
     /// Get the static webdb instance
     static WebDB& Get();

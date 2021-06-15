@@ -173,13 +173,13 @@ if(EMSCRIPTEN)
           _duckdb_web_clear_response, \
           _duckdb_web_flush_files, \
           _duckdb_web_flush_file, \
+          _duckdb_web_drop_file, \
+          _duckdb_web_drop_files, \
+          _duckdb_web_copy_file_to_buffer, \
+          _duckdb_web_copy_file_to_path, \
           _duckdb_web_tokenize, \
           _duckdb_web_connect, \
           _duckdb_web_disconnect, \
-          _duckdb_web_fs_copy_file_to_buffer, \
-          _duckdb_web_fs_copy_file_to_path, \
-          _duckdb_web_fs_drop_file, \
-          _duckdb_web_fs_drop_files, \
           _duckdb_web_fs_get_file_info, \
           _duckdb_web_fs_register_file_buffer, \
           _duckdb_web_fs_register_file_url, \
