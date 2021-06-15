@@ -176,12 +176,14 @@ if(EMSCRIPTEN)
           _duckdb_web_tokenize, \
           _duckdb_web_connect, \
           _duckdb_web_disconnect, \
+          _duckdb_web_fs_copy_file_to_buffer, \
+          _duckdb_web_fs_copy_file_to_path, \
+          _duckdb_web_fs_drop_file, \
+          _duckdb_web_fs_drop_files, \
           _duckdb_web_fs_get_file_info, \
-          _duckdb_web_fs_set_file_descriptor, \
-          _duckdb_web_fs_register_file_url, \
           _duckdb_web_fs_register_file_buffer, \
-          _duckdb_web_fs_directory_list_files_callback, \
-          _duckdb_web_fs_glob_callback, \
+          _duckdb_web_fs_register_file_url, \
+          _duckdb_web_fs_set_file_descriptor, \
           _duckdb_web_query_fetch_results, \
           _duckdb_web_query_run, \
           _duckdb_web_query_send, \

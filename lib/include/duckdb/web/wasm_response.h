@@ -49,7 +49,7 @@ class WASMResponseBuffer {
     void Store(WASMResponse& response, arrow::Result<size_t> result);
 
     /// Get the instance
-    static WASMResponseBuffer& GetInstance();
+    static WASMResponseBuffer& Get();
 };
 
 }  // namespace web

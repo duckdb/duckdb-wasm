@@ -104,7 +104,7 @@ class WebDB {
     void FlushFile(std::string_view path);
 
     /// Get the static webdb instance
-    static WebDB& GetInstance();
+    static WebDB& Get();
 };
 
 }  // namespace web

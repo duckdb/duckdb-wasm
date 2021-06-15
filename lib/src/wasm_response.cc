@@ -66,7 +66,7 @@ void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<size_t> res
 }
 
 /// Get the instance
-WASMResponseBuffer& WASMResponseBuffer::GetInstance() {
+WASMResponseBuffer& WASMResponseBuffer::Get() {
     static WASMResponseBuffer buffer;
     return buffer;
 }
