@@ -15,52 +15,29 @@ static const std::function<void(std::string, bool)> *list_files_callback = {};
 static std::vector<std::string> *glob_results = {};
 
 #ifdef EMSCRIPTEN
-extern "C" {
-extern void duckdb_web_fs_file_open(size_t fileId);
-extern void duckdb_web_fs_file_sync(size_t fileId);
-extern void duckdb_web_fs_file_close(size_t fileId);
-extern time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId);
-extern double duckdb_web_fs_file_get_size(size_t fileId);
-extern ssize_t duckdb_web_fs_file_read(size_t fileId, void *buffer, ssize_t bytes, double location);
-extern ssize_t duckdb_web_fs_file_write(size_t fileId, void *buffer, ssize_t bytes, double location);
-extern void duckdb_web_fs_file_truncate(size_t fileId, double newSize);
-
-extern void duckdb_web_fs_directory_remove(const char *path, size_t pathLen);
-extern bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen);
-extern void duckdb_web_fs_directory_create(const char *path, size_t pathLen);
-extern bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen);
-
-extern void duckdb_web_fs_glob(const char *path, size_t pathLen);
-
-void duckdb_web_fs_directory_list_files_callback(const char *path, size_t pathLen, bool is_dir) {
-    (*list_files_callback)(std::string(path, pathLen), is_dir);
-}
-void duckdb_web_fs_glob_callback(const char *path, size_t pathLen) { glob_results->emplace_back(path, pathLen); }
-extern void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen);
-extern bool duckdb_web_fs_file_exists(const char *path, size_t pathLen);
-extern bool duckdb_web_fs_file_remove(const char *path, size_t pathLen);
-}
+#define RT_FN(FUNC, IMPL) extern "C" FUNC;
 #else
-extern "C" {
-void duckdb_web_fs_file_open(size_t fileId) {}
-void duckdb_web_fs_file_sync(size_t fileId) {}
-void duckdb_web_fs_file_close(size_t fileId) {}
-time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId) { return 0; }
-double duckdb_web_fs_file_get_size(size_t fileId) { return 0; }
-ssize_t duckdb_web_fs_file_read(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
-ssize_t duckdb_web_fs_file_write(size_t fileId, void *buffer, ssize_t bytes, double location) { return 0; }
-void duckdb_web_fs_file_truncate(size_t fileId, double newSize) {}
-
-bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen) { return {}; };
-void duckdb_web_fs_directory_create(const char *path, size_t pathLen) {}
-void duckdb_web_fs_directory_remove(const char *path, size_t pathLen) {}
-bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen) { return {}; }
-void duckdb_web_fs_glob(const char *path, size_t pathLen) {}
-void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen) {}
-bool duckdb_web_fs_file_exists(const char *path, size_t pathLen) { return {}; };
-bool duckdb_web_fs_file_remove(const char *path, size_t pathLen) { return {}; };
-}
+#define RT_FN(FUNC, IMPL) FUNC IMPL;
 #endif
+
+RT_FN(void duckdb_web_fs_file_open(size_t fileId), {});
+RT_FN(void duckdb_web_fs_file_sync(size_t fileId), {});
+RT_FN(void duckdb_web_fs_file_close(size_t fileId), {});
+RT_FN(void duckdb_web_fs_file_truncate(size_t fileId, double newSize), {});
+RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId), { return 0; });
+RT_FN(double duckdb_web_fs_file_get_size(size_t fileId), { return 0.0; });
+RT_FN(ssize_t duckdb_web_fs_file_read(size_t fileId, void *buffer, ssize_t bytes, double location), { return 0; });
+RT_FN(ssize_t duckdb_web_fs_file_write(size_t fileId, void *buffer, ssize_t bytes, double location), { return 0; });
+RT_FN(void duckdb_web_fs_directory_remove(const char *path, size_t pathLen), {});
+RT_FN(bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen), { return false; });
+RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {});
+RT_FN(bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen), { return false; });
+RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {});
+RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen), {});
+RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), { return false; });
+RT_FN(bool duckdb_web_fs_file_remove(const char *path, size_t pathLen), { return false; });
+
+#undef RT_FN
 
 namespace duckdb {
 namespace web {
