@@ -42,21 +42,6 @@ export abstract class DuckDBBindings {
     /** Instantiate the module */
     protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
 
-    /** Drop a file */
-    public dropFile(name: string): void {}
-    /** Drop all file */
-    public dropFiles(): void {}
-    /** Add a file object URL */
-    public registerFileURL(name: string, objectURL: string): void {}
-    /** Add a file buffer */
-    public registerFileBuffer(name: string, buffer: Uint8Array): void {}
-    /** Write a file to a path */
-    public copyFileToPath(name: string, path: string): void {}
-    /** Write a file to a buffer */
-    public copyFileToBuffer(name: string): Uint8Array {
-        return new Uint8Array();
-    }
-
     /** Open the database */
     public async open(): Promise<void> {
         // Already opened?
@@ -188,5 +173,66 @@ export abstract class DuckDBBindings {
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
+    }
+
+    /** Add a file object URL */
+    public registerFileURL(name: string, url: string): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+    /** Add a file buffer */
+    public registerFileBuffer(name: string, buffer: Uint8Array): void {
+        const ptr = this.mod._malloc(buffer.length);
+        const dst = this.mod.HEAPU8.subarray(ptr, ptr + buffer.length);
+        dst.set(buffer);
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_fs_register_file_buffer',
+            ['string', 'number', 'number'],
+            [name, ptr, buffer.length],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+    /** Drop a file */
+    public dropFile(name: string): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_file', ['string'], [name]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+    /** Drop all file */
+    public dropFiles(): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_files', [], []);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+    /** Write a file to a path */
+    public copyFileToPath(name: string, path: string): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_copy_file_to_path', ['string', 'string'], [name, path]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+    /** Write a file to a buffer */
+    public copyFileToBuffer(name: string): Uint8Array {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_copy_file_to_buffer', ['string'], [name]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const buffer = this.mod.HEAPU8.subarray(d, d + n);
+        const copy = new Uint8Array(buffer.length);
+        copy.set(buffer);
+        dropResponseBuffers(this.mod);
+        return copy;
     }
 }

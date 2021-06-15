@@ -90,58 +90,79 @@ namespace {
 static WebFileSystem *current_webfs = nullptr;
 }  // namespace
 
-extern "C" {
-
 /// Lookup file info
-void duckdb_web_fs_get_file_info(WASMResponse *packed, size_t file_id) {
+extern "C" void duckdb_web_fs_get_file_info(WASMResponse *packed, size_t file_id) {
     if (!current_webfs) {
-        WASMResponseBuffer::GetInstance().Store(*packed, std::string_view{""});
+        WASMResponseBuffer::Get().Store(*packed, std::string_view{""});
     } else {
         auto info = current_webfs->GetFileInfo(file_id);
-        WASMResponseBuffer::GetInstance().Store(*packed, std::move(info));
+        WASMResponseBuffer::Get().Store(*packed, std::move(info));
     }
 }
-
 /// Set a file descriptor of an existing file
-void duckdb_web_fs_set_file_descriptor(WASMResponse *packed, uint32_t file_id, uint32_t file_descriptor) {
+extern "C" void duckdb_web_fs_set_file_descriptor(WASMResponse *packed, uint32_t file_id, uint32_t file_descriptor) {
     if (!current_webfs) {
-        WASMResponseBuffer::GetInstance().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
     auto status = current_webfs->SetFileDescriptor(file_id, file_descriptor);
-    WASMResponseBuffer::GetInstance().Store(*packed, status);
+    WASMResponseBuffer::Get().Store(*packed, status);
 }
-
 /// Register a file at a url
-void duckdb_web_fs_register_file_url(WASMResponse *packed, const char *file_name, const char *file_url) {
+extern "C" void duckdb_web_fs_register_file_url(WASMResponse *packed, const char *file_name, const char *file_url) {
     if (!current_webfs) {
-        WASMResponseBuffer::GetInstance().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
     auto status = current_webfs->RegisterFileURL(file_name, file_url);
-    WASMResponseBuffer::GetInstance().Store(*packed, status);
+    WASMResponseBuffer::Get().Store(*packed, status);
 }
-
 /// Register a file buffer
-void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_name, char *data, uint32_t data_length) {
-    auto data_ptr = std::unique_ptr<char[]>(data);
-    WebFileSystem::WebFileBuffer file_buffer{std::move(data_ptr), data_length};
+extern "C" void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_name, char *data,
+                                                   uint32_t data_length) {
+    WebFileSystem::WebFileBuffer file_buffer{std::unique_ptr<char[]>(data), data_length};
     if (!current_webfs) {
-        WASMResponseBuffer::GetInstance().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
         return;
     }
     auto status = current_webfs->RegisterFileBuffer(file_name, std::move(file_buffer));
-    WASMResponseBuffer::GetInstance().Store(*packed, status);
+    WASMResponseBuffer::Get().Store(*packed, status);
 }
-
 /// Drop a file
-void duckdb_web_fs_drop_file(WASMResponse *packed, const char *file_name);
+extern "C" void duckdb_web_fs_drop_file(WASMResponse *packed, const char *file_name) {
+    if (!current_webfs) {
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        return;
+    }
+    auto status = current_webfs->DropFile(file_name);
+    WASMResponseBuffer::Get().Store(*packed, status);
+}
 /// Drop all files
-void duckdb_web_fs_drop_files(WASMResponse *packed);
+extern "C" void duckdb_web_fs_drop_files(WASMResponse *packed) {
+    if (!current_webfs) {
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        return;
+    }
+    auto status = current_webfs->DropFiles();
+    WASMResponseBuffer::Get().Store(*packed, status);
+}
 /// Copy a file to a path
-void duckdb_web_fs_copy_file_to_path(WASMResponse *packed, const char *file_name, const char *file_path);
+extern "C" void duckdb_web_fs_copy_file_to_path(WASMResponse *packed, const char *file_name, const char *file_path) {
+    if (!current_webfs) {
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        return;
+    }
+    auto status = current_webfs->CopyFileToPath(file_name, file_path);
+    WASMResponseBuffer::Get().Store(*packed, status);
+}
 /// Copy a file to a buffer
-void duckdb_web_fs_copy_file_to_buffer(WASMResponse *packed, const char *file_name);
+extern "C" void duckdb_web_fs_copy_file_to_buffer(WASMResponse *packed, const char *file_name) {
+    if (!current_webfs) {
+        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
+        return;
+    }
+    auto status = current_webfs->CopyFileToBuffer(file_name);
+    WASMResponseBuffer::Get().Store(*packed, status);
 }
 
 /// Close a file handle

@@ -40,7 +40,7 @@ namespace duckdb {
 namespace web {
 
 /// Get the static webdb instance
-WebDB& WebDB::GetInstance() {
+WebDB& WebDB::Get() {
     static std::unique_ptr<WebDB> db = std::make_unique<WebDB>();
     return *db;
 }
