@@ -141,19 +141,10 @@ class WebFileSystem : public duckdb::FileSystem {
     arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor);
     /// Get a file info as JSON string
     arrow::Result<std::string> GetFileInfo(uint32_t file_id);
-
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url);
     /// Register a file buffer
     arrow::Status RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer);
-    /// Drop a file
-    arrow::Status DropFile(std::string_view drop_file);
-    /// Drop all files
-    arrow::Status DropFiles();
-    /// Copy a file to a path
-    arrow::Status CopyFileToPath(std::string_view file_name, std::string_view out_path);
-    /// Copy a file to a path
-    arrow::Result<std::shared_ptr<arrow::Buffer>> CopyFileToBuffer(std::string_view file_name);
 
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,

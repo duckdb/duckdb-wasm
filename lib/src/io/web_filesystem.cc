@@ -109,42 +109,6 @@ extern "C" void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const c
     auto status = WEBFS->RegisterFileBuffer(file_name, std::move(file_buffer));
     WASMResponseBuffer::Get().Store(*packed, status);
 }
-/// Drop a file
-extern "C" void duckdb_web_fs_drop_file(WASMResponse *packed, const char *file_name) {
-    if (!WEBFS) {
-        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
-        return;
-    }
-    auto status = WEBFS->DropFile(file_name);
-    WASMResponseBuffer::Get().Store(*packed, status);
-}
-/// Drop all files
-extern "C" void duckdb_web_fs_drop_files(WASMResponse *packed) {
-    if (!WEBFS) {
-        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
-        return;
-    }
-    auto status = WEBFS->DropFiles();
-    WASMResponseBuffer::Get().Store(*packed, status);
-}
-/// Copy a file to a path
-extern "C" void duckdb_web_fs_copy_file_to_path(WASMResponse *packed, const char *file_name, const char *file_path) {
-    if (!WEBFS) {
-        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
-        return;
-    }
-    auto status = WEBFS->CopyFileToPath(file_name, file_path);
-    WASMResponseBuffer::Get().Store(*packed, status);
-}
-/// Copy a file to a buffer
-extern "C" void duckdb_web_fs_copy_file_to_buffer(WASMResponse *packed, const char *file_name) {
-    if (!WEBFS) {
-        WASMResponseBuffer::Get().Store(*packed, arrow::Status::Invalid("WebFileSystem not set"));
-        return;
-    }
-    auto status = WEBFS->CopyFileToBuffer(file_name);
-    WASMResponseBuffer::Get().Store(*packed, status);
-}
 
 /// Close a file handle
 void WebFileSystem::WebFileHandle::Close() {
@@ -217,68 +181,6 @@ arrow::Status WebFileSystem::RegisterFileBuffer(std::string_view file_name, Data
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
     files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
-    return arrow::Status::OK();
-}
-
-/// Drop a file
-arrow::Status WebFileSystem::DropFile(std::string_view file_name) {
-    WebFile *file;
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_name_.find(file_name);
-    if (iter == files_by_name_.end()) return arrow::Status::Invalid("Unkown file: ", file_name);
-    file = iter->second;
-    ++file->handle_count_;
-
-    fs_guard.unlock();
-    std::unique_lock<std::shared_mutex> file_guard{file->file_mutex_};
-    fs_guard.lock();
-    if (file->handle_count_ == 1) {
-        duckdb_web_fs_file_close(file->file_id_);
-        files_by_name_.erase(file->file_name_);
-        files_by_id_.erase(file->file_id_);
-        file_guard.release();
-        file = nullptr;
-    }
-    if (!file) return arrow::Status::Invalid("Cannot drop file: ", file_name);
-    return arrow::Status::OK();
-}
-
-/// Drop all files
-arrow::Status WebFileSystem::DropFiles() {
-    std::vector<WebFile *> files;
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    for (auto &[file_id, file] : files_by_id_) {
-        ++file->handle_count_;
-        files.push_back(file.get());
-    }
-    fs_guard.unlock();
-    for (auto *file : files) {
-        std::unique_lock<std::shared_mutex> file_guard{file->file_mutex_};
-        fs_guard.lock();
-        if (file->handle_count_ == 1) {
-            duckdb_web_fs_file_close(file->file_id_);
-            files_by_name_.erase(file->file_name_);
-            files_by_id_.erase(file->file_id_);
-            file_guard.release();
-            file = nullptr;
-        } else {
-            --file->handle_count_;
-        }
-    }
-    return arrow::Status::OK();
-}
-
-/// Copy a file to a path
-arrow::Status WebFileSystem::CopyFileToPath(std::string_view file_name, std::string_view out_path) {
-    // XXX
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    return arrow::Status::OK();
-}
-
-/// Copy a file to a path
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebFileSystem::CopyFileToBuffer(std::string_view file_name) {
-    // XXX
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     return arrow::Status::OK();
 }
 
