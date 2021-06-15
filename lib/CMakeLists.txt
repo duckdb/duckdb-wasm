@@ -173,8 +173,6 @@ if(EMSCRIPTEN)
           _duckdb_web_clear_response, \
           _duckdb_web_flush_files, \
           _duckdb_web_flush_file, \
-          _duckdb_web_drop_file, \
-          _duckdb_web_drop_files, \
           _duckdb_web_copy_file_to_buffer, \
           _duckdb_web_copy_file_to_path, \
           _duckdb_web_tokenize, \

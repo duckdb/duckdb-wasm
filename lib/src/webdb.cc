@@ -249,10 +249,6 @@ void WebDB::Disconnect(Connection* session) { connections_.erase(session); }
 void WebDB::FlushFiles() { filesystem_buffer_->Flush(); }
 /// Flush file by path
 void WebDB::FlushFile(std::string_view path) { filesystem_buffer_->FlushFile(path); }
-/// Drop all file buffers
-void WebDB::DropFiles() { filesystem_buffer_->DropFiles(); }
-/// Drop file by path
-void WebDB::DropFile(std::string_view path) { filesystem_buffer_->DropFile(path); }
 
 /// Copy a file to a buffer
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::CopyFileToBuffer(std::string_view path) {

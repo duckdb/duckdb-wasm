@@ -103,10 +103,6 @@ class WebDB {
     void FlushFiles();
     /// Flush file by path
     void FlushFile(std::string_view path);
-    /// Drop all file buffers
-    void DropFiles();
-    /// Drop file by path
-    void DropFile(std::string_view path);
     /// Copy a file to a buffer
     arrow::Result<std::shared_ptr<arrow::Buffer>> CopyFileToBuffer(std::string_view path);
     /// Copy a file to a path

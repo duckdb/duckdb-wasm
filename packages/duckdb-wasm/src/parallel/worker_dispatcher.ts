@@ -181,16 +181,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
-                case WorkerRequestType.DROP_FILE: {
-                    this._bindings.dropFile(request.data);
-                    this.sendOK(request);
-                    break;
-                }
-                case WorkerRequestType.DROP_FILES: {
-                    this._bindings.dropFiles();
-                    this.sendOK(request);
-                    break;
-                }
                 case WorkerRequestType.REGISTER_FILE_URL: {
                     this._bindings.registerFileURL(request.data[0], request.data[1]);
                     this.sendOK(request);
