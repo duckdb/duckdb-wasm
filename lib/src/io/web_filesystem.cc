@@ -133,6 +133,15 @@ void duckdb_web_fs_register_file_buffer(WASMResponse *packed, const char *file_n
     auto status = current_webfs->RegisterFileBuffer(file_name, std::move(file_buffer));
     WASMResponseBuffer::GetInstance().Store(*packed, status);
 }
+
+/// Drop a file
+void duckdb_web_fs_drop_file(WASMResponse *packed, const char *file_name);
+/// Drop all files
+void duckdb_web_fs_drop_files(WASMResponse *packed);
+/// Copy a file to a path
+void duckdb_web_fs_copy_file_to_path(WASMResponse *packed, const char *file_name, const char *file_path);
+/// Copy a file to a buffer
+void duckdb_web_fs_copy_file_to_buffer(WASMResponse *packed, const char *file_name);
 }
 
 /// Close a file handle

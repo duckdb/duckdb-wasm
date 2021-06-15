@@ -67,7 +67,7 @@ export function testJSONImport(db: () => duckdb.DuckDBBindings): void {
             it(test.name, () => {
                 conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
-                db().addFileBuffer(TEST_FILE, buffer);
+                db().registerFileBuffer(TEST_FILE, buffer);
                 conn.importJSONFromPath(TEST_FILE, test.options);
                 const results = conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);

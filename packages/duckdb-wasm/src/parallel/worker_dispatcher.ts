@@ -182,93 +182,50 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
                 }
                 case WorkerRequestType.DROP_FILE: {
-                    await this._bindings.dropFile(request.data);
+                    this._bindings.dropFile(request.data);
                     this.sendOK(request);
                     break;
                 }
                 case WorkerRequestType.DROP_FILES: {
-                    await this._bindings.dropFiles();
+                    this._bindings.dropFiles();
                     this.sendOK(request);
                     break;
                 }
-                case WorkerRequestType.ADD_FILE_PATH: {
-                    const fileID = await this._bindings.addFilePath(request.data);
-                    this.postMessage(
-                        {
-                            messageId: this._nextMessageId++,
-                            requestId: request.messageId,
-                            type: WorkerResponseType.REGISTERED_FILE,
-                            data: fileID,
-                        },
-                        [],
-                    );
+                case WorkerRequestType.REGISTER_FILE_URL: {
+                    this._bindings.registerFileURL(request.data[0], request.data[1]);
+                    this.sendOK(request);
                     break;
                 }
-                case WorkerRequestType.ADD_FILE_BLOB: {
-                    const fileID = await this._bindings.addFileBlob(request.data[0], request.data[1]);
-                    this.postMessage(
-                        {
-                            messageId: this._nextMessageId++,
-                            requestId: request.messageId,
-                            type: WorkerResponseType.REGISTERED_FILE,
-                            data: fileID,
-                        },
-                        [],
-                    );
+                case WorkerRequestType.REGISTER_FILE_BUFFER: {
+                    this._bindings.registerFileBuffer(request.data[0], request.data[1]);
+                    this.sendOK(request);
                     break;
                 }
-                case WorkerRequestType.ADD_FILE_BUFFER: {
-                    const fileID = await this._bindings.addFileBuffer(request.data[0], request.data[1]);
-                    this.postMessage(
-                        {
-                            messageId: this._nextMessageId++,
-                            requestId: request.messageId,
-                            type: WorkerResponseType.REGISTERED_FILE,
-                            data: fileID,
-                        },
-                        [],
-                    );
+                case WorkerRequestType.COPY_FILE_TO_PATH:
+                    this._bindings.copyFileToPath(request.data[0], request.data[1]);
+                    this.sendOK(request);
                     break;
-                }
-                case WorkerRequestType.GET_FILE_OBJECT_URL:
-                    this.postMessage(
-                        {
-                            messageId: this._nextMessageId++,
-                            requestId: request.messageId,
-                            type: WorkerResponseType.FILE_OBJECT_URL,
-                            data: this._bindings.getFileObjectURL(request.data),
-                        },
-                        [],
-                    );
-                    break;
-                case WorkerRequestType.GET_FILE_BUFFER:
+
+                case WorkerRequestType.COPY_FILE_TO_BUFFER: {
+                    const buffer = this._bindings.copyFileToBuffer(request.data);
                     this.postMessage(
                         {
                             messageId: this._nextMessageId++,
                             requestId: request.messageId,
                             type: WorkerResponseType.FILE_BUFFER,
-                            data: this._bindings.getFileBuffer(request.data),
+                            data: buffer,
                         },
                         [],
                     );
                     break;
+                }
                 case WorkerRequestType.ZIP_EXTRACT_FILE: {
                     if (!this._zip) {
                         this.failWith(request, new Error('zip plugin not loaded'));
                         return;
                     }
-                    const archivePath = this._bindings.getFilePath(request.data.archiveFile);
-                    if (!archivePath) {
-                        this.failWith(request, new Error(`unknown file: ${archivePath}`));
-                        return;
-                    }
-                    const outPath = this._bindings.getFilePath(request.data.outFile);
-                    if (!outPath) {
-                        this.failWith(request, new Error(`unknown file: ${outPath}`));
-                        return;
-                    }
-                    this._zip!.loadFile(archivePath);
-                    this._zip!.extractPathToPath(request.data.entryPath, outPath);
+                    this._zip!.loadFile(request.data.archiveFile);
+                    this._zip!.extractPathToPath(request.data.entryPath, request.data.outFile);
                     this.sendOK(request);
                     break;
                 }

@@ -83,7 +83,7 @@ export class AsyncDuckDB {
     }
 
     /** Post a task */
-    protected async postTask(task: WorkerTaskVariant): Promise<any> {
+    protected async postTask(task: WorkerTaskVariant, transfer: ArrayBuffer[] = []): Promise<any> {
         if (!this._worker) {
             console.error('cannot send a message since the worker is not set!');
             return;
@@ -174,31 +174,25 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-            case WorkerRequestType.ADD_FILE_PATH:
-                if (response.type == WorkerResponseType.REGISTERED_FILE) {
+            case WorkerRequestType.REGISTER_FILE_URL:
+                if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
                 }
                 break;
-            case WorkerRequestType.ADD_FILE_BLOB:
-                if (response.type == WorkerResponseType.REGISTERED_FILE) {
+            case WorkerRequestType.REGISTER_FILE_BUFFER:
+                if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
                 }
                 break;
-            case WorkerRequestType.ADD_FILE_BUFFER:
-                if (response.type == WorkerResponseType.REGISTERED_FILE) {
+            case WorkerRequestType.COPY_FILE_TO_PATH:
+                if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
                 }
                 break;
-            case WorkerRequestType.GET_FILE_OBJECT_URL:
-                if (response.type == WorkerResponseType.FILE_OBJECT_URL) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.GET_FILE_BUFFER:
+            case WorkerRequestType.COPY_FILE_TO_BUFFER:
                 if (response.type == WorkerResponseType.FILE_BUFFER) {
                     task.promiseResolver(response.data);
                     return;
@@ -378,57 +372,38 @@ export class AsyncDuckDB {
         return await this.postTask(task);
     }
 
-    /** Register a file buffer. */
-    public async addFile(url: string): Promise<number> {
-        const task = new WorkerTask<WorkerRequestType.ADD_FILE_BUFFER, [string, Uint8Array], number>(
-            WorkerRequestType.ADD_FILE_BUFFER,
-            [url, new Uint8Array()],
-        );
-        return await this.postTask(task);
-    }
-
     /** Register a file path. */
-    public async addFilePath(path: string): Promise<number> {
-        const task = new WorkerTask<WorkerRequestType.ADD_FILE_PATH, string, number>(
-            WorkerRequestType.ADD_FILE_PATH,
-            path,
-        );
-        return await this.postTask(task);
-    }
-
-    /** Register a file blob. */
-    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    public async addFileBlob(url: string, blob: any): Promise<number> {
-        const task = new WorkerTask<WorkerRequestType.ADD_FILE_BLOB, [string, any], number>(
-            WorkerRequestType.ADD_FILE_BLOB,
-            [url, blob],
+    public async registerFileURL(name: string, url: string): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>(
+            WorkerRequestType.REGISTER_FILE_URL,
+            [name, url],
         );
         return await this.postTask(task);
     }
 
     /** Register a file buffer. */
-    public async addFileBuffer(url: string, buffer: Uint8Array): Promise<number> {
-        const task = new WorkerTask<WorkerRequestType.ADD_FILE_BUFFER, [string, Uint8Array], number>(
-            WorkerRequestType.ADD_FILE_BUFFER,
-            [url, buffer],
+    public async registerFileBuffer(name: string, buffer: Uint8Array): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(
+            WorkerRequestType.REGISTER_FILE_BUFFER,
+            [name, buffer],
+        );
+        return await this.postTask(task, [buffer.buffer]);
+    }
+
+    /** Copy a file to a buffer. */
+    public async copyFileToBuffer(name: string): Promise<Uint8Array> {
+        const task = new WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>(
+            WorkerRequestType.COPY_FILE_TO_BUFFER,
+            name,
         );
         return await this.postTask(task);
     }
 
-    /** Get file object URL. */
-    public async getFileObjectURL(file_id: number): Promise<string | null> {
-        const task = new WorkerTask<WorkerRequestType.GET_FILE_OBJECT_URL, number, string | null>(
-            WorkerRequestType.GET_FILE_OBJECT_URL,
-            file_id,
-        );
-        return await this.postTask(task);
-    }
-
-    /** Get file buffer. */
-    public async getFileBuffer(file_id: number): Promise<Uint8Array | null> {
-        const task = new WorkerTask<WorkerRequestType.GET_FILE_BUFFER, number, Uint8Array | null>(
-            WorkerRequestType.GET_FILE_BUFFER,
-            file_id,
+    /** Copy a file to a path. */
+    public async copyFileToPath(name: string, path: string): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>(
+            WorkerRequestType.COPY_FILE_TO_PATH,
+            [name, path],
         );
         return await this.postTask(task);
     }
@@ -451,7 +426,7 @@ export class AsyncDuckDB {
     }
 
     /** Extract a zip file */
-    public async extractZipPath(archiveFile: number, outFile: number, entryPath: string): Promise<number> {
+    public async extractZipPath(archiveFile: string, outFile: string, entryPath: string): Promise<number> {
         const task = new WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>(
             WorkerRequestType.ZIP_EXTRACT_FILE,
             {

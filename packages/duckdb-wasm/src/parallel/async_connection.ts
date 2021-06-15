@@ -5,12 +5,10 @@ import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 interface IAsyncDuckDB {
     logger: Logger;
 
-    addFile(url: string): Promise<number>;
-    addFilePath(path: string): Promise<number>;
-    addFileBlob(url: string, blob: any): Promise<number>;
-    addFileBuffer(url: string, buffer: Uint8Array): Promise<number>;
-    getFileObjectURL(file_id: number): Promise<string | null>;
-    getFileBuffer(file_id: number): Promise<Uint8Array | null>;
+    registerFileURL(name: string, url: string): Promise<null>;
+    registerFileBuffer(name: string, buffer: Uint8Array): Promise<null>;
+    copyFileToPath(name: string, out: string): Promise<null>;
+    copyFileToBuffer(name: string): Promise<Uint8Array>;
 
     disconnect(conn: number): Promise<null>;
     runQuery(conn: number, text: string): Promise<Uint8Array>;
@@ -20,7 +18,7 @@ interface IAsyncDuckDB {
     importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
     importJSONFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
 
-    extractZipPath(archiveFile: number, outFile: number, entryPath: string): Promise<number>;
+    extractZipPath(archiveFile: string, outFile: string, entryPath: string): Promise<number>;
 }
 
 /** An async result stream iterator */
