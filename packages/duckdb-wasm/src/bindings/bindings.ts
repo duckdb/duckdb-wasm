@@ -39,8 +39,23 @@ export abstract class DuckDBBindings {
         return this._instance!;
     }
 
-    /// Instantiate the module
+    /** Instantiate the module */
     protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
+
+    /** Drop a file */
+    public dropFile(name: string): void {}
+    /** Drop all file */
+    public dropFiles(): void {}
+    /** Add a file object URL */
+    public registerFileURL(name: string, objectURL: string): void {}
+    /** Add a file buffer */
+    public registerFileBuffer(name: string, buffer: Uint8Array): void {}
+    /** Write a file to a path */
+    public copyFileToPath(name: string, path: string): void {}
+    /** Write a file to a buffer */
+    public copyFileToBuffer(name: string): Uint8Array {
+        return new Uint8Array();
+    }
 
     /** Open the database */
     public async open(): Promise<void> {

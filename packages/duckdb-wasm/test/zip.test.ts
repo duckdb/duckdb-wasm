@@ -19,7 +19,7 @@ export function testZip(
         it('Entry Info', async () => {
             const all = await resolveData('/uni/all.zip');
             expect(all).not.toBeNull();
-            await db().addFileBuffer('/uni/all.zip', all!);
+            await db().registerFileBuffer('/uni/all.zip', all!);
 
             const zip = new duckdb.ZipBindings(db());
             zip.loadFile('/uni/all.zip');
@@ -46,8 +46,8 @@ export function testZip(
             const all = await resolveData('/uni/all.zip')!;
             const assistenten = await resolveData('/uni/assistenten.parquet')!;
             expect(all).not.toBeNull();
-            await db().addFileBuffer('/uni/all.zip', all!);
-            const outID = await db().addFileBuffer('/out/assistenten.parquet', new Uint8Array());
+            await db().registerFileBuffer('/uni/all.zip', all!);
+            await db().registerFileBuffer('/out/assistenten.parquet', new Uint8Array());
 
             const zip = new duckdb.ZipBindings(db());
             zip.loadFile('/uni/all.zip');
@@ -60,15 +60,15 @@ export function testZip(
             const written = zip.extractEntryToPath(0, '/out/assistenten.parquet');
             expect(written).toEqual(assistenten!.length);
 
-            const assistentenWritten = db().getFileBuffer(outID);
+            const assistentenWritten = db().copyFileToBuffer('/out/assistenten.parquet');
             expect(assistenten).toEqual(assistentenWritten);
         });
 
         it('Scan Loaded', async () => {
             const all = await resolveData('/uni/all.zip')!;
             expect(all).not.toBeNull();
-            await db().addFileBuffer('/uni/all.zip', all!);
-            await db().addFileBuffer('/out/assistenten.parquet', new Uint8Array());
+            await db().registerFileBuffer('/uni/all.zip', all!);
+            await db().registerFileBuffer('/out/assistenten.parquet', new Uint8Array());
 
             const zip = new duckdb.ZipBindings(db());
             zip.loadFile('/uni/all.zip');

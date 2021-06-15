@@ -95,7 +95,7 @@ export function testCSVImport(db: () => duckdb.DuckDBBindings): void {
             it(test.name, () => {
                 conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
-                db().addFileBuffer(TEST_FILE, buffer);
+                db().registerFileBuffer(TEST_FILE, buffer);
                 conn.importCSVFromPath(TEST_FILE, test.options);
                 const results = conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);
@@ -119,7 +119,7 @@ export function testCSVImportAsync(db: () => duckdb.AsyncDuckDB): void {
             it(test.name, async () => {
                 await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
-                await db().addFileBuffer(TEST_FILE, buffer);
+                await db().registerFileBuffer(TEST_FILE, buffer);
                 await conn.importCSVFromPath(TEST_FILE, test.options);
                 const results = await conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);
