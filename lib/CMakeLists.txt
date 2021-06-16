@@ -179,6 +179,8 @@ if(EMSCRIPTEN)
           _duckdb_web_tokenize, \
           _duckdb_web_connect, \
           _duckdb_web_disconnect, \
+          _duckdb_web_fs_drop_file, \
+          _duckdb_web_fs_drop_files, \
           _duckdb_web_fs_get_file_info, \
           _duckdb_web_fs_register_file_buffer, \
           _duckdb_web_fs_register_file_url, \

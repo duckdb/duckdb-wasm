@@ -72,6 +72,8 @@ class WebDB {
     /// The database config
     duckdb::DBConfig db_config_;
 
+    /// The pinned web files (if any)
+    std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_;
     /// The zipper (if loaded)
     std::unique_ptr<Zipper> zip_;
 
@@ -98,11 +100,23 @@ class WebDB {
     Connection* Connect();
     /// End a connection
     void Disconnect(Connection* connection);
-
     /// Flush all file buffers
     void FlushFiles();
     /// Flush file by path
     void FlushFile(std::string_view path);
+
+    /// Register a file URL
+    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url);
+    /// Register a file URL
+    arrow::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
+    /// Drop all files
+    arrow::Status DropFiles();
+    /// Drop a file
+    arrow::Status DropFile(std::string_view file_name);
+    /// Set a file descriptor
+    arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t fd);
+    /// Set a file descriptor
+    arrow::Result<std::string> GetFileInfo(uint32_t file_id);
     /// Copy a file to a buffer
     arrow::Result<std::shared_ptr<arrow::Buffer>> CopyFileToBuffer(std::string_view path);
     /// Copy a file to a path

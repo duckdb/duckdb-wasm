@@ -78,7 +78,7 @@ lib_release:
 # Perf the library
 .PHONY: lib_perf
 lib_perf: lib_relwithdebinfo
-	perf record --call-graph dwarf ${LIB_RELWITHDEBINFO_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=*CSV*ParseTest
+	perf record --call-graph dwarf ${LIB_RELWITHDEBINFO_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 	hotspot ./perf.data
 
 # Test the core library

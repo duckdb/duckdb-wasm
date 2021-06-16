@@ -40,6 +40,38 @@ void duckdb_web_flush_file(const char* path) {
     auto& webdb = WebDB::Get();
     webdb.FlushFile(path);
 }
+/// Drop a file
+void duckdb_web_fs_drop_file(WASMResponse* packed, const char* file_name) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.DropFile(file_name));
+}
+/// Drop a file
+void duckdb_web_fs_drop_files(WASMResponse* packed) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.DropFiles());
+}
+/// Lookup file info
+void duckdb_web_fs_get_file_info(WASMResponse* packed, size_t file_id) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(file_id));
+}
+/// Set a file descriptor of an existing file
+void duckdb_web_fs_set_file_descriptor(WASMResponse* packed, uint32_t file_id, uint32_t file_descriptor) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.SetFileDescriptor(file_id, file_descriptor));
+}
+/// Register a file at a url
+void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name, const char* file_url) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.RegisterFileURL(file_name, file_url));
+}
+/// Register a file buffer
+void duckdb_web_fs_register_file_buffer(WASMResponse* packed, const char* file_name, char* data, uint32_t data_length) {
+    auto& webdb = WebDB::Get();
+    auto data_ptr = std::unique_ptr<char[]>(data);
+    WASMResponseBuffer::Get().Store(*packed, webdb.RegisterFileBuffer(file_name, std::move(data_ptr), data_length));
+}
+
 /// Copy file buffer to path
 void duckdb_web_copy_file_to_buffer(WASMResponse* packed, const char* path) {
     auto& webdb = WebDB::Get();

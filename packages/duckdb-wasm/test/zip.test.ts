@@ -13,6 +13,8 @@ export function testZip(
 
     afterEach(async () => {
         await conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
 
     describe('Zipper', () => {
@@ -115,6 +117,8 @@ export function testZipAsync(
 
     afterEach(async () => {
         await conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
 
     describe('Async Zipper', () => {

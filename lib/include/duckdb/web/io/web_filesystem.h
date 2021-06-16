@@ -10,6 +10,7 @@
 #include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/web/wasm_response.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
@@ -109,6 +110,8 @@ class WebFileSystem : public duckdb::FileSystem {
         WebFileHandle(const WebFileHandle &) = delete;
         /// Destructor
         virtual ~WebFileHandle() { Close(); }
+        /// Get the file name
+        auto &GetName() const { return file_->file_name_; }
     };
 
    protected:
@@ -120,11 +123,15 @@ class WebFileSystem : public duckdb::FileSystem {
     std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
+    /// The pinned files (e.g. buffers)
+    std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
 
     /// Allocate a file id.
     /// XXX This could of course overflow....
     /// Make this a uint64 with emscripten BigInts maybe.
     inline uint32_t AllocateFileID() { return ++next_file_id_; }
+    /// Drop a file
+    bool DropFile(WebFile *file, std::unique_lock<std::mutex> &fs_guard);
 
    public:
     /// Constructor
@@ -139,10 +146,11 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Get a file info as JSON string
     arrow::Result<std::string> GetFileInfo(uint32_t file_id);
     /// Register a file URL
-    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url);
+    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name,
+                                                                  std::string_view file_url);
     /// Register a file buffer
-    arrow::Status RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer);
-
+    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
+                                                                     DataBuffer file_buffer);
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                  FileCompressionType compression) override;
@@ -209,6 +217,9 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Whether or not the FS handles plain files on disk. This is relevant for certain optimizations, as random reads
     /// in a file on-disk are much cheaper than e.g. random reads in a file over the network
     bool OnDiskFile(FileHandle &handle) override;
+
+    /// Get a web filesystem
+    static WebFileSystem *Get();
 };
 
 }  // namespace io

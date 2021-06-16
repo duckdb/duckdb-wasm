@@ -163,7 +163,10 @@ void FileSystemBuffer::FileRef::Release() {
     // Erase file
     buffer_.files_by_path.erase(file_->path);
     buffer_.free_file_ids.push(file_->file_id);
-    buffer_.files.erase(file_->file_id);
+    auto iter = buffer_.files.find(file_->file_id);
+    auto tmp = std::move(iter->second);
+    buffer_.files.erase(iter);
+    file_guard.unlock();
 }
 
 /// Flush file with guard
@@ -534,9 +537,9 @@ void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, Uniqu
 void FileSystemBuffer::FlushFile(std::string_view path) {
     // We need to find the file first
     auto dir_guard = Lock();
-    auto file_ref = std::make_shared<FileRef>(*this);
+    std::shared_ptr<FileRef> file_ref;
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
-        file_ref->file_ = files.at(it->second).get();
+        file_ref = std::make_shared<FileRef>(*this, *files.at(it->second).get());
     } else {
         return;
     }
@@ -621,7 +624,10 @@ void FileSystemBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_
     // Erase file
     files_by_path.erase(file.path);
     free_file_ids.push(file.file_id);
-    files.erase(file.file_id);
+    auto iter = files.find(file.file_id);
+    auto tmp = std::move(iter->second);
+    files.erase(iter);
+    std::visit([&](auto& l) { l.get().unlock(); }, file_guard);
 }
 
 /// Truncate a file

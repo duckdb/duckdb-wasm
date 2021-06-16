@@ -227,6 +227,7 @@ class FileSystemBuffer {
         explicit FileRef(FileSystemBuffer& buffer);
         /// The constructor
         explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file) {
+            std::cout << "FILE USERS " << file.num_users << std::endl;
             // Is always constructed with directory latch
             ++file.num_users;
         }
@@ -327,8 +328,6 @@ class FileSystemBuffer {
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
     void Flush();
-    /// Release a file
-    void Release(BufferedFile& file);
 
     /// Returns the page ids of all pages that are in the FIFO list in FIFO order.
     std::vector<uint64_t> GetFIFOList() const;

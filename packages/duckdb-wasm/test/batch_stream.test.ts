@@ -12,6 +12,8 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
 
     afterEach(() => {
         conn.disconnect();
+        db().flushFiles();
+        db().dropFiles();
     });
 
     describe('Arrow Record-Batches Row-Major', () => {

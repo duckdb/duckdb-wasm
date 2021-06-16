@@ -81,6 +81,14 @@ export abstract class DuckDBBindings {
         return JSON.parse(res) as ScriptTokens;
     }
 
+    /** Drop file */
+    public dropFile(name: string): boolean {
+        return this.mod.ccall('duckdb_web_fs_drop_file', 'boolean', ['string'], [name]);
+    }
+    /** Drop files */
+    public dropFiles(): void {
+        this.mod.ccall('duckdb_web_fs_drop_files', null, [], []);
+    }
     /** Flush all files */
     public flushFiles(): void {
         this.mod.ccall('duckdb_web_flush_files', null, [], []);
@@ -201,7 +209,7 @@ export abstract class DuckDBBindings {
     }
     /** Write a file to a path */
     public copyFileToPath(name: string, path: string): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_copy_file_to_path', ['string', 'string'], [name, path]);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_copy_file_to_path', ['string', 'string'], [name, path]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -209,7 +217,7 @@ export abstract class DuckDBBindings {
     }
     /** Write a file to a buffer */
     public copyFileToBuffer(name: string): Uint8Array {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_copy_file_to_buffer', ['string'], [name]);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_copy_file_to_buffer', ['string'], [name]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
