@@ -83,16 +83,18 @@ void WebFileSystem::WebFileHandle::Close() {
     file_ = nullptr;
     std::unique_lock<std::shared_mutex> file_guard{file.file_mutex_};
     std::unique_lock<std::mutex> fs_guard{fs_.fs_mutex_};
-    // std::cout << "HANDLE CLOSE " << file.handle_count_ << std::endl;
     if (--file.handle_count_ > 0) return;
-    if (file.data_protocol_ != DataProtocol::BUFFER) {
-        duckdb_web_fs_file_close(file.file_id_);
-    }
+    auto file_id = file.file_id_;
+    auto file_proto = file.data_protocol_;
     fs_.files_by_name_.erase(file.file_name_);
     auto iter = fs_.files_by_id_.find(file.file_id_);
     auto tmp = std::move(iter->second);
     fs_.files_by_id_.erase(iter);
     file_guard.unlock();
+    fs_guard.unlock();
+    if (file_proto != DataProtocol::BUFFER) {
+        duckdb_web_fs_file_close(file.file_id_);
+    }
 }
 
 static inline bool hasPrefix(std::string_view text, std::string_view prefix) {
@@ -121,7 +123,6 @@ std::unique_ptr<WebFileSystem::WebFile> WebFileSystem::WebFile::URL(uint32_t fil
     auto proto = inferDataProtocol(file_url);
     auto file = std::make_unique<WebFileSystem::WebFile>(file_id, file_name, proto);
     file->data_url_ = std::move(file_url);
-    // std::cout << "PROTO " << static_cast<size_t>(proto) << std::endl;
     return file;
 }
 
