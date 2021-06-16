@@ -121,10 +121,9 @@ export function testZipAsync(
         it('Scan Loaded', async () => {
             const all = await resolveData('/uni/all.zip')!;
             expect(all).not.toBeNull();
-            const zip = await db().addFileBuffer('/uni/all.zip', all!);
-            const out = await db().addFileBuffer('/out/assistenten.parquet', new Uint8Array());
-
-            await db().extractZipPath(zip, out, 'assistenten.parquet');
+            await db().registerFileBuffer('/uni/all.zip', all!);
+            await db().registerFileBuffer('/out/assistenten.parquet', new Uint8Array());
+            await db().extractZipPath('/uni/all.zip', '/out/assistenten.parquet', 'assistenten.parquet');
 
             const table = await conn.runQuery<{
                 persnr: arrow.Int;

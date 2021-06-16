@@ -178,6 +178,11 @@ duckdb_tests_debug: duckdb
 duckdb_tests_node: duckdb
 	yarn workspace @duckdb/duckdb-wasm test:node
 
+# Run the duckdb javascript tests on nodejs
+.PHONY: duckdb_tests_node_filter
+duckdb_tests_node_filter: duckdb
+	yarn workspace @duckdb/duckdb-wasm test:node:filter
+
 # Build the explorer
 .PHONY: explorer
 explorer_release:

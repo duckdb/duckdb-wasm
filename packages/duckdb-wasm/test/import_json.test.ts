@@ -56,7 +56,7 @@ export function testJSONImport(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
 
     beforeEach(async () => {
-        db().dropFiles();
+        db().flushFiles();
         conn = db().connect();
     });
     afterEach(async () => {
@@ -80,7 +80,7 @@ export function testJSONImportAsync(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
 
     beforeEach(async () => {
-        await db().dropFiles();
+        await db().flushFiles();
         conn = await db().connect();
     });
     afterEach(async () => {
@@ -91,7 +91,7 @@ export function testJSONImportAsync(db: () => duckdb.AsyncDuckDB): void {
             it(test.name, async () => {
                 await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
-                await db().addFileBuffer(TEST_FILE, buffer);
+                await db().registerFileBuffer(TEST_FILE, buffer);
                 await conn.importJSONFromPath(TEST_FILE, test.options);
                 const results = await conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);

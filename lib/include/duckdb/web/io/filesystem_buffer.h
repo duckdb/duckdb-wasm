@@ -253,7 +253,6 @@ class FileSystemBuffer {
         void Flush();
         /// Truncate the file
         void Truncate(uint64_t new_size);
-
         /// Read at most n bytes
         uint64_t Read(void* buffer, uint64_t n, duckdb::idx_t offset);
         /// Write at most n bytes
@@ -328,10 +327,6 @@ class FileSystemBuffer {
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
     void Flush();
-    /// Drop file matching name (if possible)
-    void DropFile(std::string_view path);
-    /// Drop all files that can be dropped
-    void DropFiles();
     /// Release a file
     void Release(BufferedFile& file);
 

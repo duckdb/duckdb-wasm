@@ -64,9 +64,6 @@ class WebFileSystem : public duckdb::FileSystem {
         size_t handle_count_;
         /// The file mutex
         std::shared_mutex file_mutex_ = {};
-        /// The data size
-        std::optional<uint64_t> data_size_ = std::nullopt;
-        /// The data buffer
         /// XXX Make chunked to upgrade from url to cached version
         std::optional<DataBuffer> data_buffer_ = std::nullopt;
         /// The data file descriptor (if any)
