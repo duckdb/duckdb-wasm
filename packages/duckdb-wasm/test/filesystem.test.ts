@@ -16,6 +16,8 @@ export function testFilesystem(
 
     afterEach(async () => {
         await conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
 
     describe('File buffer registration', () => {
@@ -29,14 +31,6 @@ export function testFilesystem(
         it('File buffer used once', async () => {
             const studenten = await resolveData('/uni/studenten.parquet');
             expect(studenten).not.toBeNull();
-            await db().registerFileBuffer('studenten.parquet', studenten!);
-            await test();
-        });
-        it('File buffer re-registered', async () => {
-            const studenten = await resolveData('/uni/studenten.parquet');
-            expect(studenten).not.toBeNull();
-            await db().registerFileBuffer('studenten.parquet', studenten!);
-            await test();
             await db().registerFileBuffer('studenten.parquet', studenten!);
             await test();
         });

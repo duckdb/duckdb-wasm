@@ -12,6 +12,8 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
 
     afterEach(async () => {
         await conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
 
     describe('AsyncDuckDB', () => {

@@ -61,6 +61,8 @@ export function testJSONImport(db: () => duckdb.DuckDBBindings): void {
     });
     afterEach(async () => {
         conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
     describe('JSON Import Sync', () => {
         for (const test of JSON_IMPORT_TESTS) {
@@ -85,6 +87,8 @@ export function testJSONImportAsync(db: () => duckdb.AsyncDuckDB): void {
     });
     afterEach(async () => {
         await conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
     describe('JSON Import Async', () => {
         for (const test of JSON_IMPORT_TESTS) {

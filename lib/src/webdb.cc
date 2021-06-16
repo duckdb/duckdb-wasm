@@ -250,6 +250,47 @@ void WebDB::FlushFiles() { filesystem_buffer_->Flush(); }
 /// Flush file by path
 void WebDB::FlushFile(std::string_view path) { filesystem_buffer_->FlushFile(path); }
 
+/// Register a file URL
+arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url));
+    pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
+    return arrow::Status::OK();
+}
+/// Register a file URL
+arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer,
+                                        size_t buffer_length) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
+    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileBuffer(file_name, std::move(data)));
+    pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
+    return arrow::Status::OK();
+}
+/// Drop all files
+arrow::Status WebDB::DropFiles() {
+    pinned_web_files_.clear();
+    return arrow::Status::OK();
+}
+/// Drop a file
+arrow::Status WebDB::DropFile(std::string_view file_name) {
+    pinned_web_files_.erase(file_name);
+    return arrow::Status::OK();
+}
+/// Set a file descriptor
+arrow::Status WebDB::SetFileDescriptor(uint32_t file_id, uint32_t fd) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    return web_fs->SetFileDescriptor(file_id, fd);
+}
+/// Set a file descriptor
+arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    return web_fs->GetFileInfo(file_id);
+}
+
 /// Copy a file to a buffer
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::CopyFileToBuffer(std::string_view path) {
     constexpr auto FLAGS = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;

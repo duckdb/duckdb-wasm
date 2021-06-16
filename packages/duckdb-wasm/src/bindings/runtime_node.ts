@@ -14,12 +14,12 @@ import { DuckDBModule } from 'src/targets/duckdb-browser-sync-eh';
 export const NODE_RUNTIME: DuckDBRuntime & {
     fileInfoCache: Map<number, DuckDBFileInfo>;
 
-    getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo;
+    resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo;
 } = {
     fileInfoCache: new Map<number, DuckDBFileInfo>(),
 
-    getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo {
-        console.log(`getFileInfo ${fileId}`);
+    resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo {
+        console.log(`resolveFileInfo ${fileId}`);
         const cached = NODE_RUNTIME.fileInfoCache.get(fileId);
         if (cached) return cached;
         const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info', ['number'], [fileId]);
@@ -36,7 +36,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_open(mod: DuckDBModule, fileId: number): void {
         console.log(`duckdb_web_fs_file_open ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 file.data_native_fd = fs.openSync(
@@ -64,7 +64,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_close: (mod: DuckDBModule, fileId: number) => {
         console.log(`duckdb_web_fs_file_close ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 if (!file.data_native_fd) {
@@ -82,7 +82,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_truncate: (mod: DuckDBModule, fileId: number, newSize: number) => {
         console.log(`duckdb_web_fs_file_truncate ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 if (!file.data_native_fd) {
@@ -97,7 +97,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_read: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         console.log(`duckdb_web_fs_file_read ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 if (!file.data_native_fd) {
@@ -112,7 +112,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_write: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         console.log(`duckdb_web_fs_file_write ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 if (!file.data_native_fd) {
@@ -128,7 +128,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_get_size: (mod: DuckDBModule, fileId: number): number => {
         console.log(`duckdb_web_fs_file_get_size ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 if (!file.data_native_fd) {
@@ -143,7 +143,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_get_last_modified_time: (mod: DuckDBModule, fileId: number) => {
         console.log(`duckdb_web_fs_file_get_last_modified_time ${fileId}`);
-        const file = NODE_RUNTIME.getFileInfo(mod, fileId);
+        const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
                 if (!file.data_native_fd) {

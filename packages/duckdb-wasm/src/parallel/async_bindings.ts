@@ -162,6 +162,18 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
+            case WorkerRequestType.DROP_FILE:
+                if (response.type == WorkerResponseType.SUCCESS) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.DROP_FILES:
+                if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.REGISTER_FILE_URL:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
@@ -259,6 +271,16 @@ export class AsyncDuckDB {
     public async ping(): Promise<any> {
         const task = new WorkerTask<WorkerRequestType.PING, null, null>(WorkerRequestType.PING, null);
         await this.postTask(task);
+    }
+    /** Try to drop a file */
+    public async dropFile(name: string): Promise<boolean> {
+        const task = new WorkerTask<WorkerRequestType.DROP_FILE, string, boolean>(WorkerRequestType.DROP_FILE, name);
+        return await this.postTask(task);
+    }
+    /** Try to drop files */
+    public async dropFiles(): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.DROP_FILES, null, null>(WorkerRequestType.DROP_FILES, null);
+        return await this.postTask(task);
     }
     /** Flush all files */
     public async flushFiles(): Promise<null> {

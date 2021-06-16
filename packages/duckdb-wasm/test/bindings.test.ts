@@ -9,6 +9,8 @@ export function testBindings(db: () => duckdb.DuckDBBindings): void {
 
     afterEach(() => {
         conn.disconnect();
+        db().flushFiles();
+        db().dropFiles();
     });
 
     describe('DuckDBBindings', () => {

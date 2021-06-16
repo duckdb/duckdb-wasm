@@ -121,6 +121,21 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this._bindings = null;
                     this.sendOK(request);
                     break;
+                case WorkerRequestType.DROP_FILE:
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.SUCCESS,
+                            data: this._bindings.dropFile(request.data),
+                        },
+                        [],
+                    );
+                    break;
+                case WorkerRequestType.DROP_FILES:
+                    this._bindings.dropFiles();
+                    this.sendOK(request);
+                    break;
                 case WorkerRequestType.FLUSH_FILES:
                     this._bindings.flushFiles();
                     this.sendOK(request);

@@ -89,6 +89,8 @@ export function testCSVImport(db: () => duckdb.DuckDBBindings): void {
     });
     afterEach(async () => {
         conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
     describe('CSV Import Sync', () => {
         for (const test of CSV_IMPORT_TESTS) {
@@ -113,6 +115,8 @@ export function testCSVImportAsync(db: () => duckdb.AsyncDuckDB): void {
     });
     afterEach(async () => {
         await conn.disconnect();
+        await db().flushFiles();
+        await db().dropFiles();
     });
     describe('CSV Import Async', () => {
         for (const test of CSV_IMPORT_TESTS) {

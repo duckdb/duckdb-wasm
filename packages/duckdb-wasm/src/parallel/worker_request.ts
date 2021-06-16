@@ -10,6 +10,8 @@ export enum WorkerRequestType {
     RESET = 'RESET',
     PING = 'PING',
     TOKENIZE = 'TOKENIZE',
+    DROP_FILE = 'DROP_FILE',
+    DROP_FILES = 'DROP_FILES',
     FLUSH_FILES = 'FLUSH_FILES',
     REGISTER_FILE_URL = 'REGISTER_FILE_URL',
     REGISTER_FILE_BUFFER = 'REGISTER_FILE_BUFFER',
@@ -87,6 +89,8 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
     | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
+    | WorkerRequest<WorkerRequestType.DROP_FILE, string>
+    | WorkerRequest<WorkerRequestType.DROP_FILES, null>
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
@@ -123,6 +127,8 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>
+    | WorkerTask<WorkerRequestType.DROP_FILE, string, boolean>
+    | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
