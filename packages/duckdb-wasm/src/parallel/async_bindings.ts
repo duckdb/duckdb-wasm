@@ -356,6 +356,15 @@ export class AsyncDuckDB {
         return await this.postTask(task);
     }
 
+    /** Register an empty file buffer. */
+    public async registerEmptyFileBuffer(name: string): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(
+            WorkerRequestType.REGISTER_FILE_BUFFER,
+            [name, new Uint8Array()],
+        );
+        return await this.postTask(task);
+    }
+
     /** Register a file buffer. */
     public async registerFileBuffer(name: string, buffer: Uint8Array): Promise<null> {
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(

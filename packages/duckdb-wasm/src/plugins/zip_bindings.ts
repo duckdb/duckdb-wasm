@@ -1,5 +1,6 @@
 import { DuckDBBindings } from '../bindings';
 import { StatusCode } from '../status';
+import { dropResponseBuffers, readString, callSRet } from '../bindings/runtime';
 
 export interface ZipArchiveEntryInfo {
     fileName: string;
@@ -40,55 +41,57 @@ export class ZipBindings {
     }
 
     public loadFile(path: string): void {
-        const [s, d, n] = this._duckdb.callSRet('duckdb_web_zip_load_file', ['string'], [path]);
+        const [s, d, n] = callSRet(this._duckdb.mod, 'duckdb_web_zip_load_file', ['string'], [path]);
         if (s !== StatusCode.SUCCESS) {
-            throw new Error(this._duckdb.readString(d, n));
+            throw new Error(readString(this._duckdb.mod, d, n));
         }
-        this._duckdb.dropResponseBuffers();
+        dropResponseBuffers(this._duckdb.mod);
     }
 
     public readEntryCount(): number {
-        const [s, d, n] = this._duckdb.callSRet('duckdb_web_zip_read_entry_count', [], []);
+        const [s, d, n] = callSRet(this._duckdb.mod, 'duckdb_web_zip_read_entry_count', [], []);
         if (s !== StatusCode.SUCCESS) {
-            throw new Error(this._duckdb.readString(d, n));
+            throw new Error(readString(this._duckdb.mod, d, n));
         }
-        this._duckdb.dropResponseBuffers();
+        dropResponseBuffers(this._duckdb.mod);
         return d;
     }
 
     public readEntryInfo(entryID: number): ZipArchiveEntryInfo {
-        const [s, d, n] = this._duckdb.callSRet('duckdb_web_zip_read_entry_info', ['number'], [entryID]);
+        const [s, d, n] = callSRet(this._duckdb.mod, 'duckdb_web_zip_read_entry_info', ['number'], [entryID]);
         if (s !== StatusCode.SUCCESS) {
-            throw new Error(this._duckdb.readString(d, n));
+            throw new Error(readString(this._duckdb.mod, d, n));
         }
-        const res = this._duckdb.readString(d, n);
-        this._duckdb.dropResponseBuffers();
+        const res = readString(this._duckdb.mod, d, n);
+        dropResponseBuffers(this._duckdb.mod);
         return JSON.parse(res) as ZipArchiveEntryInfo;
     }
 
     public extractEntryToPath(entryID: number, path: string): number {
-        const [s, d, n] = this._duckdb.callSRet(
+        const [s, d, n] = callSRet(
+            this._duckdb.mod,
             'duckdb_web_zip_extract_entry_to_path',
             ['number', 'string'],
             [entryID, path],
         );
         if (s !== StatusCode.SUCCESS) {
-            throw new Error(this._duckdb.readString(d, n));
+            throw new Error(readString(this._duckdb.mod, d, n));
         }
-        this._duckdb.dropResponseBuffers();
+        dropResponseBuffers(this._duckdb.mod);
         return d;
     }
 
     public extractPathToPath(inPath: string, outPath: string): number {
-        const [s, d, n] = this._duckdb.callSRet(
+        const [s, d, n] = callSRet(
+            this._duckdb.mod,
             'duckdb_web_zip_extract_path_to_path',
             ['string', 'string'],
             [inPath, outPath],
         );
         if (s !== StatusCode.SUCCESS) {
-            throw new Error(this._duckdb.readString(d, n));
+            throw new Error(readString(this._duckdb.mod, d, n));
         }
-        this._duckdb.dropResponseBuffers();
+        dropResponseBuffers(this._duckdb.mod);
         return d;
     }
 }

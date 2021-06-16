@@ -89,7 +89,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
-    | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, Uint8Array>
+    | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>

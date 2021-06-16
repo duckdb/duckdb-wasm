@@ -35,7 +35,7 @@ export abstract class DuckDBBindings {
         return this._logger;
     }
     /** Get the instance */
-    protected get mod(): DuckDBModule {
+    public get mod(): DuckDBModule {
         return this._instance!;
     }
 
