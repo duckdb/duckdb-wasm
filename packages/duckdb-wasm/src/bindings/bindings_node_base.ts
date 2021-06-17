@@ -49,20 +49,13 @@ export class DuckDBNodeBindings extends DuckDBBindings {
         imports: any,
         success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ): Emscripten.WebAssemblyExports {
-        const imports_rt: WebAssembly.Imports = {
-            ...imports,
-            env: {
-                ...imports.env,
-            },
-        };
+        globalThis.DUCKDB_RUNTIME = {};
+        for (const func of Object.getOwnPropertyNames(this._runtime)) {
+            if (func == 'constructor') continue;
+            globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
+        }
         const buf = fs.readFileSync(this.mainModulePath);
-        WebAssembly.instantiate(buf, imports_rt).then(output => {
-            globalThis.DUCKDB_RUNTIME = {};
-
-            for (const func of Object.getOwnPropertyNames(this._runtime)) {
-                if (func == 'constructor') continue;
-                globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
-            }
+        WebAssembly.instantiate(buf, imports).then(output => {
             success(output.instance, output.module);
         });
         return [];

@@ -32,11 +32,11 @@ function resolveBlob(file: ExtendedFileInfo): Blob {
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     fileInfoCache: Map<number, ExtendedFileInfo>;
 
-    getFileInfo(mod: DuckDBModule, fileId: number): ExtendedFileInfo;
+    getFileInfo(mod: DuckDBModule, fileId: number): ExtendedFileInfo | null;
 } = {
     fileInfoCache: new Map<number, ExtendedFileInfo>(),
 
-    getFileInfo(mod: DuckDBModule, fileId: number): ExtendedFileInfo {
+    getFileInfo(mod: DuckDBModule, fileId: number): ExtendedFileInfo | null {
         const cached = BROWSER_RUNTIME.fileInfoCache.get(fileId);
         if (cached) return cached;
         const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info', ['number'], [fileId]);
@@ -46,26 +46,34 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const infoStr = readString(mod, d, n);
         dropResponseBuffers(mod);
         const info = JSON.parse(infoStr);
-        if (info == null) throw new Error(`Could not resolve file ${fileId}`);
+        if (info == null) return null;
         return { ...info, blob: null } as ExtendedFileInfo;
     },
 
     duckdb_web_fs_file_open: (mod: DuckDBModule, fileId: number) => {
+        console.log(mod);
+        BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
+        switch (file?.data_protocol) {
             case DuckDBDataProtocol.HTTP:
+                // XXX could fire a HEAD request here to get the file size and check whether the file is accessible
+                break;
+            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+                break;
         }
     },
     duckdb_web_fs_file_sync: (_mod: DuckDBModule, _fileId: number) => {},
     duckdb_web_fs_file_close: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
+        BROWSER_RUNTIME.fileInfoCache.delete(fileId);
+        switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB:
-                if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
+                if (!file.data_url) return;
                 URL.revokeObjectURL(file.data_url);
                 file.data_url = null;
+                break;
+            case DuckDBDataProtocol.HTTP:
                 break;
             case DuckDBDataProtocol.NATIVE:
                 throw Error('Not implemented');
@@ -73,16 +81,19 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_truncate: (mod: DuckDBModule, fileId: number, newSize: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
-            case DuckDBDataProtocol.NATIVE:
+        switch (file?.data_protocol) {
+            case DuckDBDataProtocol.BLOB:
+                throw Error('Cannot truncate a BLOB');
             case DuckDBDataProtocol.HTTP:
+                throw Error('Cannot truncate a HTTP file');
+            case DuckDBDataProtocol.NATIVE:
                 throw Error('Not implemented');
         }
         return 0;
     },
     duckdb_web_fs_file_read(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
+        switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB: {
                 const blob = resolveBlob(file);
                 const slice = blob.slice(location, location + bytes);
@@ -114,7 +125,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_write: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
+        switch (file?.data_protocol) {
+            case DuckDBDataProtocol.BLOB:
+                throw Error('Cannot write to BLOB');
+            case DuckDBDataProtocol.HTTP:
+                throw Error('Cannot write to HTTP file');
+
             case DuckDBDataProtocol.NATIVE:
                 throw Error('Not implemented');
         }
@@ -122,19 +138,39 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     duckdb_web_fs_file_get_size: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
+        switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE:
-            case DuckDBDataProtocol.HTTP:
                 throw Error('Not implemented');
+
+            case DuckDBDataProtocol.HTTP: {
+                if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
+                const xhr = new XMLHttpRequest();
+                xhr.open('HEAD', file.data_url!, false);
+                xhr.send(null);
+                if (xhr.status == 200) {
+                    const header = xhr.getResponseHeader('Content-Length');
+                    if (header) {
+                        return parseInt(header);
+                    } else {
+                        throw Error(`HEAD ${file.data_url} does not contain the HTTP header: Content-Length`);
+                    }
+                } else {
+                    throw Error(`HEAD ${file.data_url} returned non-success status: ${xhr.status} "${xhr.statusText}"`);
+                }
+            }
         }
         return 0;
     },
     duckdb_web_fs_file_get_last_modified_time: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file.data_protocol) {
+        switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE:
-            case DuckDBDataProtocol.HTTP:
                 throw Error('Not implemented');
+
+            case DuckDBDataProtocol.HTTP:
+                return new Date().getTime();
+            case DuckDBDataProtocol.BLOB:
+                return new Date().getTime();
         }
         return 0;
     },

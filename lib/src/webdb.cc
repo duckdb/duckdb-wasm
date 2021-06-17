@@ -210,6 +210,8 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
     zip_ = std::make_unique<Zipper>(filesystem_buffer_);
 }
 
+WebDB::~WebDB() { pinned_web_files_.clear(); }
+
 /// Tokenize a script and return tokens as json
 std::string WebDB::Tokenize(std::string_view text) {
     duckdb::Parser parser;

@@ -42,37 +42,20 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindings {
         imports: any,
         success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ): Emscripten.WebAssemblyExports {
-        const imports_rt: WebAssembly.Imports = {
-            ...imports,
-            env: {
-                ...imports.env,
-                ...this._runtime,
-            },
-        };
+        globalThis.DUCKDB_RUNTIME = {};
+        for (const func of Object.getOwnPropertyNames(this._runtime)) {
+            if (func == 'constructor') continue;
+            globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
+        }
         if (WebAssembly.instantiateStreaming) {
-            WebAssembly.instantiateStreaming(fetch(this.mainModuleURL), imports_rt).then(output => {
-                globalThis.DUCKDB_RUNTIME = {};
-
-                for (const func of Object.getOwnPropertyNames(this._runtime)) {
-                    if (func == 'constructor') continue;
-                    globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
-                }
+            WebAssembly.instantiateStreaming(fetch(this.mainModuleURL), imports).then(output => {
                 success(output.instance, output.module);
             });
         } else {
             fetch(this.mainModuleURL)
                 .then(resp => resp.arrayBuffer())
                 .then(bytes =>
-                    WebAssembly.instantiate(bytes, imports_rt).then(output => {
-                        globalThis.DUCKDB_RUNTIME = {};
-
-                        for (const func of Object.getOwnPropertyNames(this._runtime)) {
-                            if (func == 'constructor') continue;
-                            globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(
-                                this._runtime,
-                                func,
-                            )!.value;
-                        }
+                    WebAssembly.instantiate(bytes, imports).then(output => {
                         success(output.instance, output.module);
                     }),
                 )

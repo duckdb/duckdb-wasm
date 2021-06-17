@@ -11,8 +11,10 @@
 #include "arrow/status.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/web/debug.h"
 #include "duckdb/web/io/glob.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/scope_guard.h"
 #include "duckdb/web/wasm_response.h"
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
@@ -78,23 +80,34 @@ static WebFileSystem *WEBFS = nullptr;
 WebFileSystem *WebFileSystem::Get() { return WEBFS; }
 /// Close a file handle
 void WebFileSystem::WebFileHandle::Close() {
+    DEBUG_TRACE();
     if (!file_) return;
     auto &file = *file_;
     file_ = nullptr;
-    std::unique_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    std::unique_lock<std::shared_mutex> file_guard{file.file_mutex_, std::defer_lock};
+    auto have_file_lock = file_guard.try_lock();
     std::unique_lock<std::mutex> fs_guard{fs_.fs_mutex_};
-    if (--file.handle_count_ > 0) return;
+    if (file.handle_count_ > 1) {
+        --file.handle_count_;
+        return;
+    }
+    if (!have_file_lock) return;
+    fs_guard.unlock();
+    if (file.data_protocol_ != DataProtocol::BUFFER) {
+        try {
+            duckdb_web_fs_file_close(file.file_id_);
+        } catch (...) {
+        }
+    }
+    fs_guard.lock();
     auto file_id = file.file_id_;
     auto file_proto = file.data_protocol_;
     fs_.files_by_name_.erase(file.file_name_);
     auto iter = fs_.files_by_id_.find(file.file_id_);
     auto tmp = std::move(iter->second);
     fs_.files_by_id_.erase(iter);
-    file_guard.unlock();
     fs_guard.unlock();
-    if (file_proto != DataProtocol::BUFFER) {
-        duckdb_web_fs_file_close(file.file_id_);
-    }
+    file_guard.unlock();
 }
 
 static inline bool hasPrefix(std::string_view text, std::string_view prefix) {
@@ -136,6 +149,7 @@ std::unique_ptr<WebFileSystem::WebFile> WebFileSystem::WebFile::Buffer(uint32_t 
 
 /// Get the info
 std::string WebFileSystem::WebFile::GetInfo() const {
+    DEBUG_TRACE();
     // Start the JSON document
     rapidjson::Document doc;
     doc.SetObject();
@@ -172,6 +186,7 @@ WebFileSystem::~WebFileSystem() { WEBFS = nullptr; }
 /// Register a file URL
 arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
                                                                                             std::string_view file_url) {
+    DEBUG_TRACE();
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_name_.find(file_name);
     if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
@@ -186,6 +201,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 /// Register a file buffer
 arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(
     std::string_view file_name, DataBuffer file_buffer) {
+    DEBUG_TRACE();
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_name_.find(file_name);
     if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
@@ -199,6 +215,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 
 /// Set a file descriptor
 arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor) {
+    DEBUG_TRACE();
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
     if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
@@ -208,6 +225,7 @@ arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_d
 
 /// Get a file info as JSON string
 arrow::Result<std::string> WebFileSystem::GetFileInfo(uint32_t file_id) {
+    DEBUG_TRACE();
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
     if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
@@ -218,36 +236,41 @@ arrow::Result<std::string> WebFileSystem::GetFileInfo(uint32_t file_id) {
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                             FileCompressionType compression) {
+    DEBUG_TRACE();
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto iter = files_by_name_.find(url);
+
+    // Determine url type
+    std::string_view data_url = url;
+    DataProtocol data_proto = DataProtocol::BUFFER;
+    if (hasPrefix(url, "blob:")) {
+        data_proto = DataProtocol::BLOB;
+    } else if (hasPrefix(url, "http://") || hasPrefix(url, "https://")) {
+        data_proto = DataProtocol::HTTP;
+    } else if (hasPrefix(url, "file://")) {
+        data_url = std::string_view{url}.substr(7);
+        data_proto = DataProtocol::NATIVE;
+    } else {
+        data_proto = DataProtocol::NATIVE;
+    }
 
     // We know that file already?
     WebFile *file_ptr = nullptr;
+    auto iter = files_by_name_.find(data_url);
     if (iter == files_by_name_.end()) {
-        // Determine url type
-        std::string_view data_url = url;
-        DataProtocol data_proto = DataProtocol::BUFFER;
-        if (hasPrefix(url, "blob:")) {
-            data_proto = DataProtocol::BLOB;
-        } else if (hasPrefix(url, "http://") || hasPrefix(url, "https://")) {
-            data_proto = DataProtocol::HTTP;
-        } else if (hasPrefix(url, "file://")) {
-            data_url = std::string_view{url}.substr(7);
-            data_proto = DataProtocol::NATIVE;
-        } else {
-            data_proto = DataProtocol::NATIVE;
-        }
-
         // Create file
         auto file = std::make_unique<WebFile>(AllocateFileID(), data_url, data_proto);
         auto file_id = file->file_id_;
         file_ptr = file.get();
         std::string_view file_name{file->file_name_};
+        assert(!files_by_id_.count(file_id));
+        assert(!files_by_name_.count(data_url));
+        std::cout << file_id << " " << files_by_id_.count(file_id) << std::endl;
         files_by_id_.insert({file_id, std::move(file)});
         files_by_name_.insert({file_name, file.get()});
     } else {
         file_ptr = iter->second;
     }
+    auto handle = std::make_unique<WebFileHandle>(*this, file_ptr->file_name_, *file_ptr);
 
     // Lock the file
     fs_guard.unlock();
@@ -270,12 +293,13 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 auto tmp = std::move(iter->second);
                 files_by_id_.erase(iter);
                 file_guard.unlock();
-                throw;
+                std::string msg = std::string{"Failed to open file: "} + file_ptr->file_name_;
+                throw new std::logic_error(msg);
             }
     }
 
     // Build the handle
-    return std::make_unique<WebFileHandle>(*this, file_ptr->file_name_, *file_ptr);
+    return handle;
 }
 
 void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
@@ -285,11 +309,11 @@ void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_by
 }
 
 int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+    DEBUG_TRACE();
     assert(nr_bytes < std::numeric_limits<size_t>::max());
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
-    // std::cout << "READ " << nr_bytes << " " << file_hdl.position_ << std::endl;
     std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER: {
@@ -317,6 +341,7 @@ void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_b
 }
 
 int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+    DEBUG_TRACE();
     assert(nr_bytes < std::numeric_limits<size_t>::max());
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
@@ -345,6 +370,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
 
 /// Returns the file size of a file handle, returns -1 on error
 int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
+    DEBUG_TRACE();
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
@@ -352,12 +378,10 @@ int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER:
             assert(file.data_buffer_.has_value());
-            // std::cout << "GET FILE SIZE BUFFER " << file.data_buffer_->Size() << std::endl;
             return file.data_buffer_->Size();
         case DataProtocol::NATIVE:
         case DataProtocol::BLOB:
         case DataProtocol::HTTP: {
-            // std::cout << "GET FILE SIZE NATIVE" << std::endl;
             return duckdb_web_fs_file_get_size(file.file_id_);
         }
     }
@@ -365,6 +389,7 @@ int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
 }
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
 time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
+    DEBUG_TRACE();
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
@@ -383,6 +408,7 @@ time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
 /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
 /// the file
 void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
+    DEBUG_TRACE();
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
