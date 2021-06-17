@@ -98,10 +98,12 @@ import { testCSVImport, testCSVImportAsync } from './import_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { DuckDBConfig } from '../src/targets/duckdb-browser-async';
 
+const baseURL = window.location.origin;
+
 testBindings(() => db!);
 testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
-testFilesystem(() => adb!, resolveData, '/data');
+testFilesystem(() => adb!, resolveData, baseURL + '/data');
 testZip(() => db!, resolveData);
 testZipAsync(() => adb!, resolveData);
 testJSONImport(() => db!);

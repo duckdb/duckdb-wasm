@@ -20,7 +20,7 @@
         "types": ["emscripten", "node", "jasmine"],
         "typeRoots": ["./types", "./node_modules/@types", "../../node_modules/@types"],
         "baseUrl": ".",
-        "lib": ["es6", "webworker"]
+        "lib": ["es6", "webworker", "dom"]
     },
     "include": [".eslintrc.js", "./src/**/*", "./types/*.d.ts", "./test/**/*"],
     "exclude": ["./test/node/**/*"]

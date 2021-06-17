@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <duckdb/common/constants.hpp>
 #include <exception>
-#include <iostream>
 #include <list>
 #include <map>
 #include <memory>
@@ -227,7 +226,6 @@ class FileSystemBuffer {
         explicit FileRef(FileSystemBuffer& buffer);
         /// The constructor
         explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file) {
-            std::cout << "FILE USERS " << file.num_users << std::endl;
             // Is always constructed with directory latch
             ++file.num_users;
         }

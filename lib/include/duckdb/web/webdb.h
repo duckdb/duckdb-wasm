@@ -73,13 +73,15 @@ class WebDB {
     duckdb::DBConfig db_config_;
 
     /// The pinned web files (if any)
-    std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_;
+    std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
     /// The zipper (if loaded)
-    std::unique_ptr<Zipper> zip_;
+    std::unique_ptr<Zipper> zip_ = nullptr;
 
    public:
     /// Constructor
     WebDB(std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem(), const char* path = nullptr);
+    /// Destructor
+    ~WebDB();
 
     /// Get the filesystem
     auto& filesystem() { return database_->GetFileSystem(); }

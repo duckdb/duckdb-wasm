@@ -15,6 +15,7 @@
 #include <utility>
 #include <variant>
 
+#include "duckdb/web/debug.h"
 #include "duckdb/web/scope_guard.h"
 
 /// Build a frame id
@@ -85,6 +86,7 @@ FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer) : buffer_(buffer), 
 /// Load a frame
 void FileSystemBuffer::FileRef::LoadFrame(FileSystemBuffer::BufferFrame& frame, FileGuardRefVariant file_guard,
                                           DirectoryGuard& dir_guard) {
+    DEBUG_TRACE();
     assert(frame.frame_state == FileSystemBuffer::BufferFrame::LOADING);
     auto file_id = ::GetFileID(frame.frame_id);
     auto page_id = ::GetPageID(frame.frame_id);
@@ -106,6 +108,7 @@ void FileSystemBuffer::FileRef::LoadFrame(FileSystemBuffer::BufferFrame& frame, 
 }
 
 void FileSystemBuffer::FileRef::Release() {
+    DEBUG_TRACE();
     // Already released?
     if (!file_) return;
     // Protect with directory latch
@@ -194,6 +197,7 @@ FileSystemBuffer::~FileSystemBuffer() { Flush(); }
 
 std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
                                                                       std::unique_ptr<duckdb::FileHandle> handle) {
+    DEBUG_TRACE();
     auto dir_guard = Lock();
     // Already added?
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
@@ -227,6 +231,7 @@ std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::strin
 }
 
 std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
+    DEBUG_TRACE();
     FileSystemBuffer::BufferFrame* frame = nullptr;
     std::shared_lock<std::shared_mutex> file_guard;
     while (true) {
@@ -311,6 +316,7 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
 
 /// Fix a page
 FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
+    DEBUG_TRACE();
     auto file_guard = Lock(Shared);
     auto [frame_ptr, frame_guard] = FixPage(page_id, exclusive, true, file_guard);
     return BufferRef{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
@@ -319,6 +325,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
 /// Fix a page with existing file lock
 std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> FileSystemBuffer::FileRef::FixPage(
     uint64_t page_id, bool exclusive, bool load_data, FileGuardRefVariant file_guard) {
+    DEBUG_TRACE();
     assert(file_ != nullptr);
     auto dir_guard = buffer_.Lock();
     auto file_id = file_->file_id;
@@ -434,6 +441,7 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
 }
 
 uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t offset) {
+    DEBUG_TRACE();
     // Check upper file boundary first
     auto read_end = std::min<uint64_t>(file_->file_size, offset + n);
     auto read_max = std::min<uint64_t>(n, std::max<uint64_t>(read_end, offset) - offset);
@@ -454,6 +462,7 @@ uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t of
 }
 
 uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::idx_t offset) {
+    DEBUG_TRACE();
     // Append to file?
     // Writing any bytes past the end offset if obviously a bad idea.
     // We therefore always assume, that the user wants to append instead.
@@ -484,11 +493,13 @@ uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb
 
 /// Append to the file
 void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t n) {
+    DEBUG_TRACE();
     auto file_guard = Lock(Exclusive);
     Append(buffer, n, file_guard);
 }
 
 void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, UniqueFileGuard& file_guard) {
+    DEBUG_TRACE();
     auto in_reader = static_cast<const char*>(buffer);
 
     // Increase file size
@@ -535,6 +546,7 @@ void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, Uniqu
 
 /// Flush a file at a path.
 void FileSystemBuffer::FlushFile(std::string_view path) {
+    DEBUG_TRACE();
     // We need to find the file first
     auto dir_guard = Lock();
     std::shared_ptr<FileRef> file_ref;
@@ -569,6 +581,7 @@ void FileSystemBuffer::Flush() {
 /// Flush a frame.
 /// Assumes that the file of the frame is under control.
 void FileSystemBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
+    DEBUG_TRACE();
     if (!frame.is_dirty) return;
     auto& file = frame.file;
     auto file_id = GetFileID(frame.frame_id);
@@ -598,6 +611,7 @@ void FileSystemBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_g
 
 /// Release a file
 void FileSystemBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
+    DEBUG_TRACE();
     // Someone opened the file in the meantime?
     if (file.GetReferenceCount() > 1) return;
 
@@ -632,6 +646,7 @@ void FileSystemBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_
 
 /// Truncate a file
 void FileSystemBuffer::FileRef::Truncate(uint64_t new_size) {
+    DEBUG_TRACE();
     // Modify file file.
     // This will lock out ALL file users.
     auto* file = file_;
