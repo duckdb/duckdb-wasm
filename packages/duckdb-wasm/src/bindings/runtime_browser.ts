@@ -50,7 +50,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         return { ...info, blob: null } as ExtendedFileInfo;
     },
 
-    duckdb_web_fs_file_open: (mod: DuckDBModule, fileId: number) => {
+    openFile: (mod: DuckDBModule, fileId: number) => {
         console.log(mod);
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
@@ -63,8 +63,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 break;
         }
     },
-    duckdb_web_fs_file_sync: (_mod: DuckDBModule, _fileId: number) => {},
-    duckdb_web_fs_file_close: (mod: DuckDBModule, fileId: number) => {
+    syncFile: (_mod: DuckDBModule, _fileId: number) => {},
+    closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         switch (file?.data_protocol) {
@@ -79,7 +79,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 throw Error('Not implemented');
         }
     },
-    duckdb_web_fs_file_truncate: (mod: DuckDBModule, fileId: number, newSize: number) => {
+    truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB:
@@ -91,7 +91,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_read(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
+    readFile(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB: {
@@ -123,7 +123,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_write: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
+    writeFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB:
@@ -136,7 +136,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_get_size: (mod: DuckDBModule, fileId: number) => {
+    getFileSize: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE:
@@ -161,7 +161,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_get_last_modified_time: (mod: DuckDBModule, fileId: number) => {
+    getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE:
@@ -174,22 +174,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_directory_exists: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
-    duckdb_web_fs_directory_create: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    duckdb_web_fs_directory_remove: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    duckdb_web_fs_directory_list_files: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
-    duckdb_web_fs_glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    duckdb_web_fs_file_move: (
-        _mod: DuckDBModule,
-        _fromPtr: number,
-        _fromLen: number,
-        _toPtr: number,
-        _toLen: number,
-    ) => {},
-    duckdb_web_fs_file_exists: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
+    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
+    createDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
+    glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
+    checkFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
         return false;
     },
-    duckdb_web_fs_file_remove: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
 };
 
 export default BROWSER_RUNTIME;

@@ -78,80 +78,56 @@ export function dropResponseBuffers(mod: DuckDBModule): void {
 /** The duckdb runtime */
 export interface DuckDBRuntime {
     // File APIs with dedicated file identifier
-    duckdb_web_fs_file_open(mod: DuckDBModule, fileId: number): void;
-    duckdb_web_fs_file_sync(mod: DuckDBModule, fileId: number): void;
-    duckdb_web_fs_file_close(mod: DuckDBModule, fileId: number): void;
-    duckdb_web_fs_file_get_last_modified_time(mod: DuckDBModule, fileId: number): number;
-    duckdb_web_fs_file_get_size(mod: DuckDBModule, fileId: number): number;
-    duckdb_web_fs_file_truncate(mod: DuckDBModule, fileId: number, newSize: number): void;
-    duckdb_web_fs_file_read(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
-    duckdb_web_fs_file_write(
-        mod: DuckDBModule,
-        fileId: number,
-        buffer: number,
-        bytes: number,
-        location: number,
-    ): number;
+    openFile(mod: DuckDBModule, fileId: number): void;
+    syncFile(mod: DuckDBModule, fileId: number): void;
+    closeFile(mod: DuckDBModule, fileId: number): void;
+    getLastFileModificationTime(mod: DuckDBModule, fileId: number): number;
+    getFileSize(mod: DuckDBModule, fileId: number): number;
+    truncateFile(mod: DuckDBModule, fileId: number, newSize: number): void;
+    readFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
+    writeFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
 
     // File APIs with path parameter
-    duckdb_web_fs_directory_remove(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
-    duckdb_web_fs_directory_exists(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
-    duckdb_web_fs_directory_create(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
-    duckdb_web_fs_directory_list_files(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
-    duckdb_web_fs_glob(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
-    duckdb_web_fs_file_move(mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number): void;
-    duckdb_web_fs_file_exists(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
-    duckdb_web_fs_file_remove(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
+    removeDirectory(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
+    checkDirectory(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
+    createDirectory(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
+    listDirectoryEntries(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
+    glob(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
+    moveFile(mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number): void;
+    checkFile(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
+    removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
 }
 
 export const DEFAULT_RUNTIME: DuckDBRuntime = {
-    duckdb_web_fs_file_open: (_mod: DuckDBModule, _fileId: number): void => {},
-    duckdb_web_fs_file_sync: (_mod: DuckDBModule, _fileId: number): void => {},
-    duckdb_web_fs_file_close: (_mod: DuckDBModule, _fileId: number): void => {},
-    duckdb_web_fs_file_get_last_modified_time: (_mod: DuckDBModule, _fileId: number): number => {
+    openFile: (_mod: DuckDBModule, _fileId: number): void => {},
+    syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
+    closeFile: (_mod: DuckDBModule, _fileId: number): void => {},
+    getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
     },
-    duckdb_web_fs_file_get_size: (_mod: DuckDBModule, _fileId: number): number => {
+    getFileSize: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
     },
-    duckdb_web_fs_file_truncate: (_mod: DuckDBModule, _fileId: number, _newSize: number): void => {},
-    duckdb_web_fs_file_read: (
-        _mod: DuckDBModule,
-        _fileId: number,
-        _buffer: number,
-        _bytes: number,
-        _location: number,
-    ): number => {
+    truncateFile: (_mod: DuckDBModule, _fileId: number, _newSize: number): void => {},
+    readFile: (_mod: DuckDBModule, _fileId: number, _buffer: number, _bytes: number, _location: number): number => {
         return 0;
     },
-    duckdb_web_fs_file_write: (
-        _mod: DuckDBModule,
-        _fileId: number,
-        _buffer: number,
-        _bytes: number,
-        _location: number,
-    ): number => {
+    writeFile: (_mod: DuckDBModule, _fileId: number, _buffer: number, _bytes: number, _location: number): number => {
         return 0;
     },
 
-    duckdb_web_fs_directory_remove: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
-    duckdb_web_fs_directory_exists: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): boolean => {
+    removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
+    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): boolean => {
         return false;
     },
-    duckdb_web_fs_directory_create: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
-    duckdb_web_fs_directory_list_files: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): boolean => {
+    createDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
+    listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): boolean => {
         return false;
     },
-    duckdb_web_fs_glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
-    duckdb_web_fs_file_move: (
-        _mod: DuckDBModule,
-        _fromPtr: number,
-        _fromLen: number,
-        _toPtr: number,
-        _toLen: number,
-    ): void => {},
-    duckdb_web_fs_file_exists: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): boolean => {
+    glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
+    moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number): void => {},
+    checkFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): boolean => {
         return false;
     },
-    duckdb_web_fs_file_remove: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
+    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
 };
