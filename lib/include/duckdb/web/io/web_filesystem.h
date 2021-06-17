@@ -61,21 +61,22 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The file path
         const std::string file_name_;
         /// The data protocol
-        const DataProtocol data_protocol_;
+        DataProtocol data_protocol_;
         /// The handle count
         size_t handle_count_;
         /// The file mutex
         std::shared_mutex file_mutex_ = {};
-        /// The data size
-        size_t data_size_ = 0;
+        /// The file size
+        size_t file_size_ = 0;
+        /// The file statistics (if any)
+        std::shared_ptr<FileStatisticsCollector> file_stats = nullptr;
+
         /// XXX Make chunked to upgrade from url to cached version
         std::optional<DataBuffer> data_buffer_ = std::nullopt;
         /// The data file descriptor (if any)
         std::optional<uint32_t> data_fd_ = std::nullopt;
         /// The data URL (if any)
         std::optional<std::string> data_url_ = std::nullopt;
-        /// The file statistics
-        FileStatisticsCollector *file_stats = nullptr;
 
        public:
         /// Constructor
@@ -131,14 +132,14 @@ class WebFileSystem : public duckdb::FileSystem {
     /// The pinned files (e.g. buffers)
     std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
     /// The file statistics
-    std::unordered_map<std::string_view, std::unique_ptr<FileStatisticsCollector>> file_stats = {};
+    std::unordered_map<std::string_view, std::shared_ptr<FileStatisticsCollector>> file_stats = {};
 
     /// Allocate a file id.
     /// XXX This could of course overflow....
     /// Make this a uint64 with emscripten BigInts maybe.
     inline uint32_t AllocateFileID() { return ++next_file_id_; }
-    /// Drop a file
-    bool DropFile(WebFile *file, std::unique_lock<std::mutex> &fs_guard);
+    /// Copy a blob to a buffer
+    void CopyBlobToBuffer(WebFile &file, std::shared_lock<std::shared_mutex> &file_guard);
 
    public:
     /// Constructor
