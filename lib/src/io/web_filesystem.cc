@@ -244,7 +244,20 @@ std::string WebFileSystem::WebFile::GetInfo() const {
 }
 
 /// Copy a blob to a buffer
-void WebFileSystem::CopyBlobToBuffer(WebFile &file, std::shared_lock<std::shared_mutex> &file_guard) {}
+void WebFileSystem::CopyBlobToBuffer(WebFile &file, std::shared_lock<std::shared_mutex> &file_guard) {
+    file_guard.unlock();
+    {
+        std::unique_lock<std::shared_mutex> excl_file_guard{file.file_mutex_};
+        if (file.data_protocol_ != DataProtocol::BLOB) return;
+
+        // Read the entire blob as buffer
+        std::unique_ptr<char[]> buffer{new char[file.file_size_]};
+        duckdb_web_fs_file_read(file.file_id_, buffer.get(), file.file_size_, 0);
+        file.data_protocol_ = DataProtocol::BUFFER;
+        file.data_buffer_ = DataBuffer{std::move(buffer), file.file_size_};
+    }
+    file_guard.lock();
+}
 
 /// Constructor
 WebFileSystem::WebFileSystem() {
@@ -442,6 +455,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
         // Blobs are always copied to a buffer on first write
         case DataProtocol::BLOB:
             CopyBlobToBuffer(file, file_guard);
+            // Treat further as buffer
 
         // Buffers are trans
         case DataProtocol::BUFFER: {
