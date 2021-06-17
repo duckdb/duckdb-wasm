@@ -325,7 +325,7 @@ class FileSystemBuffer {
     /// Flush file matching name to disk
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
-    void Flush();
+    void FlushFiles();
 
     /// Returns the page ids of all pages that are in the FIFO list in FIFO order.
     std::vector<uint64_t> GetFIFOList() const;

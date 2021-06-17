@@ -55,6 +55,37 @@ namespace io {
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
 
+/// Enable file statistics
+void WebFileSystem::EnableFileStatistics(std::string_view path, bool enable) {
+    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    auto stats_iter = file_stats.find(path);
+    if (stats_iter != file_stats.end()) {
+        if (enable) {
+            auto [iter, ok] = file_stats.insert({path, std::make_unique<FileStatisticsCollector>()});
+            auto file_iter = files_by_name_.find(path);
+            if (file_iter != files_by_name_.end()) {
+                file_iter->second->file_stats = iter->second.get();
+            }
+        } else {
+            file_stats.erase(stats_iter);
+            auto file_iter = files_by_name_.find(path);
+            if (file_iter != files_by_name_.end()) {
+                file_iter->second->file_stats = nullptr;
+            }
+        }
+    }
+}
+
+/// Export file statistics
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebFileSystem::ExportFilePageStatistics(std::string_view path) {
+    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    auto stats_iter = file_stats.find(path);
+    if (stats_iter != file_stats.end()) {
+        return stats_iter->second->ExportPageStatistics();
+    }
+    return arrow::Status::Invalid("Statistics are not enabled for file: ", path);
+}
+
 void WebFileSystem::DataBuffer::Resize(size_t n) {
     if (n > capacity_) {
         auto cap = std::max(capacity_ + capacity_ + capacity_ / 4, n);
@@ -269,6 +300,11 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         files_by_name_.insert({file_name, file.get()});
     } else {
         file_ptr = iter->second;
+
+        // File statistic tracking?
+        if (auto iter = file_stats.find(data_url); iter != file_stats.end()) {
+            iter->second->Resize(file_ptr->data_size_);
+        }
     }
     auto handle = std::make_unique<WebFileHandle>(*this, file_ptr->file_name_, *file_ptr);
 
@@ -315,6 +351,7 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    if (file.file_stats) file.file_stats->RegisterPageRead(file_hdl.position_, nr_bytes);
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER: {
             auto data_size = file.data_buffer_->Size();
@@ -347,6 +384,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    if (file.file_stats) file.file_stats->RegisterPageWrite(file_hdl.position_, nr_bytes);
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER: {
             auto end = file_hdl.position_ + nr_bytes;
@@ -413,6 +451,7 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     std::unique_lock<std::shared_mutex> file_guard{file_hdl.file_->file_mutex_};
+    if (file.file_stats) file.file_stats->Resize(new_size);
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER:
             file.data_buffer_->Resize(new_size);

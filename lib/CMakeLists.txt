@@ -119,19 +119,20 @@ include_directories("${CMAKE_SOURCE_DIR}/include" "${CMAKE_BINARY_DIR}/include"
 add_library(
   duckdb_web
   ${CMAKE_SOURCE_DIR}/src/csv_table_options.cc
-  ${CMAKE_SOURCE_DIR}/src/json_analyzer.cc
-  ${CMAKE_SOURCE_DIR}/src/json_parser.cc
-  ${CMAKE_SOURCE_DIR}/src/json_table.cc
-  ${CMAKE_SOURCE_DIR}/src/json_table_options.cc
-  ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
   ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc
+  ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc
   ${CMAKE_SOURCE_DIR}/src/io/filesystem_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/io/glob.cc
   ${CMAKE_SOURCE_DIR}/src/io/ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/web_filesystem.cc
+  ${CMAKE_SOURCE_DIR}/src/json_analyzer.cc
+  ${CMAKE_SOURCE_DIR}/src/json_parser.cc
+  ${CMAKE_SOURCE_DIR}/src/json_table.cc
+  ${CMAKE_SOURCE_DIR}/src/json_table_options.cc
+  ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
   ${CMAKE_SOURCE_DIR}/src/miniz_zipper.cc
   ${CMAKE_SOURCE_DIR}/src/wasm_response.cc
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
