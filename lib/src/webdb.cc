@@ -290,7 +290,7 @@ arrow::Status WebDB::SetFileDescriptor(uint32_t file_id, uint32_t fd) {
 arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    return web_fs->GetFileInfo(file_id);
+    return web_fs->GetFileInfoJSON(file_id);
 }
 /// Enable file statistics
 arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
