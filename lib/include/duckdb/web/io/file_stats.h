@@ -18,7 +18,7 @@ namespace io {
 /// A collector for file statistics.
 /// Does not need to be thread-safe since we acquire a directory latch anyway to locate the page.
 class FileStatisticsCollector {
-    static constexpr size_t PAGE_SIZE_SHIFT = 13;
+    static constexpr size_t PAGE_SIZE_SHIFT = 14;
 
    protected:
     /// The file statistics
@@ -86,7 +86,7 @@ class FileStatisticsCollector {
     }
 
     /// Encode the page statistics
-    /// lsb 		          msb
+    /// lsb 		             msb
     /// 0000  0000   0000     0000
     /// reads writes prefetch unused
     ///

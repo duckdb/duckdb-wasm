@@ -224,6 +224,23 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
+                case WorkerRequestType.ENABLE_FILE_STATISTICS: {
+                    this._bindings.enableFileStatistics(request.data[0], request.data[1]);
+                    this.sendOK(request);
+                    break;
+                }
+                case WorkerRequestType.EXPORT_FILE_PAGE_STATISTICS: {
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.FILE_PAGE_STATISTICS,
+                            data: this._bindings.exportFilePageStatistics(request.data),
+                        },
+                        [],
+                    );
+                    break;
+                }
                 case WorkerRequestType.ZIP_EXTRACT_FILE: {
                     if (!this._zip) {
                         this.failWith(request, new Error('zip plugin not loaded'));

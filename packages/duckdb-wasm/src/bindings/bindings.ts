@@ -110,6 +110,28 @@ export abstract class DuckDBBindings {
         return this._instance!.ccall('duckdb_web_get_feature_flags', 'number', [], []);
     }
 
+    /** Enable tracking of file statistics */
+    public enableFileStatistics(file: string, enable: boolean): void {
+        const [s, d, n] = this._instance!.ccall(
+            'duckdb_web_get_feature_flags',
+            null,
+            ['string', 'boolean'],
+            [file, enable],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+    }
+    /** Export page statistics */
+    public exportFilePageStatistics(file: string): Uint16Array {
+        const [s, d, n] = this._instance!.ccall('duckdb_web_export_file_page_stats', null, ['string'], [file]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const res = copyBuffer(this.mod, d, n);
+        return new Uint16Array(res.buffer);
+    }
+
     /** Connect to database */
     public connect(): DuckDBConnection {
         const instance = this._instance!;
