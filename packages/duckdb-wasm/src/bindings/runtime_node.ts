@@ -32,7 +32,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         NODE_RUNTIME.fileInfoCache.set(fileId, info);
         return info as DuckDBFileInfo;
     },
-    duckdb_web_fs_file_open(mod: DuckDBModule, fileId: number): void {
+    openFile(mod: DuckDBModule, fileId: number): void {
         NODE_RUNTIME.fileInfoCache.delete(fileId);
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
@@ -57,8 +57,8 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 throw Error('Not implemented');
         }
     },
-    duckdb_web_fs_file_sync: (_mod: DuckDBModule, _fileId: number) => {},
-    duckdb_web_fs_file_close: (mod: DuckDBModule, fileId: number) => {
+    syncFile: (_mod: DuckDBModule, _fileId: number) => {},
+    closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         NODE_RUNTIME.fileInfoCache.delete(fileId);
         switch (file?.data_protocol) {
@@ -75,7 +75,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_truncate: (mod: DuckDBModule, fileId: number, newSize: number) => {
+    truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
@@ -89,7 +89,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 throw Error('Not Implemented');
         }
     },
-    duckdb_web_fs_file_read: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
+    readFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
@@ -103,7 +103,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_write: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
+    writeFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
@@ -116,7 +116,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_get_size: (mod: DuckDBModule, fileId: number): number => {
+    getFileSize: (mod: DuckDBModule, fileId: number): number => {
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
@@ -130,7 +130,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    duckdb_web_fs_file_get_last_modified_time: (mod: DuckDBModule, fileId: number) => {
+    getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.NATIVE: {
@@ -145,32 +145,32 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         return 0;
     },
 
-    duckdb_web_fs_directory_exists: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+    checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
         return fs.existsSync(path);
     },
-    duckdb_web_fs_directory_create: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+    createDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
         return fs.mkdirSync(path);
     },
-    duckdb_web_fs_directory_remove: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+    removeDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
         return fs.rmdirSync(path);
     },
-    duckdb_web_fs_directory_list_files: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
+    listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
         throw Error('Not Implemented');
     },
-    duckdb_web_fs_glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    duckdb_web_fs_file_move: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
+    glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    moveFile: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
         const from = decodeText(mod.HEAPU8.subarray(fromPtr, fromPtr + fromLen));
         const to = decodeText(mod.HEAPU8.subarray(toPtr, toPtr + toLen));
         return fs.renameSync(from, to);
     },
-    duckdb_web_fs_file_exists: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+    checkFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
         return fs.existsSync(path);
     },
-    duckdb_web_fs_file_remove: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+    removeFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
         return fs.rmSync(path);
     },
