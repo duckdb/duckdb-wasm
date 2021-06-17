@@ -84,7 +84,11 @@ class WebFileSystem : public duckdb::FileSystem {
             : file_id_(file_id), file_name_(file_name), data_protocol_(protocol), handle_count_(0) {}
 
         /// Get the file info as json
-        std::string GetInfo() const;
+        std::string GetInfoJSON() const;
+        /// Get the data protocol
+        auto &GetDataProtocol() const { return data_protocol_; }
+        /// Get the data URL
+        auto &GetDataURL() const { return data_url_; }
 
         /// Construct file of URL
         static std::unique_ptr<WebFile> URL(uint32_t file_id, std::string_view file_name, std::string_view file_url);
@@ -149,10 +153,14 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Delete copy constructor
     WebFileSystem(const WebFileSystem &other) = delete;
 
+    /// Get a file info as JSON string
+    inline WebFile *GetFile(uint32_t file_id) const {
+        return files_by_id_.count(file_id) ? files_by_id_.at(file_id).get() : nullptr;
+    }
     /// Set a file descriptor
     arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor);
     /// Get a file info as JSON string
-    arrow::Result<std::string> GetFileInfo(uint32_t file_id);
+    arrow::Result<std::string> GetFileInfoJSON(uint32_t file_id);
     /// Register a file URL
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name,
                                                                   std::string_view file_url);

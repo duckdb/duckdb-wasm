@@ -1,5 +1,6 @@
 #include "duckdb/web/io/web_filesystem.h"
 
+#include <duckdb/common/file_buffer.hpp>
 #include <iostream>
 #include <mutex>
 #include <regex>
@@ -13,6 +14,7 @@
 #include "arrow/type_fwd.h"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/debug.h"
+#include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/glob.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/scope_guard.h"
@@ -24,20 +26,61 @@
 static const std::function<void(std::string, bool)> *list_files_callback = {};
 static std::vector<std::string> *glob_results = {};
 
+namespace duckdb {
+namespace web {
+namespace io {
+
+#ifndef EMSCRIPTEN
+/// The native filesystem to fake the webfs runtime.
+/// This is only used for tests.
+static auto NATIVE_FS = CreateDefaultFileSystem();
+/// The thread local file handles
+thread_local static std::unordered_map<size_t, std::unique_ptr<FileHandle>> LOCAL_FS_HANDLES;
+/// Get or open a file and throw if something is off
+static duckdb::FileHandle &GetOrOpen(size_t file_id) {
+    auto file = WebFileSystem::Get()->GetFile(file_id);
+    if (!file) throw std::runtime_error("unknown file");
+    switch (file->GetDataProtocol()) {
+        case WebFileSystem::DataProtocol::NATIVE: {
+            auto [it, ok] = LOCAL_FS_HANDLES.insert(
+                {file_id, NATIVE_FS->OpenFile(*file->GetDataURL(), duckdb::FileFlags::FILE_FLAGS_FILE_CREATE |
+                                                                       duckdb::FileFlags::FILE_FLAGS_WRITE)});
+            return *it->second;
+        }
+        case WebFileSystem::DataProtocol::BUFFER:
+        case WebFileSystem::DataProtocol::BLOB:
+        case WebFileSystem::DataProtocol::HTTP:
+            throw std::logic_error("data protocol not supported by fake webfs runtime");
+    }
+    throw std::logic_error("unknown data protocol");
+}
+
+#endif
+
 #ifdef EMSCRIPTEN
 #define RT_FN(FUNC, IMPL) extern "C" FUNC;
 #else
 #define RT_FN(FUNC, IMPL) FUNC IMPL;
 #endif
-
-RT_FN(void duckdb_web_fs_file_open(size_t fileId), {});
-RT_FN(void duckdb_web_fs_file_sync(size_t fileId), {});
-RT_FN(void duckdb_web_fs_file_close(size_t fileId), {});
-RT_FN(void duckdb_web_fs_file_truncate(size_t fileId, double newSize), {});
-RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t fileId), { return 0; });
-RT_FN(double duckdb_web_fs_file_get_size(size_t fileId), { return 0.0; });
-RT_FN(ssize_t duckdb_web_fs_file_read(size_t fileId, void *buffer, ssize_t bytes, double location), { return 0; });
-RT_FN(ssize_t duckdb_web_fs_file_write(size_t fileId, void *buffer, ssize_t bytes, double location), { return 0; });
+RT_FN(void duckdb_web_fs_file_open(size_t file_id), { GetOrOpen(file_id); });
+RT_FN(void duckdb_web_fs_file_sync(size_t file_id), {});
+RT_FN(void duckdb_web_fs_file_close(size_t file_id), { LOCAL_FS_HANDLES.erase(file_id); });
+RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOrOpen(file_id).Truncate(new_size); });
+RT_FN(double duckdb_web_fs_file_get_size(size_t file_id), { return GetOrOpen(file_id).GetFileSize(); });
+RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t file_id), {
+    auto &file = GetOrOpen(file_id);
+    return NATIVE_FS->GetLastModifiedTime(file);
+});
+RT_FN(ssize_t duckdb_web_fs_file_read(size_t file_id, void *buffer, ssize_t bytes, double location), {
+    auto &file = GetOrOpen(file_id);
+    file.Seek(location);
+    return file.Read(buffer, bytes);
+});
+RT_FN(ssize_t duckdb_web_fs_file_write(size_t file_id, void *buffer, ssize_t bytes, double location), {
+    auto &file = GetOrOpen(file_id);
+    file.Seek(location);
+    return file.Write(buffer, bytes);
+});
 RT_FN(void duckdb_web_fs_directory_remove(const char *path, size_t pathLen), {});
 RT_FN(bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen), { return false; });
 RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {});
@@ -48,10 +91,6 @@ RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), { return
 RT_FN(bool duckdb_web_fs_file_remove(const char *path, size_t pathLen), { return false; });
 
 #undef RT_FN
-
-namespace duckdb {
-namespace web {
-namespace io {
 
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
@@ -216,7 +255,7 @@ std::unique_ptr<WebFileSystem::WebFile> WebFileSystem::WebFile::Buffer(uint32_t 
 }
 
 /// Get the info
-std::string WebFileSystem::WebFile::GetInfo() const {
+std::string WebFileSystem::WebFile::GetInfoJSON() const {
     DEBUG_TRACE();
     // Start the JSON document
     rapidjson::Document doc;
@@ -315,13 +354,13 @@ arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_d
 }
 
 /// Get a file info as JSON string
-arrow::Result<std::string> WebFileSystem::GetFileInfo(uint32_t file_id) {
+arrow::Result<std::string> WebFileSystem::GetFileInfoJSON(uint32_t file_id) {
     DEBUG_TRACE();
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
     if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
     auto &file = *iter->second;
-    return file.GetInfo();
+    return file.GetInfoJSON();
 }
 
 /// Open a file
@@ -334,7 +373,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
     std::string_view data_url = url;
     DataProtocol data_proto = inferDataProtocol(url);
 
-    // We know that file already?
+    // New file?
     WebFile *file_ptr = nullptr;
     auto iter = files_by_name_.find(data_url);
     if (iter == files_by_name_.end()) {
@@ -343,9 +382,6 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         auto file_id = file->file_id_;
         file_ptr = file.get();
         std::string_view file_name{file->file_name_};
-        assert(!files_by_id_.count(file_id));
-        assert(!files_by_name_.count(data_url));
-        std::cout << file_id << " " << files_by_id_.count(file_id) << std::endl;
         files_by_id_.insert({file_id, std::move(file)});
         files_by_name_.insert({file_name, file.get()});
     } else {
