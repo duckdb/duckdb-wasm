@@ -17,6 +17,8 @@ export enum WorkerRequestType {
     REGISTER_FILE_BUFFER = 'REGISTER_FILE_BUFFER',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
+    ENABLE_FILE_STATISTICS = 'ENABLE_FILE_STATISTICS',
+    EXPORT_FILE_PAGE_STATISTICS = 'EXPORT_FILE_PAGE_STATISTICS',
     OPEN = 'OPEN',
     CONNECT = 'CONNECT',
     DISCONNECT = 'DISCONNECT',
@@ -38,6 +40,7 @@ export enum WorkerResponseType {
     SUCCESS = 'SUCCESS',
     CONNECTION_INFO = 'CONNECTION_INFO',
     FILE_BUFFER = 'FILE_BUFFER',
+    FILE_PAGE_STATISTICS = 'FILE_PAGE_STATISTICS',
     QUERY_PLAN = 'QUERY_PLAN',
     QUERY_RESULT = 'QUERY_RESULT',
     QUERY_RESULT_CHUNK = 'QUERY_RESULT_CHUNK',
@@ -95,6 +98,8 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
+    | WorkerRequest<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean]>
+    | WorkerRequest<WorkerRequestType.EXPORT_FILE_PAGE_STATISTICS, string>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
     | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>
@@ -111,6 +116,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.ERROR, any>
     | WorkerResponse<WorkerResponseType.FEATURE_FLAGS, number>
     | WorkerResponse<WorkerResponseType.FILE_BUFFER, Uint8Array>
+    | WorkerResponse<WorkerResponseType.FILE_PAGE_STATISTICS, Uint16Array>
     | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
     | WorkerResponse<WorkerResponseType.OK, null>
     | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
@@ -133,6 +139,8 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>
+    | WorkerTask<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean], null>
+    | WorkerTask<WorkerRequestType.EXPORT_FILE_PAGE_STATISTICS, string, Uint16Array>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
     | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>

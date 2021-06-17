@@ -45,7 +45,7 @@ void duckdb_web_enable_file_stats(WASMResponse* packed, const char* file_name, b
     auto& webdb = WebDB::Get();
     WASMResponseBuffer::Get().Store(*packed, webdb.EnableFileStatistics(file_name, enable));
 }
-/// Track file statistics
+/// Export page statistics
 void duckdb_web_export_file_page_stats(WASMResponse* packed, const char* file_name) {
     auto& webdb = WebDB::Get();
     WASMResponseBuffer::Get().Store(*packed, webdb.ExportFilePageStatistics(file_name));

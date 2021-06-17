@@ -130,7 +130,6 @@ class WebFileSystem : public duckdb::FileSystem {
     uint32_t next_file_id_ = 0;
     /// The pinned files (e.g. buffers)
     std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
-
     /// The file statistics
     std::unordered_map<std::string_view, std::unique_ptr<FileStatisticsCollector>> file_stats = {};
 

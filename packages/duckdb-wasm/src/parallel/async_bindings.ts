@@ -198,6 +198,18 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
+            case WorkerRequestType.ENABLE_FILE_STATISTICS:
+                if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.EXPORT_FILE_PAGE_STATISTICS:
+                if (response.type == WorkerResponseType.FILE_PAGE_STATISTICS) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.CONNECT:
                 if (response.type == WorkerResponseType.CONNECTION_INFO) {
                     task.promiseResolver(response.data);
