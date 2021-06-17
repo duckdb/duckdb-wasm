@@ -122,7 +122,7 @@ TEST(FileSystemBufferTest, PersistentRestart) {
             page.MarkAsDirty();
         }
     }
-    buffer->Flush();
+    buffer->FlushFiles();
     files.clear();
     ASSERT_EQ(fs::file_size(file1_path), PageCount * page_size);
     ASSERT_EQ(fs::file_size(file2_path), PageCount * page_size);

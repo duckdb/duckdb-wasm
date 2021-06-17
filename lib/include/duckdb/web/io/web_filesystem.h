@@ -10,6 +10,7 @@
 #include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/wasm_response.h"
 #include "nonstd/span.h"
 
@@ -65,12 +66,16 @@ class WebFileSystem : public duckdb::FileSystem {
         size_t handle_count_;
         /// The file mutex
         std::shared_mutex file_mutex_ = {};
+        /// The data size
+        size_t data_size_ = 0;
         /// XXX Make chunked to upgrade from url to cached version
         std::optional<DataBuffer> data_buffer_ = std::nullopt;
         /// The data file descriptor (if any)
         std::optional<uint32_t> data_fd_ = std::nullopt;
         /// The data URL (if any)
         std::optional<std::string> data_url_ = std::nullopt;
+        /// The file statistics
+        FileStatisticsCollector *file_stats = nullptr;
 
        public:
         /// Constructor
@@ -126,6 +131,9 @@ class WebFileSystem : public duckdb::FileSystem {
     /// The pinned files (e.g. buffers)
     std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
 
+    /// The file statistics
+    std::unordered_map<std::string_view, std::unique_ptr<FileStatisticsCollector>> file_stats = {};
+
     /// Allocate a file id.
     /// XXX This could of course overflow....
     /// Make this a uint64 with emscripten BigInts maybe.
@@ -151,6 +159,11 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);
+    /// Enable file statistics
+    void EnableFileStatistics(std::string_view path, bool enable = true);
+    /// Export file page statistics
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFilePageStatistics(std::string_view path);
+
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                  FileCompressionType compression) override;

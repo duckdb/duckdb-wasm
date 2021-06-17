@@ -80,7 +80,7 @@ TEST(ZipperTest, ExtractEntryToPath) {
     auto written = zipper.ExtractEntryToPath(0, out_path.c_str());
     ASSERT_EQ(entry["sizeUncompressed"].GetUint(), written.ValueUnsafe());
 
-    filesystem_buffer->Flush();
+    filesystem_buffer->FlushFiles();
 
     std::ifstream out_ifs{out_path};
     std::ifstream expected_ifs{expected_path};
@@ -101,7 +101,7 @@ TEST(ZipperTest, ExtractPathToPath) {
 
     std::string to_extract = "assistenten.parquet";
     auto written = zipper.ExtractPathToPath(to_extract.c_str(), out_path.c_str());
-    filesystem_buffer->Flush();
+    filesystem_buffer->FlushFiles();
 
     std::ifstream out_ifs{out_path};
     std::ifstream expected_ifs{expected_path};

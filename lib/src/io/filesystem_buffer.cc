@@ -193,7 +193,7 @@ FileSystemBuffer::FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesyste
     : page_size_bits(page_size_bits), page_capacity(page_capacity), filesystem(std::move(filesystem)) {}
 
 /// Destructor
-FileSystemBuffer::~FileSystemBuffer() { Flush(); }
+FileSystemBuffer::~FileSystemBuffer() { FlushFiles(); }
 
 std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
                                                                       std::unique_ptr<duckdb::FileHandle> handle) {
@@ -563,7 +563,7 @@ void FileSystemBuffer::FlushFile(std::string_view path) {
 }
 
 /// Flush all files in the buffer
-void FileSystemBuffer::Flush() {
+void FileSystemBuffer::FlushFiles() {
     // Collect files
     auto dir_guard = Lock();
     std::vector<std::shared_ptr<FileRef>> file_refs;

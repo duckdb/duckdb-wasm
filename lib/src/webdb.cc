@@ -248,7 +248,7 @@ WebDB::Connection* WebDB::Connect() {
 void WebDB::Disconnect(Connection* session) { connections_.erase(session); }
 
 /// Flush all file buffers
-void WebDB::FlushFiles() { filesystem_buffer_->Flush(); }
+void WebDB::FlushFiles() { filesystem_buffer_->FlushFiles(); }
 /// Flush file by path
 void WebDB::FlushFile(std::string_view path) { filesystem_buffer_->FlushFile(path); }
 
@@ -291,6 +291,19 @@ arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
     return web_fs->GetFileInfo(file_id);
+}
+/// Enable file statistics
+arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    web_fs->EnableFileStatistics(path, enable);
+    return arrow::Status::OK();
+}
+/// Export file page statistics
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFilePageStatistics(std::string_view path) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    return web_fs->ExportFilePageStatistics(path);
 }
 
 /// Copy a file to a buffer
