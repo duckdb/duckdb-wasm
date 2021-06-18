@@ -126,8 +126,8 @@ class WebDB {
 
     /// Enable file statistics
     arrow::Status EnableFileStatistics(std::string_view path, bool enable);
-    /// Export file page statistics
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFilePageStatistics(std::string_view path);
+    /// Export file range acceses
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileRangeStatistics(std::string_view path);
 
     /// Get the static webdb instance
     static WebDB& Get();
