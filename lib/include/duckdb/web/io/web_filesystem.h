@@ -169,9 +169,10 @@ class WebFileSystem : public duckdb::FileSystem {
                                                                      DataBuffer file_buffer);
     /// Enable file statistics
     void EnableFileStatistics(std::string_view path, bool enable = true);
-    /// Export file page statistics
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFilePageStatistics(std::string_view path);
+    /// Export file range accesses
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileRangeStatistics(std::string_view path);
 
+   public:
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                  FileCompressionType compression) override;
@@ -239,6 +240,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// in a file on-disk are much cheaper than e.g. random reads in a file over the network
     bool OnDiskFile(FileHandle &handle) override;
 
+   public:
     /// Get a web filesystem
     static WebFileSystem *Get();
 };
