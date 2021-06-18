@@ -122,9 +122,9 @@ export abstract class DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
     }
-    /** Export range statistics */
-    public exportFileRangeStatistics(file: string): Uint16Array {
-        const [s, d, n] = this._instance!.ccall('duckdb_web_export_file_range_stats', null, ['string'], [file]);
+    /** Export block statistics */
+    public exportFileBlockStatistics(file: string): Uint16Array {
+        const [s, d, n] = this._instance!.ccall('duckdb_web_export_file_block_stats', null, ['string'], [file]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }

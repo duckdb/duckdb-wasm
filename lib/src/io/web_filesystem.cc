@@ -148,11 +148,11 @@ void WebFileSystem::EnableFileStatistics(std::string_view path, bool enable) {
 }
 
 /// Export file statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebFileSystem::ExportFileRangeStatistics(std::string_view path) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebFileSystem::ExportFileBlockStatistics(std::string_view path) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto stats_iter = file_stats.find(path);
     if (stats_iter != file_stats.end()) {
-        return stats_iter->second->ExportRangeStatistics();
+        return stats_iter->second->ExportBlockStatistics();
     }
     return arrow::Status::Invalid("Statistics are not enabled for file: ", path);
 }

@@ -26,29 +26,29 @@ static uint16_t encodeHits(uint64_t hits) {
 
 /// Resize the file
 void FileStatisticsCollector::Resize(uint64_t n) {
-    auto range_count = std::max<size_t>(n >> MIN_RANGE_SHIFT, 1);
-    auto range_shift = MIN_RANGE_SHIFT;
-    for (; range_count > MAX_RANGE_COUNT; range_count >>= 1, ++range_shift)
+    auto block_count = std::max<size_t>(n >> MIN_RANGE_SHIFT, 1);
+    auto block_shift = MIN_RANGE_SHIFT;
+    for (; block_count > MAX_RANGE_COUNT; block_count >>= 1, ++block_shift)
         ;
-    if (range_count == range_count_ && range_shift == range_shift_) return;
-    range_stats_ = std::unique_ptr<RangeStatistics[]>(new RangeStatistics[range_count]);
-    range_shift_ = range_shift;
-    range_count_ = range_count;
-    std::memset(range_stats_.get(), 0, range_count_ * sizeof(RangeStatistics));
+    if (block_count == block_count_ && block_shift == block_shift_) return;
+    block_stats_ = std::unique_ptr<BlockStatistics[]>(new BlockStatistics[block_count]);
+    block_shift_ = block_shift;
+    block_count_ = block_count;
+    std::memset(block_stats_.get(), 0, block_count_ * sizeof(BlockStatistics));
 }
 
-/// Encode the range statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportRangeStatistics() const {
-    auto buffer = arrow::AllocateBuffer(range_count_ * sizeof(uint16_t));
+/// Encode the block statistics
+arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportBlockStatistics() const {
+    auto buffer = arrow::AllocateBuffer(block_count_ * sizeof(uint16_t));
     auto* stats = reinterpret_cast<uint16_t*>(buffer.ValueOrDie()->mutable_data());
-    for (size_t i = 0; i < range_count_; ++i) {
+    for (size_t i = 0; i < block_count_; ++i) {
         auto& value = stats[i];
         value = 0;
-        value |= encodeHits(range_stats_[i].prefetches);
+        value |= encodeHits(block_stats_[i].prefetches);
         value <<= 4;
-        value |= encodeHits(range_stats_[i].writes);
+        value |= encodeHits(block_stats_[i].writes);
         value <<= 4;
-        value |= encodeHits(range_stats_[i].reads);
+        value |= encodeHits(block_stats_[i].reads);
     }
     return buffer;
 }

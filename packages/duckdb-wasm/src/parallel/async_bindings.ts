@@ -204,8 +204,8 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-            case WorkerRequestType.EXPORT_FILE_RANGE_STATISTICS:
-                if (response.type == WorkerResponseType.FILE_RANGE_STATISTICS) {
+            case WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS:
+                if (response.type == WorkerResponseType.FILE_BLOCK_STATISTICS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -417,10 +417,10 @@ export class AsyncDuckDB {
         return await this.postTask(task, []);
     }
 
-    /** Export file range statistics */
-    public async exportFileRangeStatistics(name: string): Promise<Uint16Array> {
-        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_RANGE_STATISTICS, string, Uint16Array>(
-            WorkerRequestType.EXPORT_FILE_RANGE_STATISTICS,
+    /** Export file block statistics */
+    public async exportFileBlockStatistics(name: string): Promise<Uint16Array> {
+        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS, string, Uint16Array>(
+            WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS,
             name,
         );
         return await this.postTask(task, []);

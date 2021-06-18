@@ -45,10 +45,10 @@ void duckdb_web_enable_file_stats(WASMResponse* packed, const char* file_name, b
     auto& webdb = WebDB::Get();
     WASMResponseBuffer::Get().Store(*packed, webdb.EnableFileStatistics(file_name, enable));
 }
-/// Export range statistics
-void duckdb_web_export_file_range_stats(WASMResponse* packed, const char* file_name) {
+/// Export block statistics
+void duckdb_web_export_file_block_stats(WASMResponse* packed, const char* file_name) {
     auto& webdb = WebDB::Get();
-    WASMResponseBuffer::Get().Store(*packed, webdb.ExportFileRangeStatistics(file_name));
+    WASMResponseBuffer::Get().Store(*packed, webdb.ExportFileBlockStatistics(file_name));
 }
 /// Drop a file
 void duckdb_web_fs_drop_file(WASMResponse* packed, const char* file_name) {
