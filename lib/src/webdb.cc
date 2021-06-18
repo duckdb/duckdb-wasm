@@ -300,10 +300,10 @@ arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
     return arrow::Status::OK();
 }
 /// Export file page statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileRangeStatistics(std::string_view path) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileBlockStatistics(std::string_view path) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    return web_fs->ExportFileRangeStatistics(path);
+    return web_fs->ExportFileBlockStatistics(path);
 }
 
 /// Copy a file to a buffer

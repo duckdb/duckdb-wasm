@@ -31,7 +31,7 @@ TEST(WebFileSystemTest, ReadStatistics) {
         ASSERT_EQ(reader[i], i);
     }
 
-    auto stats_buffer = webfs.ExportFileRangeStatistics("TEST");
+    auto stats_buffer = webfs.ExportFileBlockStatistics("TEST");
     ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
     ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(uint16_t));
     auto stats = reinterpret_cast<const uint16_t*>(stats_buffer.ValueUnsafe()->data());

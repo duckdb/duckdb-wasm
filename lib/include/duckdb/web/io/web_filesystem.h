@@ -169,8 +169,8 @@ class WebFileSystem : public duckdb::FileSystem {
                                                                      DataBuffer file_buffer);
     /// Enable file statistics
     void EnableFileStatistics(std::string_view path, bool enable = true);
-    /// Export file range accesses
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileRangeStatistics(std::string_view path);
+    /// Export file block accesses
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileBlockStatistics(std::string_view path);
 
    public:
     /// Open a file
