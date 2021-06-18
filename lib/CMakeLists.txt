@@ -177,8 +177,8 @@ if(EMSCRIPTEN)
           _duckdb_web_flush_file, \
           _duckdb_web_copy_file_to_buffer, \
           _duckdb_web_copy_file_to_path, \
-          _duckdb_web_enable_file_statistics, \
-          _duckdb_web_export_file_range_statistics, \
+          _duckdb_web_enable_file_stats, \
+          _duckdb_web_export_file_range_stats, \
           _duckdb_web_tokenize, \
           _duckdb_web_connect, \
           _duckdb_web_disconnect, \
