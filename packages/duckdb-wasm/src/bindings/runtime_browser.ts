@@ -70,7 +70,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB:
                 if (!file.data_url) return;
-                URL.revokeObjectURL(file.data_url);
                 file.data_url = null;
                 break;
             case DuckDBDataProtocol.HTTP:
@@ -157,6 +156,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 } else {
                     throw Error(`HEAD ${file.data_url} returned non-success status: ${xhr.status} "${xhr.statusText}"`);
                 }
+            }
+
+            case DuckDBDataProtocol.BLOB: {
+                const blob = resolveBlob(file);
+                return blob.size;
             }
         }
         return 0;

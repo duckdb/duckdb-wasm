@@ -41,6 +41,17 @@ export function testFilesystem(
             await test();
             await test();
         });
+        if (typeof window !== 'undefined') {
+            it('Blob used once', async () => {
+                const studenten = await resolveData('/uni/studenten.parquet');
+                expect(studenten).not.toBeNull();
+                const studenten_blob = new Blob([studenten!]);
+                const studenten_url = URL.createObjectURL(studenten_blob);
+                await db().registerFileURL('studenten.parquet', studenten_url);
+                await test();
+                URL.revokeObjectURL(studenten_url);
+            });
+        }
     });
 
     describe('Parquet Scans', () => {
