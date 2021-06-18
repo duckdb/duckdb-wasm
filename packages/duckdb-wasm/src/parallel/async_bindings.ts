@@ -204,8 +204,8 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-            case WorkerRequestType.EXPORT_FILE_PAGE_STATISTICS:
-                if (response.type == WorkerResponseType.FILE_PAGE_STATISTICS) {
+            case WorkerRequestType.EXPORT_FILE_RANGE_STATISTICS:
+                if (response.type == WorkerResponseType.FILE_RANGE_STATISTICS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -406,6 +406,24 @@ export class AsyncDuckDB {
             [name, buffer],
         );
         return await this.postTask(task, [buffer.buffer]);
+    }
+
+    /** Enable file statistics */
+    public async enableFileStatistics(name: string, enable: boolean): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean], null>(
+            WorkerRequestType.ENABLE_FILE_STATISTICS,
+            [name, enable],
+        );
+        return await this.postTask(task, []);
+    }
+
+    /** Export file range statistics */
+    public async exportFileRangeStatistics(name: string): Promise<Uint16Array> {
+        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_RANGE_STATISTICS, string, Uint16Array>(
+            WorkerRequestType.EXPORT_FILE_RANGE_STATISTICS,
+            name,
+        );
+        return await this.postTask(task, []);
     }
 
     /** Copy a file to a buffer. */

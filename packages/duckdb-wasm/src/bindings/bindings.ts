@@ -113,7 +113,7 @@ export abstract class DuckDBBindings {
     /** Enable tracking of file statistics */
     public enableFileStatistics(file: string, enable: boolean): void {
         const [s, d, n] = this._instance!.ccall(
-            'duckdb_web_get_feature_flags',
+            'duckdb_web_enable_file_stats',
             null,
             ['string', 'boolean'],
             [file, enable],
@@ -122,9 +122,9 @@ export abstract class DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
     }
-    /** Export page statistics */
-    public exportFilePageStatistics(file: string): Uint16Array {
-        const [s, d, n] = this._instance!.ccall('duckdb_web_export_file_page_stats', null, ['string'], [file]);
+    /** Export range statistics */
+    public exportFileRangeStatistics(file: string): Uint16Array {
+        const [s, d, n] = this._instance!.ccall('duckdb_web_export_file_range_stats', null, ['string'], [file]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
