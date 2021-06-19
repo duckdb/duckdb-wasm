@@ -1,6 +1,6 @@
 use arrow::datatypes::{DataType, Field, Schema};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::Arc;
 
@@ -22,14 +22,14 @@ fn convert_tbl(
     // Create csv reader
     let tbl_file = fs::File::open(tbl_file_path)?;
     let reader = arrow::csv::ReaderBuilder::new()
-        .with_delimiter('|' as u8)
+        .with_delimiter(b'|')
         .with_schema(schema.clone())
         .with_batch_size(1024)
         .build(tbl_file)?;
 
     // Stream to parquet writer
     let parquet_file = fs::File::create(out_file_path)?;
-    let mut writer = parquet::arrow::ArrowWriter::try_new(parquet_file, schema.clone(), None)?;
+    let mut writer = parquet::arrow::ArrowWriter::try_new(parquet_file, schema, None)?;
 
     // Write all batches
     for batch in reader {
@@ -38,17 +38,14 @@ fn convert_tbl(
     writer.close()?;
 
     println!("OK");
-    return Ok(());
+    Ok(())
 }
 
 // const DECIMAL_12_2: DataType = DataType::Decimal(12, 2);
 // Not supported by the parquet arrow writer at the moment.
 const DECIMAL_12_2: DataType = DataType::Float64;
 
-pub fn convert_tbls(
-    tbl_dir: &PathBuf,
-    out_dir: &PathBuf,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     convert_tbl(
         tbl_dir.join("lineitem.tbl"),
         out_dir.join("lineitem.parquet"),
@@ -158,5 +155,5 @@ pub fn convert_tbls(
             Field::new("n_comment", DataType::Utf8, false),
         ])),
     )?;
-    return Ok(());
+    Ok(())
 }

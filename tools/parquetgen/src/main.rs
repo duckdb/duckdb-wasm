@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Invalid output directory: {}", arg);
             process::exit(1);
         }
-        return PathBuf::from(arg_path);
+        PathBuf::from(arg_path)
     };
 
     if let Some(ref matches) = matches.subcommand_matches("uni") {
