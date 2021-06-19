@@ -26,6 +26,6 @@
     },
     "scripts": {
         "build": "tsc",
-        "lint": "yarn run eslint src types"
+        "lint": "eslint src types"
     }
 }

@@ -12,7 +12,7 @@
         "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.release.js",
         "analyze:debug": "webpack --config webpack.debug.js --analyze",
         "analyze:release": "webpack --config webpack.release.js --analyze",
-        "lint": "yarn run eslint src types"
+        "lint": "eslint src types"
     },
     "engines": {
         "node": ">=14.13"
