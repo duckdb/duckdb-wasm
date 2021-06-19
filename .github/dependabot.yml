@@ -5,10 +5,8 @@ updates:
   schedule:
     interval: weekly
     day: sunday
-    timezone: PST8PDT
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
     interval: weekly
     day: sunday
-    timezone: PST8PDT
