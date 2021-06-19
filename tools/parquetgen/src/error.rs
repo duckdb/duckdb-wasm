@@ -8,9 +8,7 @@ pub struct Error {
 
 impl Error {
     pub fn new(msg: String) -> Box<Self> {
-        Box::new(Self {
-            message: msg.to_string(),
-        })
+        Box::new(Self { message: msg })
     }
 }
 
