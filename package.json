@@ -4,7 +4,7 @@
         "packages/*"
     ],
     "scripts": {
-        "fix": "yarn workspace @duckdb/duckdb-wasm lint --fix && yarn workspace @duckdb/benchmarks lint --fix && yarn workspace @duckdb/explorer lint --fix",
+        "fix": "yarn workspace @duckdb/duckdb-wasm lint --fix && yarn workspace @duckdb/benchmarks lint --fix && yarn workspace @duckdb/duckdb-wasm-shell lint --fix",
         "docs": "yarn workspace @duckdb/duckdb-wasm docs"
     }
 }
