@@ -87,22 +87,22 @@ lib_tests: lib
 	${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Debug the core library
-.PHONY: lib_tests
+.PHONY: lib_tests_lldb
 lib_tests_lldb: lib
 	lldb ${LIB_DEBUG_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Debug the core library
-.PHONY: lib_tests
+.PHONY: lib_tests_gdb
 lib_tests_gdb: lib
 	gdb --args ${LIB_DEBUG_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Test the core library
-.PHONY: lib_tests_relwithdebinfo
+.PHONY: lib_tests_rel
 lib_tests_rel: lib_relwithdebinfo
 	${LIB_RELWITHDEBINFO_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Test the core library
-.PHONY: lib_tests_relwithdebinfo_lldb
+.PHONY: lib_tests_rel_lldb
 lib_tests_rel_lldb: lib_relwithdebinfo
 	lldb ${LIB_RELWITHDEBINFO_DIR}/tester -- --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
@@ -117,6 +117,7 @@ benchmarks:
 	yarn workspace @duckdb/benchmarks build
 
 # Make sure we can access the wasm caches
+.PHONY: wasm_caches
 wasm_caches:
 	mkdir -p ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 	chown -R $(id -u):$(id -g) ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
@@ -169,7 +170,7 @@ duckdb_tests_browser: duckdb_debug
 	yarn workspace @duckdb/duckdb-wasm test:browser
 
 # Run the duckdb javascript tests in browser
-.PHONY: duckdb_tests_browser
+.PHONY: duckdb_tests_debug
 duckdb_tests_debug: duckdb_debug
 	yarn workspace @duckdb/duckdb-wasm test:browser:dbg
 
@@ -180,31 +181,36 @@ duckdb_tests_node: duckdb_debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: duckdb_tests_node_filter
-duckdb_tests_node_filter: duckdb
+duckdb_tests_node_filter:
 	yarn workspace @duckdb/duckdb-wasm test:node:filter
 
 # Build the explorer
-.PHONY: explorer
+.PHONY: explorer_release
 explorer_release:
 	yarn workspace @duckdb/explorer build:release
 
 # Start the shell dev server
+.PHONY: shell_start
 shell_start:
 	yarn workspace @duckdb/duckdb-wasm-shell start
 
 # Start the shell dev server with cross origin resource policies
+.PHONY: shell_start_corp
 shell_start_corp:
 	yarn workspace @duckdb/duckdb-wasm-shell start:corp
 
 # Build the shell
+.PHONY: shell
 shell:
 	yarn workspace @duckdb/duckdb-wasm-shell build:release
 
 # Build pages
+.PHONY: pages
 pages:
 	${ROOT_DIR}/scripts/build_pages.sh
 
 # Run a local pages server for tests
+.PHONY: pages_server
 pages_server:
 	python3 -m http.server 9003 --bind 127.0.0.1 --directory .pages
 
