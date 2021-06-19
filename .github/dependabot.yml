@@ -10,3 +10,8 @@ updates:
   schedule:
     interval: weekly
     day: sunday
+- package-ecosystem: gitsubmodule
+  directory: "/"
+  schedule:
+    interval: weekly
+    day: sunday
