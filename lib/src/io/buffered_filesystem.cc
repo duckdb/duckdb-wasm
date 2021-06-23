@@ -36,7 +36,7 @@ BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_ma
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
                                                                  FileCompressionType compression) {
-    auto file = file_page_buffer_->OpenFile(std::string_view{path});
+    auto file = file_page_buffer_->OpenFile(std::string_view{path}, flags, lock);  // XXX compression?
     return std::make_unique<BufferedFileHandle>(*this, std::move(file));
 }
 

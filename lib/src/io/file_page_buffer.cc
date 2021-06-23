@@ -1,6 +1,9 @@
+#include "duckdb/web/io/file_page_buffer.h"
+
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <duckdb/common/exception.hpp>
 #include <duckdb/common/file_system.hpp>
 #include <duckdb/parser/parser.hpp>
 #include <iostream>
@@ -14,7 +17,6 @@
 #include <variant>
 
 #include "duckdb/web/debug.h"
-#include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/scope_guard.h"
 
 /// Build a frame id
@@ -63,6 +65,9 @@ FilePageBuffer::BufferRef::BufferRef(FileRef& file, SharedFileGuard&& file_guard
 
 /// Mark a buffer ref as dirty
 void FilePageBuffer::BufferRef::MarkAsDirty() {
+    if ((file_->file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+        throw std::runtime_error("File is not opened in write mode");
+    }
     auto dir_guard = file_->buffer_.Lock();
     frame_->is_dirty = true;
 }
@@ -98,7 +103,7 @@ void FilePageBuffer::FileRef::LoadFrame(FilePageBuffer::BufferFrame& frame, File
     // Read data into frame
     assert(frame.data_size <= buffer_.GetPageSize());
     dir_guard.unlock();
-    buffer_.filesystem->Read(*file_->handle, frame.buffer.get(), frame.data_size, page_id * page_size);
+    buffer_.filesystem->Read(GetHandle(), frame.buffer.get(), frame.data_size, page_id * page_size);
     dir_guard.lock();
 
     // Register as loaded
@@ -194,13 +199,54 @@ FilePageBuffer::FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, u
 /// Destructor
 FilePageBuffer::~FilePageBuffer() { FlushFiles(); }
 
-std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path,
-                                                                  std::unique_ptr<duckdb::FileHandle> handle) {
+std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path, uint8_t flags,
+                                                                  duckdb::FileLockType lock_type) {
     DEBUG_TRACE();
     auto dir_guard = Lock();
+
     // Already added?
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
-        return std::make_unique<FileRef>(*this, *files.at(it->second));
+        auto* file = it->second;
+        // Is locked exclusively?
+        // We only allow one file ref with active WRITE_LOCK.
+        // Otherwise we wouldn't know when to release the WRITE_LOCK.
+        if (file->file_lock == duckdb::FileLockType::WRITE_LOCK) {
+            std::string path_buf{path};
+            throw duckdb::IOException("File %s is already locked exclusively", path_buf.c_str());
+        }
+
+        // User requested truncation of existing file?
+        if (flags == duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) {
+            std::string path_buf{path};
+            throw duckdb::IOException(
+                "File %s is already opened and cannot be truncated with FILE_FLAGS_FILE_CREATE_NEW", path_buf.c_str());
+        }
+
+        // Check if the user wants to write to the file
+        bool wants_writeable = (flags & duckdb::FileFlags::FILE_FLAGS_WRITE) != 0;
+        bool is_writeable = (file->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) != 0;
+
+        if (wants_writeable) {
+            // Only opened readable before?
+            if (!is_writeable) {
+                // Reopen as writeable
+                auto ref = std::make_unique<FileRef>(*this, *files.at(it->second->file_id));
+                dir_guard.unlock();
+                ref->ReOpen(flags, lock_type);
+                return ref;
+
+            } else {
+                // Conflicting APPEND?
+                // Either a file is always appending or not.
+                bool wants_append = (flags & duckdb::FileFlags::FILE_FLAGS_APPEND) != 0;
+                bool is_append = (file->file_flags & duckdb::FileFlags::FILE_FLAGS_APPEND) != 0;
+                if (wants_append && !is_append) {
+                    std::string path_buf{path};
+                    throw duckdb::IOException("File %s is already opened without APPEND", path_buf.c_str());
+                }
+            }
+        }
+        return std::make_unique<FileRef>(*this, *files.at(it->second->file_id));
     }
     // Allocate file id
     uint16_t file_id;
@@ -217,14 +263,11 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
         file_id = allocated_file_ids++;
     }
     // Create file
-    auto file_ptr = std::make_unique<BufferedFile>(file_id, path, std::move(handle));
+    auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags, lock_type);
     auto& file = *file_ptr;
+    file.handle = filesystem->OpenFile(file.path.c_str(), flags);
+    files_by_path.insert({file.path, file_ptr.get()});
     files.insert({file_id, std::move(file_ptr)});
-    files_by_path.insert({file.path, file_id});
-    if (!file.handle) {
-        file.handle = filesystem->OpenFile(
-            file.path.c_str(), duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE);
-    }
     file.file_size = filesystem->GetFileSize(*file.handle);
     return std::make_unique<FileRef>(*this, file);
 }
@@ -317,13 +360,13 @@ std::unique_ptr<char[]> FilePageBuffer::AllocateFrameBuffer(DirectoryGuard& dir_
 FilePageBuffer::BufferRef FilePageBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
     DEBUG_TRACE();
     auto file_guard = Lock(Shared);
-    auto [frame_ptr, frame_guard] = FixPage(page_id, exclusive, true, file_guard);
+    auto [frame_ptr, frame_guard] = FixPage(page_id, exclusive, file_guard);
     return BufferRef{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
 }
 
 /// Fix a page with existing file lock
 std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FilePageBuffer::FileRef::FixPage(
-    uint64_t page_id, bool exclusive, bool load_data, FileGuardRefVariant file_guard) {
+    uint64_t page_id, bool exclusive, FileGuardRefVariant file_guard) {
     DEBUG_TRACE();
     assert(file_ != nullptr);
     auto dir_guard = buffer_.Lock();
@@ -421,12 +464,9 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
     frame.fifo_position = buffer_.fifo.insert(buffer_.fifo.end(), &frame);
     buffer_.frames.insert({frame_id, std::move(frame_ptr)});
 
-    // Load data
-    if (load_data) {
-        // Load the data into the frame
-        LoadFrame(frame, file_guard, dir_guard);
-        assert(dir_guard.owns_lock());
-    }
+    // Load the data into the frame (if requested)
+    LoadFrame(frame, file_guard, dir_guard);
+    assert(dir_guard.owns_lock());
 
     // Downgrade the lock (if necessary)
     if (!exclusive) {
@@ -460,13 +500,18 @@ uint64_t FilePageBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t offs
     return read_here;
 }
 
-uint64_t FilePageBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::idx_t offset) {
+uint64_t FilePageBuffer::FileRef::Write(void* in, uint64_t bytes, duckdb::idx_t offset) {
     DEBUG_TRACE();
-    // Append to file?
-    // Writing any bytes past the end offset if obviously a bad idea.
-    // We therefore always assume, that the user wants to append instead.
     auto file_guard = Lock(Shared);
-    if (offset == file_->file_size) {
+
+    // Is not opened in WRITE mode?
+    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+        throw std::runtime_error("File is not opened in write mode");
+    }
+
+    // Append to file?
+    // Otherwise a write will never write past the end!
+    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_APPEND) != 0 || (offset == file_->file_size)) {
         file_guard.unlock();
         auto file_guard = Lock(Exclusive);
         Append(in, bytes, file_guard);
@@ -479,7 +524,7 @@ uint64_t FilePageBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::
     auto write_here = std::min<uint64_t>(bytes, buffer_.GetPageSize() - skip_here);
 
     // Fix page
-    auto [frame_ptr, frame_guard] = FixPage(page_id, true, true, file_guard);
+    auto [frame_ptr, frame_guard] = FixPage(page_id, true, file_guard);
     BufferRef page{*this, std::move(file_guard), *frame_ptr, std::move(frame_guard)};
     write_here = std::min<uint64_t>(write_here, buffer_.GetPageSize());
 
@@ -491,56 +536,68 @@ uint64_t FilePageBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::
 }
 
 /// Append to the file
-void FilePageBuffer::FileRef::Append(const void* buffer, uint64_t n) {
+void FilePageBuffer::FileRef::Append(void* buffer, uint64_t n) {
     DEBUG_TRACE();
     auto file_guard = Lock(Exclusive);
     Append(buffer, n, file_guard);
 }
 
-void FilePageBuffer::FileRef::Append(const void* buffer, uint64_t bytes, UniqueFileGuard& file_guard) {
+void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGuard& file_guard) {
     DEBUG_TRACE();
-    auto in_reader = static_cast<const char*>(buffer);
 
-    // Increase file size
+    // Is not opened in WRITE mode?
+    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+        throw std::runtime_error("file is not opened in write mode");
+    }
+
+    // Write to the end of the file
     auto old_file_size = file_->file_size;
     auto new_file_size = old_file_size + bytes;
-    buffer_.filesystem->Truncate(GetHandle(), new_file_size);
+    buffer_.filesystem->Seek(GetHandle(), old_file_size);
+
+    // Repeat until depleted
+    auto reader = static_cast<char*>(buffer);
+    auto remaining = bytes;
+    while (remaining > 0) {
+        auto n = buffer_.filesystem->Write(GetHandle(), reader, remaining);
+        assert(n <= remaining);
+        reader += n;
+        remaining -= n;
+    }
     file_->file_size = new_file_size;
 
-    // Determine capacity of the last page
+    // Do we need to resize the last page?
     auto page_size = buffer_.GetPageSize();
     auto last_page_id = old_file_size >> buffer_.GetPageSizeShift();
     auto last_page_bytes = old_file_size - (last_page_id << buffer_.GetPageSizeShift());
     auto last_page_capacity = buffer_.GetPageSize() - last_page_bytes;
+    auto last_page_frame = BuildFrameID(file_->file_id, last_page_id);
 
-    // Write into that last page first
-    if (last_page_capacity > 0) {
-        auto [frame_ptr, frame_guard] = FixPage(last_page_id, true, true, file_guard);
+    // Write data into last page if it's loaded
+    auto dir_guard = buffer_.Lock();
+    auto frame_iter = buffer_.frames.find(last_page_frame);
+    if (frame_iter != buffer_.frames.end()) {
         auto write_here = std::min(last_page_capacity, bytes);
+        auto frame_ptr = frame_iter->second.get();
         frame_ptr->data_size = last_page_bytes + write_here;
-        frame_ptr->is_dirty = true;
-        std::memcpy(frame_ptr->GetData().data() + last_page_bytes, in_reader, write_here);
+        std::memcpy(frame_ptr->GetData().data() + last_page_bytes, buffer, write_here);
         assert(write_here <= bytes);
-        bytes -= write_here;
-        in_reader += write_here;
-        --frame_ptr->num_users;
-    }
 
-    // Write remaining pages.
-    // Do not load them from disk since we now that they're new.
-    auto page_id = last_page_id + 1;
-    while (bytes > 0) {
-        auto [frame_ptr, frame_guard] = FixPage(page_id, true, false, file_guard);
-        auto write_here = std::min(page_size, bytes);
-        frame_ptr->data_size = write_here;
-        frame_ptr->is_dirty = true;
-        std::memcpy(frame_ptr->GetData().data(), static_cast<const char*>(buffer), write_here);
-        assert(write_here <= bytes);
-        ++page_id;
-        bytes -= write_here;
-        in_reader += write_here;
-        --frame_ptr->num_users;
+        // We do not need to mark the page dirty since we write directly to disk.
+        // It might already be dirty in which case it stays dirty.
     }
+}
+
+/// Append to the file
+void FilePageBuffer::FileRef::ReOpen(uint8_t flags, duckdb::FileLockType lock_type) {
+    DEBUG_TRACE();
+    auto file_guard = Lock(Exclusive);
+    // There is no way this can be opened with WRITE_LOCK now
+    assert(file_->file_lock != duckdb::FileLockType::WRITE_LOCK);
+    // Open the file with the new flags first
+    auto new_handle = buffer_.filesystem->OpenFile(file_->path, flags, lock_type);
+    // Swap the file handles
+    std::swap(new_handle, file_->handle);
 }
 
 /// Flush a file at a path.
@@ -550,7 +607,7 @@ void FilePageBuffer::FlushFile(std::string_view path) {
     auto dir_guard = Lock();
     std::shared_ptr<FileRef> file_ref;
     if (auto it = files_by_path.find(path); it != files_by_path.end()) {
-        file_ref = std::make_shared<FileRef>(*this, *files.at(it->second).get());
+        file_ref = std::make_shared<FileRef>(*this, *files.at(it->second->file_id).get());
     } else {
         return;
     }
@@ -651,7 +708,12 @@ void FilePageBuffer::FileRef::Truncate(uint64_t new_size) {
     auto* file = file_;
     auto file_lock = Lock(Exclusive);
 
-    // Block all file accesses
+    // Is not opened in WRITE mode?
+    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+        throw std::runtime_error("file is not opened in write mode");
+    }
+
+    // Truncate the file
     if (file->file_size != new_size) {
         buffer_.filesystem->Truncate(*file->handle, new_size);
         file->file_size = new_size;

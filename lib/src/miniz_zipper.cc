@@ -42,7 +42,7 @@ arrow::Status Zipper::LoadFromFile(std::string_view path) {
     std::unique_ptr<char[]> buffer = nullptr;
     size_t buffer_size = 0;
     {
-        auto file = buffer_manager_->OpenFile(path);
+        auto file = buffer_manager_->OpenFile(path, duckdb::FileFlags::FILE_FLAGS_READ);
         buffer_size = file->GetSize();
         buffer = std::unique_ptr<char[]>(new char[buffer_size]());
         file->Read(buffer.get(), buffer_size, 0);
@@ -161,7 +161,8 @@ struct ExtractToFilePageBufferState {
 size_t extractToFilePageBuffer(void* p_opaque, duckdb_miniz::mz_uint64 file_ofs, const void* p_buf, size_t n) {
     assert(p_opaque != nullptr);
     auto* state = reinterpret_cast<ExtractToFilePageBufferState*>(p_opaque);
-    return state->file->Write(p_buf, n, file_ofs);
+    auto* buf = const_cast<void*>(p_buf);  // XXX get rid of this const cast?
+    return state->file->Write(buf, n, file_ofs);
 }
 
 /// Extract an entry to a file
@@ -171,7 +172,8 @@ arrow::Result<size_t> Zipper::ExtractEntryToPath(size_t entryID, std::string_vie
     // Read file stat
     duckdb_miniz::mz_zip_archive_file_stat stat;
     duckdb_miniz::mz_zip_reader_file_stat(&current_reader_->archive, entryID, &stat);
-    auto out = buffer_manager_->OpenFile(path);
+    auto out = buffer_manager_->OpenFile(
+        path, duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW);
     out->Truncate(stat.m_uncomp_size);
 
     // Extract file
@@ -201,7 +203,9 @@ arrow::Result<size_t> Zipper::ExtractPathToPath(const char* in, std::string_view
     // Read file stat
     duckdb_miniz::mz_zip_archive_file_stat stat;
     duckdb_miniz::mz_zip_reader_file_stat(&current_reader_->archive, file_index, &stat);
-    auto out_file = buffer_manager_->OpenFile(out);
+    auto out_file = buffer_manager_->OpenFile(
+        out, duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW,
+        duckdb::FileLockType::NO_LOCK);
     out_file->Truncate(stat.m_uncomp_size);
 
     // Extract file
