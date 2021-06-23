@@ -44,7 +44,7 @@ export function testZip(
             }
         });
 
-        it('Loadion', async () => {
+        it('Loading', async () => {
             const all = await resolveData('/uni/all.zip')!;
             const assistenten = await resolveData('/uni/assistenten.parquet')!;
             expect(all).not.toBeNull();

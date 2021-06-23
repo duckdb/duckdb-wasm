@@ -143,7 +143,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Make this a uint64 with emscripten BigInts maybe.
     inline uint32_t AllocateFileID() { return ++next_file_id_; }
     /// Copy a blob to a buffer
-    void CopyBlobToBuffer(WebFile &file, std::shared_lock<std::shared_mutex> &file_guard);
+    void CopyBlobToBuffer(WebFile &file);
 
    public:
     /// Constructor

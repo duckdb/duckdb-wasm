@@ -290,19 +290,15 @@ std::string WebFileSystem::WebFile::GetInfoJSON() const {
 }
 
 /// Copy a blob to a buffer
-void WebFileSystem::CopyBlobToBuffer(WebFile &file, std::shared_lock<std::shared_mutex> &file_guard) {
-    file_guard.unlock();
-    {
-        std::unique_lock<std::shared_mutex> excl_file_guard{file.file_mutex_};
-        if (file.data_protocol_ != DataProtocol::BLOB) return;
+void WebFileSystem::CopyBlobToBuffer(WebFile &file) {
+    std::unique_lock<std::shared_mutex> excl_file_guard{file.file_mutex_};
+    if (file.data_protocol_ != DataProtocol::BLOB) return;
 
-        // Read the entire blob as buffer
-        std::unique_ptr<char[]> buffer{new char[file.file_size_]};
-        duckdb_web_fs_file_read(file.file_id_, buffer.get(), file.file_size_, 0);
-        file.data_protocol_ = DataProtocol::BUFFER;
-        file.data_buffer_ = DataBuffer{std::move(buffer), file.file_size_};
-    }
-    file_guard.lock();
+    // Read the entire blob as buffer
+    std::unique_ptr<char[]> buffer{new char[file.file_size_]};
+    duckdb_web_fs_file_read(file.file_id_, buffer.get(), file.file_size_, 0);
+    file.data_protocol_ = DataProtocol::BUFFER;
+    file.data_buffer_ = DataBuffer{std::move(buffer), file.file_size_};
 }
 
 /// Constructor
@@ -427,16 +423,26 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
     // Try to open the file (if necessary)
     switch (file_ptr->data_protocol_) {
         case DataProtocol::BUFFER:
+            if ((flags & duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) != 0) {
+                file_ptr->data_buffer_->Resize(0);
+                file_ptr->file_size_ = 0;
+            }
             break;
         case DataProtocol::NATIVE:
             if (file_ptr->data_fd_.has_value()) break;
         case DataProtocol::BLOB:
         case DataProtocol::HTTP:
             try {
-                /// Open the file
+                // Open the file
                 duckdb_web_fs_file_open(file_ptr->file_id_);
-                /// Get the file size
+                // Get the file size
                 file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
+                // Truncate file?
+                if ((flags & duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) != 0) {
+                    file_guard.unlock();
+                    Truncate(*handle, 0);
+                    file_guard.lock();
+                }
 
             } catch (...) {
                 /// Something wen't wrong, abort opening the file
@@ -516,7 +522,9 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     switch (file.data_protocol_) {
         // Blobs are always copied to a buffer on first write
         case DataProtocol::BLOB:
-            CopyBlobToBuffer(file, file_guard);
+            file_guard.unlock();
+            CopyBlobToBuffer(file);
+            file_guard.lock();
             // Treat further as buffer
 
         // Buffers are trans
@@ -606,12 +614,18 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     std::unique_lock<std::shared_mutex> file_guard{file_hdl.file_->file_mutex_};
     // Resize the buffer
     switch (file.data_protocol_) {
+        case DataProtocol::BLOB:
+            file_guard.unlock();
+            CopyBlobToBuffer(file);
+            file_guard.lock();
+
         case DataProtocol::BUFFER:
             file.data_buffer_->Resize(new_size);
+            break;
         case DataProtocol::NATIVE:
-        case DataProtocol::BLOB:
         case DataProtocol::HTTP: {
             duckdb_web_fs_file_truncate(file.file_id_, new_size);
+            break;
         }
     }
     // Acquire filesystem mutex to protect the file size update
