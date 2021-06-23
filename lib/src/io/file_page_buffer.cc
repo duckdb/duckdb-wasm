@@ -1,5 +1,3 @@
-#include "duckdb/web/io/filesystem_buffer.h"
-
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -16,6 +14,7 @@
 #include <variant>
 
 #include "duckdb/web/debug.h"
+#include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/scope_guard.h"
 
 /// Build a frame id
@@ -50,25 +49,25 @@ namespace web {
 namespace io {
 
 /// Constructor
-FileSystemBuffer::BufferFrame::BufferFrame(BufferedFile& file, uint64_t frame_id, list_position fifo_position,
-                                           list_position lru_position)
+FilePageBuffer::BufferFrame::BufferFrame(BufferedFile& file, uint64_t frame_id, list_position fifo_position,
+                                         list_position lru_position)
     : file(file), frame_id(frame_id), fifo_position(fifo_position), lru_position(lru_position), frame_latch() {
     file.frames.insert(file.frames.begin(), this);
     file_frame_position = file.frames.begin();
 }
 
 /// Constructor
-FileSystemBuffer::BufferRef::BufferRef(FileRef& file, SharedFileGuard&& file_guard, BufferFrame& frame,
-                                       FrameGuardVariant frame_guard)
+FilePageBuffer::BufferRef::BufferRef(FileRef& file, SharedFileGuard&& file_guard, BufferFrame& frame,
+                                     FrameGuardVariant frame_guard)
     : file_(&file), file_guard_(std::move(file_guard)), frame_(&frame), frame_guard_(std::move(frame_guard)) {}
 
 /// Mark a buffer ref as dirty
-void FileSystemBuffer::BufferRef::MarkAsDirty() {
+void FilePageBuffer::BufferRef::MarkAsDirty() {
     auto dir_guard = file_->buffer_.Lock();
     frame_->is_dirty = true;
 }
 /// Release a buffer ref
-void FileSystemBuffer::BufferRef::Release() {
+void FilePageBuffer::BufferRef::Release() {
     if (!frame_) return;
     // Decrease user count and mark as dirty with directory latch.
     // Destructor will then release the frame guard variant.
@@ -81,13 +80,13 @@ void FileSystemBuffer::BufferRef::Release() {
 }
 
 /// Constructor
-FileSystemBuffer::FileRef::FileRef(FileSystemBuffer& buffer) : buffer_(buffer), file_(nullptr) {}
+FilePageBuffer::FileRef::FileRef(FilePageBuffer& buffer) : buffer_(buffer), file_(nullptr) {}
 
 /// Load a frame
-void FileSystemBuffer::FileRef::LoadFrame(FileSystemBuffer::BufferFrame& frame, FileGuardRefVariant file_guard,
-                                          DirectoryGuard& dir_guard) {
+void FilePageBuffer::FileRef::LoadFrame(FilePageBuffer::BufferFrame& frame, FileGuardRefVariant file_guard,
+                                        DirectoryGuard& dir_guard) {
     DEBUG_TRACE();
-    assert(frame.frame_state == FileSystemBuffer::BufferFrame::LOADING);
+    assert(frame.frame_state == FilePageBuffer::BufferFrame::LOADING);
     auto file_id = ::GetFileID(frame.frame_id);
     auto page_id = ::GetPageID(frame.frame_id);
     auto page_size = buffer_.GetPageSize();
@@ -103,11 +102,11 @@ void FileSystemBuffer::FileRef::LoadFrame(FileSystemBuffer::BufferFrame& frame, 
     dir_guard.lock();
 
     // Register as loaded
-    frame.frame_state = FileSystemBuffer::BufferFrame::LOADED;
+    frame.frame_state = FilePageBuffer::BufferFrame::LOADED;
     frame.is_dirty = false;
 }
 
-void FileSystemBuffer::FileRef::Release() {
+void FilePageBuffer::FileRef::Release() {
     DEBUG_TRACE();
     // Already released?
     if (!file_) return;
@@ -173,13 +172,13 @@ void FileSystemBuffer::FileRef::Release() {
 }
 
 /// Flush file with guard
-void FileSystemBuffer::FileRef::Flush() {
+void FilePageBuffer::FileRef::Flush() {
     auto file_guard = Lock(Shared);
     Flush(file_guard);
 }
 
 /// Flush file without guard
-void FileSystemBuffer::FileRef::Flush(FileGuardRefVariant file_guard) {
+void FilePageBuffer::FileRef::Flush(FileGuardRefVariant file_guard) {
     // Flush all frames.
     auto dir_guard = buffer_.Lock();
     for (auto iter = file_->frames.begin(); iter != file_->frames.end(); ++iter) {
@@ -188,15 +187,15 @@ void FileSystemBuffer::FileRef::Flush(FileGuardRefVariant file_guard) {
 }
 
 /// Constructor
-FileSystemBuffer::FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, uint64_t page_capacity,
-                                   uint64_t page_size_bits)
+FilePageBuffer::FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, uint64_t page_capacity,
+                               uint64_t page_size_bits)
     : page_size_bits(page_size_bits), page_capacity(page_capacity), filesystem(std::move(filesystem)) {}
 
 /// Destructor
-FileSystemBuffer::~FileSystemBuffer() { FlushFiles(); }
+FilePageBuffer::~FilePageBuffer() { FlushFiles(); }
 
-std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::string_view path,
-                                                                      std::unique_ptr<duckdb::FileHandle> handle) {
+std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path,
+                                                                  std::unique_ptr<duckdb::FileHandle> handle) {
     DEBUG_TRACE();
     auto dir_guard = Lock();
     // Already added?
@@ -230,17 +229,17 @@ std::unique_ptr<FileSystemBuffer::FileRef> FileSystemBuffer::OpenFile(std::strin
     return std::make_unique<FileRef>(*this, file);
 }
 
-std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
+std::unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
     DEBUG_TRACE();
-    FileSystemBuffer::BufferFrame* frame = nullptr;
+    FilePageBuffer::BufferFrame* frame = nullptr;
     std::shared_lock<std::shared_mutex> file_guard;
     while (true) {
         // Find a frame to evict
         auto [frame_,
-              file_guard_] = [&]() -> std::pair<FileSystemBuffer::BufferFrame*, std::shared_lock<std::shared_mutex>> {
+              file_guard_] = [&]() -> std::pair<FilePageBuffer::BufferFrame*, std::shared_lock<std::shared_mutex>> {
             // Try FIFO list first
             for (auto* frame : fifo) {
-                if (frame->GetUserCount() == 0 && frame->frame_state == FileSystemBuffer::BufferFrame::State::LOADED) {
+                if (frame->GetUserCount() == 0 && frame->frame_state == FilePageBuffer::BufferFrame::State::LOADED) {
                     std::shared_lock<std::shared_mutex> file_guard{frame->file.file_latch, std::defer_lock};
                     if (file_guard.try_lock()) {
                         return {frame, std::move(file_guard)};
@@ -249,7 +248,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& di
             }
             // If FIFO list is empty or all pages in it are in use, try LRU
             for (auto* frame : lru) {
-                if (frame->GetUserCount() == 0 && frame->frame_state == FileSystemBuffer::BufferFrame::State::LOADED) {
+                if (frame->GetUserCount() == 0 && frame->frame_state == FilePageBuffer::BufferFrame::State::LOADED) {
                     std::shared_lock<std::shared_mutex> file_guard{frame->file.file_latch, std::defer_lock};
                     if (file_guard.try_lock()) {
                         return {frame, std::move(file_guard)};
@@ -264,8 +263,8 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& di
 
         // Found a loaded page?
         // Try to evicit it.
-        assert(frame->frame_state == FileSystemBuffer::BufferFrame::State::LOADED);
-        frame->frame_state = FileSystemBuffer::BufferFrame::State::EVICTING;
+        assert(frame->frame_state == FilePageBuffer::BufferFrame::State::LOADED);
+        frame->frame_state = FilePageBuffer::BufferFrame::State::EVICTING;
         if (!frame->is_dirty) break;
 
         // Flush the frame
@@ -276,16 +275,16 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& di
         if (--frame->num_users > 0) continue;
 
         // Frame must either be evicting or reloaded
-        assert(frame->frame_state == FileSystemBuffer::BufferFrame::State::EVICTING ||
-               frame->frame_state == FileSystemBuffer::BufferFrame::State::RELOADED);
-        if (frame->frame_state == FileSystemBuffer::BufferFrame::State::EVICTING) {
+        assert(frame->frame_state == FilePageBuffer::BufferFrame::State::EVICTING ||
+               frame->frame_state == FilePageBuffer::BufferFrame::State::RELOADED);
+        if (frame->frame_state == FilePageBuffer::BufferFrame::State::EVICTING) {
             // Nobody claimed the page while we were evicting it.
             // Otherwise we'd have to retry.
             break;
         }
 
         // Mark as loaded again and retry
-        frame->frame_state = FileSystemBuffer::BufferFrame::LOADED;
+        frame->frame_state = FilePageBuffer::BufferFrame::LOADED;
     }
 
     // Erase from queues
@@ -301,7 +300,7 @@ std::unique_ptr<char[]> FileSystemBuffer::EvictAnyBufferFrame(DirectoryGuard& di
     return buffer;
 }
 
-std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& dir_guard) {
+std::unique_ptr<char[]> FilePageBuffer::AllocateFrameBuffer(DirectoryGuard& dir_guard) {
     std::unique_ptr<char[]> buffer = nullptr;
     while (frames.size() >= page_capacity) {
         auto evicted = EvictAnyBufferFrame(dir_guard);
@@ -315,7 +314,7 @@ std::unique_ptr<char[]> FileSystemBuffer::AllocateFrameBuffer(DirectoryGuard& di
 }
 
 /// Fix a page
-FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
+FilePageBuffer::BufferRef FilePageBuffer::FileRef::FixPage(uint64_t page_id, bool exclusive) {
     DEBUG_TRACE();
     auto file_guard = Lock(Shared);
     auto [frame_ptr, frame_guard] = FixPage(page_id, exclusive, true, file_guard);
@@ -323,7 +322,7 @@ FileSystemBuffer::BufferRef FileSystemBuffer::FileRef::FixPage(uint64_t page_id,
 }
 
 /// Fix a page with existing file lock
-std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> FileSystemBuffer::FileRef::FixPage(
+std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FilePageBuffer::FileRef::FixPage(
     uint64_t page_id, bool exclusive, bool load_data, FileGuardRefVariant file_guard) {
     DEBUG_TRACE();
     assert(file_ != nullptr);
@@ -344,7 +343,7 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
 
             // Is currently being loaded by another thread?
             // This might happen when multiple threads fix the same page concurrently.
-            if (frame->frame_state == FileSystemBuffer::BufferFrame::NEW) {
+            if (frame->frame_state == FilePageBuffer::BufferFrame::NEW) {
                 // Wait for other thread to finish.
                 // We acquire the frame latch exclusively to block on the loading.
                 dir_guard.unlock();
@@ -352,7 +351,7 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
                 dir_guard.lock();
 
                 // Other thread failed to allocate a buffer for the frame?
-                if (frame->frame_state == FileSystemBuffer::BufferFrame::State::NEW) {
+                if (frame->frame_state == FilePageBuffer::BufferFrame::State::NEW) {
                     // Give up on that frame
                     --frame->num_users;
                     if (frame->GetUserCount() == 0) {
@@ -366,8 +365,8 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
             }
 
             /// Is someone currently evicting the page?
-            else if (frame->frame_state == FileSystemBuffer::BufferFrame::State::EVICTING) {
-                frame->frame_state = FileSystemBuffer::BufferFrame::State::RELOADED;
+            else if (frame->frame_state == FilePageBuffer::BufferFrame::State::EVICTING) {
+                frame->frame_state = FilePageBuffer::BufferFrame::State::RELOADED;
             }
 
             // Is page in LRU queue?
@@ -409,7 +408,7 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
     assert(buffer_.frames.find(frame_id) == buffer_.frames.end());
     auto frame_ptr = std::make_unique<BufferFrame>(*file_, frame_id, buffer_.fifo.end(), buffer_.lru.end());
     auto& frame = *frame_ptr;
-    frame.frame_state = FileSystemBuffer::BufferFrame::State::LOADING;
+    frame.frame_state = FilePageBuffer::BufferFrame::State::LOADING;
     frame.buffer = std::move(buffer);
     ++frame.num_users;
 
@@ -440,7 +439,7 @@ std::pair<FileSystemBuffer::BufferFrame*, FileSystemBuffer::FrameGuardVariant> F
     return {&frame, std::move(frame_guard)};
 }
 
-uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t offset) {
+uint64_t FilePageBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t offset) {
     DEBUG_TRACE();
     // Check upper file boundary first
     auto read_end = std::min<uint64_t>(file_->file_size, offset + n);
@@ -461,7 +460,7 @@ uint64_t FileSystemBuffer::FileRef::Read(void* out, uint64_t n, duckdb::idx_t of
     return read_here;
 }
 
-uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::idx_t offset) {
+uint64_t FilePageBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb::idx_t offset) {
     DEBUG_TRACE();
     // Append to file?
     // Writing any bytes past the end offset if obviously a bad idea.
@@ -492,13 +491,13 @@ uint64_t FileSystemBuffer::FileRef::Write(const void* in, uint64_t bytes, duckdb
 }
 
 /// Append to the file
-void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t n) {
+void FilePageBuffer::FileRef::Append(const void* buffer, uint64_t n) {
     DEBUG_TRACE();
     auto file_guard = Lock(Exclusive);
     Append(buffer, n, file_guard);
 }
 
-void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, UniqueFileGuard& file_guard) {
+void FilePageBuffer::FileRef::Append(const void* buffer, uint64_t bytes, UniqueFileGuard& file_guard) {
     DEBUG_TRACE();
     auto in_reader = static_cast<const char*>(buffer);
 
@@ -545,7 +544,7 @@ void FileSystemBuffer::FileRef::Append(const void* buffer, uint64_t bytes, Uniqu
 }
 
 /// Flush a file at a path.
-void FileSystemBuffer::FlushFile(std::string_view path) {
+void FilePageBuffer::FlushFile(std::string_view path) {
     DEBUG_TRACE();
     // We need to find the file first
     auto dir_guard = Lock();
@@ -563,7 +562,7 @@ void FileSystemBuffer::FlushFile(std::string_view path) {
 }
 
 /// Flush all files in the buffer
-void FileSystemBuffer::FlushFiles() {
+void FilePageBuffer::FlushFiles() {
     // Collect files
     auto dir_guard = Lock();
     std::vector<std::shared_ptr<FileRef>> file_refs;
@@ -580,7 +579,7 @@ void FileSystemBuffer::FlushFiles() {
 
 /// Flush a frame.
 /// Assumes that the file of the frame is under control.
-void FileSystemBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
+void FilePageBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
     DEBUG_TRACE();
     if (!frame.is_dirty) return;
     auto& file = frame.file;
@@ -610,7 +609,7 @@ void FileSystemBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_g
 }
 
 /// Release a file
-void FileSystemBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
+void FilePageBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
     DEBUG_TRACE();
     // Someone opened the file in the meantime?
     if (file.GetReferenceCount() > 1) return;
@@ -645,7 +644,7 @@ void FileSystemBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_
 }
 
 /// Truncate a file
-void FileSystemBuffer::FileRef::Truncate(uint64_t new_size) {
+void FilePageBuffer::FileRef::Truncate(uint64_t new_size) {
     DEBUG_TRACE();
     // Modify file file.
     // This will lock out ALL file users.
@@ -668,7 +667,7 @@ void FileSystemBuffer::FileRef::Truncate(uint64_t new_size) {
     }
 }
 
-std::vector<uint64_t> FileSystemBuffer::GetFIFOList() const {
+std::vector<uint64_t> FilePageBuffer::GetFIFOList() const {
     std::vector<uint64_t> fifo_list;
     fifo_list.reserve(fifo.size());
     for (auto* page : fifo) {
@@ -677,7 +676,7 @@ std::vector<uint64_t> FileSystemBuffer::GetFIFOList() const {
     return fifo_list;
 }
 
-std::vector<uint64_t> FileSystemBuffer::GetLRUList() const {
+std::vector<uint64_t> FilePageBuffer::GetLRUList() const {
     std::vector<uint64_t> lru_list;
     lru_list.reserve(lru.size());
     for (auto* page : lru) {

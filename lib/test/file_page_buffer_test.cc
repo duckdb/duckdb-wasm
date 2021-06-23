@@ -1,4 +1,4 @@
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 
 #include <gtest/gtest.h>
 
@@ -23,10 +23,10 @@ namespace fs = std::filesystem;
 
 namespace {
 
-struct TestableFileSystemBuffer : public io::FileSystemBuffer {
-    TestableFileSystemBuffer(std::unique_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
-                             size_t page_capacity = 10, size_t page_size_bits = 13)
-        : io::FileSystemBuffer(std::move(filesystem), page_capacity, page_size_bits) {}
+struct TestableFilePageBuffer : public io::FilePageBuffer {
+    TestableFilePageBuffer(std::unique_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
+                           size_t page_capacity = 10, size_t page_size_bits = 13)
+        : io::FilePageBuffer(std::move(filesystem), page_capacity, page_size_bits) {}
 
     auto& GetFrames() { return frames; }
     auto& GetFiles() { return files; }
@@ -45,8 +45,8 @@ std::filesystem::path CreateTestFile() {
 }
 
 // NOLINTNEXTLINE
-TEST(FileSystemBufferTest, FixSingle) {
-    auto buffer = std::make_shared<TestableFileSystemBuffer>();
+TEST(FilePageBufferTest, FixSingle) {
+    auto buffer = std::make_shared<TestableFilePageBuffer>();
     auto file_path = CreateTestFile();
     auto page_size = buffer->GetPageSize();
     auto entry_count = page_size / sizeof(uint64_t);
@@ -92,8 +92,8 @@ TEST(FileSystemBufferTest, FixSingle) {
 }
 
 // NOLINTNEXTLINE
-TEST(FileSystemBufferTest, PersistentRestart) {
-    auto buffer = std::make_shared<TestableFileSystemBuffer>();
+TEST(FilePageBufferTest, PersistentRestart) {
+    auto buffer = std::make_shared<TestableFilePageBuffer>();
     auto page_size = buffer->GetPageSize();
     auto file1_path = CreateTestFile();
     auto file2_path = CreateTestFile();
@@ -102,7 +102,7 @@ TEST(FileSystemBufferTest, PersistentRestart) {
     std::filesystem::resize_file(file2_path, 10 * page_size);
     std::filesystem::resize_file(file3_path, 10 * page_size);
 
-    std::vector<std::unique_ptr<io::FileSystemBuffer::FileRef>> files;
+    std::vector<std::unique_ptr<io::FilePageBuffer::FileRef>> files;
     files.push_back(buffer->OpenFile(file1_path.c_str()));
     files.push_back(buffer->OpenFile(file2_path.c_str()));
     files.push_back(buffer->OpenFile(file3_path.c_str()));
@@ -129,7 +129,7 @@ TEST(FileSystemBufferTest, PersistentRestart) {
     ASSERT_EQ(fs::file_size(file3_path), PageCount * page_size);
 
     // Destroy the buffer manager and create a new one.
-    buffer = std::make_shared<TestableFileSystemBuffer>();
+    buffer = std::make_shared<TestableFilePageBuffer>();
     files.push_back(buffer->OpenFile(file1_path.c_str()));
     files.push_back(buffer->OpenFile(file2_path.c_str()));
     files.push_back(buffer->OpenFile(file3_path.c_str()));
@@ -154,8 +154,8 @@ TEST(FileSystemBufferTest, PersistentRestart) {
 }
 
 // NOLINTNEXTLINE
-TEST(FileSystemBufferTest, FIFOEviction) {
-    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+TEST(FilePageBufferTest, FIFOEviction) {
+    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto file_path = CreateTestFile();
     std::ofstream(file_path).close();
     auto data_size = 10 * buffer->GetPageSize();
@@ -195,8 +195,8 @@ TEST(FileSystemBufferTest, FIFOEviction) {
 }
 
 // NOLINTNEXTLINE
-TEST(FileSystemBufferTest, LRUEviction) {
-    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+TEST(FilePageBufferTest, LRUEviction) {
+    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto file_path = CreateTestFile();
     std::ofstream(file_path).close();
     auto data_size = 11 * buffer->GetPageSize();
@@ -270,7 +270,7 @@ TEST(FileSystemBufferTest, LRUEviction) {
 
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelFix) {
-    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto file_path = CreateTestFile();
     auto data_size = 10 * buffer->GetPageSize();
     std::ofstream(file_path).close();
@@ -301,7 +301,7 @@ TEST(BufferManagerTest, ParallelFix) {
 
 // NOLINTNEXTLINE
 TEST(BufferManagerTest, ParallelExclusiveAccess) {
-    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto file_path = CreateTestFile();
     auto data_size = 10 * buffer->GetPageSize();
     std::ofstream(file_path).close();
@@ -356,7 +356,7 @@ TEST(BufferManagerTest, ParallelScans) {
         CreateTestFile(),
     };
     {
-        auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+        auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
         for (auto& file_path : test_files) {
             // Open file
             std::ofstream(file_path).close();
@@ -376,7 +376,7 @@ TEST(BufferManagerTest, ParallelScans) {
         // empty before running the actual test.
     }
 
-    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     std::vector<std::thread> threads;
 
     for (size_t i = 0; i < ThreadCount; ++i) {
@@ -387,7 +387,7 @@ TEST(BufferManagerTest, ParallelScans) {
             std::discrete_distribution<uint16_t> segment_distr{12.0, 5.0, 2.0, 1.0};
 
             // Open all files once per thread to isolate but
-            std::vector<std::unique_ptr<TestableFileSystemBuffer::FileRef>> file_refs;
+            std::vector<std::unique_ptr<TestableFilePageBuffer::FileRef>> file_refs;
             for (auto& file_path : test_files) {
                 file_refs.push_back(buffer->OpenFile(file_path.c_str()));
             }
@@ -432,7 +432,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
         CreateTestFile(),
     };
     {
-        auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+        auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
         for (auto& file_path : test_files) {
             // Open file
             std::ofstream(file_path).close();
@@ -452,7 +452,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
         // empty before running the actual test.
     }
 
-    auto buffer = std::make_shared<TestableFileSystemBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     std::vector<std::thread> threads;
 
     for (size_t i = 0; i < ThreadCount; ++i) {
@@ -499,7 +499,7 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
                     // reads. Only the last is potentially a write. Also,
                     // all pages but the last are held for the entire duration
                     // of the query.
-                    std::vector<TestableFileSystemBuffer::BufferRef> pages;
+                    std::vector<TestableFilePageBuffer::BufferRef> pages;
                     for (size_t page_number = 0; page_number < num_pages - 1; ++page_number) {
                         pages.push_back(file->FixPage(page_distr(engine), false));
                     }

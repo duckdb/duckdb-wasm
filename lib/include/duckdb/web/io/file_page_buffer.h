@@ -27,7 +27,7 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-/// We use a dedicated lightweight FileSystemBuffer for paged I/O in and out of WebAssembly.
+/// We use a dedicated lightweight FilePageBuffer for paged I/O in and out of WebAssembly.
 /// The buffer manager is tailored towards WASM in the following points:
 ///
 /// - The only goal is to buffer the interop with js.
@@ -38,7 +38,7 @@ namespace io {
 ///   from hot pages.
 /// - We still never hold the global directory latch while doing IO since reads/writes might touch js or go to disk.
 
-class FileSystemBuffer {
+class FilePageBuffer {
    public:
     /// A directory guard
     using DirectoryGuard = std::unique_lock<std::mutex>;
@@ -86,7 +86,7 @@ class FileSystemBuffer {
     /// A buffer frame, the central data structure to hold data
     class BufferFrame {
        protected:
-        friend class FileSystemBuffer;
+        friend class FilePageBuffer;
         /// A position in the LRU queue
         using list_position = std::list<BufferFrame*>::iterator;
 
@@ -148,7 +148,7 @@ class FileSystemBuffer {
 
     /// The buffer ref base class
     class BufferRef {
-        friend class FileSystemBuffer;
+        friend class FilePageBuffer;
 
        protected:
         /// The file
@@ -199,11 +199,11 @@ class FileSystemBuffer {
 
     /// A file reference
     class FileRef {
-        friend class FileSystemBuffer;
+        friend class FilePageBuffer;
 
        protected:
         /// The buffer manager
-        FileSystemBuffer& buffer_;
+        FilePageBuffer& buffer_;
         /// The file
         BufferedFile* file_ = nullptr;
 
@@ -223,9 +223,9 @@ class FileSystemBuffer {
 
        public:
         /// Constructor
-        explicit FileRef(FileSystemBuffer& buffer);
+        explicit FileRef(FilePageBuffer& buffer);
         /// The constructor
-        explicit FileRef(FileSystemBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file) {
+        explicit FileRef(FilePageBuffer& buffer, BufferedFile& file) : buffer_(buffer), file_(&file) {
             // Is always constructed with directory latch
             ++file.num_users;
         }
@@ -306,10 +306,10 @@ class FileSystemBuffer {
    public:
     /// Constructor.
     /// Use 10 * 16KiB pages by default (1 << 14)
-    FileSystemBuffer(std::shared_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
-                     uint64_t page_capacity = 10, uint64_t page_size_bits = 14);
+    FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
+                   uint64_t page_capacity = 10, uint64_t page_size_bits = 14);
     /// Destructor
-    ~FileSystemBuffer();
+    ~FilePageBuffer();
 
     /// Get the filesystem
     auto& GetFileSystem() { return filesystem; }

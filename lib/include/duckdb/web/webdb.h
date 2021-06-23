@@ -18,7 +18,7 @@
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/default_filesystem.h"
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/miniz_zipper.h"
 #include "nonstd/span.h"
 
@@ -64,7 +64,7 @@ class WebDB {
 
    protected:
     /// The buffer manager
-    std::shared_ptr<io::FileSystemBuffer> filesystem_buffer_;
+    std::shared_ptr<io::FilePageBuffer> file_page_buffer_;
     /// The (shared) database
     std::shared_ptr<duckdb::DuckDB> database_;
     /// The connections
@@ -88,7 +88,7 @@ class WebDB {
     /// Get the database
     auto& database() { return *database_; }
     /// Get the buffer manager
-    auto& filesystem_buffer() { return *filesystem_buffer_; }
+    auto& file_page_buffer() { return *file_page_buffer_; }
     /// Get the zipper
     auto* zip() { return zip_.get(); }
 

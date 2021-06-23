@@ -5,15 +5,15 @@
 #include "arrow/buffer.h"
 #include "arrow/result.h"
 #include "duckdb/common/file_system.hpp"
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 
 namespace duckdb {
 namespace web {
 namespace io {
 
 /// Constructor
-ArrowInputFileStream::ArrowInputFileStream(std::shared_ptr<FileSystemBuffer> filesystem_buffer, std::string_view path)
-    : filesystem_buffer_(std::move(filesystem_buffer)), file_(filesystem_buffer_->OpenFile(path)) {}
+ArrowInputFileStream::ArrowInputFileStream(std::shared_ptr<FilePageBuffer> file_page_buffer, std::string_view path)
+    : file_page_buffer_(std::move(file_page_buffer)), file_(file_page_buffer_->OpenFile(path)) {}
 
 /// Destructor
 ArrowInputFileStream::~ArrowInputFileStream() {
@@ -50,9 +50,9 @@ arrow::Result<int64_t> ArrowInputFileStream::Read(int64_t nbytes, void* out) {
 /// Peek at most nbytes bytes from the file
 arrow::Result<ArrowInputFileStream::PageView> ArrowInputFileStream::PeekView(int64_t nbytes) {
     // Determine page & offset
-    auto page_id = file_position_ >> filesystem_buffer_->GetPageSizeShift();
-    auto skip_here = file_position_ - page_id * filesystem_buffer_->GetPageSize();
-    auto read_here = std::min<size_t>(nbytes, filesystem_buffer_->GetPageSize() - skip_here);
+    auto page_id = file_position_ >> file_page_buffer_->GetPageSizeShift();
+    auto skip_here = file_position_ - page_id * file_page_buffer_->GetPageSize();
+    auto read_here = std::min<size_t>(nbytes, file_page_buffer_->GetPageSize() - skip_here);
 
     // Read page
     auto page = file_->FixPage(page_id, false);

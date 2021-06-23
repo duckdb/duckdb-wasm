@@ -170,7 +170,7 @@ arrow::Status WebDB::Connection::ImportJSONTable(std::string_view path, std::str
         if (options.table_name.empty()) return arrow::Status::Invalid("missing 'name' option");
 
         // Create the input file stream
-        auto ifs = std::make_unique<io::InputFileStream>(webdb_.filesystem_buffer_, path);
+        auto ifs = std::make_unique<io::InputFileStream>(webdb_.file_page_buffer_, path);
         // Do we need to run the analyzer?
         json::TableType table_type;
         if (!options.table_shape || options.table_shape == json::TableShape::UNRECOGNIZED) {
@@ -198,16 +198,16 @@ arrow::Status WebDB::Connection::ImportJSONTable(std::string_view path, std::str
 
 /// Constructor
 WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
-    : filesystem_buffer_(std::make_shared<io::FileSystemBuffer>(std::move(fs))),
+    : file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
       database_(),
       connections_(),
       db_config_() {
-    auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(filesystem_buffer_);
+    auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
     db_config_.file_system = std::move(std::move(buffered_filesystem));
     db_config_.maximum_threads = 1;
     database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
     database_->LoadExtension<duckdb::ParquetExtension>();
-    zip_ = std::make_unique<Zipper>(filesystem_buffer_);
+    zip_ = std::make_unique<Zipper>(file_page_buffer_);
 }
 
 WebDB::~WebDB() { pinned_web_files_.clear(); }
@@ -248,9 +248,9 @@ WebDB::Connection* WebDB::Connect() {
 void WebDB::Disconnect(Connection* session) { connections_.erase(session); }
 
 /// Flush all file buffers
-void WebDB::FlushFiles() { filesystem_buffer_->FlushFiles(); }
+void WebDB::FlushFiles() { file_page_buffer_->FlushFiles(); }
 /// Flush file by path
-void WebDB::FlushFile(std::string_view path) { filesystem_buffer_->FlushFile(path); }
+void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path); }
 
 /// Register a file URL
 arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url) {

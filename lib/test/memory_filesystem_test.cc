@@ -25,8 +25,8 @@ TEST(MemoryFilesystem, json) {
     auto memory_filesystem = std::make_unique<io::MemoryFileSystem>();
     ASSERT_TRUE(memory_filesystem->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
-    auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>(std::move(memory_filesystem));
-    auto input = std::make_shared<io::InputFileStreamBuffer>(filesystem_buffer, path);
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>(std::move(memory_filesystem));
+    auto input = std::make_shared<io::InputFileStreamBuffer>(file_page_buffer, path);
 
     std::istream ifs{input.get()};
     std::string have{std::istreambuf_iterator<char>{ifs}, std::istreambuf_iterator<char>{}};
@@ -41,7 +41,7 @@ TEST(MemoryFilesystem, integers) {
 
     const char* path = "foo";
     auto fs = std::make_shared<io::MemoryFileSystem>();
-    auto fs_buffer = std::make_shared<io::FileSystemBuffer>(fs);
+    auto fs_buffer = std::make_shared<io::FilePageBuffer>(fs);
     ASSERT_TRUE(fs->RegisterFileBuffer(path, std::move(input_buffer)).ok());
     auto input = std::make_shared<io::InputFileStreamBuffer>(fs_buffer, path);
 

@@ -7,7 +7,7 @@
 
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/buffered_filesystem.h"
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/web_filesystem.h"
 
 static const std::function<void(std::string, bool)> *list_files_callback = {};
@@ -22,7 +22,7 @@ void BufferedFileHandle::Close() { file_ref_->Release(); }
 
 /// Constructor
 BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system,
-                                       std::shared_ptr<FileSystemBuffer::FileRef> file_buffers)
+                                       std::shared_ptr<FilePageBuffer::FileRef> file_buffers)
     : duckdb::FileHandle(file_system, std::string{file_buffers->GetPath()}),
       file_ref_(std::move(file_buffers)),
       file_position_(0) {}
@@ -30,13 +30,13 @@ BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system,
 /// Constructor
 BufferedFileHandle::~BufferedFileHandle() { Close(); }
 
-BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FileSystemBuffer> buffer_manager)
-    : filesystem_buffer_(std::move(buffer_manager)), filesystem_(*filesystem_buffer_->GetFileSystem()) {}
+BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_manager)
+    : file_page_buffer_(std::move(buffer_manager)), filesystem_(*file_page_buffer_->GetFileSystem()) {}
 
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
                                                                  FileCompressionType compression) {
-    auto file = filesystem_buffer_->OpenFile(std::string_view{path});
+    auto file = file_page_buffer_->OpenFile(std::string_view{path});
     return std::make_unique<BufferedFileHandle>(*this, std::move(file));
 }
 
