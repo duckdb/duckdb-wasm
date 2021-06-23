@@ -11,7 +11,7 @@ using namespace std;
 namespace {
 
 TEST(InputStreamBuffer, istreambuf_iterator) {
-    auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>();
     auto path = duckdb::web::test::SOURCE_DIR / ".." / "data" / "test.json";
     std::string expected;
     std::string have;
@@ -19,7 +19,7 @@ TEST(InputStreamBuffer, istreambuf_iterator) {
         std::ifstream ifs{path};
         expected = {std::istreambuf_iterator<char>{ifs}, std::istreambuf_iterator<char>{}};
     }
-    auto input = std::make_shared<io::InputFileStreamBuffer>(filesystem_buffer, path.c_str());
+    auto input = std::make_shared<io::InputFileStreamBuffer>(file_page_buffer, path.c_str());
     {
         std::istream ifs{input.get()};
         have = {std::istreambuf_iterator<char>{ifs}, std::istreambuf_iterator<char>{}};

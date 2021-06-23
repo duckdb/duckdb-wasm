@@ -123,7 +123,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc
-  ${CMAKE_SOURCE_DIR}/src/io/filesystem_buffer.cc
+  ${CMAKE_SOURCE_DIR}/src/io/file_page_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/io/glob.cc
   ${CMAKE_SOURCE_DIR}/src/io/ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
@@ -209,7 +209,7 @@ endif()
 
 if(NOT EMSCRIPTEN)
   set(TEST_CC
-      ${CMAKE_SOURCE_DIR}/test/filesystem_buffer_test.cc
+      ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/glob_test.cc
       ${CMAKE_SOURCE_DIR}/test/ifstream_test.cc
       ${CMAKE_SOURCE_DIR}/test/import_csv_test.cc

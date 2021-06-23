@@ -3,7 +3,7 @@
 
 #include <streambuf>
 
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 
 namespace duckdb {
 namespace web {
@@ -12,11 +12,11 @@ namespace io {
 class InputFileStreamBuffer : public std::streambuf {
    protected:
     /// The buffer manager
-    std::shared_ptr<FileSystemBuffer> filesystem_buffer_;
+    std::shared_ptr<FilePageBuffer> file_page_buffer_;
     /// The file
-    std::unique_ptr<FileSystemBuffer::FileRef> file_;
+    std::unique_ptr<FilePageBuffer::FileRef> file_;
     /// The buffer
-    FileSystemBuffer::BufferRef buffer_;
+    FilePageBuffer::BufferRef buffer_;
     /// The end of the readable data (might be smaller than the actual file size if the stream is sliced)
     size_t data_end_;
     /// The next page id
@@ -28,7 +28,7 @@ class InputFileStreamBuffer : public std::streambuf {
     /// Get the position
     size_t GetPosition() {
         assert(next_page_id_ > 0);
-        return ((next_page_id_ - 1) << filesystem_buffer_->GetPageSizeShift()) + (gptr() - eback());
+        return ((next_page_id_ - 1) << file_page_buffer_->GetPageSizeShift()) + (gptr() - eback());
     }
     /// Virtual function (to be read s-how-many-c) called by other member functions to get an estimate
     /// on the number of characters available in the associated input sequence.
@@ -58,9 +58,9 @@ class InputFileStreamBuffer : public std::streambuf {
 
    public:
     /// Constructor
-    InputFileStreamBuffer(std::shared_ptr<FileSystemBuffer> filesystem_buffer, std::string_view path)
-        : filesystem_buffer_(std::move(filesystem_buffer)),
-          file_(filesystem_buffer_->OpenFile(path)),
+    InputFileStreamBuffer(std::shared_ptr<FilePageBuffer> file_page_buffer, std::string_view path)
+        : file_page_buffer_(std::move(file_page_buffer)),
+          file_(file_page_buffer_->OpenFile(path)),
           buffer_(file_->FixPage(0, false)),
           data_end_(file_->GetSize()),
           next_page_id_(1) {
@@ -69,8 +69,8 @@ class InputFileStreamBuffer : public std::streambuf {
     }
     /// Constructor
     InputFileStreamBuffer(const InputFileStreamBuffer& other)
-        : filesystem_buffer_(other.filesystem_buffer_),
-          file_(other.filesystem_buffer_->OpenFile(other.file_->GetPath())),
+        : file_page_buffer_(other.file_page_buffer_),
+          file_(other.file_page_buffer_->OpenFile(other.file_->GetPath())),
           buffer_(other.file_->FixPage(other.next_page_id_ - 1, false)),
           data_end_(other.data_end_),
           next_page_id_(other.next_page_id_) {
@@ -79,7 +79,7 @@ class InputFileStreamBuffer : public std::streambuf {
     }
     /// Constructor
     InputFileStreamBuffer(InputFileStreamBuffer&& other)
-        : filesystem_buffer_(std::move(other.filesystem_buffer_)),
+        : file_page_buffer_(std::move(other.file_page_buffer_)),
           file_(std::move(other.file_)),
           buffer_(std::move(other.buffer_)),
           data_end_(other.data_end_),
@@ -96,8 +96,8 @@ class InputFileStream : public std::istream {
 
    public:
     /// Constructor
-    InputFileStream(std::shared_ptr<FileSystemBuffer> filesystem_buffer, std::string_view path)
-        : buffer_(std::move(filesystem_buffer), path), std::istream(&buffer_) {}
+    InputFileStream(std::shared_ptr<FilePageBuffer> file_page_buffer, std::string_view path)
+        : buffer_(std::move(file_page_buffer), path), std::istream(&buffer_) {}
     /// Copy constructor
     InputFileStream(const InputFileStream& other) : buffer_(other.buffer_), std::istream(&buffer_){};
     /// Scan a slice of the file

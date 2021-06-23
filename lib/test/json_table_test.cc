@@ -105,8 +105,8 @@ TEST(TableReaderOptions, Fields) {
 static std::shared_ptr<io::InputFileStreamBuffer> CreateStreamBuf(const char* path, std::vector<char> buffer) {
     auto fs = std::make_unique<io::MemoryFileSystem>();
     if (!fs->RegisterFileBuffer(path, std::move(buffer)).ok()) return nullptr;
-    auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>(std::move(fs));
-    return std::make_shared<io::InputFileStreamBuffer>(filesystem_buffer, path);
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>(std::move(fs));
+    return std::make_shared<io::InputFileStreamBuffer>(file_page_buffer, path);
 }
 
 struct TableReaderTest {
@@ -132,7 +132,7 @@ TEST_P(TableReaderTestSuite, DetectAndReadSingleBatch) {
     std::vector<char> input_buffer{test.input.data(), test.input.data() + test.input.size()};
 
     auto fs = std::make_shared<io::MemoryFileSystem>();
-    auto fs_buffer = std::make_shared<io::FileSystemBuffer>(fs);
+    auto fs_buffer = std::make_shared<io::FilePageBuffer>(fs);
     ASSERT_TRUE(fs->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
     auto in1 = std::make_unique<io::InputFileStream>(fs_buffer, path);

@@ -6,7 +6,7 @@
 
 #include "arrow/result.h"
 #include "duckdb.hpp"
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 #include "miniz.hpp"
 
 namespace duckdb {
@@ -33,13 +33,13 @@ struct ZipReader {
 class Zipper {
    protected:
     /// The filesystem
-    std::shared_ptr<io::FileSystemBuffer> buffer_manager_;
+    std::shared_ptr<io::FilePageBuffer> buffer_manager_;
     /// The loaded archives
     std::optional<ZipReader> current_reader_ = std::nullopt;
 
    public:
     /// Constructor
-    Zipper(std::shared_ptr<io::FileSystemBuffer> buffer_manager);
+    Zipper(std::shared_ptr<io::FilePageBuffer> buffer_manager);
 
     /// Load zip from a buffer
     arrow::Status LoadFromFile(std::string_view path);

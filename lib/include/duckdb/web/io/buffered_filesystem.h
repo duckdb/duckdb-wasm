@@ -7,7 +7,7 @@
 
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 
 namespace duckdb {
 namespace web {
@@ -18,7 +18,7 @@ class BufferedFileHandle : public duckdb::FileHandle {
 
    protected:
     /// The file buffers
-    std::shared_ptr<FileSystemBuffer::FileRef> file_ref_;
+    std::shared_ptr<FilePageBuffer::FileRef> file_ref_;
     /// The file position
     uint64_t file_position_;
 
@@ -27,7 +27,7 @@ class BufferedFileHandle : public duckdb::FileHandle {
 
    public:
     /// Constructor
-    BufferedFileHandle(duckdb::FileSystem &file_system, std::shared_ptr<FileSystemBuffer::FileRef> file_buffers);
+    BufferedFileHandle(duckdb::FileSystem &file_system, std::shared_ptr<FilePageBuffer::FileRef> file_buffers);
     /// Move Constructor
     explicit BufferedFileHandle(BufferedFileHandle &&) = delete;
     /// Destructor
@@ -42,13 +42,13 @@ class BufferedFileHandle : public duckdb::FileHandle {
 class BufferedFileSystem : public duckdb::FileSystem {
    protected:
     /// The buffer manager
-    std::shared_ptr<FileSystemBuffer> filesystem_buffer_;
+    std::shared_ptr<FilePageBuffer> file_page_buffer_;
     /// The inner file system
     duckdb::FileSystem &filesystem_;
 
    public:
     /// Constructor
-    BufferedFileSystem(std::shared_ptr<FileSystemBuffer> buffer_manager);
+    BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_manager);
     /// Destructor
     virtual ~BufferedFileSystem() {}
 

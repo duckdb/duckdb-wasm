@@ -8,7 +8,7 @@
 #include "arrow/table.h"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/arrow_ifstream.h"
-#include "duckdb/web/io/filesystem_buffer.h"
+#include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/test/config.h"
 #include "gtest/gtest.h"
@@ -31,10 +31,10 @@ std::filesystem::path CreateTestFile() {
 }
 
 TEST(ZipperTest, LoadFile) {
-    auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>();
     auto path = test::SOURCE_DIR / ".." / "data" / "uni" / "all.zip";
 
-    Zipper zipper{filesystem_buffer};
+    Zipper zipper{file_page_buffer};
     auto load_status = zipper.LoadFromFile(path.c_str());
     ASSERT_TRUE(load_status.ok()) << load_status.message();
 
@@ -58,12 +58,12 @@ TEST(ZipperTest, LoadFile) {
 }
 
 TEST(ZipperTest, ExtractEntryToPath) {
-    auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>();
     auto all_path = test::SOURCE_DIR / ".." / "data" / "uni" / "all.zip";
     auto expected_path = test::SOURCE_DIR / ".." / "data" / "uni" / "assistenten.parquet";
     auto out_path = CreateTestFile();
 
-    Zipper zipper{filesystem_buffer};
+    Zipper zipper{file_page_buffer};
     auto load_status = zipper.LoadFromFile(all_path.c_str());
     ASSERT_TRUE(load_status.ok()) << load_status.message();
 
@@ -80,7 +80,7 @@ TEST(ZipperTest, ExtractEntryToPath) {
     auto written = zipper.ExtractEntryToPath(0, out_path.c_str());
     ASSERT_EQ(entry["sizeUncompressed"].GetUint(), written.ValueUnsafe());
 
-    filesystem_buffer->FlushFiles();
+    file_page_buffer->FlushFiles();
 
     std::ifstream out_ifs{out_path};
     std::ifstream expected_ifs{expected_path};
@@ -90,18 +90,18 @@ TEST(ZipperTest, ExtractEntryToPath) {
 }
 
 TEST(ZipperTest, ExtractPathToPath) {
-    auto filesystem_buffer = std::make_shared<io::FileSystemBuffer>();
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>();
     auto all_path = test::SOURCE_DIR / ".." / "data" / "uni" / "all.zip";
     auto expected_path = test::SOURCE_DIR / ".." / "data" / "uni" / "assistenten.parquet";
     auto out_path = CreateTestFile();
 
-    Zipper zipper{filesystem_buffer};
+    Zipper zipper{file_page_buffer};
     auto load_status = zipper.LoadFromFile(all_path.c_str());
     ASSERT_TRUE(load_status.ok()) << load_status.message();
 
     std::string to_extract = "assistenten.parquet";
     auto written = zipper.ExtractPathToPath(to_extract.c_str(), out_path.c_str());
-    filesystem_buffer->FlushFiles();
+    file_page_buffer->FlushFiles();
 
     std::ifstream out_ifs{out_path};
     std::ifstream expected_ifs{expected_path};
