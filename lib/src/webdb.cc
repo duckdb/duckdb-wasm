@@ -308,9 +308,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileBlockStatistics(s
 
 /// Copy a file to a buffer
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::CopyFileToBuffer(std::string_view path) {
-    constexpr auto FLAGS = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto& fs = filesystem();
-    auto src = fs.OpenFile(std::string{path}, FLAGS);
+    auto src = fs.OpenFile(std::string{path}, duckdb::FileFlags::FILE_FLAGS_READ);
     auto n = fs.GetFileSize(*src);
     ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::AllocateResizableBuffer(n));
 
@@ -328,10 +327,10 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::CopyFileToBuffer(std::strin
 
 /// Copy a file to a path
 arrow::Status WebDB::CopyFileToPath(std::string_view path, std::string_view out) {
-    constexpr auto FLAGS = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto& fs = filesystem();
-    auto src = fs.OpenFile(std::string{path}, FLAGS);
-    auto dst = fs.OpenFile(std::string{path}, FLAGS);
+    auto src = fs.OpenFile(std::string{path}, duckdb::FileFlags::FILE_FLAGS_READ);
+    auto dst = fs.OpenFile(std::string{path},
+                           duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW);
 
     auto buffer_size = 16 * 1024;
     std::unique_ptr<char[]> buffer{new char[buffer_size]};

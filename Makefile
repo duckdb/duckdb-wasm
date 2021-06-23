@@ -144,12 +144,12 @@ wasm_release: wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release eh_mt
 
 # Build the duckdb library in debug mode
-.PHONY: duckdb
+.PHONY: duckdb_debug
 duckdb_debug:
 	yarn workspace @duckdb/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
-.PHONY: duckdb
+.PHONY: duckdb_release
 duckdb_release:
 	yarn workspace @duckdb/duckdb-wasm build:release
 
@@ -160,22 +160,22 @@ duckdb_docs:
 
 # Run the duckdb javascript tests
 .PHONY: duckdb_tests
-duckdb_tests: duckdb
+duckdb_tests: duckdb_debug
 	yarn workspace @duckdb/duckdb-wasm test
 
 # Run the duckdb javascript tests in browser
 .PHONY: duckdb_tests_browser
-duckdb_tests_browser: duckdb
+duckdb_tests_browser: duckdb_debug
 	yarn workspace @duckdb/duckdb-wasm test:browser
 
 # Run the duckdb javascript tests in browser
 .PHONY: duckdb_tests_browser
-duckdb_tests_debug: duckdb
+duckdb_tests_debug: duckdb_debug
 	yarn workspace @duckdb/duckdb-wasm test:browser:dbg
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: duckdb_tests_node
-duckdb_tests_node: duckdb
+duckdb_tests_node: duckdb_debug
 	yarn workspace @duckdb/duckdb-wasm test:node
 
 # Run the duckdb javascript tests on nodejs

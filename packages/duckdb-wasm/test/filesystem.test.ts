@@ -154,7 +154,7 @@ export function testFilesystem(
         itBrowser('Copy To CSV Blob with COW', async () => {
             const students = await resolveData('/uni/studenten.parquet');
             expect(students).not.toBeNull();
-            const dummy = new Blob(['fooo']);
+            const dummy = new Blob(['foooooo']);
             const dummy_url = URL.createObjectURL(dummy);
             await db().registerFileBuffer('studenten.parquet', students!);
             await db().registerFileURL('students.csv', dummy_url);
@@ -174,7 +174,7 @@ export function testFilesystem(
 29120;Theophrastos;2
 29555;Feuerbach;2
 `);
-            expect(await (await fetch(dummy_url)).text()).toBe('fooo');
+            expect(await (await fetch(dummy_url)).text()).toBe('foooooo');
             URL.revokeObjectURL(dummy_url);
         });
 
