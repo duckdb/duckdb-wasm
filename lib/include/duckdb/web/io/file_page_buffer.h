@@ -51,8 +51,6 @@ class FilePageBuffer {
     enum ExclusiveTag { Exclusive };
     /// Exclusive
     enum SharedTag { Shared };
-    /// A lock type
-    enum class LockType { None, Shared, Exclusive };
     /// Forward declare file ref
     class FileRef;
 
@@ -69,6 +67,10 @@ class FilePageBuffer {
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
         /// This latch ensures that reads and writes are blocked during truncation.
         std::shared_mutex file_latch = {};
+        /// The file flags
+        uint8_t file_flags = 0;
+        /// The file lock type
+        duckdb::FileLockType file_lock = duckdb::FileLockType::NO_LOCK;
         /// The file size
         uint64_t file_size = 0;
         /// The user references
@@ -77,8 +79,8 @@ class FilePageBuffer {
         std::list<BufferFrame*> frames = {};
 
         /// Constructor
-        BufferedFile(uint16_t file_id, std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr)
-            : file_id(file_id), path(path), handle(std::move(file)) {}
+        BufferedFile(uint16_t file_id, std::string_view path, uint8_t flags, duckdb::FileLockType lock)
+            : file_id(file_id), path(path), file_flags(flags), file_lock(lock) {}
         /// Get the number of references
         auto GetReferenceCount() const { return num_users; }
     };
@@ -216,10 +218,12 @@ class FilePageBuffer {
         /// Loads the page from disk
         void LoadFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
         /// Fix file with file lock
-        std::pair<BufferFrame*, FrameGuardVariant> FixPage(uint64_t page_id, bool exclusive, bool load_data,
+        std::pair<BufferFrame*, FrameGuardVariant> FixPage(uint64_t page_id, bool exclusive,
                                                            FileGuardRefVariant file_guard);
         /// Append n bytes
-        void Append(const void* buffer, uint64_t n, UniqueFileGuard& file_guard);
+        void Append(void* buffer, uint64_t n, UniqueFileGuard& file_guard);
+        /// Reopen as writeable
+        void ReOpen(uint8_t flags, duckdb::FileLockType lock_type);
 
        public:
         /// Constructor
@@ -255,9 +259,9 @@ class FilePageBuffer {
         /// Read at most n bytes
         uint64_t Read(void* buffer, uint64_t n, duckdb::idx_t offset);
         /// Write at most n bytes
-        uint64_t Write(const void* buffer, uint64_t n, duckdb::idx_t offset);
+        uint64_t Write(void* buffer, uint64_t n, duckdb::idx_t offset);
         /// Append n bytes
-        void Append(const void* buffer, uint64_t n);
+        void Append(void* buffer, uint64_t n);
     };
 
    protected:
@@ -275,7 +279,7 @@ class FilePageBuffer {
     /// Maps file ids to their file infos
     std::unordered_map<uint16_t, std::unique_ptr<BufferedFile>> files = {};
     /// The file ids
-    std::unordered_map<std::string_view, uint16_t> files_by_path = {};
+    std::unordered_map<std::string_view, BufferedFile*> files_by_path = {};
     /// The free file ids
     std::stack<uint16_t> free_file_ids = {};
     /// The next allocated file ids
@@ -321,7 +325,8 @@ class FilePageBuffer {
     uint64_t GetPageIDFromOffset(uint64_t offset) { return offset >> page_size_bits; }
 
     /// Open a file
-    std::unique_ptr<FileRef> OpenFile(std::string_view path, std::unique_ptr<duckdb::FileHandle> file = nullptr);
+    std::unique_ptr<FileRef> OpenFile(std::string_view path, uint8_t flags,
+                                      duckdb::FileLockType lock_type = duckdb::FileLockType::NO_LOCK);
     /// Flush file matching name to disk
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
