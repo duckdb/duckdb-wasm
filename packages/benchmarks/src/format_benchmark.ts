@@ -97,7 +97,7 @@ function main(db: duckdb.DuckDB) {
 }
 
 const logger = new duckdb.VoidLogger();
-const db = new duckdb.DuckDB(logger, duckdb.NodeRuntime, path.join(__dirname, '../../duckdb/dist/duckdb.wasm'));
+const db = new duckdb.DuckDB(logger, duckdb.NODE_RUNTIME, path.join(__dirname, '../../duckdb/dist/duckdb.wasm'));
 db.open()
     .then(() => main(db))
     .catch(e => console.error(e));
