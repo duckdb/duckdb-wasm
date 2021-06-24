@@ -286,15 +286,14 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
 std::unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
     DEBUG_TRACE();
     FilePageBuffer::BufferFrame* frame = nullptr;
-    std::shared_lock<std::shared_mutex> file_guard;
+    std::shared_lock<SharedMutex> file_guard;
     while (true) {
         // Find a frame to evict
-        auto [frame_,
-              file_guard_] = [&]() -> std::pair<FilePageBuffer::BufferFrame*, std::shared_lock<std::shared_mutex>> {
+        auto [frame_, file_guard_] = [&]() -> std::pair<FilePageBuffer::BufferFrame*, std::shared_lock<SharedMutex>> {
             // Try FIFO list first
             for (auto* frame : fifo) {
                 if (frame->GetUserCount() == 0 && frame->frame_state == FilePageBuffer::BufferFrame::State::LOADED) {
-                    std::shared_lock<std::shared_mutex> file_guard{frame->file.file_latch, std::defer_lock};
+                    std::shared_lock<SharedMutex> file_guard{frame->file.file_latch, std::defer_lock};
                     if (file_guard.try_lock()) {
                         return {frame, std::move(file_guard)};
                     }
@@ -303,13 +302,13 @@ std::unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_
             // If FIFO list is empty or all pages in it are in use, try LRU
             for (auto* frame : lru) {
                 if (frame->GetUserCount() == 0 && frame->frame_state == FilePageBuffer::BufferFrame::State::LOADED) {
-                    std::shared_lock<std::shared_mutex> file_guard{frame->file.file_latch, std::defer_lock};
+                    std::shared_lock<SharedMutex> file_guard{frame->file.file_latch, std::defer_lock};
                     if (file_guard.try_lock()) {
                         return {frame, std::move(file_guard)};
                     }
                 }
             }
-            return {nullptr, std::shared_lock<std::shared_mutex>{}};
+            return {nullptr, std::shared_lock<SharedMutex>{}};
         }();
         if (!frame_) return nullptr;
         frame = std::move(frame_);
@@ -486,7 +485,7 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
 
     // Downgrade the lock (if necessary)
     if (!exclusive) {
-        std::get<std::unique_lock<std::shared_mutex>>(frame_guard).unlock();
+        std::get<std::unique_lock<SharedMutex>>(frame_guard).unlock();
         dir_guard.unlock();
         frame_guard = frame.Lock(Shared);
     } else {

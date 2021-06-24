@@ -203,7 +203,7 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
       connections_(),
       db_config_() {
     auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
-    db_config_.file_system = std::move(std::move(buffered_filesystem));
+    db_config_.file_system = std::move(buffered_filesystem);
     db_config_.maximum_threads = 1;
     database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
     database_->LoadExtension<duckdb::ParquetExtension>();
