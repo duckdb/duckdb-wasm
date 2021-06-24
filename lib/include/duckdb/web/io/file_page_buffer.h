@@ -4,7 +4,6 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <duckdb/common/constants.hpp>
 #include <exception>
 #include <list>
 #include <map>
@@ -18,10 +17,12 @@
 #include <variant>
 #include <vector>
 
+#include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_defaults.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/mutex.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
@@ -42,12 +43,12 @@ namespace io {
 class FilePageBuffer {
    public:
     /// A directory guard
-    using DirectoryGuard = std::unique_lock<std::mutex>;
+    using DirectoryGuard = std::unique_lock<Mutex>;
     /// A frame guard
-    using FrameGuardVariant = std::variant<std::unique_lock<std::shared_mutex>, std::shared_lock<std::shared_mutex>>;
+    using FrameGuardVariant = std::variant<std::unique_lock<SharedMutex>, std::shared_lock<SharedMutex>>;
     /// A file guard reference variant
-    using FileGuardRefVariant = std::variant<std::reference_wrapper<std::unique_lock<std::shared_mutex>>,
-                                             std::reference_wrapper<std::shared_lock<std::shared_mutex>>>;
+    using FileGuardRefVariant = std::variant<std::reference_wrapper<std::unique_lock<SharedMutex>>,
+                                             std::reference_wrapper<std::shared_lock<SharedMutex>>>;
     /// Exclusive
     enum ExclusiveTag { Exclusive };
     /// Exclusive
@@ -68,7 +69,7 @@ class FilePageBuffer {
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
 
         /// This latch ensures that reads and writes are blocked during truncation.
-        std::shared_mutex file_latch = {};
+        SharedMutex file_latch = {};
         /// The file flags
         uint8_t file_flags = 0;
         /// The file lock type
@@ -121,7 +122,7 @@ class FilePageBuffer {
         /// Position of this page in the LRU list
         list_position lru_position;
         /// The frame latch
-        std::shared_mutex frame_latch = {};
+        SharedMutex frame_latch = {};
 
        public:
         /// Constructor
@@ -142,16 +143,16 @@ class FilePageBuffer {
         /// Returns a pointer to this page data
         auto GetData() { return nonstd::span<char>{buffer.get(), data_size}; }
         /// Lock frame exclusively
-        inline auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{frame_latch}; }
+        inline auto Lock(SharedTag) { return std::shared_lock<SharedMutex>{frame_latch}; }
         /// Lock frame exclusively
-        inline auto Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{frame_latch}; }
+        inline auto Lock(ExclusiveTag) { return std::unique_lock<SharedMutex>{frame_latch}; }
     };
 
    public:
     /// A shared file guard
-    using SharedFileGuard = std::shared_lock<std::shared_mutex>;
+    using SharedFileGuard = std::shared_lock<SharedMutex>;
     /// A unique file guard
-    using UniqueFileGuard = std::unique_lock<std::shared_mutex>;
+    using UniqueFileGuard = std::unique_lock<SharedMutex>;
 
     /// The buffer ref base class
     class BufferRef {
@@ -215,9 +216,9 @@ class FilePageBuffer {
         BufferedFile* file_ = nullptr;
 
         /// Lock a file exclusively
-        inline auto Lock(ExclusiveTag) { return std::unique_lock<std::shared_mutex>{file_->file_latch}; }
+        inline auto Lock(ExclusiveTag) { return std::unique_lock<SharedMutex>{file_->file_latch}; }
         /// Lock a file shared
-        inline auto Lock(SharedTag) { return std::shared_lock<std::shared_mutex>{file_->file_latch}; }
+        inline auto Lock(SharedTag) { return std::shared_lock<SharedMutex>{file_->file_latch}; }
         /// Flush the file
         void Flush(FileGuardRefVariant file_guard);
         /// Loads the page from disk
@@ -279,7 +280,7 @@ class FilePageBuffer {
     std::shared_ptr<duckdb::FileSystem> filesystem;
 
     /// Latch that protects all of the following member variables
-    std::mutex directory_latch;
+    Mutex directory_latch;
 
     /// Maps file ids to their file infos
     std::unordered_map<uint16_t, std::unique_ptr<BufferedFile>> files = {};
