@@ -7,7 +7,7 @@ import kleur from 'kleur';
 
 import path from 'path';
 const workerPath = path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js');
-const wasmPath = path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm');
+const wasmPath = path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm');
 
 const noop = () => {};
 
