@@ -9,7 +9,7 @@ import {
     DuckDBDataProtocol,
 } from './runtime';
 import { StatusCode } from '../status';
-import { DuckDBModule } from 'src/targets/duckdb-browser-sync-eh';
+import { DuckDBModule } from './duckdb_module';
 
 export const NODE_RUNTIME: DuckDBRuntime & {
     fileInfoCache: Map<number, DuckDBFileInfo>;
