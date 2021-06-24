@@ -14,7 +14,7 @@ type ExtendedFileInfo = DuckDBFileInfo & {
 };
 
 function resolveBlob(file: ExtendedFileInfo): Blob {
-    if (file.blob) return file.blob;
+    if (file.blob !== null) return file.blob;
     if (!file.data_url) {
         throw new Error(`Missing data object URL: ${file.file_id}`);
     }
@@ -46,8 +46,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const infoStr = readString(mod, d, n);
         dropResponseBuffers(mod);
         const info = JSON.parse(infoStr);
-        if (info == null) return null;
-        return { ...info, blob: null } as ExtendedFileInfo;
+        if (info == null) {
+            return null;
+        }
+        const file = { ...info, blob: null } as ExtendedFileInfo;
+        BROWSER_RUNTIME.fileInfoCache.set(fileId, file);
+        return file;
     },
 
     openFile: (mod: DuckDBModule, fileId: number) => {

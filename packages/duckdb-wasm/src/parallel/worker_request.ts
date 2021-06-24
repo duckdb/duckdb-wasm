@@ -1,6 +1,7 @@
 import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 import { LogEntryVariant } from '../log';
 import { ScriptTokens } from 'src/bindings/tokens';
+import { FileBlockStatistics } from 'src/bindings/file_stats';
 
 export type ConnectionID = number;
 
@@ -116,7 +117,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.ERROR, any>
     | WorkerResponse<WorkerResponseType.FEATURE_FLAGS, number>
     | WorkerResponse<WorkerResponseType.FILE_BUFFER, Uint8Array>
-    | WorkerResponse<WorkerResponseType.FILE_BLOCK_STATISTICS, Uint16Array>
+    | WorkerResponse<WorkerResponseType.FILE_BLOCK_STATISTICS, FileBlockStatistics>
     | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
     | WorkerResponse<WorkerResponseType.OK, null>
     | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
@@ -140,7 +141,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>
     | WorkerTask<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean], null>
-    | WorkerTask<WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS, string, Uint16Array>
+    | WorkerTask<WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS, string, FileBlockStatistics>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
     | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>

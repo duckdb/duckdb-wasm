@@ -36,6 +36,10 @@ declare namespace globalThis {
     let crossOriginIsolated: boolean;
 }
 
+function isNode(): boolean {
+    return typeof process !== 'undefined' && process.release.name === 'node';
+}
+
 export async function getPlatformFeatures(): Promise<PlatformFeatures> {
     if (wasmExceptions == null) {
         wasmExceptions = await check.exceptions();
@@ -44,7 +48,7 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
         wasmThreads = await check.threads();
     }
     return {
-        crossOriginIsolated: globalThis.crossOriginIsolated || false,
+        crossOriginIsolated: isNode() || globalThis.crossOriginIsolated || false,
         wasmExceptions: wasmExceptions!,
         wasmThreads: wasmThreads!,
     };
@@ -53,7 +57,7 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions) {
-        if (platform.wasmThreads && bundles.asyncEHMT) {
+        if (platform.wasmThreads && platform.crossOriginIsolated && bundles.asyncEHMT) {
             return {
                 mainModule: bundles.asyncEHMT.mainModule,
                 mainWorker: bundles.asyncEHMT.mainWorker,

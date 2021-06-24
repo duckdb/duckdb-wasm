@@ -11,6 +11,7 @@ import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
 import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 import { ScriptTokens } from 'src/bindings/tokens';
+import { FileBlockStatistics } from 'src/bindings/file_stats';
 
 export class AsyncDuckDB {
     /** The message handler */
@@ -418,8 +419,8 @@ export class AsyncDuckDB {
     }
 
     /** Export file block statistics */
-    public async exportFileBlockStatistics(name: string): Promise<Uint16Array> {
-        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS, string, Uint16Array>(
+    public async exportFileBlockStatistics(name: string): Promise<FileBlockStatistics> {
+        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS, string, FileBlockStatistics>(
             WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS,
             name,
         );
