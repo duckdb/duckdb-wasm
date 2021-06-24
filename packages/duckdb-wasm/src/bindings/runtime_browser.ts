@@ -51,7 +51,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
 
     openFile: (mod: DuckDBModule, fileId: number) => {
-        console.log(mod);
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
