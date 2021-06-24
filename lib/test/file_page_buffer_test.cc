@@ -571,13 +571,13 @@ TEST(FilePageBufferTest, BlockStatistics) {
     auto stats_buffer = buffer->ExportFileBlockStatistics(file_path.c_str());
 
     ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
-    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(uint64_t) + sizeof(uint16_t) * 2);
+    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(double) + sizeof(uint16_t) * 2);
     auto reader = stats_buffer.ValueUnsafe()->data();
-    auto block_size = reinterpret_cast<const uint64_t*>(reader);
+    auto block_size = reinterpret_cast<const double*>(reader);
     ASSERT_EQ(*block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
 
     // We should see 1 read and 4 cache hits
-    auto* stats = reinterpret_cast<const uint16_t*>(reader + sizeof(uint64_t));
+    auto* stats = reinterpret_cast<const uint16_t*>(reader + sizeof(double));
     for (size_t i = 0; i < 2; ++i) {
         ASSERT_EQ(stats[i] & 0b1111, 1) << i;
         ASSERT_EQ((stats[i] >> (1 * 4)) & 0b1111, 0);

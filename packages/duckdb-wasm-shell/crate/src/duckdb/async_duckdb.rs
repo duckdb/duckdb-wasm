@@ -1,7 +1,7 @@
+use super::tokens::{JsScriptTokens, ScriptTokens};
 use crate::arrow_reader::ArrowStreamReader;
-use super::tokens::{ScriptTokens, JsScriptTokens};
 use arrow::ipc::reader::FileReader;
-use js_sys::Uint8Array;
+use js_sys::{Number, Uint16Array, Uint8Array};
 use std::io::Cursor;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -33,6 +33,34 @@ extern "C" {
         this: &JsAsyncDuckDB,
         conn: ConnectionID,
     ) -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(catch, method, js_name = "exportFileBlockStatistics")]
+    async fn enable_file_statistics(
+        this: &JsAsyncDuckDB,
+        text: &str,
+        enable: bool,
+    ) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "exportFileBlockStatistics")]
+    async fn export_file_block_statistics(
+        this: &JsAsyncDuckDB,
+        file: &str,
+    ) -> Result<JsValue, JsValue>;
+}
+
+#[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
+extern "C" {
+    #[wasm_bindgen(js_name = "FileBlockStatistics")]
+    pub type JsFileBlockStatistics;
+
+    #[wasm_bindgen(catch, method, getter, js_name = "blockSize")]
+    fn get_block_size(this: &JsFileBlockStatistics) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, getter, js_name = "blockStats")]
+    fn get_block_stats(this: &JsFileBlockStatistics) -> Result<JsValue, JsValue>;
+}
+
+pub struct FileBlockStatistics {
+    pub block_size: f64,
+    pub block_stats: Vec<u16>,
 }
 
 pub struct AsyncDuckDB {
@@ -67,11 +95,7 @@ impl AsyncDuckDB {
 
     /// Tokenize a script text
     pub async fn tokenize(&self, text: &str) -> Result<ScriptTokens, js_sys::Error> {
-        let tokens: JsScriptTokens = self
-            .bindings
-            .tokenize(text)
-            .await?
-            .into();
+        let tokens: JsScriptTokens = self.bindings.tokenize(text).await?.into();
         Ok(tokens.into())
     }
 
@@ -83,6 +107,34 @@ impl AsyncDuckDB {
             None => return Err(js_sys::Error::new("invalid connection id")),
         };
         Ok(AsyncDuckDBConnection::new(selfm.clone(), cid))
+    }
+
+    /// Enable file statistics
+    pub async fn enable_file_statistics(
+        &self,
+        file: &str,
+        enable: bool,
+    ) -> Result<(), js_sys::Error> {
+        self.bindings.enable_file_statistics(file, enable).await?;
+        Ok(())
+    }
+
+    /// Enable file statistics
+    pub async fn export_file_block_statistics(
+        &self,
+        file: &str,
+    ) -> Result<FileBlockStatistics, js_sys::Error> {
+        let stats: JsFileBlockStatistics = self
+            .bindings
+            .export_file_block_statistics(file)
+            .await?
+            .into();
+        let block_size: Number = stats.get_block_size()?.into();
+        let block_stats: Uint16Array = stats.get_block_stats()?.into();
+        Ok(FileBlockStatistics {
+            block_size: block_size.as_f64().unwrap_or(0.0),
+            block_stats: block_stats.to_vec(),
+        })
     }
 }
 

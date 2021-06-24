@@ -298,7 +298,7 @@ class FilePageBuffer {
     std::list<BufferFrame*> lru = {};
 
     /// The file statistics
-    std::unordered_map<std::string_view, std::shared_ptr<FileStatisticsCollector>> file_stats = {};
+    std::unordered_map<std::string, std::shared_ptr<FileStatisticsCollector>> file_stats = {};
 
     /// Lock the directory
     inline auto Lock() { return std::unique_lock{directory_latch}; }

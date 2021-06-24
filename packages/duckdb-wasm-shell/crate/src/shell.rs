@@ -220,6 +220,16 @@ impl Shell {
         self.writeln(&buffer);
     }
 
+    pub async fn stats_command(&mut self, args: String) {
+        let db = match self.db {
+            Some(ref db) => db.lock().unwrap(),
+            None => return,
+        };
+        let stats = db.export_file_block_statistics(&args).await.unwrap();
+        self.writeln(&format!("Block Size: {}", stats.block_size));
+        self.writeln(&format!("Block Count: {}", stats.block_stats.len()));
+    }
+
     /// Command handler
     pub async fn on_command(text: String) {
         let shell_ptr = Shell::global().clone();
@@ -228,6 +238,7 @@ impl Shell {
         shell.writeln(""); // XXX We could validate the input first and preserve the prompt
 
         let cmd = &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())];
+        let args = trimmed[cmd.len()..].trim();
         match cmd {
             ".clear" => {
                 shell.clear();
@@ -239,15 +250,18 @@ impl Shell {
                 shell.configure_command().await;
             }
             ".timer" => {
-                if trimmed.ends_with("on") {
+                if args.ends_with("on") {
                     shell.settings.timer = true;
                     shell.writeln("Timer enabled");
-                } else if trimmed.ends_with("off") {
+                } else if args.ends_with("off") {
                     shell.settings.timer = false;
                     shell.writeln("Timer disabled");
                 } else {
                     shell.writeln("Usage: .timer [on/off]")
                 }
+            }
+            ".stats" => {
+                shell.stats_command(args.to_string()).await;
             }
             ".files" => match shell.runtime {
                 Some(ref rt) => {

@@ -5,6 +5,7 @@ import { StatusCode } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } from './runtime';
 import { CSVTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
+import { FileBlockStatistics } from './file_stats';
 
 /** A DuckDB Feature */
 export enum DuckDBFeature {
@@ -107,35 +108,31 @@ export abstract class DuckDBBindings {
 
     /** Get the feature flags */
     public getFeatureFlags(): number {
-        return this._instance!.ccall('duckdb_web_get_feature_flags', 'number', [], []);
+        return this.mod.ccall('duckdb_web_get_feature_flags', 'number', [], []);
     }
 
     /** Enable tracking of file statistics */
     public enableFileStatistics(file: string, enable: boolean): void {
-        const [s, d, n] = this._instance!.ccall(
-            'duckdb_web_enable_file_stats',
-            null,
-            ['string', 'boolean'],
-            [file, enable],
-        );
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_enable_file_stats', ['string', 'boolean'], [file, enable]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
     }
     /** Export block statistics */
-    public exportFileBlockStatistics(file: string): Uint16Array {
-        const [s, d, n] = this._instance!.ccall('duckdb_web_export_file_block_stats', null, ['string'], [file]);
+    public exportFileBlockStatistics(file: string): FileBlockStatistics {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_export_file_block_stats', ['string'], [file]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
-        const res = copyBuffer(this.mod, d, n);
-        return new Uint16Array(res.buffer);
+        return {
+            blockSize: this.mod.HEAPF64[d >> 3],
+            blockStats: new Uint16Array(copyBuffer(this.mod, d + 8, n - 8)),
+        };
     }
 
     /** Connect to database */
     public connect(): DuckDBConnection {
-        const instance = this._instance!;
-        const conn = instance.ccall('duckdb_web_connect', 'number', [], []);
+        const conn = this.mod.ccall('duckdb_web_connect', 'number', [], []);
         return new DuckDBConnection(this, conn);
     }
 

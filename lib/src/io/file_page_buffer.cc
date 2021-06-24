@@ -776,20 +776,25 @@ std::vector<uint64_t> FilePageBuffer::GetLRUList() const {
 /// Enable file statistics
 void FilePageBuffer::EnableFileStatistics(std::string_view path, bool enable) {
     auto dir_guard = Lock();
+    std::string path_buffer{path};
 
     // Enable or disable?
     if (enable) {
         // Stats already tracked?
-        auto stats_iter = file_stats.find(path);
-        if (stats_iter != file_stats.end()) return;
+        auto stats_iter = file_stats.find(path_buffer);
+        if (stats_iter != file_stats.end()) {
+            return;
+        }
 
         // Create new statistics collector
         auto new_stats = std::make_shared<FileStatisticsCollector>();
-        auto [iter, ok] = file_stats.insert({path, new_stats});
+        auto [iter, ok] = file_stats.insert({path_buffer, new_stats});
 
         // No file currently known?
         auto files_iter = files_by_name.find(path);
-        if (files_iter == files_by_name.end()) return;
+        if (files_iter == files_by_name.end()) {
+            return;
+        }
 
         // Construct handle to release the filesystem lock
         FileRef file_ref{*this, *files_iter->second};
@@ -804,7 +809,7 @@ void FilePageBuffer::EnableFileStatistics(std::string_view path, bool enable) {
         dir_guard.unlock();
     } else {
         // Stats already tracked?
-        auto stats_iter = file_stats.find(path);
+        auto stats_iter = file_stats.find(path_buffer);
         if (stats_iter == file_stats.end()) return;
 
         // Erase statistics collector
@@ -828,7 +833,7 @@ void FilePageBuffer::EnableFileStatistics(std::string_view path, bool enable) {
 /// Export file statistics
 arrow::Result<std::shared_ptr<arrow::Buffer>> FilePageBuffer::ExportFileBlockStatistics(std::string_view path) {
     auto dir_guard = Lock();
-    auto stats_iter = file_stats.find(path);
+    auto stats_iter = file_stats.find(std::string{path});
     if (stats_iter != file_stats.end()) {
         return stats_iter->second->ExportBlockStatistics();
     }

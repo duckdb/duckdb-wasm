@@ -224,11 +224,11 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
-                case WorkerRequestType.ENABLE_FILE_STATISTICS: {
+                case WorkerRequestType.ENABLE_FILE_STATISTICS:
                     this._bindings.enableFileStatistics(request.data[0], request.data[1]);
                     this.sendOK(request);
                     break;
-                }
+
                 case WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS: {
                     this.postMessage(
                         {
