@@ -68,8 +68,6 @@ class WebFileSystem : public duckdb::FileSystem {
         std::shared_mutex file_mutex_ = {};
         /// The file size
         size_t file_size_ = 0;
-        /// The file statistics (if any)
-        std::shared_ptr<FileStatisticsCollector> file_stats = nullptr;
 
         /// XXX Make chunked to upgrade from url to cached version
         std::optional<DataBuffer> data_buffer_ = std::nullopt;
@@ -135,8 +133,6 @@ class WebFileSystem : public duckdb::FileSystem {
     uint32_t next_file_id_ = 0;
     /// The pinned files (e.g. buffers)
     std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
-    /// The file statistics
-    std::unordered_map<std::string_view, std::shared_ptr<FileStatisticsCollector>> file_stats = {};
 
     /// Allocate a file id.
     /// XXX This could of course overflow....
@@ -167,10 +163,6 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);
-    /// Enable file statistics
-    void EnableFileStatistics(std::string_view path, bool enable = true);
-    /// Export file block accesses
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileBlockStatistics(std::string_view path);
 
    public:
     /// Open a file

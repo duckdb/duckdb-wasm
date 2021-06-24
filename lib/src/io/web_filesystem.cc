@@ -95,68 +95,6 @@ RT_FN(bool duckdb_web_fs_file_remove(const char *path, size_t pathLen), { return
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
 
-/// Enable file statistics
-void WebFileSystem::EnableFileStatistics(std::string_view path, bool enable) {
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-
-    // Enable or disable?
-    if (enable) {
-        // Stats already tracked?
-        auto stats_iter = file_stats.find(path);
-        if (stats_iter != file_stats.end()) return;
-
-        // Create new statistics collector
-        auto new_stats = std::make_shared<FileStatisticsCollector>();
-        auto [iter, ok] = file_stats.insert({path, new_stats});
-
-        // No file currently known?
-        auto files_iter = files_by_name_.find(path);
-        if (files_iter == files_by_name_.end()) return;
-
-        // Construct handle to release the filesystem lock
-        WebFileHandle file_hdl{*this, files_iter->second->file_name_, *files_iter->second};
-        fs_guard.unlock();
-
-        // In the meantime, someone could race and set different file stats.
-        // But we don't care since that will never by racy.
-        std::unique_lock<std::shared_mutex> file_lock{file_hdl.file_->file_mutex_};
-        fs_guard.lock();
-        new_stats->Resize(file_hdl.file_->file_size_);
-        file_hdl.file_->file_stats = new_stats;
-        fs_guard.unlock();
-    } else {
-        // Stats already tracked?
-        auto stats_iter = file_stats.find(path);
-        if (stats_iter == file_stats.end()) return;
-
-        // Erase statistics collector
-        file_stats.erase(stats_iter);
-
-        // No file currently known?
-        auto files_iter = files_by_name_.find(path);
-        if (files_iter == files_by_name_.end()) return;
-
-        // Construct handle to release the filesystem lock
-        WebFileHandle file_hdl{*this, files_iter->second->file_name_, *files_iter->second};
-        fs_guard.unlock();
-
-        // In the meantime, someone could race and set different file stats.
-        // But we don't care since that will never by racy.
-        std::unique_lock<std::shared_mutex> file_lock{file_hdl.file_->file_mutex_};
-        file_hdl.file_->file_stats = nullptr;
-    }
-}
-
-/// Export file statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebFileSystem::ExportFileBlockStatistics(std::string_view path) {
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
-    auto stats_iter = file_stats.find(path);
-    if (stats_iter != file_stats.end()) {
-        return stats_iter->second->ExportBlockStatistics();
-    }
-    return arrow::Status::Invalid("Statistics are not enabled for file: ", path);
-}
-
 void WebFileSystem::DataBuffer::Resize(size_t n) {
     if (n > capacity_) {
         auto cap = std::max(capacity_ + capacity_ + capacity_ / 4, n);
@@ -326,12 +264,6 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     files_by_id_.insert({file_id, std::move(file)});
     files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
 
-    // File statistic tracking?
-    if (auto iter = file_stats.find(file_name); iter != file_stats.end()) {
-        iter->second->Resize(file_ptr->file_size_);
-        file_ptr->file_stats = iter->second;
-    }
-
     // Build the file handle
     return std::make_unique<WebFileHandle>(*this, file_ptr->file_name_, *file_ptr);
 }
@@ -351,12 +283,6 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
     files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
-
-    // File statistic tracking?
-    if (auto iter = file_stats.find(file_name); iter != file_stats.end()) {
-        iter->second->Resize(file_ptr->file_size_);
-        file_ptr->file_stats = iter->second;
-    }
 
     // Build the file handle
     return std::make_unique<WebFileHandle>(*this, file_ptr->file_name_, *file_ptr);
@@ -405,12 +331,6 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         std::string_view file_name{file->file_name_};
         files_by_id_.insert({file_id, std::move(file)});
         files_by_name_.insert({file_name, file.get()});
-
-        // File statistic tracking?
-        if (auto iter = file_stats.find(file_name); iter != file_stats.end()) {
-            iter->second->Resize(file_ptr->file_size_);
-            file_ptr->file_stats = iter->second;
-        }
     } else {
         file_ptr = iter->second;
     }
@@ -476,8 +396,6 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
     auto &file = *file_hdl.file_;
     // Read with shared lock to protect against truncation
     std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
-    // Register a page read
-    if (file.file_stats) file.file_stats->RegisterRead(file_hdl.position_, nr_bytes);
     // Perform the actual read
     switch (file.data_protocol_) {
         // Read buffers directly from WASM memory
@@ -516,8 +434,6 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     auto &file = *file_hdl.file_;
     // First lock shared to protect against concurrent truncation
     std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
-    // Register the write
-    if (file.file_stats) file.file_stats->RegisterWrite(file_hdl.position_, nr_bytes);
     // Do the actual write
     switch (file.data_protocol_) {
         // Blobs are always copied to a buffer on first write
@@ -632,8 +548,6 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     // Update the file size
     file.file_size_ = new_size;
-    // Update the file stats (if any)
-    if (file.file_stats) file.file_stats->Resize(new_size);
 }
 /// Check if a directory exists
 bool WebFileSystem::DirectoryExists(const std::string &directory) {
