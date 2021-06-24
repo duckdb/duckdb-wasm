@@ -294,16 +294,12 @@ arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
 }
 /// Enable file statistics
 arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
-    auto web_fs = io::WebFileSystem::Get();
-    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    web_fs->EnableFileStatistics(path, enable);
+    file_page_buffer_->EnableFileStatistics(path, enable);
     return arrow::Status::OK();
 }
 /// Export file page statistics
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileBlockStatistics(std::string_view path) {
-    auto web_fs = io::WebFileSystem::Get();
-    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    return web_fs->ExportFileBlockStatistics(path);
+    return file_page_buffer_->ExportFileBlockStatistics(path);
 }
 
 /// Copy a file to a buffer

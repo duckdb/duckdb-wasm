@@ -68,7 +68,6 @@ void FilePageBuffer::BufferRef::MarkAsDirty() {
     if ((file_->file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
         throw std::runtime_error("File is not opened in write mode");
     }
-    auto dir_guard = file_->buffer_.Lock();
     frame_->is_dirty = true;
 }
 /// Release a buffer ref
@@ -99,6 +98,11 @@ void FilePageBuffer::FileRef::LoadFrame(FilePageBuffer::BufferFrame& frame, File
     // Determine the actual size of the frame
     frame.data_size = std::min<uint64_t>(file_->file_size - page_id * page_size, buffer_.GetPageSize());
     frame.is_dirty = false;
+
+    // Register a read
+    if (file_->file_stats) {
+        file_->file_stats->RegisterRead(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
+    }
 
     // Read data into frame
     assert(frame.data_size <= buffer_.GetPageSize());
@@ -168,7 +172,7 @@ void FilePageBuffer::FileRef::Release() {
     }
 
     // Erase file
-    buffer_.files_by_path.erase(file_->path);
+    buffer_.files_by_name.erase(file_->path);
     buffer_.free_file_ids.push(file_->file_id);
     auto iter = buffer_.files.find(file_->file_id);
     auto tmp = std::move(iter->second);
@@ -205,7 +209,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     auto dir_guard = Lock();
 
     // Already added?
-    if (auto it = files_by_path.find(path); it != files_by_path.end()) {
+    if (auto it = files_by_name.find(path); it != files_by_name.end()) {
         auto* file = it->second;
         // Is locked exclusively?
         // We only allow one file ref with active WRITE_LOCK.
@@ -266,9 +270,16 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags, lock_type);
     auto& file = *file_ptr;
     file.handle = filesystem->OpenFile(file.path.c_str(), flags);
-    files_by_path.insert({file.path, file_ptr.get()});
+    files_by_name.insert({file.path, file_ptr.get()});
     files.insert({file_id, std::move(file_ptr)});
     file.file_size = filesystem->GetFileSize(*file.handle);
+
+    // Statistics tracking?
+    if (auto iter = file_stats.find(file.path); iter != file_stats.end()) {
+        iter->second->Resize(file_ptr->file_size);
+        file_ptr->file_stats = iter->second;
+    }
+
     return std::make_unique<FileRef>(*this, file);
 }
 
@@ -425,6 +436,11 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
                 frame->lru_position = buffer_.lru.insert(buffer_.lru.end(), frame.get());
             }
 
+            // Register cache hit
+            if (file_->file_stats) {
+                file_->file_stats->RegisterCacheHit(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
+            }
+
             // Release directory latch and lock frame
             dir_guard.unlock();
             FrameGuardVariant frame_guard;
@@ -566,6 +582,12 @@ void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGua
     }
     file_->file_size = new_file_size;
 
+    // Register a write
+    if (file_->file_stats) {
+        file_->file_stats->Resize(new_file_size);
+        file_->file_stats->RegisterWrite(old_file_size, bytes);
+    }
+
     // Do we need to resize the last page?
     auto page_size = buffer_.GetPageSize();
     auto last_page_id = old_file_size >> buffer_.GetPageSizeShift();
@@ -606,7 +628,7 @@ void FilePageBuffer::FlushFile(std::string_view path) {
     // We need to find the file first
     auto dir_guard = Lock();
     std::shared_ptr<FileRef> file_ref;
-    if (auto it = files_by_path.find(path); it != files_by_path.end()) {
+    if (auto it = files_by_name.find(path); it != files_by_name.end()) {
         file_ref = std::make_shared<FileRef>(*this, *files.at(it->second->file_id).get());
     } else {
         return;
@@ -692,7 +714,7 @@ void FilePageBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_gu
         frames.erase(frame.frame_id);
     }
     // Erase file
-    files_by_path.erase(file.path);
+    files_by_name.erase(file.path);
     free_file_ids.push(file.file_id);
     auto iter = files.find(file.file_id);
     auto tmp = std::move(iter->second);
@@ -715,8 +737,12 @@ void FilePageBuffer::FileRef::Truncate(uint64_t new_size) {
 
     // Truncate the file
     if (file->file_size != new_size) {
+        // Truncate the file
         buffer_.filesystem->Truncate(*file->handle, new_size);
         file->file_size = new_size;
+
+        // Update the file stats (if any)
+        if (file->file_stats) file->file_stats->Resize(new_size);
     }
 
     // Update all file frames
@@ -745,6 +771,68 @@ std::vector<uint64_t> FilePageBuffer::GetLRUList() const {
         lru_list.push_back(page->frame_id);
     }
     return lru_list;
+}
+
+/// Enable file statistics
+void FilePageBuffer::EnableFileStatistics(std::string_view path, bool enable) {
+    auto dir_guard = Lock();
+
+    // Enable or disable?
+    if (enable) {
+        // Stats already tracked?
+        auto stats_iter = file_stats.find(path);
+        if (stats_iter != file_stats.end()) return;
+
+        // Create new statistics collector
+        auto new_stats = std::make_shared<FileStatisticsCollector>();
+        auto [iter, ok] = file_stats.insert({path, new_stats});
+
+        // No file currently known?
+        auto files_iter = files_by_name.find(path);
+        if (files_iter == files_by_name.end()) return;
+
+        // Construct handle to release the filesystem lock
+        FileRef file_ref{*this, *files_iter->second};
+        dir_guard.unlock();
+
+        // In the meantime, someone could race and set different file stats.
+        // But we don't care since that will never by racy.
+        auto file_guard = file_ref.Lock(Exclusive);
+        dir_guard.lock();
+        new_stats->Resize(file_ref.file_->file_size);
+        file_ref.file_->file_stats = new_stats;
+        dir_guard.unlock();
+    } else {
+        // Stats already tracked?
+        auto stats_iter = file_stats.find(path);
+        if (stats_iter == file_stats.end()) return;
+
+        // Erase statistics collector
+        file_stats.erase(stats_iter);
+
+        // No file currently known?
+        auto files_iter = files_by_name.find(path);
+        if (files_iter == files_by_name.end()) return;
+
+        // Construct handle to release the filesystem lock
+        FileRef file_ref{*this, *files_iter->second};
+        dir_guard.unlock();
+
+        // In the meantime, someone could race and set different file stats.
+        // But we don't care since that will never by racy.
+        auto file_guard = file_ref.Lock(Exclusive);
+        file_ref.file_->file_stats = nullptr;
+    }
+}
+
+/// Export file statistics
+arrow::Result<std::shared_ptr<arrow::Buffer>> FilePageBuffer::ExportFileBlockStatistics(std::string_view path) {
+    auto dir_guard = Lock();
+    auto stats_iter = file_stats.find(path);
+    if (stats_iter != file_stats.end()) {
+        return stats_iter->second->ExportBlockStatistics();
+    }
+    return arrow::Status::Invalid("Statistics are not enabled for file: ", path);
 }
 
 }  // namespace io

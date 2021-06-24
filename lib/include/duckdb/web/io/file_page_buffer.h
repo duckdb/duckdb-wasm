@@ -1,5 +1,5 @@
-#ifndef INCLUDE_DUCKDB_WEB_IO_FILESYSTEM_BUFFER_H
-#define INCLUDE_DUCKDB_WEB_IO_FILESYSTEM_BUFFER_H
+#ifndef INCLUDE_DUCKDB_WEB_IO_FILE_PAGE_BUFFER_H
+#define INCLUDE_DUCKDB_WEB_IO_FILE_PAGE_BUFFER_H
 
 #include <atomic>
 #include <cstddef>
@@ -20,6 +20,7 @@
 
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/default_filesystem.h"
+#include "duckdb/web/io/file_page_defaults.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "nonstd/span.h"
 
@@ -65,6 +66,7 @@ class FilePageBuffer {
         std::string path = {};
         /// The file
         std::unique_ptr<duckdb::FileHandle> handle = nullptr;
+
         /// This latch ensures that reads and writes are blocked during truncation.
         std::shared_mutex file_latch = {};
         /// The file flags
@@ -77,6 +79,9 @@ class FilePageBuffer {
         int64_t num_users = 0;
         /// The loaded frame
         std::list<BufferFrame*> frames = {};
+
+        /// The file statistics (if any)
+        std::shared_ptr<FileStatisticsCollector> file_stats = nullptr;
 
         /// Constructor
         BufferedFile(uint16_t file_id, std::string_view path, uint8_t flags, duckdb::FileLockType lock)
@@ -108,7 +113,7 @@ class FilePageBuffer {
         /// The data size
         uint32_t data_size = 0;
         /// Is the page dirty?
-        bool is_dirty = false;
+        std::atomic<bool> is_dirty = false;
         /// Position in the file frame list
         list_position file_frame_position;
         /// Position of this page in the FIFO list
@@ -279,7 +284,7 @@ class FilePageBuffer {
     /// Maps file ids to their file infos
     std::unordered_map<uint16_t, std::unique_ptr<BufferedFile>> files = {};
     /// The file ids
-    std::unordered_map<std::string_view, BufferedFile*> files_by_path = {};
+    std::unordered_map<std::string_view, BufferedFile*> files_by_name = {};
     /// The free file ids
     std::stack<uint16_t> free_file_ids = {};
     /// The next allocated file ids
@@ -291,6 +296,9 @@ class FilePageBuffer {
     std::list<BufferFrame*> fifo = {};
     /// LRU list of frames
     std::list<BufferFrame*> lru = {};
+
+    /// The file statistics
+    std::unordered_map<std::string_view, std::shared_ptr<FileStatisticsCollector>> file_stats = {};
 
     /// Lock the directory
     inline auto Lock() { return std::unique_lock{directory_latch}; }
@@ -309,11 +317,17 @@ class FilePageBuffer {
 
    public:
     /// Constructor.
-    /// Use 10 * 16KiB pages by default (1 << 14)
+    /// Use 16KiB pages by default (1 << 14)
     FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
-                   uint64_t page_capacity = 10, uint64_t page_size_bits = 14);
+                   uint64_t page_capacity = DEFAULT_FILE_PAGE_CAPACITY,
+                   uint64_t page_size_bits = DEFAULT_FILE_PAGE_SHIFT);
     /// Destructor
     ~FilePageBuffer();
+
+    /// Enable file statistics
+    void EnableFileStatistics(std::string_view path, bool enable = true);
+    /// Export file block accesses
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileBlockStatistics(std::string_view path);
 
     /// Get the filesystem
     auto& GetFileSystem() { return filesystem; }

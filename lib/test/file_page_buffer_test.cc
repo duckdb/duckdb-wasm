@@ -25,7 +25,7 @@ namespace {
 
 struct TestableFilePageBuffer : public io::FilePageBuffer {
     TestableFilePageBuffer(std::unique_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
-                           size_t page_capacity = 10, size_t page_size_bits = 13)
+                           size_t page_capacity = 10, size_t page_size_bits = 14)
         : io::FilePageBuffer(std::move(filesystem), page_capacity, page_size_bits) {}
 
     auto& GetFrames() { return frames; }
@@ -274,7 +274,7 @@ TEST(FilePageBufferTest, LRUEviction) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferManagerTest, ParallelFix) {
+TEST(FilePageBufferTest, ParallelFix) {
     auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto file_path = CreateTestFile();
     auto data_size = 10 * buffer->GetPageSize();
@@ -306,7 +306,7 @@ TEST(BufferManagerTest, ParallelFix) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferManagerTest, ParallelExclusiveAccess) {
+TEST(FilePageBufferTest, ParallelExclusiveAccess) {
     auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
     auto file_path = CreateTestFile();
     auto data_size = 10 * buffer->GetPageSize();
@@ -350,7 +350,7 @@ TEST(BufferManagerTest, ParallelExclusiveAccess) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferManagerTest, ParallelScans) {
+TEST(FilePageBufferTest, ParallelScans) {
     constexpr size_t PageCount = 1000;
     constexpr size_t ThreadCount = 2;
     constexpr size_t JobCount = 100;
@@ -428,7 +428,7 @@ TEST(BufferManagerTest, ParallelScans) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferManagerTest, ParallelReaderWriter) {
+TEST(FilePageBufferTest, ParallelReaderWriter) {
     constexpr size_t PageCount = 100;
     constexpr size_t ThreadCount = 10;
     constexpr size_t JobCount = 100;
@@ -540,6 +540,49 @@ TEST(BufferManagerTest, ParallelReaderWriter) {
     }
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
+}
+
+TEST(FilePageBufferTest, BlockStatistics) {
+    auto buffer =
+        std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, io::DEFAULT_FILE_PAGE_SHIFT);
+    auto file_path = CreateTestFile();
+    auto data_size = 2 * buffer->GetPageSize();
+    std::ofstream(file_path).close();
+    fs::resize_file(file_path, data_size);
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file = buffer->OpenFile(file_path.c_str(), file_flags);
+    file->Truncate(data_size);
+
+    buffer->EnableFileStatistics(file_path.c_str());
+
+    std::vector<char> out;
+    out.resize(data_size);
+    file->Read(out.data(), buffer->GetPageSize(), 0);
+    file->Read(out.data(), buffer->GetPageSize(), 0);
+    file->Read(out.data(), buffer->GetPageSize(), 0);
+    file->Read(out.data(), buffer->GetPageSize(), 0);
+    file->Read(out.data(), buffer->GetPageSize(), 0);
+    file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
+    file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
+    file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
+    file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
+    file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
+
+    auto stats_buffer = buffer->ExportFileBlockStatistics(file_path.c_str());
+
+    ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
+    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(uint64_t) + sizeof(uint16_t) * 2);
+    auto reader = stats_buffer.ValueUnsafe()->data();
+    auto block_size = reinterpret_cast<const uint64_t*>(reader);
+    ASSERT_EQ(*block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
+
+    // We should see 1 read and 4 cache hits
+    auto* stats = reinterpret_cast<const uint16_t*>(reader + sizeof(uint64_t));
+    for (size_t i = 0; i < 2; ++i) {
+        ASSERT_EQ(stats[i] & 0b1111, 1) << i;
+        ASSERT_EQ((stats[i] >> (1 * 4)) & 0b1111, 0);
+        ASSERT_EQ((stats[i] >> (2 * 4)) & 0b1111, 2);  // ((1 << 2) - 1) == 3, ((1 << 3) - 1) == 7
+    }
 }
 
 }  // namespace
