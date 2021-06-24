@@ -81,16 +81,17 @@ class Shell extends React.Component<Props> {
     /// Drop files
     public async dropFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
         if (!this.database) return;
+        const fileInfos: Array<model.FileInfo> = [];
         for (const file of acceptedFiles) {
-            await this.database.addFileBlob(file.name, file);
+            const url = URL.createObjectURL(file);
+            await this.database.registerFileURL(file.name, url);
+            fileInfos.push({
+                name: file.name,
+                url: url,
+                size: 0,
+                downloadProgress: 1.0,
+            });
         }
-        const fileInfos = acceptedFiles.map(f => ({
-            name: f.name,
-            url: `file://${f.name}`,
-            size: 0,
-            downloadProgress: 1.0,
-        }));
-        console.log(fileInfos.toString());
         this.props.registerFiles(fileInfos);
     }
 
