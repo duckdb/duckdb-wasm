@@ -38,7 +38,17 @@ set(THREAD_LIBS Threads::Threads)
 
 if(EMSCRIPTEN)
   if(CMAKE_BUILD_TYPE MATCHES Release)
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --profiling")
+  endif()
+
+  if(WITH_WASM_FAST_LINKING)
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
+  else()
+    # set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3 -flto")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
   endif()
 
   if(WITH_WASM_EXCEPTIONS)
@@ -147,12 +157,6 @@ target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson ${THREAD_LIBS})
 # We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our
 # own imports.
 if(EMSCRIPTEN)
-  if(WASM_FAST_LINKING)
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
-  else()
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
-  endif()
-
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
   target_link_libraries(duckdb_wasm duckdb_web spdlog ${THREAD_LIBS})
   set_target_properties(
@@ -160,6 +164,7 @@ if(EMSCRIPTEN)
     PROPERTIES
       LINK_FLAGS
       "${WASM_LINK_FLAGS} \
+      -s ALLOW_BLOCKING_ON_MAIN_THREAD=1 \
       -s ENVIRONMENT='web,node,worker' \
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \

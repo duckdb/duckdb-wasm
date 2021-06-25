@@ -30,7 +30,6 @@ export function readString(mod: DuckDBModule, begin: number, length: number): st
 export enum DuckDBDataProtocol {
     BUFFER = 0,
     NATIVE = 1,
-    BLOB = 2,
     HTTP = 3,
 }
 
