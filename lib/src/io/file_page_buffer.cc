@@ -158,6 +158,7 @@ void FilePageBuffer::FileRef::Release() {
         }
         // Erase the frame
         auto next = ++iter;
+        buffer_.DonateFrameBuffer(std::move(frame.buffer), dir_guard);
         buffer_.frames.erase(frame.frame_id);
         iter = next;
     }
@@ -361,7 +362,12 @@ std::unique_ptr<char[]> FilePageBuffer::AllocateFrameBuffer(DirectoryGuard& dir_
         buffer = std::move(evicted);
     }
     if (!buffer) {
-        buffer = std::unique_ptr<char[]>{new char[GetPageSize()]};
+        if (!free_buffers.empty()) {
+            buffer = std::move(free_buffers.top());
+            free_buffers.pop();
+        } else {
+            buffer = std::unique_ptr<char[]>(new char[GetPageSize()]);
+        }
     }
     return buffer;
 }
@@ -710,6 +716,7 @@ void FilePageBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_gu
         }
 
         // Erase frame
+        DonateFrameBuffer(std::move(frame.buffer), dir_guard);
         frames.erase(frame.frame_id);
     }
     // Erase file
