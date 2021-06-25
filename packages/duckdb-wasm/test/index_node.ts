@@ -1,4 +1,4 @@
-import * as duckdb_sync from '../src/targets/duckdb-node-sync-eh';
+import * as duckdb_sync from '../src/targets/duckdb-node-sync';
 import * as duckdb_async from '../src/targets/duckdb-node-async';
 import path from 'path';
 import Worker from 'web-worker';
@@ -45,14 +45,10 @@ beforeAll(async () => {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
         },
-        asyncEH: {
-            mainModule: path.resolve(__dirname, './duckdb-eh.wasm'),
-            mainWorker: path.resolve(__dirname, './duckdb-node-async-eh.worker.js'),
-        },
     });
 
     const logger = new duckdb_sync.VoidLogger();
-    db = new duckdb_sync.DuckDB(logger, duckdb_sync.NODE_RUNTIME, path.resolve(__dirname, './duckdb-eh.wasm'));
+    db = new duckdb_sync.DuckDB(logger, duckdb_sync.NODE_RUNTIME, path.resolve(__dirname, './duckdb.wasm'));
     await db.open();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);

@@ -5,11 +5,11 @@ export interface DuckDBBundles {
         mainModule: string;
         mainWorker: string;
     };
-    asyncEH?: {
+    asyncNext?: {
         mainModule: string;
         mainWorker: string;
     };
-    asyncEHMT?: {
+    asyncNextCOI?: {
         mainModule: string;
         mainWorker: string;
         pthreadWorker: string;
@@ -69,17 +69,17 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions && platform.wasmSIMD) {
-        if (platform.wasmThreads && platform.crossOriginIsolated && bundles.asyncEHMT) {
+        if (platform.wasmThreads && platform.crossOriginIsolated && bundles.asyncNextCOI) {
             return {
-                mainModule: bundles.asyncEHMT.mainModule,
-                mainWorker: bundles.asyncEHMT.mainWorker,
-                pthreadWorker: bundles.asyncEHMT.pthreadWorker,
+                mainModule: bundles.asyncNextCOI.mainModule,
+                mainWorker: bundles.asyncNextCOI.mainWorker,
+                pthreadWorker: bundles.asyncNextCOI.pthreadWorker,
             };
         }
-        if (bundles.asyncEH) {
+        if (bundles.asyncNext) {
             return {
-                mainModule: bundles.asyncEH.mainModule,
-                mainWorker: bundles.asyncEH.mainWorker,
+                mainModule: bundles.asyncNext.mainModule,
+                mainWorker: bundles.asyncNext.mainWorker,
                 pthreadWorker: null,
             };
         }

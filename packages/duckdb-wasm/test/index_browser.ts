@@ -8,14 +8,14 @@ const DUCKDB_BUNDLES: duckdb_async.DuckDBBundles = {
         mainModule: '/static/duckdb.wasm',
         mainWorker: '/static/duckdb-browser-async.worker.js',
     },
-    asyncEH: {
-        mainModule: '/static/duckdb-eh.wasm',
-        mainWorker: '/static/duckdb-browser-async-eh.worker.js',
+    asyncNext: {
+        mainModule: '/static/duckdb-next.wasm',
+        mainWorker: '/static/duckdb-browser-async-next.worker.js',
     },
-    asyncEHMT: {
-        mainModule: '/static/duckdb-eh-mt.wasm',
-        mainWorker: '/static/duckdb-browser-async-eh-mt.worker.js',
-        pthreadWorker: '/static/duckdb-browser-async-eh-mt.pthread.worker.js',
+    asyncNextCOI: {
+        mainModule: '/static/duckdb-next-coi.wasm',
+        mainWorker: '/static/duckdb-browser-async-next-coi.worker.js',
+        pthreadWorker: '/static/duckdb-browser-async-next-coi.pthread.worker.js',
     },
 };
 let DUCKDB_CONFIG: DuckDBConfig | null = null;
@@ -23,13 +23,13 @@ let DUCKDB_CONFIG: DuckDBConfig | null = null;
 describe('wasm check', () => {
     it('worker and wasm urls', async () => {
         if ((await check.exceptions()) && (await check.threads())) {
-            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncEHMT!.mainModule);
-            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncEHMT!.mainWorker);
-            expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(DUCKDB_BUNDLES.asyncEHMT!.pthreadWorker);
+            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncNextCOI!.mainModule);
+            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncNextCOI!.mainWorker);
+            expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(DUCKDB_BUNDLES.asyncNextCOI!.pthreadWorker);
         }
         if ((await check.exceptions()) && !(await check.threads())) {
-            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncEH!.mainModule);
-            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncEH!.mainWorker);
+            expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncNext!.mainModule);
+            expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncNext!.mainWorker);
             expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(null);
         }
         if (!(await check.exceptions())) {

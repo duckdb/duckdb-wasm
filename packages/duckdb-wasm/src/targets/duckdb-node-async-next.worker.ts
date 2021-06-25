@@ -1,18 +1,18 @@
-import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel';
-import { DuckDB } from '../bindings/bindings_browser_eh_mt';
+import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel/';
 import { DuckDBBindings } from '../bindings';
-import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
+import { DuckDB } from '../bindings/bindings_node_next';
+import { NODE_RUNTIME } from '../bindings/runtime_node';
 
-/** The duckdb worker API for web workers */
-class WebWorker extends AsyncDuckDBDispatcher {
+/** The duckdb worker API for node.js workers */
+class NodeWorker extends AsyncDuckDBDispatcher {
     /** Post a response back to the main thread */
     protected postMessage(response: WorkerResponseVariant, transfer: ArrayBuffer[]) {
         globalThis.postMessage(response, transfer);
     }
 
     /** Instantiate the wasm module */
-    protected async open(mainModuleURL: string, pthreadWorkerURL: string | null): Promise<DuckDBBindings> {
-        const bindings = new DuckDB(this, BROWSER_RUNTIME, mainModuleURL, pthreadWorkerURL);
+    protected async open(mainModulePath: string, pthreadWorkerPath: string | null): Promise<DuckDBBindings> {
+        const bindings = new DuckDB(this, NODE_RUNTIME, mainModulePath, pthreadWorkerPath);
         await bindings.open();
         return bindings;
     }
@@ -20,7 +20,7 @@ class WebWorker extends AsyncDuckDBDispatcher {
 
 /** Register the worker */
 export function registerWorker(): void {
-    const api = new WebWorker();
+    const api = new NodeWorker();
     globalThis.onmessage = async (event: MessageEvent<WorkerRequestVariant>) => {
         await api.onMessage(event.data);
     };

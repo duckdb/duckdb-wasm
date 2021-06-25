@@ -11,26 +11,26 @@ import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
 
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
-import duckdb_wasm_eh_mt from '@duckdb/duckdb-wasm/dist/duckdb-eh-mt.wasm';
+import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-next.wasm';
+import duckdb_wasm_next_coi from '@duckdb/duckdb-wasm/dist/duckdb-next-coi.wasm';
 
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     asyncDefault: {
         mainModule: duckdb_wasm,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url).toString(),
     },
-    asyncEH: {
-        mainModule: duckdb_wasm_eh,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async-eh.worker.js', import.meta.url).toString(),
+    asyncNext: {
+        mainModule: duckdb_wasm_next,
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async-next.worker.js', import.meta.url).toString(),
     },
-    asyncEHMT: {
-        mainModule: duckdb_wasm_eh_mt,
+    asyncNextCOI: {
+        mainModule: duckdb_wasm_next_coi,
         mainWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-eh-mt.worker.js',
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-next-coi.worker.js',
             import.meta.url,
         ).toString(),
         pthreadWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-eh-mt.pthread.worker.js',
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-next-coi.pthread.worker.js',
             import.meta.url,
         ).toString(),
     },

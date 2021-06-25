@@ -28,13 +28,13 @@ case $MODE in
 esac
 case $FEATURES in
   "default") ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS}" ;;
-  "eh")
+  "next")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DWITH_WASM_SIMD=1"
-    SUFFIX="_eh"
+    SUFFIX="_next"
     ;;
-  "eh_mt")
+  "next_coi")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DWITH_WASM_SIMD=1 -DWITH_WASM_BULK_MEMORY=1 -DWITH_WASM_THREADS=1"
-    SUFFIX="_eh_mt"
+    SUFFIX="_next_coi"
     ;;
    *) ;;
 esac
