@@ -288,6 +288,8 @@ class FilePageBuffer {
     std::unordered_map<std::string_view, BufferedFile*> files_by_name = {};
     /// The free file ids
     std::stack<uint16_t> free_file_ids = {};
+    /// The frame buffers
+    std::stack<std::unique_ptr<char[]>> free_buffers = {};
     /// The next allocated file ids
     uint16_t allocated_file_ids = 0;
 
@@ -315,6 +317,12 @@ class FilePageBuffer {
     void FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
     /// Releases a file
     void ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
+    /// Donate a buffer
+    void DonateFrameBuffer(std::unique_ptr<char[]> buffer, DirectoryGuard& dir_guard) {
+        if (buffer && ((free_buffers.size() + frames.size()) < page_capacity)) {
+            free_buffers.push(std::move(buffer));
+        }
+    }
 
    public:
     /// Constructor.
