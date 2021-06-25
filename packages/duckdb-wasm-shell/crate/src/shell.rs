@@ -172,7 +172,14 @@ impl Shell {
         };
 
         let platform = platform::PlatformFeatures::get().await;
-        write!(buffer, "Platform Compatibility:{crlf}", crlf = vt100::CRLF).unwrap();
+        write!(
+            buffer,
+            "{crlf}{bold}Platform Compatibility:{normal}{crlf}",
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+            crlf = vt100::CRLF
+        )
+        .unwrap();
         write_feature(
             &mut buffer,
             "WebAssembly Exceptions",
@@ -197,7 +204,14 @@ impl Shell {
             None => return,
         };
         let db_features = db.get_feature_flags().await.unwrap();
-        write!(buffer, "{crlf}DuckDB Features:{crlf}", crlf = vt100::CRLF).unwrap();
+        write!(
+            buffer,
+            "{crlf}{bold}DuckDB Features:{normal}{crlf}",
+            bold = vt100::MODE_BOLD,
+            normal = vt100::MODES_OFF,
+            crlf = vt100::CRLF
+        )
+        .unwrap();
         write_feature(
             &mut buffer,
             "WebAssembly Exceptions",
@@ -415,6 +429,7 @@ impl Shell {
             Some(ref db) => db.lock().unwrap(),
             None => return,
         };
+
         self.write(&format!(
             "{clear_screen}{reset_cursor}{bold}DuckDB Web Shell{normal}{endl}",
             reset_cursor = vt100::CURSOR_HOME,
@@ -433,6 +448,17 @@ impl Shell {
             normal = vt100::MODES_OFF,
             endl = vt100::CRLF
         ));
+
+        let db_features = db.get_feature_flags().await.unwrap();
+        if (db_features & 0b01) == 0 {
+            self.write(&format!(
+                "{reverse}{bold}DuckDB is not running at full speed.{endl}Enter \".config\" for details.{normal}{endl}{endl}",
+                bold = vt100::MODE_BOLD,
+                reverse = vt100::MODE_REVERSE,
+                normal = vt100::MODES_OFF,
+                endl = vt100::CRLF
+            ))
+        }
     }
 
     fn write_connection_ready(&self) {
