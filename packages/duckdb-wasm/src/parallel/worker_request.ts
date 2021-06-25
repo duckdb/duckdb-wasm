@@ -88,7 +88,7 @@ export interface ZipExtractToFileArgs {
 }
 
 export type WorkerRequestVariant =
-    | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string, number | null]>
+    | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
@@ -129,7 +129,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.VERSION_STRING, string>;
 
 export type WorkerTaskVariant =
-    | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string, number | null], null>
+    | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>

@@ -203,13 +203,8 @@ export abstract class DuckDBBindings {
     }
 
     /** Add a file object URL */
-    public registerFileURL(name: string, url: string, size: number | null): void {
-        const [s, d, n] = callSRet(
-            this.mod,
-            'duckdb_web_fs_register_file_url',
-            ['string', 'string', 'number'],
-            [name, url, size || -1],
-        );
+    public registerFileURL(name: string, url: string): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }

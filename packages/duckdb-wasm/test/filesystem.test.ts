@@ -3,11 +3,11 @@ import * as arrow from 'apache-arrow';
 
 const decoder = new TextDecoder();
 
-function itBrowser(expectation: string, assertion?: jasmine.ImplementationCallback, timeout?: number): void {
-    if (typeof window !== 'undefined') {
-        it(expectation, assertion, timeout);
-    }
-}
+// function itBrowser(expectation: string, assertion?: jasmine.ImplementationCallback, timeout?: number): void {
+//     if (typeof window !== 'undefined') {
+//         it(expectation, assertion, timeout);
+//     }
+// }
 
 export function testFilesystem(
     db: () => duckdb.AsyncDuckDB,
@@ -47,15 +47,6 @@ export function testFilesystem(
             await test();
             await test();
         });
-        itBrowser('Blob used once', async () => {
-            const students = await resolveData('/uni/studenten.parquet');
-            expect(students).not.toBeNull();
-            const students_blob = new Blob([students!]);
-            const students_url = URL.createObjectURL(students_blob);
-            await db().registerFileURL('studenten.parquet', students_url, students_blob.size);
-            await test();
-            URL.revokeObjectURL(students_url);
-        });
     });
 
     describe('Parquet Scans', () => {
@@ -68,20 +59,6 @@ export function testFilesystem(
             expect(table.getColumnAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
-        });
-
-        itBrowser('single table from blob', async () => {
-            const students = await resolveData('/uni/studenten.parquet');
-            expect(students).not.toBeNull();
-            const students_blob = new Blob([students!]);
-            const students_url = URL.createObjectURL(students_blob);
-            await db().registerFileURL('studenten.parquet', students_url, students_blob.size);
-            const result = await conn.sendQuery(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
-            const table = await arrow.Table.from<{ matrnr: arrow.Int }>(result);
-            expect(table.getColumnAt(0)?.toArray()).toEqual(
-                new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
-            );
-            URL.revokeObjectURL(students_url);
         });
 
         it('simple join', async () => {
@@ -149,33 +126,6 @@ export function testFilesystem(
 29120;Theophrastos;2
 29555;Feuerbach;2
 `);
-        });
-
-        itBrowser('Copy To CSV Blob with COW', async () => {
-            const students = await resolveData('/uni/studenten.parquet');
-            expect(students).not.toBeNull();
-            const dummy = new Blob(['foooooo']);
-            const dummy_url = URL.createObjectURL(dummy);
-            await db().registerFileBuffer('studenten.parquet', students!);
-            await db().registerFileURL('students.csv', dummy_url, dummy.size);
-            await conn.runQuery(`CREATE TABLE students AS SELECT * FROM parquet_scan('studenten.parquet');`);
-            await conn.runQuery(`COPY students TO 'students.csv' WITH (HEADER 1, DELIMITER ';', FORMAT CSV);`);
-            await conn.runQuery(`DROP TABLE IF EXISTS students`);
-            const outBuffer = await db().copyFileToBuffer('students.csv');
-            expect(outBuffer).not.toBeNull();
-            const text = decoder.decode(outBuffer!);
-            expect(text).toBe(`matrnr;name;semester
-24002;Xenokrates;18
-25403;Jonas;12
-26120;Fichte;10
-26830;Aristoxenos;8
-27550;Schopenhauer;6
-28106;Carnap;3
-29120;Theophrastos;2
-29555;Feuerbach;2
-`);
-            expect(await (await fetch(dummy_url)).text()).toBe('foooooo');
-            URL.revokeObjectURL(dummy_url);
         });
 
         it('Copy To Parquet', async () => {

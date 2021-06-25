@@ -25,7 +25,6 @@ class WebFileSystem : public duckdb::FileSystem {
     enum DataProtocol : uint8_t {
         BUFFER = 0,
         NATIVE = 1,
-        BLOB = 2,
         HTTP = 3,
     };
 
@@ -134,8 +133,6 @@ class WebFileSystem : public duckdb::FileSystem {
     /// XXX This could of course overflow....
     /// Make this a uint64 with emscripten BigInts maybe.
     inline uint32_t AllocateFileID() { return ++next_file_id_; }
-    /// Copy a blob to a buffer
-    void CopyBlobToBuffer(WebFile &file);
 
    public:
     /// Constructor

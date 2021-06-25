@@ -38,13 +38,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            // Find out whether the BLOB/HTTP source supports range requests.
+            // Find out whether the HTTP source supports range requests.
             // Only Chrome implements range requests for object URLs unfortunately.
             // That means we have to buffer everything in firefox for now...
             //
             // XXX We might want to let the user explicitly opt into this fallback behavior here.
             //     If the user expects range requests but gets full downloads, the slowdown might be horrendous.
-            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP: {
                 // Send a dummy range request querying the first byte of the file
                 const xhr = new XMLHttpRequest();
@@ -87,7 +86,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP:
                 break;
             case DuckDBDataProtocol.NATIVE:
@@ -97,8 +95,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.BLOB:
-                throw Error('Cannot truncate a BLOB');
             case DuckDBDataProtocol.HTTP:
                 throw Error('Cannot truncate a HTTP file');
             case DuckDBDataProtocol.NATIVE:
@@ -111,7 +107,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         switch (file?.data_protocol) {
             // File reading from BLOB or HTTP MUST be done with range requests.
             // We have to check in OPEN if such file supports range requests and upgrade to BUFFER if not.
-            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP: {
                 if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
                 const xhr = new XMLHttpRequest();
@@ -144,8 +139,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     writeFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.BLOB:
-                throw Error('Cannot write to BLOB');
             case DuckDBDataProtocol.HTTP:
                 throw Error('Cannot write to HTTP file');
 
@@ -160,7 +153,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.NATIVE:
                 throw Error('Not implemented');
 
-            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP: {
                 if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
                 const xhr = new XMLHttpRequest();
@@ -177,11 +169,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     throw Error(`HEAD ${file.data_url} returned non-success status: ${xhr.status} "${xhr.statusText}"`);
                 }
             }
-
-            //case DuckDBDataProtocol.BLOB: {
-            //    const blob = resolveBlob(file);
-            //    return blob.size;
-            //}
         }
         return 0;
     },
@@ -192,7 +179,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 throw Error('Not implemented');
 
             case DuckDBDataProtocol.HTTP:
-            case DuckDBDataProtocol.BLOB:
                 return new Date().getTime();
         }
         return 0;

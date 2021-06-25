@@ -49,7 +49,6 @@ static duckdb::FileHandle &GetOrOpen(size_t file_id) {
             return *it->second;
         }
         case WebFileSystem::DataProtocol::BUFFER:
-        case WebFileSystem::DataProtocol::BLOB:
         case WebFileSystem::DataProtocol::HTTP:
             throw std::logic_error("data protocol not supported by fake webfs runtime");
     }
@@ -172,9 +171,7 @@ static inline WebFileSystem::DataProtocol inferDataProtocol(std::string_view url
     // Infer the data protocol from the prefix
     std::string_view data_url = url;
     auto proto = WebFileSystem::DataProtocol::BUFFER;
-    if (hasPrefix(url, "blob:")) {
-        proto = WebFileSystem::DataProtocol::BLOB;
-    } else if (hasPrefix(url, "http://") || hasPrefix(url, "https://")) {
+    if (hasPrefix(url, "http://") || hasPrefix(url, "https://")) {
         proto = WebFileSystem::DataProtocol::HTTP;
     } else if (hasPrefix(url, "file://")) {
         data_url = std::string_view{url}.substr(7);
@@ -213,18 +210,6 @@ std::string WebFileSystem::WebFile::GetInfoJSON() const {
     return strbuf.GetString();
 }
 
-/// Copy a blob to a buffer
-void WebFileSystem::CopyBlobToBuffer(WebFile &file) {
-    std::unique_lock<SharedMutex> excl_file_guard{file.file_mutex_};
-    if (file.data_protocol_ != DataProtocol::BLOB) return;
-
-    // Read the entire blob as buffer
-    std::unique_ptr<char[]> buffer{new char[file.file_size_]};
-    duckdb_web_fs_file_read(file.file_id_, buffer.get(), file.file_size_, 0);
-    file.data_protocol_ = DataProtocol::BUFFER;
-    file.data_buffer_ = DataBuffer{std::move(buffer), static_cast<size_t>(file.file_size_)};
-}
-
 /// Constructor
 WebFileSystem::WebFileSystem() {
     assert(WEBFS == nullptr && "Can construct only one web filesystem at a time");
@@ -243,14 +228,8 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto iter = files_by_name_.find(file_name);
     if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
 
-    // Make sure the user gave us a file size for the blob url.
-    // This is a precautious measure because browsers do not support HEAD requests against object URLs.
-    auto proto = inferDataProtocol(file_url);
-    if (proto == DataProtocol::BLOB && !file_size.has_value()) {
-        return arrow::Status::Invalid("Cannot register a blob url without a file size");
-    }
-
     // Allocate a new web file
+    auto proto = inferDataProtocol(file_url);
     auto file_id = AllocateFileID();
     auto file = std::make_unique<WebFile>(file_id, file_name, proto);
     file->data_url_ = file_url;
@@ -351,7 +330,6 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
             break;
         case DataProtocol::NATIVE:
             if (file_ptr->data_fd_.has_value()) break;
-        case DataProtocol::BLOB:
         case DataProtocol::HTTP:
             try {
                 // Open the file
@@ -367,10 +345,8 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                     file_ptr->data_protocol_ = DataProtocol::BUFFER;
                     file_ptr->data_buffer_ = DataBuffer{std::move(buffer), static_cast<size_t>(buffer_length)};
                 } else {
-                    // Get the file size if it was not provided to us
-                    if (file_ptr->file_size_ == 0 && file_ptr->data_protocol_ != DataProtocol::BLOB) {
-                        file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
-                    }
+                    // Otherwise resolve the file size
+                    file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
                 }
                 // Truncate file?
                 if ((flags & duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) != 0) {
@@ -424,7 +400,6 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
 
         // Just read with the filesystem api
         case DataProtocol::NATIVE:
-        case DataProtocol::BLOB:
         case DataProtocol::HTTP: {
             auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
             file_hdl.position_ += n;
@@ -451,13 +426,6 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
     // Do the actual write
     switch (file.data_protocol_) {
-        // Blobs are always copied to a buffer on first write
-        case DataProtocol::BLOB:
-            file_guard.unlock();
-            CopyBlobToBuffer(file);
-            file_guard.lock();
-            // Treat further as buffer
-
         // Buffers are trans
         case DataProtocol::BUFFER: {
             auto end = file_hdl.position_ + nr_bytes;
@@ -526,7 +494,6 @@ time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
         case DataProtocol::BUFFER:
             return 0;
         case DataProtocol::NATIVE:
-        case DataProtocol::BLOB:
         case DataProtocol::HTTP: {
             return duckdb_web_fs_file_get_last_modified_time(file.file_id_);
         }
@@ -545,11 +512,6 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     std::unique_lock<SharedMutex> file_guard{file_hdl.file_->file_mutex_};
     // Resize the buffer
     switch (file.data_protocol_) {
-        case DataProtocol::BLOB:
-            file_guard.unlock();
-            CopyBlobToBuffer(file);
-            file_guard.lock();
-
         case DataProtocol::BUFFER:
             file.data_buffer_->Resize(new_size);
             break;
