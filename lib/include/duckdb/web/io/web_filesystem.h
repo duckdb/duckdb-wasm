@@ -119,7 +119,7 @@ class WebFileSystem : public duckdb::FileSystem {
 
    protected:
     /// The filesystem mutex
-    std::mutex fs_mutex_ = {};
+    LightMutex fs_mutex_ = {};
     /// The files by id
     std::unordered_map<uint32_t, std::unique_ptr<WebFile>> files_by_id_ = {};
     /// The files by path

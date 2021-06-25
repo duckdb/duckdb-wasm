@@ -138,7 +138,7 @@ void WebFileSystem::WebFileHandle::Close() {
     std::unique_lock<SharedMutex> file_guard{file.file_mutex_, std::defer_lock};
     auto have_file_lock = file_guard.try_lock();
     // Additionally acquire the filesystem lock
-    std::unique_lock<std::mutex> fs_guard{fs_.fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_.fs_mutex_};
     // More than one handle left?
     if (file.handle_count_ > 1) {
         --file.handle_count_;
@@ -229,7 +229,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     std::string_view file_name, std::string_view file_url, std::optional<uint64_t> file_size) {
     DEBUG_TRACE();
     // Check if the file exists
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     auto iter = files_by_name_.find(file_name);
     if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
 
@@ -254,7 +254,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     std::string_view file_name, DataBuffer file_buffer) {
     DEBUG_TRACE();
     // Check if the file exists
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     auto iter = files_by_name_.find(file_name);
     if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
 
@@ -276,7 +276,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 /// Set a file descriptor
 arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor) {
     DEBUG_TRACE();
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
     if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
     iter->second->data_fd_ = file_descriptor;
@@ -286,7 +286,7 @@ arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_d
 /// Get a file info as JSON string
 arrow::Result<std::string> WebFileSystem::GetFileInfoJSON(uint32_t file_id) {
     DEBUG_TRACE();
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     auto iter = files_by_id_.find(file_id);
     if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
     auto &file = *iter->second;
@@ -297,7 +297,7 @@ arrow::Result<std::string> WebFileSystem::GetFileInfoJSON(uint32_t file_id) {
 std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                             FileCompressionType compression) {
     DEBUG_TRACE();
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
 
     // Determine url type
     std::string_view data_url = url;
@@ -527,7 +527,7 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
         }
     }
     // Acquire filesystem mutex to protect the file size update
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     // Update the file size
     file.file_size_ = new_size;
 }
@@ -545,7 +545,7 @@ void WebFileSystem::RemoveDirectory(const std::string &directory) {
 }
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
 bool WebFileSystem::ListFiles(const std::string &directory, const std::function<void(std::string, bool)> &callback) {
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     list_files_callback = &callback;
     bool result = duckdb_web_fs_directory_list_files(directory.c_str(), directory.size());
     list_files_callback = {};
@@ -579,7 +579,7 @@ std::string WebFileSystem::GetHomeDirectory() { return "/"; }
 
 /// Runs a glob on the file system, returning a list of matching files
 std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
-    std::unique_lock<std::mutex> fs_guard{fs_mutex_};
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     std::vector<std::string> results;
     auto glob = glob_to_regex(path);
     for (auto [name, file] : files_by_name_) {
