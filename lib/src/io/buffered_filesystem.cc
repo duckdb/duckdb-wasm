@@ -9,6 +9,7 @@
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/utils/parallel.h"
 
 static const std::function<void(std::string, bool)> *list_files_callback = {};
 static std::vector<std::string> *glob_results = {};
@@ -31,7 +32,32 @@ BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system,
 BufferedFileHandle::~BufferedFileHandle() { Close(); }
 
 BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_manager)
-    : file_page_buffer_(std::move(buffer_manager)), filesystem_(*file_page_buffer_->GetFileSystem()) {}
+    : file_page_buffer_(std::move(buffer_manager)),
+      filesystem_(*file_page_buffer_->GetFileSystem()),
+      fs_mutex_(),
+      file_pass_through_() {}
+
+/// Pass through a file
+void BufferedFileSystem::RegisterFile(std::string_view file, bool pass_through) {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (pass_through) {
+        file_pass_through_.insert({std::string{file}});
+    } else {
+        file_pass_through_.erase({std::string{file}});
+    }
+}
+
+/// Drop a file
+void BufferedFileSystem::DropFile(std::string_view file) {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    file_pass_through_.erase({std::string{file}});
+}
+
+/// Drop a file
+void BufferedFileSystem::DropFiles() {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    file_pass_through_.clear();
+}
 
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
@@ -45,6 +71,14 @@ void BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t 
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
     auto reader = static_cast<char *>(buffer);
+
+    // Pass-through?
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        file->GetHandle().Read(buffer, nr_bytes, location);
+        return;
+    }
+    fs_guard.unlock();
 
     // Read page-wise
     auto file_size = file->GetSize();
@@ -67,6 +101,14 @@ void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t
     auto &file = file_hdl.GetFile();
     auto writer = static_cast<char *>(buffer);
 
+    // Pass-through?
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        file->GetHandle().Write(buffer, nr_bytes, location);
+        return;
+    }
+    fs_guard.unlock();
+
     // Write page-wise
     auto file_size = file->GetSize();
     while (nr_bytes > 0) {
@@ -82,6 +124,11 @@ void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t
 int64_t BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        return file->GetHandle().Read(buffer, nr_bytes);
+    }
+    fs_guard.unlock();
     auto n = file->Read(buffer, nr_bytes, file_hdl.file_position_);
     file_hdl.file_position_ += n;
     return n;
@@ -90,6 +137,11 @@ int64_t BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64
 int64_t BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        return file->GetHandle().Write(buffer, nr_bytes);
+    }
+    fs_guard.unlock();
     auto n = file->Write(buffer, nr_bytes, file_hdl.file_position_);
     file_hdl.file_position_ += n;
     return n;
@@ -99,6 +151,11 @@ int64_t BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int6
 void BufferedFileSystem::FileSync(duckdb::FileHandle &handle) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        return file->GetHandle().Sync();
+    }
+    fs_guard.unlock();
     file->Flush();
 }
 
@@ -144,17 +201,31 @@ void BufferedFileSystem::SetWorkingDirectory(const std::string &path) {
 /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
 void BufferedFileSystem::Seek(duckdb::FileHandle &handle, idx_t location) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
+    auto &file = file_hdl.GetFile();
     file_hdl.file_position_ = location;
-    filesystem_.Seek(file_hdl.GetFileHandle(), location);
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        return file->GetHandle().Seek(location);
+    }
 }
 /// Reset a file to the beginning (equivalent to Seek(handle, 0) for simple files)
 void BufferedFileSystem::Reset(duckdb::FileHandle &handle) {
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
+    auto &file = file_hdl.GetFile();
     file_hdl.file_position_ = 0;
-    filesystem_.Reset(file_hdl.GetFileHandle());
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        return file->GetHandle().Reset();
+    }
 }
 /// Get the current position within the file
 idx_t BufferedFileSystem::SeekPosition(duckdb::FileHandle &handle) {
+    auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
+    auto &file = file_hdl.GetFile();
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (file_pass_through_.count(file->GetPath())) {
+        return file->GetHandle().SeekPosition();
+    }
     return static_cast<BufferedFileHandle &>(handle).file_position_;
 }
 /// Whether or not we can seek into the file
