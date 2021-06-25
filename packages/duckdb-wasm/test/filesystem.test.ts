@@ -52,7 +52,7 @@ export function testFilesystem(
             expect(students).not.toBeNull();
             const students_blob = new Blob([students!]);
             const students_url = URL.createObjectURL(students_blob);
-            await db().registerFileURL('studenten.parquet', students_url);
+            await db().registerFileURL('studenten.parquet', students_url, students_blob.size);
             await test();
             URL.revokeObjectURL(students_url);
         });
@@ -75,7 +75,7 @@ export function testFilesystem(
             expect(students).not.toBeNull();
             const students_blob = new Blob([students!]);
             const students_url = URL.createObjectURL(students_blob);
-            await db().registerFileURL('studenten.parquet', students_url);
+            await db().registerFileURL('studenten.parquet', students_url, students_blob.size);
             const result = await conn.sendQuery(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
             const table = await arrow.Table.from<{ matrnr: arrow.Int }>(result);
             expect(table.getColumnAt(0)?.toArray()).toEqual(
@@ -157,7 +157,7 @@ export function testFilesystem(
             const dummy = new Blob(['foooooo']);
             const dummy_url = URL.createObjectURL(dummy);
             await db().registerFileBuffer('studenten.parquet', students!);
-            await db().registerFileURL('students.csv', dummy_url);
+            await db().registerFileURL('students.csv', dummy_url, dummy.size);
             await conn.runQuery(`CREATE TABLE students AS SELECT * FROM parquet_scan('studenten.parquet');`);
             await conn.runQuery(`COPY students TO 'students.csv' WITH (HEADER 1, DELIMITER ';', FORMAT CSV);`);
             await conn.runQuery(`DROP TABLE IF EXISTS students`);

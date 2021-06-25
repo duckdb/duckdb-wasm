@@ -84,7 +84,7 @@ class Shell extends React.Component<Props> {
         const fileInfos: Array<model.FileInfo> = [];
         for (const file of acceptedFiles) {
             const url = URL.createObjectURL(file);
-            await this.database.registerFileURL(file.name, url);
+            await this.database.registerFileURL(file.name, url, file.size);
             fileInfos.push({
                 name: file.name,
                 url: url,

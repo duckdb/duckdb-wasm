@@ -13,21 +13,21 @@ type ExtendedFileInfo = DuckDBFileInfo & {
     blob: Blob | null;
 };
 
-function resolveBlob(file: ExtendedFileInfo): Blob {
-    if (file.blob !== null) return file.blob;
-    if (!file.data_url) {
-        throw new Error(`Missing data object URL: ${file.file_id}`);
-    }
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', file.data_url, false);
-    xhr.responseType = 'blob';
-    xhr.send(null);
-    if (xhr.status !== 200) {
-        throw new Error(`Could not resolve blob: ${file.data_url}`);
-    }
-    file.blob = xhr.response as Blob;
-    return file.blob;
-}
+// function resolveBlob(file: ExtendedFileInfo): Blob {
+//     if (file.blob !== null) return file.blob;
+//     if (!file.data_url) {
+//         throw new Error(`Missing data object URL: ${file.file_id}`);
+//     }
+//     const xhr = new XMLHttpRequest();
+//     xhr.open('GET', file.data_url, false);
+//     xhr.responseType = 'blob';
+//     xhr.send(null);
+//     if (xhr.status !== 200) {
+//         throw new Error(`Could not resolve blob: ${file.data_url}`);
+//     }
+//     file.blob = xhr.response as Blob;
+//     return file.blob;
+// }
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     fileInfoCache: Map<number, ExtendedFileInfo>;
@@ -96,13 +96,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     readFile(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.BLOB: {
-                const blob = resolveBlob(file);
-                const slice = blob.slice(location, location + bytes);
-                const src = new Uint8Array(new FileReaderSync().readAsArrayBuffer(slice));
-                mod.HEAPU8.set(src, buf);
-                return src.byteLength;
-            }
+            //case DuckDBDataProtocol.BLOB: {
+            //    const blob = resolveBlob(file);
+            //    const slice = blob.slice(location, location + bytes);
+            //    const src = new Uint8Array(new FileReaderSync().readAsArrayBuffer(slice));
+            //    mod.HEAPU8.set(src, buf);
+            //    return src.byteLength;
+            //}
+
+            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP: {
                 if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
                 const xhr = new XMLHttpRequest();
@@ -111,7 +113,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 xhr.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
                 xhr.send(null);
                 if (xhr.status == 206 /* Partial content */) {
-                    const src = new Uint8Array(xhr.response);
+                    const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
+                    mod.HEAPU8.set(src, buf);
+                    return src.byteLength;
+                } else if (xhr.status == 200) {
+                    console.error(
+                        `BLOB range read did not respond with 206! requested=${bytes} read=${xhr.response.byteLength}`,
+                    );
+                    const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
                     mod.HEAPU8.set(src, buf);
                     return src.byteLength;
                 } else {
@@ -144,6 +153,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.NATIVE:
                 throw Error('Not implemented');
 
+            case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP: {
                 if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
                 const xhr = new XMLHttpRequest();
@@ -161,10 +171,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
             }
 
-            case DuckDBDataProtocol.BLOB: {
-                const blob = resolveBlob(file);
-                return blob.size;
-            }
+            //case DuckDBDataProtocol.BLOB: {
+            //    const blob = resolveBlob(file);
+            //    return blob.size;
+            //}
         }
         return 0;
     },
@@ -175,7 +185,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 throw Error('Not implemented');
 
             case DuckDBDataProtocol.HTTP:
-                return new Date().getTime();
             case DuckDBDataProtocol.BLOB:
                 return new Date().getTime();
         }

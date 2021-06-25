@@ -108,7 +108,8 @@ class WebDB {
     void FlushFile(std::string_view path);
 
     /// Register a file URL
-    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url);
+    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                  std::optional<uint64_t> file_size);
     /// Register a file URL
     arrow::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
     /// Drop all files

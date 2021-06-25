@@ -253,10 +253,11 @@ void WebDB::FlushFiles() { file_page_buffer_->FlushFiles(); }
 void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path); }
 
 /// Register a file URL
-arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url) {
+arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                     std::optional<uint64_t> file_size) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url));
+    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url, file_size));
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
     return arrow::Status::OK();
 }
