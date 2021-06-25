@@ -8,6 +8,7 @@
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/file_page_buffer.h"
+#include "duckdb/web/utils/parallel.h"
 
 namespace duckdb {
 namespace web {
@@ -45,6 +46,10 @@ class BufferedFileSystem : public duckdb::FileSystem {
     std::shared_ptr<FilePageBuffer> file_page_buffer_;
     /// The inner file system
     duckdb::FileSystem &filesystem_;
+    /// The filesystem mutex
+    LightMutex fs_mutex_;
+    /// The files that are passed through
+    std::unordered_set<std::string> file_pass_through_;
 
    public:
     /// Constructor
@@ -52,6 +57,14 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// Destructor
     virtual ~BufferedFileSystem() {}
 
+    /// Pass through a file
+    void RegisterFile(std::string_view file, bool pass_through = false);
+    /// Drop a file
+    void DropFile(std::string_view file);
+    /// Drop a file
+    void DropFiles();
+
+   public:
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
                                                  FileCompressionType compression) override;

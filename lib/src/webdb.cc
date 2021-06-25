@@ -203,6 +203,7 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
       connections_(),
       db_config_() {
     auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
+    buffered_filesystem_ = buffered_filesystem.get();
     db_config_.file_system = std::move(buffered_filesystem);
     db_config_.maximum_threads = 1;
     database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
@@ -266,6 +267,7 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
                                         size_t buffer_length) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    buffered_filesystem_->RegisterFile(file_name, true);
     io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
     ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileBuffer(file_name, std::move(data)));
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
