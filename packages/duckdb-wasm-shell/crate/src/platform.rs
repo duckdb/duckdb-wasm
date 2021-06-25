@@ -11,6 +11,8 @@ extern "C" {
     pub fn has_wasm_threads(this: &JSPlatformFeatures) -> bool;
     #[wasm_bindgen(method, getter, js_name = "wasmExceptions")]
     pub fn has_wasm_exceptions(this: &JSPlatformFeatures) -> bool;
+    #[wasm_bindgen(method, getter, js_name = "wasmSIMD")]
+    pub fn has_wasm_simd(this: &JSPlatformFeatures) -> bool;
     #[wasm_bindgen(method, getter, js_name = "crossOriginIsolated")]
     pub fn is_cross_origin_isolated(this: &JSPlatformFeatures) -> bool;
 }
@@ -18,6 +20,7 @@ extern "C" {
 pub struct PlatformFeatures {
     pub cross_origin_isolated: bool,
     pub wasm_threads: bool,
+    pub wasm_simd: bool,
     pub wasm_exceptions: bool,
 }
 
@@ -29,12 +32,14 @@ impl PlatformFeatures {
                 Self {
                     cross_origin_isolated: f.is_cross_origin_isolated(),
                     wasm_threads: f.has_wasm_threads(),
+                    wasm_simd: f.has_wasm_simd(),
                     wasm_exceptions: f.has_wasm_exceptions(),
                 }
             }
             Err(_e) => Self {
                 cross_origin_isolated: false,
                 wasm_threads: false,
+                wasm_simd: false,
                 wasm_exceptions: false,
             },
         }

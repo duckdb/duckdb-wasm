@@ -188,6 +188,12 @@ impl Shell {
         );
         write_feature(
             &mut buffer,
+            "WebAssembly SIMD",
+            "https://www.chromestatus.com/feature/6533147810332672",
+            platform.wasm_simd,
+        );
+        write_feature(
+            &mut buffer,
             "WebAssembly Threads",
             "https://chromestatus.com/feature/5724132452859904",
             platform.wasm_threads,

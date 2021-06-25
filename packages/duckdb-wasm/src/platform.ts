@@ -25,11 +25,13 @@ export interface DuckDBConfig {
 export interface PlatformFeatures {
     crossOriginIsolated: boolean;
     wasmExceptions: boolean;
+    wasmSIMD: boolean;
     wasmThreads: boolean;
 }
 
 let wasmExceptions: boolean | null = null;
 let wasmThreads: boolean | null = null;
+let wasmSIMD: boolean | null = null;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 declare namespace globalThis {
@@ -47,9 +49,13 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
     if (wasmThreads == null) {
         wasmThreads = await check.threads();
     }
+    if (wasmSIMD == null) {
+        wasmSIMD = await check.simd();
+    }
     return {
         crossOriginIsolated: isNode() || globalThis.crossOriginIsolated || false,
         wasmExceptions: wasmExceptions!,
+        wasmSIMD: wasmSIMD!,
         wasmThreads: wasmThreads!,
     };
 }
