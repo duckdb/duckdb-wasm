@@ -32,7 +32,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         NODE_RUNTIME.fileInfoCache.set(fileId, info);
         return info as DuckDBFileInfo;
     },
-    openFile(mod: DuckDBModule, fileId: number): void {
+    openFile(mod: DuckDBModule, fileId: number): number {
         NODE_RUNTIME.fileInfoCache.delete(fileId);
         const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
         switch (file?.data_protocol) {
@@ -56,6 +56,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.HTTP:
                 throw Error('Not implemented');
         }
+        return 0;
     },
     syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
