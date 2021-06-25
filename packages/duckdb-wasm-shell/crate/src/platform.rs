@@ -13,6 +13,8 @@ extern "C" {
     pub fn has_wasm_exceptions(this: &JSPlatformFeatures) -> bool;
     #[wasm_bindgen(method, getter, js_name = "wasmSIMD")]
     pub fn has_wasm_simd(this: &JSPlatformFeatures) -> bool;
+    #[wasm_bindgen(method, getter, js_name = "wasmBulkMemory")]
+    pub fn has_wasm_bulk_memory(this: &JSPlatformFeatures) -> bool;
     #[wasm_bindgen(method, getter, js_name = "crossOriginIsolated")]
     pub fn is_cross_origin_isolated(this: &JSPlatformFeatures) -> bool;
 }
@@ -21,6 +23,7 @@ pub struct PlatformFeatures {
     pub cross_origin_isolated: bool,
     pub wasm_threads: bool,
     pub wasm_simd: bool,
+    pub wasm_bulk_memory: bool,
     pub wasm_exceptions: bool,
 }
 
@@ -33,6 +36,7 @@ impl PlatformFeatures {
                     cross_origin_isolated: f.is_cross_origin_isolated(),
                     wasm_threads: f.has_wasm_threads(),
                     wasm_simd: f.has_wasm_simd(),
+                    wasm_bulk_memory: f.has_wasm_bulk_memory(),
                     wasm_exceptions: f.has_wasm_exceptions(),
                 }
             }
@@ -40,6 +44,7 @@ impl PlatformFeatures {
                 cross_origin_isolated: false,
                 wasm_threads: false,
                 wasm_simd: false,
+                wasm_bulk_memory: false,
                 wasm_exceptions: false,
             },
         }

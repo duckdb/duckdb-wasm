@@ -26,12 +26,14 @@ export interface PlatformFeatures {
     crossOriginIsolated: boolean;
     wasmExceptions: boolean;
     wasmSIMD: boolean;
+    wasmBulkMemory: boolean;
     wasmThreads: boolean;
 }
 
 let wasmExceptions: boolean | null = null;
 let wasmThreads: boolean | null = null;
 let wasmSIMD: boolean | null = null;
+let wasmBulkMemory: boolean | null = null;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 declare namespace globalThis {
@@ -52,17 +54,21 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
     if (wasmSIMD == null) {
         wasmSIMD = await check.simd();
     }
+    if (wasmBulkMemory == null) {
+        wasmBulkMemory = await check.bulkMemory();
+    }
     return {
         crossOriginIsolated: isNode() || globalThis.crossOriginIsolated || false,
         wasmExceptions: wasmExceptions!,
         wasmSIMD: wasmSIMD!,
         wasmThreads: wasmThreads!,
+        wasmBulkMemory: wasmBulkMemory!,
     };
 }
 
 export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
     const platform = await getPlatformFeatures();
-    if (platform.wasmExceptions) {
+    if (platform.wasmExceptions && platform.wasmSIMD) {
         if (platform.wasmThreads && platform.crossOriginIsolated && bundles.asyncEHMT) {
             return {
                 mainModule: bundles.asyncEHMT.mainModule,
