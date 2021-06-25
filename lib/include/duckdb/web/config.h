@@ -9,6 +9,8 @@ namespace web {
 enum WebDBFeature : uint32_t {
     FAST_EXCEPTIONS = 0,
     THREADS = 1,
+    SIMD = 2,
+    BULK_MEMORY = 3,
 };
 
 constexpr uint32_t WEBDB_FEATURES = (0
@@ -17,6 +19,12 @@ constexpr uint32_t WEBDB_FEATURES = (0
 #endif
 #ifdef WEBDB_THREADS
                                      | (1 << WebDBFeature::THREADS)
+#endif
+#ifdef WEBDB_SIMD
+                                     | (1 << WebDBFeature::SIMD)
+#endif
+#ifdef WEBDB_BULK_MEMORY
+                                     | (1 << WebDBFeature::BULK_MEMORY)
 #endif
 );
 

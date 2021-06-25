@@ -189,8 +189,14 @@ impl Shell {
         write_feature(
             &mut buffer,
             "WebAssembly SIMD",
-            "https://www.chromestatus.com/feature/6533147810332672",
+            "https://chromestatus.com/feature/6533147810332672",
             platform.wasm_simd,
+        );
+        write_feature(
+            &mut buffer,
+            "WebAssembly Bulk Memory",
+            "https://chromestatus.com/feature/4590306448113664",
+            platform.wasm_bulk_memory,
         );
         write_feature(
             &mut buffer,
@@ -223,6 +229,18 @@ impl Shell {
             "WebAssembly Exceptions",
             "Module uses native exceptions",
             (db_features & 0b1) != 0,
+        );
+        write_feature(
+            &mut buffer,
+            "WebAssembly SIMD",
+            "Module uses SIMD instructions",
+            (db_features & 0b100) != 0,
+        );
+        write_feature(
+            &mut buffer,
+            "WebAssembly Bulk Memory",
+            "Module uses bulk memory operations",
+            (db_features & 0b100) != 0,
         );
         write_feature(
             &mut buffer,

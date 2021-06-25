@@ -36,7 +36,12 @@ namespace io {
 /// This is only used for tests.
 static auto NATIVE_FS = CreateDefaultFileSystem();
 /// The thread local file handles
-thread_local static std::unordered_map<size_t, std::unique_ptr<FileHandle>> LOCAL_FS_HANDLES;
+#if WEBDB_THREADS
+#define THREAD_LOCAL thread_local
+#else
+#define THREAD_LOCAL
+#endif
+THREAD_LOCAL static std::unordered_map<size_t, std::unique_ptr<FileHandle>> LOCAL_FS_HANDLES;
 /// Get or open a file and throw if something is off
 static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     auto file = WebFileSystem::Get()->GetFile(file_id);
