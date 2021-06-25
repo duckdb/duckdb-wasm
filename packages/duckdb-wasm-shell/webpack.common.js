@@ -54,7 +54,7 @@ export function configure(params) {
                     type: 'webassembly/async',
                 },
                 {
-                    test: /.*duckdb(|-eh|-eh-mt)\.wasm$/,
+                    test: /.*duckdb(|-next|-next-coi)\.wasm$/,
                     type: 'javascript/auto',
                     loader: 'file-loader',
                     options: {

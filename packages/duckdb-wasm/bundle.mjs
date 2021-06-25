@@ -37,11 +37,15 @@ rimraf.sync(dist + '/*.js.map');
 
 const src = path.resolve(__dirname, 'src');
 fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm.wasm'), path.resolve(dist, 'duckdb.wasm'), printErr);
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh.wasm'), path.resolve(dist, 'duckdb-eh.wasm'), printErr);
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_eh_mt.wasm'), path.resolve(dist, 'duckdb-eh-mt.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_next.wasm'), path.resolve(dist, 'duckdb-next.wasm'), printErr);
+fs.copyFile(
+    path.resolve(src, 'bindings', 'duckdb_wasm_next_coi.wasm'),
+    path.resolve(dist, 'duckdb-next-coi.wasm'),
+    printErr,
+);
 //fs.copyFile(
-//    path.resolve(src, 'bindings', 'duckdb_wasm_eh_mt.pthread.js'),
-//    path.resolve(dist, 'duckdb-browser-async-eh-mt.pthread.worker.js'),
+//    path.resolve(src, 'bindings', 'duckdb_wasm_next_coi.pthread.js'),
+//    path.resolve(dist, 'duckdb-browser-async-next-coi.pthread.worker.js'),
 //    printErr,
 //);
 
@@ -83,10 +87,10 @@ esbuild.build({
     sourcemap: is_debug ? 'inline' : true,
 });
 
-console.log('[ ESBUILD ] duckdb-browser-sync-eh.js');
+console.log('[ ESBUILD ] duckdb-browser-sync-next.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-sync-eh.ts'],
-    outfile: 'dist/duckdb-browser-sync-eh.js',
+    entryPoints: ['./src/targets/duckdb-browser-sync-next.ts'],
+    outfile: 'dist/duckdb-browser-sync-next.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -123,10 +127,10 @@ esbuild.build({
     sourcemap: is_debug ? 'inline' : true,
 });
 
-console.log('[ ESBUILD ] duckdb-browser-async-eh.worker.js');
+console.log('[ ESBUILD ] duckdb-browser-async-next.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-async-eh.worker.ts'],
-    outfile: 'dist/duckdb-browser-async-eh.worker.js',
+    entryPoints: ['./src/targets/duckdb-browser-async-next.worker.ts'],
+    outfile: 'dist/duckdb-browser-async-next.worker.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -136,10 +140,10 @@ esbuild.build({
     sourcemap: is_debug ? 'inline' : true,
 });
 
-console.log('[ ESBUILD ] duckdb-browser-async-eh-mt.worker.js');
+console.log('[ ESBUILD ] duckdb-browser-async-next-coi.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-async-eh-mt.worker.ts'],
-    outfile: 'dist/duckdb-browser-async-eh-mt.worker.js',
+    entryPoints: ['./src/targets/duckdb-browser-async-next-coi.worker.ts'],
+    outfile: 'dist/duckdb-browser-async-next-coi.worker.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -149,10 +153,10 @@ esbuild.build({
     sourcemap: is_debug ? 'inline' : true,
 });
 
-console.log('[ ESBUILD ] duckdb-browser-async-eh-mt.pthread.worker.js');
+console.log('[ ESBUILD ] duckdb-browser-async-next-coi.pthread.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-async-eh-mt.pthread.worker.ts'],
-    outfile: 'dist/duckdb-browser-async-eh-mt.pthread.worker.js',
+    entryPoints: ['./src/targets/duckdb-browser-async-next-coi.pthread.worker.ts'],
+    outfile: 'dist/duckdb-browser-async-next-coi.pthread.worker.js',
     platform: 'browser',
     format: 'iife',
     target: TARGET,
@@ -177,10 +181,10 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] duckdb-node-sync-eh.js');
+console.log('[ ESBUILD ] duckdb-node-sync-next.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node-sync-eh.ts'],
-    outfile: 'dist/duckdb-node-sync-eh.js',
+    entryPoints: ['./src/targets/duckdb-node-sync-next.ts'],
+    outfile: 'dist/duckdb-node-sync-next.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -216,10 +220,10 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] duckdb-node-async-eh.worker.js');
+console.log('[ ESBUILD ] duckdb-node-async-next.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node-async-eh.worker.ts'],
-    outfile: 'dist/duckdb-node-async-eh.worker.js',
+    entryPoints: ['./src/targets/duckdb-node-async-next.worker.ts'],
+    outfile: 'dist/duckdb-node-async-next.worker.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -266,13 +270,13 @@ fs.writeFile(path.join(dist, 'duckdb.module.d.ts'), "export * from './types/src/
 
 // Browser declarations
 fs.writeFile(
-    path.join(dist, 'duckdb-browser.d.ts'),
+    path.join(dist, 'duckdb-browser-sync.d.ts'),
     "export * from './types/src/targets/duckdb-browser-sync';",
     printErr,
 );
 fs.writeFile(
-    path.join(dist, 'duckdb-browser-eh.d.ts'),
-    "export * from './types/src/targets/duckdb-browser-sync-eh';",
+    path.join(dist, 'duckdb-browser-sync-next.d.ts'),
+    "export * from './types/src/targets/duckdb-browser-sync-next';",
     printErr,
 );
 fs.writeFile(
@@ -281,13 +285,13 @@ fs.writeFile(
     printErr,
 );
 fs.writeFile(
-    path.join(dist, 'duckdb-browser-async-eh.d.ts'),
-    "export * from './types/src/targets/duckdb-browser-async-eh';",
+    path.join(dist, 'duckdb-browser-async-next.d.ts'),
+    "export * from './types/src/targets/duckdb-browser-async-next';",
     printErr,
 );
 fs.writeFile(
-    path.join(dist, 'duckdb-browser-async-eh-mt.d.ts'),
-    "export * from './types/src/targets/duckdb-browser-async-eh-mt';",
+    path.join(dist, 'duckdb-browser-async-next-coi.d.ts'),
+    "export * from './types/src/targets/duckdb-browser-async-next-coi';",
     printErr,
 );
 
@@ -298,8 +302,8 @@ fs.writeFile(
     printErr,
 );
 fs.writeFile(
-    path.join(dist, 'duckdb-node-sync-eh.d.ts'),
-    "export * from './types/src/targets/duckdb-node-sync-eh';",
+    path.join(dist, 'duckdb-node-sync-next.d.ts'),
+    "export * from './types/src/targets/duckdb-node-sync-next';",
     printErr,
 );
 fs.writeFile(

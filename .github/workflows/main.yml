@@ -176,20 +176,20 @@ jobs:
                       ./scripts/wasm_build_lib.sh release default
                       ccache -s
 
-            - name: Build WASM module +eh
+            - name: Build WASM module +next
               uses: ./actions/image
               with:
                   script: |-
                       ccache -s
-                      ./scripts/wasm_build_lib.sh release eh
+                      ./scripts/wasm_build_lib.sh release next
                       ccache -s
 
-            - name: Build WASM module +eh +mt
+            - name: Build WASM module +next +coi
               uses: ./actions/image
               with:
                   script: |-
                       ccache -s
-                      ./scripts/wasm_build_lib.sh release eh_mt
+                      ./scripts/wasm_build_lib.sh release next_coi
                       ccache -s
 
             - name: Build @duckdb/duckdb-wasm
