@@ -6,6 +6,7 @@
 #include "arrow/status.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/web/json_parser.h"
+#include "duckdb/web/utils/reservoir_sample.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/istreamwrapper.h"
 

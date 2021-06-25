@@ -40,7 +40,6 @@ void FileStatisticsCollector::Resize(uint64_t n) {
 
 /// Encode the block statistics
 arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportBlockStatistics() const {
-    std::cout << "EXPORT BLOCKS " << block_count_ << " " << block_shift_ << std::endl;
     auto buffer = arrow::AllocateBuffer(sizeof(double) + block_count_ * sizeof(uint16_t));
     auto writer = buffer.ValueOrDie()->mutable_data();
     auto* block_size = reinterpret_cast<double*>(writer);

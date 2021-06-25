@@ -1,5 +1,5 @@
-#ifndef INCLUDE_DUCKDB_WEB_WASM_RESPONSE_H_
-#define INCLUDE_DUCKDB_WEB_WASM_RESPONSE_H_
+#ifndef INCLUDE_DUCKDB_WEB_UTILS_WASM_RESPONSE_H_
+#define INCLUDE_DUCKDB_WEB_UTILS_WASM_RESPONSE_H_
 
 #include "arrow/io/buffered.h"
 #include "arrow/io/interfaces.h"

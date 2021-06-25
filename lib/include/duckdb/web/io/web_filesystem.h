@@ -11,8 +11,8 @@
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/file_stats.h"
-#include "duckdb/web/mutex.h"
-#include "duckdb/web/wasm_response.h"
+#include "duckdb/web/utils/parallel.h"
+#include "duckdb/web/utils/wasm_response.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
