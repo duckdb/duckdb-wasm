@@ -9,34 +9,14 @@ import {
 } from './runtime';
 import { DuckDBModule } from 'src/targets/duckdb-browser-sync-eh';
 
-type ExtendedFileInfo = DuckDBFileInfo & {
-    blob: Blob | null;
-};
-
-// function resolveBlob(file: ExtendedFileInfo): Blob {
-//     if (file.blob !== null) return file.blob;
-//     if (!file.data_url) {
-//         throw new Error(`Missing data object URL: ${file.file_id}`);
-//     }
-//     const xhr = new XMLHttpRequest();
-//     xhr.open('GET', file.data_url, false);
-//     xhr.responseType = 'blob';
-//     xhr.send(null);
-//     if (xhr.status !== 200) {
-//         throw new Error(`Could not resolve blob: ${file.data_url}`);
-//     }
-//     file.blob = xhr.response as Blob;
-//     return file.blob;
-// }
-
 export const BROWSER_RUNTIME: DuckDBRuntime & {
-    fileInfoCache: Map<number, ExtendedFileInfo>;
+    fileInfoCache: Map<number, DuckDBFileInfo>;
 
-    getFileInfo(mod: DuckDBModule, fileId: number): ExtendedFileInfo | null;
+    getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
 } = {
-    fileInfoCache: new Map<number, ExtendedFileInfo>(),
+    fileInfoCache: new Map<number, DuckDBFileInfo>(),
 
-    getFileInfo(mod: DuckDBModule, fileId: number): ExtendedFileInfo | null {
+    getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         const cached = BROWSER_RUNTIME.fileInfoCache.get(fileId);
         if (cached) return cached;
         const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info', ['number'], [fileId]);
@@ -49,22 +29,58 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         if (info == null) {
             return null;
         }
-        const file = { ...info, blob: null } as ExtendedFileInfo;
+        const file = { ...info, blob: null } as DuckDBFileInfo;
         BROWSER_RUNTIME.fileInfoCache.set(fileId, file);
         return file;
     },
 
-    openFile: (mod: DuckDBModule, fileId: number) => {
+    openFile: (mod: DuckDBModule, fileId: number): number => {
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.HTTP:
-                // XXX could fire a HEAD request here to get the file size and check whether the file is accessible
-                break;
+            // Find out whether the BLOB/HTTP source supports range requests.
+            // Only Chrome implements range requests for object URLs unfortunately.
+            // That means we have to buffer everything in firefox for now...
+            //
+            // XXX We might want to let the user explicitly opt into this fallback behavior here.
+            //     If the user expects range requests but gets full downloads, the slowdown might be horrendous.
             case DuckDBDataProtocol.BLOB:
+            case DuckDBDataProtocol.HTTP: {
+                // Send a dummy range request querying the first byte of the file
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', file.data_url!, false);
+                xhr.responseType = 'arraybuffer';
+                xhr.setRequestHeader('Range', `bytes=0-1`);
+                xhr.send(null);
+                if (xhr.status == 206) {
+                    // Source supports partial reading, no explicit buffering necessary.
+                } else if (xhr.status == 200) {
+                    console.info(
+                        `File does not support range requests, buffering everything in WASM instead. url=${file.data_url!}`,
+                    );
+
+                    // Source returned us everything, great!
+                    // Copy everything into wasm.
+                    const buffer = xhr.response as ArrayBuffer;
+                    const bufferPtr = mod._malloc(buffer.byteLength);
+                    mod.HEAPU8.set(new Uint8Array(buffer), bufferPtr);
+
+                    // Allocate the buffer descriptor (offset + length)
+                    const desc = mod._malloc(4 + 4);
+                    mod.HEAPU32[(desc >> 2) + 0] = bufferPtr;
+                    mod.HEAPU32[(desc >> 2) + 1] = buffer.byteLength;
+                    return desc;
+                } else {
+                    throw Error(
+                        `Accessing file returned non-success status ${xhr.status} "${xhr.statusText}". url=${file.data_url}`,
+                    );
+                }
+                break;
+            }
             case DuckDBDataProtocol.NATIVE:
                 break;
         }
+        return 0;
     },
     syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
@@ -72,9 +88,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
         switch (file?.data_protocol) {
             case DuckDBDataProtocol.BLOB:
-                if (!file.data_url) return;
-                file.data_url = null;
-                break;
             case DuckDBDataProtocol.HTTP:
                 break;
             case DuckDBDataProtocol.NATIVE:
@@ -96,14 +109,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     readFile(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            //case DuckDBDataProtocol.BLOB: {
-            //    const blob = resolveBlob(file);
-            //    const slice = blob.slice(location, location + bytes);
-            //    const src = new Uint8Array(new FileReaderSync().readAsArrayBuffer(slice));
-            //    mod.HEAPU8.set(src, buf);
-            //    return src.byteLength;
-            //}
-
+            // File reading from BLOB or HTTP MUST be done with range requests.
+            // We have to check in OPEN if such file supports range requests and upgrade to BUFFER if not.
             case DuckDBDataProtocol.BLOB:
             case DuckDBDataProtocol.HTTP: {
                 if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
@@ -112,20 +119,20 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 xhr.responseType = 'arraybuffer';
                 xhr.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
                 xhr.send(null);
-                if (xhr.status == 206 /* Partial content */) {
+                if (
+                    xhr.status == 206 /* Partial content */ ||
+                    (xhr.status == 200 && bytes == xhr.response.byteLength && location == 0)
+                ) {
                     const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
                     mod.HEAPU8.set(src, buf);
                     return src.byteLength;
                 } else if (xhr.status == 200) {
-                    console.error(
-                        `BLOB range read did not respond with 206! requested=${bytes} read=${xhr.response.byteLength}`,
+                    throw Error(
+                        `Range request for ${file.data_url} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
                     );
-                    const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
-                    mod.HEAPU8.set(src, buf);
-                    return src.byteLength;
                 } else {
                     throw Error(
-                        `Range request for ${file.data_url} returned non-success status: ${xhr.status} "${xhr.statusText}"`,
+                        `Range request for ${file.data_url} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
                     );
                 }
             }

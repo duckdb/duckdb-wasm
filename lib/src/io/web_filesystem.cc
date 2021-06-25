@@ -1,5 +1,6 @@
 #include "duckdb/web/io/web_filesystem.h"
 
+#include <cstdint>
 #include <duckdb/common/file_buffer.hpp>
 #include <iostream>
 #include <mutex>
@@ -62,7 +63,10 @@ static duckdb::FileHandle &GetOrOpen(size_t file_id) {
 #else
 #define RT_FN(FUNC, IMPL) FUNC IMPL;
 #endif
-RT_FN(void duckdb_web_fs_file_open(size_t file_id), { GetOrOpen(file_id); });
+RT_FN(void *duckdb_web_fs_file_open(size_t file_id), {
+    GetOrOpen(file_id);
+    return nullptr;
+});
 RT_FN(void duckdb_web_fs_file_sync(size_t file_id), {});
 RT_FN(void duckdb_web_fs_file_close(size_t file_id), { LOCAL_FS_HANDLES.erase(file_id); });
 RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOrOpen(file_id).Truncate(new_size); });
@@ -351,10 +355,22 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         case DataProtocol::HTTP:
             try {
                 // Open the file
-                duckdb_web_fs_file_open(file_ptr->file_id_);
-                // Get the file size
-                if (file_ptr->file_size_ == 0 && file_ptr->data_protocol_ != DataProtocol::BLOB) {
-                    file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
+                auto *copy = duckdb_web_fs_file_open(file_ptr->file_id_);
+
+                // Was the file fully copied into wasm memory?
+                // This can happen if the data source does not support HTTP range requests.
+                if (copy != nullptr) {
+                    std::unique_ptr<uint32_t[]> copy_desc(reinterpret_cast<uint32_t *>(copy));
+                    auto *buffer_ptr = reinterpret_cast<char *>(static_cast<uintptr_t>(copy_desc.get()[0]));
+                    auto buffer_length = copy_desc.get()[1];
+                    std::unique_ptr<char[]> buffer{buffer_ptr};
+                    file_ptr->data_protocol_ = DataProtocol::BUFFER;
+                    file_ptr->data_buffer_ = DataBuffer{std::move(buffer), static_cast<size_t>(buffer_length)};
+                } else {
+                    // Get the file size if it was not provided to us
+                    if (file_ptr->file_size_ == 0 && file_ptr->data_protocol_ != DataProtocol::BLOB) {
+                        file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
+                    }
                 }
                 // Truncate file?
                 if ((flags & duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) != 0) {
