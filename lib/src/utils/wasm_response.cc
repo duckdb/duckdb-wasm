@@ -1,4 +1,4 @@
-#include "duckdb/web/wasm_response.h"
+#include "duckdb/web/utils/wasm_response.h"
 
 #include <cstdint>
 

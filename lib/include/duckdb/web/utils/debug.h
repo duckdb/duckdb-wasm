@@ -1,10 +1,10 @@
-#ifndef INCLUDE_DUCKDB_WEB_DEBUG_H_
-#define INCLUDE_DUCKDB_WEB_DEBUG_H_
+#ifndef INCLUDE_DUCKDB_WEB_UTILS_DEBUG_H_
+#define INCLUDE_DUCKDB_WEB_UTILS_DEBUG_H_
 
 #include <cstring>
 #include <iostream>
 
-#include "duckdb/web/scope_guard.h"
+#include "duckdb/web/utils/scope_guard.h"
 
 namespace duckdb {
 namespace web {

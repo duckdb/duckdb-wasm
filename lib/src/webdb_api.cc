@@ -2,8 +2,7 @@
 
 #include "arrow/buffer.h"
 #include "arrow/status.h"
-#include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
-#include "duckdb/web/wasm_response.h"
+#include "duckdb/web/utils/wasm_response.h"
 #include "duckdb/web/webdb.h"
 
 using namespace duckdb::web;

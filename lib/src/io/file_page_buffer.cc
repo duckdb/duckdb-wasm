@@ -16,8 +16,8 @@
 #include <utility>
 #include <variant>
 
-#include "duckdb/web/debug.h"
-#include "duckdb/web/scope_guard.h"
+#include "duckdb/web/utils/debug.h"
+#include "duckdb/web/utils/scope_guard.h"
 
 /// Build a frame id
 static constexpr uint64_t BuildFrameID(uint16_t file_id, uint64_t page_id = 0) {

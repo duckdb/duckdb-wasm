@@ -22,7 +22,7 @@
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_defaults.h"
 #include "duckdb/web/io/web_filesystem.h"
-#include "duckdb/web/mutex.h"
+#include "duckdb/web/utils/parallel.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
@@ -43,7 +43,7 @@ namespace io {
 class FilePageBuffer {
    public:
     /// A directory guard
-    using DirectoryGuard = std::unique_lock<Mutex>;
+    using DirectoryGuard = std::unique_lock<LightMutex>;
     /// A frame guard
     using FrameGuardVariant = std::variant<std::unique_lock<SharedMutex>, std::shared_lock<SharedMutex>>;
     /// A file guard reference variant
@@ -280,7 +280,7 @@ class FilePageBuffer {
     std::shared_ptr<duckdb::FileSystem> filesystem;
 
     /// Latch that protects all of the following member variables
-    Mutex directory_latch;
+    LightMutex directory_latch;
 
     /// Maps file ids to their file infos
     std::unordered_map<uint16_t, std::unique_ptr<BufferedFile>> files = {};

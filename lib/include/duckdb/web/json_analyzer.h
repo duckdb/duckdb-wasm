@@ -11,7 +11,6 @@
 #include "arrow/type_traits.h"
 #include "duckdb/web/json_parser.h"
 #include "duckdb/web/json_table.h"
-#include "duckdb/web/reservoir_sample.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {

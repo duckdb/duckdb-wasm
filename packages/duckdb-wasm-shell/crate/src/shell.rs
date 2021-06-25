@@ -156,7 +156,7 @@ impl Shell {
         let write_feature = |buffer: &mut String, name: &str, description: &str, value: bool| {
             write!(
                 buffer,
-                "{bg}{value}{normal} {feature:<22} - {description}{crlf}",
+                "{bg}{value}{normal} {feature:<24} - {description}{crlf}",
                 feature = name,
                 bg = if value {
                     vt100::COLOR_BG_GREEN
