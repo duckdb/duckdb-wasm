@@ -71,9 +71,13 @@ void duckdb_web_fs_set_file_descriptor(WASMResponse* packed, uint32_t file_id, u
     WASMResponseBuffer::Get().Store(*packed, webdb.SetFileDescriptor(file_id, file_descriptor));
 }
 /// Register a file at a url
-void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name, const char* file_url) {
+void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name, const char* file_url,
+                                     double file_size) {
     auto& webdb = WebDB::Get();
-    WASMResponseBuffer::Get().Store(*packed, webdb.RegisterFileURL(file_name, file_url));
+    WASMResponseBuffer::Get().Store(
+        *packed, webdb.RegisterFileURL(
+                     file_name, file_url,
+                     ((file_size == -1) ? std::nullopt : std::optional<uint64_t>(static_cast<uint64_t>(file_size)))));
 }
 /// Register a file buffer
 void duckdb_web_fs_register_file_buffer(WASMResponse* packed, const char* file_name, char* data, uint32_t data_length) {

@@ -127,7 +127,7 @@ void WebFileSystem::WebFileHandle::Close() {
     file_ = nullptr;
 
     // Try to lock the file uniquely
-    std::unique_lock<std::shared_mutex> file_guard{file.file_mutex_, std::defer_lock};
+    std::unique_lock<SharedMutex> file_guard{file.file_mutex_, std::defer_lock};
     auto have_file_lock = file_guard.try_lock();
     // Additionally acquire the filesystem lock
     std::unique_lock<std::mutex> fs_guard{fs_.fs_mutex_};
@@ -181,24 +181,6 @@ static inline WebFileSystem::DataProtocol inferDataProtocol(std::string_view url
     return proto;
 }
 
-/// Construct file of URL
-std::unique_ptr<WebFileSystem::WebFile> WebFileSystem::WebFile::URL(uint32_t file_id, std::string_view file_name,
-                                                                    std::string_view file_url) {
-    auto proto = inferDataProtocol(file_url);
-    auto file = std::make_unique<WebFileSystem::WebFile>(file_id, file_name, proto);
-    file->data_url_ = std::move(file_url);
-    return file;
-}
-
-/// Construct file of URL
-std::unique_ptr<WebFileSystem::WebFile> WebFileSystem::WebFile::Buffer(uint32_t file_id, std::string_view file_name,
-                                                                       DataBuffer buffer) {
-    auto file = std::make_unique<WebFileSystem::WebFile>(file_id, file_name, DataProtocol::BUFFER);
-    file->data_buffer_ = std::move(buffer);
-    file->file_size_ = file->data_buffer_->Size();
-    return file;
-}
-
 /// Get the info
 std::string WebFileSystem::WebFile::GetInfoJSON() const {
     DEBUG_TRACE();
@@ -229,14 +211,14 @@ std::string WebFileSystem::WebFile::GetInfoJSON() const {
 
 /// Copy a blob to a buffer
 void WebFileSystem::CopyBlobToBuffer(WebFile &file) {
-    std::unique_lock<std::shared_mutex> excl_file_guard{file.file_mutex_};
+    std::unique_lock<SharedMutex> excl_file_guard{file.file_mutex_};
     if (file.data_protocol_ != DataProtocol::BLOB) return;
 
     // Read the entire blob as buffer
     std::unique_ptr<char[]> buffer{new char[file.file_size_]};
     duckdb_web_fs_file_read(file.file_id_, buffer.get(), file.file_size_, 0);
     file.data_protocol_ = DataProtocol::BUFFER;
-    file.data_buffer_ = DataBuffer{std::move(buffer), file.file_size_};
+    file.data_buffer_ = DataBuffer{std::move(buffer), static_cast<size_t>(file.file_size_)};
 }
 
 /// Constructor
@@ -249,17 +231,28 @@ WebFileSystem::WebFileSystem() {
 WebFileSystem::~WebFileSystem() { WEBFS = nullptr; }
 
 /// Register a file URL
-arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
-                                                                                            std::string_view file_url) {
+arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(
+    std::string_view file_name, std::string_view file_url, std::optional<uint64_t> file_size) {
     DEBUG_TRACE();
     // Check if the file exists
     std::unique_lock<std::mutex> fs_guard{fs_mutex_};
     auto iter = files_by_name_.find(file_name);
     if (iter != files_by_name_.end()) return arrow::Status::Invalid("File already registered: ", file_name);
 
+    // Make sure the user gave us a file size for the blob url.
+    // This is a precautious measure because browsers do not support HEAD requests against object URLs.
+    auto proto = inferDataProtocol(file_url);
+    if (proto == DataProtocol::BLOB && !file_size.has_value()) {
+        return arrow::Status::Invalid("Cannot register a blob url without a file size");
+    }
+
     // Allocate a new web file
     auto file_id = AllocateFileID();
-    auto file = WebFile::URL(file_id, file_name, file_url);
+    auto file = std::make_unique<WebFile>(file_id, file_name, proto);
+    file->data_url_ = file_url;
+    file->file_size_ = file_size.value_or(0);
+
+    // Register the file
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
     files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
@@ -279,7 +272,11 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 
     // Allocate a new web file
     auto file_id = AllocateFileID();
-    auto file = WebFile::Buffer(file_id, file_name, std::move(file_buffer));
+    auto file = std::make_unique<WebFile>(file_id, file_name, DataProtocol::BUFFER);
+    file->file_size_ = file_buffer.Size();
+    file->data_buffer_ = std::move(file_buffer);
+
+    // Register the file
     auto file_ptr = file.get();
     files_by_id_.insert({file_id, std::move(file)});
     files_by_name_.insert({std::string_view{file_ptr->file_name_}, file_ptr});
@@ -338,7 +335,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
 
     // Lock the file
     fs_guard.unlock();
-    std::unique_lock<std::shared_mutex> file_guard{file_ptr->file_mutex_};
+    std::unique_lock<SharedMutex> file_guard{file_ptr->file_mutex_};
 
     // Try to open the file (if necessary)
     switch (file_ptr->data_protocol_) {
@@ -356,7 +353,9 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 // Open the file
                 duckdb_web_fs_file_open(file_ptr->file_id_);
                 // Get the file size
-                file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
+                if (file_ptr->file_size_ == 0 && file_ptr->data_protocol_ != DataProtocol::BLOB) {
+                    file_ptr->file_size_ = duckdb_web_fs_file_get_size(file_ptr->file_id_);
+                }
                 // Truncate file?
                 if ((flags & duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) != 0) {
                     file_guard.unlock();
@@ -395,7 +394,7 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     // Read with shared lock to protect against truncation
-    std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
     // Perform the actual read
     switch (file.data_protocol_) {
         // Read buffers directly from WASM memory
@@ -433,7 +432,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     // First lock shared to protect against concurrent truncation
-    std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
     // Do the actual write
     switch (file.data_protocol_) {
         // Blobs are always copied to a buffer on first write
@@ -468,7 +467,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             if (end > file.file_size_) {
                 // Upgrade to exclusive lock
                 file_guard.unlock();
-                std::unique_lock<std::shared_mutex> appender_guard{file.file_mutex_};
+                std::unique_lock<SharedMutex> appender_guard{file.file_mutex_};
                 n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
                 assert(n == nr_bytes);
                 file.file_size_ = std::max<size_t>(file_hdl.position_ + n, file.file_size_);
@@ -494,7 +493,7 @@ int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
-    std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
     return file.file_size_;
 }
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
@@ -506,7 +505,7 @@ time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
     auto &file = *file_hdl.file_;
 
     // Acquire the file mutex to procted against a procotol switch
-    std::shared_lock<std::shared_mutex> file_guard{file.file_mutex_};
+    std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER:
             return 0;
@@ -527,7 +526,7 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     auto &file = *file_hdl.file_;
 
     // Acquire unique file latch
-    std::unique_lock<std::shared_mutex> file_guard{file_hdl.file_->file_mutex_};
+    std::unique_lock<SharedMutex> file_guard{file_hdl.file_->file_mutex_};
     // Resize the buffer
     switch (file.data_protocol_) {
         case DataProtocol::BLOB:

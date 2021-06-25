@@ -5,7 +5,7 @@ import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 interface IAsyncDuckDB {
     logger: Logger;
 
-    registerFileURL(name: string, url: string): Promise<null>;
+    registerFileURL(name: string, url: string, size: number): Promise<null>;
     registerFileBuffer(name: string, buffer: Uint8Array): Promise<null>;
     copyFileToPath(name: string, out: string): Promise<null>;
     copyFileToBuffer(name: string): Promise<Uint8Array>;

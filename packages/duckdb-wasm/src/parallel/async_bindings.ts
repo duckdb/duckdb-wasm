@@ -383,10 +383,10 @@ export class AsyncDuckDB {
     }
 
     /** Register a file path. */
-    public async registerFileURL(name: string, url: string): Promise<null> {
-        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>(
+    public async registerFileURL(name: string, url: string, size: number | null = null): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string, number | null], null>(
             WorkerRequestType.REGISTER_FILE_URL,
-            [name, url],
+            [name, url, size],
         );
         return await this.postTask(task);
     }

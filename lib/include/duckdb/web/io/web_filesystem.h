@@ -11,6 +11,7 @@
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/file_stats.h"
+#include "duckdb/web/mutex.h"
 #include "duckdb/web/wasm_response.h"
 #include "nonstd/span.h"
 
@@ -65,9 +66,9 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The handle count
         size_t handle_count_;
         /// The file mutex
-        std::shared_mutex file_mutex_ = {};
+        SharedMutex file_mutex_ = {};
         /// The file size
-        size_t file_size_ = 0;
+        uint64_t file_size_ = 0;
 
         /// XXX Make chunked to upgrade from url to cached version
         std::optional<DataBuffer> data_buffer_ = std::nullopt;
@@ -87,11 +88,6 @@ class WebFileSystem : public duckdb::FileSystem {
         auto &GetDataProtocol() const { return data_protocol_; }
         /// Get the data URL
         auto &GetDataURL() const { return data_url_; }
-
-        /// Construct file of URL
-        static std::unique_ptr<WebFile> URL(uint32_t file_id, std::string_view file_name, std::string_view file_url);
-        /// Construct file of URL
-        static std::unique_ptr<WebFile> Buffer(uint32_t file_id, std::string_view file_name, DataBuffer buffer);
     };
 
     class WebFileHandle : public duckdb::FileHandle {
@@ -158,8 +154,8 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Get a file info as JSON string
     arrow::Result<std::string> GetFileInfoJSON(uint32_t file_id);
     /// Register a file URL
-    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name,
-                                                                  std::string_view file_url);
+    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                                                  std::optional<uint64_t> file_size);
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);
