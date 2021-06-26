@@ -29,16 +29,30 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-/// We use a dedicated lightweight FilePageBuffer for paged I/O in and out of WebAssembly.
-/// The buffer manager is tailored towards WASM in the following points:
+/// We use a dedicated lightweight buffer manager for paged I/O in and out of WebAssembly.
+/// Our web filesystem can serve files from locations with very different access latencies.
+/// E.g. memory, HTTP range requests or disk via the Chrome FileSystem APIs.
+/// We therefore want to buffer explicitly for all expensive accesses and use direct I/O for memory-backed files.
 ///
-/// - The only goal is to buffer the interop with js.
-/// - We're complementing the actual buffer management of DuckDB.
-///   We do not fail if the buffer capacity is reached but over-allocate new buffers instead.
-///   (Memory management is not our business, we're only caching I/O buffers)
-/// - We maintain few I/O buffers with the 2-Queue buffer replacement strategy to differentiate sequential scans
-///   from hot pages.
-/// - We still never hold the global directory latch while doing IO since reads/writes might touch js or go to disk.
+/// Our I/O stack looks rougly like the following:
+///
+///             DuckDB              json::TableReader  io::Zipper io::InputFileStreamBuffer
+///               |                         |             |                |
+///               V                         +-------------+----------------+
+///        io::BufferedFileSystem           |
+///               |      |                  V
+///               |      +--------> io::FilePageBuffer <-> Prefetcher
+///    Direct I/O |                         |
+///               |      +------------------+
+///               |      |
+///               V      V
+///            io::WebFileSystem
+///              |     |     |
+///        +-----+     |     +--------+
+///        |           |              |
+///        V           V              V
+///      Buffer    HTTP Ranges    Chrome FS
+///
 
 class FilePageBuffer {
    public:
