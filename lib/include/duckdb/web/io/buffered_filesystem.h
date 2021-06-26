@@ -1,9 +1,8 @@
 #ifndef INCLUDE_DUCKDB_WEB_BUFFERED_FILESYSTEM_H_
 #define INCLUDE_DUCKDB_WEB_BUFFERED_FILESYSTEM_H_
 
-#include <arrow/util/string_view.h>
-
 #include <cstddef>
+#include <unordered_map>
 
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
@@ -41,15 +40,23 @@ class BufferedFileHandle : public duckdb::FileHandle {
 };
 
 class BufferedFileSystem : public duckdb::FileSystem {
+   public:
+    /// The file settings
+    struct FileConfig {
+        /// Force direct I/O?
+        /// This always bypasses the page buffer.
+        bool force_direct_io;
+    };
+
    protected:
     /// The buffer manager
     std::shared_ptr<FilePageBuffer> file_page_buffer_;
     /// The inner file system
     duckdb::FileSystem &filesystem_;
     /// The filesystem mutex
-    LightMutex fs_mutex_;
+    LightMutex directory_mutex_;
     /// The files that are passed through
-    std::unordered_set<std::string> file_pass_through_;
+    std::unordered_map<std::string, FileConfig> file_configs_;
 
    public:
     /// Constructor
@@ -58,7 +65,7 @@ class BufferedFileSystem : public duckdb::FileSystem {
     virtual ~BufferedFileSystem() {}
 
     /// Pass through a file
-    void RegisterFile(std::string_view file, bool pass_through = false);
+    void RegisterFile(std::string_view file, FileConfig config = {.force_direct_io = false});
     /// Drop a file
     void DropFile(std::string_view file);
     /// Drop a file

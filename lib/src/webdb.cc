@@ -267,7 +267,10 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
                                         size_t buffer_length) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    buffered_filesystem_->RegisterFile(file_name, true);
+    io::BufferedFileSystem::FileConfig file_config = {
+        .force_direct_io = true,
+    };
+    buffered_filesystem_->RegisterFile(file_name, file_config);
     io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
     ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileBuffer(file_name, std::move(data)));
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
