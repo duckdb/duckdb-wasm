@@ -177,12 +177,20 @@ int64_t BufferedFileSystem::GetFileSize(duckdb::FileHandle &handle) {
 
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
 time_t BufferedFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
+    // Direct I/O?
+    if (&handle.file_system != this) {
+        return filesystem_.GetLastModifiedTime(handle);
+    }
     auto &buffered_hdl = static_cast<BufferedFileHandle &>(handle);
     return filesystem_.GetLastModifiedTime(buffered_hdl.GetFileHandle());
 }
 /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
 /// the file
 void BufferedFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
+    // Direct I/O?
+    if (&handle.file_system != this) {
+        return filesystem_.Truncate(handle, new_size);
+    }
     auto &buffered_hdl = static_cast<BufferedFileHandle &>(handle);
     return buffered_hdl.GetFile()->Truncate(new_size);
 }
@@ -246,6 +254,10 @@ bool BufferedFileSystem::CanSeek() { return true; }
 /// Whether or not the FS handles plain files on disk. This is relevant for certain optimizations, as random reads
 /// in a file on-disk are much cheaper than e.g. random reads in a file over the network
 bool BufferedFileSystem::OnDiskFile(duckdb::FileHandle &handle) {
+    // Direct I/O?
+    if (&handle.file_system != this) {
+        return filesystem_.OnDiskFile(handle);
+    }
     return filesystem_.OnDiskFile(static_cast<BufferedFileHandle &>(handle).GetFileHandle());
 }
 
