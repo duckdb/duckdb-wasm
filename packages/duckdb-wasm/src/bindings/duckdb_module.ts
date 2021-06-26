@@ -5,3 +5,8 @@ export interface DuckDBModule extends EmscriptenModule {
 
     ccall: typeof ccall;
 }
+
+export interface PThread {
+    unusedWorkers: Worker[];
+    runningWorkers: Worker[];
+}

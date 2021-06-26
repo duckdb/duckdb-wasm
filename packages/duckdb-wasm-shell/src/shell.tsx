@@ -48,12 +48,32 @@ interface Props {
     registerFiles: (files: model.FileInfo[]) => void;
 }
 
+// const requestFS = (window as any).requestFileSystem || (window as any).webkitRequestFileSystem;
+// const PERSISTENT = (window as any).PERSISTENT;
+
+async function foo(): Promise<number> {
+    const storage_size = 1024 * 1024 * 1024 * 2;
+    if (typeof (navigator as any).storage !== 'undefined') {
+        console.log((navigator as any).storage);
+        // Request persistent file storage
+        return await new Promise<number>((resolve, reject) =>
+            (navigator as any).storage.requestQuota(storage_size, resolve, reject),
+        );
+    } else {
+        console.warn(
+            'WebDB was initialized with persistent file path, but does not support the File System API. Ignoring',
+        );
+        return 0;
+    }
+}
+
 class ShellRuntime {
     public _openFileExplorer: (() => void) | null = null;
 
     public openFileExplorer(this: ShellRuntime): void {
         if (this._openFileExplorer) {
             this._openFileExplorer();
+            foo();
         } else {
             shell.resumeAfterInput(shell.ShellInputContext.FileInput);
         }

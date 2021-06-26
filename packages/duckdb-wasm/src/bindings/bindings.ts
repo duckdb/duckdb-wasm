@@ -1,4 +1,4 @@
-import { DuckDBModule } from './duckdb_module';
+import { DuckDBModule, PThread } from './duckdb_module';
 import { Logger } from '../log';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
@@ -6,6 +6,11 @@ import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } 
 import { CSVTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
 import { FileBlockStatistics } from './file_stats';
+
+declare global {
+    // eslint-disable-next-line no-var
+    var DUCKDB_RUNTIME: any;
+}
 
 /** A DuckDB Feature */
 export enum DuckDBFeature {
@@ -16,13 +21,15 @@ export enum DuckDBFeature {
 /** The proxy for either the browser- order node-based DuckDB API */
 export abstract class DuckDBBindings {
     /** The logger */
-    private _logger: Logger;
+    protected _logger: Logger;
     /** The instance */
-    private _instance: DuckDBModule | null = null;
+    protected _instance: DuckDBModule | null = null;
+    /** The pthreads */
+    protected _pthread: PThread | null = null;
     /** The loading promise */
-    private _openPromise: Promise<void> | null = null;
+    protected _openPromise: Promise<void> | null = null;
     /** The resolver for the open promise (called by onRuntimeInitialized) */
-    private _openPromiseResolver: () => void = () => {};
+    protected _openPromiseResolver: () => void = () => {};
     /** Backend-dependent native-glue code for DuckDB */
     protected _runtime: DuckDBRuntime;
 
@@ -202,7 +209,7 @@ export abstract class DuckDBBindings {
         }
     }
 
-    /** Add a file object URL */
+    /** Register a file object URL */
     public registerFileURL(name: string, url: string): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
         if (s !== StatusCode.SUCCESS) {
@@ -210,7 +217,7 @@ export abstract class DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
     }
-    /** Add a file buffer */
+    /** Register a file buffer */
     public registerFileBuffer(name: string, buffer: Uint8Array): void {
         const ptr = this.mod._malloc(buffer.length);
         const dst = this.mod.HEAPU8.subarray(ptr, ptr + buffer.length);
@@ -225,6 +232,25 @@ export abstract class DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
         dropResponseBuffers(this.mod);
+    }
+    /** Register a file object URL */
+    public registerFileHandle<HandleType>(name: string, handle: HandleType): void {
+        globalThis.DUCKDB_RUNTIME._files = (globalThis.DUCKDB_RUNTIME._files || new Map()).set(name, handle);
+        if (this._pthread) {
+            for (const worker of this._pthread.runningWorkers) {
+                worker.postMessage({
+                    cmd: 'registerFile',
+                    fileName: name,
+                    fileHandle: handle,
+                });
+            }
+            for (const worker of this._pthread.unusedWorkers) {
+                worker.postMessage({
+                    cmd: 'dropFile',
+                    fileName: name,
+                });
+            }
+        }
     }
     /** Write a file to a path */
     public copyFileToPath(name: string, path: string): void {
