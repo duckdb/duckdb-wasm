@@ -225,7 +225,7 @@ void BufferedFileSystem::Seek(duckdb::FileHandle &handle, idx_t location) {
     // Seek in file
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
-    return file->GetHandle().Seek(location);
+    file_hdl.file_position_ = location;
 }
 /// Reset a file to the beginning (equivalent to Seek(handle, 0) for simple files)
 void BufferedFileSystem::Reset(duckdb::FileHandle &handle) {
@@ -236,7 +236,7 @@ void BufferedFileSystem::Reset(duckdb::FileHandle &handle) {
     // Reset file
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
-    return file->GetHandle().Reset();
+    file_hdl.file_position_ = 0;
 }
 /// Get the current position within the file
 idx_t BufferedFileSystem::SeekPosition(duckdb::FileHandle &handle) {
@@ -247,7 +247,7 @@ idx_t BufferedFileSystem::SeekPosition(duckdb::FileHandle &handle) {
     // Get position
     auto &file_hdl = static_cast<BufferedFileHandle &>(handle);
     auto &file = file_hdl.GetFile();
-    return file->GetHandle().SeekPosition();
+    return file_hdl.file_position_;
 }
 /// Whether or not we can seek into the file
 bool BufferedFileSystem::CanSeek() { return true; }
