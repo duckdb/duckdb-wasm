@@ -409,6 +409,15 @@ export class AsyncDuckDB {
         return await this.postTask(task, [buffer.buffer]);
     }
 
+    /** Register a file handle. */
+    public async registerFileHandle<HandleType>(name: string, handle: HandleType): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>(
+            WorkerRequestType.REGISTER_FILE_HANDLE,
+            [name, handle],
+        );
+        return await this.postTask(task, []);
+    }
+
     /** Enable file statistics */
     public async enableFileStatistics(name: string, enable: boolean): Promise<null> {
         const task = new WorkerTask<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean], null>(

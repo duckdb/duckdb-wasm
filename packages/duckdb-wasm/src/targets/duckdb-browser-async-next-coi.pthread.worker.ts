@@ -23,6 +23,12 @@ globalThis.onmessage = (e: any) => {
         DuckDB(m).then(function (instance) {
             pthread_api.setModule(instance);
         });
+    } else if (e.data.cmd === 'registerFile') {
+        globalThis.DUCKDB_RUNTIME._files = globalThis.DUCKDB_RUNTIME._files || new Map();
+        globalThis.DUCKDB_RUNTIME._files.set(e.data.fileName, e.data.fileHandle);
+    } else if (e.data.cmd === 'dropFile') {
+        globalThis.DUCKDB_RUNTIME._files = globalThis.DUCKDB_RUNTIME._files || new Map();
+        globalThis.DUCKDB_RUNTIME._files.delete(e.data.fileName);
     } else {
         pthread_api.onmessage(e);
     }

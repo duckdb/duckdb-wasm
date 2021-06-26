@@ -1,4 +1,5 @@
 import DuckDBWasm from './duckdb_wasm_next_coi.js';
+import { getPThread } from './duckdb_wasm_next_coi.js';
 import { DuckDBBrowserBindings } from './bindings_browser_base';
 import { DuckDBModule } from './duckdb_module';
 import { DuckDBRuntime } from './runtime';
@@ -18,6 +19,7 @@ export class DuckDB extends DuckDBBrowserBindings {
 
     /** Instantiate the bindings */
     protected instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule> {
+        this._pthread = getPThread();
         return DuckDBWasm({
             ...moduleOverrides,
             instantiateWasm: this.instantiateWasm.bind(this),

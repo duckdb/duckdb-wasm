@@ -196,16 +196,21 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
-                case WorkerRequestType.REGISTER_FILE_URL: {
+                case WorkerRequestType.REGISTER_FILE_URL:
                     this._bindings.registerFileURL(request.data[0], request.data[1]);
                     this.sendOK(request);
                     break;
-                }
-                case WorkerRequestType.REGISTER_FILE_BUFFER: {
+
+                case WorkerRequestType.REGISTER_FILE_BUFFER:
                     this._bindings.registerFileBuffer(request.data[0], request.data[1]);
                     this.sendOK(request);
                     break;
-                }
+
+                case WorkerRequestType.REGISTER_FILE_HANDLE:
+                    this._bindings.registerFileHandle(request.data[0], request.data[1]);
+                    this.sendOK(request);
+                    break;
+
                 case WorkerRequestType.COPY_FILE_TO_PATH:
                     this._bindings.copyFileToPath(request.data[0], request.data[1]);
                     this.sendOK(request);

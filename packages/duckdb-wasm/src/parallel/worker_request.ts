@@ -16,6 +16,7 @@ export enum WorkerRequestType {
     FLUSH_FILES = 'FLUSH_FILES',
     REGISTER_FILE_URL = 'REGISTER_FILE_URL',
     REGISTER_FILE_BUFFER = 'REGISTER_FILE_BUFFER',
+    REGISTER_FILE_HANDLE = 'REGISTER_FILE_HANDLE',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
     ENABLE_FILE_STATISTICS = 'ENABLE_FILE_STATISTICS',
@@ -90,6 +91,7 @@ export interface ZipExtractToFileArgs {
 export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
+    | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
     | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
@@ -131,6 +133,7 @@ export type WorkerResponseVariant =
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>
+    | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>

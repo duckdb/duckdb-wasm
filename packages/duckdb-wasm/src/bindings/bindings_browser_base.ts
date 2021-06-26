@@ -3,11 +3,6 @@ import { DuckDBBindings } from './bindings';
 import { DuckDBRuntime } from './runtime';
 import { Logger } from '../log';
 
-declare global {
-    // eslint-disable-next-line no-var
-    var DUCKDB_RUNTIME: any;
-}
-
 /** DuckDB bindings for the browser */
 export abstract class DuckDBBrowserBindings extends DuckDBBindings {
     /** The path of the wasm module */
