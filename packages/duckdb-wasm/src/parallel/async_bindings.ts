@@ -187,6 +187,12 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
+            case WorkerRequestType.REGISTER_FILE_HANDLE:
+                if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.COPY_FILE_TO_PATH:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
