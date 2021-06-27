@@ -76,8 +76,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
                 break;
             }
-            case DuckDBDataProtocol.NATIVE:
+            case DuckDBDataProtocol.NATIVE: {
+                const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                if (!handle) {
+                    console.log('open');
+                    console.log(BROWSER_RUNTIME._files);
+                    throw Error(`No handle available for file: ${file.file_name}`);
+                }
                 break;
+            }
         }
         return 0;
     },
@@ -89,7 +96,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.HTTP:
                 break;
             case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+                throw Error('closeFile not implemented');
         }
     },
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
@@ -98,7 +105,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.HTTP:
                 throw Error('Cannot truncate a HTTP file');
             case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+                throw Error('truncateFile not implemented');
         }
         return 0;
     },
@@ -131,8 +138,17 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     );
                 }
             }
-            case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+            case DuckDBDataProtocol.NATIVE: {
+                const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                if (!handle) {
+                    console.log(BROWSER_RUNTIME._files);
+                    throw Error(`No handle available for file: ${file.file_name}`);
+                }
+                const sliced = handle!.slice(location, location + bytes);
+                const data = new Uint8Array(new FileReaderSync().readAsArrayBuffer(sliced));
+                mod.HEAPU8.set(data, buf);
+                return data.byteLength;
+            }
         }
         return 0;
     },
@@ -143,15 +159,21 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 throw Error('Cannot write to HTTP file');
 
             case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+                throw Error('writeFile not implemented');
         }
         return 0;
     },
     getFileSize: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+            case DuckDBDataProtocol.NATIVE: {
+                const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                if (!handle) {
+                    console.log(BROWSER_RUNTIME._files);
+                    throw Error(`No handle available for file: ${file.file_name}`);
+                }
+                return handle.size;
+            }
 
             case DuckDBDataProtocol.HTTP: {
                 if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
@@ -175,8 +197,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
-            case DuckDBDataProtocol.NATIVE:
-                throw Error('Not implemented');
+            case DuckDBDataProtocol.NATIVE: {
+                const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                if (!handle) {
+                    console.log(BROWSER_RUNTIME._files);
+                    throw Error(`No handle available for file: ${file.file_name}`);
+                }
+                return 0;
+            }
 
             case DuckDBDataProtocol.HTTP:
                 return new Date().getTime();
