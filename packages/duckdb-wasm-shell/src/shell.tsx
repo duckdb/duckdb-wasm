@@ -83,8 +83,7 @@ class Shell extends React.Component<Props> {
         const fileInfos: Array<model.FileInfo> = [];
         for (let i = 0; i < files.length; ++i) {
             const file = files.item(i)!;
-            const fileBuffer = await file.arrayBuffer();
-            await this.database.registerFileBuffer(file.name, new Uint8Array(fileBuffer));
+            await this.database.registerFileHandle(file.name, file);
             fileInfos.push({
                 name: file.name,
                 url: null,
