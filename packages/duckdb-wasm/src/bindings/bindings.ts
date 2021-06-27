@@ -239,14 +239,14 @@ export abstract class DuckDBBindings {
         if (this._pthread) {
             for (const worker of this._pthread.runningWorkers) {
                 worker.postMessage({
-                    cmd: 'registerFile',
+                    cmd: 'registerFileHandle',
                     fileName: name,
                     fileHandle: handle,
                 });
             }
             for (const worker of this._pthread.unusedWorkers) {
                 worker.postMessage({
-                    cmd: 'dropFile',
+                    cmd: 'dropFileHandle',
                     fileName: name,
                 });
             }

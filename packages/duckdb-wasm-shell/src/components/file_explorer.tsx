@@ -3,11 +3,11 @@ import Button from 'react-bootstrap/Button';
 import Immutable from 'immutable';
 import React from 'react';
 import styles from './file_explorer.module.css';
-import FileDropzone from './file_dropzone';
 import { FileRejection, DropEvent } from 'react-dropzone';
 import { connect } from 'react-redux';
 import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 
+import icon_close from '../../static/svg/icons/close.svg';
 import icon_file from '../../static/svg/icons/file-document-outline.svg';
 
 interface Props {
@@ -38,21 +38,36 @@ class FileExplorer extends React.Component<Props> {
             <div className={styles.root}>
                 <div className={styles.header}>
                     <div className={styles.header_title}>Files</div>
-                    <Button
-                        className={styles.header_action}
-                        variant="primary"
-                        size="sm"
-                        onClick={this.props.closeOverlay}
-                    >
-                        Done
-                    </Button>
+                    <div className={styles.close} onClick={this.props.closeOverlay}>
+                        <svg width="20px" height="20px">
+                            <use xlinkHref={`${icon_close}#sym`} />
+                        </svg>
+                    </div>
                 </div>
                 <div className={styles.registered_file_list}>
                     {this.props.registeredFiles
                         .toArray()
                         .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}
+                    {this.props.registeredFiles.size == 0 && <div className={styles.no_files}>No files registered</div>}
                 </div>
-                <FileDropzone onDrop={this.props.onDrop} />
+                <div className={styles.footer_actions}>
+                    <Button
+                        className={styles.footer_action}
+                        variant="primary"
+                        size="sm"
+                        onClick={this.props.closeOverlay}
+                    >
+                        HTTP File
+                    </Button>
+                    <Button
+                        className={styles.footer_action}
+                        variant="primary"
+                        size="sm"
+                        onClick={this.props.closeOverlay}
+                    >
+                        Local File
+                    </Button>
+                </div>
             </div>
         );
     }

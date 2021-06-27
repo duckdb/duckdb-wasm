@@ -5,7 +5,7 @@
     height: 100%;
 
     display: grid;
-    grid-template-rows: 48px auto;
+    grid-template-rows: 48px auto 48px;
 
     box-sizing: border-box;
     border: 1px solid rgb(220, 220, 220);
@@ -17,7 +17,7 @@
 
     display: grid;
     align-items: center;
-    grid-template-columns: auto 80px;
+    grid-template-columns: auto 48px;
 }
 
 .header_title {
@@ -28,13 +28,26 @@
     align-items: center;
 }
 
-.header_action {
+.close {
     grid-row: 1;
     grid-column: 2;
-    margin: 0px 8px;
+    display: grid;
+    height: calc(100% - 16px);
+    margin: 8px;
+}
+
+.close:hover {
+    background-color: rgb(220, 220, 220);
+    border-radius: 8px;
+}
+
+.close > svg {
+    justify-self: center;
+    align-self: center;
 }
 
 .registered_file_list {
+    grid-row: 2;
     padding: 8px 0px;
 }
 
@@ -64,4 +77,25 @@
     display: grid;
     justify-content: left;
     align-items: center;
+}
+
+.no_files {
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 8px;
+}
+
+.footer_actions {
+    grid-row: 3;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0px 4px;
+}
+
+.footer_action {
+    margin: 0px 4px;
 }

@@ -76,6 +76,8 @@ export function dropResponseBuffers(mod: DuckDBModule): void {
 
 /** The duckdb runtime */
 export interface DuckDBRuntime {
+    _files?: Map<string, any>;
+
     // File APIs with dedicated file identifier
     openFile(mod: DuckDBModule, fileId: number): void;
     syncFile(mod: DuckDBModule, fileId: number): void;
