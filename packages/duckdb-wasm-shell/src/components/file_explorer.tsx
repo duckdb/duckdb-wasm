@@ -1,9 +1,8 @@
 import * as model from '../model';
 import Button from 'react-bootstrap/Button';
 import Immutable from 'immutable';
-import React from 'react';
+import React, { ChangeEvent } from 'react';
 import styles from './file_explorer.module.css';
-import { FileRejection, DropEvent } from 'react-dropzone';
 import { connect } from 'react-redux';
 import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 
@@ -16,11 +15,36 @@ interface Props {
     database: AsyncDuckDB | null;
 
     closeOverlay: () => void;
-    onDrop: <T extends File>(acceptedFiles: T[], fileRejections: FileRejection[], event: DropEvent) => void;
+    addFiles: (files: FileList) => void;
 }
 
 class FileExplorer extends React.Component<Props> {
-    public renderLoadedFileEntry(metadata: model.FileInfo) {
+    /// The input element
+    protected _inputElement: React.RefObject<HTMLInputElement>;
+    /// The file selection changed
+    protected _fileSelectionChanged = this.fileSelectionChanged.bind(this);
+    /// Select a file
+    protected _selectFile = this.selectFile.bind(this);
+
+    /// Constructor
+    constructor(props: Props) {
+        super(props);
+        this._inputElement = React.createRef();
+    }
+
+    /// Trigger the file selection
+    protected selectFile() {
+        // Click the input element
+        this._inputElement.current?.click();
+    }
+
+    /// Did the file selection change?
+    protected fileSelectionChanged(e: ChangeEvent<HTMLInputElement>) {
+        this.props.addFiles(e.target.files as FileList);
+    }
+
+    /// Render a loaded entry
+    protected renderLoadedFileEntry(metadata: model.FileInfo) {
         return (
             <div key={metadata.name} className={styles.registered_file_list_entry}>
                 <div className={styles.registered_file_list_entryIcon}>
@@ -33,6 +57,7 @@ class FileExplorer extends React.Component<Props> {
         );
     }
 
+    /// Render the file explorer
     public render(): React.ReactElement {
         return (
             <div className={styles.root}>
@@ -51,12 +76,13 @@ class FileExplorer extends React.Component<Props> {
                     {this.props.registeredFiles.size == 0 && <div className={styles.no_files}>No files registered</div>}
                 </div>
                 <div className={styles.footer_actions}>
-                    <Button
-                        className={styles.footer_action}
-                        variant="primary"
-                        size="sm"
-                        onClick={this.props.closeOverlay}
-                    >
+                    <Button className={styles.footer_action} variant="primary" size="sm" onClick={this._selectFile}>
+                        <input
+                            ref={this._inputElement}
+                            onChange={this._fileSelectionChanged}
+                            type="file"
+                            style={{ display: 'none' }}
+                        />
                         Local File
                     </Button>
                     <Button

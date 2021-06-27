@@ -4,7 +4,6 @@ import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import FileExplorer from './components/file_explorer';
 import Overlay from './components/overlay';
 import React from 'react';
-import { FileRejection, DropEvent } from 'react-dropzone';
 import { connect } from 'react-redux';
 
 import styles from './shell.module.css';
@@ -48,32 +47,12 @@ interface Props {
     registerFiles: (files: model.FileInfo[]) => void;
 }
 
-// const requestFS = (window as any).requestFileSystem || (window as any).webkitRequestFileSystem;
-// const PERSISTENT = (window as any).PERSISTENT;
-
-async function foo(): Promise<number> {
-    const storage_size = 1024 * 1024 * 1024 * 2;
-    if (typeof (navigator as any).storage !== 'undefined') {
-        console.log((navigator as any).storage);
-        // Request persistent file storage
-        return await new Promise<number>((resolve, reject) =>
-            (navigator as any).storage.requestQuota(storage_size, resolve, reject),
-        );
-    } else {
-        console.warn(
-            'WebDB was initialized with persistent file path, but does not support the File System API. Ignoring',
-        );
-        return 0;
-    }
-}
-
 class ShellRuntime {
     public _openFileExplorer: (() => void) | null = null;
 
     public openFileExplorer(this: ShellRuntime): void {
         if (this._openFileExplorer) {
             this._openFileExplorer();
-            foo();
         } else {
             shell.resumeAfterInput(shell.ShellInputContext.FileInput);
         }
@@ -88,7 +67,7 @@ class Shell extends React.Component<Props> {
     /// The database
     protected database: duckdb.AsyncDuckDB | null;
     /// The drop file handler
-    protected dropFileHandler = this.dropFiles.bind(this);
+    protected addFiles_ = this.addFiles.bind(this);
 
     /// Constructor
     constructor(props: Props) {
@@ -99,10 +78,11 @@ class Shell extends React.Component<Props> {
     }
 
     /// Drop files
-    public async dropFiles(acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) {
+    public async addFiles(files: FileList) {
         if (!this.database) return;
         const fileInfos: Array<model.FileInfo> = [];
-        for (const file of acceptedFiles) {
+        for (let i = 0; i < files.length; ++i) {
+            const file = files.item(i)!;
             const fileBuffer = await file.arrayBuffer();
             await this.database.registerFileBuffer(file.name, new Uint8Array(fileBuffer));
             fileInfos.push({
@@ -128,7 +108,7 @@ class Shell extends React.Component<Props> {
                 <div ref={this.termContainer} className={styles.term_container}></div>
                 {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
                     <Overlay>
-                        <FileExplorer database={this.database} onDrop={this.dropFileHandler} />
+                        <FileExplorer database={this.database} addFiles={this.addFiles_} />
                     </Overlay>
                 )}
             </div>
