@@ -68,15 +68,6 @@ class FileExplorer extends React.Component<Props> {
                     >
                         HTTP File
                     </Button>
-                    <Button
-                        className={styles.footer_action}
-                        variant="primary"
-                        size="sm"
-                        onClick={this.props.closeOverlay}
-                        disabled
-                    >
-                        Arrow Flight
-                    </Button>
                 </div>
             </div>
         );
