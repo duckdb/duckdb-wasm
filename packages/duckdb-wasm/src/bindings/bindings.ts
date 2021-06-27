@@ -24,8 +24,6 @@ export abstract class DuckDBBindings {
     protected _logger: Logger;
     /** The instance */
     protected _instance: DuckDBModule | null = null;
-    /** The pthreads */
-    protected _pthread: PThread | null = null;
     /** The loading promise */
     protected _openPromise: Promise<void> | null = null;
     /** The resolver for the open promise (called by onRuntimeInitialized) */
@@ -45,6 +43,10 @@ export abstract class DuckDBBindings {
     /** Get the instance */
     public get mod(): DuckDBModule {
         return this._instance!;
+    }
+    /** Get the instance */
+    public get pthread(): PThread | null {
+        return this.mod.PThread || null;
     }
 
     /** Instantiate the module */
@@ -235,16 +237,22 @@ export abstract class DuckDBBindings {
     }
     /** Register a file object URL */
     public registerFileHandle<HandleType>(name: string, handle: HandleType): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, name]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
         globalThis.DUCKDB_RUNTIME._files = (globalThis.DUCKDB_RUNTIME._files || new Map()).set(name, handle);
-        if (this._pthread) {
-            for (const worker of this._pthread.runningWorkers) {
+        console.log(globalThis.DUCKDB_RUNTIME._files);
+        if (this.pthread) {
+            for (const worker of this.pthread.runningWorkers) {
                 worker.postMessage({
                     cmd: 'registerFileHandle',
                     fileName: name,
                     fileHandle: handle,
                 });
             }
-            for (const worker of this._pthread.unusedWorkers) {
+            for (const worker of this.pthread.unusedWorkers) {
                 worker.postMessage({
                     cmd: 'dropFileHandle',
                     fileName: name,
