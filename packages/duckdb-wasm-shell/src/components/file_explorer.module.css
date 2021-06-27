@@ -88,12 +88,19 @@
 
 .footer_actions {
     grid-row: 3;
+    border-top: 1px solid rgb(220, 220, 220);
+    border-radius: 0 0 8px 8px;
 
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
     padding: 0px 4px;
+}
+
+.footer_label {
+    padding: 0px 16px;
+    flex: 1;
 }
 
 .footer_action {

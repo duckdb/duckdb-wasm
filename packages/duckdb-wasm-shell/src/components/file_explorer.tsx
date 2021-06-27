@@ -57,6 +57,15 @@ class FileExplorer extends React.Component<Props> {
                         size="sm"
                         onClick={this.props.closeOverlay}
                     >
+                        Local File
+                    </Button>
+                    <Button
+                        className={styles.footer_action}
+                        variant="primary"
+                        size="sm"
+                        onClick={this.props.closeOverlay}
+                        disabled
+                    >
                         HTTP File
                     </Button>
                     <Button
@@ -64,8 +73,9 @@ class FileExplorer extends React.Component<Props> {
                         variant="primary"
                         size="sm"
                         onClick={this.props.closeOverlay}
+                        disabled
                     >
-                        Local File
+                        Arrow Flight
                     </Button>
                 </div>
             </div>
