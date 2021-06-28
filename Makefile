@@ -25,7 +25,7 @@ EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_I
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
-GTEST_FILTER=*
+GTEST_FILTER=*ReadAheadBuffer*
 
 # ---------------------------------------------------------------------------
 # Formatting
