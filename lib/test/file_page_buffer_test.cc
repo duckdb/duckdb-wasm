@@ -554,7 +554,11 @@ TEST(FilePageBufferTest, BlockStatistics) {
     auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     file->Truncate(data_size);
 
-    buffer->EnableFileStatistics(file_path.c_str());
+    auto stats_reg = std::make_shared<io::FileStatisticsRegistry>();
+    auto stats_collector = stats_reg->EnableCollector(file_path.c_str());
+    ASSERT_NE(stats_collector, nullptr);
+    buffer->ConfigureFileStatistics(stats_reg);
+    buffer->CollectFileStatistics(file_path.c_str(), stats_collector);
 
     std::vector<char> out;
     out.resize(data_size);
@@ -569,8 +573,8 @@ TEST(FilePageBufferTest, BlockStatistics) {
     file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
     file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
 
-    auto stats_buffer = buffer->ExportFileBlockStatistics(file_path.c_str());
-
+    auto stats_buffer = stats_reg->ExportBlockStatistics(file_path.c_str());
+    ASSERT_NE(stats_buffer, nullptr);
     ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
     ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(double) + sizeof(uint16_t) * 2);
     auto reader = stats_buffer.ValueUnsafe()->data();

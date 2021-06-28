@@ -101,7 +101,7 @@ void FilePageBuffer::FileRef::LoadFrame(FilePageBuffer::BufferFrame& frame, File
 
     // Register a read
     if (file_->file_stats) {
-        file_->file_stats->RegisterRead(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
+        file_->file_stats->RegisterPageRead(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
     }
 
     // Read data into frame
@@ -276,9 +276,11 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     file.file_size = filesystem->GetFileSize(*file.handle);
 
     // Statistics tracking?
-    if (auto iter = file_stats.find(file.path); iter != file_stats.end()) {
-        iter->second->Resize(file_ptr->file_size);
-        file_ptr->file_stats = iter->second;
+    if (file_statistics_) {
+        if (auto stats = file_statistics_->FindCollector(file.path); !!stats) {
+            stats->Resize(file_ptr->file_size);
+            file_ptr->file_stats = stats;
+        }
     }
 
     return std::make_unique<FileRef>(*this, file);
@@ -443,7 +445,7 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
 
             // Register cache hit
             if (file_->file_stats) {
-                file_->file_stats->RegisterCacheHit(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
+                file_->file_stats->RegisterPageRead(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
             }
 
             // Release directory latch and lock frame
@@ -590,7 +592,7 @@ void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGua
     // Register a write
     if (file_->file_stats) {
         file_->file_stats->Resize(new_file_size);
-        file_->file_stats->RegisterWrite(old_file_size, bytes);
+        file_->file_stats->RegisterPageWrite(old_file_size, bytes);
     }
 
     // Do we need to resize the last page?
@@ -779,71 +781,30 @@ std::vector<uint64_t> FilePageBuffer::GetLRUList() const {
     return lru_list;
 }
 
-/// Enable file statistics
-void FilePageBuffer::EnableFileStatistics(std::string_view path, bool enable) {
+/// Configure file statistics
+void FilePageBuffer::ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry) {
     auto dir_guard = Lock();
-    std::string path_buffer{path};
-
-    // Enable or disable?
-    if (enable) {
-        // Stats already tracked?
-        auto stats_iter = file_stats.find(path_buffer);
-        if (stats_iter != file_stats.end()) {
-            return;
-        }
-
-        // Create new statistics collector
-        auto new_stats = std::make_shared<FileStatisticsCollector>();
-        auto [iter, ok] = file_stats.insert({path_buffer, new_stats});
-
-        // No file currently known?
-        auto files_iter = files_by_name.find(path);
-        if (files_iter == files_by_name.end()) {
-            return;
-        }
-
-        // Construct handle to release the filesystem lock
-        FileRef file_ref{*this, *files_iter->second};
-        dir_guard.unlock();
-
-        // In the meantime, someone could race and set different file stats.
-        // But we don't care since that will never by racy.
-        auto file_guard = file_ref.Lock(Exclusive);
-        dir_guard.lock();
-        new_stats->Resize(file_ref.file_->file_size);
-        file_ref.file_->file_stats = new_stats;
-        dir_guard.unlock();
-    } else {
-        // Stats already tracked?
-        auto stats_iter = file_stats.find(path_buffer);
-        if (stats_iter == file_stats.end()) return;
-
-        // Erase statistics collector
-        file_stats.erase(stats_iter);
-
-        // No file currently known?
-        auto files_iter = files_by_name.find(path);
-        if (files_iter == files_by_name.end()) return;
-
-        // Construct handle to release the filesystem lock
-        FileRef file_ref{*this, *files_iter->second};
-        dir_guard.unlock();
-
-        // In the meantime, someone could race and set different file stats.
-        // But we don't care since that will never by racy.
-        auto file_guard = file_ref.Lock(Exclusive);
-        file_ref.file_->file_stats = nullptr;
-    }
+    file_statistics_ = registry;
 }
 
-/// Export file statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> FilePageBuffer::ExportFileBlockStatistics(std::string_view path) {
+/// Enable file statistics
+void FilePageBuffer::CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector) {
     auto dir_guard = Lock();
-    auto stats_iter = file_stats.find(std::string{path});
-    if (stats_iter != file_stats.end()) {
-        return stats_iter->second->ExportBlockStatistics();
-    }
-    return arrow::Status::Invalid("Statistics are not enabled for file: ", path);
+    if (!file_statistics_) return;
+
+    // No file currently known?
+    auto files_iter = files_by_name.find(path);
+    if (files_iter == files_by_name.end()) return;
+    if (collector && files_iter->second->file_stats) return;
+    if (!collector && !files_iter->second->file_stats) return;
+
+    // Construct handle to release the filesystem lock
+    FileRef file_ref{*this, *files_iter->second};
+    dir_guard.unlock();
+
+    // Set file stats
+    auto file_guard = file_ref.Lock(Exclusive);
+    file_ref.file_->file_stats = collector;
 }
 
 }  // namespace io

@@ -77,6 +77,9 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The data URL (if any)
         std::optional<std::string> data_url_ = std::nullopt;
 
+        /// The file stats
+        std::shared_ptr<io::FileStatisticsCollector> file_stats_ = nullptr;
+
        public:
         /// Constructor
         WebFile(uint32_t file_id, std::string_view file_name, DataProtocol protocol)
@@ -133,10 +136,10 @@ class WebFileSystem : public duckdb::FileSystem {
     std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
-    /// The pinned files (e.g. buffers)
-    std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
     /// The thread-local readahead buffers
     std::unordered_map<uint32_t, std::unique_ptr<ReadAheadBuffer>> readahead_buffers_ = {};
+    /// The file statistics
+    std::shared_ptr<io::FileStatisticsRegistry> file_statistics_;
 
     /// Allocate a file id.
     /// XXX This could of course overflow....
@@ -167,6 +170,10 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);
+    /// Configure file statistics
+    void ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry);
+    /// Collect file statistics
+    void CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector);
 
    public:
     /// Open a file

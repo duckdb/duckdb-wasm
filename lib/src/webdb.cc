@@ -1,9 +1,6 @@
 #include "duckdb/web/webdb.h"
 
-#include <rapidjson/rapidjson.h>
-
 #include <cstdio>
-#include <duckdb/parser/parser.hpp>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -22,6 +19,7 @@
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/main/query_result.hpp"
+#include "duckdb/parser/parser.hpp"
 #include "duckdb/web/csv_table_options.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
@@ -33,6 +31,7 @@
 #include "duckdb/web/json_table_options.h"
 #include "parquet-extension.hpp"
 #include "rapidjson/document.h"
+#include "rapidjson/rapidjson.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
@@ -201,7 +200,8 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
     : file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
       database_(),
       connections_(),
-      db_config_() {
+      db_config_(),
+      file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
     auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
     buffered_filesystem_ = buffered_filesystem.get();
     db_config_.file_system = std::move(buffered_filesystem);
@@ -209,6 +209,10 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
     database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
     database_->LoadExtension<duckdb::ParquetExtension>();
     zip_ = std::make_unique<Zipper>(file_page_buffer_);
+    file_page_buffer_->ConfigureFileStatistics(file_stats_);
+    if (auto webfs = io::WebFileSystem::Get()) {
+        webfs->ConfigureFileStatistics(file_stats_);
+    }
 }
 
 WebDB::~WebDB() { pinned_web_files_.clear(); }
@@ -300,12 +304,16 @@ arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
 }
 /// Enable file statistics
 arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
-    file_page_buffer_->EnableFileStatistics(path, enable);
+    auto stats = file_stats_->EnableCollector(path, enable);
+    if (auto web_fs = io::WebFileSystem::Get()) {
+        web_fs->CollectFileStatistics(path, stats);
+    }
+    file_page_buffer_->CollectFileStatistics(path, std::move(stats));
     return arrow::Status::OK();
 }
 /// Export file page statistics
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileBlockStatistics(std::string_view path) {
-    return file_page_buffer_->ExportFileBlockStatistics(path);
+    return file_stats_->ExportBlockStatistics(path);
 }
 
 /// Copy a file to a buffer
