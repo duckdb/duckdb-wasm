@@ -39,8 +39,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.data_protocol) {
             // Find out whether the HTTP source supports range requests.
-            // Only Chrome implements range requests for object URLs unfortunately.
-            // That means we have to buffer everything in firefox for now...
             //
             // XXX We might want to let the user explicitly opt into this fallback behavior here.
             //     If the user expects range requests but gets full downloads, the slowdown might be horrendous.
@@ -58,8 +56,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         `File does not support range requests, buffering everything in WASM instead. url=${file.data_url!}`,
                     );
 
-                    // Source returned us everything, great!
+                    // Source returned us everything... great...
                     // Copy everything into wasm.
+                    // XXX we might want to switch back to HTTP HEAD requests again since we're no longer using this for object URLs
                     const buffer = xhr.response as ArrayBuffer;
                     const bufferPtr = mod._malloc(buffer.byteLength);
                     mod.HEAPU8.set(new Uint8Array(buffer), bufferPtr);
@@ -79,8 +78,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.NATIVE: {
                 const handle = BROWSER_RUNTIME._files?.get(file.file_name);
                 if (!handle) {
-                    console.log('open');
-                    console.log(BROWSER_RUNTIME._files);
                     throw Error(`No handle available for file: ${file.file_name}`);
                 }
                 break;
