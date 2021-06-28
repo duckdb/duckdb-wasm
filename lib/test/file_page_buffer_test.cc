@@ -131,6 +131,7 @@ TEST(FilePageBufferTest, PersistentRestart) {
     ASSERT_EQ(fs::file_size(file3_path), PageCount * page_size);
 
     // Destroy the buffer manager and create a new one.
+    buffer = nullptr;
     buffer = std::make_shared<TestableFilePageBuffer>();
     file_flags = duckdb::FileFlags::FILE_FLAGS_READ;
     files.push_back(buffer->OpenFile(file1_path.c_str(), file_flags));

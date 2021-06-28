@@ -13,7 +13,6 @@
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/readahead_buffer.h"
 #include "duckdb/web/utils/parallel.h"
-#include "duckdb/web/utils/shared_mutex.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "nonstd/span.h"
 
@@ -85,6 +84,8 @@ class WebFileSystem : public duckdb::FileSystem {
 
         /// Get the file info as json
         std::string GetInfoJSON() const;
+        /// Get the file name
+        auto &GetFileName() const { return file_name_; }
         /// Get the data protocol
         auto &GetDataProtocol() const { return data_protocol_; }
         /// Get the data URL
@@ -102,7 +103,7 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The readahead (if resolved)
         ReadAheadBuffer *readahead_;
         /// The position
-        uint64_t position_;
+        std::atomic<uint64_t> position_;
 
         /// Close the file
         void Close() override;

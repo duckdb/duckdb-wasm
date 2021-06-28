@@ -10,7 +10,7 @@ namespace io {
 
 /// Create the default filesystem depending on the platform
 std::unique_ptr<duckdb::FileSystem> CreateDefaultFileSystem() {
-#ifdef EMSCRIPTEN
+#if EMSCRIPTEN
     return std::make_unique<WebFileSystem>();
 #else
     return std::make_unique<duckdb::FileSystem>();

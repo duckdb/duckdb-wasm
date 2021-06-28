@@ -1,7 +1,6 @@
 #include "duckdb/web/io/web_filesystem.h"
 
 #include <cstdint>
-#include <duckdb/common/file_buffer.hpp>
 #include <iostream>
 #include <mutex>
 #include <regex>
@@ -19,7 +18,6 @@
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/scope_guard.h"
-#include "duckdb/web/utils/shared_mutex.h"
 #include "duckdb/web/utils/thread.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "rapidjson/document.h"
@@ -33,27 +31,50 @@ namespace duckdb {
 namespace web {
 namespace io {
 
+/// Stub the filesystem for native tests
 #ifndef EMSCRIPTEN
+/// The thread infos
+struct ThreadInfo {
+    /// The handles
+    std::unordered_map<size_t, std::unique_ptr<FileHandle>> handles = {};
+};
 /// The native filesystem to fake the webfs runtime.
 /// This is only used for tests.
-static auto NATIVE_FS = CreateDefaultFileSystem();
-/// The thread local file handles
-#if WEBDB_THREADS
-#define THREAD_LOCAL thread_local
-#else
-#define THREAD_LOCAL
-#endif
-THREAD_LOCAL static std::unordered_map<size_t, std::unique_ptr<FileHandle>> LOCAL_FS_HANDLES;
-
+static duckdb::FileSystem NATIVE_FS;
+/// The mutex for the system
+static std::mutex NATIVE_FS_MTX;
+/// The thread local file infos
+static std::unordered_map<size_t, std::unique_ptr<ThreadInfo>> LOCAL_FS_INFOS;
+/// Clear the native file handles
+static void ClearNativeFileInfos() {
+    std::unique_lock<std::mutex> fs_guard{NATIVE_FS_MTX};
+    LOCAL_FS_INFOS.clear();
+}
+/// Get the native file infos
+static auto &GetNativeFileInfos() {
+    std::unique_lock<std::mutex> fs_guard{NATIVE_FS_MTX};
+    auto tid = GetThreadID();
+    auto iter = LOCAL_FS_INFOS.find(tid);
+    if (iter != LOCAL_FS_INFOS.end()) return *iter->second;
+    auto entry = LOCAL_FS_INFOS.insert({tid, std::make_unique<ThreadInfo>()});
+    return *entry.first->second;
+}
 /// Get or open a file and throw if something is off
 static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     auto file = WebFileSystem::Get()->GetFile(file_id);
-    if (!file) throw std::runtime_error("unknown file");
+    if (!file) {
+        throw std::runtime_error("unknown file");
+    }
+    auto &infos = GetNativeFileInfos();
     switch (file->GetDataProtocol()) {
         case WebFileSystem::DataProtocol::NATIVE: {
-            auto [it, ok] = LOCAL_FS_HANDLES.insert(
-                {file_id, NATIVE_FS->OpenFile(*file->GetDataURL(), duckdb::FileFlags::FILE_FLAGS_FILE_CREATE |
-                                                                       duckdb::FileFlags::FILE_FLAGS_WRITE)});
+            assert(file->GetDataURL());
+            if (auto iter = infos.handles.find(file_id); iter != infos.handles.end()) {
+                return *iter->second;
+            }
+            auto [it, ok] = infos.handles.insert(
+                {file_id, NATIVE_FS.OpenFile(*file->GetDataURL(), duckdb::FileFlags::FILE_FLAGS_FILE_CREATE |
+                                                                      duckdb::FileFlags::FILE_FLAGS_WRITE)});
             return *it->second;
         }
         case WebFileSystem::DataProtocol::BUFFER:
@@ -73,33 +94,51 @@ RT_FN(void *duckdb_web_fs_file_open(size_t file_id), {
     GetOrOpen(file_id);
     return nullptr;
 });
-RT_FN(void duckdb_web_fs_file_sync(size_t file_id), {});
-RT_FN(void duckdb_web_fs_file_close(size_t file_id), { LOCAL_FS_HANDLES.erase(file_id); });
+RT_FN(void duckdb_web_fs_file_sync(size_t file_id), { NATIVE_FS.FileSync(GetOrOpen(file_id)); });
+RT_FN(void duckdb_web_fs_file_close(size_t file_id), {
+    auto &infos = GetNativeFileInfos();
+    infos.handles.erase(file_id);
+});
 RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOrOpen(file_id).Truncate(new_size); });
 RT_FN(double duckdb_web_fs_file_get_size(size_t file_id), { return GetOrOpen(file_id).GetFileSize(); });
 RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t file_id), {
     auto &file = GetOrOpen(file_id);
-    return NATIVE_FS->GetLastModifiedTime(file);
+    return NATIVE_FS.GetLastModifiedTime(file);
 });
 RT_FN(ssize_t duckdb_web_fs_file_read(size_t file_id, void *buffer, ssize_t bytes, double location), {
     auto &file = GetOrOpen(file_id);
-    file.Seek(location);
-    return file.Read(buffer, bytes);
+    auto file_size = file.GetFileSize();
+    auto safe_offset = std::min<int64_t>(file_size, location);
+    auto read_here = std::min<int64_t>(file_size - safe_offset, bytes);
+    file.Read(buffer, read_here, safe_offset);
+    return read_here;
 });
 RT_FN(ssize_t duckdb_web_fs_file_write(size_t file_id, void *buffer, ssize_t bytes, double location), {
     auto &file = GetOrOpen(file_id);
-    file.Seek(location);
-    return file.Write(buffer, bytes);
+    auto file_size = file.GetFileSize();
+    auto safe_offset = std::min<int64_t>(file_size, location);
+    file.Write(buffer, bytes, location);
+    return bytes;
 });
-RT_FN(void duckdb_web_fs_directory_remove(const char *path, size_t pathLen), {});
-RT_FN(bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen), { return false; });
-RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {});
+RT_FN(void duckdb_web_fs_directory_remove(const char *path, size_t pathLen), {
+    NATIVE_FS.RemoveDirectory(std::string{path, pathLen});
+});
+RT_FN(bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen), {
+    return NATIVE_FS.DirectoryExists(std::string{path, pathLen});
+});
+RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {
+    NATIVE_FS.CreateDirectory(std::string{path, pathLen});
+});
 RT_FN(bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen), { return false; });
-RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {});
-RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen), {});
-RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), { return false; });
-RT_FN(bool duckdb_web_fs_file_remove(const char *path, size_t pathLen), { return false; });
-
+RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {
+    *glob_results = NATIVE_FS.Glob(std::string{path, pathLen});
+});
+RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen), {
+    NATIVE_FS.MoveFile(std::string{from, fromLen}, std::string{to, toLen});
+});
+RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), {
+    return NATIVE_FS.FileExists(std::string{path, pathLen});
+});
 #undef RT_FN
 
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
@@ -131,12 +170,16 @@ WebFileSystem *WebFileSystem::Get() { return WEBFS; }
 
 /// Resolve readahead
 ReadAheadBuffer *WebFileSystem::WebFileHandle::ResolveReadAheadBuffer(std::shared_lock<SharedMutex> &file_guard) {
+    auto tid = GetThreadID();
+
     // Already resolved?
     if (readahead_) return readahead_;
-
     // Check global readahead buffers
-    auto tid = GetThreadID();
     std::unique_lock<LightMutex> fs_guard{fs_.fs_mutex_};
+    // Registered in the meantime
+    if (readahead_) return readahead_;
+
+    // Already known?
     auto iter = fs_.readahead_buffers_.find(tid);
     if (iter != fs_.readahead_buffers_.end()) return iter->second.get();
 
@@ -145,7 +188,6 @@ ReadAheadBuffer *WebFileSystem::WebFileHandle::ResolveReadAheadBuffer(std::share
     auto ra_ptr = ra.get();
     fs_.readahead_buffers_.insert({tid, std::move(ra)});
     readahead_ = ra_ptr;
-
     return readahead_;
 }
 
@@ -240,12 +282,17 @@ std::string WebFileSystem::WebFile::GetInfoJSON() const {
 
 /// Constructor
 WebFileSystem::WebFileSystem() {
-    assert(WEBFS == nullptr && "Can construct only one web filesystem at a time");
+    assert(WEBFS == nullptr && "Can only register a single WebFileSystem at a time");
     WEBFS = this;
 }
 
 /// Destructor
-WebFileSystem::~WebFileSystem() { WEBFS = nullptr; }
+WebFileSystem::~WebFileSystem() {
+    WEBFS = nullptr;
+#ifndef EMSCRIPTEN
+    ClearNativeFileInfos();
+#endif
+}
 
 /// Invalidate readaheads
 void WebFileSystem::InvalidateReadAheads(size_t file_id, std::unique_lock<SharedMutex> &file_guard) {
@@ -342,6 +389,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         auto file = std::make_unique<WebFile>(AllocateFileID(), data_url, data_proto);
         auto file_id = file->file_id_;
         file_ptr = file.get();
+        file_ptr->data_url_ = url;
 
         // Register in directory
         std::string_view file_name{file->file_name_};
@@ -365,6 +413,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
             }
             break;
         case DataProtocol::NATIVE:
+            // Open the file
             if (file_ptr->data_fd_.has_value()) break;
         case DataProtocol::HTTP:
             try {
@@ -443,9 +492,18 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         // Just read with the filesystem api
         case DataProtocol::NATIVE:
         case DataProtocol::HTTP: {
-            auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
-            file_hdl.position_ += n;
-            return n;
+            if (auto ra = file_hdl.ResolveReadAheadBuffer(file_guard)) {
+                auto reader = [&](auto *out, size_t n, duckdb::idx_t ofs) {
+                    return duckdb_web_fs_file_read(file.file_id_, out, n, ofs);
+                };
+                auto n = ra->Read(file.file_id_, file.file_size_, buffer, nr_bytes, file_hdl.position_, reader);
+                file_hdl.position_ += n;
+                return n;
+            } else {
+                auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+                file_hdl.position_ += n;
+                return n;
+            }
         }
     }
     return 0;
@@ -470,7 +528,8 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
-    // First lock shared to protect against concurrent truncation
+    // First lock shared to protect against concurrent truncation.
+    // XXX Check whether we can downgrade this to a shared lock (-> readahead invalidation).
     std::unique_lock<SharedMutex> file_guard{file.file_mutex_};
     // Do the actual write
     size_t bytes_read = 0;
@@ -637,7 +696,7 @@ std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
     }
     glob_results = &results;
     duckdb_web_fs_glob(path.c_str(), path.size());
-    glob_results = {};
+    glob_results = nullptr;
     return results;
 }
 
