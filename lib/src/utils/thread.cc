@@ -5,7 +5,7 @@
 namespace duckdb {
 namespace web {
 
-#if WEBDB_THREADS
+#if !EMSCRIPTEN || WEBDB_THREADS
 uint32_t GetThreadID() {
     static std::atomic<uint32_t> NEXT_THREAD_ID = 0;
     static thread_local uint32_t THREAD_ID = 0;
@@ -15,7 +15,7 @@ uint32_t GetThreadID() {
     return THREAD_ID - 1;
 };
 #else
-size_t GetThreadID() { return 0; }
+uint32_t GetThreadID() { return 0; }
 #endif
 
 }  // namespace web

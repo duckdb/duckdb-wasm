@@ -2,6 +2,7 @@
 #define INCLUDE_DUCKDB_WEB_IO_READAHEAD_BUFFER_H_
 
 #include <atomic>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <memory>
@@ -15,9 +16,9 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-constexpr size_t READAHEAD_ACCELERATION = 4;   // * 1.25
+constexpr size_t READAHEAD_ACCELERATION = 2;   // x = x + x / 2
 constexpr size_t READAHEAD_BASE = 1 << 10;     // 1 KB
-constexpr size_t READAHEAD_MAXIMUM = 1 << 20;  // 1 MB
+constexpr size_t READAHEAD_MAXIMUM = 1 << 24;  // 16 MB
 constexpr size_t READ_HEAD_COUNT = 10;         // (READ_HEAD_COUNT * READAHEAD_MAXIMUM) bytes
 
 /// A readahead buffer that is meant to be maintained per thread
@@ -59,9 +60,11 @@ class ReadAheadBuffer {
     void ApplyInvalidations() {
         auto invalidations = invalidation_mask_.exchange(0);
         if (invalidations == 0) return;
-        for (auto iter = read_heads_.begin(); iter != read_heads_.end(); ++iter) {
-            if (((~invalidations) & iter->file_id) == 0) {
-                iter->file_id = std::numeric_limits<uint64_t>::max();
+        for (auto iter = read_heads_.begin(); iter != read_heads_.end();) {
+            auto current = iter++;
+            if (((~invalidations) & current->file_id) == 0) {
+                current->file_id = std::numeric_limits<uint64_t>::max();
+                read_heads_.splice(read_heads_.begin(), read_heads_, current);
             }
         }
     }
@@ -117,11 +120,13 @@ class ReadAheadBuffer {
             // Accelerate readahead if read occurs exactly at end
             if (offset == end) {
                 // Update read head
-                iter->speed = std::min<size_t>(iter->speed + iter->speed / READAHEAD_ACCELERATION, READAHEAD_MAXIMUM);
+                iter->speed = std::max<size_t>(
+                    std::min<size_t>(iter->speed + iter->speed / READAHEAD_ACCELERATION, READAHEAD_MAXIMUM),
+                    READAHEAD_BASE);
                 allocate(*iter, iter->speed);
 
                 // Perform read
-                auto safe_offset = std::min<uint64_t>(file_size, iter->offset);
+                auto safe_offset = std::min<uint64_t>(file_size, end);
                 auto read_here = std::min<uint64_t>(file_size - safe_offset, iter->speed);
                 iter->buffer_size = read_fn(iter->buffer.get(), read_here, safe_offset);
                 iter->offset = end;

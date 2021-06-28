@@ -99,7 +99,6 @@ TEST(ReadAheadBufferTest, ConsecutiveReads) {
     ASSERT_EQ(buffer.GetReadHeads().back().file_id, FILE_ID);
     ASSERT_EQ(buffer.GetReadHeads().back().offset, expected_pos);
     ASSERT_EQ(buffer.GetReadHeads().back().speed, expected_speed);
-    ASSERT_EQ(buffer.GetReadHeads().back().buffer_size, expected_speed);
 }
 
 }  // namespace
