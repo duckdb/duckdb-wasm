@@ -75,7 +75,7 @@ class ReadAheadBuffer {
     }
     /// Read up to nr_bytes bytes into the buffer
     template <typename Fn>
-    int64_t Read(void* buffer, int64_t nr_bytes, duckdb::idx_t offset, uint32_t file_id, uint64_t file_size,
+    int64_t Read(uint32_t file_id, uint64_t file_size, void* buffer, int64_t nr_bytes, duckdb::idx_t offset,
                  Fn read_fn) {
         // First apply all invalidations
         ApplyInvalidations();
@@ -86,9 +86,9 @@ class ReadAheadBuffer {
                 return;
             }
             head.buffer = nullptr;
-            head.buffer_capacity = size;
-            head.buffer_size = size;
             head.buffer = std::unique_ptr<char[]>(new char[size]);
+            head.buffer_size = size;
+            head.buffer_capacity = size;
         };
 
         for (auto iter = read_heads_.begin(); iter != read_heads_.end(); ++iter) {
@@ -105,13 +105,13 @@ class ReadAheadBuffer {
             if (offset < end) {
                 // Read from buffer
                 auto skip_here = offset - iter->offset;
-                auto read_here = iter->buffer_size - skip_here;
+                auto copy_here = std::min<size_t>(iter->buffer_size - skip_here, nr_bytes);
                 assert(iter->buffer_size > skip_here);
-                std::memcpy(buffer, iter->buffer.get() + skip_here, read_here);
+                std::memcpy(buffer, iter->buffer.get() + skip_here, copy_here);
 
                 // Move to the end of LRU queue
                 read_heads_.splice(read_heads_.end(), read_heads_, iter);
-                return read_here;
+                return copy_here;
             }
 
             // Accelerate readahead if read occurs exactly at end
@@ -119,31 +119,32 @@ class ReadAheadBuffer {
                 // Update read head
                 iter->speed = std::min<size_t>(iter->speed + iter->speed / READAHEAD_ACCELERATION, READAHEAD_MAXIMUM);
                 allocate(*iter, iter->speed);
-                iter->offset = end;
 
                 // Perform read
                 auto safe_offset = std::min<uint64_t>(file_size, iter->offset);
                 auto read_here = std::min<uint64_t>(file_size - safe_offset, iter->speed);
                 iter->buffer_size = read_fn(iter->buffer.get(), read_here, safe_offset);
+                iter->offset = end;
 
                 // Copy requested bytes
-                auto copy_bytes = std::min<int64_t>(iter->buffer_size, nr_bytes);
-                std::memcpy(buffer, iter->buffer.get(), copy_bytes);
+                auto copy_here = std::min<int64_t>(iter->buffer_size, nr_bytes);
+                std::memcpy(buffer, iter->buffer.get(), copy_here);
 
                 // Move to the end of LRU queue
                 read_heads_.splice(read_heads_.end(), read_heads_, iter);
-                return copy_bytes;
+                return copy_here;
             }
         }
 
         // No read head qualified.
         // Reset the first read head.
         auto iter = read_heads_.begin();
-        iter->speed = READAHEAD_BASE;
+        iter->file_id = file_id;
+        iter->speed = nr_bytes;
         iter->buffer_size = 0;
 
         // Important:
-        // We do not buffer the very first read since don't want to copy the data when the accesses are random!
+        // We do not buffer the very first read since don't want to copy the data when the accesses are entirely random!
         // We instead just set the offset to the END of the read and use a buffer size of 0.
         auto safe_offset = std::min<uint64_t>(file_size, offset);
         auto read_here = std::min<uint64_t>(file_size - safe_offset, iter->speed);

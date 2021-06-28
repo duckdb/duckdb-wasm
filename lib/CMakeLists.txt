@@ -238,6 +238,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/miniz_zipper_test.cc
+      ${CMAKE_SOURCE_DIR}/test/readahead_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
       ${CMAKE_SOURCE_DIR}/test/tester.cc)
