@@ -47,6 +47,20 @@ pub fn embed(
     Ok(())
 }
 
+#[wasm_bindgen(js_name = "write")]
+pub fn write(text: &str) {
+    let sa = shell::Shell::global();
+    let s = sa.lock().unwrap();
+    s.write(text);
+}
+
+#[wasm_bindgen(js_name = "writeln")]
+pub fn writeln(text: &str) {
+    let sa = shell::Shell::global();
+    let s = sa.lock().unwrap();
+    s.writeln(text);
+}
+
 #[wasm_bindgen(js_name = "configureDatabase")]
 pub async fn configure_database(db: JsAsyncDuckDB) -> Result<(), js_sys::Error> {
     let sa = shell::Shell::global();

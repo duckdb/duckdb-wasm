@@ -128,6 +128,7 @@ class Shell extends React.Component<Props> {
             shell.embed(this.termContainer.current, this.runtime, {
                 backgroundColor: '#333',
             });
+            shell.writeln('Initializing DuckDB...');
             this.initDuckDB();
         }
     }
