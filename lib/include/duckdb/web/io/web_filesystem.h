@@ -11,7 +11,9 @@
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/file_stats.h"
+#include "duckdb/web/io/readahead_buffer.h"
 #include "duckdb/web/utils/parallel.h"
+#include "duckdb/web/utils/shared_mutex.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "nonstd/span.h"
 
@@ -97,6 +99,8 @@ class WebFileSystem : public duckdb::FileSystem {
         WebFileSystem &fs_;
         /// The file
         WebFile *file_;
+        /// The readahead (if resolved)
+        ReadAheadBuffer *readahead_;
         /// The position
         uint64_t position_;
 
@@ -106,7 +110,7 @@ class WebFileSystem : public duckdb::FileSystem {
        public:
         /// Constructor
         WebFileHandle(WebFileSystem &file_system, std::string path, WebFile &file)
-            : duckdb::FileHandle(file_system, path), fs_(file_system), file_(&file), position_(0) {
+            : duckdb::FileHandle(file_system, path), fs_(file_system), file_(&file), readahead_(nullptr), position_(0) {
             ++file_->handle_count_;
         }
         /// Delete copy constructor
@@ -115,6 +119,8 @@ class WebFileSystem : public duckdb::FileSystem {
         virtual ~WebFileHandle() { Close(); }
         /// Get the file name
         auto &GetName() const { return file_->file_name_; }
+        /// Resolve readahead
+        ReadAheadBuffer *ResolveReadAheadBuffer(std::shared_lock<SharedMutex> &file_guard);
     };
 
    protected:
@@ -128,11 +134,15 @@ class WebFileSystem : public duckdb::FileSystem {
     uint32_t next_file_id_ = 0;
     /// The pinned files (e.g. buffers)
     std::vector<std::unique_ptr<duckdb::FileHandle>> file_handles_ = {};
+    /// The thread-local readahead buffers
+    std::unordered_map<uint32_t, std::unique_ptr<ReadAheadBuffer>> readahead_buffers_ = {};
 
     /// Allocate a file id.
     /// XXX This could of course overflow....
     /// Make this a uint64 with emscripten BigInts maybe.
     inline uint32_t AllocateFileID() { return ++next_file_id_; }
+    /// Invalidate readaheads
+    void InvalidateReadAheads(size_t file_id, std::unique_lock<SharedMutex> &file_guard);
 
    public:
     /// Constructor
