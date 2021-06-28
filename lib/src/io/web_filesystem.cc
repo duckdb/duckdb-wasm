@@ -379,8 +379,14 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
 
 void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
+    auto file_size = file_hdl.file_->file_size_;
+    auto reader = static_cast<char *>(buffer);
     file_hdl.position_ = location;
-    Read(handle, buffer, nr_bytes);
+    while (nr_bytes > 0 && location < file_size) {
+        auto n = Read(handle, reader, nr_bytes);
+        reader += n;
+        nr_bytes -= n;
+    }
 }
 
 int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
@@ -416,8 +422,14 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
 
 void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
+    auto file_size = file_hdl.file_->file_size_;
+    auto writer = static_cast<char *>(buffer);
     file_hdl.position_ = location;
-    Write(handle, buffer, nr_bytes);
+    while (nr_bytes > 0 && location < file_size) {
+        auto n = Write(handle, writer, nr_bytes);
+        writer += n;
+        nr_bytes -= n;
+    }
 }
 
 int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
