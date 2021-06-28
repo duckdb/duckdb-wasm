@@ -10,7 +10,7 @@ import '../static/fonts/fonts.module.css';
 import './globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const PaddedShell = () => <Shell padding={[16, 20]} backgroundColor="#333" />;
+const PaddedShell = () => <Shell padding={[16, 0, 16, 20]} backgroundColor="#333" />;
 
 const store = model.createStore();
 
