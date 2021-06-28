@@ -218,7 +218,7 @@ impl Shell {
         let db_features = db.get_feature_flags().await.unwrap();
         write!(
             buffer,
-            "{crlf}{bold}DuckDB Features:{normal}{crlf}",
+            "{crlf}{bold}DuckDB Bundle Features:{normal}{crlf}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
             crlf = vt100::CRLF
@@ -247,12 +247,6 @@ impl Shell {
             "WebAssembly Threads",
             "Module uses multiple web-workers",
             (db_features & 0b10) != 0,
-        );
-        write_feature(
-            &mut buffer,
-            "Parquet Extension",
-            "Module contains the Parquet extension",
-            true,
         );
 
         self.writeln(&buffer);
