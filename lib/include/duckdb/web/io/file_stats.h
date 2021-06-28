@@ -11,6 +11,7 @@
 #include "arrow/buffer.h"
 #include "arrow/status.h"
 #include "duckdb/web/io/file_page_defaults.h"
+#include "duckdb/web/utils/parallel.h"
 
 namespace duckdb {
 namespace web {
@@ -25,10 +26,12 @@ class FileStatisticsCollector {
    protected:
     /// The file statistics
     struct BlockStatistics {
-        uint16_t reads = 0;
-        uint16_t writes = 0;
-        uint16_t prefetches = 0;
-        uint16_t cache = 0;
+        std::atomic<uint16_t> file_read_cold = 0;
+        std::atomic<uint16_t> file_read_ahead = 0;
+        std::atomic<uint16_t> file_read_cached = 0;
+        std::atomic<uint16_t> file_write = 0;
+        std::atomic<uint16_t> page_read = 0;
+        std::atomic<uint16_t> page_write = 0;
     };
     /// The block size shift
     size_t block_shift_ = 0;
@@ -36,70 +39,103 @@ class FileStatisticsCollector {
     size_t block_count_ = 0;
     /// The file statistics
     std::unique_ptr<BlockStatistics[]> block_stats_ = {};
-    /// The number of read bytes
-    uint64_t bytes_read = 0;
-    /// The number of written bytes
-    uint64_t bytes_written = 0;
+
+    /// Is active?
+    std::atomic<bool> active_ = true;
+
+    /// The number of file bytes that were read cold
+    std::atomic<uint64_t> bytes_file_read_cold_ = 0;
+    std::atomic<uint64_t> bytes_file_read_ahead_ = 0;
+    std::atomic<uint64_t> bytes_file_read_cached_ = 0;
+    std::atomic<uint64_t> bytes_file_write_ = 0;
+    std::atomic<uint64_t> bytes_page_read_ = 0;
+    std::atomic<uint64_t> bytes_page_write_ = 0;
+
+    /// The times
+    std::atomic<uint64_t> earliest_access = 0;
+    std::atomic<uint64_t> latest_access = 0;
 
     /// Increment hits
     static inline void inc(uint16_t& hits) {
         hits = std::min<uint16_t>(std::numeric_limits<uint16_t>::max() - 1, hits) + 1;
+    }
+    /// Register a read
+    template <typename GetCounter>
+    inline void BumpCounter(uint64_t offset, uint64_t length, GetCounter counter, std::atomic<uint64_t>& total) {
+        if (!active_) return;
+        auto block_id = offset >> block_shift_;
+        if (block_id >= block_count_) {
+            assert(false);
+            return;
+        }
+        auto& hits = counter(block_stats_[block_id]);
+
+        // We don't care too much about overflows here since these counters are not meant to be super accurate.
+        auto hit = hits.fetch_add(1);
+        if ((hit + 1) > (1 << 15)) hits = 1 << 15;
     }
 
    public:
     /// Constructor
     FileStatisticsCollector() = default;
 
+    /// Activate the collector
+    void Activate(bool value) { active_ = value; }
     /// Resize the file
     void Resize(uint64_t n);
     /// Register a read
-    inline void RegisterRead(uint64_t offset, uint64_t length) {
-        auto block_id = offset >> block_shift_;
-        if (block_id >= block_count_) {
-            assert(false);
-            return;
-        }
-        inc(block_stats_[block_id].reads);
-        bytes_read += length;
+    inline void RegisterFileReadAhead(uint64_t offset, uint64_t length) {
+        BumpCounter(
+            offset, length, [](auto& s) -> auto& { return s.file_read_ahead; }, bytes_file_read_ahead_);
     }
-    /// Register a prefetch
-    inline void RegisterPrefetch(uint64_t offset, uint64_t length) {
-        auto block_id = offset >> block_shift_;
-        if (block_id >= block_count_) {
-            assert(false);
-            return;
-        }
-        inc(block_stats_[block_id].prefetches);
-        bytes_read += length;
+    /// Register a read cold
+    inline void RegisterFileReadCold(uint64_t offset, uint64_t length) {
+        BumpCounter(
+            offset, length, [](auto& s) -> auto& { return s.file_read_cold; }, bytes_file_read_cold_);
     }
     /// Register a cache hit
-    inline void RegisterCacheHit(uint64_t offset, uint64_t length) {
-        auto block_id = offset >> block_shift_;
-        if (block_id >= block_count_) {
-            assert(false);
-            return;
-        }
-        inc(block_stats_[block_id].prefetches);
-        bytes_read += length;
+    inline void RegisterFileReadCached(uint64_t offset, uint64_t length) {
+        BumpCounter(
+            offset, length, [](auto& s) -> auto& { return s.file_read_cached; }, bytes_file_read_cached_);
     }
     /// Register a write
-    inline void RegisterWrite(uint64_t offset, uint64_t length) {
-        auto block_id = offset >> block_shift_;
-        if (block_id >= block_count_) {
-            assert(false);
-            return;
-        }
-        inc(block_stats_[block_id].writes);
-        bytes_written += length;
+    inline void RegisterFileWrite(uint64_t offset, uint64_t length) {
+        BumpCounter(
+            offset, length, [](auto& s) -> auto& { return s.file_write; }, bytes_file_write_);
+    }
+    /// Register a page read
+    inline void RegisterPageRead(uint64_t offset, uint64_t length) {
+        BumpCounter(
+            offset, length, [](auto& s) -> auto& { return s.page_read; }, bytes_page_read_);
+    }
+    /// Register a page write
+    inline void RegisterPageWrite(uint64_t offset, uint64_t length) {
+        BumpCounter(
+            offset, length, [](auto& s) -> auto& { return s.page_write; }, bytes_page_write_);
     }
 
     /// Encode the block accesses
-    /// lsb 		             msb
-    /// 0000   0000   0000     0000
-    /// access writes prefetch cached
+    /// lsb      msb | lsb        msb | lsb      msb
+    /// 0000   0000  | 0000   0000    | 0000   0000
+    /// fwrite fcold | fahead fcached | pwrite pread
     ///
     /// Encoding: at least ((1 << nibble) - 1) times
     arrow::Result<std::shared_ptr<arrow::Buffer>> ExportBlockStatistics() const;
+};
+
+class FileStatisticsRegistry {
+    /// The mutex
+    LightMutex registry_mutex_;
+    /// The collectors
+    std::unordered_map<std::string, std::shared_ptr<FileStatisticsCollector>> collectors_ = {};
+
+   public:
+    /// Find a collector
+    std::shared_ptr<FileStatisticsCollector> FindCollector(std::string_view file_name);
+    /// Enable a collector (if exists)
+    std::shared_ptr<FileStatisticsCollector> EnableCollector(std::string_view file_name, bool enable = true);
+    /// Export statistics
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportBlockStatistics(std::string_view path);
 };
 
 }  // namespace io

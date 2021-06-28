@@ -18,6 +18,7 @@
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/scope_guard.h"
+#include "duckdb/web/utils/shared_mutex.h"
 #include "duckdb/web/utils/thread.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "rapidjson/document.h"
@@ -371,6 +372,32 @@ arrow::Result<std::string> WebFileSystem::GetFileInfoJSON(uint32_t file_id) {
     return file.GetInfoJSON();
 }
 
+/// Configure file statistics
+void WebFileSystem::ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry) {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    file_statistics_ = registry;
+}
+
+/// Enable file statistics
+void WebFileSystem::CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector) {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (!file_statistics_) return;
+
+    // No file currently known?
+    auto files_iter = files_by_name_.find(path);
+    if (files_iter == files_by_name_.end()) return;
+    if (collector && files_iter->second->file_stats_) return;
+    if (!collector && !files_iter->second->file_stats_) return;
+
+    // Construct handle to release the filesystem lock
+    WebFileHandle file_hdl{*this, files_iter->second->file_name_, *files_iter->second};
+    fs_guard.unlock();
+
+    // Set file stats
+    std::unique_lock<SharedMutex> file_guard{files_iter->second->file_mutex_};
+    file_hdl.file_->file_stats_ = collector;
+}
+
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
                                                             FileCompressionType compression) {
@@ -451,6 +478,14 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 std::string msg = std::string{"Failed to open file: "} + file_ptr->file_name_;
                 throw new std::logic_error(msg);
             }
+    }
+
+    // Statistics tracking?
+    if (file_statistics_) {
+        if (auto stats = file_statistics_->FindCollector(file_ptr->file_name_); !!stats) {
+            stats->Resize(file_ptr->file_size_);
+            file_ptr->file_stats_ = stats;
+        }
     }
 
     // Build the handle

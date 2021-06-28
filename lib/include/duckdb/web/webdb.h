@@ -2,7 +2,6 @@
 #define INCLUDE_DUCKDB_WEB_WEBDB_H_
 
 #include <cstring>
-#include <duckdb/common/file_system.hpp>
 #include <initializer_list>
 #include <stdexcept>
 #include <string>
@@ -13,12 +12,14 @@
 #include "arrow/io/interfaces.h"
 #include "arrow/ipc/writer.h"
 #include "duckdb.hpp"
+#include "duckdb/common/file_system.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
+#include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/miniz_zipper.h"
 #include "nonstd/span.h"
 
@@ -74,6 +75,8 @@ class WebDB {
     /// The database config
     duckdb::DBConfig db_config_;
 
+    /// The file statistics (if any)
+    std::shared_ptr<io::FileStatisticsRegistry> file_stats_ = {};
     /// The pinned web files (if any)
     std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
     /// The zipper (if loaded)

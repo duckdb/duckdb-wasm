@@ -315,7 +315,7 @@ class FilePageBuffer {
     std::list<BufferFrame*> lru = {};
 
     /// The file statistics
-    std::unordered_map<std::string, std::shared_ptr<FileStatisticsCollector>> file_stats = {};
+    std::shared_ptr<io::FileStatisticsRegistry> file_statistics_;
 
     /// Lock the directory
     inline auto Lock() { return std::unique_lock{directory_latch}; }
@@ -347,11 +347,6 @@ class FilePageBuffer {
     /// Destructor
     ~FilePageBuffer();
 
-    /// Enable file statistics
-    void EnableFileStatistics(std::string_view path, bool enable = true);
-    /// Export file block accesses
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileBlockStatistics(std::string_view path);
-
     /// Get the filesystem
     auto& GetFileSystem() { return filesystem; }
     /// Get the page size
@@ -360,6 +355,10 @@ class FilePageBuffer {
     auto GetPageSizeShift() const { return page_size_bits; }
     /// Get a page id from an offset
     uint64_t GetPageIDFromOffset(uint64_t offset) { return offset >> page_size_bits; }
+    /// Configure file statistics
+    void ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry);
+    /// Collect file statistics
+    void CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector);
 
     /// Open a file
     std::unique_ptr<FileRef> OpenFile(std::string_view path, uint8_t flags,
