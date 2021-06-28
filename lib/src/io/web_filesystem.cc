@@ -19,6 +19,8 @@
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/scope_guard.h"
+#include "duckdb/web/utils/shared_mutex.h"
+#include "duckdb/web/utils/thread.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
@@ -42,6 +44,7 @@ static auto NATIVE_FS = CreateDefaultFileSystem();
 #define THREAD_LOCAL
 #endif
 THREAD_LOCAL static std::unordered_map<size_t, std::unique_ptr<FileHandle>> LOCAL_FS_HANDLES;
+
 /// Get or open a file and throw if something is off
 static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     auto file = WebFileSystem::Get()->GetFile(file_id);
@@ -59,7 +62,6 @@ static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     }
     throw std::logic_error("unknown data protocol");
 }
-
 #endif
 
 #ifdef EMSCRIPTEN
@@ -126,6 +128,27 @@ static WebFileSystem *WEBFS = nullptr;
 
 /// Get the static web filesystem
 WebFileSystem *WebFileSystem::Get() { return WEBFS; }
+
+/// Resolve readahead
+ReadAheadBuffer *WebFileSystem::WebFileHandle::ResolveReadAheadBuffer(std::shared_lock<SharedMutex> &file_guard) {
+    // Already resolved?
+    if (readahead_) return readahead_;
+
+    // Check global readahead buffers
+    auto tid = GetThreadID();
+    std::unique_lock<LightMutex> fs_guard{fs_.fs_mutex_};
+    auto iter = fs_.readahead_buffers_.find(tid);
+    if (iter != fs_.readahead_buffers_.end()) return iter->second.get();
+
+    // Create new readahead buffer
+    auto ra = std::make_unique<ReadAheadBuffer>();
+    auto ra_ptr = ra.get();
+    fs_.readahead_buffers_.insert({tid, std::move(ra)});
+    readahead_ = ra_ptr;
+
+    return readahead_;
+}
+
 /// Close a file handle
 void WebFileSystem::WebFileHandle::Close() {
     DEBUG_TRACE();
@@ -223,6 +246,14 @@ WebFileSystem::WebFileSystem() {
 
 /// Destructor
 WebFileSystem::~WebFileSystem() { WEBFS = nullptr; }
+
+/// Invalidate readaheads
+void WebFileSystem::InvalidateReadAheads(size_t file_id, std::unique_lock<SharedMutex> &file_guard) {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    for (auto &ra : readahead_buffers_) {
+        ra.second->Invalidate(file_id);
+    }
+}
 
 /// Register a file URL
 arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(
@@ -440,8 +471,9 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     // First lock shared to protect against concurrent truncation
-    std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
+    std::unique_lock<SharedMutex> file_guard{file.file_mutex_};
     // Do the actual write
+    size_t bytes_read = 0;
     switch (file.data_protocol_) {
         // Buffers are trans
         case DataProtocol::BUFFER: {
@@ -458,7 +490,8 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             // Copy data to buffer
             ::memcpy(file.data_buffer_->Get().data() + file_hdl.position_, buffer, nr_bytes);
             file_hdl.position_ = end;
-            return nr_bytes;
+            bytes_read = nr_bytes;
+            break;
         }
         case DataProtocol::NATIVE: {
             auto end = file_hdl.position_ + nr_bytes;
@@ -478,14 +511,17 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
                 n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
                 file_hdl.position_ = file_hdl.position_ + n;
             }
-            return n;
+            bytes_read = n;
+            break;
         }
         case DataProtocol::HTTP: {
             // XXX How should handle writing HTTP files?
             throw std::runtime_error("writing to HTTP files is not implemented");
         }
     }
-    return 0;
+    // Invalidate all readahead buffers
+    InvalidateReadAheads(file.file_id_, file_guard);
+    return bytes_read;
 }
 
 /// Returns the file size of a file handle, returns -1 on error
@@ -538,10 +574,10 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
             break;
         }
     }
-    // Acquire filesystem mutex to protect the file size update
-    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     // Update the file size
     file.file_size_ = new_size;
+    // Invalidate readahead buffers
+    InvalidateReadAheads(file.file_id_, file_guard);
 }
 /// Check if a directory exists
 bool WebFileSystem::DirectoryExists(const std::string &directory) {

@@ -157,6 +157,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/utils/parking_lot.cc
   ${CMAKE_SOURCE_DIR}/src/utils/wasm_response.cc
   ${CMAKE_SOURCE_DIR}/src/utils/shared_mutex.cc
+  ${CMAKE_SOURCE_DIR}/src/utils/thread.cc
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
