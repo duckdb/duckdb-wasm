@@ -240,7 +240,7 @@ impl Shell {
             &mut buffer,
             "WebAssembly Bulk Memory",
             "Module uses bulk memory operations",
-            (db_features & 0b100) != 0,
+            (db_features & 0b1000) != 0,
         );
         write_feature(
             &mut buffer,
