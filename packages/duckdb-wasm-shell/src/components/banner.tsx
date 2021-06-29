@@ -12,7 +12,9 @@ class Banner extends React.Component<Props> {
     public render() {
         return (
             <div className={styles.banner_bar}>
-                <span className={styles.banner_text}>CAUTION: Alpha-quality software in the wild! Talk to us</span>
+                <span className={styles.banner_text}>
+                    <b>CAUTION:</b> Alpha-quality software in the wild! Talk to us
+                </span>
                 <a
                     className={styles.banner_link}
                     target="_blank"

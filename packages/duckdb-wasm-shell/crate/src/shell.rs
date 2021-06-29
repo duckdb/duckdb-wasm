@@ -488,9 +488,9 @@ impl Shell {
         let db_features = db.get_feature_flags().await.unwrap();
         if (db_features & 0b01) == 0 {
             self.write(&format!(
-                "{bg}{fg}{bold}DuckDB is not running at full speed.{endl}Enter \".config\" for details.{normal}{endl}{endl}",
+                "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter \".config\" for details.{normal}{endl}{endl}",
                 fg = vt100::COLOR_FG_BLACK,
-                bg = vt100::COLOR_BG_WHITE,
+                bg = vt100::COLOR_BG_BRIGHT_WHITE,
                 bold = vt100::MODE_BOLD,
                 normal = vt100::MODES_OFF,
                 endl = vt100::CRLF
