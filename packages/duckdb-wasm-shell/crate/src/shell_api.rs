@@ -26,6 +26,7 @@ pub fn embed(
             .with_right_click_selects_word(true)
             .with_theme(
                 Theme::new()
+                    .with_bright_yellow("#FFF000")
                     .with_foreground("#FFFFFF")
                     .with_background(&options.get_bg()),
             ),

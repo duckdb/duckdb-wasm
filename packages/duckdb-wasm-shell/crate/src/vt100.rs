@@ -10,10 +10,20 @@ pub const KEY_ARROW_DOWN: u32 = 40;
 pub const KEY_C: u32 = 67;
 pub const KEY_L: u32 = 76;
 
+pub const COLOR_FG_BLACK: &str = "\x1b[30m";
 pub const COLOR_FG_RED: &str = "\x1b[31m";
 pub const COLOR_FG_GREEN: &str = "\x1b[32m";
+pub const COLOR_FG_BRIGHT_YELLOW: &str = "\x1b[93m";
+pub const COLOR_BG_BLACK: &str = "\x1b[40m";
 pub const COLOR_BG_RED: &str = "\x1b[41m";
 pub const COLOR_BG_GREEN: &str = "\x1b[42m";
+pub const COLOR_BG_YELLOW: &str = "\x1b[43m";
+pub const COLOR_BG_MAGENTA: &str = "\x1b[44m";
+pub const COLOR_BG_CYAN: &str = "\x1b[46m";
+pub const COLOR_BG_WHITE: &str = "\x1b[47m";
+pub const COLOR_BG_BRIGHT_BLACK: &str = "\x1b[100m";
+pub const COLOR_BG_BRIGHT_RED: &str = "\x1b[101m";
+pub const COLOR_BG_BRIGHT_YELLOW: &str = "\x1b[103m";
 
 pub const CURSOR_UP: &str = "\x1b[A";
 pub const CURSOR_DOWN: &str = "\x1b[B";
