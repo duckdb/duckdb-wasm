@@ -194,7 +194,7 @@ impl Shell {
         .unwrap();
         write_feature(
             &mut buffer,
-            "WebGL 2",
+            "WebGL 2 Renderer",
             "https://chromestatus.com/feature/6694359164518400",
             platform.wasm_exceptions,
         );
