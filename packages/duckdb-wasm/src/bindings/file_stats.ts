@@ -16,21 +16,21 @@ export interface FileBlockStatistics {
 /** The file block statistics */
 export class FileStatistics {
     /** The cold file reads */
-    totalFileReadsCold: number;
+    public totalFileReadsCold: number;
     /** The file readaheads */
-    totalFileReadsAhead: number;
+    public totalFileReadsAhead: number;
     /** The cached file reads */
-    totalFileReadsCached: number;
+    public totalFileReadsCached: number;
     /** The file writes */
-    totalFileWrites: number;
+    public totalFileWrites: number;
     /** The page reads */
-    totalPageReads: number;
+    public totalPageReads: number;
     /** The page writes */
-    totalPageWrites: number;
+    public totalPageWrites: number;
     /** The blocks */
-    blockSize: number;
+    public blockSize: number;
     /** The blocks */
-    blockStats: Uint8Array;
+    public blockStats: Uint8Array;
 
     constructor(u8array: Uint8Array) {
         const f64 = new Float64Array(u8array.buffer);

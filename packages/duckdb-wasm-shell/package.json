@@ -45,6 +45,7 @@
         "@types/react-router-dom": "^5.1.7",
         "@types/react-virtualized": "^9.21.11",
         "@wasm-tool/wasm-pack-plugin": "^1.4.0",
+        "copy-webpack-plugin": "^9.0.1",
         "css-loader": "^5.2.6",
         "esbuild-css-modules-plugin": "^1.0.6",
         "eslint": "^7.27.0",
