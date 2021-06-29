@@ -42,18 +42,25 @@ void FileStatisticsCollector::Resize(uint64_t n) {
 }
 
 /// Encode the block statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportBlockStatistics() const {
-    auto buffer = arrow::AllocateBuffer(sizeof(double) + block_count_ * 3 * sizeof(uint8_t));
+arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportStatistics() const {
+    auto buffer = arrow::AllocateBuffer(sizeof(FileStatisticsCollector::ExportFileStatistics) +
+                                        block_count_ * sizeof(ExportedBlockStats));
     auto writer = buffer.ValueOrDie()->mutable_data();
-    auto* block_size = reinterpret_cast<double*>(writer);
-    auto* stats = reinterpret_cast<uint8_t*>(writer + sizeof(double));
+    auto* out = reinterpret_cast<ExportFileStatistics*>(writer);
+    out->bytes_file_cold = bytes_file_read_cold_;
+    out->bytes_file_ahead = bytes_file_read_ahead_;
+    out->bytes_file_cached = bytes_file_read_cached_;
+    out->bytes_file_write = bytes_file_write_;
+    out->bytes_page_read = bytes_page_read_;
+    out->bytes_page_write = bytes_page_write_;
+    out->block_size = 1 << block_shift_;
     for (size_t i = 0; i < block_count_; ++i) {
         auto& b = block_stats_[i];
-        stats[3 * i + 0] = as_nibble(b.file_write) | (as_nibble(b.file_read_cold) << 4);
-        stats[3 * i + 1] = as_nibble(b.file_read_ahead) | (as_nibble(b.file_read_cached) << 4);
-        stats[3 * i + 2] = as_nibble(b.page_write) | (as_nibble(b.page_read) << 4);
+        auto& o = out->block_stats[i];
+        o[0] = as_nibble(b.file_write) | (as_nibble(b.file_read_cold) << 4);
+        o[1] = as_nibble(b.file_read_ahead) | (as_nibble(b.file_read_cached) << 4);
+        o[2] = as_nibble(b.page_write) | (as_nibble(b.page_read) << 4);
     }
-    *block_size = 1 << block_shift_;
     return buffer;
 }
 
@@ -81,11 +88,11 @@ std::shared_ptr<FileStatisticsCollector> FileStatisticsRegistry::EnableCollector
 }
 
 /// Export block statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsRegistry::ExportBlockStatistics(std::string_view path) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsRegistry::ExportStatistics(std::string_view path) {
     std::unique_lock<LightMutex> reg_guard{registry_mutex_};
     auto iter = collectors_.find(std::string{path});
     if (iter != collectors_.end()) {
-        return iter->second->ExportBlockStatistics();
+        return iter->second->ExportStatistics();
     }
     return nullptr;
 }

@@ -574,23 +574,23 @@ TEST(FilePageBufferTest, BlockStatistics) {
     file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
     file->Read(out.data(), buffer->GetPageSize(), buffer->GetPageSize());
 
-    auto stats_buffer = stats_reg->ExportBlockStatistics(file_path.c_str());
+    auto stats_buffer = stats_reg->ExportStatistics(file_path.c_str());
     ASSERT_NE(stats_buffer, nullptr);
     ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
-    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(double) + sizeof(uint8_t) * 3 * 2);
+    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(io::FileStatisticsCollector::ExportFileStatistics) +
+                                                      sizeof(io::FileStatisticsCollector::ExportedBlockStats) * 2);
     auto reader = stats_buffer.ValueUnsafe()->data();
-    auto block_size = reinterpret_cast<const double*>(reader);
-    ASSERT_EQ(*block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
+    auto stats = reinterpret_cast<const io::FileStatisticsCollector::ExportFileStatistics*>(reader);
+    ASSERT_EQ(stats->block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
 
     // We should see 1 read and 4 cache hits
-    auto* stats = reinterpret_cast<const uint8_t*>(reader + sizeof(double));
     for (size_t i = 0; i < 2; ++i) {
-        auto fwrite = stats[3 * i + 0] & 0b1111;
-        auto fcold = stats[3 * i + 0] >> 4;
-        auto fahead = stats[3 * i + 1] & 0b1111;
-        auto fcached = stats[3 * i + 1] >> 4;
-        auto pwrite = stats[3 * i + 2] & 0b1111;
-        auto pread = stats[3 * i + 2] >> 4;
+        auto fwrite = stats->block_stats[i][0] & 0b1111;
+        auto fcold = stats->block_stats[i][0] >> 4;
+        auto fahead = stats->block_stats[i][1] & 0b1111;
+        auto fcached = stats->block_stats[i][1] >> 4;
+        auto pwrite = stats->block_stats[i][2] & 0b1111;
+        auto pread = stats->block_stats[i][2] >> 4;
 
         ASSERT_EQ(fwrite, 0);
         ASSERT_EQ(fcold, 0);

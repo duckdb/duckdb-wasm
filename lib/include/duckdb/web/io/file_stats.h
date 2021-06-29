@@ -33,6 +33,7 @@ class FileStatisticsCollector {
         std::atomic<uint16_t> page_read = 0;
         std::atomic<uint16_t> page_write = 0;
     };
+
     /// The collector mutex (used for resizing)
     LightMutex collector_mutex_ = {};
     /// The block size shift
@@ -52,10 +53,6 @@ class FileStatisticsCollector {
     std::atomic<uint64_t> bytes_file_write_ = 0;
     std::atomic<uint64_t> bytes_page_read_ = 0;
     std::atomic<uint64_t> bytes_page_write_ = 0;
-
-    /// The times
-    std::atomic<uint64_t> earliest_access = 0;
-    std::atomic<uint64_t> latest_access = 0;
 
     /// Increment hits
     static inline void inc(uint16_t& hits) {
@@ -116,13 +113,35 @@ class FileStatisticsCollector {
             offset, length, [](auto& s) -> auto& { return s.page_write; }, bytes_page_write_);
     }
 
-    /// Encode the block accesses
+    /// The block stats
+    using ExportedBlockStats = uint8_t[3];
+    /// The export file statistics
+    struct ExportFileStatistics {
+        double bytes_file_cold = 0;
+        double bytes_file_ahead = 0;
+        double bytes_file_cached = 0;
+        double bytes_file_write = 0;
+        double bytes_page_read = 0;
+        double bytes_page_write = 0;
+        double block_size = 0;
+        ExportedBlockStats block_stats[];
+    };
+
+    /// Encode the accesses
+    ///
+    /// | bytes_file_cold   | bytes_file_ahead
+    /// | bytes_file_cached | bytes_file_write
+    /// | bytes_page_read   | bytes_page_write
+    /// | block_size
+    /// | <blocks>
+    ///
+    /// Block Entry:
     /// lsb      msb | lsb        msb | lsb      msb
-    /// 0000   0000  | 0000   0000    | 0000   0000
+    /// 0000    0000 | 0000      0000 | 0000    0000
     /// fwrite fcold | fahead fcached | pwrite pread
     ///
     /// Encoding: at least ((1 << nibble) - 1) times
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportBlockStatistics() const;
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportStatistics() const;
 };
 
 class FileStatisticsRegistry {
@@ -137,7 +156,7 @@ class FileStatisticsRegistry {
     /// Enable a collector (if exists)
     std::shared_ptr<FileStatisticsCollector> EnableCollector(std::string_view file_name, bool enable = true);
     /// Export statistics
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportBlockStatistics(std::string_view path);
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportStatistics(std::string_view path);
 };
 
 }  // namespace io
