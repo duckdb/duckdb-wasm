@@ -47,7 +47,7 @@ void duckdb_web_enable_file_stats(WASMResponse* packed, const char* file_name, b
 /// Export block statistics
 void duckdb_web_export_file_block_stats(WASMResponse* packed, const char* file_name) {
     auto& webdb = WebDB::Get();
-    WASMResponseBuffer::Get().Store(*packed, webdb.ExportFileBlockStatistics(file_name));
+    WASMResponseBuffer::Get().Store(*packed, webdb.ExportFileStatistics(file_name));
 }
 /// Drop a file
 void duckdb_web_fs_drop_file(WASMResponse* packed, const char* file_name) {

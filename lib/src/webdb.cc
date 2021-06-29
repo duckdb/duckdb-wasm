@@ -312,8 +312,8 @@ arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
     return arrow::Status::OK();
 }
 /// Export file page statistics
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileBlockStatistics(std::string_view path) {
-    return file_stats_->ExportBlockStatistics(path);
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::ExportFileStatistics(std::string_view path) {
+    return file_stats_->ExportStatistics(path);
 }
 
 /// Copy a file to a buffer
