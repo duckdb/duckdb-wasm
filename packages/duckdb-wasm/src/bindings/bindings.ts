@@ -5,7 +5,7 @@ import { StatusCode } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } from './runtime';
 import { CSVTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
-import { FileBlockStatistics } from './file_stats';
+import { FileStatistics } from './file_stats';
 
 declare global {
     // eslint-disable-next-line no-var
@@ -128,15 +128,12 @@ export abstract class DuckDBBindings {
         }
     }
     /** Export block statistics */
-    public exportFileBlockStatistics(file: string): FileBlockStatistics {
+    public exportFileBlockStatistics(file: string): FileStatistics {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_export_file_block_stats', ['string'], [file]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
-        return {
-            blockSize: this.mod.HEAPF64[d >> 3],
-            blockStats: new Uint16Array(copyBuffer(this.mod, d + 8, n - 8)),
-        };
+        return new FileStatistics(this.mod.HEAPU8.subarray(d, d + n));
     }
 
     /** Connect to database */
