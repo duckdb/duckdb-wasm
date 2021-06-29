@@ -1,7 +1,7 @@
 use super::tokens::{JsScriptTokens, ScriptTokens};
 use crate::arrow_reader::ArrowStreamReader;
 use arrow::ipc::reader::FileReader;
-use js_sys::{Number, Uint16Array, Uint8Array};
+use js_sys::Uint8Array;
 use std::io::Cursor;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -49,18 +49,54 @@ extern "C" {
 
 #[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
 extern "C" {
-    #[wasm_bindgen(js_name = "FileBlockStatistics")]
-    pub type JsFileBlockStatistics;
+    #[wasm_bindgen(js_name = "FileStatistics")]
+    pub type JsFileStatistics;
 
-    #[wasm_bindgen(catch, method, getter, js_name = "blockSize")]
-    fn get_block_size(this: &JsFileBlockStatistics) -> Result<JsValue, JsValue>;
-    #[wasm_bindgen(catch, method, getter, js_name = "blockStats")]
-    fn get_block_stats(this: &JsFileBlockStatistics) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(method, getter, js_name = "totalFileWrites")]
+    fn get_total_file_writes(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalFileReadsCold")]
+    fn get_total_file_reads_cold(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalFileReadsAhead")]
+    fn get_total_file_reads_ahead(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalFileReadsCached")]
+    fn get_total_file_reads_cached(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalPageWrites")]
+    fn get_total_page_writes(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalPageReads")]
+    fn get_total_page_reads(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "blockSize")]
+    fn get_block_size(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "blockStats")]
+    fn get_block_stats(this: &JsFileStatistics) -> JsValue;
 }
 
-pub struct FileBlockStatistics {
-    pub block_size: f64,
-    pub block_stats: Vec<u16>,
+pub struct FileStatistics {
+    pub total_file_reads_cold: u64,
+    pub total_file_reads_ahead: u64,
+    pub total_file_reads_cached: u64,
+    pub total_file_writes: u64,
+    pub total_page_reads: u64,
+    pub total_page_writes: u64,
+    pub block_size: u64,
+    pub block_stats: Vec<u8>,
+}
+
+impl FileStatistics {
+    pub fn read(stats: &JsFileStatistics) -> Self {
+        let u8array: Uint8Array = stats.get_block_stats().into();
+        Self {
+            total_file_writes: stats.get_total_file_writes().as_f64().unwrap_or(0.0) as u64,
+            total_file_reads_ahead: stats.get_total_file_reads_ahead().as_f64().unwrap_or(0.0)
+                as u64,
+            total_file_reads_cold: stats.get_total_file_reads_cold().as_f64().unwrap_or(0.0) as u64,
+            total_file_reads_cached: stats.get_total_file_reads_cached().as_f64().unwrap_or(0.0)
+                as u64,
+            total_page_writes: stats.get_total_page_writes().as_f64().unwrap_or(0.0) as u64,
+            total_page_reads: stats.get_total_page_reads().as_f64().unwrap_or(0.0) as u64,
+            block_size: stats.get_block_size().as_f64().unwrap_or(0.0) as u64,
+            block_stats: u8array.to_vec(),
+        }
+    }
 }
 
 pub struct AsyncDuckDB {
@@ -123,18 +159,13 @@ impl AsyncDuckDB {
     pub async fn export_file_block_statistics(
         &self,
         file: &str,
-    ) -> Result<FileBlockStatistics, js_sys::Error> {
-        let stats: JsFileBlockStatistics = self
+    ) -> Result<FileStatistics, js_sys::Error> {
+        let js_stats: JsFileStatistics = self
             .bindings
             .export_file_block_statistics(file)
             .await?
             .into();
-        let block_size: Number = stats.get_block_size()?.into();
-        let block_stats: Uint16Array = stats.get_block_stats()?.into();
-        Ok(FileBlockStatistics {
-            block_size: block_size.as_f64().unwrap_or(0.0),
-            block_stats: block_stats.to_vec(),
-        })
+        Ok(FileStatistics::read(&js_stats))
     }
 }
 
