@@ -12,8 +12,15 @@ class Banner extends React.Component<Props> {
     public render() {
         return (
             <div className={styles.banner_bar}>
-                <div className={styles.banner_text}>CAUTION: Alpha-quality software in the wild! Talk to us</div>
-                <div className={styles.banner_link}>here</div>
+                <span className={styles.banner_text}>CAUTION: Alpha-quality software in the wild! Talk to us</span>
+                <a
+                    className={styles.banner_link}
+                    target="_blank"
+                    href="https://github.com/duckdb/duckdb-wasm/discussions"
+                    rel="noreferrer"
+                >
+                    here
+                </a>
             </div>
         );
     }

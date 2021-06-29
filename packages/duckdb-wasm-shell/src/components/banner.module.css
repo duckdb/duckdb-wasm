@@ -21,14 +21,16 @@
 }
 
 .banner_link {
-    margin: 0px 6px;
+    margin: 0px 4px;
     padding: 0px 6px;
     height: 100%;
-    background-color: #c2b500;
+    background-color: #e0d100;
 
     display: flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
+    color: black;
 }
 
 .page {
