@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import * as model from './model';
 import { Provider as ReduxProvider } from 'react-redux';
 import Shell from './shell';
-import { Route, BrowserRouter, Redirect } from 'react-router-dom';
+import { Route, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
 
@@ -19,8 +19,7 @@ const element = document.getElementById('root');
 ReactDOM.render(
     <ReduxProvider store={store}>
         <BrowserRouter>
-            <Route exact path="/" component={withBanner(withNavBar(PaddedShell))} />
-            <Redirect to="/" />
+            <Route component={withBanner(withNavBar(PaddedShell))} />
         </BrowserRouter>
     </ReduxProvider>,
     element,
