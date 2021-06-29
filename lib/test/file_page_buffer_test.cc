@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -576,17 +577,27 @@ TEST(FilePageBufferTest, BlockStatistics) {
     auto stats_buffer = stats_reg->ExportBlockStatistics(file_path.c_str());
     ASSERT_NE(stats_buffer, nullptr);
     ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
-    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(double) + sizeof(uint16_t) * 2);
+    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(double) + sizeof(uint8_t) * 3 * 2);
     auto reader = stats_buffer.ValueUnsafe()->data();
     auto block_size = reinterpret_cast<const double*>(reader);
     ASSERT_EQ(*block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
 
     // We should see 1 read and 4 cache hits
-    auto* stats = reinterpret_cast<const uint16_t*>(reader + sizeof(double));
+    auto* stats = reinterpret_cast<const uint8_t*>(reader + sizeof(double));
     for (size_t i = 0; i < 2; ++i) {
-        ASSERT_EQ(stats[i] & 0b1111, 1) << i;
-        ASSERT_EQ((stats[i] >> (1 * 4)) & 0b1111, 0);
-        ASSERT_EQ((stats[i] >> (2 * 4)) & 0b1111, 2);  // ((1 << 2) - 1) == 3, ((1 << 3) - 1) == 7
+        auto fwrite = stats[3 * i + 0] & 0b1111;
+        auto fcold = stats[3 * i + 0] >> 4;
+        auto fahead = stats[3 * i + 1] & 0b1111;
+        auto fcached = stats[3 * i + 1] >> 4;
+        auto pwrite = stats[3 * i + 2] & 0b1111;
+        auto pread = stats[3 * i + 2] >> 4;
+
+        ASSERT_EQ(fwrite, 0);
+        ASSERT_EQ(fcold, 0);
+        ASSERT_EQ(fahead, 0);
+        ASSERT_EQ(fcached, 0);
+        ASSERT_EQ(pwrite, 0);
+        ASSERT_EQ(pread, 2);  // ((1 << 2) - 1) == 3, ((1 << 3) - 1) == 7
     }
 }
 

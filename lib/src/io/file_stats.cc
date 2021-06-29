@@ -7,6 +7,7 @@
 
 #include "arrow/buffer.h"
 #include "arrow/result.h"
+#include "duckdb/web/utils/parallel.h"
 
 namespace duckdb {
 namespace web {
@@ -27,6 +28,7 @@ static uint16_t as_nibble(uint64_t hits) {
 
 /// Resize the file
 void FileStatisticsCollector::Resize(uint64_t n) {
+    std::unique_lock<LightMutex> collector_guard{collector_mutex_};
     auto block_count = std::max<size_t>(n >> MIN_RANGE_SHIFT, 1);
     auto block_shift = MIN_RANGE_SHIFT;
     for (; block_count > MAX_RANGE_COUNT; block_count >>= 1, ++block_shift)

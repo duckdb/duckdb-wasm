@@ -396,6 +396,7 @@ void WebFileSystem::CollectFileStatistics(std::string_view path, std::shared_ptr
     // Set file stats
     std::unique_lock<SharedMutex> file_guard{files_iter->second->file_mutex_};
     file_hdl.file_->file_stats_ = collector;
+    file_hdl.file_->file_stats_->Resize(file_hdl.file_->file_size_);
 }
 
 /// Open a file
