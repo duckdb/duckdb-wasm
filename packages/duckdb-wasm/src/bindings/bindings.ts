@@ -127,9 +127,9 @@ export abstract class DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
     }
-    /** Export block statistics */
-    public exportFileBlockStatistics(file: string): FileStatistics {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_export_file_block_stats', ['string'], [file]);
+    /** Export file statistics */
+    public exportFileStatistics(file: string): FileStatistics {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_export_file_stats', ['string'], [file]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }

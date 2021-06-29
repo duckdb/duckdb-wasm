@@ -44,8 +44,8 @@ void duckdb_web_enable_file_stats(WASMResponse* packed, const char* file_name, b
     auto& webdb = WebDB::Get();
     WASMResponseBuffer::Get().Store(*packed, webdb.EnableFileStatistics(file_name, enable));
 }
-/// Export block statistics
-void duckdb_web_export_file_block_stats(WASMResponse* packed, const char* file_name) {
+/// Export file statistics
+void duckdb_web_export_file_stats(WASMResponse* packed, const char* file_name) {
     auto& webdb = WebDB::Get();
     WASMResponseBuffer::Get().Store(*packed, webdb.ExportFileStatistics(file_name));
 }
