@@ -389,32 +389,83 @@ impl PromptBuffer {
         for t in 0..tokens.offsets.len() {
             let token_ofs = tokens.offsets[t];
             let token_type = tokens.types[t];
+            let next_ofs = if (t + 1) < tokens.offsets.len() {
+                tokens.offsets[t + 1]
+            } else {
+                self.text_buffer.len_chars() as u32
+            };
+            let mut in_quotes: char = '\0';
             for (i, c) in &mut chars_iter {
                 if (i as u32) == token_ofs {
                     match token_type {
                         TokenType::Keyword => {
                             write!(
                                 self.output_buffer,
-                                "{fg_green}{bold}",
-                                fg_green = vt100::COLOR_FG_GREEN,
+                                "{reset}{fg}{bold}",
+                                reset = vt100::MODES_OFF,
+                                fg = vt100::COLOR_FG_GREEN,
                                 bold = vt100::MODE_BOLD
                             )
                             .unwrap();
                         }
-                        TokenType::NumericConstant => (),
-                        TokenType::StringConstant => (),
+                        TokenType::NumericConstant => {
+                            write!(
+                                self.output_buffer,
+                                "{reset}{fg}{bold}",
+                                reset = vt100::MODES_OFF,
+                                fg = vt100::COLOR_FG_MAGENTA,
+                                bold = vt100::MODE_BOLD
+                            )
+                            .unwrap();
+                        }
+                        TokenType::StringConstant => {
+                            write!(
+                                self.output_buffer,
+                                "{reset}{fg}{bold}",
+                                reset = vt100::MODES_OFF,
+                                fg = vt100::COLOR_FG_MAGENTA,
+                                bold = vt100::MODE_BOLD
+                            )
+                            .unwrap();
+                        }
                         TokenType::Identifier => (),
                         TokenType::Comment => (),
                         TokenType::Operator => (),
                     }
                 }
-                if (i as u32) > token_ofs && !c.is_alphanumeric() {
-                    self.output_buffer.push_str(vt100::MODES_OFF);
-                    emit(c, &mut self.output_buffer);
-                    break;
+                // Check exit conditions
+                match token_type {
+                    TokenType::Keyword | TokenType::NumericConstant => {
+                        if !c.is_alphanumeric() {
+                            emit(c, &mut self.output_buffer);
+                            break;
+                        }
+                    }
+                    TokenType::Identifier | TokenType::StringConstant => {
+                        if c == '\'' || c == '\"' {
+                            in_quotes = if in_quotes == c { '\0' } else { c };
+                        }
+                        if in_quotes == '\0' && !c.is_alphanumeric() {
+                            emit(c, &mut self.output_buffer);
+                            break;
+                        }
+                    }
+                    TokenType::Comment => (),
+                    TokenType::Operator => {
+                        if c == ' ' {
+                            emit(c, &mut self.output_buffer);
+                            break;
+                        }
+                    }
                 }
                 emit(c, &mut self.output_buffer);
+
+                // Next is new token?
+                if (i as u32) > token_ofs && ((i + 1) as u32 >= next_ofs) {
+                    break;
+                }
             }
+            self.output_buffer.push_str(vt100::MODES_OFF);
         }
         // Write remainder
         for (_, c) in &mut chars_iter {
