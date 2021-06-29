@@ -1,5 +1,6 @@
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -69,6 +70,13 @@ export function configure(params) {
                     },
                 },
                 {
+                    test: /\.(json)$/i,
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/json/[name].[contenthash].[ext]',
+                    },
+                },
+                {
                     test: /\.(csv|tbl)$/i,
                     loader: 'file-loader',
                     options: {
@@ -83,7 +91,7 @@ export function configure(params) {
                     },
                 },
                 {
-                    test: /\.(png|jpe?g|gif|svg)$/i,
+                    test: /\.(png|jpe?g|gif|svg|ico)$/i,
                     loader: 'file-loader',
                     options: {
                         name: 'static/img/[name].[contenthash].[ext]',
@@ -114,6 +122,20 @@ export function configure(params) {
                         },
                     ],
                 },
+                {
+                    test: /site\.webmanifest$/i,
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/[name].[contenthash].[ext]',
+                    },
+                },
+                {
+                    test: /browserconfig\.xml$/i,
+                    loader: 'file-loader',
+                    options: {
+                        name: 'static/[name].[contenthash].[ext]',
+                    },
+                },
             ],
         },
         optimization: {
@@ -137,12 +159,18 @@ export function configure(params) {
             new HtmlWebpackPlugin({
                 template: './static/index.html',
                 filename: './index.html',
-                favicon: './static/favicon.ico',
-                inject: true,
             }),
             new MiniCssExtractPlugin({
                 filename: './static/css/[id].[contenthash].css',
                 chunkFilename: './static/css/[id].[contenthash].css',
+            }),
+            new CopyWebpackPlugin({
+                patterns: [
+                    {
+                        from: './static/favicons',
+                        to: './static/favicons',
+                    },
+                ],
             }),
         ],
         experiments: {
