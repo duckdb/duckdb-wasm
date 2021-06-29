@@ -211,8 +211,8 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-            case WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS:
-                if (response.type == WorkerResponseType.FILE_BLOCK_STATISTICS) {
+            case WorkerRequestType.EXPORT_FILE_STATISTICS:
+                if (response.type == WorkerResponseType.FILE_STATISTICS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -433,10 +433,10 @@ export class AsyncDuckDB {
         return await this.postTask(task, []);
     }
 
-    /** Export file block statistics */
-    public async exportFileBlockStatistics(name: string): Promise<FileStatistics> {
-        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS, string, FileStatistics>(
-            WorkerRequestType.EXPORT_FILE_BLOCK_STATISTICS,
+    /** Export file statistics */
+    public async exportFileStatistics(name: string): Promise<FileStatistics> {
+        const task = new WorkerTask<WorkerRequestType.EXPORT_FILE_STATISTICS, string, FileStatistics>(
+            WorkerRequestType.EXPORT_FILE_STATISTICS,
             name,
         );
         return await this.postTask(task, []);
