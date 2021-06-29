@@ -33,6 +33,8 @@ class FileStatisticsCollector {
         std::atomic<uint16_t> page_read = 0;
         std::atomic<uint16_t> page_write = 0;
     };
+    /// The collector mutex (used for resizing)
+    LightMutex collector_mutex_ = {};
     /// The block size shift
     size_t block_shift_ = 0;
     /// The block count

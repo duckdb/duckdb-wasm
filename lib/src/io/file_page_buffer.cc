@@ -805,6 +805,7 @@ void FilePageBuffer::CollectFileStatistics(std::string_view path, std::shared_pt
     // Set file stats
     auto file_guard = file_ref.Lock(Exclusive);
     file_ref.file_->file_stats = collector;
+    file_ref.file_->file_stats->Resize(file_ref.file_->file_size);
 }
 
 }  // namespace io
