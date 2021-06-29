@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <limits>
 #include <streambuf>
+#include <unordered_map>
 #include <vector>
 
 #include "arrow/buffer.h"

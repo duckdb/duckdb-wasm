@@ -18,7 +18,6 @@
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/scope_guard.h"
-#include "duckdb/web/utils/shared_mutex.h"
 #include "duckdb/web/utils/thread.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "rapidjson/document.h"
