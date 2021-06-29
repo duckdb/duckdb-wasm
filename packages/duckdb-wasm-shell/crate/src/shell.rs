@@ -475,9 +475,10 @@ impl Shell {
         let db_features = db.get_feature_flags().await.unwrap();
         if (db_features & 0b01) == 0 {
             self.write(&format!(
-                "{reverse}{bold}DuckDB is not running at full speed.{endl}Enter \".config\" for details.{normal}{endl}{endl}",
+                "{bg}{fg}{bold}DuckDB is not running at full speed.{endl}Enter \".config\" for details.{normal}{endl}{endl}",
+                fg = vt100::COLOR_FG_BLACK,
+                bg = vt100::COLOR_BG_WHITE,
                 bold = vt100::MODE_BOLD,
-                reverse = vt100::MODE_REVERSE,
                 normal = vt100::MODES_OFF,
                 endl = vt100::CRLF
             ))
