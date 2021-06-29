@@ -437,6 +437,7 @@ impl PromptBuffer {
                 match token_type {
                     TokenType::Keyword | TokenType::NumericConstant => {
                         if !c.is_alphanumeric() {
+                            self.output_buffer.push_str(vt100::MODES_OFF);
                             emit(c, &mut self.output_buffer);
                             break;
                         }
@@ -446,6 +447,7 @@ impl PromptBuffer {
                             in_quotes = if in_quotes == c { '\0' } else { c };
                         }
                         if in_quotes == '\0' && !c.is_alphanumeric() {
+                            self.output_buffer.push_str(vt100::MODES_OFF);
                             emit(c, &mut self.output_buffer);
                             break;
                         }
@@ -453,6 +455,7 @@ impl PromptBuffer {
                     TokenType::Comment => (),
                     TokenType::Operator => {
                         if c == ' ' {
+                            self.output_buffer.push_str(vt100::MODES_OFF);
                             emit(c, &mut self.output_buffer);
                             break;
                         }
@@ -462,6 +465,7 @@ impl PromptBuffer {
 
                 // Next is new token?
                 if (i as u32) > token_ofs && ((i + 1) as u32 >= next_ofs) {
+                    self.output_buffer.push_str(vt100::MODES_OFF);
                     break;
                 }
             }
