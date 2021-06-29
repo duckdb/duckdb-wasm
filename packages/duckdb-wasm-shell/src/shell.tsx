@@ -134,7 +134,6 @@ class Shell extends React.Component<Props> {
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
             this.runtime._openFileExplorer = this.props.openFileViewer;
-            console.log(`hashWebGL: ${this.hasWebGL()}`);
             shell.embed(this.termContainer.current, this.runtime, {
                 backgroundColor: '#333',
                 withWebGL: this.hasWebGL(),
