@@ -5,6 +5,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import Shell from './shell';
 import { Route, BrowserRouter, Redirect } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
+import { withBanner } from './components/banner';
 
 import '../static/fonts/fonts.module.css';
 import './globals.css';
@@ -18,7 +19,7 @@ const element = document.getElementById('root');
 ReactDOM.render(
     <ReduxProvider store={store}>
         <BrowserRouter>
-            <Route exact path="/" component={withNavBar(PaddedShell)} />
+            <Route exact path="/" component={withBanner(withNavBar(PaddedShell))} />
             <Redirect to="/" />
         </BrowserRouter>
     </ReduxProvider>,
