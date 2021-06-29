@@ -122,11 +122,22 @@ class Shell extends React.Component<Props> {
         this.database.open(config.mainModule, config.pthreadWorker).then(_ => shell.configureDatabase(this.database));
     }
 
+    protected hasWebGL(): boolean {
+        const canvas = document.createElement('canvas') as any;
+        const supports = 'probablySupportsContext' in canvas ? 'probablySupportsContext' : 'supportsContext';
+        if (supports in canvas) {
+            return canvas[supports]('webgl2');
+        }
+        return 'WebGL2RenderingContext' in window;
+    }
+
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
             this.runtime._openFileExplorer = this.props.openFileViewer;
+            console.log(`hashWebGL: ${this.hasWebGL()}`);
             shell.embed(this.termContainer.current, this.runtime, {
                 backgroundColor: '#333',
+                withWebGL: this.hasWebGL(),
             });
             shell.writeln('Initializing DuckDB...');
             this.initDuckDB();

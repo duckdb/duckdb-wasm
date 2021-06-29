@@ -4,6 +4,7 @@ use crate::duckdb::AsyncDuckDB;
 use crate::key_event::{Key, KeyEvent};
 use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
+use crate::shell_options::ShellOptions;
 use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
@@ -30,11 +31,16 @@ pub enum ShellInputContext {
 struct ShellSettings {
     /// Enable query timer
     timer: bool,
+    /// Is WebGL enabled?
+    webgl: bool,
 }
 
 impl ShellSettings {
     fn default() -> Self {
-        Self { timer: false }
+        Self {
+            timer: false,
+            webgl: false,
+        }
     }
 }
 
@@ -78,11 +84,12 @@ impl Shell {
     }
 
     /// Attach to a terminal
-    pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime) {
+    pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime, options: ShellOptions) {
         self.terminal = term;
         self.terminal_width = self.terminal.get_cols() as usize;
         self.runtime = Some(runtime);
         self.input.configure(self.terminal_width);
+        self.settings.webgl = options.with_webgl();
 
         // Register on_key callback
         let callback = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
@@ -185,6 +192,12 @@ impl Shell {
             crlf = vt100::CRLF
         )
         .unwrap();
+        write_feature(
+            &mut buffer,
+            "WebGL 2",
+            "https://chromestatus.com/feature/6694359164518400",
+            platform.wasm_exceptions,
+        );
         write_feature(
             &mut buffer,
             "WebAssembly Exceptions",

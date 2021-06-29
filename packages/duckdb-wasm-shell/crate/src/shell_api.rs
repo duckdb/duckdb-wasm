@@ -34,17 +34,19 @@ pub fn embed(
     terminal.set_any_option("cursorBlink", true.into());
     terminal.open(elem);
 
+    if options.with_webgl() {
+        let addon_webgl = WebglAddon::new(None);
+        terminal.load_addon(addon_webgl.clone().dyn_into::<WebglAddon>()?.into());
+    }
     let addon_fit = FitAddon::new();
-    let addon_webgl = WebglAddon::new(None);
     let links_addon = WebLinksAddon::new(None, None, None);
     terminal.load_addon(addon_fit.clone().dyn_into::<FitAddon>()?.into());
-    terminal.load_addon(addon_webgl.clone().dyn_into::<WebglAddon>()?.into());
     terminal.load_addon(links_addon.clone().dyn_into::<WebLinksAddon>()?.into());
     addon_fit.fit();
 
     let foo = shell::Shell::global();
     let mut s = foo.lock().unwrap();
-    s.attach(terminal, runtime);
+    s.attach(terminal, runtime, options);
     Ok(())
 }
 
