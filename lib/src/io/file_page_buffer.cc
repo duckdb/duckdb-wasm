@@ -280,12 +280,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
         if (auto stats = file_statistics_->FindCollector(file.path); !!stats) {
             stats->Resize(file.file_size);
             file.file_stats = stats;
-            std::cout << "SETTINGS FILE STATS FOR FILE " << file.path << std::endl;
-        } else {
-            std::cout << "COULDNT FILE STATS FOR FILE " << file.path << std::endl;
         }
-    } else {
-        std::cout << "OPENED PAGED FILE WITHOUT STATS" << std::endl;
     }
 
     return std::make_unique<FileRef>(*this, file);
