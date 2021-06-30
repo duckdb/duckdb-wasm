@@ -11,6 +11,7 @@
 #include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/web/io/file_stats.h"
 
 namespace duckdb {
 namespace web {
@@ -78,8 +79,8 @@ class ReadAheadBuffer {
     }
     /// Read up to nr_bytes bytes into the buffer
     template <typename Fn>
-    int64_t Read(uint32_t file_id, uint64_t file_size, void* buffer, int64_t nr_bytes, duckdb::idx_t offset,
-                 Fn read_fn) {
+    int64_t Read(uint32_t file_id, uint64_t file_size, void* buffer, int64_t nr_bytes, duckdb::idx_t offset, Fn read_fn,
+                 FileStatisticsCollector* stats = nullptr) {
         // First apply all invalidations
         ApplyInvalidations();
         // Helper to allocate buffer in the read head
@@ -112,6 +113,11 @@ class ReadAheadBuffer {
                 assert(iter->buffer_size > skip_here);
                 std::memcpy(buffer, iter->buffer.get() + skip_here, copy_here);
 
+                // Register cached
+                if (stats) {
+                    stats->RegisterFileReadCached(offset, copy_here);
+                }
+
                 // Move to the end of LRU queue
                 read_heads_.splice(read_heads_.end(), read_heads_, iter);
                 return copy_here;
@@ -130,6 +136,14 @@ class ReadAheadBuffer {
                 auto read_here = std::min<uint64_t>(file_size - safe_offset, iter->speed);
                 iter->buffer_size = read_fn(iter->buffer.get(), read_here, safe_offset);
                 iter->offset = end;
+
+                // Register file read
+                if (stats) {
+                    auto cold = std::min<size_t>(nr_bytes, iter->buffer_size);
+                    auto ahead = std::max<size_t>(iter->buffer_size, nr_bytes) - nr_bytes;
+                    stats->RegisterFileReadCold(safe_offset, cold);
+                    stats->RegisterFileReadAhead(safe_offset + cold, ahead);
+                }
 
                 // Copy requested bytes
                 auto copy_here = std::min<int64_t>(iter->buffer_size, nr_bytes);
@@ -155,6 +169,11 @@ class ReadAheadBuffer {
         auto read_here = std::min<uint64_t>(file_size - safe_offset, iter->speed);
         auto bytes_read = read_fn(buffer, read_here, safe_offset);
         iter->offset = safe_offset + bytes_read;
+
+        // Register cold read
+        if (stats) {
+            stats->RegisterFileReadCold(safe_offset, bytes_read);
+        }
 
         // Move to the end of LRU queue
         read_heads_.splice(read_heads_.end(), read_heads_, iter);

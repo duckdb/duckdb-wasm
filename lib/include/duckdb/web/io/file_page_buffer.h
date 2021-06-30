@@ -51,7 +51,7 @@ namespace io {
 ///        +-----+     |     +--------+
 ///        |           |              |
 ///        V           V              V
-///      Buffer    HTTP Ranges    Chrome FS
+///      Buffer    HTTP Ranges  FileReaderSync
 ///
 
 class FilePageBuffer {

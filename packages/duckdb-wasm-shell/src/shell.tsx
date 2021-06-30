@@ -90,7 +90,6 @@ class Shell extends React.Component<Props> {
                 size: 0,
                 downloadProgress: 1.0,
             });
-            await this.database.enableFileStatistics(file.name, true);
         }
         this.props.registerFiles(fileInfos);
     }

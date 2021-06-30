@@ -1,12 +1,11 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
-use crate::duckdb;
-use crate::duckdb::AsyncDuckDB;
+use crate::duckdb::{AsyncDuckDB, AsyncDuckDBConnection};
 use crate::key_event::{Key, KeyEvent};
 use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
 use crate::shell_options::ShellOptions;
 use crate::shell_runtime::ShellRuntime;
-use crate::utils::{now, pretty_elapsed};
+use crate::utils::{now, pretty_bytes, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
 use chrono::Duration;
@@ -62,10 +61,12 @@ pub struct Shell {
     /// The input clock
     input_clock: u64,
     /// The database (if any)
-    db: Option<Arc<Mutex<duckdb::AsyncDuckDB>>>,
+    db: Option<Arc<Mutex<AsyncDuckDB>>>,
     /// The connection (if any)
-    db_conn: Option<Arc<Mutex<duckdb::AsyncDuckDBConnection>>>,
+    db_conn: Option<Arc<Mutex<AsyncDuckDBConnection>>>,
 }
+
+const BLOCK_CHARS: [char; 4] = ['░', '▒', '▓', '█'];
 
 impl Shell {
     /// Construct a shell
@@ -270,14 +271,169 @@ impl Shell {
         self.writeln(&buffer);
     }
 
-    pub async fn stats_command(&mut self, args: String) {
+    pub async fn fstats_command(&mut self, args: String) {
         let db = match self.db {
             Some(ref db) => db.lock().unwrap(),
             None => return,
         };
-        let stats = db.export_file_block_statistics(&args).await.unwrap();
-        self.writeln(&format!("Block Size: {}", stats.block_size));
-        self.writeln(&format!("Block Count: {}", stats.block_stats.len()));
+        let subcmd = &args[..args.find(" ").unwrap_or(args.len())];
+        let options = args[subcmd.len()..].trim();
+        match subcmd {
+            "enable" => {
+                db.enable_file_statistics(&options, true).await.unwrap();
+                self.writeln(&format!("Enabled file statistics for: {}", options));
+            }
+            "disable" => {
+                db.enable_file_statistics(&options, false).await.unwrap();
+                self.writeln(&format!("Disabled file statistics for: {}", options));
+            }
+            "reset" => {
+                self.writeln(&format!("Resetted file statistics for: {}", options));
+            }
+            "reads" => {
+                let stats = db.export_file_statistics(&options).await.unwrap();
+
+                // Determine the maximum value per attribute to scale the block chars
+                let mut max = 0;
+                let block_count = stats.get_block_count();
+                for i in 0..block_count {
+                    let b = stats.get_block_stats(i);
+                    max = max.max(b.file_reads_cold);
+                    max = max.max(b.file_reads_ahead);
+                    max = max.max(b.file_reads_cached);
+                }
+
+                // Collect all block chars
+                let mut block_chars: Vec<char> = Vec::new();
+                block_chars.resize(3 * block_count, '\0');
+                for i in 0..block_count {
+                    let stats = stats.get_block_stats(i);
+                    block_chars[3 * i + 0] = if stats.file_reads_cold > 0 {
+                        BLOCK_CHARS[(stats.file_reads_cold * 4 / max).min(3) as usize]
+                    } else {
+                        ' '
+                    };
+                    block_chars[3 * i + 1] = if stats.file_reads_ahead > 0 {
+                        BLOCK_CHARS[(stats.file_reads_ahead * 4 / max).min(3) as usize]
+                    } else {
+                        ' '
+                    };
+                    block_chars[3 * i + 2] = if stats.file_reads_cached > 0 {
+                        BLOCK_CHARS[(stats.file_reads_cached * 4 / max).min(3) as usize]
+                    } else {
+                        ' '
+                    };
+                }
+                let column_width = ((self.terminal_width.max(4) - 4) / 3).max(1);
+                let row_count = (block_count + column_width - 1) / column_width;
+
+                // Write all block chars
+                let mut buffer = String::new();
+                buffer.reserve((6 * 5 + 3 * column_width) * (row_count + 4));
+                buffer.push('┌');
+                buffer.push_str(&"─".repeat(column_width));
+                buffer.push('┬');
+                buffer.push_str(&"─".repeat(column_width));
+                buffer.push('┬');
+                buffer.push_str(&"─".repeat(column_width));
+                buffer.push('┐');
+                buffer.push_str("\r\n");
+                for row in 0..row_count {
+                    let range = (row * column_width)..((row + 1) * column_width).min(block_count);
+                    let padding = column_width - range.len();
+                    buffer.push_str(vt100::COLOR_FG_WHITE);
+                    buffer.push('│');
+                    buffer.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
+                    for i in range.clone() {
+                        buffer.push(block_chars[3 * i + 0]);
+                    }
+                    buffer.push_str(&" ".repeat(padding));
+                    buffer.push_str(vt100::COLOR_FG_WHITE);
+                    buffer.push('│');
+                    buffer.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
+                    for i in range.clone() {
+                        buffer.push(block_chars[3 * i + 1]);
+                    }
+                    buffer.push_str(&" ".repeat(padding));
+                    buffer.push_str(vt100::COLOR_FG_WHITE);
+                    buffer.push('│');
+                    buffer.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
+                    for i in range.clone() {
+                        buffer.push(block_chars[3 * i + 2]);
+                    }
+                    buffer.push_str(&" ".repeat(padding));
+                    buffer.push_str(vt100::COLOR_FG_WHITE);
+                    buffer.push_str("│\r\n");
+                }
+                buffer.push('└');
+                buffer.push_str(&"─".repeat(column_width));
+                buffer.push('┴');
+                buffer.push_str(&"─".repeat(column_width));
+                buffer.push('┴');
+                buffer.push_str(&"─".repeat(column_width));
+                buffer.push('┘');
+                buffer.push_str("\r\n");
+
+                let write_col = |out: &mut String, s: &str, w: usize| {
+                    out.push_str(s);
+                    out.push_str(&" ".repeat(w.max(s.len()) - s.len()));
+                };
+
+                buffer.push_str(vt100::MODE_BOLD);
+                write_col(&mut buffer, " Cold", column_width + 1);
+                write_col(&mut buffer, " Read-Ahead", column_width + 1);
+                write_col(&mut buffer, " Cached", column_width + 1);
+                buffer.push_str(vt100::MODES_OFF);
+                buffer.push_str("\r\n");
+
+                write_col(
+                    &mut buffer,
+                    &format!(" {}", pretty_bytes(stats.total_file_reads_cold as f64)),
+                    column_width + 1,
+                );
+                write_col(
+                    &mut buffer,
+                    &format!(" {}", pretty_bytes(stats.total_file_reads_ahead as f64)),
+                    column_width + 1,
+                );
+                write_col(
+                    &mut buffer,
+                    &format!(" {}", pretty_bytes(stats.total_file_reads_cached as f64)),
+                    column_width + 1,
+                );
+                buffer.push_str("\r\n");
+                buffer.push_str("\r\n");
+
+                buffer.push_str(&format!(
+                    "{bold}Block Size:{normal} {bytes}\r\n",
+                    bold = vt100::MODE_BOLD,
+                    normal = vt100::MODES_OFF,
+                    bytes = pretty_bytes(stats.block_size as f64)
+                ));
+                buffer.push_str(&format!(
+                    "{bold}Block Hits:{normal}",
+                    bold = vt100::MODE_BOLD,
+                    normal = vt100::MODES_OFF
+                ));
+                for i in 0..4 {
+                    let v = 1 + (i * max / 4);
+                    buffer.push_str(&format!(
+                        " {fg}{sym}{normal} >={hits}",
+                        sym = BLOCK_CHARS[i as usize],
+                        hits = (1 << v) - 1,
+                        fg = vt100::COLOR_FG_BRIGHT_YELLOW,
+                        normal = vt100::MODES_OFF,
+                    ));
+                }
+                buffer.push_str("\r\n");
+
+                self.writeln(&buffer);
+            }
+            _ => {
+                self.writeln(&format!("Resetted file statistics for: {}", options));
+                self.writeln("Usage: .fstats [enable/disable/reset/reads/paging] <file>")
+            }
+        }
     }
 
     /// Command handler
@@ -310,8 +466,8 @@ impl Shell {
                     shell.writeln("Usage: .timer [on/off]")
                 }
             }
-            ".stats" => {
-                shell.stats_command(args.to_string()).await;
+            ".fstats" => {
+                shell.fstats_command(args.to_string()).await;
             }
             ".files" => match shell.runtime {
                 Some(ref rt) => {
@@ -324,6 +480,7 @@ impl Shell {
             },
             cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
         }
+        shell.writeln("");
         shell.prompt();
     }
 

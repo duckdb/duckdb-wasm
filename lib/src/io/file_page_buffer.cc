@@ -278,9 +278,14 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     // Statistics tracking?
     if (file_statistics_) {
         if (auto stats = file_statistics_->FindCollector(file.path); !!stats) {
-            stats->Resize(file_ptr->file_size);
-            file_ptr->file_stats = stats;
+            stats->Resize(file.file_size);
+            file.file_stats = stats;
+            std::cout << "SETTINGS FILE STATS FOR FILE " << file.path << std::endl;
+        } else {
+            std::cout << "COULDNT FILE STATS FOR FILE " << file.path << std::endl;
         }
+    } else {
+        std::cout << "OPENED PAGED FILE WITHOUT STATS" << std::endl;
     }
 
     return std::make_unique<FileRef>(*this, file);
@@ -441,11 +446,6 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
                 buffer_.fifo.erase(frame->fifo_position);
                 frame->fifo_position = buffer_.fifo.end();
                 frame->lru_position = buffer_.lru.insert(buffer_.lru.end(), frame.get());
-            }
-
-            // Register cache hit
-            if (file_->file_stats) {
-                file_->file_stats->RegisterPageRead(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
             }
 
             // Release directory latch and lock frame
@@ -686,6 +686,11 @@ void FilePageBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_gua
     if (frame.is_dirty) {
         filesystem->Write(*file.handle, frame.buffer.get(), frame.data_size, page_id * page_size);
         frame.is_dirty = false;
+
+        // Register a write
+        if (file.file_stats) {
+            file.file_stats->RegisterPageWrite(page_id * page_size, frame.data_size);
+        }
     }
 
     // Unlock frame to acquire latch

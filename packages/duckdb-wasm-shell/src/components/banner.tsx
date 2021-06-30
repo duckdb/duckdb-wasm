@@ -13,7 +13,7 @@ class Banner extends React.Component<Props> {
         return (
             <div className={styles.banner_bar}>
                 <span className={styles.banner_text}>
-                    <b>CAUTION:</b> Alpha-quality software in the wild! Talk to us
+                    <b>CAUTION:</b>&nbsp;Alpha-quality software in the wild! Talk to us
                 </span>
                 <a
                     className={styles.banner_link}

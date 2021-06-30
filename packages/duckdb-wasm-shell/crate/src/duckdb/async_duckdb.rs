@@ -34,17 +34,14 @@ extern "C" {
         conn: ConnectionID,
     ) -> Result<JsValue, JsValue>;
 
-    #[wasm_bindgen(catch, method, js_name = "exportFileBlockStatistics")]
+    #[wasm_bindgen(catch, method, js_name = "enableFileStatistics")]
     async fn enable_file_statistics(
         this: &JsAsyncDuckDB,
         text: &str,
         enable: bool,
     ) -> Result<JsValue, JsValue>;
-    #[wasm_bindgen(catch, method, js_name = "exportFileBlockStatistics")]
-    async fn export_file_block_statistics(
-        this: &JsAsyncDuckDB,
-        file: &str,
-    ) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "exportFileStatistics")]
+    async fn export_file_statistics(this: &JsAsyncDuckDB, file: &str) -> Result<JsValue, JsValue>;
 }
 
 #[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
@@ -81,6 +78,15 @@ pub struct FileStatistics {
     pub block_stats: Vec<u8>,
 }
 
+pub struct FileBlockStatistics {
+    pub file_reads_cold: u8,
+    pub file_reads_ahead: u8,
+    pub file_reads_cached: u8,
+    pub file_writes: u8,
+    pub page_reads: u8,
+    pub page_writes: u8,
+}
+
 impl FileStatistics {
     pub fn read(stats: &JsFileStatistics) -> Self {
         let u8array: Uint8Array = stats.get_block_stats().into();
@@ -95,6 +101,21 @@ impl FileStatistics {
             total_page_reads: stats.get_total_page_reads().as_f64().unwrap_or(0.0) as u64,
             block_size: stats.get_block_size().as_f64().unwrap_or(0.0) as u64,
             block_stats: u8array.to_vec(),
+        }
+    }
+
+    pub fn get_block_count(&self) -> usize {
+        self.block_stats.len() / 3
+    }
+
+    pub fn get_block_stats(&self, idx: usize) -> FileBlockStatistics {
+        FileBlockStatistics {
+            file_writes: self.block_stats[3 * idx + 0] & 0b1111,
+            file_reads_cold: self.block_stats[3 * idx + 0] >> 4,
+            file_reads_ahead: self.block_stats[3 * idx + 1] & 0b1111,
+            file_reads_cached: self.block_stats[3 * idx + 1] >> 4,
+            page_reads: self.block_stats[3 * idx + 2] & 0b1111,
+            page_writes: self.block_stats[3 * idx + 2] >> 4,
         }
     }
 }
@@ -156,15 +177,11 @@ impl AsyncDuckDB {
     }
 
     /// Enable file statistics
-    pub async fn export_file_block_statistics(
+    pub async fn export_file_statistics(
         &self,
         file: &str,
     ) -> Result<FileStatistics, js_sys::Error> {
-        let js_stats: JsFileStatistics = self
-            .bindings
-            .export_file_block_statistics(file)
-            .await?
-            .into();
+        let js_stats: JsFileStatistics = self.bindings.export_file_statistics(file).await?.into();
         Ok(FileStatistics::read(&js_stats))
     }
 }

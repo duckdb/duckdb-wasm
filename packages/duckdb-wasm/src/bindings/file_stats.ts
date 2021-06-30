@@ -33,7 +33,7 @@ export class FileStatistics {
     public blockStats: Uint8Array;
 
     constructor(u8array: Uint8Array) {
-        const f64 = new Float64Array(u8array.buffer);
+        const f64 = new Float64Array(u8array.buffer, u8array.byteOffset, u8array.byteLength / 8);
         const blocks = new Uint8Array(new ArrayBuffer(u8array.byteLength));
         blocks.set(u8array.subarray(7 * 8));
         this.totalFileReadsCold = f64[0];
