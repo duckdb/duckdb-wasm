@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <streambuf>
 #include <unordered_map>
@@ -21,7 +22,7 @@ namespace io {
 /// A collector for file statistics.
 /// Does not need to be thread-safe since we acquire a directory latch anyway to locate the block.
 class FileStatisticsCollector {
-    static constexpr size_t MAX_RANGE_COUNT = 10000;
+    static constexpr size_t MAX_RANGE_COUNT = 1000;
     static constexpr size_t MIN_RANGE_SHIFT = DEFAULT_FILE_PAGE_SHIFT;
 
    protected:
@@ -63,16 +64,14 @@ class FileStatisticsCollector {
     template <typename GetCounter>
     inline void BumpCounter(uint64_t offset, uint64_t length, GetCounter counter, std::atomic<uint64_t>& total) {
         if (!active_) return;
-        auto block_id = offset >> block_shift_;
-        if (block_id >= block_count_) {
-            assert(false);
-            return;
+        auto begin = offset >> block_shift_;
+        auto end = (offset + length) >> block_shift_;
+        for (auto i = begin; i <= end; ++i) {
+            auto& hits = counter(block_stats_[i]);
+            auto hit = hits.fetch_add(1);
+            if ((hit + 1) > (1 << 15)) hits = 1 << 15;
         }
-        auto& hits = counter(block_stats_[block_id]);
-
-        // We don't care too much about overflows here since these counters are not meant to be super accurate.
-        auto hit = hits.fetch_add(1);
-        if ((hit + 1) > (1 << 15)) hits = 1 << 15;
+        total += length;
     }
 
    public:

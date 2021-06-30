@@ -520,6 +520,11 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
             auto file_size = file.data_buffer_->Size();
             auto n = std::min<size_t>(nr_bytes, file_size - std::min<size_t>(file_hdl.position_, file_size));
             ::memcpy(buffer, file.data_buffer_->Get().data() + file_hdl.position_, n);
+            // Register read
+            if (file.file_stats_) {
+                file.file_stats_->RegisterFileReadCached(file_hdl.position_, n);
+            }
+            // Update position
             file_hdl.position_ += n;
             return n;
         }
@@ -531,11 +536,17 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
                 auto reader = [&](auto *out, size_t n, duckdb::idx_t ofs) {
                     return duckdb_web_fs_file_read(file.file_id_, out, n, ofs);
                 };
-                auto n = ra->Read(file.file_id_, file.file_size_, buffer, nr_bytes, file_hdl.position_, reader);
+                auto n = ra->Read(file.file_id_, file.file_size_, buffer, nr_bytes, file_hdl.position_, reader,
+                                  file.file_stats_.get());
                 file_hdl.position_ += n;
                 return n;
             } else {
                 auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+                // Register read
+                if (file.file_stats_) {
+                    file.file_stats_->RegisterFileReadCold(file_hdl.position_, n);
+                }
+                // Update position
                 file_hdl.position_ += n;
                 return n;
             }
@@ -571,6 +582,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     switch (file.data_protocol_) {
         // Buffers are trans
         case DataProtocol::BUFFER: {
+            auto pos = file_hdl.position_.load();
             auto end = file_hdl.position_ + nr_bytes;
 
             // Need to resize the buffer?
@@ -585,6 +597,12 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             ::memcpy(file.data_buffer_->Get().data() + file_hdl.position_, buffer, nr_bytes);
             file_hdl.position_ = end;
             bytes_read = nr_bytes;
+
+            // Register write
+            if (file.file_stats_) {
+                file.file_stats_->Resize(file.file_size_);
+                file.file_stats_->RegisterFileWrite(pos, end);
+            }
             break;
         }
         case DataProtocol::NATIVE: {
@@ -599,10 +617,25 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
                 n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
                 assert(n == nr_bytes);
                 file.file_size_ = std::max<size_t>(file_hdl.position_ + n, file.file_size_);
+
+                // Register write
+                if (file.file_stats_) {
+                    file.file_stats_->Resize(file.file_size_);
+                    file.file_stats_->RegisterFileWrite(file_hdl.position_, n);
+                }
+
+                // Update position
                 file_hdl.position_ = file_hdl.position_ + n;
             } else {
                 // Write is in bounds, rely on atomicity of filesystem writes
                 n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+
+                // Register write
+                if (file.file_stats_) {
+                    file.file_stats_->RegisterFileWrite(file_hdl.position_, n);
+                }
+
+                // Update position
                 file_hdl.position_ = file_hdl.position_ + n;
             }
             bytes_read = n;
@@ -667,6 +700,10 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
             duckdb_web_fs_file_truncate(file.file_id_, new_size);
             break;
         }
+    }
+    // Resize the statistics buffer
+    if (file.file_stats_) {
+        file.file_stats_->Resize(file.file_size_);
     }
     // Update the file size
     file.file_size_ = new_size;
