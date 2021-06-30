@@ -427,7 +427,7 @@ impl Shell {
                 }
                 buffer.push_str("\r\n");
 
-                self.writeln(&buffer);
+                self.write(&buffer);
             }
             _ => {
                 self.writeln(&format!("Resetted file statistics for: {}", options));
