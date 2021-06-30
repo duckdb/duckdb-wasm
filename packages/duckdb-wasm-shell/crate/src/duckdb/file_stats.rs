@@ -204,9 +204,9 @@ impl FileStatistics {
             normal = vt100::MODES_OFF
         ));
         for i in 0..4 {
-            let v = 1 + (i * max / 4);
+            let v = i * max / 4;
             out.push_str(&format!(
-                " {fg}{sym}{normal} >={hits}",
+                " {fg}{sym}{normal} > {hits}",
                 sym = BLOCK_CHARS[i as usize],
                 hits = (1 << v) - 1,
                 fg = vt100::COLOR_FG_BRIGHT_YELLOW,
