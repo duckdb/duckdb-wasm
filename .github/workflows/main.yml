@@ -159,13 +159,6 @@ jobs:
               with:
                   submodules: 'recursive'
 
-            - name: Fetch DuckDB submodule
-              uses: ./actions/image
-              with:
-                  script: |-
-                      cd ./submodules/duckdb
-                      git fetch --all
-
             - name: Prepare repository
               uses: ./actions/image
               with:
@@ -174,6 +167,8 @@ jobs:
                       yarn install --frozen-lockfile
                       ./scripts/generate_tpch.sh 0.01
                       ./scripts/generate_uni.sh
+                      cd ./submodules/duckdb
+                      git fetch --all
 
             - name: Build WASM module
               uses: ./actions/image
