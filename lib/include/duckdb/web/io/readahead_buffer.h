@@ -137,17 +137,16 @@ class ReadAheadBuffer {
                 iter->buffer_size = read_fn(iter->buffer.get(), read_here, safe_offset);
                 iter->offset = end;
 
-                // Register file read
-                if (stats) {
-                    auto cold = std::min<size_t>(nr_bytes, iter->buffer_size);
-                    auto ahead = std::max<size_t>(iter->buffer_size, nr_bytes) - nr_bytes;
-                    stats->RegisterFileReadCold(safe_offset, cold);
-                    stats->RegisterFileReadAhead(safe_offset + cold, ahead);
-                }
-
                 // Copy requested bytes
                 auto copy_here = std::min<int64_t>(iter->buffer_size, nr_bytes);
                 std::memcpy(buffer, iter->buffer.get(), copy_here);
+
+                // Register file read
+                if (stats) {
+                    auto ahead = iter->buffer_size - copy_here;
+                    stats->RegisterFileReadCold(safe_offset, copy_here);
+                    stats->RegisterFileReadAhead(safe_offset + copy_here, ahead);
+                }
 
                 // Move to the end of LRU queue
                 read_heads_.splice(read_heads_.end(), read_heads_, iter);
