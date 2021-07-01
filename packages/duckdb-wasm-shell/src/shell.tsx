@@ -1,7 +1,7 @@
 import * as model from './model';
 import * as shell from '../crate/pkg';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
-import { FitAddon } from 'xterm-addon-fit';
+import { useResizeDetector } from 'react-resize-detector';
 import FileExplorer from './components/file_explorer';
 import Overlay from './components/overlay';
 import React from 'react';
@@ -60,11 +60,17 @@ class ShellRuntime {
     }
 }
 
+const ShellResizer = () => {
+    const onResize = React.useCallback((width?: number, height?: number) => {
+        shell.resize(width || 0, height || 0);
+    }, []);
+    const { ref } = useResizeDetector({ onResize });
+    return <div ref={ref} className={styles.resizer} />;
+};
+
 class Shell extends React.Component<Props> {
     /// The terminal container
     protected termContainer: React.RefObject<HTMLDivElement>;
-    /// The fit addon
-    protected termResizer: FitAddon;
     /// The runtime
     protected runtime: ShellRuntime;
     /// The database
@@ -76,7 +82,6 @@ class Shell extends React.Component<Props> {
     constructor(props: Props) {
         super(props);
         this.termContainer = React.createRef();
-        this.termResizer = new FitAddon();
         this.runtime = new ShellRuntime();
         this.database = null;
     }
@@ -107,6 +112,7 @@ class Shell extends React.Component<Props> {
         };
         return (
             <div className={styles.root} style={style}>
+                <ShellResizer />
                 <div ref={this.termContainer} className={styles.term_container}></div>
                 {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
                     <Overlay>
@@ -137,15 +143,10 @@ class Shell extends React.Component<Props> {
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
             this.runtime._openFileExplorer = this.props.openFileViewer;
-            shell.embed(
-                this.termContainer.current,
-                this.runtime,
-                {
-                    backgroundColor: '#333',
-                    withWebGL: this.hasWebGL(),
-                },
-                this.termResizer,
-            );
+            shell.embed(this.termContainer.current, this.runtime, {
+                backgroundColor: '#333',
+                withWebGL: this.hasWebGL(),
+            });
             shell.writeln('Initializing DuckDB...');
             this.initDuckDB();
         }

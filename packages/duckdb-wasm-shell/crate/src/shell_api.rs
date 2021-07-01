@@ -8,15 +8,19 @@ use crate::xterm::addons::fit::FitAddon;
 use crate::xterm::addons::web_links::WebLinksAddon;
 use crate::xterm::addons::webgl::WebglAddon;
 use crate::xterm::{Terminal, TerminalOptions, Theme};
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+
+thread_local! {
+    static FIT_ADDON: RefCell<FitAddon> = RefCell::new(FitAddon::new());
+}
 
 #[wasm_bindgen(js_name = "embed")]
 pub fn embed(
     elem: web_sys::HtmlElement,
     runtime: shell_runtime::ShellRuntime,
     options: shell_options::ShellOptions,
-    resizer: FitAddon,
 ) -> Result<(), JsValue> {
     let terminal = Terminal::new(
         TerminalOptions::new()
@@ -41,9 +45,10 @@ pub fn embed(
         terminal.load_addon(addon_webgl.clone().dyn_into::<WebglAddon>()?.into());
     }
     let links_addon = WebLinksAddon::new(None, None, None);
-    terminal.load_addon(resizer.clone().into());
+    let fit_addon = FIT_ADDON.with(|a| a.borrow().clone());
+    terminal.load_addon(fit_addon.clone().into());
     terminal.load_addon(links_addon.clone().dyn_into::<WebLinksAddon>()?.into());
-    resizer.fit();
+    FIT_ADDON.with(|a| a.borrow().fit());
 
     Shell::with_mut(|s| s.attach(terminal, runtime, options));
     Ok(())
@@ -57,6 +62,11 @@ pub fn write(text: &str) {
 #[wasm_bindgen(js_name = "writeln")]
 pub fn writeln(text: &str) {
     Shell::with(|s| s.writeln(text));
+}
+
+#[wasm_bindgen(js_name = "resize")]
+pub fn resize(_width: usize, _height: usize) {
+    FIT_ADDON.with(|a| a.borrow().fit());
 }
 
 #[wasm_bindgen(js_name = "configureDatabase")]
