@@ -443,10 +443,15 @@ impl PromptBuffer {
                         }
                     }
                     TokenType::Identifier | TokenType::StringConstant => {
-                        if c == '\'' || c == '\"' {
-                            in_quotes = if in_quotes == c { '\0' } else { c };
-                        }
-                        if in_quotes == '\0' && !c.is_alphanumeric() {
+                        if in_quotes != '\0' {
+                            if c == '\'' || c == '\"' {
+                                emit(c, &mut self.output_buffer);
+                                self.output_buffer.push_str(vt100::MODES_OFF);
+                                break;
+                            }
+                        } else if c == '\'' || c == '\"' {
+                            in_quotes = c;
+                        } else if !c.is_alphanumeric() {
                             self.output_buffer.push_str(vt100::MODES_OFF);
                             emit(c, &mut self.output_buffer);
                             break;
