@@ -240,7 +240,6 @@ export abstract class DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
         globalThis.DUCKDB_RUNTIME._files = (globalThis.DUCKDB_RUNTIME._files || new Map()).set(name, handle);
-        console.log(globalThis.DUCKDB_RUNTIME._files);
         if (this.pthread) {
             for (const worker of this.pthread.runningWorkers) {
                 worker.postMessage({
