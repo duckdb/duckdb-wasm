@@ -9,7 +9,9 @@ use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
 use chrono::Duration;
+use scopeguard::defer;
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -20,6 +22,8 @@ use wasm_bindgen_futures::spawn_local;
 thread_local! {
     static SHELL: RefCell<Shell> = RefCell::new(Shell::default());
 }
+
+const HISTORY_LENGTH: usize = 1000;
 
 /// A shell input context
 #[wasm_bindgen]
@@ -61,6 +65,8 @@ pub struct Shell {
     input_enabled: bool,
     /// The input clock
     input_clock: u64,
+    /// This history buffer
+    history: VecDeque<String>,
     /// The database (if any)
     db: Option<Arc<RwLock<AsyncDuckDB>>>,
     /// The connection (if any)
@@ -78,6 +84,7 @@ impl Shell {
             input: PromptBuffer::default(),
             input_enabled: false,
             input_clock: 0,
+            history: VecDeque::new(),
             db: None,
             db_conn: None,
         }
@@ -314,6 +321,17 @@ impl Shell {
         let trimmed = text.trim();
         Shell::with(|s| s.writeln("")); // XXX We could validate the input first and preserve the prompt
 
+        defer!({
+            Shell::with_mut(|s| {
+                s.history.push_back(text.clone());
+                if s.history.len() > HISTORY_LENGTH {
+                    s.history.pop_front();
+                }
+                s.writeln("");
+                s.prompt();
+            })
+        });
+
         let cmd = &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())];
         let args = trimmed[cmd.len()..].trim();
         match cmd {
@@ -347,22 +365,27 @@ impl Shell {
                     }
                     None => {
                         s.writeln("Shell runtime not set");
-                        s.writeln("");
-                        s.prompt();
                     }
                 });
                 return;
             }
             cmd => Shell::with(|s| s.writeln(&format!("Unknown command: {}", &cmd))),
         }
-        Shell::with_mut(|s| {
-            s.writeln("");
-            s.prompt();
-        });
     }
 
     /// Command handler
     async fn on_sql(text: String) {
+        defer!({
+            Shell::with_mut(|s| {
+                s.history.push_back(text.clone());
+                if s.history.len() > HISTORY_LENGTH {
+                    s.history.pop_front();
+                }
+                s.writeln("");
+                s.prompt();
+            })
+        });
+
         let (maybe_conn, use_timer, terminal_width) = Shell::with(|shell| {
             shell.writeln("");
             (
@@ -378,7 +401,6 @@ impl Shell {
             None => {
                 Shell::with_mut(|s| {
                     s.writeln("Error: connection not set");
-                    s.prompt();
                 });
                 return;
             }
@@ -393,7 +415,6 @@ impl Shell {
                 msg = msg.replace("\n", "\r\n");
                 Shell::with_mut(|s| {
                     s.writeln(&format!("Error: {}{}", &msg, vt100::CRLF));
-                    s.prompt();
                 });
                 return;
             }
@@ -421,9 +442,6 @@ impl Shell {
                     normal = vt100::MODES_OFF,
                 ));
             }
-
-            s.writeln("");
-            s.prompt();
         });
     }
 
