@@ -316,27 +316,26 @@ impl Shell {
         }
     }
 
+    fn remember_command(&mut self, text: String) {
+        self.history.push_back(text.clone());
+        if self.history.len() > HISTORY_LENGTH {
+            self.history.pop_front();
+        }
+    }
+
     /// Command handler
     pub async fn on_command(text: String) {
         let trimmed = text.trim();
         Shell::with(|s| s.writeln("")); // XXX We could validate the input first and preserve the prompt
 
-        defer!({
-            Shell::with_mut(|s| {
-                s.history.push_back(text.clone());
-                if s.history.len() > HISTORY_LENGTH {
-                    s.history.pop_front();
-                }
-                s.writeln("");
-                s.prompt();
-            })
-        });
-
         let cmd = &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())];
         let args = trimmed[cmd.len()..].trim();
         match cmd {
             ".clear" => {
-                Shell::with_mut(|s| s.clear());
+                Shell::with_mut(|s| {
+                    s.remember_command(text.clone());
+                    s.clear();
+                });
                 return;
             }
             ".help" => Shell::with(|s| s.writeln("Not implemented yet")),
@@ -362,15 +361,24 @@ impl Shell {
                 Shell::with_mut(|s| match s.runtime {
                     Some(ref rt) => {
                         rt.open_file_explorer();
+                        s.remember_command(text.clone());
                     }
                     None => {
                         s.writeln("Shell runtime not set");
+                        s.remember_command(text.clone());
+                        s.writeln("");
+                        s.prompt();
                     }
                 });
                 return;
             }
             cmd => Shell::with(|s| s.writeln(&format!("Unknown command: {}", &cmd))),
         }
+        Shell::with_mut(|s| {
+            s.remember_command(text.clone());
+            s.writeln("");
+            s.prompt();
+        });
     }
 
     /// Command handler
@@ -386,6 +394,7 @@ impl Shell {
             })
         });
 
+        // Get the database connection
         let (maybe_conn, use_timer, terminal_width) = Shell::with(|shell| {
             shell.writeln("");
             (
@@ -394,8 +403,7 @@ impl Shell {
                 shell.terminal_width,
             )
         });
-
-        // Get the connection
+        // Lock the connection
         let conn = match maybe_conn {
             Some(ref conn) => conn.read().unwrap(),
             None => {
@@ -414,7 +422,7 @@ impl Shell {
                 let mut msg: String = e.message().into();
                 msg = msg.replace("\n", "\r\n");
                 Shell::with_mut(|s| {
-                    s.writeln(&format!("Error: {}{}", &msg, vt100::CRLF));
+                    s.writeln(&format!("Error: {}", &msg));
                 });
                 return;
             }
