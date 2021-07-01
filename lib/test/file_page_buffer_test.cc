@@ -577,10 +577,13 @@ TEST(FilePageBufferTest, BlockStatistics) {
     auto stats_buffer = stats_reg->ExportStatistics(file_path.c_str());
     ASSERT_NE(stats_buffer, nullptr);
     ASSERT_TRUE(stats_buffer.ok()) << stats_buffer.status().message();
-    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(io::FileStatisticsCollector::ExportFileStatistics) +
-                                                      sizeof(io::FileStatisticsCollector::ExportedBlockStats) * 2);
     auto reader = stats_buffer.ValueUnsafe()->data();
     auto stats = reinterpret_cast<const io::FileStatisticsCollector::ExportFileStatistics*>(reader);
+    ASSERT_GE(stats_buffer.ValueUnsafe()->size(), sizeof(io::FileStatisticsCollector::ExportFileStatistics));
+    ASSERT_EQ(stats->block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
+
+    ASSERT_EQ(stats_buffer.ValueUnsafe()->size(), sizeof(io::FileStatisticsCollector::ExportFileStatistics) +
+                                                      sizeof(io::FileStatisticsCollector::ExportedBlockStats) * 2);
     ASSERT_EQ(stats->block_size, 1 << io::DEFAULT_FILE_PAGE_SHIFT);
 
     // We should see 1 read and 4 cache hits
@@ -597,7 +600,7 @@ TEST(FilePageBufferTest, BlockStatistics) {
         ASSERT_EQ(fahead, 0);
         ASSERT_EQ(fcached, 0);
         ASSERT_EQ(pwrite, 0);
-        ASSERT_EQ(pread, 2);  // ((1 << 2) - 1) == 3, ((1 << 3) - 1) == 7
+        ASSERT_EQ(pread, 1);
     }
 }
 

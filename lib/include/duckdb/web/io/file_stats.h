@@ -64,9 +64,10 @@ class FileStatisticsCollector {
     template <typename GetCounter>
     inline void BumpCounter(uint64_t offset, uint64_t length, GetCounter counter, std::atomic<uint64_t>& total) {
         if (!active_) return;
-        auto begin = offset >> block_shift_;
-        auto end = (offset + length) >> block_shift_;
-        for (auto i = begin; i <= end; ++i) {
+        auto first = offset >> block_shift_;
+        auto last = (offset + std::max<size_t>(length, 1) - 1) >> block_shift_;
+        for (auto i = first; i <= last; ++i) {
+            assert(i < block_count_);
             auto& hits = counter(block_stats_[i]);
             auto hit = hits.fetch_add(1);
             if ((hit + 1) > (1 << 15)) hits = 1 << 15;
