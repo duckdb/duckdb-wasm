@@ -1,6 +1,7 @@
 use crate::duckdb::AsyncDuckDB;
 use crate::duckdb::JsAsyncDuckDB;
 use crate::shell;
+use crate::shell::Shell;
 use crate::shell_options;
 use crate::shell_runtime;
 use crate::xterm::addons::fit::FitAddon;
@@ -44,38 +45,28 @@ pub fn embed(
     terminal.load_addon(links_addon.clone().dyn_into::<WebLinksAddon>()?.into());
     addon_fit.fit();
 
-    let foo = shell::Shell::global();
-    let mut s = foo.lock().unwrap();
-    s.attach(terminal, runtime, options);
+    Shell::with_mut(|s| s.attach(terminal, runtime, options));
     Ok(())
 }
 
 #[wasm_bindgen(js_name = "write")]
 pub fn write(text: &str) {
-    let sa = shell::Shell::global();
-    let s = sa.lock().unwrap();
-    s.write(text);
+    Shell::with(|s| s.write(text));
 }
 
 #[wasm_bindgen(js_name = "writeln")]
 pub fn writeln(text: &str) {
-    let sa = shell::Shell::global();
-    let s = sa.lock().unwrap();
-    s.writeln(text);
+    Shell::with(|s| s.writeln(text));
 }
 
 #[wasm_bindgen(js_name = "configureDatabase")]
 pub async fn configure_database(db: JsAsyncDuckDB) -> Result<(), js_sys::Error> {
-    let sa = shell::Shell::global();
-    let mut s = sa.lock().unwrap();
-    s.configure_database(AsyncDuckDB::from_bindings(db)).await?;
+    Shell::configure_database(AsyncDuckDB::from_bindings(db)).await?;
     Ok(())
 }
 
 #[wasm_bindgen(js_name = "resumeAfterInput")]
 pub async fn resume_after_input(ctx: shell::ShellInputContext) -> Result<(), js_sys::Error> {
-    let sa = shell::Shell::global();
-    let mut s = sa.lock().unwrap();
-    s.resume_after_input(ctx);
+    Shell::with_mut(|s| s.resume_after_input(ctx));
     Ok(())
 }
