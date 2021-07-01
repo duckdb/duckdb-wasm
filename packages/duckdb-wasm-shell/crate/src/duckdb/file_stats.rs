@@ -238,4 +238,48 @@ impl FileStatistics {
         );
         out
     }
+
+    pub fn print_page_stats(&self, width: usize) -> String {
+        // Determine the maximum value per attribute to scale the block chars
+        let mut max = 0;
+        let block_count = self.get_block_count();
+        for i in 0..block_count {
+            let b = self.get_block_stats(i);
+            max = max.max(b.page_loads);
+            max = max.max(b.page_accesses);
+        }
+
+        // Collect all block chars
+        let mut block_chars: Vec<char> = Vec::new();
+        block_chars.resize(2 * block_count, '\0');
+        for i in 0..block_count {
+            let stats = self.get_block_stats(i);
+            block_chars[2 * i + 0] = if stats.page_loads > 0 {
+                BLOCK_CHARS[(stats.page_loads * 4 / max).min(3) as usize]
+            } else {
+                ' '
+            };
+            block_chars[2 * i + 1] = if stats.page_accesses > 0 {
+                BLOCK_CHARS[(stats.page_accesses * 4 / max).min(3) as usize]
+            } else {
+                ' '
+            };
+        }
+        let column_width = ((width.max(3) - 3) / 2).max(1);
+        let row_count = (block_count + column_width - 1) / column_width;
+
+        // Write all block chars
+        let mut out = String::new();
+        out.reserve((40 + 2 * column_width) * (row_count + 4));
+        FileStatistics::print_block_stats(
+            &mut out,
+            width,
+            &["Loads", "Accesses"],
+            &[self.total_page_loads, self.total_page_accesses],
+            &block_chars,
+            self.block_size,
+            max,
+        );
+        out
+    }
 }

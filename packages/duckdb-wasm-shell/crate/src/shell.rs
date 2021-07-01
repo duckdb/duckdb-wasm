@@ -310,6 +310,10 @@ impl Shell {
                 let stats = db.export_file_statistics(&options).await.unwrap();
                 Shell::with(|s| s.write(&stats.print_read_stats(s.terminal_width)));
             }
+            "paging" => {
+                let stats = db.export_file_statistics(&options).await.unwrap();
+                Shell::with(|s| s.write(&stats.print_page_stats(s.terminal_width)));
+            }
             _ => {
                 Shell::with(|s| {
                     s.writeln(&format!("Resetted file statistics for: {}", options));
