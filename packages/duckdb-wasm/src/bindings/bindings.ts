@@ -133,10 +133,7 @@ export abstract class DuckDBBindings {
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
-        const stats = new FileStatistics(this.mod.HEAPU8.subarray(d, d + n));
-        console.log(this.mod.HEAPU8.subarray(d, d + n));
-        console.log(stats);
-        return stats;
+        return new FileStatistics(this.mod.HEAPU8.subarray(d, d + n));
     }
 
     /** Connect to database */
