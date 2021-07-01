@@ -1,6 +1,7 @@
 import * as model from './model';
 import * as shell from '../crate/pkg';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
+import { FitAddon } from 'xterm-addon-fit';
 import FileExplorer from './components/file_explorer';
 import Overlay from './components/overlay';
 import React from 'react';
@@ -62,6 +63,8 @@ class ShellRuntime {
 class Shell extends React.Component<Props> {
     /// The terminal container
     protected termContainer: React.RefObject<HTMLDivElement>;
+    /// The fit addon
+    protected termResizer: FitAddon;
     /// The runtime
     protected runtime: ShellRuntime;
     /// The database
@@ -73,6 +76,7 @@ class Shell extends React.Component<Props> {
     constructor(props: Props) {
         super(props);
         this.termContainer = React.createRef();
+        this.termResizer = new FitAddon();
         this.runtime = new ShellRuntime();
         this.database = null;
     }
@@ -133,10 +137,15 @@ class Shell extends React.Component<Props> {
     public componentDidMount(): void {
         if (this.termContainer.current != null) {
             this.runtime._openFileExplorer = this.props.openFileViewer;
-            shell.embed(this.termContainer.current, this.runtime, {
-                backgroundColor: '#333',
-                withWebGL: this.hasWebGL(),
-            });
+            shell.embed(
+                this.termContainer.current,
+                this.runtime,
+                {
+                    backgroundColor: '#333',
+                    withWebGL: this.hasWebGL(),
+                },
+                this.termResizer,
+            );
             shell.writeln('Initializing DuckDB...');
             this.initDuckDB();
         }
