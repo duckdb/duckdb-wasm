@@ -5,7 +5,7 @@ use arrow::ipc::reader::FileReader;
 use js_sys::Uint8Array;
 use std::io::Cursor;
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::RwLock;
 use wasm_bindgen::prelude::*;
 
 type ConnectionID = u32;
@@ -82,8 +82,8 @@ impl AsyncDuckDB {
     }
 
     /// Create a new connection
-    pub async fn connect(selfm: Arc<Mutex<Self>>) -> Result<AsyncDuckDBConnection, js_sys::Error> {
-        let db = selfm.lock().unwrap();
+    pub async fn connect(selfm: Arc<RwLock<Self>>) -> Result<AsyncDuckDBConnection, js_sys::Error> {
+        let db = selfm.read().unwrap();
         let cid: u32 = match db.bindings.connect().await?.as_f64() {
             Some(c) => c as u32,
             None => return Err(js_sys::Error::new("invalid connection id")),
@@ -112,14 +112,14 @@ impl AsyncDuckDB {
 }
 
 pub struct AsyncDuckDBConnection {
-    duckdb: Arc<Mutex<AsyncDuckDB>>,
+    duckdb: Arc<RwLock<AsyncDuckDB>>,
     connection: u32,
 
     result_stream: Option<ArrowStreamReader>,
 }
 
 impl AsyncDuckDBConnection {
-    pub fn new(db: Arc<Mutex<AsyncDuckDB>>, cid: u32) -> Self {
+    pub fn new(db: Arc<RwLock<AsyncDuckDB>>, cid: u32) -> Self {
         Self {
             duckdb: db,
             connection: cid,
@@ -134,7 +134,7 @@ impl AsyncDuckDBConnection {
     ) -> Result<Vec<arrow::record_batch::RecordBatch>, js_sys::Error> {
         let ui8array: Uint8Array = self
             .duckdb
-            .lock()
+            .read()
             .unwrap()
             .bindings
             .run_query(self.connection, text)
@@ -167,7 +167,7 @@ impl AsyncDuckDBConnection {
         };
         let ui8array: Uint8Array = self
             .duckdb
-            .lock()
+            .read()
             .unwrap()
             .bindings
             .fetch_query_results(self.connection)

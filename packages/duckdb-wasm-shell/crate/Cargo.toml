@@ -29,6 +29,7 @@ features = [
 ]
 
 [dependencies]
+anyhow = "1.0.41"
 console_error_panic_hook = "0.1.6"
 wasm-bindgen = "0.2.74"
 wasm-bindgen-futures = "0.4.24"

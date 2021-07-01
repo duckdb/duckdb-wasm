@@ -9,15 +9,16 @@ use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
 use chrono::Duration;
+use std::cell::RefCell;
 use std::fmt::Write;
 use std::sync::Arc;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::RwLock;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 
 thread_local! {
-    static SHELL: Arc<Mutex<Shell>> = Arc::new(Mutex::new(Shell::default()));
+    static SHELL: RefCell<Shell> = RefCell::new(Shell::default());
 }
 
 /// A shell input context
@@ -61,9 +62,9 @@ pub struct Shell {
     /// The input clock
     input_clock: u64,
     /// The database (if any)
-    db: Option<Arc<Mutex<AsyncDuckDB>>>,
+    db: Option<Arc<RwLock<AsyncDuckDB>>>,
     /// The connection (if any)
-    db_conn: Option<Arc<Mutex<AsyncDuckDBConnection>>>,
+    db_conn: Option<Arc<RwLock<AsyncDuckDBConnection>>>,
 }
 
 impl Shell {
@@ -92,11 +93,8 @@ impl Shell {
 
         // Register on_key callback
         let callback = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
-            match Shell::global().try_lock() {
-                Ok(s) => Shell::on_key(s, e),
-                Err(_) => (),
-            };
-            return false;
+            Shell::on_key(e);
+            false
         }) as Box<dyn FnMut(_) -> bool>);
         self.terminal
             .attach_custom_key_event_handler(callback.as_ref().unchecked_ref());
@@ -104,26 +102,34 @@ impl Shell {
     }
 
     /// Attach to a database
-    pub async fn configure_database(&mut self, db: AsyncDuckDB) -> Result<(), js_sys::Error> {
+    pub async fn configure_database(db: AsyncDuckDB) -> Result<(), js_sys::Error> {
         // Teardown state (if there is any)
-        if self.db_conn.is_some() {
-            // XXX disconnect
-        }
+        let db = Shell::with_mut(|s| {
+            if s.db_conn.is_some() {
+                // XXX disconnect
+                return None;
+            }
+            // Store database
+            let db = Arc::new(RwLock::new(db));
+            s.db_conn = None;
+            s.db = Some(db.clone());
+            Some(db)
+        });
+        if !db.is_some() {
+            Shell::with(|s| s.writeln("Error: Database already set!"));
+            return Ok(());
+        };
 
-        // Store database
-        self.db_conn = None;
-        self.db = Some(Arc::new(Mutex::new(db)));
-        self.write_version_info().await;
+        Shell::write_version_info().await;
+        let conn = AsyncDuckDB::connect(db.unwrap().clone()).await?;
 
         // Create connection
-        self.db_conn = Some(Arc::new(Mutex::new(
-            AsyncDuckDB::connect(self.db.clone().unwrap().clone()).await?,
-        )));
-        self.write_connection_ready();
-
-        // Write the first prompt and set focus
-        self.prompt();
-        self.focus();
+        Shell::with_mut(|s| {
+            s.db_conn = Some(Arc::new(RwLock::new(conn)));
+            s.write_connection_ready();
+            s.prompt();
+            s.focus();
+        });
         Ok(())
     }
 
@@ -157,7 +163,7 @@ impl Shell {
         self.prompt();
     }
 
-    pub async fn configure_command(&mut self) {
+    pub async fn configure_command() {
         let mut buffer = String::new();
         let write_feature = |buffer: &mut String, name: &str, description: &str, value: bool| {
             write!(
@@ -228,8 +234,9 @@ impl Shell {
             platform.cross_origin_isolated,
         );
 
-        let db = match self.db {
-            Some(ref db) => db.lock().unwrap(),
+        let db_ptr = Shell::with(|s| s.db.clone());
+        let db = match db_ptr {
+            Some(ref db) => db.read().unwrap(),
             None => return,
         };
         let db_features = db.get_feature_flags().await.unwrap();
@@ -266,12 +273,13 @@ impl Shell {
             (db_features & 0b10) != 0,
         );
 
-        self.writeln(&buffer);
+        Shell::with(|s| s.writeln(&buffer));
     }
 
-    pub async fn fstats_command(&mut self, args: String) {
-        let db = match self.db {
-            Some(ref db) => db.lock().unwrap(),
+    pub async fn fstats_command(args: String) {
+        let db_ptr = Shell::with(|s| s.db.clone());
+        let db = match db_ptr {
+            Some(ref db) => db.read().unwrap(),
             None => return,
         };
         let subcmd = &args[..args.find(" ").unwrap_or(args.len())];
@@ -279,87 +287,99 @@ impl Shell {
         match subcmd {
             "enable" => {
                 db.enable_file_statistics(&options, true).await.unwrap();
-                self.writeln(&format!("Enabled file statistics for: {}", options));
+                Shell::with(|s| s.writeln(&format!("Enabled file statistics for: {}", options)));
             }
             "disable" => {
                 db.enable_file_statistics(&options, false).await.unwrap();
-                self.writeln(&format!("Disabled file statistics for: {}", options));
+                Shell::with(|s| s.writeln(&format!("Disabled file statistics for: {}", options)));
             }
             "reset" => {
-                self.writeln(&format!("Resetted file statistics for: {}", options));
+                Shell::with(|s| s.writeln(&format!("Resetted file statistics for: {}", options)));
             }
             "reads" => {
                 let stats = db.export_file_statistics(&options).await.unwrap();
-                self.writeln(&stats.print_read_stats(self.terminal_width));
+                Shell::with(|s| s.writeln(&stats.print_read_stats(s.terminal_width)));
             }
             _ => {
-                self.writeln(&format!("Resetted file statistics for: {}", options));
-                self.writeln("Usage: .fstats [enable/disable/reset/reads/paging] <file>")
+                Shell::with(|s| {
+                    s.writeln(&format!("Resetted file statistics for: {}", options));
+                    s.writeln("Usage: .fstats [enable/disable/reset/reads/paging] <file>");
+                });
             }
         }
     }
 
     /// Command handler
     pub async fn on_command(text: String) {
-        let shell_ptr = Shell::global().clone();
-        let mut shell = shell_ptr.lock().unwrap();
         let trimmed = text.trim();
-        shell.writeln(""); // XXX We could validate the input first and preserve the prompt
+        Shell::with(|s| s.writeln("")); // XXX We could validate the input first and preserve the prompt
 
         let cmd = &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())];
         let args = trimmed[cmd.len()..].trim();
         match cmd {
             ".clear" => {
-                shell.clear();
+                Shell::with_mut(|s| s.clear());
                 return;
             }
-            ".help" => shell.writeln("Not implemented yet"),
-            ".quit" => shell.writeln("Not implemented yet"),
+            ".help" => Shell::with(|s| s.writeln("Not implemented yet")),
+            ".quit" => Shell::with(|s| s.writeln("Not implemented yet")),
             ".config" => {
-                shell.configure_command().await;
+                Shell::configure_command().await;
             }
-            ".timer" => {
+            ".timer" => Shell::with_mut(|s| {
                 if args.ends_with("on") {
-                    shell.settings.timer = true;
-                    shell.writeln("Timer enabled");
+                    s.settings.timer = true;
+                    s.writeln("Timer enabled");
                 } else if args.ends_with("off") {
-                    shell.settings.timer = false;
-                    shell.writeln("Timer disabled");
+                    s.settings.timer = false;
+                    s.writeln("Timer disabled");
                 } else {
-                    shell.writeln("Usage: .timer [on/off]")
+                    s.writeln("Usage: .timer [on/off]")
                 }
-            }
+            }),
             ".fstats" => {
-                shell.fstats_command(args.to_string()).await;
+                Shell::fstats_command(args.to_string()).await;
             }
-            ".files" => match shell.runtime {
-                Some(ref rt) => {
-                    rt.open_file_explorer();
-                    return;
-                }
-                None => {
-                    shell.writeln("Shell runtime not set");
-                }
-            },
-            cmd => shell.writeln(&format!("Unknown command: {}", &cmd)),
+            ".files" => {
+                Shell::with_mut(|s| match s.runtime {
+                    Some(ref rt) => {
+                        rt.open_file_explorer();
+                    }
+                    None => {
+                        s.writeln("Shell runtime not set");
+                        s.writeln("");
+                        s.prompt();
+                    }
+                });
+                return;
+            }
+            cmd => Shell::with(|s| s.writeln(&format!("Unknown command: {}", &cmd))),
         }
-        shell.writeln("");
-        shell.prompt();
+        Shell::with_mut(|s| {
+            s.writeln("");
+            s.prompt();
+        });
     }
 
     /// Command handler
     async fn on_sql(text: String) {
-        let shell_ptr = Shell::global().clone();
-        let mut shell = shell_ptr.lock().unwrap();
-        shell.writeln(""); // XXX We could validate the input first and preserve the prompt
+        let (maybe_conn, use_timer, terminal_width) = Shell::with(|shell| {
+            shell.writeln("");
+            (
+                shell.db_conn.clone(),
+                shell.settings.timer,
+                shell.terminal_width,
+            )
+        });
 
         // Get the connection
-        let maybe_conn = shell.db_conn.clone();
         let conn = match maybe_conn {
-            Some(ref conn) => conn.lock().unwrap(),
+            Some(ref conn) => conn.read().unwrap(),
             None => {
-                shell.writeln("Error: connection not set");
-                shell.prompt();
+                Shell::with_mut(|s| {
+                    s.writeln("Error: connection not set");
+                    s.prompt();
+                });
                 return;
             }
         };
@@ -371,38 +391,40 @@ impl Shell {
             Err(e) => {
                 let mut msg: String = e.message().into();
                 msg = msg.replace("\n", "\r\n");
-                shell.writeln(&format!("Error: {}{}", &msg, vt100::CRLF));
-                shell.prompt();
+                Shell::with_mut(|s| {
+                    s.writeln(&format!("Error: {}{}", &msg, vt100::CRLF));
+                    s.prompt();
+                });
                 return;
             }
         };
-        let elapsed = if shell.settings.timer {
+        let elapsed = if use_timer {
             Duration::milliseconds((now() - start) as i64)
         } else {
             Duration::milliseconds(0)
         };
 
         // Print the table
-        let pretty_table = pretty_format_batches(
-            &batches,
-            shell.terminal_width as u16,
-            UTF8_BORDERS_NO_HORIZONTAL,
-        )
-        .unwrap_or_default();
-        shell.writeln(&pretty_table);
+        let pretty_table =
+            pretty_format_batches(&batches, terminal_width as u16, UTF8_BORDERS_NO_HORIZONTAL)
+                .unwrap_or_default();
 
-        // Print elapsed time (if requested)
-        if shell.settings.timer {
-            shell.writeln(&format!(
-                "{bold}Elapsed:{normal} {elapsed}",
-                elapsed = pretty_elapsed(&elapsed),
-                bold = vt100::MODE_BOLD,
-                normal = vt100::MODES_OFF,
-            ));
-        }
+        Shell::with_mut(|s| {
+            s.writeln(&pretty_table);
 
-        shell.writeln("");
-        shell.prompt();
+            // Print elapsed time (if requested)
+            if s.settings.timer {
+                s.writeln(&format!(
+                    "{bold}Elapsed:{normal} {elapsed}",
+                    elapsed = pretty_elapsed(&elapsed),
+                    bold = vt100::MODE_BOLD,
+                    normal = vt100::MODES_OFF,
+                ));
+            }
+
+            s.writeln("");
+            s.prompt();
+        });
     }
 
     /// Flush output buffer to the terminal
@@ -411,33 +433,34 @@ impl Shell {
     }
 
     /// Highlight input text (if sql)
-    fn highlight_input(mut shell: MutexGuard<Shell>) {
-        let input = shell.input.collect();
+    fn highlight_input() {
+        let (input, input_clock) = Shell::with_mut(|s| (s.input.collect(), s.input_clock));
         if input.trim_start().starts_with(".") {
             return;
         }
-        let db_ptr = shell.db.clone().unwrap();
-        let expected_clock = shell.input_clock;
-        drop(shell);
+        let db_ptr = Shell::with(|s| s.db.clone()).unwrap();
         spawn_local(async move {
-            let db = db_ptr.lock().unwrap();
+            let db = match db_ptr.read() {
+                Ok(guard) => guard,
+                Err(_) => return,
+            };
             let tokens = match db.tokenize(&input).await {
                 Ok(t) => t,
                 Err(_) => return,
             };
-            let shell_ptr = Shell::global().clone();
-            let mut shell = shell_ptr.lock().unwrap();
-            if shell.input_clock != expected_clock {
-                return;
-            }
-            shell.input.highlight_sql(tokens);
-            shell.flush();
+            Shell::with_mut(|s| {
+                if s.input_clock != input_clock {
+                    return;
+                }
+                s.input.highlight_sql(tokens);
+                s.flush();
+            });
         });
     }
 
     /// Process on-key event
-    fn on_key(mut shell: MutexGuard<Shell>, event: web_sys::KeyboardEvent) {
-        if !shell.input_enabled {
+    fn on_key(event: web_sys::KeyboardEvent) {
+        if !Shell::with(|s| s.input_enabled) {
             return;
         }
         if &event.type_() != "keydown" {
@@ -446,76 +469,86 @@ impl Shell {
         let event = KeyEvent::from_event(event);
         match event.key {
             Key::Enter => {
-                shell.input_clock += 1;
+                let input = Shell::with_mut(|s| {
+                    s.input_clock += 1;
+                    s.input.collect()
+                });
                 // Is a command?
-                let input = shell.input.collect();
                 if input.trim_start().starts_with(".") {
-                    shell.block_input();
-                    drop(shell);
+                    Shell::with_mut(|s| s.block_input());
                     spawn_local(Shell::on_command(input));
                 } else {
                     // Ends with semicolon?
                     if input.trim_end().ends_with(";") {
-                        shell.block_input();
-                        drop(shell);
+                        Shell::with_mut(|s| s.block_input());
                         spawn_local(Shell::on_sql(input));
                     } else {
-                        shell.input.consume(event);
-                        shell.flush();
+                        Shell::with_mut(|s| {
+                            s.input.consume(event);
+                            s.flush();
+                        });
                     }
                 }
             }
             Key::Backspace | Key::ArrowDown | Key::ArrowLeft | Key::ArrowRight | Key::ArrowUp => {
-                shell.input_clock += 1;
-                shell.input.consume(event);
-                shell.flush();
+                Shell::with_mut(|s| {
+                    s.input_clock += 1;
+                    s.input.consume(event);
+                    s.flush();
+                });
             }
             _ => {
-                shell.input_clock += 1;
-                shell.input.consume(event);
-                shell.flush();
-                Shell::highlight_input(shell);
+                Shell::with_mut(|s| {
+                    s.input_clock += 1;
+                    s.input.consume(event);
+                    s.flush();
+                });
+                Shell::highlight_input();
             }
         }
     }
 
     /// Write greeter
-    async fn write_version_info(&self) {
-        let db = match self.db {
-            Some(ref db) => db.lock().unwrap(),
-            None => return,
+    async fn write_version_info() {
+        let db_ptr = Shell::with(|s| s.db.clone());
+        let db = match db_ptr {
+            Some(ref db) => db.read().unwrap(),
+            _ => return,
         };
 
-        self.write(&format!(
-            "{clear_screen}{reset_cursor}{bold}DuckDB Web Shell{normal}{endl}",
-            reset_cursor = vt100::CURSOR_HOME,
-            clear_screen = vt100::CLEAR_SCREEN,
-            bold = vt100::MODE_BOLD,
-            normal = vt100::MODES_OFF,
-            endl = vt100::CRLF
-        ));
-
         let version = db.get_version().await.unwrap();
-        self.write(&format!(
-            "Database: {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}{endl}",
-            version = version,
-            package = "@duckdb/duckdb-wasm@0.0.1",
-            bold = vt100::MODE_BOLD,
-            normal = vt100::MODES_OFF,
-            endl = vt100::CRLF
-        ));
-
         let db_features = db.get_feature_flags().await.unwrap();
-        if (db_features & 0b01) == 0 {
-            self.write(&format!(
-                "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter \".config\" for details.{normal}{endl}{endl}",
-                fg = vt100::COLOR_FG_BLACK,
-                bg = vt100::COLOR_BG_BRIGHT_WHITE,
+
+        Shell::with(|s| {
+            s.write(&format!(
+                "{clear_screen}{reset_cursor}{bold}DuckDB Web Shell{normal}{endl}",
+                reset_cursor = vt100::CURSOR_HOME,
+                clear_screen = vt100::CLEAR_SCREEN,
                 bold = vt100::MODE_BOLD,
                 normal = vt100::MODES_OFF,
                 endl = vt100::CRLF
-            ))
-        }
+            ));
+
+            s.write(&format!(
+                "Database: {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}{endl}",
+                version = version,
+                package = "@duckdb/duckdb-wasm@0.0.1",
+                bold = vt100::MODE_BOLD,
+                normal = vt100::MODES_OFF,
+                endl = vt100::CRLF
+            ));
+
+            if (db_features & 0b01) == 0 {
+                s.write(&format!(
+                    "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter \".config\" for details.{normal}{endl}{endl}",
+                    fg = vt100::COLOR_FG_BLACK,
+                    bg = vt100::COLOR_BG_BRIGHT_WHITE,
+                    bold = vt100::MODE_BOLD,
+                    normal = vt100::MODES_OFF,
+                    endl = vt100::CRLF
+                ))
+            }
+        });
     }
 
     fn write_connection_ready(&self) {
@@ -538,7 +571,19 @@ impl Shell {
         self.terminal.focus();
     }
 
-    pub fn global() -> Arc<Mutex<Shell>> {
-        SHELL.with(|s| s.clone())
+    // Borrow shell immutable
+    pub fn with<F, R>(f: F) -> R
+    where
+        F: FnOnce(&Shell) -> R,
+    {
+        SHELL.with(|s| f(&s.borrow()))
+    }
+
+    // Borrow shell mutable
+    pub fn with_mut<F, R>(f: F) -> R
+    where
+        F: FnOnce(&mut Shell) -> R,
+    {
+        SHELL.with(|s| f(&mut s.borrow_mut()))
     }
 }
