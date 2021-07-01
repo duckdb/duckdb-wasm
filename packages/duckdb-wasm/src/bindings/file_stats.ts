@@ -7,10 +7,10 @@ export interface FileBlockStatistics {
     file_reads_cached: number;
     /** The file writes */
     file_writes: number;
-    /** The page reads */
-    page_reads: number;
-    /** The page write */
-    page_writes: number;
+    /** The page accesses */
+    page_accesses: number;
+    /** The page loads */
+    page_loads: number;
 }
 
 /** The file block statistics */
@@ -23,10 +23,10 @@ export class FileStatistics {
     public totalFileReadsCached: number;
     /** The file writes */
     public totalFileWrites: number;
-    /** The page reads */
-    public totalPageReads: number;
-    /** The page writes */
-    public totalPageWrites: number;
+    /** The page accesses */
+    public totalPageAccesses: number;
+    /** The page loads */
+    public totalPageLoads: number;
     /** The blocks */
     public blockSize: number;
     /** The blocks */
@@ -40,8 +40,8 @@ export class FileStatistics {
         this.totalFileReadsAhead = f64[1];
         this.totalFileReadsCached = f64[2];
         this.totalFileWrites = f64[3];
-        this.totalPageReads = f64[4];
-        this.totalPageWrites = f64[5];
+        this.totalPageAccesses = f64[4];
+        this.totalPageLoads = f64[5];
         this.blockSize = f64[6];
         this.blockStats = blocks;
     }
@@ -53,15 +53,15 @@ export class FileStatistics {
             file_reads_ahead: 0,
             file_reads_cached: 0,
             file_writes: 0,
-            page_reads: 0,
-            page_writes: 0,
+            page_accesses: 0,
+            page_loads: 0,
         };
         out.file_writes = this.blockStats[index * 3 + 0] & 0b1111;
         out.file_reads_cold = this.blockStats[index * 3 + 0] >> 4;
         out.file_reads_ahead = this.blockStats[index * 3 + 1] & 0b1111;
         out.file_reads_cached = this.blockStats[index * 3 + 1] >> 4;
-        out.page_reads = this.blockStats[index * 3 + 1] & 0b1111;
-        out.page_writes = this.blockStats[index * 3 + 1] >> 4;
+        out.page_accesses = this.blockStats[index * 3 + 1] & 0b1111;
+        out.page_loads = this.blockStats[index * 3 + 1] >> 4;
         return out;
     }
 }

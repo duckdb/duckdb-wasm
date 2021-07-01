@@ -592,15 +592,15 @@ TEST(FilePageBufferTest, BlockStatistics) {
         auto fcold = stats->block_stats[i][0] >> 4;
         auto fahead = stats->block_stats[i][1] & 0b1111;
         auto fcached = stats->block_stats[i][1] >> 4;
-        auto pwrite = stats->block_stats[i][2] & 0b1111;
-        auto pread = stats->block_stats[i][2] >> 4;
+        auto paccess = stats->block_stats[i][2] & 0b1111;
+        auto pload = stats->block_stats[i][2] >> 4;
 
         ASSERT_EQ(fwrite, 0);
         ASSERT_EQ(fcold, 0);
         ASSERT_EQ(fahead, 0);
         ASSERT_EQ(fcached, 0);
-        ASSERT_EQ(pwrite, 0);
-        ASSERT_EQ(pread, 1);
+        ASSERT_EQ(paccess, 2);  // (1 << 2) - 1: >= 3, (1 << 3) - 1: >= 7
+        ASSERT_EQ(pload, 1);
     }
 }
 

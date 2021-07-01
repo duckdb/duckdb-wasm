@@ -32,8 +32,8 @@ class FileStatisticsCollector {
         std::atomic<uint16_t> file_read_ahead = 0;
         std::atomic<uint16_t> file_read_cached = 0;
         std::atomic<uint16_t> file_write = 0;
-        std::atomic<uint16_t> page_read = 0;
-        std::atomic<uint16_t> page_write = 0;
+        std::atomic<uint16_t> page_access = 0;
+        std::atomic<uint16_t> page_load = 0;
     };
 
     /// The collector mutex (used for resizing)
@@ -53,8 +53,8 @@ class FileStatisticsCollector {
     std::atomic<uint64_t> bytes_file_read_ahead_ = 0;
     std::atomic<uint64_t> bytes_file_read_cached_ = 0;
     std::atomic<uint64_t> bytes_file_write_ = 0;
-    std::atomic<uint64_t> bytes_page_read_ = 0;
-    std::atomic<uint64_t> bytes_page_write_ = 0;
+    std::atomic<uint64_t> bytes_page_access_ = 0;
+    std::atomic<uint64_t> bytes_page_load_ = 0;
 
     /// Increment hits
     static inline void inc(uint16_t& hits) {
@@ -104,14 +104,14 @@ class FileStatisticsCollector {
             offset, length, [](auto& s) -> auto& { return s.file_write; }, bytes_file_write_);
     }
     /// Register a page read
-    inline void RegisterPageRead(uint64_t offset, uint64_t length) {
+    inline void RegisterPageAccess(uint64_t offset, uint64_t length) {
         BumpCounter(
-            offset, length, [](auto& s) -> auto& { return s.page_read; }, bytes_page_read_);
+            offset, length, [](auto& s) -> auto& { return s.page_access; }, bytes_page_access_);
     }
     /// Register a page write
-    inline void RegisterPageWrite(uint64_t offset, uint64_t length) {
+    inline void RegisterPageLoad(uint64_t offset, uint64_t length) {
         BumpCounter(
-            offset, length, [](auto& s) -> auto& { return s.page_write; }, bytes_page_write_);
+            offset, length, [](auto& s) -> auto& { return s.page_load; }, bytes_page_load_);
     }
 
     /// The block stats
@@ -122,8 +122,8 @@ class FileStatisticsCollector {
         double bytes_file_ahead = 0;
         double bytes_file_cached = 0;
         double bytes_file_write = 0;
-        double bytes_page_read = 0;
-        double bytes_page_write = 0;
+        double bytes_page_access = 0;
+        double bytes_page_load = 0;
         double block_size = 0;
         ExportedBlockStats block_stats[];
     };
@@ -132,14 +132,14 @@ class FileStatisticsCollector {
     ///
     /// | bytes_file_cold   | bytes_file_ahead
     /// | bytes_file_cached | bytes_file_write
-    /// | bytes_page_read   | bytes_page_write
+    /// | bytes_page_access | bytes_page_load
     /// | block_size
     /// | <blocks>
     ///
     /// Block Entry:
-    /// lsb      msb | lsb        msb | lsb      msb
-    /// 0000    0000 | 0000      0000 | 0000    0000
-    /// fwrite fcold | fahead fcached | pwrite pread
+    /// lsb      msb | lsb        msb | lsb       msb
+    /// 0000    0000 | 0000      0000 | 0000     0000
+    /// fwrite fcold | fahead fcached | paccess pload
     ///
     /// Encoding: at least ((1 << nibble) - 1) times
     arrow::Result<std::shared_ptr<arrow::Buffer>> ExportStatistics() const;

@@ -295,9 +295,9 @@ impl Shell {
         let subcmd = &args[..args.find(" ").unwrap_or(args.len())];
         let options = args[subcmd.len()..].trim();
         match subcmd {
-            "enable" => {
+            "collect" => {
                 db.enable_file_statistics(&options, true).await.unwrap();
-                Shell::with(|s| s.writeln(&format!("Enabled file statistics for: {}", options)));
+                Shell::with(|s| s.writeln(&format!("Collecting file statistics for: {}", options)));
             }
             "disable" => {
                 db.enable_file_statistics(&options, false).await.unwrap();
@@ -308,12 +308,12 @@ impl Shell {
             }
             "reads" => {
                 let stats = db.export_file_statistics(&options).await.unwrap();
-                Shell::with(|s| s.writeln(&stats.print_read_stats(s.terminal_width)));
+                Shell::with(|s| s.write(&stats.print_read_stats(s.terminal_width)));
             }
             _ => {
                 Shell::with(|s| {
                     s.writeln(&format!("Resetted file statistics for: {}", options));
-                    s.writeln("Usage: .fstats [enable/disable/reset/reads/paging] <file>");
+                    s.writeln("Usage: .fstats [collect/disable/reset/reads/paging] <file>");
                 });
             }
         }
