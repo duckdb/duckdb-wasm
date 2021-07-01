@@ -67,6 +67,8 @@ pub struct Shell {
     input_clock: u64,
     /// This history buffer
     history: VecDeque<String>,
+    /// This history buffer
+    history_cursor: usize,
     /// The database (if any)
     db: Option<Arc<RwLock<AsyncDuckDB>>>,
     /// The connection (if any)
@@ -85,6 +87,7 @@ impl Shell {
             input_enabled: false,
             input_clock: 0,
             history: VecDeque::new(),
+            history_cursor: 0,
             db: None,
             db_conn: None,
         }
@@ -321,6 +324,7 @@ impl Shell {
         if self.history.len() > HISTORY_LENGTH {
             self.history.pop_front();
         }
+        self.history_cursor = self.history.len();
     }
 
     /// Command handler
@@ -385,10 +389,7 @@ impl Shell {
     async fn on_sql(text: String) {
         defer!({
             Shell::with_mut(|s| {
-                s.history.push_back(text.clone());
-                if s.history.len() > HISTORY_LENGTH {
-                    s.history.pop_front();
-                }
+                s.remember_command(text.clone());
                 s.writeln("");
                 s.prompt();
             })
@@ -516,7 +517,41 @@ impl Shell {
                     }
                 }
             }
-            Key::Backspace | Key::ArrowDown | Key::ArrowLeft | Key::ArrowRight | Key::ArrowUp => {
+            Key::ArrowUp => {
+                if Shell::with_mut(|s| -> bool {
+                    if s.history_cursor > 0 {
+                        s.history_cursor -= 1;
+                        s.input_clock += 1;
+                        s.input.replace(&s.history[s.history_cursor]);
+                        s.flush();
+                        true
+                    } else {
+                        false
+                    }
+                }) {
+                    Shell::highlight_input();
+                }
+            }
+            Key::ArrowDown => {
+                if Shell::with_mut(|s| -> bool {
+                    if s.history_cursor < s.history.len() {
+                        s.history_cursor += 1;
+                        s.input.replace(if s.history_cursor < s.history.len() {
+                            s.history[s.history_cursor].as_str()
+                        } else {
+                            ""
+                        });
+                        s.input_clock += 1;
+                        s.flush();
+                        true
+                    } else {
+                        false
+                    }
+                }) {
+                    Shell::highlight_input();
+                }
+            }
+            Key::Backspace | Key::ArrowLeft | Key::ArrowRight => {
                 Shell::with_mut(|s| {
                     s.input_clock += 1;
                     s.input.consume(event);

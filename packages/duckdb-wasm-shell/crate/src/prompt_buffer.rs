@@ -50,6 +50,13 @@ impl PromptBuffer {
         String::from(&self.text_buffer).replace(&vt100::PARAGRAPH_SEPERATOR.to_string(), "\n")
     }
 
+    /// Replace the prompt
+    pub fn replace(&mut self, input: &str) {
+        self.reflow(|text_buffer| {
+            *text_buffer = Rope::from_str(input);
+        });
+    }
+
     /// Reset the prompt
     pub fn start_new(&mut self) {
         self.output_buffer.clear();
