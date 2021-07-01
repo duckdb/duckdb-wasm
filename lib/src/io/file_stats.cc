@@ -52,15 +52,15 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportSta
     out->bytes_file_ahead = bytes_file_read_ahead_;
     out->bytes_file_cached = bytes_file_read_cached_;
     out->bytes_file_write = bytes_file_write_;
-    out->bytes_page_read = bytes_page_read_;
-    out->bytes_page_write = bytes_page_write_;
+    out->bytes_page_access = bytes_page_access_;
+    out->bytes_page_load = bytes_page_load_;
     out->block_size = 1 << block_shift_;
     for (size_t i = 0; i < block_count_; ++i) {
         auto& b = block_stats_[i];
         auto& o = out->block_stats[i];
         o[0] = as_nibble(b.file_write) | (as_nibble(b.file_read_cold) << 4);
         o[1] = as_nibble(b.file_read_ahead) | (as_nibble(b.file_read_cached) << 4);
-        o[2] = as_nibble(b.page_write) | (as_nibble(b.page_read) << 4);
+        o[2] = as_nibble(b.page_access) | (as_nibble(b.page_load) << 4);
     }
     return buffer;
 }

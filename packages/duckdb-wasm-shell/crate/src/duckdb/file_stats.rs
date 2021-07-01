@@ -1,6 +1,7 @@
 use crate::utils::pretty_bytes;
 use crate::vt100;
 use js_sys::Uint8Array;
+use unicode_width::UnicodeWidthStr;
 use wasm_bindgen::prelude::*;
 
 const BLOCK_CHARS: [char; 4] = ['░', '▒', '▓', '█'];
@@ -18,10 +19,10 @@ extern "C" {
     fn get_total_file_reads_ahead(this: &JsFileStatistics) -> JsValue;
     #[wasm_bindgen(method, getter, js_name = "totalFileReadsCached")]
     fn get_total_file_reads_cached(this: &JsFileStatistics) -> JsValue;
-    #[wasm_bindgen(method, getter, js_name = "totalPageWrites")]
-    fn get_total_page_writes(this: &JsFileStatistics) -> JsValue;
-    #[wasm_bindgen(method, getter, js_name = "totalPageReads")]
-    fn get_total_page_reads(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalPageAccesses")]
+    fn get_total_page_accesses(this: &JsFileStatistics) -> JsValue;
+    #[wasm_bindgen(method, getter, js_name = "totalPageLoads")]
+    fn get_total_page_loads(this: &JsFileStatistics) -> JsValue;
     #[wasm_bindgen(method, getter, js_name = "blockSize")]
     fn get_block_size(this: &JsFileStatistics) -> JsValue;
     #[wasm_bindgen(method, getter, js_name = "blockStats")]
@@ -33,8 +34,8 @@ pub struct FileStatistics {
     pub total_file_reads_ahead: u64,
     pub total_file_reads_cached: u64,
     pub total_file_writes: u64,
-    pub total_page_reads: u64,
-    pub total_page_writes: u64,
+    pub total_page_accesses: u64,
+    pub total_page_loads: u64,
     pub block_size: u64,
     pub block_stats: Vec<u8>,
 }
@@ -44,8 +45,8 @@ pub struct FileBlockStatistics {
     pub file_reads_ahead: u8,
     pub file_reads_cached: u8,
     pub file_writes: u8,
-    pub page_reads: u8,
-    pub page_writes: u8,
+    pub page_accesses: u8,
+    pub page_loads: u8,
 }
 
 impl FileStatistics {
@@ -58,8 +59,8 @@ impl FileStatistics {
             total_file_reads_cold: stats.get_total_file_reads_cold().as_f64().unwrap_or(0.0) as u64,
             total_file_reads_cached: stats.get_total_file_reads_cached().as_f64().unwrap_or(0.0)
                 as u64,
-            total_page_writes: stats.get_total_page_writes().as_f64().unwrap_or(0.0) as u64,
-            total_page_reads: stats.get_total_page_reads().as_f64().unwrap_or(0.0) as u64,
+            total_page_accesses: stats.get_total_page_accesses().as_f64().unwrap_or(0.0) as u64,
+            total_page_loads: stats.get_total_page_loads().as_f64().unwrap_or(0.0) as u64,
             block_size: stats.get_block_size().as_f64().unwrap_or(0.0) as u64,
             block_stats: u8array.to_vec(),
         }
@@ -75,9 +76,113 @@ impl FileStatistics {
             file_reads_cold: self.block_stats[3 * idx + 0] >> 4,
             file_reads_ahead: self.block_stats[3 * idx + 1] & 0b1111,
             file_reads_cached: self.block_stats[3 * idx + 1] >> 4,
-            page_reads: self.block_stats[3 * idx + 2] & 0b1111,
-            page_writes: self.block_stats[3 * idx + 2] >> 4,
+            page_accesses: self.block_stats[3 * idx + 2] & 0b1111,
+            page_loads: self.block_stats[3 * idx + 2] >> 4,
         }
+    }
+
+    fn print_block_stats(
+        out: &mut String,
+        terminal_width: usize,
+        column_names: &[&str],
+        column_totals: &[u64],
+        blocks: &[char],
+        block_size: u64,
+        max_hits: u8,
+    ) {
+        let column_count = column_names.len();
+        let column_border_count = column_count + 1;
+        let column_width =
+            ((terminal_width.max(column_border_count) - column_border_count) / column_count).max(1);
+
+        // Draw legend
+        let mut legend = String::new();
+        let block_bytes = pretty_bytes(block_size as f64);
+        legend.push_str(&format!(
+            "{fg}{sym}{normal} {bytes}   ",
+            sym = BLOCK_CHARS[3],
+            fg = vt100::COLOR_FG_WHITE,
+            normal = vt100::MODES_OFF,
+            bytes = block_bytes
+        ));
+        let mut legend_width = 1 + 1 + block_bytes.len() + 3;
+        for i in 0..4 {
+            let v = i * max_hits / 4;
+            let hits = (1 << v) - 1;
+            let hits_fmt = format!("{}", hits);
+            legend.push_str(&format!(
+                " {fg}{sym}{normal} > {hits}",
+                sym = BLOCK_CHARS[i as usize],
+                hits = &hits_fmt,
+                fg = vt100::COLOR_FG_BRIGHT_YELLOW,
+                normal = vt100::MODES_OFF,
+            ));
+            legend_width += 1 + 1 + 3 + hits_fmt.len();
+        }
+        legend_width += 2;
+        out.push_str(&" ".repeat(terminal_width.max(legend_width) - legend_width));
+        out.push_str(&legend);
+        out.push_str("\r\n");
+
+        // Draw header
+        out.push('┌');
+        for i in 0..column_count {
+            if i != 0 {
+                out.push('┬');
+            }
+            out.push_str(&"─".repeat(column_width));
+        }
+        out.push_str("┐\r\n");
+
+        // Draw rows
+        let block_count = blocks.len() / column_count;
+        let row_count = (block_count + column_width - 1) / column_width;
+        for row in 0..row_count {
+            let block_range = (row * column_width)..((row + 1) * column_width).min(block_count);
+            let padding = column_width - block_range.len();
+
+            for col in 0..column_count {
+                out.push_str(vt100::COLOR_FG_WHITE);
+                out.push('│');
+                out.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
+
+                for i in block_range.clone() {
+                    out.push(blocks[i * column_count + col]);
+                }
+                out.push_str(&" ".repeat(padding));
+            }
+            out.push_str(vt100::COLOR_FG_WHITE);
+            out.push_str("│\r\n");
+        }
+
+        // Draw footer
+        out.push('└');
+        for i in 0..column_count {
+            if i != 0 {
+                out.push('┴');
+            }
+            out.push_str(&"─".repeat(column_width));
+        }
+        out.push_str("┘\r\n");
+
+        // Draw block labels
+        out.push_str(vt100::MODE_BOLD);
+        for col_name in column_names {
+            out.push(' ');
+            out.push_str(col_name);
+            out.push_str(&" ".repeat(column_width.max(col_name.len()) - col_name.len()));
+        }
+        out.push_str(vt100::MODES_OFF);
+        out.push_str("\r\n");
+
+        // Draw block totals
+        for col_total in column_totals {
+            out.push(' ');
+            let total = pretty_bytes(*col_total as f64);
+            out.push_str(&total);
+            out.push_str(&" ".repeat(column_width.max(total.len()) - total.len()));
+        }
+        out.push_str("\r\n");
     }
 
     pub fn print_read_stats(&self, width: usize) -> String {
@@ -117,102 +222,20 @@ impl FileStatistics {
 
         // Write all block chars
         let mut out = String::new();
-        out.reserve((6 * 5 + 3 * column_width) * (row_count + 4));
-        out.push('┌');
-        out.push_str(&"─".repeat(column_width));
-        out.push('┬');
-        out.push_str(&"─".repeat(column_width));
-        out.push('┬');
-        out.push_str(&"─".repeat(column_width));
-        out.push('┐');
-        out.push_str("\r\n");
-        for row in 0..row_count {
-            let range = (row * column_width)..((row + 1) * column_width).min(block_count);
-            let padding = column_width - range.len();
-            out.push_str(vt100::COLOR_FG_WHITE);
-            out.push('│');
-            out.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
-            for i in range.clone() {
-                out.push(block_chars[3 * i + 0]);
-            }
-            out.push_str(&" ".repeat(padding));
-            out.push_str(vt100::COLOR_FG_WHITE);
-            out.push('│');
-            out.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
-            for i in range.clone() {
-                out.push(block_chars[3 * i + 1]);
-            }
-            out.push_str(&" ".repeat(padding));
-            out.push_str(vt100::COLOR_FG_WHITE);
-            out.push('│');
-            out.push_str(vt100::COLOR_FG_BRIGHT_YELLOW);
-            for i in range.clone() {
-                out.push(block_chars[3 * i + 2]);
-            }
-            out.push_str(&" ".repeat(padding));
-            out.push_str(vt100::COLOR_FG_WHITE);
-            out.push_str("│\r\n");
-        }
-        out.push('└');
-        out.push_str(&"─".repeat(column_width));
-        out.push('┴');
-        out.push_str(&"─".repeat(column_width));
-        out.push('┴');
-        out.push_str(&"─".repeat(column_width));
-        out.push('┘');
-        out.push_str("\r\n");
-
-        let write_col = |out: &mut String, s: &str, w: usize| {
-            out.push_str(s);
-            out.push_str(&" ".repeat(w.max(s.len()) - s.len()));
-        };
-
-        out.push_str(vt100::MODE_BOLD);
-        write_col(&mut out, " Cold", column_width + 1);
-        write_col(&mut out, " Read-Ahead", column_width + 1);
-        write_col(&mut out, " Cached", column_width + 1);
-        out.push_str(vt100::MODES_OFF);
-        out.push_str("\r\n");
-
-        write_col(
+        out.reserve((40 + 3 * column_width) * (row_count + 4));
+        FileStatistics::print_block_stats(
             &mut out,
-            &format!(" {}", pretty_bytes(self.total_file_reads_cold as f64)),
-            column_width + 1,
+            width,
+            &["Cold", "Read-Ahead", "Cached"],
+            &[
+                self.total_file_reads_cold,
+                self.total_file_reads_ahead,
+                self.total_file_reads_cached,
+            ],
+            &block_chars,
+            self.block_size,
+            max,
         );
-        write_col(
-            &mut out,
-            &format!(" {}", pretty_bytes(self.total_file_reads_ahead as f64)),
-            column_width + 1,
-        );
-        write_col(
-            &mut out,
-            &format!(" {}", pretty_bytes(self.total_file_reads_cached as f64)),
-            column_width + 1,
-        );
-        out.push_str("\r\n");
-        out.push_str("\r\n");
-
-        out.push_str(&format!(
-            "{bold}Block Size:{normal} {bytes}\r\n",
-            bold = vt100::MODE_BOLD,
-            normal = vt100::MODES_OFF,
-            bytes = pretty_bytes(self.block_size as f64)
-        ));
-        out.push_str(&format!(
-            "{bold}Block Hits:{normal}",
-            bold = vt100::MODE_BOLD,
-            normal = vt100::MODES_OFF
-        ));
-        for i in 0..4 {
-            let v = i * max / 4;
-            out.push_str(&format!(
-                " {fg}{sym}{normal} > {hits}",
-                sym = BLOCK_CHARS[i as usize],
-                hits = (1 << v) - 1,
-                fg = vt100::COLOR_FG_BRIGHT_YELLOW,
-                normal = vt100::MODES_OFF,
-            ));
-        }
         out
     }
 }

@@ -99,9 +99,9 @@ void FilePageBuffer::FileRef::LoadFrame(FilePageBuffer::BufferFrame& frame, File
     frame.data_size = std::min<uint64_t>(file_->file_size - page_id * page_size, buffer_.GetPageSize());
     frame.is_dirty = false;
 
-    // Register a read
+    // Register a page load
     if (file_->file_stats) {
-        file_->file_stats->RegisterPageRead(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
+        file_->file_stats->RegisterPageLoad(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
     }
 
     // Read data into frame
@@ -391,6 +391,11 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
     auto file_id = file_->file_id;
     auto frame_id = BuildFrameID(file_id, page_id);
 
+    // Register a read
+    if (file_->file_stats) {
+        file_->file_stats->RegisterPageAccess(page_id * buffer_.GetPageSize(), buffer_.GetPageSize());
+    }
+
     // Repeat until we suceed or fail.
     // We might have to wait for a thread that concurrently tries to fix our page.
     // If that thread fails, we try again until we're the one failing.
@@ -584,12 +589,6 @@ void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGua
     }
     file_->file_size = new_file_size;
 
-    // Register a write
-    if (file_->file_stats) {
-        file_->file_stats->Resize(new_file_size);
-        file_->file_stats->RegisterPageWrite(old_file_size, bytes);
-    }
-
     // Do we need to resize the last page?
     auto page_size = buffer_.GetPageSize();
     auto last_page_id = old_file_size >> buffer_.GetPageSizeShift();
@@ -681,11 +680,6 @@ void FilePageBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_gua
     if (frame.is_dirty) {
         filesystem->Write(*file.handle, frame.buffer.get(), frame.data_size, page_id * page_size);
         frame.is_dirty = false;
-
-        // Register a write
-        if (file.file_stats) {
-            file.file_stats->RegisterPageWrite(page_id * page_size, frame.data_size);
-        }
     }
 
     // Unlock frame to acquire latch
