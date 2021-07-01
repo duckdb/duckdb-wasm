@@ -16,13 +16,14 @@ pub fn embed(
     elem: web_sys::HtmlElement,
     runtime: shell_runtime::ShellRuntime,
     options: shell_options::ShellOptions,
+    resizer: FitAddon,
 ) -> Result<(), JsValue> {
     let terminal = Terminal::new(
         TerminalOptions::new()
             .with_rows(100)
             .with_cursor_blink(true)
             .with_cursor_width(10)
-            .with_font_size(16)
+            .with_font_size(14) // XXX Make this dynamic based on the device width
             .with_draw_bold_text_in_bright_colors(true)
             .with_right_click_selects_word(true)
             .with_theme(
@@ -39,11 +40,10 @@ pub fn embed(
         let addon_webgl = WebglAddon::new(None);
         terminal.load_addon(addon_webgl.clone().dyn_into::<WebglAddon>()?.into());
     }
-    let addon_fit = FitAddon::new();
     let links_addon = WebLinksAddon::new(None, None, None);
-    terminal.load_addon(addon_fit.clone().dyn_into::<FitAddon>()?.into());
+    terminal.load_addon(resizer.clone().into());
     terminal.load_addon(links_addon.clone().dyn_into::<WebLinksAddon>()?.into());
-    addon_fit.fit();
+    resizer.fit();
 
     Shell::with_mut(|s| s.attach(terminal, runtime, options));
     Ok(())

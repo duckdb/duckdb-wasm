@@ -48,7 +48,7 @@ impl ShellSettings {
     }
 }
 
-/// The shell is the primary entrypoint for the Javascript api.
+/// The shell is the primary entrypoint for the web shell api.
 /// It is stored as thread_local singleton and maintains all the state for the interactions with DuckDB
 pub struct Shell {
     /// The shell settings

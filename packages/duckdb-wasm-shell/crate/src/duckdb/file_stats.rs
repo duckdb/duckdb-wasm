@@ -1,7 +1,6 @@
 use crate::utils::pretty_bytes;
 use crate::vt100;
 use js_sys::Uint8Array;
-use unicode_width::UnicodeWidthStr;
 use wasm_bindgen::prelude::*;
 
 const BLOCK_CHARS: [char; 4] = ['░', '▒', '▓', '█'];
