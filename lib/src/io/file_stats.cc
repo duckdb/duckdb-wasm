@@ -34,6 +34,7 @@ void FileStatisticsCollector::Resize(uint64_t n) {
     for (; block_count > MAX_RANGE_COUNT; block_count >>= 1, ++block_shift)
         ;
     block_count = ((block_count << block_shift) < n) ? (block_count + 1) : block_count;
+    assert((block_count << block_shift) >= n);
     if (block_count == block_count_ && block_shift == block_shift_) return;
     block_stats_ = std::unique_ptr<BlockStatistics[]>(new BlockStatistics[block_count]);
     block_shift_ = block_shift;
