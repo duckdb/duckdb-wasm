@@ -65,7 +65,7 @@
         "dist/types/**/*.d.ts",
         "dist/chunk*.js",
         "dist/duckdb*.js",
-        "dist/duckdb.wasm"
+        "dist/duckdb*.wasm"
     ],
     "main": "./dist/duckdb-node.js",
     "types": "./dist/duckdb-node.d.ts",
