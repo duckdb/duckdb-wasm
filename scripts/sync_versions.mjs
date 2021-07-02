@@ -3,7 +3,7 @@
 import path from 'path';
 import fs from 'fs';
 
-const pkgNames = ['duckdb', 'benchmarks', 'explorer'];
+const pkgNames = ['duckdb-wasm', 'duckdb-wasm-shell', 'benchmarks'];
 const pkgs = new Map();
 
 // Read all packages
