@@ -585,11 +585,14 @@ impl Shell {
         if keyboard_event.ctrl_key() || keyboard_event.meta_key() {
             match event.key {
                 Key::Char('v') => match rt.read_clipboard_text().await {
-                    Ok(v) => Shell::with_mut(|s| {
-                        s.input
-                            .insert_text(&v.as_string().unwrap_or("".to_string()));
-                        s.input.flush(&s.terminal);
-                    }),
+                    Ok(v) => {
+                        Shell::with_mut(|s| {
+                            s.input
+                                .insert_text(&v.as_string().unwrap_or("".to_string()));
+                            s.input.flush(&s.terminal);
+                        });
+                        Shell::highlight_input();
+                    }
                     Err(_e) => warn!("Failed to read from clipboard"),
                 },
                 Key::Char('c') => (),
