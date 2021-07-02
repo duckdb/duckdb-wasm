@@ -138,7 +138,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.NATIVE: {
                 const handle = BROWSER_RUNTIME._files?.get(file.file_name);
                 if (!handle) {
-                    console.log(BROWSER_RUNTIME._files);
                     throw Error(`No handle available for file: ${file.file_name}`);
                 }
                 const sliced = handle!.slice(location, location + bytes);
@@ -166,7 +165,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.NATIVE: {
                 const handle = BROWSER_RUNTIME._files?.get(file.file_name);
                 if (!handle) {
-                    console.log(BROWSER_RUNTIME._files);
                     throw Error(`No handle available for file: ${file.file_name}`);
                 }
                 return handle.size;
@@ -197,7 +195,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.NATIVE: {
                 const handle = BROWSER_RUNTIME._files?.get(file.file_name);
                 if (!handle) {
-                    console.log(BROWSER_RUNTIME._files);
                     throw Error(`No handle available for file: ${file.file_name}`);
                 }
                 return 0;
