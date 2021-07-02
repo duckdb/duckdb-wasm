@@ -57,6 +57,15 @@ impl PromptBuffer {
         });
     }
 
+    /// Insert a text at position
+    pub fn insert_text(&mut self, s: &str) {
+        let pos = self.cursor;
+        self.reflow(|buffer| {
+            buffer.insert(pos, s);
+        });
+        self.move_cursor_to(pos + s.len());
+    }
+
     /// Reset the prompt
     pub fn start_new(&mut self) {
         self.output_buffer.clear();

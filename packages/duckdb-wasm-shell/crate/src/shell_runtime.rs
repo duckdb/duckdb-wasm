@@ -7,4 +7,8 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "openFileExplorer")]
     pub fn open_file_explorer(this: &ShellRuntime);
+    #[wasm_bindgen(method, catch, js_name = "readClipboardText")]
+    pub async fn read_clipboard_text(this: &ShellRuntime) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = "writeClipboardText")]
+    pub async fn write_clipboard_text(this: &ShellRuntime, value: &str) -> Result<(), JsValue>;
 }
