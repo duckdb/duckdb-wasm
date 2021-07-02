@@ -21,8 +21,10 @@
 //! Utilities for printing record batches. Note this module is not
 //! available unless `feature = "prettyprint"` is enabled.
 
+use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
 
+use crate::comfy;
 pub use crate::comfy::presets::ASCII_BORDERS_NO_HORIZONTAL;
 pub use crate::comfy::presets::UTF8_BORDERS_NO_HORIZONTAL;
 pub use crate::comfy::ContentArrangement;
@@ -39,6 +41,25 @@ pub fn pretty_format_batches(
     presets: &str,
 ) -> Result<String> {
     Ok(create_table(results, table_width, presets)?.to_string())
+}
+
+fn get_column_alignment(column: &arrow::array::ArrayRef) -> comfy::CellAlignment {
+    match column.data_type() {
+        DataType::Boolean
+        | DataType::Int8
+        | DataType::Int16
+        | DataType::Int32
+        | DataType::Int64
+        | DataType::UInt8
+        | DataType::UInt16
+        | DataType::UInt32
+        | DataType::UInt64
+        | DataType::Float16
+        | DataType::Float32
+        | DataType::Float64
+        | DataType::Decimal(_, _) => comfy::CellAlignment::Right,
+        _ => comfy::CellAlignment::Left,
+    }
 }
 
 ///! Convert a series of record batches into a table
@@ -65,7 +86,8 @@ fn create_table(results: &[RecordBatch], table_width: u16, presets: &str) -> Res
             let mut cells = Vec::new();
             for col in 0..batch.num_columns() {
                 let column = batch.column(col);
-                cells.push(Cell::new(&array_value_to_string(&column, row)?));
+                let cell = Cell::new(&array_value_to_string(&column, row)?);
+                cells.push(cell.set_alignment(get_column_alignment(column)));
             }
             table.add_row(Row::from(cells));
         }
@@ -123,9 +145,9 @@ mod tests {
             "+---+-----+",
             "| a | b   |",
             "+===+=====+",
-            "| a | 1   |",
+            "| a |   1 |",
             "| b |     |",
-            "|   | 10  |",
+            "|   |  10 |",
             "| d | 100 |",
             "+---+-----+",
         ];
@@ -407,9 +429,9 @@ mod tests {
             "+-------+",
             "| f     |",
             "+=======+",
-            "| 1.01  |",
+            "|  1.01 |",
             "|       |",
-            "| 2.00  |",
+            "|  2.00 |",
             "| 30.40 |",
             "+-------+",
         ];
@@ -444,7 +466,7 @@ mod tests {
 
         let table = pretty_format_batches(&[batch], 100, ASCII_BORDERS_NO_HORIZONTAL)?;
         let expected = vec![
-            "+------+", "| f    |", "+======+", "| 101  |", "|      |", "| 200  |", "| 3040 |",
+            "+------+", "| f    |", "+======+", "|  101 |", "|      |", "|  200 |", "| 3040 |",
             "+------+",
         ];
 
