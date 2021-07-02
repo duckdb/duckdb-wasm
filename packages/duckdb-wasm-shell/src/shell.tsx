@@ -58,6 +58,12 @@ class ShellRuntime {
             shell.resumeAfterInput(shell.ShellInputContext.FileInput);
         }
     }
+    public async readClipboardText(this: ShellRuntime): Promise<string> {
+        return await navigator.clipboard.readText();
+    }
+    public async writeClipboardText(this: ShellRuntime, value: string) {
+        return await navigator.clipboard.writeText(value);
+    }
 }
 
 const ShellResizer = () => {

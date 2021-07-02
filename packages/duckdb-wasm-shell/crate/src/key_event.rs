@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+#[derive(PartialEq, Eq)]
 pub enum Key {
     Dead,
     Enter,
@@ -46,6 +47,7 @@ impl FromStr for Key {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub struct KeyEvent {
     pub key: Key,
 }

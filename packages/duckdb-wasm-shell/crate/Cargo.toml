@@ -29,6 +29,7 @@ features = [
 ]
 
 [dependencies]
+log = "0.4.14"
 scopeguard = "1.1.0"
 anyhow = "1.0.41"
 console_error_panic_hook = "0.1.6"

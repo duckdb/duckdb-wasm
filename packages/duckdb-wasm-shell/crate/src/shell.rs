@@ -9,6 +9,7 @@ use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
 use chrono::Duration;
+use log::warn;
 use scopeguard::defer;
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -58,7 +59,7 @@ pub struct Shell {
     /// The terminal width
     terminal_width: usize,
     /// The runtime
-    runtime: Option<ShellRuntime>,
+    runtime: Option<Arc<RwLock<ShellRuntime>>>,
     /// The current line buffer
     input: PromptBuffer,
     /// The input is enabled
@@ -97,7 +98,7 @@ impl Shell {
     pub fn attach(&mut self, term: Terminal, runtime: ShellRuntime, options: ShellOptions) {
         self.terminal = term;
         self.terminal_width = self.terminal.get_cols() as usize;
-        self.runtime = Some(runtime);
+        self.runtime = Some(Arc::new(RwLock::new(runtime)));
         self.input.configure(self.terminal_width);
         self.settings.webgl = options.with_webgl();
 
@@ -368,7 +369,7 @@ impl Shell {
             ".files" => {
                 Shell::with_mut(|s| match s.runtime {
                     Some(ref rt) => {
-                        rt.open_file_explorer();
+                        rt.read().unwrap().open_file_explorer();
                         s.remember_command(text.clone());
                     }
                     None => {
@@ -490,14 +491,14 @@ impl Shell {
     }
 
     /// Process on-key event
-    fn on_key(event: web_sys::KeyboardEvent) {
+    fn on_key(keyboard_event: web_sys::KeyboardEvent) {
         if !Shell::with(|s| s.input_enabled) {
             return;
         }
-        if &event.type_() != "keydown" {
+        if &keyboard_event.type_() != "keydown" {
             return;
         }
-        let event = KeyEvent::from_event(event);
+        let event = KeyEvent::from_event(keyboard_event.clone());
         match event.key {
             Key::Enter => {
                 let input = Shell::with_mut(|s| {
@@ -563,12 +564,36 @@ impl Shell {
                 });
             }
             _ => {
+                if keyboard_event.ctrl_key() || keyboard_event.meta_key() {
+                    spawn_local(Shell::on_key_combination(keyboard_event, event));
+                    return;
+                }
                 Shell::with_mut(|s| {
                     s.input_clock += 1;
                     s.input.consume(event);
                     s.flush();
                 });
                 Shell::highlight_input();
+            }
+        }
+    }
+
+    /// Handle pressed key combinations such as ctrl+c & ctrl+v
+    async fn on_key_combination(keyboard_event: web_sys::KeyboardEvent, event: KeyEvent) {
+        let rt_ptr = Shell::with_mut(|s| s.runtime.clone()).unwrap();
+        let rt = rt_ptr.read().unwrap();
+        if keyboard_event.ctrl_key() || keyboard_event.meta_key() {
+            match event.key {
+                Key::Char('v') => match rt.read_clipboard_text().await {
+                    Ok(v) => Shell::with_mut(|s| {
+                        s.input
+                            .insert_text(&v.as_string().unwrap_or("".to_string()));
+                        s.input.flush(&s.terminal);
+                    }),
+                    Err(_e) => warn!("Failed to read from clipboard"),
+                },
+                Key::Char('c') => (),
+                _ => {}
             }
         }
     }
