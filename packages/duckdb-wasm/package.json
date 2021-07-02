@@ -1,6 +1,6 @@
 {
     "name": "@duckdb/duckdb-wasm",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "description": "DuckDB powered by WebAssembly",
     "license": "MPL-2.0",
     "repository": "git://github.com/duckdb/duckdb-wasm.git",
