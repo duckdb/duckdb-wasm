@@ -24,7 +24,7 @@ fn convert_tbl(
     let reader = arrow::csv::ReaderBuilder::new()
         .with_delimiter(b'|')
         .with_schema(schema.clone())
-        .with_batch_size(1024)
+        .with_batch_size(20000)
         .build(tbl_file)?;
 
     // Stream to parquet writer
