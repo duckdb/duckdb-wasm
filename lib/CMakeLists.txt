@@ -103,7 +103,6 @@ include("${CMAKE_SOURCE_DIR}/cmake/benchmark.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/gflags.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/googletest.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
-include("${CMAKE_SOURCE_DIR}/cmake/spdlog.cmake")
 
 # ---------------------------------------------------------------------------
 # Code coverage
@@ -161,7 +160,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
-target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson ${THREAD_LIBS})
+target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
 
 # ---------------------------------------------------------------------------
 # Emscripten
@@ -170,7 +169,7 @@ target_link_libraries(duckdb_web duckdb spdlog arrow rapidjson ${THREAD_LIBS})
 # own imports.
 if(EMSCRIPTEN)
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
-  target_link_libraries(duckdb_wasm duckdb_web spdlog ${THREAD_LIBS})
+  target_link_libraries(duckdb_wasm duckdb_web ${THREAD_LIBS})
   set_target_properties(
     duckdb_wasm
     PROPERTIES
