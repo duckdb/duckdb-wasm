@@ -16,7 +16,7 @@ interface IAsyncDuckDB {
     fetchQueryResults(conn: number): Promise<Uint8Array>;
 
     importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
-    importJSONFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
+    importJSONFromPath(conn: number, path: string, options: JSONTableOptions): Promise<null>;
 
     extractZipPath(archiveFile: string, outFile: string, entryPath: string): Promise<number>;
 }
@@ -138,7 +138,7 @@ export class AsyncDuckDBConnection implements AsyncConnection {
         return await this._instance.importCSVFromPath(this._conn, text, options);
     }
     /** Import json file from path */
-    public async importJSONFromPath(text: string, options: CSVTableOptions): Promise<null> {
+    public async importJSONFromPath(text: string, options: JSONTableOptions): Promise<null> {
         return await this._instance.importJSONFromPath(this._conn, text, options);
     }
 }
