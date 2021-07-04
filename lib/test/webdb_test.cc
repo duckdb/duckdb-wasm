@@ -61,6 +61,17 @@ TEST(WebDB, SendQuery) {
     ASSERT_TRUE(buffer.ok()) << buffer.status().message();
 }
 
+TEST(WebDB, PrepareQuery) {
+    auto db = make_shared<WebDB>();
+    WebDB::Connection conn{*db};
+    auto stmt = conn.PrepareStatement("SELECT ? + 5");
+    ASSERT_TRUE(stmt.ok()) << stmt.status().message();
+    auto buffer = conn.RunPreparedStatement(*stmt, "[4]");
+    ASSERT_TRUE(buffer.ok()) << buffer.status().message();
+    auto success = conn.ClosePreparedStatement(*stmt);
+    ASSERT_TRUE(success.ok()) << success.message();
+}
+
 TEST(WebDB, Tokenize) {
     auto db = make_shared<WebDB>();
     ASSERT_EQ(db->Tokenize("SELECT 1"), "{\"offsets\":[0,7],\"types\":[4,1]}");

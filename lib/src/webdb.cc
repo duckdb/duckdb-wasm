@@ -1,6 +1,9 @@
 #include "duckdb/web/webdb.h"
+#include <rapidjson/error/en.h>
 
+#include <cstddef>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -47,32 +50,50 @@ WebDB& WebDB::Get() {
 /// Constructor
 WebDB::Connection::Connection(WebDB& webdb) : webdb_(webdb), connection_(*webdb.database_) {}
 
+
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(std::unique_ptr<duckdb::QueryResult> result) {
+    current_query_result_.reset();
+    current_schema_.reset();
+
+    // Configure the output writer
+    ArrowSchema raw_schema;
+    result->ToArrowSchema(&raw_schema);
+    ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
+    ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
+    ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, schema));
+
+    // Write chunk stream
+    for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
+        // Import the data chunk as record batch
+        ArrowArray array;
+        chunk->ToArrowArray(&array);
+        // Write record batch to the output stream
+        ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
+        ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
+    }
+    ARROW_RETURN_NOT_OK(writer->Close());
+    return out->Finish();
+}
+
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(std::unique_ptr<duckdb::QueryResult> result) {
+    current_query_result_ = move(result);
+    current_schema_.reset();
+
+    // Import the schema
+    ArrowSchema raw_schema;
+    current_query_result_->ToArrowSchema(&raw_schema);
+    ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
+
+    // Serialize the schema
+    return arrow::ipc::SerializeSchema(*current_schema_);
+}
+
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::string_view text) {
     try {
         // Send the query
         auto result = connection_.SendQuery(std::string{text});
         if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
-        current_query_result_.reset();
-        current_schema_.reset();
-
-        // Configure the output writer
-        ArrowSchema raw_schema;
-        result->ToArrowSchema(&raw_schema);
-        ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
-        ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
-        ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, schema));
-
-        // Write chunk stream
-        for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
-            // Import the data chunk as record batch
-            ArrowArray array;
-            chunk->ToArrowArray(&array);
-            // Write record batch to the output stream
-            ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
-            ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
-        }
-        ARROW_RETURN_NOT_OK(writer->Close());
-        return out->Finish();
+        return MaterializeQueryResult(std::move(result));
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
@@ -83,16 +104,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendQuery(std::
         // Send the query
         auto result = connection_.SendQuery(std::string{text});
         if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
-        current_query_result_ = move(result);
-        current_schema_.reset();
-
-        // Import the schema
-        ArrowSchema raw_schema;
-        current_query_result_->ToArrowSchema(&raw_schema);
-        ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
-
-        // Serialize the schema
-        return arrow::ipc::SerializeSchema(*current_schema_);
+        return StreamQueryResult(std::move(result));
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
@@ -127,6 +139,70 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
+}
+
+arrow::Result<size_t> WebDB::Connection::PrepareStatement(std::string_view text) {
+    try {
+        auto prep = connection_.Prepare(std::string{text});
+        auto id = prepared_statements_counter_++;
+
+        // Wrap around if maximum exceeded
+        if(prepared_statements_counter_ == std::numeric_limits<size_t>::max()) prepared_statements_counter_ = 0;
+
+        prepared_statements_.emplace(id, std::move(prep));
+        return id;
+    } catch(std::exception& e) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
+    }
+}
+
+
+arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(size_t statement_id, std::string_view args_json) {
+    try {
+        auto stmt = prepared_statements_.find(statement_id);
+        if(stmt == prepared_statements_.end()) 
+            return arrow::Status{arrow::StatusCode::KeyError, "No prepared statement found with ID"};
+
+        rapidjson::Document args_doc;
+        rapidjson::ParseResult ok = args_doc.Parse(args_json.begin(), args_json.size());
+        if(!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
+        if(!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array."};
+
+        std::vector<duckdb::Value> values;
+        for(const auto& v : args_doc.GetArray()) {
+            if(v.IsLosslessDouble()) values.emplace_back(v.GetDouble());
+            else if(v.IsString()) values.emplace_back(v.GetString());
+            else if(v.IsNull()) values.emplace_back(nullptr);
+            else return arrow::Status{arrow::StatusCode::Invalid, "Invalid column type encountered."};
+        }
+
+        auto result = stmt->second->Execute(values);
+        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
+        return result;
+    } catch(std::exception& e) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
+    }
+}
+
+
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunPreparedStatement(size_t statement_id, std::string_view args_json) {
+    auto result = ExecutePreparedStatement(statement_id, args_json);
+    if(!result.ok()) return result.status();
+    return MaterializeQueryResult(std::move(*result));
+}
+
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendPreparedStatement(size_t statement_id, std::string_view args_json) {
+    auto result = ExecutePreparedStatement(statement_id, args_json);
+    if(!result.ok()) return result.status();
+    return StreamQueryResult(std::move(*result));
+}
+
+arrow::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
+    auto it = prepared_statements_.find(statement_id);
+    if(it == prepared_statements_.end()) 
+        return arrow::Status{arrow::StatusCode::KeyError, "No prepared statement found with ID"};
+    prepared_statements_.erase(it);
+    return arrow::Status::OK();
 }
 
 /// Import a csv file
