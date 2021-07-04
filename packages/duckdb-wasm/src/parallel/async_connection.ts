@@ -24,11 +24,15 @@ interface IAsyncDuckDB {
 /** An async result stream iterator */
 class ResultStreamIterator implements AsyncIterable<Uint8Array> {
     /** First chunk? */
-    _first: boolean;
+    protected _first: boolean;
     /** Reached end of stream? */
-    _depleted: boolean;
+    protected _depleted: boolean;
 
-    constructor(protected db: IAsyncDuckDB, protected conn: number, protected header: Uint8Array) {
+    constructor(
+        protected readonly db: IAsyncDuckDB,
+        protected readonly conn: number,
+        protected readonly header: Uint8Array,
+    ) {
         this._first = true;
         this._depleted = false;
     }
@@ -77,9 +81,9 @@ export interface AsyncConnection {
 /** A thin helper to memoize the connection id */
 export class AsyncDuckDBConnection implements AsyncConnection {
     /** The async duckdb */
-    _instance: IAsyncDuckDB;
+    protected readonly _instance: IAsyncDuckDB;
     /** The conn handle */
-    _conn: number;
+    protected readonly _conn: number;
 
     constructor(instance: IAsyncDuckDB, conn: number) {
         this._instance = instance;

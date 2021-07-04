@@ -16,14 +16,14 @@ import { FileStatistics } from 'src/bindings/file_stats';
 
 export class AsyncDuckDB {
     /** The message handler */
-    protected _onMessageHandler: (event: MessageEvent) => void;
+    protected readonly _onMessageHandler: (event: MessageEvent) => void;
     /** The error handler */
-    protected _onErrorHandler: (event: ErrorEvent) => void;
+    protected readonly _onErrorHandler: (event: ErrorEvent) => void;
     /** The close handler */
-    protected _onCloseHandler: () => void;
+    protected readonly _onCloseHandler: () => void;
 
     /** The logger */
-    protected _logger: Logger;
+    protected readonly _logger: Logger;
     /** The worker */
     protected _worker: Worker | null = null;
     /** The promise for the worker shutdown */

@@ -21,15 +21,15 @@ export enum DuckDBFeature {
 /** The proxy for either the browser- order node-based DuckDB API */
 export abstract class DuckDBBindings {
     /** The logger */
-    protected _logger: Logger;
+    protected readonly _logger: Logger;
+    /** Backend-dependent native-glue code for DuckDB */
+    protected readonly _runtime: DuckDBRuntime;
     /** The instance */
     protected _instance: DuckDBModule | null = null;
     /** The loading promise */
     protected _openPromise: Promise<void> | null = null;
     /** The resolver for the open promise (called by onRuntimeInitialized) */
     protected _openPromiseResolver: () => void = () => {};
-    /** Backend-dependent native-glue code for DuckDB */
-    protected _runtime: DuckDBRuntime;
 
     constructor(logger: Logger, runtime: DuckDBRuntime) {
         this._logger = logger;
