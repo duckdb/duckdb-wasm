@@ -53,10 +53,10 @@ export abstract class DuckDBBindings {
     protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
 
     /** Open the database */
-    public async open(): Promise<void> {
+    public async open(): Promise<this> {
         // Already opened?
         if (this._instance != null) {
-            return;
+            return this;
         }
         // Open in progress?
         if (this._openPromise != null) {
@@ -78,6 +78,8 @@ export abstract class DuckDBBindings {
         // Wait for onRuntimeInitialized
         await this._openPromise;
         this._openPromise = null;
+
+        return this;
     }
 
     /** Tokenize a script */
