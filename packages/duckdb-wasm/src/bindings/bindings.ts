@@ -3,7 +3,7 @@ import { Logger } from '../log';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } from './runtime';
-import { CSVTableOptions } from './table_options';
+import { CSVTableOptions, JSONTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 
@@ -195,7 +195,7 @@ export abstract class DuckDBBindings {
     }
 
     /** Import json from path */
-    public importJSONFromPath(conn: number, path: string, options: CSVTableOptions): void {
+    public importJSONFromPath(conn: number, path: string, options: JSONTableOptions): void {
         const optionsJSON = JSON.stringify(options);
         const [s, d, n] = callSRet(
             this.mod,
