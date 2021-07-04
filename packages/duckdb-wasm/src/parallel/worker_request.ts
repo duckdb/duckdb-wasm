@@ -48,6 +48,7 @@ export enum WorkerResponseType {
     QUERY_RESULT_CHUNK = 'QUERY_RESULT_CHUNK',
     QUERY_START = 'QUERY_START',
     REGISTERED_FILE = 'REGISTERED_FILE',
+    FILE_SIZE = 'FILE_SIZE',
 }
 
 export type WorkerRequest<T, P> = {
@@ -62,6 +63,8 @@ export type WorkerResponse<T, P> = {
     readonly type: T;
     readonly data: P;
 };
+
+export type WorkerTaskReturnType<T extends WorkerTaskVariant> = T extends WorkerTask<any, any, infer P> ? P : never;
 
 export class WorkerTask<T, D, P> {
     readonly type: T;
@@ -128,7 +131,8 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.QUERY_START, Uint8Array>
     | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
     | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
-    | WorkerResponse<WorkerResponseType.VERSION_STRING, string>;
+    | WorkerResponse<WorkerResponseType.VERSION_STRING, string>
+    | WorkerResponse<WorkerResponseType.FILE_SIZE, number>;
 
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
@@ -154,4 +158,4 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>
-    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>;
+    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, number>;
