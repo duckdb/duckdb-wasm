@@ -252,8 +252,16 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                         return;
                     }
                     this._zip!.loadFile(request.data.archiveFile);
-                    this._zip!.extractPathToPath(request.data.entryPath, request.data.outFile);
-                    this.sendOK(request);
+                    const fileSize = this._zip!.extractPathToPath(request.data.entryPath, request.data.outFile);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.FILE_SIZE,
+                            data: fileSize,
+                        },
+                        [],
+                    );
                     break;
                 }
                 case WorkerRequestType.IMPORT_CSV_FROM_PATH: {
