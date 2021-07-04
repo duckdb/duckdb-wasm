@@ -181,6 +181,62 @@ export abstract class DuckDBBindings {
         return res;
     }
 
+    /** Prepare a statement and return its identifier */
+    public createPreparedStatement(conn: number, text: string): number {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create', ['number', 'string'], [conn, text]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+        return d;
+    }
+
+    /** Close a prepared statement*/
+    public closePreparedStatement(conn: number, statement: number): void {
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_query_prepared_close',
+            ['number', 'number'],
+            [conn, statement],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+
+    /** Execute a prepared statement and return the full result */
+    public runPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array {
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_query_prepared_run',
+            ['number', 'number', 'string'],
+            [conn, statement, JSON.stringify(params)],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const res = copyBuffer(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return res;
+    }
+
+    /** Execute a prepared statement and stream the result */
+    public sendPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array {
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_query_prepared_send',
+            ['number', 'number', 'string'],
+            [conn, statement, JSON.stringify(params)],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const res = copyBuffer(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return res;
+    }
+
     /** Import csv from path */
     public importCSVFromPath(conn: number, path: string, options: CSVTableOptions): void {
         const optionsJSON = JSON.stringify(options);

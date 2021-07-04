@@ -107,6 +107,30 @@ void duckdb_web_tokenize(WASMResponse* packed, const char* query) {
     auto tokens = WebDB::Get().Tokenize(query);
     WASMResponseBuffer::Get().Store(*packed, arrow::Result(std::move(tokens)));
 }
+/// Prepare a query statement
+void duckdb_web_prepared_create(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->PrepareStatement(script);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
+/// Close a prepared statement
+void duckdb_web_query_prepared_close(WASMResponse* packed, ConnectionHdl connHdl, size_t statement_id) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->ClosePreparedStatement(statement_id);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
+/// Execute a prepared statement and fully materialize result
+void duckdb_web_query_prepared_run(WASMResponse* packed, ConnectionHdl connHdl, size_t statement_id, const char* args_json) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->RunPreparedStatement(statement_id, args_json);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
+/// Execute a prepared statement and fully materialize result
+void duckdb_web_query_prepared_send(WASMResponse* packed, ConnectionHdl connHdl, size_t statement_id, const char* args_json) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->SendPreparedStatement(statement_id, args_json);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
 /// Run a query
 void duckdb_web_query_run(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
