@@ -5,6 +5,10 @@ interface IDuckDBBindings {
     disconnect(conn: number): void;
     runQuery(conn: number, text: string): Uint8Array;
     sendQuery(conn: number, text: string): Uint8Array;
+    createPreparedStatement(conn: number, text: string): number;
+    runPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array;
+    sendPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array;
+    closePreparedStatement(conn: number, statement: number): void;
     fetchQueryResults(conn: number): Uint8Array;
     importCSVFromPath(conn: number, path: string, options: CSVTableOptions): void;
     importJSONFromPath(conn: number, path: string, options: JSONTableOptions): void;
@@ -83,9 +87,37 @@ export class DuckDBConnection {
         return reader as arrow.RecordBatchStreamReader;
     }
 
+    public createPreparedStatement(text: string): number {
+        return this._bindings.createPreparedStatement(this._conn, text);
+    }
+
+    public runPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
+        statement: number,
+        params: any[],
+    ): arrow.Table<T> {
+        const buffer = this._bindings.runPreparedStatement(this._conn, statement, params);
+        const reader = arrow.RecordBatchReader.from<T>(buffer);
+        console.assert(reader.isSync());
+        console.assert(reader.isFile());
+        return arrow.Table.from(reader as arrow.RecordBatchFileReader);
+    }
+
+    public sendPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
+        statement: number,
+        params: any[],
+    ): arrow.RecordBatchStreamReader<T> {
+        const header = this._bindings.sendPreparedStatement(this._conn, statement, params);
+        const iter = new ResultStreamIterator(this._bindings, this._conn, header);
+        const reader = arrow.RecordBatchReader.from<T>(iter);
+        console.assert(reader.isSync());
+        console.assert(reader.isStream());
+        return reader as arrow.RecordBatchStreamReader;
+    }
+
     public importCSVFromPath(path: string, options: CSVTableOptions): void {
         this._bindings.importCSVFromPath(this._conn, path, options);
     }
+
     public importJSONFromPath(path: string, options: JSONTableOptions): void {
         this._bindings.importJSONFromPath(this._conn, path, options);
     }
