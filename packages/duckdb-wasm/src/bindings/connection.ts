@@ -86,7 +86,7 @@ export class DuckDBConnection {
     public importCSVFromPath(path: string, options: CSVTableOptions): void {
         this._bindings.importCSVFromPath(this._conn, path, options);
     }
-    public importJSONFromPath(path: string, options: CSVTableOptions): void {
+    public importJSONFromPath(path: string, options: JSONTableOptions): void {
         this._bindings.importJSONFromPath(this._conn, path, options);
     }
 }
