@@ -6,6 +6,7 @@ import {
     WorkerTask,
     ConnectionID,
     ZipExtractToFileArgs,
+    WorkerTaskReturnType,
 } from './worker_request';
 import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
@@ -84,10 +85,13 @@ export class AsyncDuckDB {
     }
 
     /** Post a task */
-    protected async postTask(task: WorkerTaskVariant, transfer: ArrayBuffer[] = []): Promise<any> {
+    protected async postTask<W extends WorkerTaskVariant>(
+        task: W,
+        transfer: ArrayBuffer[] = [],
+    ): Promise<WorkerTaskReturnType<W>> {
         if (!this._worker) {
             console.error('cannot send a message since the worker is not set!');
-            return;
+            return undefined as any;
         }
         const mid = this._nextMessageId++;
         this._pendingRequests.set(mid, task);
@@ -96,7 +100,7 @@ export class AsyncDuckDB {
             type: task.type,
             data: task.data,
         });
-        return await task.promise;
+        return (await task.promise) as WorkerTaskReturnType<W>;
     }
 
     /** Received a message */
@@ -242,7 +246,7 @@ export class AsyncDuckDB {
                 }
                 break;
             case WorkerRequestType.ZIP_EXTRACT_FILE:
-                if (response.type == WorkerResponseType.OK) {
+                if (response.type == WorkerResponseType.FILE_SIZE) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -324,13 +328,13 @@ export class AsyncDuckDB {
     }
 
     /** Get the feature flags */
-    public async getFeatureFlags(): Promise<string> {
+    public async getFeatureFlags(): Promise<number> {
         const task = new WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>(
             WorkerRequestType.GET_FEATURE_FLAGS,
             null,
         );
-        const version = await this.postTask(task);
-        return version;
+        const feature = await this.postTask(task);
+        return feature;
     }
 
     /** Tokenize a script text */
@@ -479,7 +483,7 @@ export class AsyncDuckDB {
 
     /** Extract a zip file */
     public async extractZipPath(archiveFile: string, outFile: string, entryPath: string): Promise<number> {
-        const task = new WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, null>(
+        const task = new WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, number>(
             WorkerRequestType.ZIP_EXTRACT_FILE,
             {
                 archiveFile: archiveFile,
