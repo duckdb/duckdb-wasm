@@ -204,6 +204,11 @@ shell_start_corp:
 shell:
 	yarn workspace @duckdb/duckdb-wasm-shell build:release
 
+# Build the shell tests
+.PHONY: shell_tests
+shell_tests:
+	yarn workspace @duckdb/duckdb-wasm-shell build:tests
+
 # Build pages
 .PHONY: pages
 pages:

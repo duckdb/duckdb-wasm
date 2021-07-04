@@ -9,12 +9,12 @@
         "esModuleInterop": true,
         "downlevelIteration": true,
         "strict": true,
-        "types": ["node"],
         "jsx": "react",
+        "types": ["emscripten", "node", "jasmine"],
         "plugins": [{ "name": "typescript-plugin-css-modules" }],
         "baseUrl": ".",
         "lib": ["es6", "es2020", "dom"]
     },
-    "exclude": ["./test/**/*.ts", "./node_modules"],
-    "include": ["./src/**/*", "./types/*.d.ts"]
+    "exclude": ["./node_modules"],
+    "include": ["./src/**/*", "./test/**/*", "./types/*.d.ts"]
 }
