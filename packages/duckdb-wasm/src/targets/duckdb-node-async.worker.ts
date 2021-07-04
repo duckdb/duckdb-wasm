@@ -13,8 +13,7 @@ class NodeWorker extends AsyncDuckDBDispatcher {
     /** Instantiate the wasm module */
     protected async open(mainModulePath: string, pthreadWorkerPath: string | null): Promise<DuckDBBindings> {
         const bindings = new DuckDB(this, NODE_RUNTIME, mainModulePath, pthreadWorkerPath);
-        await bindings.open();
-        return bindings;
+        return await bindings.open();
     }
 }
 
