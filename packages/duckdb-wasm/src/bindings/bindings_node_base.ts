@@ -13,9 +13,9 @@ declare global {
 /** DuckDB bindings for node.js */
 export class DuckDBNodeBindings extends DuckDBBindings {
     /** The path of the wasm module */
-    protected mainModulePath: string;
+    protected readonly mainModulePath: string;
     /** The path of the pthread worker script */
-    protected pthreadWorkerPath: string | null;
+    protected readonly pthreadWorkerPath: string | null;
 
     /** Constructor */
     public constructor(

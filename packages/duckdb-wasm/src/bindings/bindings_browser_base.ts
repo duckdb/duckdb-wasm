@@ -6,9 +6,9 @@ import { Logger } from '../log';
 /** DuckDB bindings for the browser */
 export abstract class DuckDBBrowserBindings extends DuckDBBindings {
     /** The path of the wasm module */
-    protected mainModuleURL: string;
+    protected readonly mainModuleURL: string;
     /** The path of the pthread worker script */
-    protected pthreadWorkerURL: string | null;
+    protected readonly pthreadWorkerURL: string | null;
 
     /** Constructor */
     public constructor(logger: Logger, runtime: DuckDBRuntime, mainModuleURL: string, pthreadWorkerURL: string | null) {
