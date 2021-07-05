@@ -1,16 +1,15 @@
 import * as model from './model';
 import * as shell from '../crate/pkg';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
-import { useResizeDetector } from 'react-resize-detector';
 import FileExplorer from './components/file_explorer';
 import Overlay from './components/overlay';
 import React from 'react';
 import { connect } from 'react-redux';
+import { useResizeDetector } from 'react-resize-detector';
 
 import styles from './shell.module.css';
-import 'xterm/css/xterm.css';
 
-interface Props {
+interface ShellProps {
     resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
 
     backgroundColor?: string;
@@ -48,7 +47,7 @@ const ShellResizer = () => {
     return <div ref={ref} className={styles.resizer} />;
 };
 
-class Shell extends React.Component<Props> {
+class Shell extends React.Component<ShellProps> {
     /// The terminal container
     protected _termContainer: React.RefObject<HTMLDivElement>;
     /// The runtime
@@ -59,7 +58,7 @@ class Shell extends React.Component<Props> {
     protected _addFiles = this.addFiles.bind(this);
 
     /// Constructor
-    constructor(props: Props) {
+    constructor(props: ShellProps) {
         super(props);
         this._termContainer = React.createRef();
         this._runtime = new ShellRuntime();

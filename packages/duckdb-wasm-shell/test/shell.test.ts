@@ -1,4 +1,4 @@
-export function testShell() {
+export function testShell(): void {
     beforeAll(async () => {});
 
     beforeEach(async () => {});
