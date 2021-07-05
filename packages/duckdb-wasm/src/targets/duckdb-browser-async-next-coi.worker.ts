@@ -11,9 +11,9 @@ class WebWorker extends AsyncDuckDBDispatcher {
     }
 
     /** Instantiate the wasm module */
-    protected async open(mainModuleURL: string, pthreadWorkerURL: string | null): Promise<DuckDBBindings> {
+    protected async instantiate(mainModuleURL: string, pthreadWorkerURL: string | null): Promise<DuckDBBindings> {
         const bindings = new DuckDB(this, BROWSER_RUNTIME, mainModuleURL, pthreadWorkerURL);
-        return await bindings.open();
+        return await bindings.instantiate();
     }
 }
 

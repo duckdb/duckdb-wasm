@@ -58,5 +58,5 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindings {
     }
 
     /// Instantiation must be done by the browser variants
-    protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
+    protected abstract instantiateImpl(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
 }

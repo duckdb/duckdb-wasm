@@ -77,11 +77,11 @@ beforeAll(async () => {
     DUCKDB_CONFIG = await duckdb_async.configure(DUCKDB_BUNDLES);
     const logger = new duckdb_sync.VoidLogger();
     db = new duckdb_sync.DuckDB(logger, duckdb_sync.BROWSER_RUNTIME, '/static/duckdb.wasm');
-    await db.open();
+    await db.instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker!);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.open(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
+    await adb.instantiate(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
 });
 
 afterAll(async () => {

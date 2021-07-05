@@ -38,16 +38,16 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     },
 };
 
-async function initDB(): Promise<duckdb.AsyncDuckDB> {
+async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     const config = await duckdb.configure(DUCKDB_BUNDLES);
     const worker = new Worker(config.mainWorker!);
     const logger = new duckdb.ConsoleLogger();
     const database = new duckdb.AsyncDuckDB(logger, worker);
-    await database.open(config.mainModule, config.pthreadWorker);
+    await database.instantiate(config.mainModule, config.pthreadWorker);
     return database;
 }
 
-const PaddedShell = () => <Shell initDatabase={initDB} padding={[16, 0, 16, 20]} backgroundColor="#333" />;
+const PaddedShell = () => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 16, 20]} backgroundColor="#333" />;
 
 const store = model.createStore();
 

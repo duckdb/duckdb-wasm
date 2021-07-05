@@ -17,7 +17,7 @@ export class DuckDB extends DuckDBNodeBindings {
     }
 
     /** Instantiate the bindings */
-    protected instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule> {
+    protected instantiateImpl(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule> {
         return DuckDBWasm({
             ...moduleOverrides,
             instantiateWasm: this.instantiateWasm.bind(this),

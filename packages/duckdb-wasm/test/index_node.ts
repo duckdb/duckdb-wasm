@@ -52,11 +52,11 @@ beforeAll(async () => {
         logger,
         duckdb_sync.NODE_RUNTIME,
         path.resolve(__dirname, './duckdb.wasm'),
-    ).open();
+    ).instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.open(DUCKDB_CONFIG.mainModule);
+    await adb.instantiate(DUCKDB_CONFIG.mainModule);
 });
 
 afterAll(async () => {
