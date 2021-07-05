@@ -10,6 +10,7 @@ import { withBanner } from './components/banner';
 import '../static/fonts/fonts.module.css';
 import './globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'xterm/css/xterm.css';
 
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';

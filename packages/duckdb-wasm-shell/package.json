@@ -6,13 +6,13 @@
     "license": "MIT",
     "private": true,
     "scripts": {
-        "start": "webpack serve --config webpack.debug.js",
-        "start:corp": "webpack serve --config webpack.debug.corp.js",
-        "build:debug": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.debug.js",
-        "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.release.js",
+        "start": "webpack serve --config webpack.app.debug.js",
+        "start:corp": "webpack serve --config webpack.app.debug.corp.js",
+        "build:debug": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.app.debug.js",
+        "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.app.release.js",
         "build:tests": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.tests.js",
-        "analyze:debug": "webpack --config webpack.debug.js --analyze",
-        "analyze:release": "webpack --config webpack.release.js --analyze",
+        "analyze:debug": "webpack --config webpack.app.debug.js --analyze",
+        "analyze:release": "webpack --config webpack.app.release.js --analyze",
         "lint": "eslint src types"
     },
     "engines": {
