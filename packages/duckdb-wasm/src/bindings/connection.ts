@@ -91,6 +91,10 @@ export class DuckDBConnection {
         return this._bindings.createPreparedStatement(this._conn, text);
     }
 
+    public closePreparedStatement(statement: number): void {
+        this._bindings.closePreparedStatement(this._conn, statement);
+    }
+
     public runPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
         statement: number,
         params: any[],
