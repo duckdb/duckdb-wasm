@@ -95,8 +95,12 @@ export class HistoryStore {
 
     /// Create the store schema
     protected createSchema(idb: IDBDatabase): void {
-        idb.deleteObjectStore(TABLE_LOG_INFO);
-        idb.deleteObjectStore(TABLE_LOG_ENTRIES);
+        if (idb.objectStoreNames.contains(TABLE_LOG_INFO)) {
+            idb.deleteObjectStore(TABLE_LOG_INFO);
+        }
+        if (idb.objectStoreNames.contains(TABLE_LOG_ENTRIES)) {
+            idb.deleteObjectStore(TABLE_LOG_ENTRIES);
+        }
         idb.createObjectStore(TABLE_LOG_INFO, {
             keyPath: 'key',
         });
