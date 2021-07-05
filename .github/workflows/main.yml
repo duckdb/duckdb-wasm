@@ -168,7 +168,8 @@ jobs:
                       ./scripts/generate_tpch.sh 0.01
                       ./scripts/generate_uni.sh
                       cd ./submodules/duckdb
-                      git fetch --all
+                      git fetch --tag
+                      git describe --tags --abbrev=0
 
             - name: Build WASM module
               uses: ./actions/image
