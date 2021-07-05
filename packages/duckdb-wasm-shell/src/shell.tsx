@@ -11,7 +11,7 @@ import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
 
 interface Props {
-    initDatabase: () => Promise<duckdb.AsyncDuckDB>;
+    resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
 
     backgroundColor?: string;
     padding?: number[];
@@ -104,9 +104,9 @@ class Shell extends React.Component<Props> {
         );
     }
 
-    public async initDuckDB() {
+    public async resolveDatabase() {
         shell.writeln('Initializing DuckDB...');
-        this._database = await this.props.initDatabase();
+        this._database = await this.props.resolveDatabase();
         shell.configureDatabase(this._database);
     }
 
@@ -126,7 +126,7 @@ class Shell extends React.Component<Props> {
                 backgroundColor: '#333',
                 withWebGL: this.hasWebGL(),
             });
-            this.initDuckDB();
+            this.resolveDatabase();
         }
     }
 

@@ -50,10 +50,9 @@ export abstract class DuckDBBindings {
     }
 
     /** Instantiate the module */
-    protected abstract instantiate(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
-
-    /** Open the database */
-    public async open(): Promise<this> {
+    protected abstract instantiateImpl(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
+    /** Instantiate the database */
+    public async instantiate(): Promise<this> {
         // Already opened?
         if (this._instance != null) {
             return this;
@@ -69,7 +68,7 @@ export abstract class DuckDBBindings {
         });
 
         // Initialize duckdb
-        this._instance = await this.instantiate({
+        this._instance = await this.instantiateImpl({
             print: console.log.bind(console),
             printErr: console.log.bind(console),
             onRuntimeInitialized: this._openPromiseResolver,

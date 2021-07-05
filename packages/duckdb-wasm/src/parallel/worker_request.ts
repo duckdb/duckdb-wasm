@@ -21,7 +21,7 @@ export enum WorkerRequestType {
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
     ENABLE_FILE_STATISTICS = 'ENABLE_FILE_STATISTICS',
     EXPORT_FILE_STATISTICS = 'EXPORT_FILE_STATISTICS',
-    OPEN = 'OPEN',
+    INSTANTIATE = 'INSTANTIATE',
     CONNECT = 'CONNECT',
     DISCONNECT = 'DISCONNECT',
     RUN_QUERY = 'RUN_QUERY',
@@ -109,7 +109,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
     | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>
-    | WorkerRequest<WorkerRequestType.OPEN, [string, string | null]>
+    | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
     | WorkerRequest<WorkerRequestType.PING, null>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
@@ -152,7 +152,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
     | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>
-    | WorkerTask<WorkerRequestType.OPEN, [string, string | null], null>
+    | WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>
     | WorkerTask<WorkerRequestType.PING, null, null>
     | WorkerTask<WorkerRequestType.RESET, null, null>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>

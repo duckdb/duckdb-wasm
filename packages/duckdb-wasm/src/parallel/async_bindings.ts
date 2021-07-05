@@ -154,7 +154,7 @@ export class AsyncDuckDB {
                 break;
             case WorkerRequestType.RESET:
             case WorkerRequestType.PING:
-            case WorkerRequestType.OPEN:
+            case WorkerRequestType.INSTANTIATE:
             case WorkerRequestType.DISCONNECT:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
@@ -312,11 +312,11 @@ export class AsyncDuckDB {
     }
 
     /** Open the database */
-    public async open(mainModuleURL: string, pthreadWorkerURL: string | null = null): Promise<null> {
-        const task = new WorkerTask<WorkerRequestType.OPEN, [string, string | null], null>(WorkerRequestType.OPEN, [
-            mainModuleURL,
-            pthreadWorkerURL,
-        ]);
+    public async instantiate(mainModuleURL: string, pthreadWorkerURL: string | null = null): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>(
+            WorkerRequestType.INSTANTIATE,
+            [mainModuleURL, pthreadWorkerURL],
+        );
         return await this.postTask(task);
     }
 
