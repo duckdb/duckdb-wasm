@@ -256,7 +256,7 @@ async function main(db: duckdb.AsyncDuckDB) {
 const logger = new duckdb.VoidLogger();
 const worker = new Worker(workerPath);
 const db = new duckdb.AsyncDuckDB(logger, worker);
-db.open(wasmPath)
+db.instantiate(wasmPath)
     .then(() => main(db))
     .then(() => db.terminate())
     .catch(e => console.error(e));
