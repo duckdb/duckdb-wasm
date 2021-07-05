@@ -47,7 +47,9 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     return database;
 }
 
-const PaddedShell = () => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 16, 20]} backgroundColor="#333" />;
+const StandaloneShell = withBanner(
+    withNavBar(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 16, 20]} backgroundColor="#333" />),
+);
 
 const store = model.createStore();
 
@@ -55,7 +57,7 @@ const element = document.getElementById('root');
 ReactDOM.render(
     <ReduxProvider store={store}>
         <BrowserRouter>
-            <Route component={withBanner(withNavBar(PaddedShell))} />
+            <Route component={StandaloneShell} />
         </BrowserRouter>
     </ReduxProvider>,
     element,
