@@ -112,8 +112,8 @@ class Shell extends React.Component<ShellProps> {
         this._database = await this.props.resolveDatabase();
         // Load the input history
         await this._history.open();
-        const history = await this._history.load();
-        console.log(history);
+        const [history, historyCursor] = await this._history.load();
+        shell.loadHistory(history, historyCursor);
         // Attach the shell to the database
         shell.configureDatabase(this._database);
     }
