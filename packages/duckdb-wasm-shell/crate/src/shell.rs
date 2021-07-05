@@ -145,8 +145,18 @@ impl Shell {
     }
 
     /// Load input history
-    pub fn load_history(history: Vec<String>) {
-        Shell::with_mut(|s| s.history = VecDeque::from(history));
+    pub fn load_history(history: Vec<String>, cursor: usize) {
+        let mut h = VecDeque::with_capacity(history.len());
+        for i in cursor..history.len() {
+            h.push_back(history[i].clone());
+        }
+        for i in 0..cursor {
+            h.push_back(history[i].clone());
+        }
+        Shell::with_mut(|s| {
+            s.history_cursor = h.len();
+            s.history = h;
+        });
     }
 
     /// Write directly to the terminal

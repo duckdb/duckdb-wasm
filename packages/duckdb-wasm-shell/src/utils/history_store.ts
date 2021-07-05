@@ -30,8 +30,8 @@ export class HistoryStore {
     }
 
     /// Load entire history
-    public async load(): Promise<string[]> {
-        if (this._entryCount == 0) return [];
+    public async load(): Promise<[string[], number]> {
+        if (this._entryCount == 0) return [[], 0];
 
         // Update in indexeddb
         const tx = this._idb!.transaction([TABLE_LOG_ENTRIES, TABLE_LOG_INFO], 'readwrite');
@@ -47,7 +47,7 @@ export class HistoryStore {
                     results.push((req.result.value as LogEntry).input);
                     req.result.continue();
                 } else {
-                    resolve(results);
+                    resolve([results, this._nextEntryKey]);
                 }
             };
             cursor.onerror = reject;

@@ -70,9 +70,9 @@ pub fn resize(_width: usize, _height: usize) {
 }
 
 #[wasm_bindgen(js_name = "loadHistory")]
-pub fn load_history(history: &js_sys::Array) {
+pub fn load_history(history: &js_sys::Array, cursor: usize) {
     let h: Vec<String> = history.iter().map(|ref v| v.as_string().unwrap()).collect();
-    Shell::load_history(h);
+    Shell::load_history(h, cursor);
 }
 
 #[wasm_bindgen(js_name = "configureDatabase")]
