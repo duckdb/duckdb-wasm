@@ -389,6 +389,6 @@ function main(db: duckdb.DuckDB) {
 
 const logger = new duckdb.VoidLogger();
 const db = new duckdb.DuckDB(logger, duckdb.NODE_RUNTIME, '../duckdb-wasm/dist/duckdb-eh.wasm');
-db.open()
+db.instantiate()
     .then(() => main(db))
     .catch(e => console.error(e));

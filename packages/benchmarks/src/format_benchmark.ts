@@ -102,6 +102,6 @@ const db = new duckdb.DuckDB(
     duckdb.NODE_RUNTIME,
     path.join(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
 );
-db.open()
+db.instantiate()
     .then(() => main(db))
     .catch(e => console.error(e));
