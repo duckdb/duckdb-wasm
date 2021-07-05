@@ -69,6 +69,12 @@ pub fn resize(_width: usize, _height: usize) {
     FIT_ADDON.with(|a| a.borrow().fit());
 }
 
+#[wasm_bindgen(js_name = "loadHistory")]
+pub fn load_history(history: &js_sys::Array) {
+    let h: Vec<String> = history.iter().map(|ref v| v.as_string().unwrap()).collect();
+    Shell::load_history(h);
+}
+
 #[wasm_bindgen(js_name = "configureDatabase")]
 pub async fn configure_database(db: JsAsyncDuckDB) -> Result<(), js_sys::Error> {
     Shell::configure_database(AsyncDuckDB::from_bindings(db)).await?;
