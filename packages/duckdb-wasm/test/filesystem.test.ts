@@ -40,6 +40,14 @@ export function testFilesystem(
             await db().registerFileBuffer('studenten.parquet', students!);
             await test();
         });
+        it('File buffer registered twice', async () => {
+            const students = await resolveData('/uni/studenten.parquet');
+            expect(students).not.toBeNull();
+            await db().registerFileBuffer('studenten.parquet', students!);
+            await test();
+            await db().registerFileBuffer('studenten.parquet', students!);
+            await test();
+        });
         it('File buffer used twice', async () => {
             const students = await resolveData('/uni/studenten.parquet');
             expect(students).not.toBeNull();

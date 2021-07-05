@@ -43,10 +43,14 @@ void BufferedFileSystem::RegisterFile(std::string_view file, FileConfig config) 
     file_configs_.insert({std::string{file}, config});
 }
 
-/// Drop a file
-void BufferedFileSystem::DropFile(std::string_view file) {
+/// Try to drop a file
+bool BufferedFileSystem::TryDropFile(std::string_view file) {
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
+    if (file_page_buffer_->BuffersFile(file)) {
+        return false;
+    }
     file_configs_.erase({std::string{file}});
+    return true;
 }
 
 /// Drop a file
