@@ -219,8 +219,10 @@ WebDB::~WebDB() { pinned_web_files_.clear(); }
 
 /// Tokenize a script and return tokens as json
 std::string WebDB::Tokenize(std::string_view text) {
+    // Tokenize the text
     duckdb::Parser parser;
     auto tokens = parser.Tokenize(std::string{text});
+    // Encode the tokens as json
     rapidjson::Document doc;
     doc.SetObject();
     auto& allocator = doc.GetAllocator();
@@ -232,6 +234,7 @@ std::string WebDB::Tokenize(std::string_view text) {
     }
     doc.AddMember("offsets", offsets, allocator);
     doc.AddMember("types", types, allocator);
+    // Write the json to a string
     rapidjson::StringBuffer strbuf;
     rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
     doc.Accept(writer);
@@ -260,8 +263,25 @@ void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path
 /// Register a file URL
 arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                      std::optional<uint64_t> file_size) {
+    // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    // Already pinned by us?
+    // Unpin the file to re-register the new file.
+    if (auto iter = pinned_web_files_.find(file_name); iter != pinned_web_files_.end()) {
+        pinned_web_files_.erase(iter);
+    }
+    // Try to drop the file in the buffered file system.
+    // If that fails we have to give up since someone still holds an open file ref.
+    if (!buffered_filesystem_->TryDropFile(file_name)) {
+        return arrow::Status::Invalid("File is already registered and is still buffered");
+    }
+    // Try to drop the file in the web file system
+    if (!web_fs->TryDropFile(file_name)) {
+        return arrow::Status::Invalid("File is already registered and is in use");
+    }
+    // Register new file url in web filesystem.
+    // Pin the file handle to keep the file alive.
     ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url, file_size));
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
     return arrow::Status::OK();
@@ -269,14 +289,32 @@ arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_vie
 /// Register a file URL
 arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer,
                                         size_t buffer_length) {
+    // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+    // Already pinned by us?
+    // Unpin the file to re-register the new file.
+    if (auto iter = pinned_web_files_.find(file_name); iter != pinned_web_files_.end()) {
+        pinned_web_files_.erase(iter);
+    }
+    // Try to drop the file in the buffered file system.
+    // If that fails we have to give up since someone still holds an open file ref.
+    if (!buffered_filesystem_->TryDropFile(file_name)) {
+        return arrow::Status::Invalid("File is already registered and is still buffered");
+    }
+    // Try to drop the file in the web file system
+    if (!web_fs->TryDropFile(file_name)) {
+        return arrow::Status::Invalid("File is already registered and is in use");
+    }
+    // Register new file in web filesystem
+    io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
+    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileBuffer(file_name, std::move(data)));
+    // Register new file in buffered filesystem to bypass the paging with direct i/o.
     io::BufferedFileSystem::FileConfig file_config = {
         .force_direct_io = true,
     };
     buffered_filesystem_->RegisterFile(file_name, file_config);
-    io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
-    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileBuffer(file_name, std::move(data)));
+    // Pin the file handle to keep the file alive
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
     return arrow::Status::OK();
 }

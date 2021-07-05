@@ -66,8 +66,8 @@ class BufferedFileSystem : public duckdb::FileSystem {
 
     /// Pass through a file
     void RegisterFile(std::string_view file, FileConfig config = {.force_direct_io = false});
-    /// Drop a file
-    void DropFile(std::string_view file);
+    /// Try to drop a file
+    bool TryDropFile(std::string_view file);
     /// Drop a file
     void DropFiles();
 

@@ -351,6 +351,16 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     return std::make_unique<WebFileHandle>(*this, file_ptr->file_name_, *file_ptr);
 }
 
+/// Try to drop a file
+bool WebFileSystem::TryDropFile(std::string_view file_name) {
+    DEBUG_TRACE();
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    auto iter = files_by_name_.find(file_name);
+    if (iter == files_by_name_.end()) return true;
+    assert(iter->second->handle_count_ > 0);
+    return false;
+}
+
 /// Set a file descriptor
 arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor) {
     DEBUG_TRACE();

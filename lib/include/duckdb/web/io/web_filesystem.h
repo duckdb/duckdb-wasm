@@ -170,6 +170,8 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);
+    /// Try to drop a file
+    bool TryDropFile(std::string_view file_name);
     /// Configure file statistics
     void ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry);
     /// Collect file statistics
