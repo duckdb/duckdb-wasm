@@ -10,34 +10,8 @@ import { connect } from 'react-redux';
 import styles from './shell.module.css';
 import 'xterm/css/xterm.css';
 
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
-import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-next.wasm';
-import duckdb_wasm_next_coi from '@duckdb/duckdb-wasm/dist/duckdb-next-coi.wasm';
-
-const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
-    asyncDefault: {
-        mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url).toString(),
-    },
-    asyncNext: {
-        mainModule: duckdb_wasm_next,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async-next.worker.js', import.meta.url).toString(),
-    },
-    asyncNextCOI: {
-        mainModule: duckdb_wasm_next_coi,
-        mainWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-next-coi.worker.js',
-            import.meta.url,
-        ).toString(),
-        pthreadWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-next-coi.pthread.worker.js',
-            import.meta.url,
-        ).toString(),
-    },
-};
-
 interface Props {
-    workerURL?: string;
+    initDatabase: () => Promise<duckdb.AsyncDuckDB>;
 
     backgroundColor?: string;
     padding?: number[];
@@ -76,30 +50,30 @@ const ShellResizer = () => {
 
 class Shell extends React.Component<Props> {
     /// The terminal container
-    protected termContainer: React.RefObject<HTMLDivElement>;
+    protected _termContainer: React.RefObject<HTMLDivElement>;
     /// The runtime
-    protected runtime: ShellRuntime;
+    protected _runtime: ShellRuntime;
     /// The database
-    protected database: duckdb.AsyncDuckDB | null;
+    protected _database: duckdb.AsyncDuckDB | null;
     /// The drop file handler
-    protected addFiles_ = this.addFiles.bind(this);
+    protected _addFiles = this.addFiles.bind(this);
 
     /// Constructor
     constructor(props: Props) {
         super(props);
-        this.termContainer = React.createRef();
-        this.runtime = new ShellRuntime();
-        this.database = null;
+        this._termContainer = React.createRef();
+        this._runtime = new ShellRuntime();
+        this._database = null;
     }
 
     /// Drop files
     public async addFiles(files: FileList) {
-        if (!this.database) return;
+        if (!this._database) return;
         const fileInfos: Array<model.FileInfo> = [];
         for (let i = 0; i < files.length; ++i) {
             const file = files.item(i)!;
-            await this.database.dropFile(file.name);
-            await this.database.registerFileHandle(file.name, file);
+            await this._database.dropFile(file.name);
+            await this._database.registerFileHandle(file.name, file);
             fileInfos.push({
                 name: file.name,
                 url: null,
@@ -120,10 +94,10 @@ class Shell extends React.Component<Props> {
         return (
             <div className={styles.root} style={style}>
                 <ShellResizer />
-                <div ref={this.termContainer} className={styles.term_container}></div>
+                <div ref={this._termContainer} className={styles.term_container}></div>
                 {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
                     <Overlay>
-                        <FileExplorer database={this.database} addFiles={this.addFiles_} />
+                        <FileExplorer database={this._database} addFiles={this._addFiles} />
                     </Overlay>
                 )}
             </div>
@@ -131,11 +105,9 @@ class Shell extends React.Component<Props> {
     }
 
     public async initDuckDB() {
-        const config = await duckdb.configure(DUCKDB_BUNDLES);
-        const worker = new Worker(config.mainWorker!);
-        const logger = new duckdb.ConsoleLogger();
-        this.database = new duckdb.AsyncDuckDB(logger, worker);
-        this.database.open(config.mainModule, config.pthreadWorker).then(_ => shell.configureDatabase(this.database));
+        shell.writeln('Initializing DuckDB...');
+        this._database = await this.props.initDatabase();
+        shell.configureDatabase(this._database);
     }
 
     protected hasWebGL(): boolean {
@@ -148,13 +120,12 @@ class Shell extends React.Component<Props> {
     }
 
     public componentDidMount(): void {
-        if (this.termContainer.current != null) {
-            this.runtime._openFileExplorer = this.props.openFileViewer;
-            shell.embed(this.termContainer.current, this.runtime, {
+        if (this._termContainer.current != null) {
+            this._runtime._openFileExplorer = this.props.openFileViewer;
+            shell.embed(this._termContainer.current, this._runtime, {
                 backgroundColor: '#333',
                 withWebGL: this.hasWebGL(),
             });
-            shell.writeln('Initializing DuckDB...');
             this.initDuckDB();
         }
     }
