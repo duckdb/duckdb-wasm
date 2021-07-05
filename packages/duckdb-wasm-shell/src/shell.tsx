@@ -6,6 +6,7 @@ import Overlay from './components/overlay';
 import React from 'react';
 import { connect } from 'react-redux';
 import { useResizeDetector } from 'react-resize-detector';
+import { HistoryStore } from './utils/history_store';
 
 import styles from './shell.module.css';
 
@@ -22,20 +23,19 @@ interface ShellProps {
 }
 
 class ShellRuntime {
-    public _openFileExplorer: (() => void) | null = null;
+    constructor(protected _history: HistoryStore, protected _openFileExplorer: () => void) {}
 
     public openFileExplorer(this: ShellRuntime): void {
-        if (this._openFileExplorer) {
-            this._openFileExplorer();
-        } else {
-            shell.resumeAfterInput(shell.ShellInputContext.FileInput);
-        }
+        this._openFileExplorer();
     }
     public async readClipboardText(this: ShellRuntime): Promise<string> {
         return await navigator.clipboard.readText();
     }
     public async writeClipboardText(this: ShellRuntime, value: string) {
         return await navigator.clipboard.writeText(value);
+    }
+    public async pushInputToHistory(this: ShellRuntime, value: string) {
+        this._history.push(value);
     }
 }
 
@@ -50,6 +50,8 @@ const ShellResizer = () => {
 class Shell extends React.Component<ShellProps> {
     /// The terminal container
     protected _termContainer: React.RefObject<HTMLDivElement>;
+    /// The history store
+    protected _history: HistoryStore;
     /// The runtime
     protected _runtime: ShellRuntime;
     /// The database
@@ -61,7 +63,8 @@ class Shell extends React.Component<ShellProps> {
     constructor(props: ShellProps) {
         super(props);
         this._termContainer = React.createRef();
-        this._runtime = new ShellRuntime();
+        this._history = new HistoryStore();
+        this._runtime = new ShellRuntime(this._history, props.openFileViewer);
         this._database = null;
     }
 
@@ -105,7 +108,11 @@ class Shell extends React.Component<ShellProps> {
 
     public async resolveDatabase() {
         shell.writeln('Initializing DuckDB...');
+        // Resolve the database
         this._database = await this.props.resolveDatabase();
+        // Load the input history
+        await this._history.open();
+        // Attach the shell to the database
         shell.configureDatabase(this._database);
     }
 
@@ -120,7 +127,6 @@ class Shell extends React.Component<ShellProps> {
 
     public componentDidMount(): void {
         if (this._termContainer.current != null) {
-            this._runtime._openFileExplorer = this.props.openFileViewer;
             shell.embed(this._termContainer.current, this._runtime, {
                 backgroundColor: '#333',
                 withWebGL: this.hasWebGL(),

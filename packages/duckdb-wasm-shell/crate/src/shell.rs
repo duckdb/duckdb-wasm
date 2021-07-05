@@ -325,6 +325,21 @@ impl Shell {
     }
 
     fn remember_command(&mut self, text: String) {
+        if let Some(ref rt) = self.runtime {
+            let rt_copy = rt.clone();
+            let text_copy = text.clone();
+            spawn_local(async move {
+                match rt_copy
+                    .read()
+                    .unwrap()
+                    .push_input_to_history(&text_copy)
+                    .await
+                {
+                    Ok(_) => (),
+                    Err(_e) => (),
+                }
+            });
+        }
         self.history.push_back(text.clone());
         if self.history.len() > HISTORY_LENGTH {
             self.history.pop_front();
