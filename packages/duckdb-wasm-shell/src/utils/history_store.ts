@@ -4,6 +4,12 @@ const TABLE_LOG_INFO = 'LOG_INFO';
 const TABLE_LOG_ENTRIES = 'LOG_ENTRIES';
 const HISTORY_SIZE_SHIFT = 10; // 1 << 10 = 1024 elements
 
+interface LogEntry {
+    key: number;
+    when: Date;
+    input: string;
+}
+
 interface LogInfo {
     key: number;
     nextEntryKey: number;
@@ -21,6 +27,31 @@ export class HistoryStore {
         this._idb = null;
         this._nextEntryKey = 0;
         this._entryCount = 0;
+    }
+
+    /// Load entire history
+    public async load(): Promise<string[]> {
+        if (this._entryCount == 0) return [];
+
+        // Update in indexeddb
+        const tx = this._idb!.transaction([TABLE_LOG_ENTRIES, TABLE_LOG_INFO], 'readwrite');
+        const logs = tx.objectStore(TABLE_LOG_ENTRIES);
+        const cursor = logs.openCursor();
+
+        // Collect all history entries
+        return await new Promise((resolve, reject) => {
+            const results: string[] = [];
+            cursor.onsuccess = event => {
+                const req = event.target as IDBRequest<IDBCursorWithValue | null>;
+                if (req.result != null) {
+                    results.push((req.result.value as LogEntry).input);
+                    req.result.continue();
+                } else {
+                    resolve(results);
+                }
+            };
+            cursor.onerror = reject;
+        });
     }
 
     /// Open the indexeddb database

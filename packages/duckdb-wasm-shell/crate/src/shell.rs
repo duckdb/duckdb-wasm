@@ -144,6 +144,11 @@ impl Shell {
         Ok(())
     }
 
+    /// Load input history
+    pub fn load_history(history: Vec<String>) {
+        Shell::with_mut(|s| s.history = VecDeque::from(history));
+    }
+
     /// Write directly to the terminal
     pub fn write(&self, text: &str) {
         self.terminal.write(text);
