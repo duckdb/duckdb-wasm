@@ -183,7 +183,12 @@ export abstract class DuckDBBindings {
 
     /** Prepare a statement and return its identifier */
     public createPreparedStatement(conn: number, text: string): number {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create', ['number', 'string'], [conn, text]);
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_prepared_statement_create',
+            ['number', 'string'],
+            [conn, text],
+        );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -195,7 +200,7 @@ export abstract class DuckDBBindings {
     public closePreparedStatement(conn: number, statement: number): void {
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_query_prepared_close',
+            'duckdb_web_prepared_statement_close',
             ['number', 'number'],
             [conn, statement],
         );
@@ -209,7 +214,7 @@ export abstract class DuckDBBindings {
     public runPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array {
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_query_prepared_run',
+            'duckdb_web_prepared_statement_run',
             ['number', 'number', 'string'],
             [conn, statement, JSON.stringify(params)],
         );
@@ -225,7 +230,7 @@ export abstract class DuckDBBindings {
     public sendPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array {
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_query_prepared_send',
+            'duckdb_web_prepared_statement_send',
             ['number', 'number', 'string'],
             [conn, statement, JSON.stringify(params)],
         );

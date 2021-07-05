@@ -141,9 +141,10 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
     }
 }
 
-arrow::Result<size_t> WebDB::Connection::PrepareStatement(std::string_view text) {
+arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_view text) {
     try {
         auto prep = connection_.Prepare(std::string{text});
+        if(!prep->success) return arrow::Status{arrow::StatusCode::ExecutionError, prep->error};
         auto id = prepared_statements_counter_++;
 
         // Wrap around if maximum exceeded

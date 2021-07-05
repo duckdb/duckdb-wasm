@@ -64,7 +64,7 @@ TEST(WebDB, SendQuery) {
 TEST(WebDB, PrepareQuery) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};
-    auto stmt = conn.PrepareStatement("SELECT ? + 5");
+    auto stmt = conn.CreatePreparedStatement("SELECT ? + 5");
     ASSERT_TRUE(stmt.ok()) << stmt.status().message();
     auto buffer = conn.RunPreparedStatement(*stmt, "[4]");
     ASSERT_TRUE(buffer.ok()) << buffer.status().message();
