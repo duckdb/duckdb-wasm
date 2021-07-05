@@ -623,6 +623,17 @@ void FilePageBuffer::FileRef::ReOpen(uint8_t flags, duckdb::FileLockType lock_ty
     std::swap(new_handle, file_->handle);
 }
 
+/// Buffers a file at a path.
+bool FilePageBuffer::BuffersFile(std::string_view path) {
+    auto dir_guard = Lock();
+    auto it = files_by_name.find(path);
+    if (it == files_by_name.end()) {
+        return false;
+    }
+    assert(it->second->GetReferenceCount() > 0);
+    return true;
+}
+
 /// Flush a file at a path.
 void FilePageBuffer::FlushFile(std::string_view path) {
     DEBUG_TRACE();

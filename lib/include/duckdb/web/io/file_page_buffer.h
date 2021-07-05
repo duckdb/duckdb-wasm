@@ -31,7 +31,7 @@ namespace io {
 
 /// We use a dedicated lightweight buffer manager for paged I/O in and out of WebAssembly.
 /// Our web filesystem can serve files from locations with very different access latencies.
-/// E.g. memory, HTTP range requests or disk via the Chrome FileSystem APIs.
+/// E.g. memory, HTTP range requests or disk via the Browser FileSystem APIs.
 /// We therefore want to buffer explicitly for all expensive accesses and use direct I/O for memory-backed files.
 ///
 /// Our I/O stack looks rougly like the following:
@@ -363,6 +363,8 @@ class FilePageBuffer {
     /// Open a file
     std::unique_ptr<FileRef> OpenFile(std::string_view path, uint8_t flags,
                                       duckdb::FileLockType lock_type = duckdb::FileLockType::NO_LOCK);
+    /// Is buffered
+    bool BuffersFile(std::string_view path);
     /// Flush file matching name to disk
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
