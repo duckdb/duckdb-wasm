@@ -68,6 +68,7 @@ TEST(FilePageBufferTest, FixSingle) {
     file->Flush();
 
     // Check buffer manager state
+    ASSERT_TRUE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFrames().size(), 1);
     ASSERT_EQ(buffer->GetFrames().begin()->second->GetUserCount(), 0);
     ASSERT_EQ(std::vector<uint64_t>{0}, buffer->GetFIFOList());
@@ -89,6 +90,7 @@ TEST(FilePageBufferTest, FixSingle) {
     // Close the file.
     // Since there's no more ref, the buffer manager should evict all frames
     file->Release();
+    ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
@@ -271,6 +273,7 @@ TEST(FilePageBufferTest, LRUEviction) {
     EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
     file->Release();
+    ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
@@ -303,6 +306,7 @@ TEST(FilePageBufferTest, ParallelFix) {
     EXPECT_TRUE(buffer->GetLRUList().empty());
 
     file->Release();
+    ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
@@ -347,6 +351,7 @@ TEST(FilePageBufferTest, ParallelExclusiveAccess) {
         EXPECT_EQ(4000, value);
     }
     file->Release();
+    ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
@@ -381,6 +386,9 @@ TEST(FilePageBufferTest, ParallelScans) {
                 std::memset(page_data.data(), 0, buffer->GetPageSize());
                 page.MarkAsDirty();
             }
+        }
+        for (auto& file_path : test_files) {
+            ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
         }
         // Let the buffer manager be destroyed here so that the caches are
         // empty before running the actual test.
@@ -460,6 +468,10 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
                 page.MarkAsDirty();
             }
         }
+        for (auto& file_path : test_files) {
+            ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
+        }
+
         // Let the buffer manager be destroyed here so that the caches are
         // empty before running the actual test.
     }
