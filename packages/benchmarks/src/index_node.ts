@@ -41,7 +41,11 @@ async function main() {
     });
 
     const logger = new duckdb_sync.VoidLogger();
-    db = await new duckdb_sync.DuckDB(logger, duckdb_sync.NODE_RUNTIME, DUCKDB_CONFIG.mainModule).instantiate();
+    db = await new duckdb_sync.DuckDB(
+        logger,
+        duckdb_sync.NODE_RUNTIME,
+        path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
+    ).instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
@@ -89,9 +93,9 @@ async function main() {
         },
         tpchScale,
     );
-    // benchmarkFormat(() => db!);
-    // benchmarkIterator(() => db!);
-    // benchmarkIteratorAsync(() => adb!);
+    benchmarkFormat(() => db!);
+    benchmarkIterator(() => db!);
+    benchmarkIteratorAsync(() => adb!);
 
     // lovefield leaves an open handle or something.
     process.exit(0);

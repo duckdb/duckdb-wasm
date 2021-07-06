@@ -100,7 +100,7 @@ export function* sqlInsert(table: string, data: arrow.Table) {
             if (j < maxVal - 1) query += ',';
         }
         i = maxVal;
-        console.info(Math.round((i / data.length) * 100) + '%');
+        // console.info(Math.round((i / data.length) * 100) + '%');
         yield query;
     }
 }

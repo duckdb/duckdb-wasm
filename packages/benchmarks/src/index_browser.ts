@@ -39,8 +39,9 @@ async function main() {
             pthreadWorker: '/static/duckdb-browser-async-next-coi.pthread.worker.js',
         },
     });
+
     const logger = new duckdb_sync.VoidLogger();
-    db = new duckdb_sync.DuckDB(logger, duckdb_sync.BROWSER_RUNTIME, DUCKDB_CONFIG.mainModule);
+    db = new duckdb_sync.DuckDB(logger, duckdb_sync.BROWSER_RUNTIME, '/static/duckdb.wasm');
     await db.instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker!);
@@ -63,26 +64,26 @@ async function main() {
 
     await benchmarkCompetitions(
         [
-            // new (class extends DuckDBSyncMatWrapper {
-            //     async registerFile(path: string): Promise<void> {
-            //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
-            //     }
-            // })(db),
-            // new (class extends DuckDBSyncStreamWrapper {
-            //     async registerFile(path: string): Promise<void> {
-            //         await this.db.addFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
-            //     }
-            // })(db),
-            // new (class extends DuckDBAsyncStreamWrapper {
-            //     async registerFile(path: string): Promise<void> {
-            //         await this.db.addFileBlob(path, await (await fetch(path)).blob());
-            //     }
-            // })(adb),
-            // new ArqueroWrapper(),
-            // new LovefieldWrapper(),
+            new (class extends DuckDBSyncMatWrapper {
+                async registerFile(path: string): Promise<void> {
+                    await this.db.registerFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+                }
+            })(db),
+            new (class extends DuckDBSyncStreamWrapper {
+                async registerFile(path: string): Promise<void> {
+                    await this.db.registerFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+                }
+            })(db),
+            new (class extends DuckDBAsyncStreamWrapper {
+                async registerFile(path: string): Promise<void> {
+                    await this.db.registerFileBuffer(path, new Uint8Array(await (await fetch(path)).arrayBuffer()));
+                }
+            })(adb),
+            new ArqueroWrapper(),
+            new LovefieldWrapper(),
             new SQLjsWrapper(sqlDb),
-            // new NanoSQLWrapper(),
-            // new AlaSQLWrapper(),
+            new NanoSQLWrapper(),
+            new AlaSQLWrapper(),
         ],
         '/data',
         async (path: string) => {
@@ -94,9 +95,9 @@ async function main() {
         },
         tpchScale,
     );
-    // benchmarkFormat(() => db!);
-    // benchmarkIterator(() => db!);
-    // benchmarkIteratorAsync(() => adb!);
+    benchmarkFormat(() => db!);
+    benchmarkIterator(() => db!);
+    benchmarkIteratorAsync(() => adb!);
 }
 
 (window as any).karmaCustomEnv = {};
