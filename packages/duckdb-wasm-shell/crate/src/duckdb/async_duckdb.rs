@@ -21,6 +21,8 @@ extern "C" {
     async fn get_feature_flags(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "connectInternal")]
     async fn connect(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "disconnect")]
+    async fn disconnect(this: &JsAsyncDuckDB, conn: ConnectionID) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "tokenize")]
     async fn tokenize(this: &JsAsyncDuckDB, text: &str) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "runQuery")]
@@ -125,6 +127,17 @@ impl AsyncDuckDBConnection {
             connection: cid,
             result_stream: None,
         }
+    }
+
+    /// Disconnect a connection
+    pub async fn disconnect(&self) -> Result<(), js_sys::Error> {
+        self.duckdb
+            .read()
+            .unwrap()
+            .bindings
+            .disconnect(self.connection)
+            .await?;
+        Ok(())
     }
 
     /// Run a query
