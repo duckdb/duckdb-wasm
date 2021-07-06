@@ -12,6 +12,7 @@
         "noImplicitAny": true,
         "esModuleInterop": true,
         "downlevelIteration": true,
+        "resolveJsonModule": true,
 
         // Insanity mode due to:
         // https://issues.apache.org/jira/browse/ARROW-10794
