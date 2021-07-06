@@ -1,4 +1,4 @@
-import * as duckdb_serial from '@duckdb/duckdb-wasm/src/targets/duckdb-node-sync';
+import * as duckdb_sync from '@duckdb/duckdb-wasm/src/targets/duckdb-node-sync';
 import * as duckdb_async from '@duckdb/duckdb-wasm/src/targets/duckdb-node-async';
 import path from 'path';
 import Worker from 'web-worker';
@@ -21,31 +21,35 @@ import {
     loadTPCHSQL,
 } from './db_wrappers';
 
-// Configure the worker
-
-const WORKER_CONFIG = duckdb_async.configure({
-    worker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async.worker.js'),
-    workerEH: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-eh.worker.js'),
-    wasm: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
-    wasmEH: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
-});
-
 const decoder = new TextDecoder();
 
 async function main() {
-    console.info('Selected DuckDB: ' + WORKER_CONFIG.wasmURL);
-
-    let db: duckdb_serial.DuckDB | null = null;
+    let db: duckdb_sync.DuckDB | null = null;
     let adb: duckdb_async.AsyncDuckDB | null = null;
     let worker: Worker | null = null;
 
-    const logger = new duckdb_serial.VoidLogger();
-    db = new duckdb_serial.DuckDB(logger, duckdb_serial.NodeRuntime, WORKER_CONFIG.wasmURL);
-    await db.open();
+    // Configure the worker
+    const DUCKDB_CONFIG = await duckdb_async.configure({
+        asyncDefault: {
+            mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
+            mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async.worker.js'),
+        },
+        asyncNext: {
+            mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-next.wasm'),
+            mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-next.worker.js'),
+        },
+    });
 
-    worker = new Worker(WORKER_CONFIG.workerURL);
+    const logger = new duckdb_sync.VoidLogger();
+    db = await new duckdb_sync.DuckDB(
+        logger,
+        duckdb_sync.NODE_RUNTIME,
+        path.resolve(__dirname, './duckdb.wasm'),
+    ).instantiate();
+
+    worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.open(WORKER_CONFIG.wasmURL);
+    await adb.instantiate(DUCKDB_CONFIG.mainModule);
 
     const tpchScale = '0_5';
 
@@ -60,17 +64,17 @@ async function main() {
         [
             new (class extends DuckDBSyncMatWrapper {
                 async registerFile(path: string): Promise<void> {
-                    await this.db.addFilePath(path, path);
+                    await this.db.registerFileURL(path, path);
                 }
             })(db),
             new (class extends DuckDBSyncStreamWrapper {
                 async registerFile(path: string): Promise<void> {
-                    await this.db.addFilePath(path, path);
+                    await this.db.registerFileURL(path, path);
                 }
             })(db),
             new (class extends DuckDBAsyncStreamWrapper {
                 async registerFile(path: string): Promise<void> {
-                    await this.db.addFilePath(path, path);
+                    await this.db.registerFileURL(path, path);
                 }
             })(adb),
             new ArqueroWrapper(),
@@ -82,7 +86,7 @@ async function main() {
         path.resolve(__dirname, '../../../data'),
         (path: string) => {
             let conn = db!.connect();
-            db!.addFilePath(path, path);
+            db!.registerFileURL(path, path);
             const table = conn.runQuery(`SELECT * FROM parquet_scan('${path}')`);
             conn.disconnect();
             return Promise.resolve(table);

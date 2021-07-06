@@ -11,6 +11,7 @@
         "downlevelIteration": true,
         "allowJs": true,
         "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
         // Insanity mode due to:
         // https://issues.apache.org/jira/browse/ARROW-10794
         "skipLibCheck": true,
