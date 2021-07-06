@@ -10,5 +10,6 @@
     ],
     "readme": "none",
     "out": "docs",
-    "includeVersion": true
+    "includeVersion": true,
+    "theme": "minimal"
 }
