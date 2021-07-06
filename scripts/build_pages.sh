@@ -31,7 +31,6 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
 
 
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release/* ${PAGES_DIR}
-    cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
 else
     TARGET_DIR="${PAGES_DIR}/branches/${CURRENT_BRANCH}"
     echo "[ RUN ] Install @duckdb/duckdb-wasm-shell to ${TARGET_DIR}/"
@@ -39,5 +38,4 @@ else
     rm -rf ${TARGET_DIR}
     mkdir -p ${PAGES_DIR}/branches
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release ${TARGET_DIR}
-    cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${TARGET_DIR}/docs
 fi

@@ -170,6 +170,10 @@ export function configure(params) {
                         from: './static/favicons',
                         to: './static/favicons',
                     },
+                    {
+                        from: '../duckdb-wasm/docs',
+                        to: './docs',
+                    },
                 ],
             }),
         ],
