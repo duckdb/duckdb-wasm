@@ -114,25 +114,22 @@ impl Shell {
 
     /// Attach to a database
     pub async fn configure_database(db: AsyncDuckDB) -> Result<(), js_sys::Error> {
-        // Teardown state (if there is any)
+        // Disconnect any connections
+        let conn = Shell::with_mut(|s| s.db_conn.clone());
+        if let Some(ref conn) = conn {
+            let conn_guard = conn.read().unwrap();
+            conn_guard.disconnect().await?;
+        }
+        // Store new database and reset the connection
         let db = Shell::with_mut(|s| {
-            if s.db_conn.is_some() {
-                // XXX disconnect
-                return None;
-            }
-            // Store database
             let db = Arc::new(RwLock::new(db));
             s.db_conn = None;
             s.db = Some(db.clone());
-            Some(db)
+            db
         });
-        if !db.is_some() {
-            Shell::with(|s| s.writeln("Error: Database already set!"));
-            return Ok(());
-        };
 
         Shell::write_version_info().await;
-        let conn = AsyncDuckDB::connect(db.unwrap().clone()).await?;
+        let conn = AsyncDuckDB::connect(db.clone()).await?;
 
         // Create connection
         Shell::with_mut(|s| {
