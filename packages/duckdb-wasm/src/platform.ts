@@ -1,4 +1,5 @@
 import * as check from 'wasm-feature-detect';
+import { PACKAGE_NAME, PACKAGE_VERSION } from './version';
 
 export interface DuckDBBundles {
     asyncDefault: {
@@ -13,6 +14,26 @@ export interface DuckDBBundles {
         mainModule: string;
         mainWorker: string;
         pthreadWorker: string;
+    };
+}
+
+export function getJsDelivrBundles(): DuckDBBundles {
+    // XXX This must be changed when we switch to github packages.
+    const jsdelivr_base_url = 'https://cdn.jsdelivr.net/npm/';
+    return {
+        asyncDefault: {
+            mainModule: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb.wasm`,
+            mainWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async.worker.js`,
+        },
+        asyncNext: {
+            mainModule: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-next.wasm`,
+            mainWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async-next.worker.js`,
+        },
+        asyncNextCOI: {
+            mainModule: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-next-coi.wasm`,
+            mainWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async-next-coi.worker.js`,
+            pthreadWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async-next-coi.pthread.worker.js`,
+        },
     };
 }
 
