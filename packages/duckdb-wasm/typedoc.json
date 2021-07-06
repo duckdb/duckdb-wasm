@@ -1,11 +1,11 @@
 {
     "name": "DuckDB-WASM",
     "entryPoints": [
+        "src/index.ts",
         "src/targets/duckdb.module.ts",
         "src/targets/duckdb-browser-sync.ts",
         "src/targets/duckdb-browser-async.ts",
         "src/targets/duckdb-node-sync.ts",
-        "src/targets/duckdb-node-async.ts",
         "src/targets/duckdb-node-async.ts"
     ],
     "readme": "none",
