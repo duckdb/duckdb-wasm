@@ -1,4 +1,5 @@
 #include "duckdb/web/webdb.h"
+
 #include <rapidjson/error/en.h>
 
 #include <cstddef>
@@ -50,8 +51,8 @@ WebDB& WebDB::Get() {
 /// Constructor
 WebDB::Connection::Connection(WebDB& webdb) : webdb_(webdb), connection_(*webdb.database_) {}
 
-
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(std::unique_ptr<duckdb::QueryResult> result) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(
+    std::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_.reset();
     current_schema_.reset();
 
@@ -75,7 +76,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     return out->Finish();
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(std::unique_ptr<duckdb::QueryResult> result) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(
+    std::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_ = move(result);
     current_schema_.reset();
 
@@ -144,63 +146,73 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
 arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_view text) {
     try {
         auto prep = connection_.Prepare(std::string{text});
-        if(!prep->success) return arrow::Status{arrow::StatusCode::ExecutionError, prep->error};
+        if (!prep->success) return arrow::Status{arrow::StatusCode::ExecutionError, prep->error};
         auto id = prepared_statements_counter_++;
 
         // Wrap around if maximum exceeded
-        if(prepared_statements_counter_ == std::numeric_limits<size_t>::max()) prepared_statements_counter_ = 0;
+        if (prepared_statements_counter_ == std::numeric_limits<size_t>::max()) prepared_statements_counter_ = 0;
 
         prepared_statements_.emplace(id, std::move(prep));
         return id;
-    } catch(std::exception& e) {
+    } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
 }
 
-
-arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(size_t statement_id, std::string_view args_json) {
+arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(
+    size_t statement_id, std::string_view args_json) {
     try {
         auto stmt = prepared_statements_.find(statement_id);
-        if(stmt == prepared_statements_.end()) 
+        if (stmt == prepared_statements_.end())
             return arrow::Status{arrow::StatusCode::KeyError, "No prepared statement found with ID"};
 
         rapidjson::Document args_doc;
         rapidjson::ParseResult ok = args_doc.Parse(args_json.begin(), args_json.size());
-        if(!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
-        if(!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array."};
+        if (!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
+        if (!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array"};
 
         std::vector<duckdb::Value> values;
-        for(const auto& v : args_doc.GetArray()) {
-            if(v.IsLosslessDouble()) values.emplace_back(v.GetDouble());
-            else if(v.IsString()) values.emplace_back(v.GetString());
-            else if(v.IsNull()) values.emplace_back(nullptr);
-            else return arrow::Status{arrow::StatusCode::Invalid, "Invalid column type encountered."};
+        size_t index = 0;
+        for (const auto& v : args_doc.GetArray()) {
+            if (v.IsLosslessDouble())
+                values.emplace_back(v.GetDouble());
+            else if (v.IsString())
+                values.emplace_back(v.GetString());
+            else if (v.IsNull())
+                values.emplace_back(nullptr);
+            else if (v.IsBool())
+                values.emplace_back(v.GetBool());
+            else
+                return arrow::Status{arrow::StatusCode::Invalid,
+                                     "Invalid column type encountered for argument " + std::to_string(index)};
+            ++index;
         }
 
         auto result = stmt->second->Execute(values);
         if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
         return result;
-    } catch(std::exception& e) {
+    } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
 }
 
-
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunPreparedStatement(size_t statement_id, std::string_view args_json) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunPreparedStatement(size_t statement_id,
+                                                                                      std::string_view args_json) {
     auto result = ExecutePreparedStatement(statement_id, args_json);
-    if(!result.ok()) return result.status();
+    if (!result.ok()) return result.status();
     return MaterializeQueryResult(std::move(*result));
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendPreparedStatement(size_t statement_id, std::string_view args_json) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendPreparedStatement(size_t statement_id,
+                                                                                       std::string_view args_json) {
     auto result = ExecutePreparedStatement(statement_id, args_json);
-    if(!result.ok()) return result.status();
+    if (!result.ok()) return result.status();
     return StreamQueryResult(std::move(*result));
 }
 
 arrow::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
     auto it = prepared_statements_.find(statement_id);
-    if(it == prepared_statements_.end()) 
+    if (it == prepared_statements_.end())
         return arrow::Status{arrow::StatusCode::KeyError, "No prepared statement found with ID"};
     prepared_statements_.erase(it);
     return arrow::Status::OK();
