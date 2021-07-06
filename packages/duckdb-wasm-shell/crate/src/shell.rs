@@ -647,7 +647,7 @@ impl Shell {
             ));
 
             s.write(&format!(
-                "Database: {bold}{version}{normal}{endl}Package:  {bold}{package_name}{package_version}{normal}{endl}{endl}",
+                "Database: {bold}{version}{normal}{endl}Package:  {bold}{package_name}@{package_version}{normal}{endl}{endl}",
                 version = version,
                 package_name = PACKAGE_NAME.as_str(),
                 package_version = PACKAGE_VERSION.as_str(),
