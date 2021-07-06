@@ -46,13 +46,15 @@ class WebDB {
         size_t prepared_statements_counter_ = 1;
 
         // Fully materialize a given result set and return it as an Arrow Buffer
-        arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(std::unique_ptr<duckdb::QueryResult> result);
+        arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(
+            std::unique_ptr<duckdb::QueryResult> result);
 
         // Setup streaming of a result set and return the schema as an Arrow Buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> StreamQueryResult(std::unique_ptr<duckdb::QueryResult> result);
 
         // Execute a prepared statement by setting up all arguments and returning the query result
-        arrow::Result<std::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id, std::string_view args_json);
+        arrow::Result<std::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
+                                                                                     std::string_view args_json);
 
        public:
         /// Constructor
@@ -70,11 +72,13 @@ class WebDB {
         /// Fetch query results and return an arrow buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> FetchQueryResults();
         /// Prepare a statement and return its identifier
-        arrow::Result<size_t> CreatePreparedStatement(std::string_view text); 
+        arrow::Result<size_t> CreatePreparedStatement(std::string_view text);
         /// Execute a prepared statement with the given parameters in stringifed json format and return full result
-        arrow::Result<std::shared_ptr<arrow::Buffer>> RunPreparedStatement(size_t statement_id, std::string_view args_json); 
+        arrow::Result<std::shared_ptr<arrow::Buffer>> RunPreparedStatement(size_t statement_id,
+                                                                           std::string_view args_json);
         /// Execute a prepared statement with the given parameters in stringifed json format and stream result
-        arrow::Result<std::shared_ptr<arrow::Buffer>> SendPreparedStatement(size_t statement_id, std::string_view args_json); 
+        arrow::Result<std::shared_ptr<arrow::Buffer>> SendPreparedStatement(size_t statement_id,
+                                                                            std::string_view args_json);
         /// Close a prepared statement by its identifier
         arrow::Status ClosePreparedStatement(size_t statement_id);
 
