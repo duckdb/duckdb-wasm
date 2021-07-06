@@ -1,4 +1,5 @@
 {
+    "name": "DuckDB-WASM",
     "entryPoints": [
         "src/targets/duckdb.module.ts",
         "src/targets/duckdb-browser-sync.ts",
