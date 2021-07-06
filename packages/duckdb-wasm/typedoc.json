@@ -8,6 +8,7 @@
         "src/targets/duckdb-node-async.ts",
         "src/targets/duckdb-node-async.ts"
     ],
+    "readme": "none",
     "out": "docs",
     "includeVersion": true
 }
