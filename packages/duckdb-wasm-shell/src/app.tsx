@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom';
 import * as model from './model';
 import { Provider as ReduxProvider } from 'react-redux';
 import Shell from './shell';
+import Docs from './docs';
 import { Route, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
@@ -48,9 +49,10 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     return database;
 }
 
-const StandaloneShell = withBanner(
+const Shell_ = withBanner(
     withNavBar(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
 );
+const Docs_ = withNavBar(Docs);
 
 const store = model.createStore();
 
@@ -58,7 +60,8 @@ const element = document.getElementById('root');
 ReactDOM.render(
     <ReduxProvider store={store}>
         <BrowserRouter>
-            <Route component={StandaloneShell} />
+            <Route path="/docs" exact={true} component={Docs_} />
+            <Route path="/" exact={true} component={Shell_} />
         </BrowserRouter>
     </ReduxProvider>,
     element,

@@ -6,6 +6,7 @@ import styles from './navbar.module.css';
 
 import logo from '../../static/svg/logo/duckdb.svg';
 import icon_shell from '../../static/svg/icons/shell.svg';
+import icon_book from '../../static/svg/icons/book.svg';
 
 function Tab(props: { route: string; location: string; icon: string }): React.ReactElement {
     return (
@@ -42,6 +43,7 @@ class NavBarImpl extends React.Component<Props> {
                 </div>
                 <div className={styles.tabs}>
                     <Tab route="/" location={this.props.location.pathname} icon={icon_shell} />
+                    <Tab route="/docs" location={this.props.location.pathname} icon={icon_book} />
                 </div>
             </div>
         );
