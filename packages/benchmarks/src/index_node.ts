@@ -41,11 +41,7 @@ async function main() {
     });
 
     const logger = new duckdb_sync.VoidLogger();
-    db = await new duckdb_sync.DuckDB(
-        logger,
-        duckdb_sync.NODE_RUNTIME,
-        path.resolve(__dirname, './duckdb.wasm'),
-    ).instantiate();
+    db = await new duckdb_sync.DuckDB(logger, duckdb_sync.NODE_RUNTIME, DUCKDB_CONFIG.mainModule).instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
