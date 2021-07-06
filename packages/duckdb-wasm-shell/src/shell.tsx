@@ -106,16 +106,26 @@ class Shell extends React.Component<ShellProps> {
         );
     }
 
-    public async resolveDatabase() {
-        shell.writeln('Initializing DuckDB...');
-        // Resolve the database
-        this._database = await this.props.resolveDatabase();
-        // Load the input history
-        await this._history.open();
-        const [history, historyCursor] = await this._history.load();
-        shell.loadHistory(history, historyCursor);
-        // Attach the shell to the database
-        shell.configureDatabase(this._database);
+    public async configure() {
+        const step = async (label: string, work: () => Promise<void>) => {
+            const TERM_BOLD = '\x1b[1m';
+            const TERM_NORMAL = '\x1b[m';
+            shell.writeln(`${TERM_BOLD}[ RUN   ]${TERM_NORMAL} ${label}`);
+            await work();
+            shell.writeln(`${TERM_BOLD}[ OK    ]${TERM_NORMAL} ${label}`);
+        };
+
+        await step('Resolving DuckDB Bundle', async () => {
+            this._database = await this.props.resolveDatabase();
+        });
+        await step('Loading Shell History', async () => {
+            await this._history.open();
+            const [history, historyCursor] = await this._history.load();
+            shell.loadHistory(history, historyCursor);
+        });
+        await step('Attaching Shell', async () => {
+            shell.configureDatabase(this._database);
+        });
     }
 
     protected hasWebGL(): boolean {
@@ -133,7 +143,7 @@ class Shell extends React.Component<ShellProps> {
                 backgroundColor: '#333',
                 withWebGL: this.hasWebGL(),
             });
-            this.resolveDatabase();
+            this.configure();
         }
     }
 
