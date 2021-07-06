@@ -49,7 +49,7 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
 }
 
 const StandaloneShell = withBanner(
-    withNavBar(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 16, 20]} backgroundColor="#333" />),
+    withNavBar(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
 );
 
 const store = model.createStore();
