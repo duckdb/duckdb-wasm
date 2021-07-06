@@ -1,5 +1,5 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
-use crate::duckdb::{AsyncDuckDB, AsyncDuckDBConnection};
+use crate::duckdb::{AsyncDuckDB, AsyncDuckDBConnection, PACKAGE_NAME, PACKAGE_VERSION};
 use crate::key_event::{Key, KeyEvent};
 use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
@@ -647,9 +647,10 @@ impl Shell {
             ));
 
             s.write(&format!(
-                "Database: {bold}{version}{normal}{endl}Package:  {bold}{package}{normal}{endl}{endl}",
+                "Database: {bold}{version}{normal}{endl}Package:  {bold}{package_name}{package_version}{normal}{endl}{endl}",
                 version = version,
-                package = "@duckdb/duckdb-wasm@0.0.1",
+                package_name = PACKAGE_NAME.as_str(),
+                package_version = PACKAGE_VERSION.as_str(),
                 bold = vt100::MODE_BOLD,
                 normal = vt100::MODES_OFF,
                 endl = vt100::CRLF
