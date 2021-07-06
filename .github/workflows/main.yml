@@ -219,6 +219,12 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:ci
 
+            - name: Build @duckdb/duckdb-wasm docs
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm docs
+
             - name: Build GitHub Pages
               if: github.ref == 'refs/heads/master'
               run: |
