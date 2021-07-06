@@ -49,8 +49,8 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     return database;
 }
 
-const Shell_ = withBanner(
-    withNavBar(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
+const Shell_ = withNavBar(
+    withBanner(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
 );
 const Docs_ = withNavBar(Docs);
 
