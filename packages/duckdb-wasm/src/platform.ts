@@ -19,20 +19,20 @@ export interface DuckDBBundles {
 
 export function getJsDelivrBundles(): DuckDBBundles {
     // XXX This must be changed when we switch to github packages.
-    const jsdelivr_base_url = 'https://cdn.jsdelivr.net/npm/';
+    const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
         asyncDefault: {
-            mainModule: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb.wasm`,
-            mainWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async.worker.js`,
+            mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-async.worker.js`,
         },
         asyncNext: {
-            mainModule: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-next.wasm`,
-            mainWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async-next.worker.js`,
+            mainModule: `${jsdelivr_dist_url}duckdb-next.wasm`,
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-async-next.worker.js`,
         },
         asyncNextCOI: {
-            mainModule: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-next-coi.wasm`,
-            mainWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async-next-coi.worker.js`,
-            pthreadWorker: `${jsdelivr_base_url}${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/duckdb-browser-async-next-coi.pthread.worker.js`,
+            mainModule: `${jsdelivr_dist_url}duckdb-next-coi.wasm`,
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-async-next-coi.worker.js`,
+            pthreadWorker: `${jsdelivr_dist_url}duckdb-browser-async-next-coi.pthread.worker.js`,
         },
     };
 }
