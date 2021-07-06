@@ -4,7 +4,7 @@ import * as model from './model';
 import { Provider as ReduxProvider } from 'react-redux';
 import Shell from './shell';
 import Docs from './docs';
-import { Route, BrowserRouter } from 'react-router-dom';
+import { Route, HashRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
 
@@ -55,14 +55,13 @@ const Shell_ = withBanner(
 const Docs_ = withNavBar(Docs);
 
 const store = model.createStore();
-
 const element = document.getElementById('root');
 ReactDOM.render(
     <ReduxProvider store={store}>
-        <BrowserRouter>
+        <HashRouter>
             <Route path="/docs" exact={true} component={Docs_} />
             <Route path="/" exact={true} component={Shell_} />
-        </BrowserRouter>
+        </HashRouter>
     </ReduxProvider>,
     element,
 );
