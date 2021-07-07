@@ -209,7 +209,7 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-            case WorkerRequestType.ENABLE_FILE_STATISTICS:
+            case WorkerRequestType.COLLECT_FILE_STATISTICS:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
@@ -429,9 +429,9 @@ export class AsyncDuckDB {
     }
 
     /** Enable file statistics */
-    public async enableFileStatistics(name: string, enable: boolean): Promise<null> {
-        const task = new WorkerTask<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean], null>(
-            WorkerRequestType.ENABLE_FILE_STATISTICS,
+    public async collectFileStatistics(name: string, enable: boolean): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>(
+            WorkerRequestType.COLLECT_FILE_STATISTICS,
             [name, enable],
         );
         return await this.postTask(task, []);

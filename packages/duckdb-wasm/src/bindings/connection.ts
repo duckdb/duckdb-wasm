@@ -50,9 +50,9 @@ class ResultStreamIterator implements Iterable<Uint8Array> {
 /** A thin helper to bind the connection id and talk record batches */
 export class DuckDBConnection {
     /** The bindings */
-    _bindings: IDuckDBBindings;
+    protected _bindings: IDuckDBBindings;
     /** The connection handle */
-    _conn: number;
+    protected _conn: number;
 
     /** Constructor */
     constructor(bindings: IDuckDBBindings, conn: number) {

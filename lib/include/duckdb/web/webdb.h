@@ -155,8 +155,8 @@ class WebDB {
     /// Copy a file to a path
     arrow::Status CopyFileToPath(std::string_view path, std::string_view out);
 
-    /// Enable file statistics
-    arrow::Status EnableFileStatistics(std::string_view path, bool enable);
+    /// Collect file statistics
+    arrow::Status CollectFileStatistics(std::string_view path, bool enable);
     /// Export file statistics
     arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileStatistics(std::string_view path);
 

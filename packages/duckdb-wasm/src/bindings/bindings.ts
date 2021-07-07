@@ -124,7 +124,7 @@ export abstract class DuckDBBindings {
     }
 
     /** Enable tracking of file statistics */
-    public enableFileStatistics(file: string, enable: boolean): void {
+    public collectFileStatistics(file: string, enable: boolean): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_enable_file_stats', ['string', 'boolean'], [file, enable]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
