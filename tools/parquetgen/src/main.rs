@@ -54,15 +54,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         PathBuf::from(arg_path)
     };
 
-    if let Some(ref matches) = matches.subcommand_matches("uni") {
-        let out_dir = require_dir_arg(&matches, "out");
+    if let Some(matches) = matches.subcommand_matches("uni") {
+        let out_dir = require_dir_arg(matches, "out");
         uni::write_tables(&out_dir);
         process::exit(0);
     }
 
-    if let Some(ref matches) = matches.subcommand_matches("tpch") {
-        let out_dir = require_dir_arg(&matches, "out");
-        let in_dir = require_dir_arg(&matches, "in");
+    if let Some(matches) = matches.subcommand_matches("tpch") {
+        let out_dir = require_dir_arg(matches, "out");
+        let in_dir = require_dir_arg(matches, "in");
         tpch::convert_tbls(&in_dir, &out_dir)?;
         process::exit(0);
     }

@@ -42,7 +42,7 @@ fn write_table(path: std::path::PathBuf, schema: Schema, data: Vec<StaticColumnD
             }
             match (&data[column_id], &mut col_writer) {
                 (StaticColumnData::Integer(ref v), ColumnWriter::Int32ColumnWriter(ref mut w)) => {
-                    w.write_batch(&v, None, None)?;
+                    w.write_batch(v, None, None)?;
                 }
                 (
                     StaticColumnData::Varchar(ref v),
