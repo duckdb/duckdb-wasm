@@ -46,7 +46,7 @@ pub fn embed(
     }
     let links_addon = WebLinksAddon::new(None, None, None);
     let fit_addon = FIT_ADDON.with(|a| a.borrow().clone());
-    terminal.load_addon(fit_addon.clone().into());
+    terminal.load_addon(fit_addon.into());
     terminal.load_addon(links_addon.clone().dyn_into::<WebLinksAddon>()?.into());
     FIT_ADDON.with(|a| a.borrow().fit());
 

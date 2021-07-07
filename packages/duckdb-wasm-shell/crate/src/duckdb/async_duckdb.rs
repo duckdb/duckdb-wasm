@@ -163,7 +163,7 @@ impl AsyncDuckDBConnection {
                 Err(err) => return Err(js_sys::Error::new(&err.to_string())),
             }
         }
-        return Ok(batches);
+        Ok(batches)
     }
 
     /// Fetch query result
