@@ -8,7 +8,7 @@ import logo from '../../static/svg/logo/duckdb.svg';
 import icon_shell from '../../static/svg/icons/shell.svg';
 import icon_book from '../../static/svg/icons/book.svg';
 
-function Tab(props: { route: string; location: string; icon: string }): React.ReactElement {
+function Tab(props: { route: string; location: string; icon: string; external?: boolean }): React.ReactElement {
     return (
         <div
             key={props.route}
@@ -16,13 +16,23 @@ function Tab(props: { route: string; location: string; icon: string }): React.Re
                 [styles.active]: props.location == props.route,
             })}
         >
-            <Link to={props.route}>
-                <div className={styles.tabButton}>
-                    <svg className={styles.tabIcon} width="18px" height="18px">
-                        <use xlinkHref={`${props.icon}#sym`} />
-                    </svg>
-                </div>
-            </Link>
+            {props.external ? (
+                <a href={props.route} target="blank">
+                    <div className={styles.tabButton}>
+                        <svg className={styles.tabIcon} width="18px" height="18px">
+                            <use xlinkHref={`${props.icon}#sym`} />
+                        </svg>
+                    </div>
+                </a>
+            ) : (
+                <Link to={props.route}>
+                    <div className={styles.tabButton}>
+                        <svg className={styles.tabIcon} width="18px" height="18px">
+                            <use xlinkHref={`${props.icon}#sym`} />
+                        </svg>
+                    </div>
+                </Link>
+            )}
         </div>
     );
 }
@@ -43,7 +53,7 @@ class NavBarImpl extends React.Component<Props> {
                 </div>
                 <div className={styles.tabs}>
                     <Tab route="/" location={this.props.location.pathname} icon={icon_shell} />
-                    <Tab route="/docs" location={this.props.location.pathname} icon={icon_book} />
+                    <Tab route="/docs/" location={this.props.location.pathname} icon={icon_book} external={true} />
                 </div>
             </div>
         );

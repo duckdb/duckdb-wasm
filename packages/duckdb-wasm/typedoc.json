@@ -10,6 +10,7 @@
     ],
     "readme": "none",
     "out": "docs",
-    "includeVersion": true,
-    "theme": "minimal"
+    "includeVersion": false,
+    "excludeProtected": true,
+    "theme": "default"
 }
