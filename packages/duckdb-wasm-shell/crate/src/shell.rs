@@ -371,8 +371,21 @@ impl Shell {
                 });
                 return;
             }
-            ".help" => Shell::with(|s| s.writeln("Not implemented yet")),
-            ".quit" => Shell::with(|s| s.writeln("Not implemented yet")),
+            ".help" => Shell::with(|s| {
+                s.write(concat!(
+                    ".clear                 Clear the shell.\r\n",
+                    ".config                Shell configuration.\r\n",
+                    ".files                 Open file picker.\r\n",
+                    ".fstats collect $FILE  Collect file statistics.\r\n",
+                    ".fstats disable $FILE  Disable file statistics.\r\n",
+                    ".fstats paging $FILE   Show file paging.\r\n",
+                    ".fstats reads $FILE    Show file reads.\r\n",
+                    ".fstats reset $FILE    Reset file statistics.\r\n",
+                    ".reset                 Reset the shell.\r\n",
+                    ".timer on|off          Turn query timer on or off.\r\n",
+                ));
+            }),
+            ".reset" => Shell::with(|s| s.writeln("Not implemented yet")),
             ".config" => {
                 Shell::configure_command().await;
             }
