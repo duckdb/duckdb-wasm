@@ -309,22 +309,22 @@ impl Shell {
         let options = args[subcmd.len()..].trim();
         match subcmd {
             "collect" => {
-                db.enable_file_statistics(&options, true).await.unwrap();
+                db.enable_file_statistics(options, true).await.unwrap();
                 Shell::with(|s| s.writeln(&format!("Collecting file statistics for: {}", options)));
             }
             "disable" => {
-                db.enable_file_statistics(&options, false).await.unwrap();
+                db.enable_file_statistics(options, false).await.unwrap();
                 Shell::with(|s| s.writeln(&format!("Disabled file statistics for: {}", options)));
             }
             "reset" => {
                 Shell::with(|s| s.writeln(&format!("Resetted file statistics for: {}", options)));
             }
             "reads" => {
-                let stats = db.export_file_statistics(&options).await.unwrap();
+                let stats = db.export_file_statistics(options).await.unwrap();
                 Shell::with(|s| s.write(&stats.print_read_stats(s.terminal_width)));
             }
             "paging" => {
-                let stats = db.export_file_statistics(&options).await.unwrap();
+                let stats = db.export_file_statistics(options).await.unwrap();
                 Shell::with(|s| s.write(&stats.print_page_stats(s.terminal_width)));
             }
             _ => {
@@ -488,7 +488,7 @@ impl Shell {
     /// Highlight input text (if sql)
     fn highlight_input() {
         let (input, input_clock) = Shell::with_mut(|s| (s.input.collect(), s.input_clock));
-        if input.trim_start().starts_with(".") {
+        if input.trim_start().starts_with('.') {
             return;
         }
         let db_ptr = Shell::with(|s| s.db.clone()).unwrap();
@@ -527,12 +527,12 @@ impl Shell {
                     s.input.collect()
                 });
                 // Is a command?
-                if input.trim_start().starts_with(".") {
+                if input.trim_start().starts_with('.') {
                     Shell::with_mut(|s| s.block_input());
                     spawn_local(Shell::on_command(input));
                 } else {
                     // Ends with semicolon?
-                    if input.trim_end().ends_with(";") {
+                    if input.trim_end().ends_with(';') {
                         Shell::with_mut(|s| s.block_input());
                         spawn_local(Shell::on_sql(input));
                     } else {

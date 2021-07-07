@@ -24,6 +24,10 @@
     "[xml]": {
         "editor.formatOnSave": false
     },
+    "[rust]": {
+        "editor.defaultFormatter": "matklad.rust-analyzer"
+    },
+    "rust-analyzer.checkOnSave.command": "clippy",
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": true
     },

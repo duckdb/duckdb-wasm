@@ -3,11 +3,12 @@ use crate::key_event::{Key, KeyEvent};
 use crate::vt100;
 use crate::xterm::Terminal;
 use ropey::Rope;
+use std::cmp::Ordering;
 use std::fmt::Write;
 
-const PROMPT_INIT: &'static str = "\x1b[1mduckdb\x1b[m> ";
-const PROMPT_ENDL: &'static str = "   ...> ";
-const PROMPT_WRAP: &'static str = "   ..>> ";
+const PROMPT_INIT: &str = "\x1b[1mduckdb\x1b[m> ";
+const PROMPT_ENDL: &str = "   ...> ";
+const PROMPT_WRAP: &str = "   ..>> ";
 const PROMPT_WIDTH: usize = 8;
 const TAB_WIDTH: usize = 2;
 
@@ -129,17 +130,25 @@ impl PromptBuffer {
     pub fn move_cursor_to(&mut self, pos: usize) {
         let src_line_id = self.text_buffer.char_to_line(self.cursor);
         let dst_line_id = self.text_buffer.char_to_line(pos);
-        if src_line_id < dst_line_id {
-            vt100::cursor_down(&mut self.output_buffer, dst_line_id - src_line_id);
-        } else if src_line_id > dst_line_id {
-            vt100::cursor_up(&mut self.output_buffer, src_line_id - dst_line_id);
+        match src_line_id.cmp(&dst_line_id) {
+            Ordering::Less => {
+                vt100::cursor_down(&mut self.output_buffer, dst_line_id - src_line_id);
+            }
+            Ordering::Greater => {
+                vt100::cursor_up(&mut self.output_buffer, src_line_id - dst_line_id);
+            }
+            Ordering::Equal => {}
         }
         let src_col = self.cursor - self.text_buffer.line_to_char(src_line_id);
         let dst_col = pos - self.text_buffer.line_to_char(dst_line_id);
-        if src_col < dst_col {
-            vt100::cursor_right(&mut self.output_buffer, dst_col - src_col);
-        } else if src_col > dst_col {
-            vt100::cursor_left(&mut self.output_buffer, src_col - dst_col);
+        match src_col.cmp(&dst_col) {
+            Ordering::Less => {
+                vt100::cursor_right(&mut self.output_buffer, dst_col - src_col);
+            }
+            Ordering::Greater => {
+                vt100::cursor_left(&mut self.output_buffer, src_col - dst_col);
+            }
+            Ordering::Equal => {}
         }
         self.cursor = pos;
     }
@@ -147,76 +156,68 @@ impl PromptBuffer {
     // Move the cursor 1 to the left
     fn move_cursor_left(&mut self) {
         let mut iter = self.text_buffer.chars_at(self.cursor);
-        match iter.prev() {
-            Some(c) => {
-                match c {
-                    // Move to end of previous line?
-                    '\n' | vt100::PARAGRAPH_SEPERATOR => {
-                        let line_id = self.text_buffer.char_to_line(self.cursor - 1);
-                        let line = self.text_buffer.line(line_id);
-                        write!(
-                            self.output_buffer,
-                            "{rewind}{cursor_up}",
-                            rewind = vt100::CR,
-                            cursor_up = vt100::CURSOR_UP
-                        )
-                        .unwrap();
-                        vt100::cursor_right(
-                            &mut self.output_buffer,
-                            PROMPT_WIDTH + line.len_chars() - 1,
-                        );
-                    }
-                    // Just cursor one to the left
-                    _ => write!(
+        if let Some(c) = iter.prev() {
+            match c {
+                // Move to end of previous line?
+                '\n' | vt100::PARAGRAPH_SEPERATOR => {
+                    let line_id = self.text_buffer.char_to_line(self.cursor - 1);
+                    let line = self.text_buffer.line(line_id);
+                    write!(
                         self.output_buffer,
-                        "{cursor_left}",
-                        cursor_left = vt100::CURSOR_LEFT
+                        "{rewind}{cursor_up}",
+                        rewind = vt100::CR,
+                        cursor_up = vt100::CURSOR_UP
                     )
-                    .unwrap(),
+                    .unwrap();
+                    vt100::cursor_right(
+                        &mut self.output_buffer,
+                        PROMPT_WIDTH + line.len_chars() - 1,
+                    );
                 }
-                self.cursor -= 1;
+                // Just cursor one to the left
+                _ => write!(
+                    self.output_buffer,
+                    "{cursor_left}",
+                    cursor_left = vt100::CURSOR_LEFT
+                )
+                .unwrap(),
             }
-            // Reached beginning of input
-            None => return,
+            self.cursor -= 1;
         }
     }
 
     // Move the cursor 1 to the right
     fn move_cursor_right(&mut self) {
         let mut iter = self.text_buffer.chars_at(self.cursor);
-        match iter.next() {
-            Some(c) => {
-                match c {
-                    // Move to beginning of previous line?
-                    '\n' | vt100::PARAGRAPH_SEPERATOR => {
-                        write!(
-                            self.output_buffer,
-                            "{rewind}{cursor_down}",
-                            rewind = vt100::CR,
-                            cursor_down = vt100::CURSOR_DOWN
-                        )
-                        .unwrap();
-                        vt100::cursor_right(&mut self.output_buffer, PROMPT_WIDTH);
-                    }
-                    // Just cursor one to the right
-                    _ => write!(
+        if let Some(c) = iter.next() {
+            match c {
+                // Move to beginning of previous line?
+                '\n' | vt100::PARAGRAPH_SEPERATOR => {
+                    write!(
                         self.output_buffer,
-                        "{cursor_right}",
-                        cursor_right = vt100::CURSOR_RIGHT
+                        "{rewind}{cursor_down}",
+                        rewind = vt100::CR,
+                        cursor_down = vt100::CURSOR_DOWN
                     )
-                    .unwrap(),
+                    .unwrap();
+                    vt100::cursor_right(&mut self.output_buffer, PROMPT_WIDTH);
                 }
-                self.cursor += 1;
+                // Just cursor one to the right
+                _ => write!(
+                    self.output_buffer,
+                    "{cursor_right}",
+                    cursor_right = vt100::CURSOR_RIGHT
+                )
+                .unwrap(),
             }
-            // Reached end of input
-            None => return,
+            self.cursor += 1;
         }
     }
 
     /// Reflow the text buffer
     fn reflow<F>(&mut self, modify: F)
     where
-        F: Fn(&mut Rope) -> (),
+        F: Fn(&mut Rope),
     {
         // First erase the prompt since we need a valid text buffer for clearing
         self.erase_prompt();
@@ -317,41 +318,38 @@ impl PromptBuffer {
     /// Erase the previous character
     fn erase_previous_char(&mut self) {
         let mut iter = self.text_buffer.chars_at(self.cursor);
-        match iter.prev() {
-            Some(c) => {
-                match c {
-                    // Remove explicit newline?
-                    // Removing newlines is expensive since we have to reflow the following lines.
-                    '\n' => {
-                        let pos = self.cursor;
-                        self.reflow(|buffer| buffer.remove((pos - 1)..pos));
+        if let Some(c) = iter.prev() {
+            match c {
+                // Remove explicit newline?
+                // Removing newlines is expensive since we have to reflow the following lines.
+                '\n' => {
+                    let pos = self.cursor;
+                    self.reflow(|buffer| buffer.remove((pos - 1)..pos));
+                    self.move_cursor_to(pos - 1);
+                }
+
+                // Previous character is an artificial line wrap?
+                // In that case, we'll delete the character before that character.
+                vt100::PARAGRAPH_SEPERATOR => {
+                    let pos = self.cursor;
+                    let begin = std::cmp::max(pos, 2) - 2;
+                    self.reflow(|buffer| buffer.remove(begin..pos));
+                    self.move_cursor_to(begin);
+                }
+
+                // In all other cases, just remove the character
+                _ => {
+                    let pos = self.cursor;
+                    if pos == self.text_buffer.len_chars() {
+                        write!(self.output_buffer, "\u{0008} \u{0008}").unwrap();
+                        self.text_buffer.remove((self.cursor - 1)..(self.cursor));
+                        self.cursor -= 1;
+                    } else {
+                        self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
                         self.move_cursor_to(pos - 1);
-                    }
-
-                    // Previous character is an artificial line wrap?
-                    // In that case, we'll delete the character before that character.
-                    vt100::PARAGRAPH_SEPERATOR => {
-                        let pos = self.cursor;
-                        let begin = std::cmp::max(pos, 2) - 2;
-                        self.reflow(|buffer| buffer.remove(begin..pos));
-                        self.move_cursor_to(begin);
-                    }
-
-                    // In all other cases, just remove the character
-                    _ => {
-                        let pos = self.cursor;
-                        if pos == self.text_buffer.len_chars() {
-                            write!(self.output_buffer, "{}", "\u{0008} \u{0008}").unwrap();
-                            self.text_buffer.remove((self.cursor - 1)..(self.cursor));
-                            self.cursor -= 1;
-                        } else {
-                            self.reflow(|buffer| buffer.remove((pos - 1)..(pos)));
-                            self.move_cursor_to(pos - 1);
-                        }
                     }
                 }
             }
-            None => return,
         }
     }
 
@@ -514,7 +512,7 @@ impl PromptBuffer {
                     self.insert_char(c);
                 }
             }
-            _ => return,
+            _ => {}
         }
     }
 }
