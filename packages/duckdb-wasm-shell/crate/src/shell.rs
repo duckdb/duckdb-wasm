@@ -8,6 +8,9 @@ use crate::shell_runtime::ShellRuntime;
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
+use arrow::array::Array;
+use arrow::array::StringArray;
+use arrow::datatypes::DataType;
 use chrono::Duration;
 use log::warn;
 use scopeguard::defer;
@@ -459,6 +462,34 @@ impl Shell {
         } else {
             Duration::milliseconds(0)
         };
+
+        // Detect explain result
+        if batches.len() == 1 {
+            let first = batches.first().unwrap();
+            let schema = &first.schema();
+            let fields = schema.fields();
+            if fields.len() == 2
+                && fields[0].name() == "explain_key"
+                && fields[1].name() == "explain_value"
+                && first.num_rows() == 1
+                && first.column(0).data_type().eq(&DataType::Utf8)
+                && first.column(1).data_type().eq(&DataType::Utf8)
+            {
+                let array = first
+                    .column(1)
+                    .as_any()
+                    .downcast_ref::<StringArray>()
+                    .unwrap();
+                if !array.is_null(0) {
+                    let mut explain = array.value(0).to_string();
+                    explain = explain.replace("\n", "\r\n");
+                    Shell::with_mut(|s| {
+                        s.write(&explain);
+                    });
+                    return;
+                }
+            }
+        }
 
         // Print the table
         let pretty_table =
