@@ -381,6 +381,7 @@ impl Shell {
                     ".fstats paging $FILE   Show file paging.\r\n",
                     ".fstats reads $FILE    Show file reads.\r\n",
                     ".fstats reset $FILE    Reset file statistics.\r\n",
+                    ".open $FILE            Open database file.\r\n",
                     ".reset                 Reset the shell.\r\n",
                     ".timer on|off          Turn query timer on or off.\r\n",
                 ));
