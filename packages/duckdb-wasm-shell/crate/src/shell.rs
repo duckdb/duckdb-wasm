@@ -144,11 +144,11 @@ impl Shell {
     /// Load input history
     pub fn load_history(history: Vec<String>, cursor: usize) {
         let mut h = VecDeque::with_capacity(history.len());
-        for i in cursor..history.len() {
-            h.push_back(history[i].clone());
+        for entry in &history[cursor..history.len()] {
+            h.push_back(entry.clone());
         }
-        for i in 0..cursor {
-            h.push_back(history[i].clone());
+        for entry in &history[0..cursor] {
+            h.push_back(entry.clone());
         }
         Shell::with_mut(|s| {
             s.history_cursor = h.len();
@@ -305,7 +305,7 @@ impl Shell {
             Some(ref db) => db.read().unwrap(),
             None => return,
         };
-        let subcmd = &args[..args.find(" ").unwrap_or(args.len())];
+        let subcmd = &args[..args.find(' ').unwrap_or_else(|| args.len())];
         let options = args[subcmd.len()..].trim();
         match subcmd {
             "collect" => {
@@ -358,7 +358,7 @@ impl Shell {
         let trimmed = text.trim();
         Shell::with(|s| s.writeln("")); // XXX We could validate the input first and preserve the prompt
 
-        let cmd = &trimmed[..trimmed.find(" ").unwrap_or(trimmed.len())];
+        let cmd = &trimmed[..trimmed.find(' ').unwrap_or_else(|| trimmed.len())];
         let args = trimmed[cmd.len()..].trim();
         match cmd {
             ".clear" => {
@@ -544,22 +544,22 @@ impl Shell {
                 }
             }
             Key::ArrowUp => {
-                if Shell::with_mut(|s| -> bool {
+                let should_highlight = Shell::with_mut(|s| -> bool {
                     if s.history_cursor > 0 {
                         s.history_cursor -= 1;
                         s.input_clock += 1;
                         s.input.replace(&s.history[s.history_cursor]);
                         s.flush();
-                        true
-                    } else {
-                        false
+                        return true;
                     }
-                }) {
+                    false
+                });
+                if should_highlight {
                     Shell::highlight_input();
                 }
             }
             Key::ArrowDown => {
-                if Shell::with_mut(|s| -> bool {
+                let should_highlight = Shell::with_mut(|s| -> bool {
                     if s.history_cursor < s.history.len() {
                         s.history_cursor += 1;
                         s.input.replace(if s.history_cursor < s.history.len() {
@@ -569,11 +569,11 @@ impl Shell {
                         });
                         s.input_clock += 1;
                         s.flush();
-                        true
-                    } else {
-                        false
+                        return true;
                     }
-                }) {
+                    false
+                });
+                if should_highlight {
                     Shell::highlight_input();
                 }
             }
@@ -609,7 +609,7 @@ impl Shell {
                     Ok(v) => {
                         Shell::with_mut(|s| {
                             s.input
-                                .insert_text(&v.as_string().unwrap_or("".to_string()));
+                                .insert_text(&v.as_string().unwrap_or_else(|| ' '.to_string()));
                             s.input.flush(&s.terminal);
                         });
                         Shell::highlight_input();
