@@ -5,9 +5,11 @@ import React, { ChangeEvent } from 'react';
 import styles from './file_explorer.module.css';
 import { connect } from 'react-redux';
 import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
+import { formatBytes } from '../utils/format';
 
 import icon_close from '../../static/svg/icons/close.svg';
-import icon_file from '../../static/svg/icons/file-document-outline.svg';
+import icon_data_matrix_scan from '../../static/svg/icons/data-matrix-scan.svg';
+import icon_minus from '../../static/svg/icons/minus.svg';
 
 interface Props {
     children?: React.ReactElement;
@@ -15,7 +17,7 @@ interface Props {
     database: AsyncDuckDB | null;
 
     closeOverlay: () => void;
-    addFiles: (files: FileList) => void;
+    addLocalFiles: (files: FileList) => void;
 }
 
 class FileExplorer extends React.Component<Props> {
@@ -40,19 +42,25 @@ class FileExplorer extends React.Component<Props> {
 
     /// Did the file selection change?
     protected fileSelectionChanged(e: ChangeEvent<HTMLInputElement>) {
-        this.props.addFiles(e.target.files as FileList);
+        this.props.addLocalFiles(e.target.files as FileList);
     }
 
     /// Render a loaded entry
     protected renderLoadedFileEntry(metadata: model.FileInfo) {
         return (
-            <div key={metadata.name} className={styles.registered_file_list_entry}>
-                <div className={styles.registered_file_list_entryIcon}>
+            <div key={metadata.name} className={styles.file_list_entry}>
+                <div className={styles.file_list_entry_name}>{metadata.name}</div>
+                <div className={styles.file_list_entry_size}>{formatBytes(metadata.size || 0)}</div>
+                <div className={styles.file_list_entry_action}>
                     <svg width="20px" height="20px">
-                        <use xlinkHref={`${icon_file}#sym`} />
+                        <use xlinkHref={`${icon_data_matrix_scan}#sym`} />
                     </svg>
                 </div>
-                <div className={styles.registered_file_list_entry_header}>{metadata.name}</div>
+                <div className={styles.file_list_entry_action}>
+                    <svg width="20px" height="20px">
+                        <use xlinkHref={`${icon_minus}#sym`} />
+                    </svg>
+                </div>
             </div>
         );
     }
@@ -69,7 +77,7 @@ class FileExplorer extends React.Component<Props> {
                         </svg>
                     </div>
                 </div>
-                <div className={styles.registered_file_list}>
+                <div className={styles.file_list}>
                     {this.props.registeredFiles
                         .toArray()
                         .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}

@@ -57,7 +57,7 @@ class Shell extends React.Component<ShellProps> {
     /// The database
     protected _database: duckdb.AsyncDuckDB | null;
     /// The drop file handler
-    protected _addFiles = this.addFiles.bind(this);
+    protected _addLocalFiles = this.addLocalFiles.bind(this);
 
     /// Constructor
     constructor(props: ShellProps) {
@@ -69,7 +69,7 @@ class Shell extends React.Component<ShellProps> {
     }
 
     /// Drop files
-    public async addFiles(files: FileList) {
+    public async addLocalFiles(files: FileList) {
         if (!this._database) return;
         const fileInfos: Array<model.FileInfo> = [];
         for (let i = 0; i < files.length; ++i) {
@@ -78,8 +78,8 @@ class Shell extends React.Component<ShellProps> {
             await this._database.registerFileHandle(file.name, file);
             fileInfos.push({
                 name: file.name,
-                url: null,
-                size: 0,
+                url: file.name,
+                size: file.size,
                 downloadProgress: 1.0,
             });
         }
@@ -99,7 +99,7 @@ class Shell extends React.Component<ShellProps> {
                 <div ref={this._termContainer} className={styles.term_container}></div>
                 {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
                     <Overlay>
-                        <FileExplorer database={this._database} addFiles={this._addFiles} />
+                        <FileExplorer database={this._database} addLocalFiles={this._addLocalFiles} />
                     </Overlay>
                 )}
             </div>
