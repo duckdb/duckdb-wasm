@@ -14,8 +14,10 @@ declare global {
 
 /** A DuckDB Feature */
 export enum DuckDBFeature {
-    FAST_EXCEPTIONS = 1 << 0,
-    THREADS = 1 << 1,
+    WASM_EXCEPTIONS = 1 << 0,
+    WASM_THREADS = 1 << 1,
+    WASM_SIMD = 1 << 2,
+    WASM_BULK_MEMORY = 1 << 3,
 }
 
 /** The proxy for either the browser- order node-based DuckDB API */
