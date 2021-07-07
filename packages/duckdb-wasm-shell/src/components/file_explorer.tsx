@@ -52,7 +52,7 @@ class FileExplorer extends React.Component<Props> {
                 <div className={styles.file_list_entry_name}>{metadata.name}</div>
                 <div className={styles.file_list_entry_size}>{formatBytes(metadata.size || 0)}</div>
                 <div className={styles.file_list_entry_action}>
-                    <svg width="20px" height="20px">
+                    <svg width="18px" height="18px">
                         <use xlinkHref={`${icon_data_matrix_scan}#sym`} />
                     </svg>
                 </div>
