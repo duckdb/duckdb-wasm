@@ -309,11 +309,11 @@ impl Shell {
         let options = args[subcmd.len()..].trim();
         match subcmd {
             "collect" => {
-                db.enable_file_statistics(options, true).await.unwrap();
+                db.collect_file_statistics(options, true).await.unwrap();
                 Shell::with(|s| s.writeln(&format!("Collecting file statistics for: {}", options)));
             }
             "disable" => {
-                db.enable_file_statistics(options, false).await.unwrap();
+                db.collect_file_statistics(options, false).await.unwrap();
                 Shell::with(|s| s.writeln(&format!("Disabled file statistics for: {}", options)));
             }
             "reset" => {

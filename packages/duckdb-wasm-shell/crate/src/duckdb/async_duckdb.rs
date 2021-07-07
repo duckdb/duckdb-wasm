@@ -37,8 +37,8 @@ extern "C" {
         conn: ConnectionID,
     ) -> Result<JsValue, JsValue>;
 
-    #[wasm_bindgen(catch, method, js_name = "enableFileStatistics")]
-    async fn enable_file_statistics(
+    #[wasm_bindgen(catch, method, js_name = "collectFileStatistics")]
+    async fn collect_file_statistics(
         this: &JsAsyncDuckDB,
         text: &str,
         enable: bool,
@@ -94,12 +94,12 @@ impl AsyncDuckDB {
     }
 
     /// Enable file statistics
-    pub async fn enable_file_statistics(
+    pub async fn collect_file_statistics(
         &self,
         file: &str,
         enable: bool,
     ) -> Result<(), js_sys::Error> {
-        self.bindings.enable_file_statistics(file, enable).await?;
+        self.bindings.collect_file_statistics(file, enable).await?;
         Ok(())
     }
 
