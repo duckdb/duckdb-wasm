@@ -46,35 +46,39 @@
     align-self: center;
 }
 
-.registered_file_list {
+.file_list {
     grid-row: 2;
 }
 
-.registered_file_list_entry {
-    padding: 4px 16px 4px 24px;
+.file_list_entry {
     display: grid;
     width: 100%;
-    grid-template-columns: 32px auto;
-    grid-template-rows: 32px;
+    grid-template-columns: auto max-content 40px 40px;
+    padding-right: 4px;
 }
 
-.registered_file_list_entry:hover {
-    background-color: rgb(200, 200, 200);
-}
-
-.registered_file_list_entryIcon {
-    grid-row: 1;
-    grid-column: 1;
-    display: grid;
-    justify-content: left;
-    align-items: center;
-}
-
-.registered_file_list_entry_header {
-    grid-column: 2;
+.file_list_entry_name {
     font-size: 0.95rem;
     display: grid;
     justify-content: left;
+    align-items: center;
+    padding: 8px 8px 8px 16px;
+    height: 40px;
+}
+
+.file_list_entry_size {
+    font-size: 0.95rem;
+    display: grid;
+    justify-content: right;
+    align-items: center;
+    padding-right: 12px;
+    padding-left: 12px;
+    font-weight: 500;
+}
+
+.file_list_entry_action {
+    display: grid;
+    justify-content: center;
     align-items: center;
 }
 
