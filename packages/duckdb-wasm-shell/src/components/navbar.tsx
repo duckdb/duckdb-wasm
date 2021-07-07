@@ -52,7 +52,7 @@ class NavBarImpl extends React.Component<Props> {
                     </svg>
                 </div>
                 <div className={styles.tabs}>
-                    <Tab route="/" location={this.props.location.pathname} icon={icon_shell} />
+                    <Tab route="./" location={this.props.location.pathname} icon={icon_shell} />
                     <Tab
                         route="docs/modules/index.html"
                         location={this.props.location.pathname}
