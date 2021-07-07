@@ -430,7 +430,7 @@ arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
     return web_fs->GetFileInfoJSON(file_id);
 }
 /// Enable file statistics
-arrow::Status WebDB::EnableFileStatistics(std::string_view path, bool enable) {
+arrow::Status WebDB::CollectFileStatistics(std::string_view path, bool enable) {
     auto stats = file_stats_->EnableCollector(path, enable);
     if (auto web_fs = io::WebFileSystem::Get()) {
         web_fs->CollectFileStatistics(path, stats);

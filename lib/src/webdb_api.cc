@@ -39,10 +39,10 @@ void duckdb_web_flush_file(const char* path) {
     auto& webdb = WebDB::Get();
     webdb.FlushFile(path);
 }
-/// Enable file statistics
-void duckdb_web_enable_file_stats(WASMResponse* packed, const char* file_name, bool enable) {
+/// Collect file statistics
+void duckdb_web_collect_file_stats(WASMResponse* packed, const char* file_name, bool enable) {
     auto& webdb = WebDB::Get();
-    WASMResponseBuffer::Get().Store(*packed, webdb.EnableFileStatistics(file_name, enable));
+    WASMResponseBuffer::Get().Store(*packed, webdb.CollectFileStatistics(file_name, enable));
 }
 /// Export file statistics
 void duckdb_web_export_file_stats(WASMResponse* packed, const char* file_name) {

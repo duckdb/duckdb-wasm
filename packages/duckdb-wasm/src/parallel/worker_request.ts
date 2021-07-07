@@ -19,7 +19,7 @@ export enum WorkerRequestType {
     REGISTER_FILE_HANDLE = 'REGISTER_FILE_HANDLE',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
-    ENABLE_FILE_STATISTICS = 'ENABLE_FILE_STATISTICS',
+    COLLECT_FILE_STATISTICS = 'COLLECT_FILE_STATISTICS',
     EXPORT_FILE_STATISTICS = 'EXPORT_FILE_STATISTICS',
     INSTANTIATE = 'INSTANTIATE',
     CONNECT = 'CONNECT',
@@ -104,7 +104,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
-    | WorkerRequest<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean]>
+    | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
     | WorkerRequest<WorkerRequestType.EXPORT_FILE_STATISTICS, string>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
@@ -147,7 +147,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>
-    | WorkerTask<WorkerRequestType.ENABLE_FILE_STATISTICS, [string, boolean], null>
+    | WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>
     | WorkerTask<WorkerRequestType.EXPORT_FILE_STATISTICS, string, FileStatistics>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
