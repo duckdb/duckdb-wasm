@@ -77,9 +77,15 @@
 }
 
 .file_list_entry_action {
+    margin: 4px;
     display: grid;
     justify-content: center;
     align-items: center;
+}
+
+.file_list_entry_action:hover {
+    background-color: rgb(220, 220, 220);
+    border-radius: 8px;
 }
 
 .no_files {
