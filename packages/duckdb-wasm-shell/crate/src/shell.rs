@@ -326,6 +326,23 @@ impl Shell {
         Shell::with(|s| s.write(&buffer));
     }
 
+    pub fn collect_file_statistics(name: &str, enable: bool) {
+        let db_ptr = Shell::with(|s| s.db.clone());
+        let name_copy = name.to_string();
+        spawn_local(async move {
+            let db = match db_ptr {
+                Some(ref db) => db.read().unwrap(),
+                None => return,
+            };
+            db.collect_file_statistics(&name_copy, true).await.unwrap();
+            Shell::with_mut(|s| {
+                s.access_file(&name_copy, |info| {
+                    info.file_stats_enabled = enable;
+                });
+            });
+        });
+    }
+
     pub async fn fstats_command(args: String) {
         let db_ptr = Shell::with(|s| s.db.clone());
         let db = match db_ptr {

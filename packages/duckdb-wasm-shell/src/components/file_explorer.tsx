@@ -1,4 +1,5 @@
 import * as model from '../model';
+import * as shell from '../../crate/pkg';
 import Button from 'react-bootstrap/Button';
 import Immutable from 'immutable';
 import React, { ChangeEvent } from 'react';
@@ -53,9 +54,11 @@ class FileExplorer extends React.Component<Props> {
                 <div className={styles.file_list_entry_name}>{metadata.name}</div>
                 <div className={styles.file_list_entry_size}>{formatBytes(metadata.size || 0)}</div>
                 <div
-                    className={classNames(styles.file_list_entry_action, {
-                        [styles.file_list_entry_action_toggled]: true,
+                    className={classNames({
+                        [styles.file_list_entry_action]: !metadata.fileStatsEnabled,
+                        [styles.file_list_entry_action_toggled]: metadata.fileStatsEnabled,
                     })}
+                    onClick={() => shell.collectFileStatistics(metadata.name, !metadata.fileStatsEnabled)}
                 >
                     <svg width="18px" height="18px">
                         <use xlinkHref={`${icon_data_matrix_scan}#sym`} />

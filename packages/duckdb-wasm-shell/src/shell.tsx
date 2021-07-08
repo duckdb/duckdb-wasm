@@ -11,13 +11,12 @@ import { HistoryStore } from './utils/history_store';
 import styles from './shell.module.css';
 
 interface ShellProps {
-    resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
-
     backgroundColor?: string;
     padding?: number[];
     borderRadius?: number[];
     overlay: model.OverlayContent | null;
 
+    resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
     openFileViewer: () => void;
     updateFile: (file: model.FileInfoUpdate) => void;
     registerFiles: (files: model.FileInfo[]) => void;
