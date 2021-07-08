@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 pub struct FileInfo {
     pub name: String,
     pub url: Option<String>,
+    #[serde(rename = "fileStatsEnabled")]
     pub file_stats_enabled: bool,
 }
 
