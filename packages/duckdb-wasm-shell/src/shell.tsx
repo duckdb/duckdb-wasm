@@ -19,17 +19,22 @@ interface ShellProps {
     overlay: model.OverlayContent | null;
 
     openFileViewer: () => void;
+    updateFile: (file: model.FileInfoUpdate) => void;
     registerFiles: (files: model.FileInfo[]) => void;
 }
 
 class ShellRuntime {
-    constructor(protected _history: HistoryStore, protected _openFileExplorer: () => void) {}
+    constructor(
+        protected _history: HistoryStore,
+        protected _openFileExplorer: () => void,
+        protected _updateFile: (file: model.FileInfoUpdate) => void,
+    ) {}
 
     public openFileExplorer(this: ShellRuntime): void {
         this._openFileExplorer();
     }
     public updateFileInfo(this: ShellRuntime, info: string) {
-        console.log(info);
+        this._updateFile(JSON.parse(info) as model.FileInfoUpdate);
     }
     public async readClipboardText(this: ShellRuntime): Promise<string> {
         return await navigator.clipboard.readText();
@@ -67,7 +72,7 @@ class Shell extends React.Component<ShellProps> {
         super(props);
         this._termContainer = React.createRef();
         this._history = new HistoryStore();
-        this._runtime = new ShellRuntime(this._history, props.openFileViewer);
+        this._runtime = new ShellRuntime(this._history, props.openFileViewer, props.updateFile);
         this._database = null;
     }
 
@@ -83,7 +88,7 @@ class Shell extends React.Component<ShellProps> {
                 name: file.name,
                 url: file.name,
                 size: file.size,
-                downloadProgress: 1.0,
+                fileStatsEnabled: false,
             });
         }
         this.props.registerFiles(fileInfos);
@@ -162,6 +167,11 @@ const mapDispatchToProps = (dispatch: model.Dispatch) => ({
         dispatch({
             type: model.StateMutationType.OVERLAY_OPEN,
             data: model.OverlayContent.FILE_EXPLORER,
+        }),
+    updateFile: (file: model.FileInfoUpdate) =>
+        dispatch({
+            type: model.StateMutationType.UPDATE_FILE_INFO,
+            data: file,
         }),
     registerFiles: (files: model.FileInfo[]) =>
         dispatch({

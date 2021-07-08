@@ -5,6 +5,8 @@ export interface FileInfo {
     url: string | null;
     /// The size (if known)
     size: number | null;
-    /// The download progress
-    downloadProgress: number | null;
+    /// The file statistics
+    fileStatsEnabled: boolean;
 }
+
+export type FileInfoUpdate = Partial<FileInfo> & { name: string };

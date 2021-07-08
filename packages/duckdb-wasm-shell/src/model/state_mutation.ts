@@ -13,6 +13,7 @@ export type StateMutation<T, P> = {
 export enum StateMutationType {
     OVERLAY_OPEN = 'OVERLAY_OPEN',
     OVERLAY_CLOSE = 'OVERLAY_CLOSE',
+    UPDATE_FILE_INFO = 'UPDATE_FILE_INFO',
     REGISTER_FILES = 'REGISTER_FILES',
     OTHER = 'OTHER',
 }
@@ -21,6 +22,7 @@ export enum StateMutationType {
 export type StateMutationVariant =
     | StateMutation<StateMutationType.OVERLAY_OPEN, OverlayContent>
     | StateMutation<StateMutationType.OVERLAY_CLOSE, OverlayContent>
+    | StateMutation<StateMutationType.UPDATE_FILE_INFO, Partial<model.FileInfo>>
     | StateMutation<StateMutationType.REGISTER_FILES, model.FileInfo[]>;
 
 // The action dispatch
@@ -43,6 +45,27 @@ export class AppStateMutation {
                 return {
                     ...state,
                     overlay: mutation.data,
+                };
+            case StateMutationType.UPDATE_FILE_INFO:
+                return {
+                    ...state,
+                    registeredFiles: state.registeredFiles.withMutations(m => {
+                        const info = m.get(mutation.data.name!);
+                        if (info) {
+                            m.set(mutation.data.name!, {
+                                ...info,
+                                ...mutation.data,
+                            });
+                        } else {
+                            m.set(mutation.data.name!, {
+                                name: mutation.data.name!,
+                                url: null,
+                                size: null,
+                                fileStatsEnabled: false,
+                                ...mutation.data,
+                            });
+                        }
+                    }),
                 };
             case StateMutationType.REGISTER_FILES:
                 return {
