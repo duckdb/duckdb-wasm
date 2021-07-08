@@ -46,9 +46,9 @@ impl PromptBuffer {
     }
 
     /// Collect as string.
-    /// We replace all paragraph separators with real line feeds for the user.
+    /// Erase all artificial line wraps (encoded as paragraph separator).
     pub fn collect(&mut self) -> String {
-        String::from(&self.text_buffer).replace(&vt100::PARAGRAPH_SEPERATOR.to_string(), "\n")
+        String::from(&self.text_buffer).replace(&vt100::PARAGRAPH_SEPERATOR.to_string(), "")
     }
 
     /// Replace the prompt
