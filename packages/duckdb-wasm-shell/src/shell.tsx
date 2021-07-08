@@ -28,6 +28,9 @@ class ShellRuntime {
     public openFileExplorer(this: ShellRuntime): void {
         this._openFileExplorer();
     }
+    public updateFileInfo(this: ShellRuntime, info: string) {
+        console.log(info);
+    }
     public async readClipboardText(this: ShellRuntime): Promise<string> {
         return await navigator.clipboard.readText();
     }

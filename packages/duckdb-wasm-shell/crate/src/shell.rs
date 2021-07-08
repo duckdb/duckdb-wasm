@@ -4,7 +4,7 @@ use crate::key_event::{Key, KeyEvent};
 use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
 use crate::shell_options::ShellOptions;
-use crate::shell_runtime::ShellRuntime;
+use crate::shell_runtime::{FileInfo, ShellRuntime};
 use crate::utils::{now, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
@@ -15,7 +15,8 @@ use chrono::Duration;
 use log::warn;
 use scopeguard::defer;
 use std::cell::RefCell;
-use std::collections::VecDeque;
+use std::collections::hash_map::Entry;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::Write;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -77,6 +78,8 @@ pub struct Shell {
     db: Option<Arc<RwLock<AsyncDuckDB>>>,
     /// The connection (if any)
     db_conn: Option<Arc<RwLock<AsyncDuckDBConnection>>>,
+    /// The file infos
+    file_infos: HashMap<String, FileInfo>,
 }
 
 impl Shell {
@@ -94,6 +97,27 @@ impl Shell {
             history_cursor: 0,
             db: None,
             db_conn: None,
+            file_infos: HashMap::new(),
+        }
+    }
+
+    /// Access a file
+    fn access_file<F>(&mut self, name: &str, callback: F)
+    where
+        F: FnOnce(&mut FileInfo),
+    {
+        // Get or insert file
+        let file = match self.file_infos.entry(name.to_string()) {
+            Entry::Occupied(o) => o.into_mut(),
+            Entry::Vacant(v) => v.insert(FileInfo::from_name(name)),
+        };
+        // Run the user modifcations
+        callback(file);
+        // Update the file info in the runtime
+        if let Some(rt) = &self.runtime {
+            if let Ok(file_json) = serde_json::ser::to_string(&file) {
+                rt.read().unwrap().update_file_info(&file_json);
+            }
         }
     }
 
@@ -310,29 +334,40 @@ impl Shell {
         };
         let subcmd = &args[..args.find(' ').unwrap_or_else(|| args.len())];
         let options = args[subcmd.len()..].trim();
+        let filename = options;
         match subcmd {
             "collect" => {
-                db.collect_file_statistics(options, true).await.unwrap();
-                Shell::with(|s| s.writeln(&format!("Collecting file statistics for: {}", options)));
+                db.collect_file_statistics(filename, true).await.unwrap();
+                Shell::with_mut(|s| {
+                    s.access_file(filename, |info| {
+                        info.file_stats_enabled = true;
+                    });
+                    s.writeln(&format!("Collecting file statistics for: {}", options))
+                });
             }
             "disable" => {
-                db.collect_file_statistics(options, false).await.unwrap();
-                Shell::with(|s| s.writeln(&format!("Disabled file statistics for: {}", options)));
+                db.collect_file_statistics(filename, false).await.unwrap();
+                Shell::with_mut(|s| {
+                    s.access_file(filename, |info| {
+                        info.file_stats_enabled = true;
+                    });
+                    s.writeln(&format!("Disabled file statistics for: {}", options))
+                });
             }
             "reset" => {
                 Shell::with(|s| s.writeln(&format!("Resetted file statistics for: {}", options)));
             }
             "reads" => {
-                let stats = db.export_file_statistics(options).await.unwrap();
+                let stats = db.export_file_statistics(filename).await.unwrap();
                 Shell::with(|s| s.write(&stats.print_read_stats(s.terminal_width)));
             }
             "paging" => {
-                let stats = db.export_file_statistics(options).await.unwrap();
+                let stats = db.export_file_statistics(filename).await.unwrap();
                 Shell::with(|s| s.write(&stats.print_page_stats(s.terminal_width)));
             }
             _ => {
                 Shell::with(|s| {
-                    s.writeln(&format!("Resetted file statistics for: {}", options));
+                    s.writeln(&format!("Resetted file statistics for: {}", filename));
                     s.writeln("Usage: .fstats [collect/disable/reset/reads/paging] <file>");
                 });
             }
