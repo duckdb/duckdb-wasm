@@ -3,6 +3,7 @@ import Button from 'react-bootstrap/Button';
 import Immutable from 'immutable';
 import React, { ChangeEvent } from 'react';
 import styles from './file_explorer.module.css';
+import classNames from 'classnames';
 import { connect } from 'react-redux';
 import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
 import { formatBytes } from '../utils/format';
@@ -51,7 +52,11 @@ class FileExplorer extends React.Component<Props> {
             <div key={metadata.name} className={styles.file_list_entry}>
                 <div className={styles.file_list_entry_name}>{metadata.name}</div>
                 <div className={styles.file_list_entry_size}>{formatBytes(metadata.size || 0)}</div>
-                <div className={styles.file_list_entry_action}>
+                <div
+                    className={classNames(styles.file_list_entry_action, {
+                        [styles.file_list_entry_action_toggled]: true,
+                    })}
+                >
                     <svg width="18px" height="18px">
                         <use xlinkHref={`${icon_data_matrix_scan}#sym`} />
                     </svg>

@@ -84,8 +84,15 @@
 }
 
 .file_list_entry_action:hover {
-    background-color: rgb(220, 220, 220);
+    background-color: rgb(220, 220, 220) !important;
     border-radius: 8px;
+    color: black !important;
+}
+
+.file_list_entry_action_toggled {
+    background-color: rgb(30, 30, 30);
+    border-radius: 8px;
+    color: white;
 }
 
 .no_files {
