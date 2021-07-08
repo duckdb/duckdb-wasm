@@ -710,7 +710,7 @@ impl Shell {
 
             if (db_features & 0b01) == 0 {
                 s.write(&format!(
-                    "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter \".config\" for details.{normal}{endl}{endl}",
+                    "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter {bold}.config{normal} for details.{normal}{endl}{endl}",
                     fg = vt100::COLOR_FG_BLACK,
                     bg = vt100::COLOR_BG_BRIGHT_WHITE,
                     bold = vt100::MODE_BOLD,
@@ -722,7 +722,7 @@ impl Shell {
     }
 
     fn write_connection_ready(&self) {
-        self.write(&format!("Connected to a {bold}transient in-memory database{normal}.{endl}Enter \".help\" for usage hints.{endl}{endl}",
+        self.write(&format!("Connected to a {bold}transient in-memory database{normal}.{endl}Enter {bold}.help{normal} for usage hints.{endl}{endl}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
             endl = vt100::CRLF
