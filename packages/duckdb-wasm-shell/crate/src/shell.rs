@@ -299,7 +299,7 @@ impl Shell {
             (db_features & 0b10) != 0,
         );
 
-        Shell::with(|s| s.writeln(&buffer));
+        Shell::with(|s| s.write(&buffer));
     }
 
     pub async fn fstats_command(args: String) {
