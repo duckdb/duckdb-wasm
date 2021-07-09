@@ -187,18 +187,16 @@ if(EMSCRIPTEN)
           _main, \
           _malloc, \
           _free, \
-          _duckdb_web_get_version, \
-          _duckdb_web_get_feature_flags, \
           _duckdb_web_clear_response, \
-          _duckdb_web_flush_files, \
-          _duckdb_web_flush_file, \
+          _duckdb_web_collect_file_stats, \
+          _duckdb_web_connect, \
           _duckdb_web_copy_file_to_buffer, \
           _duckdb_web_copy_file_to_path, \
-          _duckdb_web_collect_file_stats, \
-          _duckdb_web_export_file_stats, \
-          _duckdb_web_tokenize, \
-          _duckdb_web_connect, \
           _duckdb_web_disconnect, \
+          _duckdb_web_export_file_stats, \
+          _duckdb_web_fail_with, \
+          _duckdb_web_flush_file, \
+          _duckdb_web_flush_files, \
           _duckdb_web_fs_drop_file, \
           _duckdb_web_fs_drop_files, \
           _duckdb_web_fs_get_file_info, \
@@ -206,20 +204,23 @@ if(EMSCRIPTEN)
           _duckdb_web_fs_register_file_buffer, \
           _duckdb_web_fs_register_file_url, \
           _duckdb_web_fs_set_file_descriptor, \
+          _duckdb_web_get_feature_flags, \
+          _duckdb_web_get_version, \
+          _duckdb_web_import_csv_table, \
+          _duckdb_web_import_json_table, \
+          _duckdb_web_prepared_statement_close, \
+          _duckdb_web_prepared_statement_create, \
+          _duckdb_web_prepared_statement_run, \
+          _duckdb_web_prepared_statement_send, \
           _duckdb_web_query_fetch_results, \
           _duckdb_web_query_run, \
           _duckdb_web_query_send, \
-          _duckdb_web_import_csv_table, \
-          _duckdb_web_import_json_table, \
-          _duckdb_web_zip_load_file, \
-          _duckdb_web_zip_read_entry_count, \
-          _duckdb_web_zip_read_entry_info, \
+          _duckdb_web_tokenize, \
           _duckdb_web_zip_extract_entry_to_path, \
           _duckdb_web_zip_extract_path_to_path, \
-          _duckdb_web_prepared_statement_create, \
-          _duckdb_web_prepared_statement_close, \
-          _duckdb_web_prepared_statement_run, \
-          _duckdb_web_prepared_statement_send \
+          _duckdb_web_zip_load_file, \
+          _duckdb_web_zip_read_entry_count, \
+          _duckdb_web_zip_read_entry_info \
       ]' \
       -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
       --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")
