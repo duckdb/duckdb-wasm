@@ -36,6 +36,8 @@ struct LocalState {
     std::unordered_map<size_t, std::unique_ptr<FileHandle>> handles = {};
     /// The glob results (if any)
     std::vector<std::string> glob_results = {};
+    /// The error message (if any)
+    std::string error_msg = {};
 };
 /// The mutex for local state dictionary
 static std::mutex LOCAL_STATES_MTX;

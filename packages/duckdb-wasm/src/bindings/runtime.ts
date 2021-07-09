@@ -14,6 +14,11 @@ function TextDecoderWrapper(): (input?: BufferSource) => string {
 export const decodeText = TextDecoderWrapper();
 
 /** Copy a buffer */
+export function failWith(mod: DuckDBModule, msg: string): void {
+    mod.ccall('duckdb_web_fail_with', null, ['string'], [msg]);
+}
+
+/** Copy a buffer */
 export function copyBuffer(mod: DuckDBModule, begin: number, length: number): Uint8Array {
     const buffer = mod.HEAPU8.subarray(begin, begin + length);
     const copy = new Uint8Array(new ArrayBuffer(buffer.byteLength));

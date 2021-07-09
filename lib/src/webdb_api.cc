@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdexcept>
 
 #include "arrow/buffer.h"
 #include "arrow/status.h"
@@ -14,6 +15,9 @@ using BufferHdl = uintptr_t;
 
 /// Clear the response buffer
 void duckdb_web_clear_response() { WASMResponseBuffer::Get().Clear(); }
+
+/// Throw a (wasm) exception
+extern "C" void duckdb_web_fail_with(const char* path) { throw std::runtime_error{std::string{path}}; }
 
 /// Create a conn
 ConnectionHdl duckdb_web_connect() {
