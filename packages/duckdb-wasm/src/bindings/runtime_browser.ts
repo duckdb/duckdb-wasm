@@ -80,11 +80,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     break;
                 }
             }
-            return 0;
         } catch (e) {
             failWith(mod, e.toString());
-            return 0;
         }
+        return 0;
     },
     glob: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
