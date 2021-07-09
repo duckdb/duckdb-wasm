@@ -7,7 +7,7 @@ namespace web {
 
 #if !EMSCRIPTEN || WEBDB_THREADS
 uint32_t GetThreadID() {
-    static std::atomic<uint32_t> NEXT_THREAD_ID = 0;
+    static std::atomic<uint32_t> NEXT_THREAD_ID = 1;
     static thread_local uint32_t THREAD_ID = 0;
     if (THREAD_ID == 0) {
         THREAD_ID = NEXT_THREAD_ID++;

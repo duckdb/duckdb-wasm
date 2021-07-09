@@ -25,47 +25,48 @@
 #include "rapidjson/writer.h"
 
 static const std::function<void(std::string, bool)> *list_files_callback = {};
-static std::vector<std::string> *glob_results = {};
 
 namespace duckdb {
 namespace web {
 namespace io {
 
-/// Stub the filesystem for native tests
-#ifndef EMSCRIPTEN
-/// The thread infos
-struct ThreadInfo {
-    /// The handles
+/// The local state
+struct LocalState {
+    /// The handles (if any)
     std::unordered_map<size_t, std::unique_ptr<FileHandle>> handles = {};
+    /// The glob results (if any)
+    std::vector<std::string> glob_results = {};
 };
-/// The native filesystem to fake the webfs runtime.
-/// This is only used for tests.
-static duckdb::FileSystem NATIVE_FS;
-/// The mutex for the system
-static std::mutex NATIVE_FS_MTX;
-/// The thread local file infos
-static std::unordered_map<size_t, std::unique_ptr<ThreadInfo>> LOCAL_FS_INFOS;
-/// Clear the native file handles
-static void ClearNativeFileInfos() {
-    std::unique_lock<std::mutex> fs_guard{NATIVE_FS_MTX};
-    LOCAL_FS_INFOS.clear();
-}
-/// Get the native file infos
-static auto &GetNativeFileInfos() {
-    std::unique_lock<std::mutex> fs_guard{NATIVE_FS_MTX};
+/// The mutex for local state dictionary
+static std::mutex LOCAL_STATES_MTX;
+/// The thread local stats
+static std::unordered_map<size_t, std::unique_ptr<LocalState>> LOCAL_STATES;
+/// Get the local state
+static auto &GetLocalState() {
+    std::unique_lock<std::mutex> fs_guard{LOCAL_STATES_MTX};
     auto tid = GetThreadID();
-    auto iter = LOCAL_FS_INFOS.find(tid);
-    if (iter != LOCAL_FS_INFOS.end()) return *iter->second;
-    auto entry = LOCAL_FS_INFOS.insert({tid, std::make_unique<ThreadInfo>()});
+    auto iter = LOCAL_STATES.find(tid);
+    if (iter != LOCAL_STATES.end()) return *iter->second;
+    auto entry = LOCAL_STATES.insert({tid, std::make_unique<LocalState>()});
     return *entry.first->second;
 }
+/// Clear the native file handles
+static void ClearLocalStates() {
+    std::unique_lock<std::mutex> fs_guard{LOCAL_STATES_MTX};
+    LOCAL_STATES.clear();
+}
+
+/// Stub the filesystem for native tests
+#ifndef EMSCRIPTEN
+/// This is only used for tests.
+static duckdb::FileSystem NATIVE_FS;
 /// Get or open a file and throw if something is off
 static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     auto file = WebFileSystem::Get()->GetFile(file_id);
     if (!file) {
         throw std::runtime_error("unknown file");
     }
-    auto &infos = GetNativeFileInfos();
+    auto &infos = GetLocalState();
     switch (file->GetDataProtocol()) {
         case WebFileSystem::DataProtocol::NATIVE: {
             assert(file->GetDataURL());
@@ -96,7 +97,7 @@ RT_FN(void *duckdb_web_fs_file_open(size_t file_id), {
 });
 RT_FN(void duckdb_web_fs_file_sync(size_t file_id), { NATIVE_FS.FileSync(GetOrOpen(file_id)); });
 RT_FN(void duckdb_web_fs_file_close(size_t file_id), {
-    auto &infos = GetNativeFileInfos();
+    auto &infos = GetLocalState();
     infos.handles.erase(file_id);
 });
 RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOrOpen(file_id).Truncate(new_size); });
@@ -131,7 +132,8 @@ RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {
 });
 RT_FN(bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen), { return false; });
 RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {
-    *glob_results = NATIVE_FS.Glob(std::string{path, pathLen});
+    auto &state = GetLocalState();
+    state.glob_results = NATIVE_FS.Glob(std::string{path, pathLen});
 });
 RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen), {
     NATIVE_FS.MoveFile(std::string{from, fromLen}, std::string{to, toLen});
@@ -140,6 +142,10 @@ RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), {
     return NATIVE_FS.FileExists(std::string{path, pathLen});
 });
 #undef RT_FN
+
+extern "C" void duckdb_web_fs_glob_add_path(const char *path, size_t path_len) {
+    GetLocalState().glob_results.push_back(std::string{path, path_len});
+}
 
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
@@ -289,9 +295,7 @@ WebFileSystem::WebFileSystem() {
 /// Destructor
 WebFileSystem::~WebFileSystem() {
     WEBFS = nullptr;
-#ifndef EMSCRIPTEN
-    ClearNativeFileInfos();
-#endif
+    ClearLocalStates();
 }
 
 /// Invalidate readaheads
@@ -776,10 +780,12 @@ std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
             results.push_back(std::string{name});
         }
     }
-    glob_results = &results;
+    auto &state = GetLocalState();
     duckdb_web_fs_glob(path.c_str(), path.size());
-    glob_results = nullptr;
-    return results;
+    for (auto &path : state.glob_results) {
+        results.push_back(std::move(path));
+    }
+    return std::move(results);
 }
 
 /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location

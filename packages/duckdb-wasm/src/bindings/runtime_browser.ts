@@ -45,33 +45,21 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.HTTP: {
                 // Send a dummy range request querying the first byte of the file
                 const xhr = new XMLHttpRequest();
-                xhr.open('GET', file.data_url!, false);
+                xhr.open('HEAD', file.data_url!, false);
                 xhr.responseType = 'arraybuffer';
-                xhr.setRequestHeader('Range', `bytes=0-1`);
+                xhr.setRequestHeader('Range', `bytes=0-`);
                 xhr.send(null);
+
+                // Supports range requests
+                let supportsRanges = false;
                 if (xhr.status == 206) {
-                    // Source supports partial reading, no explicit buffering necessary.
+                    supportsRanges = true;
                 } else if (xhr.status == 200) {
-                    console.info(
-                        `File does not support range requests, buffering everything in WASM instead. url=${file.data_url!}`,
-                    );
-
-                    // Source returned us everything... great...
-                    // Copy everything into wasm.
-                    // XXX we might want to switch back to HTTP HEAD requests again since we're no longer using this for object URLs
-                    const buffer = xhr.response as ArrayBuffer;
-                    const bufferPtr = mod._malloc(buffer.byteLength);
-                    mod.HEAPU8.set(new Uint8Array(buffer), bufferPtr);
-
-                    // Allocate the buffer descriptor (offset + length)
-                    const desc = mod._malloc(4 + 4);
-                    mod.HEAPU32[(desc >> 2) + 0] = bufferPtr;
-                    mod.HEAPU32[(desc >> 2) + 1] = buffer.byteLength;
-                    return desc;
-                } else {
-                    throw Error(
-                        `Accessing file returned non-success status ${xhr.status} "${xhr.statusText}". url=${file.data_url}`,
-                    );
+                    const header = xhr.getResponseHeader('Accept-Ranges');
+                    supportsRanges = header === 'bytes';
+                }
+                if (!supportsRanges) {
+                    throw Error(`File does not support range requests: ${file.file_name}`);
                 }
                 break;
             }
@@ -84,6 +72,32 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             }
         }
         return 0;
+    },
+    glob: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+
+        // Starts with http?
+        // Try a HTTP HEAD request
+        if (path.startsWith('http')) {
+            // Send a dummy range request querying the first byte of the file
+            const xhr = new XMLHttpRequest();
+            xhr.open('HEAD', path!, false);
+            xhr.responseType = 'arraybuffer';
+            xhr.setRequestHeader('Range', `bytes=0-`);
+            xhr.send(null);
+            let supportsRanges = false;
+            if (xhr.status == 206) {
+                supportsRanges = true;
+            } else if (xhr.status == 200) {
+                const header = xhr.getResponseHeader('Accept-Ranges');
+                supportsRanges = header === 'bytes';
+            }
+            if (!supportsRanges) {
+                throw Error(`Server does not support range requests for file: ${path}`);
+            }
+            console.log(`GLOB ${path}: ${supportsRanges}`);
+            mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
+        }
     },
     syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
@@ -209,7 +223,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     createDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
-    glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
     checkFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
         return false;
