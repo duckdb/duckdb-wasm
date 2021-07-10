@@ -684,7 +684,15 @@ impl Shell {
                     Shell::highlight_input();
                 }
             }
-            Key::Backspace | Key::ArrowLeft | Key::ArrowRight => {
+            Key::Backspace => {
+                Shell::with_mut(|s| {
+                    s.input_clock += 1;
+                    s.input.consume(event);
+                    s.flush();
+                });
+                Shell::highlight_input();
+            }
+            Key::ArrowLeft | Key::ArrowRight => {
                 Shell::with_mut(|s| {
                     s.input_clock += 1;
                     s.input.consume(event);
@@ -723,6 +731,18 @@ impl Shell {
                     }
                     Err(_e) => warn!("Failed to read from clipboard"),
                 },
+                Key::Char('a') => {
+                    Shell::with_mut(|s| {
+                        s.input.move_cursor_to(0);
+                        s.input.flush(&s.terminal);
+                    });
+                }
+                Key::Char('e') => {
+                    Shell::with_mut(|s| {
+                        s.input.move_cursor_to_end();
+                        s.input.flush(&s.terminal);
+                    });
+                }
                 Key::Char('c') => (),
                 _ => {}
             }
