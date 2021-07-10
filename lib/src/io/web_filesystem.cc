@@ -145,8 +145,8 @@ RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), {
 });
 #undef RT_FN
 
-extern "C" void duckdb_web_fs_glob_add_path(const char *path, size_t path_len) {
-    GetLocalState().glob_results.push_back(std::string{path, path_len});
+extern "C" void duckdb_web_fs_glob_add_path(const char *path) {
+    GetLocalState().glob_results.push_back(std::string{path});
 }
 
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
@@ -213,20 +213,16 @@ void WebFileSystem::WebFileHandle::Close() {
     // Additionally acquire the filesystem lock
     std::unique_lock<LightMutex> fs_guard{fs_.fs_mutex_};
     // More than one handle left?
-    if (file.handle_count_ > 1) {
-        --file.handle_count_;
+    if (--file.handle_count_ > 0) {
         return;
     }
     // Failed to lock exclusively?
     if (!have_file_lock) return;
     // Do we need to close explicitly?
     if (file.data_protocol_ != DataProtocol::BUFFER) {
-        try {
-            fs_guard.unlock();
-            duckdb_web_fs_file_close(file.file_id_);
-            fs_guard.lock();
-        } catch (...) {
-        }
+        fs_guard.unlock();
+        duckdb_web_fs_file_close(file.file_id_);
+        fs_guard.lock();
     }
     // Erase the file from the file system
     auto file_id = file.file_id_;
@@ -783,6 +779,7 @@ std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
         }
     }
     auto &state = GetLocalState();
+    state.glob_results.clear();
     duckdb_web_fs_glob(path.c_str(), path.size());
     for (auto &path : state.glob_results) {
         results.push_back(std::move(path));

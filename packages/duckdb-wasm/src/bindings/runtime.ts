@@ -15,6 +15,7 @@ export const decodeText = TextDecoderWrapper();
 
 /** Copy a buffer */
 export function failWith(mod: DuckDBModule, msg: string): void {
+    console.error(msg);
     mod.ccall('duckdb_web_fail_with', null, ['string'], [msg]);
 }
 

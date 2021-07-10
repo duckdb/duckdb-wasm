@@ -267,6 +267,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
         }
         file_id = allocated_file_ids++;
     }
+
     // Create file
     auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags, lock_type);
     auto& file = *file_ptr;
