@@ -109,7 +109,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     failWith(mod, `File does not support range requests: ${path}`);
                     return;
                 }
-                console.log(`GLOB ${path}: ${supportsRanges}`);
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
             }
         } catch (e) {
