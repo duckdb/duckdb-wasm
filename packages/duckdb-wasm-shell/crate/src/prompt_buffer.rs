@@ -153,6 +153,11 @@ impl PromptBuffer {
         self.cursor = pos;
     }
 
+    // Move the cursor to the end of the input
+    pub fn move_cursor_to_end(&mut self) {
+        self.move_cursor_to(self.text_buffer.len_chars());
+    }
+
     // Move the cursor 1 to the left
     fn move_cursor_left(&mut self) {
         let mut iter = self.text_buffer.chars_at(self.cursor);
