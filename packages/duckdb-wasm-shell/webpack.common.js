@@ -16,7 +16,7 @@ export function configure(params) {
             path: params.buildDir,
             filename: 'static/js/[name].[contenthash].js',
             chunkFilename: 'static/js/[name].[contenthash].js',
-            assetModuleFilename: 'static/assets/[name].[contenthash].[ext]',
+            assetModuleFilename: 'static/assets/[name].[contenthash][ext]',
             webassemblyModuleFilename: 'static/wasm/[hash].wasm',
             clean: true,
         },
@@ -59,7 +59,7 @@ export function configure(params) {
                     type: 'javascript/auto',
                     loader: 'file-loader',
                     options: {
-                        name: 'static/wasm/[contenthash].[ext]',
+                        name: 'static/wasm/[name].[contenthash].[ext]',
                     },
                 },
                 {
