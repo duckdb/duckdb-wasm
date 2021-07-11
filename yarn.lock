@@ -3298,10 +3298,10 @@ image-size@~0.5.0:
   resolved "https://registry.yarnpkg.com/image-size/-/image-size-0.5.5.tgz#09dfd4ab9d20e29eb1c3e80b8990378df9e3cb9c"
   integrity sha1-Cd/Uq50g4p6xw+gLiZA3jfnjy5w=
 
-immutable@^4.0.0-rc.12:
-  version "4.0.0-rc.12"
-  resolved "https://registry.yarnpkg.com/immutable/-/immutable-4.0.0-rc.12.tgz#ca59a7e4c19ae8d9bf74a97bdf0f6e2f2a5d0217"
-  integrity sha512-0M2XxkZLx/mi3t8NVwIm1g8nHoEmM9p9UBl/G9k4+hm0kBgOVdMV/B3CY5dQ8qG8qc80NN4gDV4HQv6FTJ5q7A==
+immutable@^4.0.0-rc.14:
+  version "4.0.0-rc.14"
+  resolved "https://registry.yarnpkg.com/immutable/-/immutable-4.0.0-rc.14.tgz#29ba96631ec10867d1348515ac4e6bdba462f071"
+  integrity sha512-pfkvmRKJSoW7JFx0QeYlAmT+kNYvn5j0u7bnpNq4N2RCvHSTlLT208G8jgaquNe+Q8kCPHKOSpxJkyvLDpYq0w==
 
 import-cwd@^3.0.0:
   version "3.0.0"
@@ -3924,10 +3924,10 @@ karma-firefox-launcher@^2.1.0, karma-firefox-launcher@^2.1.1:
     is-wsl "^2.2.0"
     which "^2.0.1"
 
-karma-jasmine-html-reporter@^1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/karma-jasmine-html-reporter/-/karma-jasmine-html-reporter-1.6.0.tgz#586e17025a1b4128e9fba55d5f1e8921bfc3bc1e"
-  integrity sha512-ELO9yf0cNqpzaNLsfFgXd/wxZVYkE2+ECUwhMHUD4PZ17kcsPsYsVyjquiRqyMn2jkd2sHt0IeMyAyq1MC23Fw==
+karma-jasmine-html-reporter@^1.7.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/karma-jasmine-html-reporter/-/karma-jasmine-html-reporter-1.7.0.tgz#52c489a74d760934a1089bfa5ea4a8fcb84cc28b"
+  integrity sha512-pzum1TL7j90DTE86eFt48/s12hqwQuiD+e5aXx2Dc9wDEn2LfGq6RoAxEZZjFiN0RDSCOnosEKRZWxbQ+iMpQQ==
 
 karma-jasmine@^4.0.1:
   version "4.0.1"
