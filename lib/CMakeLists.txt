@@ -208,6 +208,7 @@ if(EMSCRIPTEN)
           _duckdb_web_get_version, \
           _duckdb_web_import_csv_table, \
           _duckdb_web_import_json_table, \
+          _duckdb_web_open, \
           _duckdb_web_prepared_statement_close, \
           _duckdb_web_prepared_statement_create, \
           _duckdb_web_prepared_statement_run, \

@@ -121,6 +121,11 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this._bindings = null;
                     this.sendOK(request);
                     break;
+
+                case WorkerRequestType.OPEN:
+                    this._bindings.open(request.data);
+                    this.sendOK(request);
+                    break;
                 case WorkerRequestType.DROP_FILE:
                     this.postMessage(
                         {

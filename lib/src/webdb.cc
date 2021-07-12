@@ -295,13 +295,13 @@ WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
     buffered_filesystem_ = buffered_filesystem.get();
     db_config_.file_system = std::move(buffered_filesystem);
     db_config_.maximum_threads = 1;
-    database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
-    database_->LoadExtension<duckdb::ParquetExtension>();
     zip_ = std::make_unique<Zipper>(file_page_buffer_);
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
     if (auto webfs = io::WebFileSystem::Get()) {
         webfs->ConfigureFileStatistics(file_stats_);
     }
+    database_ = std::make_shared<duckdb::DuckDB>(path, &db_config_);
+    database_->LoadExtension<duckdb::ParquetExtension>();
 }
 
 WebDB::~WebDB() { pinned_web_files_.clear(); }
@@ -348,6 +348,24 @@ void WebDB::Disconnect(Connection* session) { connections_.erase(session); }
 void WebDB::FlushFiles() { file_page_buffer_->FlushFiles(); }
 /// Flush file by path
 void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path); }
+
+/// Open a database
+arrow::Status WebDB::Open(std::string_view path) {
+    std::string path_buffer{path};
+    try {
+        auto buffered_filesystem = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
+        buffered_filesystem_ = buffered_filesystem.get();
+        db_config_.file_system = std::move(buffered_filesystem);
+        db_config_.maximum_threads = 1;
+        database_ = std::make_shared<duckdb::DuckDB>(path_buffer, &db_config_);
+        database_->LoadExtension<duckdb::ParquetExtension>();
+    } catch (std::exception& ex) {
+        return arrow::Status::Invalid("Opening the database failed with error: ", ex.what());
+    } catch (...) {
+        return arrow::Status::Invalid("Opening the database failed");
+    }
+    return arrow::Status::OK();
+}
 
 /// Register a file URL
 arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,

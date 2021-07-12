@@ -137,6 +137,8 @@ class WebDB {
     /// Flush file by path
     void FlushFile(std::string_view path);
 
+    /// Open a database
+    arrow::Status Open(std::string_view path);
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                   std::optional<uint64_t> file_size);

@@ -43,6 +43,11 @@ void duckdb_web_flush_file(const char* path) {
     auto& webdb = WebDB::Get();
     webdb.FlushFile(path);
 }
+/// Open a database
+void duckdb_web_open(WASMResponse* packed, const char* file_name) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.Open(file_name));
+}
 /// Collect file statistics
 void duckdb_web_collect_file_stats(WASMResponse* packed, const char* file_name, bool enable) {
     auto& webdb = WebDB::Get();

@@ -29,9 +29,9 @@ export abstract class DuckDBBindings {
     /** The instance */
     protected _instance: DuckDBModule | null = null;
     /** The loading promise */
-    protected _openPromise: Promise<void> | null = null;
+    protected _initPromise: Promise<void> | null = null;
     /** The resolver for the open promise (called by onRuntimeInitialized) */
-    protected _openPromiseResolver: () => void = () => {};
+    protected _initPromiseResolver: () => void = () => {};
 
     constructor(logger: Logger, runtime: DuckDBRuntime) {
         this._logger = logger;
@@ -60,27 +60,36 @@ export abstract class DuckDBBindings {
             return this;
         }
         // Open in progress?
-        if (this._openPromise != null) {
-            await this._openPromise;
+        if (this._initPromise != null) {
+            await this._initPromise;
         }
 
         // Create a promise that we can await
-        this._openPromise = new Promise(resolve => {
-            this._openPromiseResolver = resolve;
+        this._initPromise = new Promise(resolve => {
+            this._initPromiseResolver = resolve;
         });
 
         // Initialize duckdb
         this._instance = await this.instantiateImpl({
             print: console.log.bind(console),
             printErr: console.log.bind(console),
-            onRuntimeInitialized: this._openPromiseResolver,
+            onRuntimeInitialized: this._initPromiseResolver,
         });
 
         // Wait for onRuntimeInitialized
-        await this._openPromise;
-        this._openPromise = null;
+        await this._initPromise;
+        this._initPromise = null;
 
         return this;
+    }
+
+    /** Open a database at a path */
+    public open(path: string): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_open', ['string'], [path]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
     }
 
     /** Tokenize a script */

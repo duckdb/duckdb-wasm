@@ -1,6 +1,6 @@
 import * as duckdb from '../src/';
 
-export function testBindings(db: () => duckdb.DuckDBBindings): void {
+export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): void {
     let conn: duckdb.DuckDBConnection;
 
     beforeEach(() => {
@@ -24,6 +24,15 @@ export function testBindings(db: () => duckdb.DuckDBBindings): void {
                 }
                 expect(error).not.toBe(null);
             });
+        });
+
+        describe('Open', () => {
+            // XXX apparently synchronous XHR on the main thread does not allow for arraybuffer response type?
+            //     WTF why?
+            // it('Remote TPCH 0_01', async () => {
+            //     await db().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
+            //     db().open('tpch_0_01.db');
+            // });
         });
 
         describe('Prepared Statement', () => {
@@ -129,6 +138,27 @@ export function testBindings(db: () => duckdb.DuckDBBindings): void {
                 ).toThrow();
                 conn.closePreparedStatement(stmt);
             });
+        });
+    });
+}
+
+export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string): void {
+    let conn: duckdb.AsyncDuckDBConnection;
+
+    beforeEach(async () => {
+        conn = await adb().connect();
+    });
+
+    afterEach(async () => {
+        await conn.disconnect();
+        await adb().flushFiles();
+        await adb().dropFiles();
+    });
+
+    describe('Open', () => {
+        it('Remote TPCH 0_01', async () => {
+            await adb().registerFileURL('tpch_0_01', `${baseURL}/tpch/0_01/duckdb/db`);
+            await adb().open('tpch_0_01.db');
         });
     });
 }

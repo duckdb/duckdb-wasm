@@ -52,6 +52,7 @@ module.exports = function (config) {
             { pattern: 'packages/duckdb-wasm/dist/tests-browser.js' },
             { pattern: 'packages/duckdb-wasm/dist/*.wasm', included: false, watched: false, served: true },
             { pattern: 'packages/duckdb-wasm/dist/*.js', included: false, watched: false, served: true },
+            { pattern: 'data/tpch/0*/duckdb/db', included: false, watched: false, served: true },
             { pattern: 'data/tpch/0*/parquet/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/uni/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/**/*.zip', included: false, watched: false, served: true },

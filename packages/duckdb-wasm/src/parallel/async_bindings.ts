@@ -134,6 +134,25 @@ export class AsyncDuckDB {
 
         // Otherwise differentiate between the tasks first
         switch (task.type) {
+            case WorkerRequestType.COLLECT_FILE_STATISTICS:
+            case WorkerRequestType.COPY_FILE_TO_PATH:
+            case WorkerRequestType.DISCONNECT:
+            case WorkerRequestType.DROP_FILES:
+            case WorkerRequestType.FLUSH_FILES:
+            case WorkerRequestType.IMPORT_CSV_FROM_PATH:
+            case WorkerRequestType.IMPORT_JSON_FROM_PATH:
+            case WorkerRequestType.INSTANTIATE:
+            case WorkerRequestType.OPEN:
+            case WorkerRequestType.PING:
+            case WorkerRequestType.REGISTER_FILE_BUFFER:
+            case WorkerRequestType.REGISTER_FILE_HANDLE:
+            case WorkerRequestType.REGISTER_FILE_URL:
+            case WorkerRequestType.RESET:
+                if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.GET_VERSION:
                 if (response.type == WorkerResponseType.VERSION_STRING) {
                     task.promiseResolver(response.data);
@@ -152,65 +171,14 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
-            case WorkerRequestType.RESET:
-            case WorkerRequestType.PING:
-            case WorkerRequestType.INSTANTIATE:
-            case WorkerRequestType.DISCONNECT:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.FLUSH_FILES:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
             case WorkerRequestType.DROP_FILE:
                 if (response.type == WorkerResponseType.SUCCESS) {
                     task.promiseResolver(response.data);
                     return;
                 }
                 break;
-            case WorkerRequestType.DROP_FILES:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.REGISTER_FILE_URL:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.REGISTER_FILE_BUFFER:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.REGISTER_FILE_HANDLE:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.COPY_FILE_TO_PATH:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
             case WorkerRequestType.COPY_FILE_TO_BUFFER:
                 if (response.type == WorkerResponseType.FILE_BUFFER) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.COLLECT_FILE_STATISTICS:
-                if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -247,18 +215,6 @@ export class AsyncDuckDB {
                 break;
             case WorkerRequestType.ZIP_EXTRACT_FILE:
                 if (response.type == WorkerResponseType.FILE_SIZE) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.IMPORT_CSV_FROM_PATH:
-                if (response.type == WorkerResponseType.OK) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.IMPORT_JSON_FROM_PATH:
-                if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -337,6 +293,12 @@ export class AsyncDuckDB {
         return feature;
     }
 
+    /** Open a new database */
+    public async open(path: string): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.OPEN, string, null>(WorkerRequestType.OPEN, path);
+        await this.postTask(task);
+    }
+
     /** Tokenize a script text */
     public async tokenize(text: string): Promise<ScriptTokens> {
         const task = new WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>(WorkerRequestType.TOKENIZE, text);
@@ -357,12 +319,12 @@ export class AsyncDuckDB {
     }
 
     /** Disconnect from the database */
-    public async disconnect(conn: ConnectionID): Promise<null> {
+    public async disconnect(conn: ConnectionID): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>(
             WorkerRequestType.DISCONNECT,
             conn,
         );
-        return await this.postTask(task);
+        await this.postTask(task);
     }
 
     /// Run a query
@@ -393,48 +355,48 @@ export class AsyncDuckDB {
     }
 
     /** Register a file path. */
-    public async registerFileURL(name: string, url: string): Promise<null> {
+    public async registerFileURL(name: string, url: string): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>(
             WorkerRequestType.REGISTER_FILE_URL,
             [name, url],
         );
-        return await this.postTask(task);
+        await this.postTask(task);
     }
 
     /** Register an empty file buffer. */
-    public async registerEmptyFileBuffer(name: string): Promise<null> {
+    public async registerEmptyFileBuffer(name: string): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(
             WorkerRequestType.REGISTER_FILE_BUFFER,
             [name, new Uint8Array()],
         );
-        return await this.postTask(task);
+        await this.postTask(task);
     }
 
     /** Register a file buffer. */
-    public async registerFileBuffer(name: string, buffer: Uint8Array): Promise<null> {
+    public async registerFileBuffer(name: string, buffer: Uint8Array): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(
             WorkerRequestType.REGISTER_FILE_BUFFER,
             [name, buffer],
         );
-        return await this.postTask(task, [buffer.buffer]);
+        await this.postTask(task, [buffer.buffer]);
     }
 
     /** Register a file handle. */
-    public async registerFileHandle<HandleType>(name: string, handle: HandleType): Promise<null> {
+    public async registerFileHandle<HandleType>(name: string, handle: HandleType): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>(
             WorkerRequestType.REGISTER_FILE_HANDLE,
             [name, handle],
         );
-        return await this.postTask(task, []);
+        await this.postTask(task, []);
     }
 
     /** Enable file statistics */
-    public async collectFileStatistics(name: string, enable: boolean): Promise<null> {
+    public async collectFileStatistics(name: string, enable: boolean): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>(
             WorkerRequestType.COLLECT_FILE_STATISTICS,
             [name, enable],
         );
-        return await this.postTask(task, []);
+        await this.postTask(task, []);
     }
 
     /** Export file statistics */
@@ -456,29 +418,29 @@ export class AsyncDuckDB {
     }
 
     /** Copy a file to a path. */
-    public async copyFileToPath(name: string, path: string): Promise<null> {
+    public async copyFileToPath(name: string, path: string): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>(
             WorkerRequestType.COPY_FILE_TO_PATH,
             [name, path],
         );
-        return await this.postTask(task);
+        await this.postTask(task);
     }
 
     /** Import a csv file */
-    public async importCSVFromPath(conn: ConnectionID, path: string, options: CSVTableOptions): Promise<null> {
+    public async importCSVFromPath(conn: ConnectionID, path: string, options: CSVTableOptions): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>(
             WorkerRequestType.IMPORT_CSV_FROM_PATH,
             [conn, path, options],
         );
-        return await this.postTask(task);
+        await this.postTask(task);
     }
     /** Import a json file */
-    public async importJSONFromPath(conn: ConnectionID, path: string, options: JSONTableOptions): Promise<null> {
+    public async importJSONFromPath(conn: ConnectionID, path: string, options: JSONTableOptions): Promise<void> {
         const task = new WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>(
             WorkerRequestType.IMPORT_JSON_FROM_PATH,
             [conn, path, options],
         );
-        return await this.postTask(task);
+        await this.postTask(task);
     }
 
     /** Extract a zip file */

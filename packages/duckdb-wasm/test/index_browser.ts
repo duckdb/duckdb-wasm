@@ -88,7 +88,7 @@ afterAll(async () => {
     if (worker) worker.terminate();
 });
 
-import { testBindings } from './bindings.test';
+import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
 import { testFilesystem } from './filesystem.test';
@@ -99,11 +99,13 @@ import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { DuckDBConfig } from '../src/targets/duckdb-browser-async';
 
 const baseURL = window.location.origin;
+const dataURL = baseURL + '/data';
 
-testBindings(() => db!);
+testBindings(() => db!, dataURL);
+testAsyncBindings(() => adb!, dataURL);
 testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
-testFilesystem(() => adb!, resolveData, baseURL + '/data');
+testFilesystem(() => adb!, resolveData, dataURL);
 testZip(() => db!, resolveData);
 testZipAsync(() => adb!, resolveData);
 testJSONImport(() => db!);
