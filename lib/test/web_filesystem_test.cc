@@ -19,7 +19,7 @@ namespace {
 
 TEST(WebFileSystemTest, LoadParquet) {
     auto webfs = std::make_unique<io::WebFileSystem>();
-    auto db = std::make_shared<WebDB>(std::move(webfs));
+    auto db = std::make_shared<WebDB>("", std::move(webfs));
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -43,7 +43,7 @@ INTEGER	VARCHAR	INTEGER
 
 TEST(WebFileSystemTest, TestTPCHScans) {
     auto webfs = std::make_unique<io::WebFileSystem>();
-    auto db = std::make_shared<WebDB>(std::move(webfs));
+    auto db = std::make_shared<WebDB>("", std::move(webfs));
     WebDB::Connection conn{*db};
     std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
     for (const auto& f : files) {
