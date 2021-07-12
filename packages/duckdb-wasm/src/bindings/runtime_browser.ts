@@ -53,7 +53,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // Send a dummy range request querying the first byte of the file
                     const xhr = new XMLHttpRequest();
                     xhr.open('HEAD', file.data_url!, false);
-                    xhr.responseType = 'arraybuffer';
                     xhr.setRequestHeader('Range', `bytes=0-`);
                     xhr.send(null);
 
@@ -95,7 +94,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 // Send a dummy range request querying the first byte of the file
                 const xhr = new XMLHttpRequest();
                 xhr.open('HEAD', path!, false);
-                xhr.responseType = 'arraybuffer';
                 xhr.setRequestHeader('Range', `bytes=0-`);
                 xhr.send(null);
                 let supportsRanges = false;

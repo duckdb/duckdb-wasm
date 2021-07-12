@@ -5,18 +5,18 @@ import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
 interface IAsyncDuckDB {
     logger: Logger;
 
-    registerFileURL(name: string, url: string, size: number): Promise<null>;
-    registerFileBuffer(name: string, buffer: Uint8Array): Promise<null>;
-    copyFileToPath(name: string, out: string): Promise<null>;
+    registerFileURL(name: string, url: string, size: number): Promise<void>;
+    registerFileBuffer(name: string, buffer: Uint8Array): Promise<void>;
+    copyFileToPath(name: string, out: string): Promise<void>;
     copyFileToBuffer(name: string): Promise<Uint8Array>;
 
-    disconnect(conn: number): Promise<null>;
+    disconnect(conn: number): Promise<void>;
     runQuery(conn: number, text: string): Promise<Uint8Array>;
     sendQuery(conn: number, text: string): Promise<Uint8Array>;
     fetchQueryResults(conn: number): Promise<Uint8Array>;
 
-    importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<null>;
-    importJSONFromPath(conn: number, path: string, options: JSONTableOptions): Promise<null>;
+    importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<void>;
+    importJSONFromPath(conn: number, path: string, options: JSONTableOptions): Promise<void>;
 
     extractZipPath(archiveFile: string, outFile: string, entryPath: string): Promise<number>;
 }
@@ -65,7 +65,7 @@ export interface AsyncConnection {
     readonly instance: IAsyncDuckDB;
 
     /** Disconnect from the database */
-    disconnect(): Promise<null>;
+    disconnect(): Promise<void>;
     /** Run a query */
     runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>>;
     /** Send a query */
@@ -73,9 +73,9 @@ export interface AsyncConnection {
         text: string,
     ): Promise<arrow.AsyncRecordBatchStreamReader<T>>;
     /** Import csv file from path */
-    importCSVFromPath(text: string, options: CSVTableOptions): Promise<null>;
+    importCSVFromPath(text: string, options: CSVTableOptions): Promise<void>;
     /** Import csv file from path */
-    importJSONFromPath(text: string, options: JSONTableOptions): Promise<null>;
+    importJSONFromPath(text: string, options: JSONTableOptions): Promise<void>;
 }
 
 /** A thin helper to memoize the connection id */
@@ -96,7 +96,7 @@ export class AsyncDuckDBConnection implements AsyncConnection {
     }
 
     /** Disconnect from the database */
-    public async disconnect(): Promise<null> {
+    public async disconnect(): Promise<void> {
         return this._instance.disconnect(this._conn);
     }
 
@@ -138,11 +138,11 @@ export class AsyncDuckDBConnection implements AsyncConnection {
     }
 
     /** Import csv file from path */
-    public async importCSVFromPath(text: string, options: CSVTableOptions): Promise<null> {
-        return await this._instance.importCSVFromPath(this._conn, text, options);
+    public async importCSVFromPath(text: string, options: CSVTableOptions): Promise<void> {
+        await this._instance.importCSVFromPath(this._conn, text, options);
     }
     /** Import json file from path */
-    public async importJSONFromPath(text: string, options: JSONTableOptions): Promise<null> {
-        return await this._instance.importJSONFromPath(this._conn, text, options);
+    public async importJSONFromPath(text: string, options: JSONTableOptions): Promise<void> {
+        await this._instance.importJSONFromPath(this._conn, text, options);
     }
 }

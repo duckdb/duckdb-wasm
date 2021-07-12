@@ -63,7 +63,7 @@ afterAll(async () => {
     if (worker) worker.terminate();
 });
 
-import { testBindings } from './bindings.test';
+import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testFilesystem } from './filesystem.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
@@ -71,7 +71,8 @@ import { testZip, testZipAsync } from './zip.test';
 import { testJSONImport, testJSONImportAsync } from './import_json.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 
-testBindings(() => db!);
+testBindings(() => db!, dataDir);
+testAsyncBindings(() => adb!, dataDir);
 testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
 testFilesystem(() => adb!, resolveData, dataDir);
