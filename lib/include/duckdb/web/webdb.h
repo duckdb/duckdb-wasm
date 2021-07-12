@@ -97,8 +97,6 @@ class WebDB {
     std::shared_ptr<duckdb::DuckDB> database_;
     /// The connections
     std::unordered_map<Connection*, std::unique_ptr<Connection>> connections_;
-    /// The database config
-    duckdb::DBConfig db_config_;
 
     /// The file statistics (if any)
     std::shared_ptr<io::FileStatisticsRegistry> file_stats_ = {};
@@ -137,8 +135,12 @@ class WebDB {
     /// Flush file by path
     void FlushFile(std::string_view path);
 
+    /// Reset the database
+    arrow::Status Reset();
+    /// Configure the database
+    arrow::Status Configure(std::string_view path);
     /// Open a database
-    arrow::Status Open(std::string_view path);
+    arrow::Status Open(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem());
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                   std::optional<uint64_t> file_size);

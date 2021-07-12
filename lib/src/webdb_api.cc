@@ -19,6 +19,12 @@ void duckdb_web_clear_response() { WASMResponseBuffer::Get().Clear(); }
 /// Throw a (wasm) exception
 extern "C" void duckdb_web_fail_with(const char* path) { throw std::runtime_error{std::string{path}}; }
 
+/// Reset the database
+void duckdb_web_reset(WASMResponse* packed) {
+    auto& webdb = WebDB::Get();
+    WASMResponseBuffer::Get().Store(*packed, webdb.Reset());
+}
+
 /// Create a conn
 ConnectionHdl duckdb_web_connect() {
     auto conn = reinterpret_cast<ConnectionHdl>(WebDB::Get().Connect());

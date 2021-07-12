@@ -114,6 +114,38 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             return 0;
         }
     },
+    checkFile: (mod: DuckDBModule, pathPtr: number, pathLen: number): boolean => {
+        try {
+            const path = readString(mod, pathPtr, pathLen);
+
+            // Starts with http?
+            // Try a HTTP HEAD request
+            if (path.startsWith('http')) {
+                // Send a dummy range request querying the first byte of the file
+                const xhr = new XMLHttpRequest();
+                xhr.open('HEAD', path!, false);
+                xhr.setRequestHeader('Range', `bytes=0-`);
+                xhr.send(null);
+                let supportsRanges = false;
+                if (xhr.status == 206) {
+                    supportsRanges = true;
+                } else if (xhr.status == 200) {
+                    const header = xhr.getResponseHeader('Accept-Ranges');
+                    supportsRanges = header === 'bytes';
+                }
+                if (!supportsRanges) {
+                    failWith(mod, `File does not support range requests: ${path}`);
+                    return false;
+                }
+
+                // HTTP file exists and supports range requests
+                return true;
+            }
+        } catch (e) {
+            failWith(mod, e.toString());
+        }
+        return false;
+    },
     syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
@@ -265,9 +297,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
     moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
-    checkFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
-        return false;
-    },
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
 };
 
