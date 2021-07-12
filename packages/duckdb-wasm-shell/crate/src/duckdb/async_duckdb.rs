@@ -15,6 +15,8 @@ extern "C" {
     #[wasm_bindgen(js_name = "AsyncDuckDB")]
     pub type JsAsyncDuckDB;
 
+    #[wasm_bindgen(catch, method, js_name = "open")]
+    async fn open(this: &JsAsyncDuckDB, text: &str) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "getVersion")]
     async fn get_version(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "getFeatureFlags")]
@@ -57,8 +59,14 @@ impl AsyncDuckDB {
         Self { bindings }
     }
 
+    /// Open a database
+    pub async fn open(&self, path: &str) -> Result<(), js_sys::Error> {
+        let _status = self.bindings.open(path).await?;
+        Ok(())
+    }
+
     /// Get the DuckDB version
-    pub async fn get_version(&self) -> Result<String, JsValue> {
+    pub async fn get_version(&self) -> Result<String, js_sys::Error> {
         Ok(self
             .bindings
             .get_version()

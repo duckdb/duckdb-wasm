@@ -102,6 +102,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 } else if (xhr.status == 200) {
                     const header = xhr.getResponseHeader('Accept-Ranges');
                     supportsRanges = header === 'bytes';
+                } else {
+                    failWith(mod, `HEAD request failed: ${path}`);
+                    return;
                 }
                 if (!supportsRanges) {
                     failWith(mod, `File does not support range requests: ${path}`);
@@ -132,9 +135,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 } else if (xhr.status == 200) {
                     const header = xhr.getResponseHeader('Accept-Ranges');
                     supportsRanges = header === 'bytes';
+                } else {
+                    return false;
                 }
                 if (!supportsRanges) {
-                    failWith(mod, `File does not support range requests: ${path}`);
                     return false;
                 }
 
@@ -142,7 +146,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 return true;
             }
         } catch (e) {
-            failWith(mod, e.toString());
+            return false;
         }
         return false;
     },
