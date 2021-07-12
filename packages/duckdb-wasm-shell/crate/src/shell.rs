@@ -518,6 +518,7 @@ impl Shell {
             }
             ".open" => {
                 Shell::open_command(args.to_string()).await;
+                Shell::with_mut(|s| s.remember_command(text.clone()));
                 return;
             }
             ".files" => {
@@ -858,7 +859,7 @@ impl Shell {
             },
             url = match self.db_path.as_str() {
                 "" | ":memory:" => "".to_string(),
-                path => format!("at: {}", path),
+                path => format!(" at: {}", path),
             }
         ));
     }
