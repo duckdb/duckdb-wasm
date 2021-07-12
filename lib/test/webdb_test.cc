@@ -81,7 +81,8 @@ TEST(WebDB, Tokenize) {
 
 TEST(WebDB, OpenDatabase) {
     auto db_path = CreateTestDB();
-    auto db = make_shared<WebDB>(io::CreateDefaultFileSystem(), db_path.c_str());
+    auto fs = std::make_unique<io::WebFileSystem>();
+    auto db = make_shared<WebDB>(std::move(fs), db_path.c_str());
 }
 
 }  // namespace

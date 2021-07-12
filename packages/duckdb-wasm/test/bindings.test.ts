@@ -157,7 +157,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
 
     describe('Open', () => {
         it('Remote TPCH 0_01', async () => {
-            await adb().registerFileURL('tpch_0_01', `${baseURL}/tpch/0_01/duckdb/db`);
+            await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
             await adb().open('tpch_0_01.db');
         });
     });

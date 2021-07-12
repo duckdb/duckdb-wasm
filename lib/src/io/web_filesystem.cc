@@ -416,16 +416,15 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
     DEBUG_TRACE();
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
 
-    // Determine url type
-    std::string_view data_url = url;
-    DataProtocol data_proto = inferDataProtocol(url);
-
     // New file?
     WebFile *file_ptr = nullptr;
-    auto iter = files_by_name_.find(data_url);
+    auto iter = files_by_name_.find(url);
     if (iter == files_by_name_.end()) {
+        // Determine url type
+        DataProtocol data_proto = inferDataProtocol(url);
+
         // Create file
-        auto file = std::make_unique<WebFile>(AllocateFileID(), data_url, data_proto);
+        auto file = std::make_unique<WebFile>(AllocateFileID(), url, data_proto);
         auto file_id = file->file_id_;
         file_ptr = file.get();
         file_ptr->data_url_ = url;
@@ -749,6 +748,8 @@ void WebFileSystem::MoveFile(const std::string &source, const std::string &targe
 }
 /// Check if a file exists
 bool WebFileSystem::FileExists(const std::string &filename) {
+    auto iter = files_by_name_.find(filename);
+    if (iter != files_by_name_.end()) return true;
     return duckdb_web_fs_file_exists(filename.c_str(), filename.size());
 }
 /// Remove a file from disk

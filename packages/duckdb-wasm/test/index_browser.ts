@@ -22,7 +22,11 @@ let DUCKDB_CONFIG: DuckDBConfig | null = null;
 
 describe('wasm check', () => {
     it('worker and wasm urls', async () => {
-        if ((await check.exceptions()) && (await check.threads())) {
+        if (
+            (await getPlatformFeatures()).crossOriginIsolated &&
+            (await check.exceptions()) &&
+            (await check.threads())
+        ) {
             expect(DUCKDB_CONFIG!.mainModule).toEqual(DUCKDB_BUNDLES.asyncNextCOI!.mainModule);
             expect(DUCKDB_CONFIG!.mainWorker).toEqual(DUCKDB_BUNDLES.asyncNextCOI!.mainWorker);
             expect(DUCKDB_CONFIG!.pthreadWorker).toEqual(DUCKDB_BUNDLES.asyncNextCOI!.pthreadWorker);
@@ -96,7 +100,7 @@ import { testZip, testZipAsync } from './zip.test';
 import { testJSONImport, testJSONImportAsync } from './import_json.test';
 import { testCSVImport, testCSVImportAsync } from './import_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
-import { DuckDBConfig } from '../src/targets/duckdb-browser-async';
+import { DuckDBConfig, getPlatformFeatures } from '../src/targets/duckdb-browser-async';
 
 const baseURL = window.location.origin;
 const dataURL = baseURL + '/data';
