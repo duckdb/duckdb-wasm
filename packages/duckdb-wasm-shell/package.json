@@ -44,7 +44,7 @@
         "@types/classnames": "^2.3.1",
         "@types/node": "^16.0.0",
         "@types/react-dom": "^17.0.9",
-        "@types/react-redux": "^7.1.16",
+        "@types/react-redux": "^7.1.18",
         "@types/react-router-dom": "^5.1.8",
         "@types/react-virtualized": "^9.21.11",
         "@wasm-tool/wasm-pack-plugin": "^1.4.0",
