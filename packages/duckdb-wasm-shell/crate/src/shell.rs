@@ -848,7 +848,7 @@ impl Shell {
     }
 
     fn write_connection_ready(&self) {
-        self.write(&format!("Connected to a {bold}{mode} database{normal}.{endl}Enter {bold}.help{normal} for usage hints.{endl}{endl}",
+        self.write(&format!("Connected to a {bold}{mode} database{normal}{url}.{endl}Enter {bold}.help{normal} for usage hints.{endl}{endl}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
             endl = vt100::CRLF,
@@ -856,6 +856,10 @@ impl Shell {
                 DatabaseType::InMemory => "transient in-memory",
                 DatabaseType::RemoteReadOnly => "read-only remote"
             },
+            url = match self.db_path.as_str() {
+                "" | ":memory:" => "".to_string(),
+                path => format!("at: {}", path),
+            }
         ));
     }
 
