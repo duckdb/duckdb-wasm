@@ -53,6 +53,11 @@ impl ShellSettings {
     }
 }
 
+pub enum DatabaseType {
+    InMemory,
+    RemoteReadOnly,
+}
+
 /// The shell is the primary entrypoint for the web shell api.
 /// It is stored as thread_local singleton and maintains all the state for the interactions with DuckDB
 pub struct Shell {
@@ -74,6 +79,10 @@ pub struct Shell {
     history: VecDeque<String>,
     /// This history buffer
     history_cursor: usize,
+    /// The database path
+    db_path: String,
+    /// The database access
+    db_access: DatabaseType,
     /// The database (if any)
     db: Option<Arc<RwLock<AsyncDuckDB>>>,
     /// The connection (if any)
@@ -95,6 +104,8 @@ impl Shell {
             input_clock: 0,
             history: VecDeque::new(),
             history_cursor: 0,
+            db_path: ":memory:".to_string(),
+            db_access: DatabaseType::InMemory,
             db: None,
             db_conn: None,
             file_infos: HashMap::new(),
@@ -344,23 +355,42 @@ impl Shell {
     }
 
     pub async fn open_command(args: String) {
-        let db_ptr = Shell::with(|s| s.db.clone());
+        let db_ptr = Shell::with_mut(|s| s.db.clone());
         let db = match db_ptr {
             Some(ref db) => db.read().unwrap(),
             None => return,
         };
+
+        // Try to open the database
         let target = &args[..args.find(' ').unwrap_or_else(|| args.len())];
-        match db.open(target).await {
-            Ok(_) => {
-                Shell::with(|s| {
-                    s.writeln("Opened database");
-                });
-            }
-            Err(e) => {
-                let msg: String = e.message().into();
-                Shell::with(|s| s.writeln(&msg));
-            }
-        };
+        if let Err(e) = db.open(target).await {
+            let msg: String = e.message().into();
+            Shell::with(|s| s.writeln(&msg));
+            return;
+        }
+
+        // Create new connection
+        Shell::write_version_info().await;
+        let maybe_conn = AsyncDuckDB::connect(db_ptr.clone().unwrap()).await;
+        if let Err(e) = maybe_conn {
+            let msg: String = e.message().into();
+            Shell::with_mut(|s| s.writeln(&msg));
+            return;
+        }
+
+        // Setup new database
+        Shell::with_mut(|s| {
+            s.db_conn = Some(Arc::new(RwLock::new(maybe_conn.unwrap())));
+            s.db_path = args.clone();
+            s.db_access = match s.db_path.as_str() {
+                // XXX Get this from database
+                "" | ":memory:" => DatabaseType::InMemory,
+                _ => DatabaseType::RemoteReadOnly,
+            };
+            s.write_connection_ready();
+            s.prompt();
+            s.focus();
+        });
     }
 
     pub async fn fstats_command(args: String) {
@@ -488,6 +518,7 @@ impl Shell {
             }
             ".open" => {
                 Shell::open_command(args.to_string()).await;
+                return;
             }
             ".files" => {
                 Shell::with_mut(|s| match s.runtime {
@@ -817,10 +848,14 @@ impl Shell {
     }
 
     fn write_connection_ready(&self) {
-        self.write(&format!("Connected to a {bold}transient in-memory database{normal}.{endl}Enter {bold}.help{normal} for usage hints.{endl}{endl}",
+        self.write(&format!("Connected to a {bold}{mode} database{normal}.{endl}Enter {bold}.help{normal} for usage hints.{endl}{endl}",
             bold = vt100::MODE_BOLD,
             normal = vt100::MODES_OFF,
-            endl = vt100::CRLF
+            endl = vt100::CRLF,
+            mode = match &self.db_access {
+                DatabaseType::InMemory => "transient in-memory",
+                DatabaseType::RemoteReadOnly => "read-only remote"
+            },
         ));
     }
 
