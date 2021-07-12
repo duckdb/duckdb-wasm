@@ -107,7 +107,7 @@ class WebDB {
 
    public:
     /// Constructor
-    WebDB(std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem(), const char* path = nullptr);
+    WebDB(std::string_view path = "", std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem());
     /// Destructor
     ~WebDB();
 
@@ -140,7 +140,7 @@ class WebDB {
     /// Configure the database
     arrow::Status Configure(std::string_view path);
     /// Open a database
-    arrow::Status Open(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem());
+    arrow::Status Open(std::string_view path);
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                   std::optional<uint64_t> file_size);

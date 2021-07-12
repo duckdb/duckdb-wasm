@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <unordered_map>
 
@@ -285,9 +286,16 @@ arrow::Status WebDB::Connection::ImportJSONTable(std::string_view path, std::str
 }
 
 /// Constructor
-WebDB::WebDB(std::unique_ptr<duckdb::FileSystem> fs, const char* path)
-    : file_page_buffer_(), database_(), connections_(), file_stats_() {
-    Open(path, std::move(fs)).ok();
+WebDB::WebDB(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs)
+    : file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
+      database_(),
+      connections_(),
+      file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
+      zip_(std::make_unique<Zipper>(file_page_buffer_)) {
+    file_page_buffer_->ConfigureFileStatistics(file_stats_);
+    if (auto open_status = Open(path); !open_status.ok()) {
+        throw std::runtime_error(open_status.message());
+    }
 }
 
 WebDB::~WebDB() { pinned_web_files_.clear(); }
@@ -338,42 +346,30 @@ void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path
 /// Reset the database
 arrow::Status WebDB::Reset() { return Open(""); }
 /// Open a database
-arrow::Status WebDB::Open(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs) {
-    std::string path_buffer{path};
-    bool in_memory = path == "" || path == ":memory:";
+arrow::Status WebDB::Open(std::string_view path) {
+    std::string path_buffer{path.empty() ? ":memory:" : path};
+    bool in_memory = path_buffer == ":memory:";
     try {
         // Setup new database
-        auto page_buffer = std::make_shared<io::FilePageBuffer>(std::move(fs));
         auto buffered_fs = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
         auto buffered_fs_ptr = buffered_fs.get();
-        auto stats = std::make_shared<io::FileStatisticsRegistry>();
 
         duckdb::DBConfig config;
         config.file_system = std::move(buffered_fs);
         config.maximum_threads = 1;
         config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
 
-        auto zip = std::make_unique<Zipper>(page_buffer);
-        page_buffer->ConfigureFileStatistics(stats);
-
         auto db = std::make_shared<duckdb::DuckDB>(path_buffer, &config);
         db->LoadExtension<duckdb::ParquetExtension>();
 
         // Reset state that is specific to the old database
-        pinned_web_files_.clear();
-        zip_.reset();
         connections_.clear();
         database_.reset();
-        file_page_buffer_.reset();
-        file_stats_.reset();
         buffered_filesystem_ = nullptr;
 
         // Store  new database
-        file_stats_ = std::move(stats);
-        file_page_buffer_ = std::move(file_page_buffer_);
         buffered_filesystem_ = buffered_fs_ptr;
         database_ = std::move(db);
-        zip_ = std::move(zip);
 
     } catch (std::exception& ex) {
         return arrow::Status::Invalid("Opening the database failed with error: ", ex.what());

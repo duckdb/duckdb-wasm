@@ -79,10 +79,4 @@ TEST(WebDB, Tokenize) {
     ASSERT_EQ(db->Tokenize("SELECT * FROM region, nation"), "{\"offsets\":[0,7,9,14,20,22],\"types\":[4,3,4,0,3,0]}");
 }
 
-TEST(WebDB, OpenDatabase) {
-    auto db_path = CreateTestDB();
-    auto fs = std::make_unique<io::WebFileSystem>();
-    auto db = make_shared<WebDB>(std::move(fs), db_path.c_str());
-}
-
 }  // namespace

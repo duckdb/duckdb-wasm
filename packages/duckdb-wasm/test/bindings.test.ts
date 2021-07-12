@@ -153,6 +153,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
         await conn.disconnect();
         await adb().flushFiles();
         await adb().dropFiles();
+        await adb().open(':memory:');
     });
 
     describe('Open', () => {
