@@ -293,6 +293,9 @@ WebDB::WebDB(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs)
       file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
       zip_(std::make_unique<Zipper>(file_page_buffer_)) {
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
+    if (auto webfs = io::WebFileSystem::Get()) {
+        webfs->ConfigureFileStatistics(file_stats_);
+    }
     if (auto open_status = Open(path); !open_status.ok()) {
         throw std::runtime_error(open_status.message());
     }
