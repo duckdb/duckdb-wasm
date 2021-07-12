@@ -1,3 +1,4 @@
+import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
 
 export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): void {
@@ -143,14 +144,9 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
 }
 
 export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string): void {
-    let conn: duckdb.AsyncDuckDBConnection;
-
-    beforeEach(async () => {
-        conn = await adb().connect();
-    });
+    beforeEach(async () => {});
 
     afterEach(async () => {
-        await conn.disconnect();
         await adb().flushFiles();
         await adb().dropFiles();
         await adb().open(':memory:');
@@ -160,6 +156,13 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
         it('Remote TPCH 0_01', async () => {
             await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
             await adb().open('tpch_0_01.db');
+            const conn = await adb().connect();
+            const table = await conn.runQuery<{
+                a: arrow.Int;
+            }>('select count(*)::INTEGER as a from lineitem');
+            const rows = table.toArray();
+            expect(rows.length).toEqual(1);
+            expect(rows[0].a).toEqual(60175);
         });
     });
 }
