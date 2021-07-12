@@ -343,6 +343,26 @@ impl Shell {
         });
     }
 
+    pub async fn open_command(args: String) {
+        let db_ptr = Shell::with(|s| s.db.clone());
+        let db = match db_ptr {
+            Some(ref db) => db.read().unwrap(),
+            None => return,
+        };
+        let target = &args[..args.find(' ').unwrap_or_else(|| args.len())];
+        match db.open(target).await {
+            Ok(_) => {
+                Shell::with(|s| {
+                    s.writeln("Opened database");
+                });
+            }
+            Err(e) => {
+                let msg: String = e.message().into();
+                Shell::with(|s| s.writeln(&msg));
+            }
+        };
+    }
+
     pub async fn fstats_command(args: String) {
         let db_ptr = Shell::with(|s| s.db.clone());
         let db = match db_ptr {
@@ -465,6 +485,9 @@ impl Shell {
             }),
             ".fstats" => {
                 Shell::fstats_command(args.to_string()).await;
+            }
+            ".open" => {
+                Shell::open_command(args.to_string()).await;
             }
             ".files" => {
                 Shell::with_mut(|s| match s.runtime {
