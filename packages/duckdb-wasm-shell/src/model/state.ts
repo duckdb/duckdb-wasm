@@ -12,6 +12,6 @@ export interface AppState {
 export function createDefaultState(): AppState {
     return {
         overlay: null,
-        registeredFiles: Immutable.Map(),
+        registeredFiles: Immutable.Map<string, FileInfo>(),
     };
 }
