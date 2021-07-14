@@ -36,6 +36,23 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             // });
         });
 
+        describe('Reset', () => {
+            it('table must disappear', async () => {
+                await db().reset();
+                conn = db().connect();
+                conn.runQuery('CREATE TABLE foo (a int)');
+                let table = conn.runQuery<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
+                let rows = table.toArray();
+                expect(rows.length).toEqual(1);
+                expect(rows[0].name).toEqual('foo');
+                await db().reset();
+                conn = db().connect();
+                table = conn.runQuery<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
+                rows = table.toArray();
+                expect(rows.length).toEqual(0);
+            });
+        });
+
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
                 const stmt = conn.createPreparedStatement(

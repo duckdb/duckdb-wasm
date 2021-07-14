@@ -118,7 +118,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 case WorkerRequestType.RESET:
-                    this._bindings = null;
+                    this._bindings.reset();
                     this.sendOK(request);
                     break;
 
