@@ -52,7 +52,7 @@ fs.copyFile(
 // -------------------------------
 // ESM
 
-const TARGET = 'es2020';
+const TARGET = ['esnext'];
 const EXTERNALS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 
 console.log('[ ESBUILD ] duckdb.module.js');
