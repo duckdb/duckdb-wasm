@@ -92,6 +92,15 @@ export abstract class DuckDBBindings {
         dropResponseBuffers(this.mod);
     }
 
+    /** Reset the database */
+    public reset(): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_reset', [], []);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
+    }
+
     /** Tokenize a script */
     public tokenize(text: string): ScriptTokens {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize', ['string'], [text]);

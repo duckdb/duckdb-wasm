@@ -190,6 +190,7 @@ if(EMSCRIPTEN)
           _free, \
           _duckdb_web_clear_response, \
           _duckdb_web_collect_file_stats, \
+          _duckdb_web_reset, \
           _duckdb_web_connect, \
           _duckdb_web_copy_file_to_buffer, \
           _duckdb_web_copy_file_to_path, \
