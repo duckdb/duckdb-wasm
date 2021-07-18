@@ -1,4 +1,4 @@
-import config from './webpack.debug.js';
+import config from './webpack.app.debug.js';
 
 export default {
     ...config,
