@@ -7,6 +7,7 @@ interface IAsyncDuckDB {
 
     registerFileURL(name: string, url: string, size: number): Promise<void>;
     registerFileBuffer(name: string, buffer: Uint8Array): Promise<void>;
+    registerFileHandle<HandleType>(name: string, handle: HandleType): Promise<void>;
     copyFileToPath(name: string, out: string): Promise<void>;
     copyFileToBuffer(name: string): Promise<Uint8Array>;
 
