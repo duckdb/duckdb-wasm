@@ -51,7 +51,7 @@
         "docs": "typedoc",
         "report": "node ./coverage.mjs",
         "test:node": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
-        "test:node:filter": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js --filter=\"Open\"",
+        "test:node:filter": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js --filter=\"CSV\"",
         "test:node:cov": "nyc -r json --report-dir ./coverage/node node --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
         "test:browser": "karma start karma.conf.cjs",
         "test:browser:cov": "karma start karma.conf.cov.cjs",

@@ -158,7 +158,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.HTTP:
                 break;
             case DuckDBDataProtocol.NATIVE:
-                failWith(mod, `closeFile not implemented`);
+                // XXX Remove from registry
                 return;
         }
     },
