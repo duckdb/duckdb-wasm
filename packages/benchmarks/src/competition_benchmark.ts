@@ -117,6 +117,7 @@ export async function benchmarkCompetitions(
         }
 
         for (const [k, v] of Object.entries(tables)) {
+            console.log(k);
             await db.load(k, `${basedir}/tpch/${tpchScale}/parquet/${k}.parquet`, v);
         }
 
