@@ -3,12 +3,6 @@ import * as arrow from 'apache-arrow';
 
 const decoder = new TextDecoder();
 
-// function itBrowser(expectation: string, assertion?: jasmine.ImplementationCallback, timeout?: number): void {
-//     if (typeof window !== 'undefined') {
-//         it(expectation, assertion, timeout);
-//     }
-// }
-
 export function testFilesystem(
     db: () => duckdb.AsyncDuckDB,
     resolveData: (url: string) => Promise<Uint8Array | null>,

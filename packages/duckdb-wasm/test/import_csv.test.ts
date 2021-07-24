@@ -1,6 +1,12 @@
 import * as duckdb from '../src/';
 import { Column, compareTable } from './table_test';
 
+function itBrowser(expectation: string, assertion?: jasmine.ImplementationCallback, timeout?: number): void {
+    if (typeof window !== 'undefined') {
+        it(expectation, assertion, timeout);
+    }
+}
+
 const encoder = new TextEncoder();
 
 interface CSVImportTest {
@@ -118,12 +124,26 @@ export function testCSVImportAsync(db: () => duckdb.AsyncDuckDB): void {
         await db().flushFiles();
         await db().dropFiles();
     });
-    describe('CSV Import Async', () => {
+    describe('CSV Import Buffer Async', () => {
         for (const test of CSV_IMPORT_TESTS) {
             it(test.name, async () => {
                 await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 await db().registerFileBuffer(TEST_FILE, buffer);
+                await conn.importCSVFromPath(TEST_FILE, test.options);
+                const results = await conn.runQuery(test.query);
+                compareTable(results, test.expectedColumns);
+            });
+        }
+    });
+
+    describe('CSV Import Blob Async', () => {
+        for (const test of CSV_IMPORT_TESTS) {
+            itBrowser(test.name, async () => {
+                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                const buffer = encoder.encode(test.input);
+                const blob = new Blob([buffer]);
+                await db().registerFileHandle(TEST_FILE, blob);
                 await conn.importCSVFromPath(TEST_FILE, test.options);
                 const results = await conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);
