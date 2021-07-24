@@ -96,6 +96,7 @@ module.exports = function (config) {
             { pattern: 'node_modules/sql.js/dist/*.wasm', included: false, watched: false, served: true },
             { pattern: 'data/uni/*', included: false, watched: false, served: true },
             { pattern: 'data/tpch/0_5/parquet/*', included: false, watched: false, served: true },
+            { pattern: 'data/tpch/0_5/tbl/*', included: false, watched: false, served: true },
             { pattern: 'data/tpch/0_5/*', included: false, watched: false, served: true },
             { pattern: 'packages/benchmarks/src/scripts/*.sql', included: false, watched: false, served: true },
         ],
@@ -104,6 +105,7 @@ module.exports = function (config) {
             '**/*.js': ['sourcemap', 'gzip'],
             '**/*.wasm': ['gzip'],
             '**/*.parquet': ['gzip'],
+            '**/*.tbl': ['gzip'],
             '**/*.db': ['gzip'],
         },
         proxies: {

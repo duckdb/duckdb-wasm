@@ -444,8 +444,17 @@ export class AlaSQLWrapper implements DBWrapper {
         return Promise.resolve();
     }
 
-    load(table: string, path: string | null, data: arrow.Table): Promise<void> {
-        for (const q of sqlInsert(table, data)) alasql(q);
+    async load(table: string, path: string | null, data: arrow.Table): Promise<void> {
+        if (path) {
+            await alasql.promise(
+                `SELECT * INTO ${table} FROM CSV("${path.replace(
+                    /parquet/g,
+                    'tbl',
+                )}", {headers: false, separator:"|"})`,
+            );
+        } else {
+            for (const q of sqlInsert(table, data)) alasql(q);
+        }
         return Promise.resolve();
     }
 
