@@ -1,5 +1,3 @@
-# Copyright (c) 2020 The DashQL Authors
-
 set(BOOST_VERSION_REQUIRED 1.74.0)
 set(BOOST_RELEASE_DIR boost_1_74_0)
 
