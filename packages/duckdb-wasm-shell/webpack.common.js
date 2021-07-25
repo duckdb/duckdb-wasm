@@ -55,52 +55,44 @@ export function configure(params) {
                 },
                 {
                     test: /.*duckdb(|-next|-next-coi)\.wasm$/,
-                    type: 'javascript/auto',
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/wasm/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/wasm/[name].[contenthash].[ext]',
                     },
                 },
                 {
                     test: /\.(sql)$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/scripts/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/scripts/[name].[contenthash].[ext]',
                     },
                 },
                 {
                     test: /\.(json)$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/json/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/json/[name].[contenthash].[ext]',
                     },
                 },
                 {
                     test: /\.(csv|tbl)$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/csv/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/csv/[name].[contenthash].[ext]',
                     },
                 },
                 {
                     test: /\.(parquet)$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/parquet/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/parquet/[name].[contenthash].[ext]',
                     },
                 },
                 {
                     test: /\.(png|jpe?g|gif|svg|ico)$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/img/[name].[contenthash].[ext]',
-                    },
-                },
-                {
-                    test: /\.(ttf|eot|woff|woff2)$/,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/fonts/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/img/[name].[contenthash].[ext]',
                     },
                 },
                 {
@@ -123,16 +115,16 @@ export function configure(params) {
                 },
                 {
                     test: /site\.webmanifest$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/[name].[contenthash].[ext]',
                     },
                 },
                 {
                     test: /browserconfig\.xml$/i,
-                    loader: 'file-loader',
-                    options: {
-                        name: 'static/[name].[contenthash].[ext]',
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'static/[name].[contenthash].[ext]',
                     },
                 },
             ],
