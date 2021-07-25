@@ -47,7 +47,7 @@
         "@types/react-redux": "^7.1.16",
         "@types/react-router-dom": "^5.1.8",
         "@types/react-virtualized": "^9.21.11",
-        "@wasm-tool/wasm-pack-plugin": "^1.4.0",
+        "@wasm-tool/wasm-pack-plugin": "^1.5.0",
         "copy-webpack-plugin": "^9.0.1",
         "css-loader": "^6.1.0",
         "esbuild-css-modules-plugin": "^1.0.6",
