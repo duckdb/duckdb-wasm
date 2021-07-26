@@ -68,11 +68,11 @@
         "dist/duckdb*.js",
         "dist/duckdb*.wasm"
     ],
-    "main": "./dist/duckdb-node.js",
-    "types": "./dist/duckdb-node.d.ts",
+    "main": "./dist/duckdb-node-async.js",
+    "types": "./dist/duckdb-node-async.d.ts",
     "module": "./dist/duckdb.module.js",
     "browser": {
-        "./dist/duckdb-node.js": "./dist/duckdb-browser.js",
+        "./dist/duckdb-node-async.js": "./dist/duckdb-browser-async.js",
         "temp-write": false,
         "worker_threads": false,
         "perf_hooks": false,
