@@ -62,11 +62,9 @@
         "lint": "eslint src test types"
     },
     "files": [
-        "dist/*.d.ts",
-        "dist/types/**/*.d.ts",
-        "dist/chunk*.js",
-        "dist/duckdb*.js",
-        "dist/duckdb*.wasm"
+        "src",
+        "dist",
+        "!dist/types/test"
     ],
     "main": "./dist/duckdb-node-async.js",
     "types": "./dist/duckdb-node-async.d.ts",
