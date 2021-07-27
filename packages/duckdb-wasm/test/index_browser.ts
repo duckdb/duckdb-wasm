@@ -103,7 +103,7 @@ import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { DuckDBConfig, getPlatformFeatures } from '../src/targets/duckdb-browser-async';
 
 const baseURL = window.location.origin;
-const dataURL = baseURL + '/data';
+const dataURL = `${baseURL}/data`;
 
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL);
