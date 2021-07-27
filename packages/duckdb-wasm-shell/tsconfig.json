@@ -12,7 +12,6 @@
         "jsx": "react",
         "types": ["emscripten", "node", "jasmine"],
         "plugins": [{ "name": "typescript-plugin-css-modules" }],
-        "baseUrl": ".",
         "lib": ["es6", "es2020", "dom"]
     },
     "exclude": ["./node_modules"],

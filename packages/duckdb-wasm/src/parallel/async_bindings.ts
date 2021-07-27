@@ -10,9 +10,9 @@ import {
 } from './worker_request';
 import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
-import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
-import { ScriptTokens } from 'src/bindings/tokens';
-import { FileStatistics } from 'src/bindings/file_stats';
+import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
+import { ScriptTokens } from '../bindings/tokens';
+import { FileStatistics } from '../bindings/file_stats';
 
 export class AsyncDuckDB {
     /** The message handler */
