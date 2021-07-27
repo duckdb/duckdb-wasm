@@ -73,7 +73,7 @@ export class DuckDBConnection {
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
         console.assert(reader.isFile());
-        return arrow.Table.from(reader as arrow.RecordBatchFileReader);
+        return arrow.Table.from(reader);
     }
 
     public sendQuery<T extends { [key: string]: arrow.DataType } = any>(
@@ -84,7 +84,7 @@ export class DuckDBConnection {
         const reader = arrow.RecordBatchReader.from<T>(iter);
         console.assert(reader.isSync());
         console.assert(reader.isStream());
-        return reader as arrow.RecordBatchStreamReader;
+        return reader;
     }
 
     public createPreparedStatement(text: string): number {
