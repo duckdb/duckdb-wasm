@@ -1,4 +1,4 @@
-import * as duckdb from '../../duckdb-wasm/dist/duckdb-node-sync.js';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-node-sync.js';
 import * as utils from './utils';
 import * as benny from 'benny';
 import * as arrow from 'apache-arrow';

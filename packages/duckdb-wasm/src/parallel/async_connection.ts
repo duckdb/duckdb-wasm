@@ -1,6 +1,6 @@
 import { Logger, LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import * as arrow from 'apache-arrow';
-import { CSVTableOptions, JSONTableOptions } from 'src/bindings/table_options';
+import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
 
 interface IAsyncDuckDB {
     logger: Logger;
