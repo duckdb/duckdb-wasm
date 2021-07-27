@@ -17,22 +17,27 @@ export interface DuckDBBundles {
     };
 }
 
+function getWorkerURL(url: string) {
+    const content = `importScripts("${url}");`;
+    return URL.createObjectURL(new Blob([content], { type: 'text/javascript' }));
+}
+
 export function getJsDelivrBundles(): DuckDBBundles {
     // XXX This must be changed when we switch to github packages.
     const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
         asyncDefault: {
             mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser-async.worker.js`,
+            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async.worker.js`),
         },
         asyncNext: {
             mainModule: `${jsdelivr_dist_url}duckdb-next.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser-async-next.worker.js`,
+            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async-next.worker.js`),
         },
         asyncNextCOI: {
             mainModule: `${jsdelivr_dist_url}duckdb-next-coi.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser-async-next-coi.worker.js`,
-            pthreadWorker: `${jsdelivr_dist_url}duckdb-browser-async-next-coi.pthread.worker.js`,
+            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async-next-coi.worker.js`),
+            pthreadWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async-next-coi.pthread.worker.js`),
         },
     };
 }
