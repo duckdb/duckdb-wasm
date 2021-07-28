@@ -9,7 +9,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
     });
 
     afterEach(() => {
-        conn.disconnect();
+        conn.close();
         db().flushFiles();
         db().dropFiles();
     });
