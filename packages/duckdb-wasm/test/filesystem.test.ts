@@ -15,7 +15,7 @@ export function testFilesystem(
     });
 
     afterEach(async () => {
-        await conn.disconnect();
+        await conn.close();
         await db().flushFiles();
         await db().dropFiles();
     });

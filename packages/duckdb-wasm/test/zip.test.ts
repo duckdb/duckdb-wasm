@@ -12,7 +12,7 @@ export function testZip(
     });
 
     afterEach(async () => {
-        await conn.disconnect();
+        await conn.close();
         await db().flushFiles();
         await db().dropFiles();
     });
@@ -116,7 +116,7 @@ export function testZipAsync(
     });
 
     afterEach(async () => {
-        await conn.disconnect();
+        await conn.close();
         await db().flushFiles();
         await db().dropFiles();
     });

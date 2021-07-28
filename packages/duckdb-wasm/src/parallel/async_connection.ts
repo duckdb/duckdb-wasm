@@ -66,7 +66,7 @@ export interface AsyncConnection {
     readonly instance: IAsyncDuckDB;
 
     /** Disconnect from the database */
-    disconnect(): Promise<void>;
+    close(): Promise<void>;
     /** Run a query */
     runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>>;
     /** Send a query */
@@ -97,7 +97,7 @@ export class AsyncDuckDBConnection implements AsyncConnection {
     }
 
     /** Disconnect from the database */
-    public async disconnect(): Promise<void> {
+    public async close(): Promise<void> {
         return this._instance.disconnect(this._conn);
     }
 

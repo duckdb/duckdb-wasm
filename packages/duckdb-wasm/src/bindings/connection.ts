@@ -64,7 +64,7 @@ export class DuckDBConnection {
         return this._conn;
     }
 
-    public disconnect(): void {
+    public close(): void {
         this._bindings.disconnect(this._conn);
     }
 

@@ -11,7 +11,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
     });
 
     afterEach(() => {
-        conn.disconnect();
+        conn.close();
         db().flushFiles();
         db().dropFiles();
     });
