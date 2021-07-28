@@ -20,7 +20,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 1;
         }),
@@ -33,7 +33,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 1;
         }),
@@ -46,7 +46,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 2;
         }),
@@ -59,7 +59,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 4;
         }),
@@ -72,7 +72,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -85,7 +85,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 4;
         }),
@@ -98,7 +98,7 @@ function main(db: duckdb.DuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -112,7 +112,7 @@ function main(db: duckdb.DuckDB) {
             for (const v of result.getChildAt(0)) {
                 bytes += v!.length;
             }
-            conn.disconnect();
+            conn.close();
         }),
 
         benny.cycle((result: any, _summary: any) => {
@@ -135,7 +135,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT v > 0 FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 1;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -149,7 +149,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT (v & 127)::TINYINT FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 1;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -163,7 +163,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT (v & 32767)::SMALLINT FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 2;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -177,7 +177,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT v::INTEGER FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 4;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -191,7 +191,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT v::BIGINT FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 8;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -205,7 +205,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT v::FLOAT FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 4;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -219,7 +219,7 @@ function main(db: duckdb.DuckDB) {
                 SELECT v::DOUBLE FROM generate_series(0, ${tupleCount}) as t(v);
             `);
             bytes = tupleCount * 8;
-            conn.disconnect();
+            conn.close();
             return () => {
                 for (const _v of result.getChildAt(0)) {
                     noop();
@@ -232,7 +232,7 @@ function main(db: duckdb.DuckDB) {
             const result = conn.runQuery(`
                 SELECT v::VARCHAR FROM generate_series(0, ${tupleCount}) as t(v);
             `);
-            conn.disconnect();
+            conn.close();
             return () => {
                 bytes = 0;
                 for (const v of result.getChildAt(0)) {
@@ -265,7 +265,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -280,7 +280,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -295,7 +295,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -310,7 +310,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -325,7 +325,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -340,7 +340,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -355,7 +355,7 @@ function main(db: duckdb.DuckDB) {
                     noop();
                 }
             }
-            conn.disconnect();
+            conn.close();
 
             bytes = tupleCount * 8;
         }),
@@ -371,7 +371,7 @@ function main(db: duckdb.DuckDB) {
                     bytes += v!.length;
                 }
             }
-            conn.disconnect();
+            conn.close();
         }),
 
         benny.cycle((result: any, _summary: any) => {
