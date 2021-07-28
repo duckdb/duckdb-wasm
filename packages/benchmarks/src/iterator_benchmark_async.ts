@@ -25,7 +25,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 1;
         }),
 
@@ -37,7 +37,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 1;
         }),
 
@@ -49,7 +49,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 2;
         }),
 
@@ -61,7 +61,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 4;
         }),
 
@@ -73,7 +73,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 8;
         }),
 
@@ -85,7 +85,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 4;
         }),
 
@@ -97,7 +97,7 @@ async function main(db: duckdb.AsyncDuckDB) {
             for (const _v of result.getChildAt(0)) {
                 noop();
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 8;
         }),
 
@@ -111,7 +111,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                 noop();
                 bytes += v!.length;
             }
-            await conn.disconnect();
+            await conn.close();
         }),
 
         benny.cycle((result: any, _summary: any) => {
@@ -138,7 +138,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 1;
         }),
 
@@ -152,7 +152,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 1;
         }),
 
@@ -166,7 +166,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 2;
         }),
 
@@ -180,7 +180,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 4;
         }),
 
@@ -194,7 +194,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 8;
         }),
 
@@ -208,7 +208,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 4;
         }),
 
@@ -222,7 +222,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     noop();
                 }
             }
-            await conn.disconnect();
+            await conn.close();
             bytes = tupleCount * 8;
         }),
 
@@ -237,7 +237,7 @@ async function main(db: duckdb.AsyncDuckDB) {
                     bytes += v!.length;
                 }
             }
-            await conn.disconnect();
+            await conn.close();
         }),
 
         benny.cycle((result: any, _summary: any) => {

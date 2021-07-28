@@ -15,7 +15,7 @@ function main(db: duckdb.DuckDB) {
                 const result = conn.runQuery<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
-                conn.disconnect();
+                conn.close();
                 return () => {
                     let sum = 0;
                     let count = 0;
@@ -36,7 +36,7 @@ function main(db: duckdb.DuckDB) {
                 const result = conn.runQuery<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
-                conn.disconnect();
+                conn.close();
                 return () => {
                     let sum = 0;
                     let count = 0;
@@ -57,7 +57,7 @@ function main(db: duckdb.DuckDB) {
                 const table = conn.runQuery<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
-                conn.disconnect();
+                conn.close();
                 return () => {
                     let sum = 0;
                     let count = 0;
