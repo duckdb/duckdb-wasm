@@ -34,7 +34,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             const file = { ...info, blob: null } as DuckDBFileInfo;
             BROWSER_RUNTIME.fileInfoCache.set(fileId, file);
             return file;
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return null;
         }
@@ -79,7 +79,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     break;
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -112,7 +112,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }
@@ -145,7 +145,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 // HTTP file exists and supports range requests
                 return true;
             }
-        } catch (e) {
+        } catch (e: any) {
             return false;
         }
         return false;
@@ -224,7 +224,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
             }
             return 0;
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }
@@ -275,7 +275,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
             }
             return 0;
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }

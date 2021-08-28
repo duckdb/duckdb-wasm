@@ -20,7 +20,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                 let error: Error | null = null;
                 try {
                     conn.sendQuery('INVALID');
-                } catch (e) {
+                } catch (e: any) {
                     error = e;
                 }
                 expect(error).not.toBe(null);

@@ -34,7 +34,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             if (info == null) return null;
             NODE_RUNTIME.fileInfoCache.set(fileId, info);
             return info as DuckDBFileInfo;
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return null;
         }
@@ -64,7 +64,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, 'Not implemented');
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -87,7 +87,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, `Not implemented`);
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -107,7 +107,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, `Not implemented`);
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -126,7 +126,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, `Not implemented`);
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -144,7 +144,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     return fs.writeSync(file.data_native_fd!, src, 0, src.length, location);
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -163,7 +163,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, 'Not implemented');
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -182,7 +182,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, 'Not implemented');
             }
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
         }
         return 0;
@@ -192,7 +192,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.existsSync(path);
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return false;
         }
@@ -201,7 +201,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.mkdirSync(path);
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }
@@ -210,7 +210,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.rmdirSync(path);
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }
@@ -225,7 +225,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             const from = decodeText(mod.HEAPU8.subarray(fromPtr, fromPtr + fromLen));
             const to = decodeText(mod.HEAPU8.subarray(toPtr, toPtr + toLen));
             return fs.renameSync(from, to);
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }
@@ -234,7 +234,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.existsSync(path);
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return false;
         }
@@ -243,7 +243,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.rmSync(path);
-        } catch (e) {
+        } catch (e: any) {
             failWith(mod, e.toString());
             return 0;
         }
