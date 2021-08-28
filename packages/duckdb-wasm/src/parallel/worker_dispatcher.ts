@@ -78,7 +78,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this._bindings = await this.instantiate(request.data[0], request.data[1]);
                     this._zip = new ZipBindings(this._bindings); // TODO: make optional
                     this.sendOK(request);
-                } catch (e) {
+                } catch (e: any) {
                     this._bindings = null;
                     this.failWith(request, e);
                 }
@@ -293,7 +293,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             return this.failWith(request, e);
         }
     }
