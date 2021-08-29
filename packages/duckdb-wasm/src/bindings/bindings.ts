@@ -19,6 +19,7 @@ export enum DuckDBFeature {
     WASM_THREADS = 1 << 1,
     WASM_SIMD = 1 << 2,
     WASM_BULK_MEMORY = 1 << 3,
+    EMIT_BIGINT = 1 << 4,
 }
 
 /** The proxy for either the browser- order node-based DuckDB API */
@@ -86,9 +87,6 @@ export abstract class DuckDBBindings {
 
     /** Open a database at a path */
     public open(config: DuckDBConfig): void {
-        if (config.emitBigInt === undefined) {
-            config.emitBigInt = typeof BigInt64Array != 'undefined';
-        }
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_open', ['string'], [JSON.stringify(config)]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));

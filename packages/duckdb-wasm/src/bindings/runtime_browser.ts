@@ -40,6 +40,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
     },
 
+    testPlatformFeature: (_mod: DuckDBModule, feature: number): boolean => {
+        switch (feature) {
+            case 1:
+                return typeof BigInt64Array !== 'undefined';
+            default:
+                console.warn(`test for unknown feature: ${feature}`);
+                return false;
+        }
+    },
+
     openFile: (mod: DuckDBModule, fileId: number): number => {
         try {
             BROWSER_RUNTIME.fileInfoCache.delete(fileId);

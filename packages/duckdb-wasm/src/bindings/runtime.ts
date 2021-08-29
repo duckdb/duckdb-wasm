@@ -84,6 +84,9 @@ export function dropResponseBuffers(mod: DuckDBModule): void {
 export interface DuckDBRuntime {
     _files?: Map<string, any>;
 
+    // Test a platform feature
+    testPlatformFeature(mod: DuckDBModule, feature: number): boolean;
+
     // File APIs with dedicated file identifier
     openFile(mod: DuckDBModule, fileId: number): void;
     syncFile(mod: DuckDBModule, fileId: number): void;
@@ -106,6 +109,7 @@ export interface DuckDBRuntime {
 }
 
 export const DEFAULT_RUNTIME: DuckDBRuntime = {
+    testPlatformFeature: (_mod: DuckDBModule, _feature: number): boolean => false,
     openFile: (_mod: DuckDBModule, _fileId: number): void => {},
     syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
     closeFile: (_mod: DuckDBModule, _fileId: number): void => {},
