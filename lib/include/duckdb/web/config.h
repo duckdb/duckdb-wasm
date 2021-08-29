@@ -32,7 +32,7 @@ constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 struct WebDBConfig {
     /// Emit BigInt values?
     /// This depends on the browser supporting BigInt64Array.
-    bool emitBigInt;
+    bool emit_bigint;
 };
 
 }  // namespace web

@@ -1,7 +1,5 @@
 #include "duckdb/web/webdb.h"
 
-#include <rapidjson/error/en.h>
-
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -11,11 +9,15 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "arrow/array/array_dict.h"
+#include "arrow/array/array_nested.h"
+#include "arrow/array/builder_primitive.h"
 #include "arrow/buffer.h"
 #include "arrow/c/bridge.h"
 #include "arrow/io/memory.h"
 #include "arrow/ipc/options.h"
 #include "arrow/ipc/writer.h"
+#include "arrow/record_batch.h"
 #include "arrow/result.h"
 #include "arrow/status.h"
 #include "arrow/type_fwd.h"
@@ -25,6 +27,7 @@
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/parser.hpp"
+#include "duckdb/web/arrow_casts.h"
 #include "duckdb/web/csv_table_options.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
@@ -36,6 +39,7 @@
 #include "duckdb/web/json_table_options.h"
 #include "parquet-extension.hpp"
 #include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -56,21 +60,33 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     std::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_.reset();
     current_schema_.reset();
+    current_schema_patched_.reset();
 
     // Configure the output writer
     ArrowSchema raw_schema;
     result->ToArrowSchema(&raw_schema);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
+
+    // Patch the schema (if necessary)
+    std::shared_ptr<arrow::Schema> patched_schema = nullptr;
+    if (!webdb_.config_.emit_bigint) {
+        patched_schema = patchSchema(schema, webdb_.config_);
+    }
+
+    // Create the file writer
     ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
-    ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, schema));
+    ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, patched_schema));
 
     // Write chunk stream
     for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
         // Import the data chunk as record batch
         ArrowArray array;
         chunk->ToArrowArray(&array);
-        // Write record batch to the output stream
+        // Import the record batch
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
+        // Patch the record batch
+        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, patched_schema, webdb_.config_));
+        // Write the record batch
         ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
     }
     ARROW_RETURN_NOT_OK(writer->Close());
@@ -81,12 +97,18 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
     std::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_ = move(result);
     current_schema_.reset();
+    current_schema_patched_.reset();
 
     // Import the schema
     ArrowSchema raw_schema;
     current_query_result_->ToArrowSchema(&raw_schema);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
 
+    // Patch the schema (if necessary)
+    std::shared_ptr<arrow::Schema> patched_schema = nullptr;
+    if (!webdb_.config_.emit_bigint) {
+        current_schema_patched_ = patchSchema(current_schema_, webdb_.config_);
+    }
     // Serialize the schema
     return arrow::ipc::SerializeSchema(*current_schema_);
 }
@@ -120,17 +142,16 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         if (current_query_result_ == nullptr) {
             return nullptr;
         }
-
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
         if (!current_query_result_->success) {
             return arrow::Status{arrow::StatusCode::ExecutionError, move(current_query_result_->error)};
         }
-
         // Reached end?
         if (!chunk) {
             current_query_result_.reset();
             current_schema_.reset();
+            current_schema_patched_.reset();
             return nullptr;
         }
 
@@ -138,6 +159,9 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         ArrowArray array;
         chunk->ToArrowArray(&array);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
+        // Patch the record batch
+        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_));
+        // Serialize the record batch
         return arrow::ipc::SerializeRecordBatch(*batch, arrow::ipc::IpcWriteOptions::Defaults());
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
@@ -333,7 +357,7 @@ std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 /// Get feature flags
 uint32_t WebDB::GetFeatureFlags() {
     auto flags = STATIC_WEBDB_FEATURES;
-    if (config_.emitBigInt) {
+    if (config_.emit_bigint) {
         flags |= 1 << WebDBFeature::EMIT_BIGINT;
     }
     return flags;

@@ -41,6 +41,8 @@ class WebDB {
         std::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
         /// The current arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
+        /// The current patched arrow schema (if any)
+        std::shared_ptr<arrow::Schema> current_schema_patched_ = nullptr;
         /// The currently active prepared statements
         std::unordered_map<size_t, std::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
         size_t prepared_statements_counter_ = 1;
