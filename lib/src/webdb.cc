@@ -291,7 +291,8 @@ WebDB::WebDB(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs)
       database_(),
       connections_(),
       file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
-      zip_(std::make_unique<Zipper>(file_page_buffer_)) {
+      zip_(std::make_unique<Zipper>(file_page_buffer_)),
+      config_() {
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
     if (auto webfs = io::WebFileSystem::Get()) {
         webfs->ConfigureFileStatistics(file_stats_);
@@ -329,6 +330,14 @@ std::string WebDB::Tokenize(std::string_view text) {
 
 /// Get the version
 std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
+/// Get feature flags
+uint32_t WebDB::GetFeatureFlags() {
+    auto flags = STATIC_WEBDB_FEATURES;
+    if (config_.emitBigInt) {
+        flags |= 1 << WebDBFeature::EMIT_BIGINT;
+    }
+    return flags;
+}
 
 /// Create a session
 WebDB::Connection* WebDB::Connect() {

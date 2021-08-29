@@ -11,22 +11,29 @@ enum WebDBFeature : uint32_t {
     THREADS = 1,
     SIMD = 2,
     BULK_MEMORY = 3,
+    EMIT_BIGINT = 4,
 };
 
-constexpr uint32_t WEBDB_FEATURES = (0
+constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 #ifdef WEBDB_FAST_EXCEPTIONS
-                                     | (1 << WebDBFeature::FAST_EXCEPTIONS)
+                                            | (1 << WebDBFeature::FAST_EXCEPTIONS)
 #endif
 #ifdef WEBDB_THREADS
-                                     | (1 << WebDBFeature::THREADS)
+                                            | (1 << WebDBFeature::THREADS)
 #endif
 #ifdef WEBDB_SIMD
-                                     | (1 << WebDBFeature::SIMD)
+                                            | (1 << WebDBFeature::SIMD)
 #endif
 #ifdef WEBDB_BULK_MEMORY
-                                     | (1 << WebDBFeature::BULK_MEMORY)
+                                            | (1 << WebDBFeature::BULK_MEMORY)
 #endif
 );
+
+struct WebDBConfig {
+    /// Emit BigInt values?
+    /// This depends on the browser supporting BigInt64Array.
+    bool emitBigInt;
+};
 
 }  // namespace web
 }  // namespace duckdb
