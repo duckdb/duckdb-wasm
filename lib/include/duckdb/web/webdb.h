@@ -104,6 +104,8 @@ class WebDB {
     std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
     /// The zipper (if loaded)
     std::unique_ptr<Zipper> zip_ = nullptr;
+    /// The config
+    WebDBConfig config_;
 
    public:
     /// Constructor
@@ -123,7 +125,7 @@ class WebDB {
     /// Get the version
     std::string_view GetVersion();
     /// Get the feature flags
-    uint32_t GetFeatureFlags() { return WEBDB_FEATURES; }
+    uint32_t GetFeatureFlags();
     /// Tokenize a script and return tokens as json
     std::string Tokenize(std::string_view text);
     /// Create a connection
