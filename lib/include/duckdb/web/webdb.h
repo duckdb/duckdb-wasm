@@ -141,8 +141,6 @@ class WebDB {
 
     /// Reset the database
     arrow::Status Reset();
-    /// Configure the database
-    arrow::Status Configure(std::string_view path);
     /// Open a database
     arrow::Status Open(std::string_view path);
     /// Register a file URL
