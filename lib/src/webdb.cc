@@ -105,12 +105,12 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
 
     // Patch the schema (if necessary)
-    std::shared_ptr<arrow::Schema> patched_schema = nullptr;
+    current_schema_patched_ = current_schema_;
     if (!webdb_.config_.emit_bigint) {
         current_schema_patched_ = patchSchema(current_schema_, webdb_.config_);
     }
     // Serialize the schema
-    return arrow::ipc::SerializeSchema(*current_schema_);
+    return arrow::ipc::SerializeSchema(*current_schema_patched_);
 }
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::string_view text) {

@@ -166,20 +166,50 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
     afterEach(async () => {
         await adb().flushFiles();
         await adb().dropFiles();
-        await adb().open(':memory:');
+        await adb().open({
+            path: ':memory:',
+        });
     });
 
-    describe('Open', () => {
-        it('Remote TPCH 0_01', async () => {
-            await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
-            await adb().open('tpch_0_01.db');
-            const conn = await adb().connect();
-            const table = await conn.runQuery<{
-                a: arrow.Int;
-            }>('select count(*)::INTEGER as a from lineitem');
-            const rows = table.toArray();
-            expect(rows.length).toEqual(1);
-            expect(rows[0].a).toEqual(60175);
+    describe('Bindings', () => {
+        describe('Open', () => {
+            it('Remote TPCH 0_01', async () => {
+                await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
+                await adb().open({
+                    path: 'tpch_0_01.db',
+                });
+                const conn = await adb().connect();
+                const table = await conn.runQuery<{
+                    a: arrow.Int;
+                }>('select count(*)::INTEGER as a from lineitem');
+                const rows = table.toArray();
+                expect(rows.length).toEqual(1);
+                expect(rows[0].a).toEqual(60175);
+            });
+        });
+
+        describe('Patching', () => {
+            it('Count(*) Default', async () => {
+                await adb().open({
+                    path: ':memory:',
+                    emitBigInt: true,
+                });
+                const conn = await adb().connect();
+                const table = await conn.runQuery('select 1::BIGINT');
+                expect(table.schema.fields.length).toEqual(1);
+                expect(table.schema.fields[0].typeId).toEqual(arrow.Type.Int);
+            });
+
+            it('Count(*) No BigInt', async () => {
+                await adb().open({
+                    path: ':memory:',
+                    emitBigInt: false,
+                });
+                const conn = await adb().connect();
+                const table = await conn.runQuery('select 1::BIGINT');
+                expect(table.schema.fields.length).toEqual(1);
+                expect(table.schema.fields[0].typeId).toEqual(arrow.Type.Float);
+            });
         });
     });
 }

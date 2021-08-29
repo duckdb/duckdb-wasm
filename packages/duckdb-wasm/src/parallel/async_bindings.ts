@@ -13,6 +13,7 @@ import { AsyncDuckDBConnection } from './async_connection';
 import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
+import { DuckDBConfig } from '../bindings/config';
 
 export class AsyncDuckDB {
     /** The message handler */
@@ -294,8 +295,8 @@ export class AsyncDuckDB {
     }
 
     /** Open a new database */
-    public async open(path: string): Promise<void> {
-        const task = new WorkerTask<WorkerRequestType.OPEN, string, null>(WorkerRequestType.OPEN, path);
+    public async open(config: DuckDBConfig): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>(WorkerRequestType.OPEN, config);
         await this.postTask(task);
     }
 
