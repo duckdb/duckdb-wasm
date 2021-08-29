@@ -138,12 +138,13 @@ include_directories("${CMAKE_SOURCE_DIR}/include" "${CMAKE_BINARY_DIR}/include"
 
 add_library(
   duckdb_web
+  ${CMAKE_SOURCE_DIR}/src/arrow_casts.cc
   ${CMAKE_SOURCE_DIR}/src/csv_table_options.cc
   ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc
-  ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_page_buffer.cc
+  ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc
   ${CMAKE_SOURCE_DIR}/src/io/glob.cc
   ${CMAKE_SOURCE_DIR}/src/io/ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
@@ -155,9 +156,9 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
   ${CMAKE_SOURCE_DIR}/src/miniz_zipper.cc
   ${CMAKE_SOURCE_DIR}/src/utils/parking_lot.cc
-  ${CMAKE_SOURCE_DIR}/src/utils/wasm_response.cc
   ${CMAKE_SOURCE_DIR}/src/utils/shared_mutex.cc
   ${CMAKE_SOURCE_DIR}/src/utils/thread.cc
+  ${CMAKE_SOURCE_DIR}/src/utils/wasm_response.cc
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
@@ -235,6 +236,7 @@ endif()
 
 if(NOT EMSCRIPTEN)
   set(TEST_CC
+      ${CMAKE_SOURCE_DIR}/test/arrow_casts_test.cc
       ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/glob_test.cc
       ${CMAKE_SOURCE_DIR}/test/ifstream_test.cc
