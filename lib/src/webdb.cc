@@ -381,6 +381,7 @@ void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path
 
 /// Reset the database
 arrow::Status WebDB::Reset() { return Open(""); }
+
 /// Open a database
 arrow::Status WebDB::Open(std::string_view args_json) {
     config_ = WebDBConfig::ReadFrom(args_json);

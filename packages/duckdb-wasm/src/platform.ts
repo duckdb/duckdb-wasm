@@ -49,6 +49,7 @@ export interface DuckDBBundle {
 }
 
 export interface PlatformFeatures {
+    bigInt64Array: boolean;
     crossOriginIsolated: boolean;
     wasmExceptions: boolean;
     wasmSIMD: boolean;
@@ -56,6 +57,7 @@ export interface PlatformFeatures {
     wasmThreads: boolean;
 }
 
+let bigInt64Array: boolean | null = null;
 let wasmExceptions: boolean | null = null;
 let wasmThreads: boolean | null = null;
 let wasmSIMD: boolean | null = null;
@@ -71,6 +73,9 @@ function isNode(): boolean {
 }
 
 export async function getPlatformFeatures(): Promise<PlatformFeatures> {
+    if (bigInt64Array == null) {
+        bigInt64Array = typeof BigInt64Array != 'undefined';
+    }
     if (wasmExceptions == null) {
         wasmExceptions = await check.exceptions();
     }
@@ -84,6 +89,7 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
         wasmBulkMemory = await check.bulkMemory();
     }
     return {
+        bigInt64Array: bigInt64Array!,
         crossOriginIsolated: isNode() || globalThis.crossOriginIsolated || false,
         wasmExceptions: wasmExceptions!,
         wasmSIMD: wasmSIMD!,

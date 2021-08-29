@@ -7,6 +7,8 @@ extern "C" {
     #[wasm_bindgen(catch, js_name = "getPlatformFeatures")]
     async fn get_platform_features() -> Result<JsValue, JsValue>;
 
+    #[wasm_bindgen(method, getter, js_name = "bigInt64Array")]
+    pub fn has_bigint64array(this: &JSPlatformFeatures) -> bool;
     #[wasm_bindgen(method, getter, js_name = "wasmThreads")]
     pub fn has_wasm_threads(this: &JSPlatformFeatures) -> bool;
     #[wasm_bindgen(method, getter, js_name = "wasmExceptions")]
@@ -20,6 +22,7 @@ extern "C" {
 }
 
 pub struct PlatformFeatures {
+    pub bigint64array: bool,
     pub cross_origin_isolated: bool,
     pub wasm_threads: bool,
     pub wasm_simd: bool,
@@ -33,6 +36,7 @@ impl PlatformFeatures {
             Ok(v) => {
                 let f: JSPlatformFeatures = v.into();
                 Self {
+                    bigint64array: f.has_bigint64array(),
                     cross_origin_isolated: f.is_cross_origin_isolated(),
                     wasm_threads: f.has_wasm_threads(),
                     wasm_simd: f.has_wasm_simd(),
@@ -41,6 +45,7 @@ impl PlatformFeatures {
                 }
             }
             Err(_e) => Self {
+                bigint64array: false,
                 cross_origin_isolated: false,
                 wasm_threads: false,
                 wasm_simd: false,

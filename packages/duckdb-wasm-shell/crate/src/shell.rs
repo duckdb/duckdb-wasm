@@ -260,6 +260,12 @@ impl Shell {
         .unwrap();
         write_feature(
             &mut buffer,
+            "BigInt64Array",
+            "https://caniuse.com/?search=bigint64array",
+            platform.bigint64array,
+        );
+        write_feature(
+            &mut buffer,
             "WebGL 2 Renderer",
             "https://chromestatus.com/feature/6694359164518400",
             platform.wasm_exceptions,
@@ -309,6 +315,12 @@ impl Shell {
             crlf = vt100::CRLF
         )
         .unwrap();
+        write_feature(
+            &mut buffer,
+            "BigInt64Array",
+            "Module uses BigInt64Arrays",
+            (db_features & 0b10000) != 0,
+        );
         write_feature(
             &mut buffer,
             "WebAssembly Exceptions",
