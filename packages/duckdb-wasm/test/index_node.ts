@@ -40,7 +40,7 @@ let worker: Worker | null = null;
 
 beforeAll(async () => {
     // Configure the worker
-    const DUCKDB_CONFIG = await duckdb_async.configure({
+    const DUCKDB_CONFIG = await duckdb_async.selectBundle({
         asyncDefault: {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node-async.worker.js'),

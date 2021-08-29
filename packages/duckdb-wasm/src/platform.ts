@@ -42,7 +42,7 @@ export function getJsDelivrBundles(): DuckDBBundles {
     };
 }
 
-export interface DuckDBConfig {
+export interface DuckDBBundle {
     mainModule: string;
     mainWorker: string | null;
     pthreadWorker: string | null;
@@ -92,7 +92,7 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
     };
 }
 
-export async function configure(bundles: DuckDBBundles): Promise<DuckDBConfig> {
+export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions && platform.wasmSIMD) {
         if (platform.wasmThreads && platform.crossOriginIsolated && bundles.asyncNextCOI) {

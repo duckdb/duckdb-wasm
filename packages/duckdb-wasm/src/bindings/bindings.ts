@@ -1,4 +1,5 @@
 import { DuckDBModule, PThread } from './duckdb_module';
+import { DuckDBConfig } from './config';
 import { Logger } from '../log';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
@@ -84,8 +85,8 @@ export abstract class DuckDBBindings {
     }
 
     /** Open a database at a path */
-    public open(path: string): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_open', ['string'], [path]);
+    public open(config: DuckDBConfig): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_open', ['string'], [JSON.stringify(config)]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }

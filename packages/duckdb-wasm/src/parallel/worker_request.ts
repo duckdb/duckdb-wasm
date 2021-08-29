@@ -2,6 +2,7 @@ import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
 import { LogEntryVariant } from '../log';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
+import { DuckDBConfig } from '../bindings/config';
 
 export type ConnectionID = number;
 
@@ -108,7 +109,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
     | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>
     | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
-    | WorkerRequest<WorkerRequestType.OPEN, string>
+    | WorkerRequest<WorkerRequestType.OPEN, DuckDBConfig>
     | WorkerRequest<WorkerRequestType.PING, null>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any]>
@@ -152,7 +153,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
     | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>
     | WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>
-    | WorkerTask<WorkerRequestType.OPEN, string, null>
+    | WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>
     | WorkerTask<WorkerRequestType.PING, null, null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>
