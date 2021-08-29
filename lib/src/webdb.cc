@@ -68,7 +68,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
 
     // Patch the schema (if necessary)
-    std::shared_ptr<arrow::Schema> patched_schema = nullptr;
+    std::shared_ptr<arrow::Schema> patched_schema = schema;
     if (!webdb_.config_.emit_bigint) {
         patched_schema = patchSchema(schema, webdb_.config_);
     }
@@ -382,20 +382,20 @@ void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path
 /// Reset the database
 arrow::Status WebDB::Reset() { return Open(""); }
 /// Open a database
-arrow::Status WebDB::Open(std::string_view path) {
-    std::string path_buffer{path.empty() ? ":memory:" : path};
-    bool in_memory = path_buffer == ":memory:";
+arrow::Status WebDB::Open(std::string_view args_json) {
+    config_ = WebDBConfig::ReadFrom(args_json);
+    bool in_memory = config_.path == ":memory:";
     try {
         // Setup new database
         auto buffered_fs = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
         auto buffered_fs_ptr = buffered_fs.get();
 
-        duckdb::DBConfig config;
-        config.file_system = std::move(buffered_fs);
-        config.maximum_threads = 1;
-        config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
+        duckdb::DBConfig db_config;
+        db_config.file_system = std::move(buffered_fs);
+        db_config.maximum_threads = 1;
+        db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
 
-        auto db = std::make_shared<duckdb::DuckDB>(path_buffer, &config);
+        auto db = std::make_shared<duckdb::DuckDB>(config_.path, &db_config);
         db->LoadExtension<duckdb::ParquetExtension>();
 
         // Reset state that is specific to the old database

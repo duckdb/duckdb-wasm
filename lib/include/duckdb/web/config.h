@@ -1,6 +1,8 @@
 #ifndef INCLUDE_DUCKDB_WEB_CONFIG_H_
 #define INCLUDE_DUCKDB_WEB_CONFIG_H_
 
+#include <rapidjson/document.h>
+
 #include <cstdint>
 
 namespace duckdb {
@@ -30,9 +32,14 @@ constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 );
 
 struct WebDBConfig {
+    /// The database path
+    std::string path;
     /// Emit BigInt values?
     /// This depends on the browser supporting BigInt64Array.
     bool emit_bigint;
+
+    /// Read from a document
+    static WebDBConfig ReadFrom(std::string_view args_json);
 };
 
 }  // namespace web
