@@ -167,12 +167,12 @@ duckdb_tests: duckdb_debug
 # Run the duckdb javascript tests in browser
 .PHONY: duckdb_tests_browser
 duckdb_tests_browser: duckdb_debug
-	yarn workspace @duckdb/duckdb-wasm test:browser
+	yarn workspace @duckdb/duckdb-wasm test:chrome
 
 # Run the duckdb javascript tests in browser
 .PHONY: duckdb_tests_debug
 duckdb_tests_debug: duckdb_debug
-	yarn workspace @duckdb/duckdb-wasm test:browser:dbg
+	yarn workspace @duckdb/duckdb-wasm test:chrome:debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: duckdb_tests_node
@@ -183,11 +183,6 @@ duckdb_tests_node: duckdb_debug
 .PHONY: duckdb_tests_node_filter
 duckdb_tests_node_filter:
 	yarn workspace @duckdb/duckdb-wasm test:node:filter
-
-# Run the duckdb javascript tests with coverage
-.PHONY: duckdb_tests_ci
-duckdb_tests_ci: duckdb_debug
-	yarn workspace @duckdb/duckdb-wasm test:ci
 
 # Start the shell dev server
 .PHONY: shell_start
