@@ -145,43 +145,43 @@ wasm_release: wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release next_coi
 
 # Build the duckdb library in debug mode
-.PHONY: duckdb_debug
-duckdb_debug:
+.PHONY: js_debug
+js_debug:
 	yarn workspace @duckdb/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
-.PHONY: duckdb_release
-duckdb_release:
+.PHONY: js_release
+js_release:
 	yarn workspace @duckdb/duckdb-wasm build:release
 
 # Build the duckdb docs
-.PHONY: duckdb_docs
-duckdb_docs:
+.PHONY: docs
+docs:
 	yarn workspace @duckdb/duckdb-wasm docs
 
 # Run the duckdb javascript tests
-.PHONY: duckdb_tests
-duckdb_tests: duckdb_debug
+.PHONY: js_tests
+js_tests: js_debug
 	yarn workspace @duckdb/duckdb-wasm test
 
 # Run the duckdb javascript tests in browser
-.PHONY: duckdb_tests_browser
-duckdb_tests_browser: duckdb_debug
+.PHONY: js_tests_browser
+js_tests_browser: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:chrome
 
 # Run the duckdb javascript tests in browser
-.PHONY: duckdb_tests_debug
-duckdb_tests_debug: duckdb_debug
+.PHONY: js_tests_debug
+js_tests_debug: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:chrome:debug
 
 # Run the duckdb javascript tests on nodejs
-.PHONY: duckdb_tests_node
-duckdb_tests_node: duckdb_debug
+.PHONY: js_tests_node
+js_tests_node: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:node
 
 # Run the duckdb javascript tests on nodejs
-.PHONY: duckdb_tests_node_filter
-duckdb_tests_node_filter:
+.PHONY: js_tests_node_filter
+js_tests_node_filter:
 	yarn workspace @duckdb/duckdb-wasm test:node:filter
 
 # Start the shell dev server
@@ -270,8 +270,3 @@ bootstrap:
 	make docker_ci_image yarn_install
 	make wasm
 	make duckdb
-
-# Run all js tests
-.PHONY: jstests
-jstests:
-	make duckdb_tests
