@@ -56,9 +56,9 @@
         "test:firefox": "karma start ./karma/tests-firefox.cjs",
         "test:chrome": "karma start ./karma/tests-chrome.cjs",
         "test:chrome:eh": "karma start ./karma/tests-chrome-eh.cjs",
-        "test:chrome:debug": "karma start ./karma/tests-chrome-debug.cjs",
         "test:chrome:coverage": "karma start ./karma/tests-chrome-coverage.cjs",
         "test:browsers": "karma start ./karma/tests-all.cjs",
+        "test:debug": "karma start ./karma/tests-debug.cjs",
         "test": "npm run test:chrome && npm run test:node",
         "test:coverage": "npm run test:chrome:coverage && npm run test:node:coverage && npm run report",
         "lint": "eslint src test types"
