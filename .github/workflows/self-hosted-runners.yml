@@ -218,7 +218,13 @@ jobs:
               uses: ./actions/image
               with:
                   script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:ci
+                      yarn workspace @duckdb/duckdb-wasm test
+
+            - name: Coverage @duckdb/duckdb-wasm
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:cov
 
             - name: Build GitHub Pages
               if: github.ref == 'refs/heads/master'
