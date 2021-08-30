@@ -220,13 +220,6 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:chrome
 
-            - name: Test @duckdb/duckdb-wasm on Chrome +eh
-              continue-on-error: true
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:chrome:eh
-
             - name: Test @duckdb/duckdb-wasm on Firefox
               uses: ./actions/image
               with:
