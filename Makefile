@@ -184,10 +184,10 @@ duckdb_tests_node: duckdb_debug
 duckdb_tests_node_filter:
 	yarn workspace @duckdb/duckdb-wasm test:node:filter
 
-# Build the explorer
-.PHONY: explorer_release
-explorer_release:
-	yarn workspace @duckdb/explorer build:release
+# Run the duckdb javascript tests with coverage
+.PHONY: duckdb_tests_ci
+duckdb_tests_ci: duckdb_debug
+	yarn workspace @duckdb/duckdb-wasm test:ci
 
 # Start the shell dev server
 .PHONY: shell_start
