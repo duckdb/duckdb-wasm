@@ -35,7 +35,7 @@ HeadersMiddlewareFactory.$inject = ['filesPromise', 'config.basePath', 'config.u
 
 module.exports = function (config) {
     return {
-        basePath: '../..',
+        basePath: '../../..',
         plugins: [
             'karma-jasmine',
             'karma-chrome-launcher',
@@ -70,7 +70,6 @@ module.exports = function (config) {
         logLevel: config.LOG_INFO,
         autoWatch: true,
         singleRun: true,
-        // browsers: ['FirefoxHeadless', 'ChromeHeadlessNoSandbox', 'ChromeHeadlessNoSandboxEH'],
         browsers: ['ChromeHeadlessNoSandbox', 'ChromeHeadlessNoSandboxEH'],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {

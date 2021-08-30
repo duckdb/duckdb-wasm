@@ -214,17 +214,29 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
-            - name: Test @duckdb/duckdb-wasm
+            - name: Test @duckdb/duckdb-wasm on Chrome
               uses: ./actions/image
               with:
                   script: |-
-                      yarn workspace @duckdb/duckdb-wasm test
+                      yarn workspace @duckdb/duckdb-wasm test:chrome
+
+            - name: Test @duckdb/duckdb-wasm on Chrome +eh
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:chrome:eh
+
+            - name: Test @duckdb/duckdb-wasm on Firefox
+              uses: ./actions/image
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:firefox
 
             - name: Coverage @duckdb/duckdb-wasm
               uses: ./actions/image
               with:
                   script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:cov
+                      yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
             - name: Build GitHub Pages
               if: github.ref == 'refs/heads/master'
