@@ -9,6 +9,7 @@
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/common/arrow.hpp"
+#include "duckdb/function/table_function.hpp"
 #include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_parser.h"
 #include "duckdb/web/json_typedef.h"
@@ -329,8 +330,14 @@ arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr) {
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateArrayStreamFromSharedPtrPtr(
+    uintptr_t this_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
+    duckdb::TableFilterCollection* filters) {
     assert(this_ptr != 0);
+
+    // XXX Not relevant at the moment since we use the json table reader for imports only
+    (void)project_columns;
+    (void)filters;
 
     // Rewind the reader
     auto reader = reinterpret_cast<std::shared_ptr<TableReader>*>(this_ptr);

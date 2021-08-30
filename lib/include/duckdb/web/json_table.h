@@ -17,6 +17,9 @@
 #include "rapidjson/istreamwrapper.h"
 
 namespace duckdb {
+
+struct TableFilterCollection;
+
 namespace web {
 namespace json {
 
@@ -63,7 +66,9 @@ class TableReader : public arrow::RecordBatchReader {
     static arrow::Result<std::shared_ptr<TableReader>> Resolve(std::unique_ptr<io::InputFileStream> table,
                                                                TableType type, size_t batch_size = 1024);
     /// Arrow array stream factory function
-    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateArrayStreamFromSharedPtrPtr(uintptr_t this_ptr);
+    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateArrayStreamFromSharedPtrPtr(
+        uintptr_t this_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
+        duckdb::TableFilterCollection* filters);
 };
 
 }  // namespace json
