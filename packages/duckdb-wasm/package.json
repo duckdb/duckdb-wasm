@@ -53,6 +53,7 @@
         "test:node": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
         "test:node:filter": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js --filter=\"CSV\"",
         "test:node:coverage": "nyc -r json --report-dir ./coverage/node node --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
+        "test:firefox": "karma start ./karma/tests-firefox.cjs",
         "test:chrome": "karma start ./karma/tests-chrome.cjs",
         "test:chrome:eh": "karma start ./karma/tests-chrome-eh.cjs",
         "test:chrome:debug": "karma start ./karma/tests-chrome-debug.cjs",
