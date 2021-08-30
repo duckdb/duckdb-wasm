@@ -1,8 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import * as model from './model';
-import { Provider as ReduxProvider } from 'react-redux';
-import Shell from './shell';
+import { FileRegistryProvider, StaticOverlayProvider } from './model';
+import { Shell } from './shell';
 import { Route, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
@@ -52,13 +51,14 @@ const Shell_ = withNavBar(
     withBanner(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
 );
 
-const store = model.createStore();
 const element = document.getElementById('root');
 ReactDOM.render(
-    <ReduxProvider store={store}>
-        <BrowserRouter>
-            <Route component={Shell_} />
-        </BrowserRouter>
-    </ReduxProvider>,
+    <FileRegistryProvider>
+        <StaticOverlayProvider>
+            <BrowserRouter>
+                <Route component={Shell_} />
+            </BrowserRouter>
+        </StaticOverlayProvider>
+    </FileRegistryProvider>,
     element,
 );

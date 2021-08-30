@@ -1,12 +1,9 @@
 import * as model from '../model';
 import * as shell from '../../crate/pkg';
 import Button from 'react-bootstrap/Button';
-import Immutable from 'immutable';
 import React, { ChangeEvent } from 'react';
-import styles from './file_explorer.module.css';
 import classNames from 'classnames';
-import { connect } from 'react-redux';
-import { AsyncDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
+import styles from './file_explorer.module.css';
 import { formatBytes } from '../utils/format';
 
 import icon_close from '../../static/svg/icons/close.svg';
@@ -15,40 +12,16 @@ import icon_minus from '../../static/svg/icons/minus.svg';
 
 interface Props {
     children?: React.ReactElement;
-    registeredFiles: Immutable.Map<string, model.FileInfo>;
-    database: AsyncDuckDB | null;
-
-    closeOverlay: () => void;
     addLocalFiles: (files: FileList) => void;
 }
 
-class FileExplorer extends React.Component<Props> {
-    /// The input element
-    protected _inputElement: React.RefObject<HTMLInputElement>;
-    /// The file selection changed
-    protected _fileSelectionChanged = this.fileSelectionChanged.bind(this);
-    /// Select a file
-    protected _selectFile = this.selectFile.bind(this);
-
-    /// Constructor
-    constructor(props: Props) {
-        super(props);
-        this._inputElement = React.createRef();
-    }
-
-    /// Trigger the file selection
-    protected selectFile() {
-        // Click the input element
-        this._inputElement.current?.click();
-    }
-
-    /// Did the file selection change?
-    protected fileSelectionChanged(e: ChangeEvent<HTMLInputElement>) {
-        this.props.addLocalFiles(e.target.files as FileList);
-    }
+export const FileExplorer: React.FC<Props> = (props: Props) => {
+    const inputElement = React.useRef<HTMLInputElement | null>(null);
+    const setOverlay = model.useStaticOverlaySetter();
+    const fileRegistry = model.useFileRegistry();
 
     /// Render a loaded entry
-    protected renderLoadedFileEntry(metadata: model.FileInfo) {
+    const renderLoadedFileEntry = (metadata: model.FileInfo) => {
         return (
             <div key={metadata.name} className={styles.file_list_entry}>
                 <div className={styles.file_list_entry_name}>{metadata.name}</div>
@@ -71,61 +44,51 @@ class FileExplorer extends React.Component<Props> {
                 </div>
             </div>
         );
-    }
+    };
+
+    /// Close the overlay
+    const closeOverlay = () =>
+        setOverlay({
+            type: model.CLOSE_OVERLAY,
+            data: null,
+        });
 
     /// Render the file explorer
-    public render(): React.ReactElement {
-        return (
-            <div className={styles.root}>
-                <div className={styles.header}>
-                    <div className={styles.header_title}>Files</div>
-                    <div className={styles.close} onClick={this.props.closeOverlay}>
-                        <svg width="20px" height="20px">
-                            <use xlinkHref={`${icon_close}#sym`} />
-                        </svg>
-                    </div>
-                </div>
-                <div className={styles.file_list}>
-                    {this.props.registeredFiles
-                        .toArray()
-                        .map((entry: [string, model.FileInfo]) => this.renderLoadedFileEntry(entry[1]))}
-                    {this.props.registeredFiles.size == 0 && <div className={styles.no_files}>No files registered</div>}
-                </div>
-                <div className={styles.footer_actions}>
-                    <Button className={styles.footer_action} variant="primary" size="sm" onClick={this._selectFile}>
-                        <input
-                            ref={this._inputElement}
-                            onChange={this._fileSelectionChanged}
-                            type="file"
-                            style={{ display: 'none' }}
-                        />
-                        Local File
-                    </Button>
-                    <Button
-                        className={styles.footer_action}
-                        variant="primary"
-                        size="sm"
-                        onClick={this.props.closeOverlay}
-                        disabled
-                    >
-                        HTTP File
-                    </Button>
+    return (
+        <div className={styles.root}>
+            <div className={styles.header}>
+                <div className={styles.header_title}>Files</div>
+                <div className={styles.close} onClick={closeOverlay}>
+                    <svg width="20px" height="20px">
+                        <use xlinkHref={`${icon_close}#sym`} />
+                    </svg>
                 </div>
             </div>
-        );
-    }
-}
-
-const mapStateToProps = (state: model.AppState) => ({
-    registeredFiles: state.registeredFiles,
-});
-
-const mapDispatchToProps = (dispatch: model.Dispatch) => ({
-    closeOverlay: () =>
-        dispatch({
-            type: model.StateMutationType.OVERLAY_CLOSE,
-            data: model.OverlayContent.FILE_EXPLORER,
-        }),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(FileExplorer);
+            <div className={styles.file_list}>
+                {fileRegistry.files.toArray().map((entry: [string, model.FileInfo]) => renderLoadedFileEntry(entry[1]))}
+                {fileRegistry.files.size == 0 && <div className={styles.no_files}>No files registered</div>}
+            </div>
+            <div className={styles.footer_actions}>
+                <Button
+                    className={styles.footer_action}
+                    variant="primary"
+                    size="sm"
+                    onClick={() => inputElement.current?.click()}
+                >
+                    <input
+                        ref={inputElement}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            props.addLocalFiles(e.target.files as FileList);
+                        }}
+                        type="file"
+                        style={{ display: 'none' }}
+                    />
+                    Local File
+                </Button>
+                <Button className={styles.footer_action} variant="primary" size="sm" onClick={closeOverlay} disabled>
+                    HTTP File
+                </Button>
+            </div>
+        </div>
+    );
+};
