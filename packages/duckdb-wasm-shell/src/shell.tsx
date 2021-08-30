@@ -1,10 +1,9 @@
 import * as model from './model';
 import * as shell from '../crate/pkg';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
-import FileExplorer from './components/file_explorer';
-import Overlay from './components/overlay';
 import React from 'react';
-import { connect } from 'react-redux';
+import { FileExplorer } from './components/file_explorer';
+import { Overlay } from './components/overlay';
 import { useResizeDetector } from 'react-resize-detector';
 import { HistoryStore } from './utils/history_store';
 
@@ -14,13 +13,18 @@ interface ShellProps {
     backgroundColor?: string;
     padding?: number[];
     borderRadius?: number[];
-    overlay: model.OverlayContent | null;
 
     resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
-    openFileViewer: () => void;
-    updateFile: (file: model.FileInfoUpdate) => void;
-    registerFiles: (files: model.FileInfo[]) => void;
 }
+
+const hasWebGL = (): boolean => {
+    const canvas = document.createElement('canvas') as any;
+    const supports = 'probablySupportsContext' in canvas ? 'probablySupportsContext' : 'supportsContext';
+    if (supports in canvas) {
+        return canvas[supports]('webgl2');
+    }
+    return 'WebGL2RenderingContext' in window;
+};
 
 class ShellRuntime {
     constructor(
@@ -54,35 +58,38 @@ const ShellResizer = () => {
     return <div ref={ref} className={styles.resizer} />;
 };
 
-class Shell extends React.Component<ShellProps> {
-    /// The terminal container
-    protected _termContainer: React.RefObject<HTMLDivElement>;
-    /// The history store
-    protected _history: HistoryStore;
-    /// The runtime
-    protected _runtime: ShellRuntime;
-    /// The database
-    protected _database: duckdb.AsyncDuckDB | null;
-    /// The drop file handler
-    protected _addLocalFiles = this.addLocalFiles.bind(this);
+export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
+    const termContainer = React.useRef<HTMLDivElement | null>(null);
+    const history = React.useRef<HistoryStore>(new HistoryStore());
+    const overlay = model.useStaticOverlay();
+    const overlayDispatch = model.useStaticOverlaySetter();
+    const fileRegistryDispatch = model.useFileRegistryDispatch();
+    const database = React.useRef<duckdb.AsyncDuckDB | null>(null);
 
-    /// Constructor
-    constructor(props: ShellProps) {
-        super(props);
-        this._termContainer = React.createRef();
-        this._history = new HistoryStore();
-        this._runtime = new ShellRuntime(this._history, props.openFileViewer, props.updateFile);
-        this._database = null;
-    }
+    const runtime = React.useRef<ShellRuntime>(
+        new ShellRuntime(
+            history.current,
+            () =>
+                overlayDispatch({
+                    type: model.SHOW_OVERLAY,
+                    data: model.StaticOverlay.FILE_EXPLORER,
+                }),
+            (file: model.FileInfoUpdate) =>
+                fileRegistryDispatch({
+                    type: model.UPDATE_FILE_INFO,
+                    data: file,
+                }),
+        ),
+    );
 
-    /// Drop files
-    public async addLocalFiles(files: FileList) {
-        if (!this._database) return;
+    const addLocalFiles = async (files: FileList) => {
+        if (!database.current) return;
+        const db = database.current;
         const fileInfos: Array<model.FileInfo> = [];
         for (let i = 0; i < files.length; ++i) {
             const file = files.item(i)!;
-            await this._database.dropFile(file.name);
-            await this._database.registerFileHandle(file.name, file);
+            await db.dropFile(file.name);
+            await db.registerFileHandle(file.name, file);
             fileInfos.push({
                 name: file.name,
                 url: file.name,
@@ -90,93 +97,54 @@ class Shell extends React.Component<ShellProps> {
                 fileStatsEnabled: false,
             });
         }
-        this.props.registerFiles(fileInfos);
-    }
-
-    /// Render the demo
-    public render(): React.ReactElement {
-        const style: React.CSSProperties = {
-            padding: this.props.padding ? `${this.props.padding.map(p => `${p}px`).join(' ')}` : '0px',
-            borderRadius: this.props.borderRadius ? `${this.props.borderRadius.map(p => `${p}px`).join(' ')}` : '0px',
-            backgroundColor: this.props.backgroundColor || 'transparent',
-        };
-        return (
-            <div className={styles.root} style={style}>
-                <ShellResizer />
-                <div ref={this._termContainer} className={styles.term_container}></div>
-                {this.props.overlay === model.OverlayContent.FILE_EXPLORER && (
-                    <Overlay>
-                        <FileExplorer database={this._database} addLocalFiles={this._addLocalFiles} />
-                    </Overlay>
-                )}
-            </div>
-        );
-    }
-
-    public async configure() {
-        const step = async (label: string, work: () => Promise<void>) => {
-            const TERM_BOLD = '\x1b[1m';
-            const TERM_NORMAL = '\x1b[m';
-            shell.writeln(`${TERM_BOLD}[ RUN   ]${TERM_NORMAL} ${label}`);
-            await work();
-            shell.writeln(`${TERM_BOLD}[ OK    ]${TERM_NORMAL} ${label}`);
-        };
-
-        await step('Resolving DuckDB Bundle', async () => {
-            this._database = await this.props.resolveDatabase();
+        fileRegistryDispatch({
+            type: model.REGISTER_FILES,
+            data: fileInfos,
         });
-        await step('Loading Shell History', async () => {
-            await this._history.open();
-            const [history, historyCursor] = await this._history.load();
-            shell.loadHistory(history, historyCursor);
-        });
-        await step('Attaching Shell', async () => {
-            shell.configureDatabase(this._database);
-        });
-    }
+    };
 
-    protected hasWebGL(): boolean {
-        const canvas = document.createElement('canvas') as any;
-        const supports = 'probablySupportsContext' in canvas ? 'probablySupportsContext' : 'supportsContext';
-        if (supports in canvas) {
-            return canvas[supports]('webgl2');
-        }
-        return 'WebGL2RenderingContext' in window;
-    }
-
-    public componentDidMount(): void {
-        if (this._termContainer.current != null) {
-            shell.embed(this._termContainer.current, this._runtime, {
-                backgroundColor: '#333',
-                withWebGL: this.hasWebGL(),
+    React.useEffect(() => {
+        console.assert(termContainer.current != null);
+        shell.embed(termContainer.current!, runtime.current, {
+            backgroundColor: '#333',
+            withWebGL: hasWebGL(),
+        });
+        (async () => {
+            const step = async (label: string, work: () => Promise<void>) => {
+                const TERM_BOLD = '\x1b[1m';
+                const TERM_NORMAL = '\x1b[m';
+                shell.writeln(`${TERM_BOLD}[ RUN   ]${TERM_NORMAL} ${label}`);
+                await work();
+                shell.writeln(`${TERM_BOLD}[ OK    ]${TERM_NORMAL} ${label}`);
+            };
+            await step('Resolving DuckDB Bundle', async () => {
+                database.current = await props.resolveDatabase();
             });
-            this.configure();
-        }
-    }
+            await step('Loading Shell History', async () => {
+                await history.current.open();
+                const [hist, histCursor] = await history.current.load();
+                shell.loadHistory(hist, histCursor);
+            });
+            await step('Attaching Shell', async () => {
+                shell.configureDatabase(database.current);
+            });
+        })();
+    }, []);
 
-    public componentWillUnmount(): void {}
-}
-
-const mapStateToProps = (state: model.AppState) => ({
-    overlay: state.overlay,
-});
-
-const mapDispatchToProps = (dispatch: model.Dispatch) => ({
-    openFileViewer: () =>
-        dispatch({
-            type: model.StateMutationType.OVERLAY_OPEN,
-            data: model.OverlayContent.FILE_EXPLORER,
-        }),
-    updateFile: (file: model.FileInfoUpdate) =>
-        dispatch({
-            type: model.StateMutationType.UPDATE_FILE_INFO,
-            data: file,
-        }),
-    registerFiles: (files: model.FileInfo[]) =>
-        dispatch({
-            type: model.StateMutationType.REGISTER_FILES,
-            data: files,
-        }),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(Shell);
+    const style: React.CSSProperties = {
+        padding: props.padding ? `${props.padding.map(p => `${p}px`).join(' ')}` : '0px',
+        borderRadius: props.borderRadius ? `${props.borderRadius.map(p => `${p}px`).join(' ')}` : '0px',
+        backgroundColor: props.backgroundColor || 'transparent',
+    };
+    return (
+        <div className={styles.root} style={style}>
+            <ShellResizer />
+            <div ref={termContainer} className={styles.term_container}></div>
+            {overlay === model.StaticOverlay.FILE_EXPLORER && (
+                <Overlay>
+                    <FileExplorer addLocalFiles={addLocalFiles} />
+                </Overlay>
+            )}
+        </div>
+    );
+};

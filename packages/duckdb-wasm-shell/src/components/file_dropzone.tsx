@@ -7,7 +7,7 @@ interface Props {
     onDrop: <T extends File>(acceptedFiles: T[], fileRejections: FileRejection[], event: DropEvent) => void;
 }
 
-export function FileDropzone(props: Props): React.ReactElement {
+export const FileDropzone: React.FC<Props> = (props: Props): React.ReactElement => {
     const { getRootProps, getInputProps } = useDropzone({ onDrop: props.onDrop });
     return (
         <div {...getRootProps({ className: styles.root })}>
@@ -19,5 +19,5 @@ export function FileDropzone(props: Props): React.ReactElement {
             </p>
         </div>
     );
-}
+};
 export default FileDropzone;
