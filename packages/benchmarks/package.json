@@ -19,7 +19,7 @@
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-react": "^7.25.1",
         "prettier": "^2.3.2",
-        "typescript": "^4.3.5"
+        "typescript": "^4.4.3"
     },
     "optionalDependencies": {
         "fsevents": "*"
