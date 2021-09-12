@@ -9,7 +9,7 @@
         "benny": "^3.6.15",
         "kleur": "^4.1.4",
         "prettier": "^2.3.2",
-        "web-worker": "^1.0.0"
+        "web-worker": "^1.1.0"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^4.31.0",
