@@ -21,7 +21,7 @@
     "dependencies": {
         "@duckdb/duckdb-wasm": "^0.0.38",
         "@popperjs/core": "^2.10.1",
-        "bootstrap": "^5.0.1",
+        "bootstrap": "^5.1.1",
         "classnames": "^2.3.1",
         "framer-motion": "^4.1.17",
         "immutable": "^4.0.0-rc.12",
