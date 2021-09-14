@@ -355,7 +355,7 @@ static std::vector<TableReaderTest> TABLE_READER_TEST = {
             "foo:   [\n    5,\n    6,\n    7,\n    8\n  ]\n",
             "foo:   [\n    9\n  ]\n",
         }
-    },
+    }
 };
 // clang-format on
 
