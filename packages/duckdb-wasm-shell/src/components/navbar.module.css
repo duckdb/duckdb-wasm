@@ -1,28 +1,56 @@
-.container {
-    position: relative;
-    display: grid;
-    grid-template-rows: 100%;
-    grid-template-columns: var(--nav_bar_width) calc(100% - var(--nav_bar_width));
-    height: 100%;
+@media only screen and (min-width: 600px) {
+    .container {
+        position: relative;
+        display: grid;
+        grid-template-rows: 100%;
+        grid-template-columns: var(--nav_bar_width) calc(100% - var(--nav_bar_width));
+        height: 100%;
+    }
+
+    .navbar {
+        background-color: var(--nav_bar_bg);
+        color: rgb(255, 255, 255);
+        line-height: 24px;
+        text-align: center;
+
+        display: grid;
+        grid-template-rows: 56px auto;
+        grid-template-columns: 100%;
+    }
+
+    .tabs {
+        display: grid;
+        grid-template-rows: repeat(3, 48px);
+        grid-template-columns: 100%;
+    }
 }
 
-.page {
-    grid-row: 1;
-    grid-column: 2;
-}
+@media only screen and (max-width: 600px) {
+    .container {
+        position: relative;
+        display: grid;
+        grid-template-rows: var(--nav_bar_width) calc(100% - var(--nav_bar_width));
+        grid-template-columns: 100%;
+        height: 100%;
+    }
 
-.navbar {
-    grid-row: 1;
-    grid-column: 1;
+    .navbar {
+        background-color: var(--nav_bar_bg);
+        color: rgb(255, 255, 255);
+        line-height: 24px;
+        text-align: center;
 
-    background-color: var(--nav_bar_bg);
-    color: rgb(255, 255, 255);
-    line-height: 24px;
-    text-align: center;
+        display: grid;
+        grid-template-rows: 100%;
+        grid-template-columns: 64px auto;
+        justify-items: right;
+    }
 
-    display: grid;
-    grid-template-rows: 56px auto;
-    grid-template-columns: 100%;
+    .tabs {
+        display: grid;
+        grid-template-columns: repeat(2, 56px);
+        grid-template-rows: 100%;
+    }
 }
 
 .logo {
@@ -35,13 +63,6 @@
 
 .logo > img {
     width: 40px;
-}
-
-.tabs {
-    grid-row: 2;
-    display: grid;
-    grid-template-rows: repeat(3, 48px);
-    grid-template-columns: 100%;
 }
 
 .tabNavbar {
@@ -84,8 +105,4 @@
 .tab.active {
     background-color: var(--nav_tab_bg_active);
     color: var(--nav_tab_fg_active);
-}
-
-.account {
-    grid-row: 3;
 }
