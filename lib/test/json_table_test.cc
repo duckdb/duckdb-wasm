@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <initializer_list>
 #include <optional>
 
@@ -6,6 +7,8 @@
 #include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_parser.h"
 #include "duckdb/web/json_table_options.h"
+#include "duckdb/web/test/config.h"
+#include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
 #include "rapidjson/document.h"
 #include "rapidjson/memorystream.h"
@@ -164,7 +167,7 @@ TEST_P(TableReaderTestSuite, DetectAndReadSingleBatch) {
 }
 
 // clang-format off
-static std::vector<TableReaderTest> TABLE_READER_TEST = {
+static std::vector<TableReaderTest> TABLE_READER_TESTS = {
 
     // ---------------------------------------
     // Column-major table layout
@@ -359,9 +362,47 @@ static std::vector<TableReaderTest> TABLE_READER_TEST = {
 };
 // clang-format on
 
-INSTANTIATE_TEST_SUITE_P(TableReaderTest, TableReaderTestSuite, testing::ValuesIn(TABLE_READER_TEST),
+INSTANTIATE_TEST_SUITE_P(TableReaderTest, TableReaderTestSuite, testing::ValuesIn(TABLE_READER_TESTS),
                          TableReaderTest::TestPrinter());
 
-TEST(TableReaderTest, LargeIntegers) {}
+struct TableImportTest {
+    struct TestPrinter {
+        std::string operator()(const ::testing::TestParamInfo<TableImportTest>& info) const {
+            return std::string{info.param.name};
+        }
+    };
+    std::string_view name;
+    std::string_view input_path;
+    std::string_view query;
+    std::string_view output;
+};
+
+struct TableImportTestSuite : public testing::TestWithParam<TableImportTest> {};
+
+TEST_P(TableImportTestSuite, ImportFile) {
+    auto& test = GetParam();
+    auto db = std::make_shared<WebDB>();
+    WebDB::Connection conn{*db};
+
+    auto input = std::filesystem::path(test::SOURCE_DIR) / ".." / test.input_path;
+    auto options = R"JSON({
+        "name": "sometable"
+    })JSON";
+    auto status = conn.ImportJSONTable(input.string(), options);
+    ASSERT_TRUE(status.ok()) << status.message();
+}
+
+// clang-format off
+static std::vector<TableImportTest> TABLE_IMPORT_TESTS = {
+    {
+        .name = "vega_movies_1",
+        .input_path = "./data/vega/movies.json",
+        .query = "",
+        .output = "",
+    },
+};
+
+INSTANTIATE_TEST_SUITE_P(TableImportTest, TableImportTestSuite, testing::ValuesIn(TABLE_IMPORT_TESTS),
+                         TableImportTest::TestPrinter());
 
 }  // namespace

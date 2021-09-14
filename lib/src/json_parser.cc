@@ -50,9 +50,34 @@ namespace json {
 
 namespace {
 
+std::string JSONTypeToString(rapidjson::Type type) {
+    switch (type) {
+        case rapidjson::Type::kNullType:
+            return "null";
+        case rapidjson::Type::kFalseType:
+            return "false";
+        case rapidjson::Type::kTrueType:
+            return "true";
+        case rapidjson::Type::kObjectType:
+            return "object";
+        case rapidjson::Type::kArrayType:
+            return "array";
+        case rapidjson::Type::kStringType:
+            return "string";
+        case rapidjson::Type::kNumberType:
+            return "number";
+    }
+    return "?";
+}
+
 /// A type error
 arrow::Status JSONTypeError(const char* expected_type, rapidjson::Type json_type) {
-    return arrow::Status::Invalid("Expected ", expected_type, " or null, got JSON type ", json_type);
+    return arrow::Status::Invalid("Expected ", expected_type, " or null, got ", JSONTypeToString(json_type));
+}
+
+arrow::Status AnnotateErrorWithField(std::string_view field, arrow::Status status) {
+    if (status.ok()) return status;
+    return arrow::Status::Invalid("Invalid field '", field, "'. ", status.message());
 }
 
 // -------------------------------------------
@@ -175,13 +200,16 @@ arrow::Result<arrow::DayTimeIntervalType::DayMilliseconds> ParseDayTime(const ra
 }
 
 /// Parse a string
-arrow::Result<arrow::util::string_view> ParseString(const rapidjson::Value& json_obj, const arrow::DataType& /*type*/) {
+arrow::Result<arrow::util::string_view> ParseString(const rapidjson::Value& json_obj, const arrow::DataType& /*type*/,
+                                                    rapidjson::StringBuffer& sb) {
     assert(!json_obj.IsNull());
     if (json_obj.IsString()) {
         auto view = arrow::util::string_view(json_obj.GetString(), json_obj.GetStringLength());
         return view;
     } else {
-        return JSONTypeError("string", json_obj.GetType());
+        rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+        json_obj.Accept(writer);
+        return arrow::util::string_view(sb.GetString(), sb.GetLength());
     }
 }
 
@@ -385,7 +413,8 @@ class StringArrayParser final : public BaseArrayParser<StringArrayParser<Type, B
     /// Append a value
     arrow::Status AppendValue(const rapidjson::Value& json_obj) override {
         if (json_obj.IsNull()) return this->AppendNull();
-        ARROW_ASSIGN_OR_RAISE(auto value, ParseString(json_obj, *this->type_));
+        rapidjson::StringBuffer buffer;
+        ARROW_ASSIGN_OR_RAISE(auto value, ParseString(json_obj, *this->type_, buffer));
         return this->builder_->Append(value);
     }
 };
@@ -557,9 +586,9 @@ class StructArrayParser final : public BaseArrayParser<StructArrayParser, arrow:
                 auto it = json_obj.FindMember(field->name().c_str());
                 if (it != json_obj.MemberEnd()) {
                     --remaining;
-                    RETURN_NOT_OK(child_parsers_[i]->AppendValue(it->value));
+                    RETURN_NOT_OK(AnnotateErrorWithField(field->name(), child_parsers_[i]->AppendValue(it->value)));
                 } else {
-                    RETURN_NOT_OK(child_parsers_[i]->AppendNull());
+                    RETURN_NOT_OK(AnnotateErrorWithField(field->name(), child_parsers_[i]->AppendNull()));
                 }
             }
             return builder_->Append();
@@ -733,7 +762,7 @@ bool TestType<arrow::Type::INTERVAL_DAY_TIME>(const rapidjson::Value& json_obj, 
     return ParseDayTime(json_obj, type).ok();
 }
 template <> bool TestType<arrow::Type::STRING>(const rapidjson::Value& json_obj, const arrow::DataType& type) {
-    return ParseString(json_obj, type).ok();
+    return json_obj.IsString();
 }
 template <>
 bool TestType<arrow::Type::FIXED_SIZE_BINARY>(const rapidjson::Value& json_obj, const arrow::DataType& type) {
