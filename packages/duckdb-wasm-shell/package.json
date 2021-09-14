@@ -36,7 +36,7 @@
         "xterm-addon-ligatures": "^0.5.1",
         "xterm-addon-unicode11": "^0.2.0",
         "xterm-addon-web-links": "^0.4.0",
-        "xterm-addon-webgl": "^0.11.1"
+        "xterm-addon-webgl": "^0.11.2"
     },
     "devDependencies": {
         "@types/classnames": "^2.3.1",

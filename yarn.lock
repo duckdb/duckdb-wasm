@@ -434,10 +434,10 @@
   resolved "https://registry.yarnpkg.com/@types/invariant/-/invariant-2.2.35.tgz#cd3ebf581a6557452735688d8daba6cf0bd5a3be"
   integrity sha512-DxX1V9P8zdJPYQat1gHyY0xj3efl8gnMVjiM9iCY6y27lj+PoQWkgjt8jDqmovPqULkKVpKRg8J36iQiA+EtEg==
 
-"@types/jasmine@^3.8.2":
-  version "3.8.2"
-  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.8.2.tgz#27ab0aaac29581bcbde5774e1843f90df977078e"
-  integrity sha512-u5h7dqzy2XpXTzhOzSNQUQpKGFvROF8ElNX9P/TJvsHnTg/JvsAseVsGWQAQQldqanYaM+5kwxW909BBFAUYsg==
+"@types/jasmine@^3.9.0":
+  version "3.9.0"
+  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-3.9.0.tgz#0118a74c447a580035406521c2600b22f28db4d4"
+  integrity sha512-x7aAO0c4EpBEJkUd/v012GLO7tDXXtv+t7Cz5xK+WdSmitH27eHgsQr+36CblfJFuqBQ0++O0xgBTuaKJnB4fg==
 
 "@types/json-schema@*", "@types/json-schema@^7.0.7", "@types/json-schema@^7.0.8":
   version "7.0.9"
@@ -5885,10 +5885,10 @@ wbuf@^1.1.0, wbuf@^1.7.3:
   dependencies:
     minimalistic-assert "^1.0.0"
 
-web-worker@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/web-worker/-/web-worker-1.0.0.tgz#c7ced4e1eb6227636ada35056a9e5a477414e4d0"
-  integrity sha512-BzuMqeKVkKKwHV6tJuwePFcxYMxvC97D448mXTgh/CxXAB4sRtoV26gRPN+JDxsXRR7QZyioMV9O6NzQaASf7Q==
+web-worker@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/web-worker/-/web-worker-1.1.0.tgz#5cb84a7aab7c36da32965641cf6db6db8adfb794"
+  integrity sha512-BsAzCx5k71qqjPXD5+nBEiLaH/5glNV1OASF2kB+13qkajkScd70mo0E4U0GyhD9nUGgWmSq8dVUqlIOdfICUg==
 
 webpack-bundle-analyzer@^4.4.1:
   version "4.4.2"
@@ -6168,10 +6168,10 @@ xterm-addon-web-links@^0.4.0:
   resolved "https://registry.yarnpkg.com/xterm-addon-web-links/-/xterm-addon-web-links-0.4.0.tgz#265cbf8221b9b315d0a748e1323bee331cd5da03"
   integrity sha512-xv8GeiINmx0zENO9hf5k+5bnkaE8mRzF+OBAr9WeFq2eLaQSudioQSiT34M1ofKbzcdjSsKiZm19Rw3i4eXamg==
 
-xterm-addon-webgl@^0.11.1:
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/xterm-addon-webgl/-/xterm-addon-webgl-0.11.1.tgz#33dd250ab52e9f51d2ff52396447962e6f53e24c"
-  integrity sha512-xF6DnEoV+rPtzetMBXBZVe1kLKtus7AKdEcyfq2eMHQzhaRvC+pfnU+XiCXC85kueguqu2UkBHXZs5mihK9jOQ==
+xterm-addon-webgl@^0.11.2:
+  version "0.11.2"
+  resolved "https://registry.yarnpkg.com/xterm-addon-webgl/-/xterm-addon-webgl-0.11.2.tgz#eeb01f85cb35b0e47d1a3b691d4c6de8b2584c8e"
+  integrity sha512-eEOKEIMZO0IRb+UTHhTaUwxpD1cu7Zqr+jdUfhDv9cfVieg9c4mcRn9RWvNGlprGdlLmOSTUByhm8ve6qAc4HQ==
 
 xterm@^4.13.0:
   version "4.13.0"
