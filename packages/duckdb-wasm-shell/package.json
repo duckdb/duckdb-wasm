@@ -19,7 +19,7 @@
         "node": ">=14.13"
     },
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^0.0.38",
+        "@duckdb/duckdb-wasm": "^0.0.39",
         "@popperjs/core": "^2.10.1",
         "bootstrap": "^5.1.1",
         "classnames": "^2.3.1",
