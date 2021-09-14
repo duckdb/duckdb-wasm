@@ -101,13 +101,12 @@ static std::shared_ptr<arrow::DataType> InferDataTypeImpl(
     std::sort(hits.begin(), hits.end(), [&](auto& l, auto& r) { return l.second < r.second; });
     auto best = hits.back().second;
 
-    // Filter everything that scores at least 80% of the best match
-    auto threshold = best * 80 / 100;
-    auto lb = std::lower_bound(hits.begin(), hits.end(), threshold,
-                               [&](auto& e, auto threshold) { return e.second < threshold; });
+    // Filter everything that scores at same as the best match
+    auto lb =
+        std::lower_bound(hits.begin(), hits.end(), best, [&](auto& e, auto threshold) { return e.second < threshold; });
     assert(lb < hits.end());  // At least the best match
 
-    // Sort those by type preference
+    // Sort the best matches by type preference
     std::sort(lb, hits.end(),
               [&](auto& l, auto& r) { return getTypePreference(l.first->id()) < getTypePreference(r.first->id()); });
     return hits.back().first;
