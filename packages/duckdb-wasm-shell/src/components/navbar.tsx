@@ -61,10 +61,10 @@ export function withNavBar<P>(Component: React.ComponentType<P>): React.Function
     return (props: P) => {
         return (
             <div className={styles.container}>
+                <NavBar />
                 <div className={styles.page}>
                     <Component {...props} />
                 </div>
-                <NavBar />
             </div>
         );
     };
