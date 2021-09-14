@@ -37,11 +37,6 @@ export default {
         static: {
             directory: path.join(__dirname, './build/app-dev'),
         },
-        devMiddleware: {
-            mimeTypes: {
-                'text/plain': ['dashql'],
-            },
-        },
         headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
