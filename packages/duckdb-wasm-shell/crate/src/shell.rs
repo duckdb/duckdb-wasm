@@ -505,6 +505,9 @@ impl Shell {
                         "{bold}Repositories:{normal}\r\n",
                         "   https://github.com/duckdb/duckdb\r\n",
                         "   https://github.com/duckdb/duckdb-wasm\r\n",
+                        "\r\n",
+                        "{bold}Feedback:{normal}\r\n",
+                        "   https://github.com/duckdb/duckdb-wasm/discussions\r\n"
                     ),
                     bold = vt100::MODE_BOLD,
                     normal = vt100::MODES_OFF
@@ -828,10 +831,11 @@ impl Shell {
         let db_features = db.get_feature_flags().await.unwrap();
 
         Shell::with(|s| {
+            s.write(&vt100::CLEAR_SCREEN);
+            s.write(&vt100::CURSOR_HOME);
+
             s.write(&format!(
-                "{clear_screen}{reset_cursor}{bold}DuckDB Web Shell{normal}{endl}",
-                reset_cursor = vt100::CURSOR_HOME,
-                clear_screen = vt100::CLEAR_SCREEN,
+                "{bold}DuckDB Web Shell{normal}{endl}",
                 bold = vt100::MODE_BOLD,
                 normal = vt100::MODES_OFF,
                 endl = vt100::CRLF
