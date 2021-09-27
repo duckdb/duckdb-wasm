@@ -172,7 +172,7 @@ js_tests_browser: js_debug
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_debug
 js_tests_debug: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:chrome:debug
+	yarn workspace @duckdb/duckdb-wasm test:debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: js_tests_node
