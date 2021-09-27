@@ -249,6 +249,7 @@ impl Shell {
             .unwrap();
         };
 
+        let webgl = Shell::with(|s| s.settings.webgl);
         let platform = platform::PlatformFeatures::get().await;
         write!(
             buffer,
@@ -268,7 +269,7 @@ impl Shell {
             &mut buffer,
             "WebGL 2 Renderer",
             "https://chromestatus.com/feature/6694359164518400",
-            platform.wasm_exceptions,
+            webgl,
         );
         write_feature(
             &mut buffer,
