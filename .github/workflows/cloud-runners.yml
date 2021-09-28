@@ -27,7 +27,7 @@ jobs:
 
     eslint:
         name: ESLint
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         steps:
             - name: Cache node_modules
               uses: actions/cache@v2
