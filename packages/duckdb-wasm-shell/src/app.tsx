@@ -4,6 +4,7 @@ import { FileRegistryProvider, StaticOverlayProvider } from './model';
 import { Shell } from './shell';
 import { Route, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
+import { withBanner } from './components/banner';
 
 import '../static/fonts/fonts.module.css';
 import './globals.css';
@@ -46,9 +47,9 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     return database;
 }
 
-const Shell_ = withNavBar(() => (
-    <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />
-));
+const Shell_ = withNavBar(
+    withBanner(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
+);
 
 const element = document.getElementById('root');
 ReactDOM.render(

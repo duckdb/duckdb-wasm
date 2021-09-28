@@ -6,9 +6,8 @@ type Props = Record<string, string>;
 
 export const Banner: React.FC<Props> = (props: Props) => (
     <div className={styles.banner_bar}>
-        <span className={styles.banner_text}>
-            <b>CAUTION:</b>&nbsp;Alpha-quality software in the wild! Talk to us
-        </span>
+        <span className={styles.banner_caution}>CAUTION:</span>
+        <span className={styles.banner_text}>Alpha-quality software in the wild! Talk to us</span>
         <a
             className={styles.banner_link}
             target="_blank"
