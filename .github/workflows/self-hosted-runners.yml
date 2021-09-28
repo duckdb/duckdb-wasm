@@ -25,230 +25,230 @@ jobs:
                         --exclude ./lib/third_party \
                         -r ./lib/
 
-    eslint:
-        name: ESLint
-        runs-on: self-hosted
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
-
-            - name: Prepare repository
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn install --frozen-lockfile
-
-            - name: Lint @duckdb/duckdb-wasm
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm run lint
-
-    linux_x86_debug:
-        name: Linux / x86 / Debug
-        runs-on: self-hosted
-        needs:
-            - clang_format
-            - eslint
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
-
-            - name: Prepare repository
-              uses: ./actions/image
-              with:
-                  script: |-
-                      mkdir -p ./lib/build/debug ./reports
-                      ./scripts/generate_tpch_raw.sh 0.01
-                      ./scripts/generate_uni.sh
-
-            - name: Build
-              uses: ./actions/image
-              with:
-                  script: |-
-                      cmake \
-                          -S./lib/ \
-                          -B./lib/build/debug \
-                          -DCODE_COVERAGE=1 \
-                          -DCMAKE_BUILD_TYPE=Debug \
-                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-                          -DCMAKE_C_COMPILER=clang \
-                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-                          -DCMAKE_CXX_COMPILER=clang++ \
-                          -DCMAKE_BUILD_TYPE=Debug
-                      ccache -s
-                      make -C./lib/build/debug -j`nproc`
-                      ccache -s
-
-            - name: Test
-              uses: ./actions/image
-              with:
-                  script: |-
-                      export LLVM_PROFILE_FILE=./reports/lib.profraw
-                      ./lib/build/debug/tester \
-                          --source_dir=./lib/ \
-                          --gtest_output=xml:./reports/tests_lib_debug.xml
-
-            - name: Code Coverage
-              uses: ./actions/image
-              with:
-                  script: |-
-                      llvm-profdata merge \
-                          -sparse ./reports/lib.profraw \
-                          -o ./reports/lib.profdata
-                      llvm-cov show ./lib/build/debug/tester \
-                          --instr-profile ./reports/lib.profdata \
-                          -ignore-filename-regex submodules \
-                          > ./reports/coverage_lib.txt
-
-    linux_x86_release:
-        name: Linux / x86 / Release
-        runs-on: self-hosted
-        needs:
-            - clang_format
-            - eslint
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
-
-            - name: Prepare repository
-              uses: ./actions/image
-              with:
-                  script: |-
-                      mkdir -p ./lib/build/release ./reports
-                      ./scripts/generate_tpch_raw.sh 0.01
-                      ./scripts/generate_uni.sh
-
-            - name: Build
-              uses: ./actions/image
-              with:
-                  script: |-
-                      cmake \
-                          -S./lib/ \
-                          -B./lib/build/release \
-                          -DCMAKE_BUILD_TYPE=Release \
-                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-                          -DCMAKE_C_COMPILER=clang \
-                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-                          -DCMAKE_CXX_COMPILER=clang++ \
-                          -DCMAKE_BUILD_TYPE=Release
-                      ccache -s
-                      make -C./lib/build/release -j`nproc`
-                      ccache -s
-
-            - name: Test
-              uses: ./actions/image
-              with:
-                  script: |-
-                      ./lib/build/release/tester \
-                          --source_dir=./lib/ \
-                          --gtest_output=xml:./reports/tests_lib_release.xml
-
-    wasm:
-        name: WASM
-        runs-on: self-hosted
-        needs:
-            - linux_x86_debug
-            - linux_x86_release
-
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
-
-            - name: Prepare repository
-              uses: ./actions/image
-              with:
-                  script: |-
-                      mkdir -p ./lib/build/wasm/release ./reports
-                      yarn install --frozen-lockfile
-                      ./scripts/generate_tpch_raw.sh 0.01
-                      ./scripts/generate_tpch_duckdb.sh 0.01
-                      ./scripts/generate_tpch_sqlite.sh 0.01
-                      ./scripts/generate_uni.sh
-                      cd ./submodules/duckdb
-                      git fetch --prune --unshallow --tags
-                      git describe --tags --abbrev=0
-
-            - name: Build WASM module
-              uses: ./actions/image
-              with:
-                  script: |-
-                      ccache -s
-                      ./scripts/wasm_build_lib.sh release default
-                      ccache -s
-
-            - name: Build WASM module +next
-              uses: ./actions/image
-              with:
-                  script: |-
-                      ccache -s
-                      ./scripts/wasm_build_lib.sh release next
-                      ccache -s
-
-            - name: Build WASM module +next +coi
-              uses: ./actions/image
-              with:
-                  script: |-
-                      ccache -s
-                      ./scripts/wasm_build_lib.sh release next_coi
-                      ccache -s
-
-            - name: Build @duckdb/duckdb-wasm
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm build:release
-                      yarn workspace @duckdb/duckdb-wasm docs
-
-            - name: Build @duckdb/duckdb-wasm-shell
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm-shell build:release
-
-            - name: Build @duckdb/benchmarks
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/benchmarks build
-
-            - name: Test @duckdb/duckdb-wasm on Chrome
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:chrome
-
-            - name: Test @duckdb/duckdb-wasm on Firefox
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:firefox
-
-            - name: Coverage @duckdb/duckdb-wasm
-              uses: ./actions/image
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
-
-            - name: Build GitHub Pages
-              if: github.ref == 'refs/heads/master'
-              run: |
-                  git config --global user.name 'github-actions[bot]'
-                  git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-                  git fetch origin gh-pages
-                  ./scripts/build_pages.sh
-
-            - name: Deploy GitHub Pages
-              if: github.ref == 'refs/heads/master'
-              uses: JamesIves/github-pages-deploy-action@4.1.5
-              with:
-                  branch: gh-pages
-                  folder: ./.pages
-                  target-folder: ./
-                  clean: true
-                  single-commit: true
+#    eslint:
+#        name: ESLint
+#        runs-on: self-hosted
+#        steps:
+#            - uses: actions/checkout@v2
+#              with:
+#                  submodules: 'recursive'
+#
+#            - name: Prepare repository
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn install --frozen-lockfile
+#
+#            - name: Lint @duckdb/duckdb-wasm
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/duckdb-wasm run lint
+#
+#    linux_x86_debug:
+#        name: Linux / x86 / Debug
+#        runs-on: self-hosted
+#        needs:
+#            - clang_format
+#            - eslint
+#        steps:
+#            - uses: actions/checkout@v2
+#              with:
+#                  submodules: 'recursive'
+#
+#            - name: Prepare repository
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      mkdir -p ./lib/build/debug ./reports
+#                      ./scripts/generate_tpch_raw.sh 0.01
+#                      ./scripts/generate_uni.sh
+#
+#            - name: Build
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      cmake \
+#                          -S./lib/ \
+#                          -B./lib/build/debug \
+#                          -DCODE_COVERAGE=1 \
+#                          -DCMAKE_BUILD_TYPE=Debug \
+#                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+#                          -DCMAKE_C_COMPILER=clang \
+#                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+#                          -DCMAKE_CXX_COMPILER=clang++ \
+#                          -DCMAKE_BUILD_TYPE=Debug
+#                      ccache -s
+#                      make -C./lib/build/debug -j`nproc`
+#                      ccache -s
+#
+#            - name: Test
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      export LLVM_PROFILE_FILE=./reports/lib.profraw
+#                      ./lib/build/debug/tester \
+#                          --source_dir=./lib/ \
+#                          --gtest_output=xml:./reports/tests_lib_debug.xml
+#
+#            - name: Code Coverage
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      llvm-profdata merge \
+#                          -sparse ./reports/lib.profraw \
+#                          -o ./reports/lib.profdata
+#                      llvm-cov show ./lib/build/debug/tester \
+#                          --instr-profile ./reports/lib.profdata \
+#                          -ignore-filename-regex submodules \
+#                          > ./reports/coverage_lib.txt
+#
+#    linux_x86_release:
+#        name: Linux / x86 / Release
+#        runs-on: self-hosted
+#        needs:
+#            - clang_format
+#            - eslint
+#        steps:
+#            - uses: actions/checkout@v2
+#              with:
+#                  submodules: 'recursive'
+#
+#            - name: Prepare repository
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      mkdir -p ./lib/build/release ./reports
+#                      ./scripts/generate_tpch_raw.sh 0.01
+#                      ./scripts/generate_uni.sh
+#
+#            - name: Build
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      cmake \
+#                          -S./lib/ \
+#                          -B./lib/build/release \
+#                          -DCMAKE_BUILD_TYPE=Release \
+#                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+#                          -DCMAKE_C_COMPILER=clang \
+#                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+#                          -DCMAKE_CXX_COMPILER=clang++ \
+#                          -DCMAKE_BUILD_TYPE=Release
+#                      ccache -s
+#                      make -C./lib/build/release -j`nproc`
+#                      ccache -s
+#
+#            - name: Test
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      ./lib/build/release/tester \
+#                          --source_dir=./lib/ \
+#                          --gtest_output=xml:./reports/tests_lib_release.xml
+#
+#    wasm:
+#        name: WASM
+#        runs-on: self-hosted
+#        needs:
+#            - linux_x86_debug
+#            - linux_x86_release
+#
+#        steps:
+#            - uses: actions/checkout@v2
+#              with:
+#                  submodules: 'recursive'
+#
+#            - name: Prepare repository
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      mkdir -p ./lib/build/wasm/release ./reports
+#                      yarn install --frozen-lockfile
+#                      ./scripts/generate_tpch_raw.sh 0.01
+#                      ./scripts/generate_tpch_duckdb.sh 0.01
+#                      ./scripts/generate_tpch_sqlite.sh 0.01
+#                      ./scripts/generate_uni.sh
+#                      cd ./submodules/duckdb
+#                      git fetch --prune --unshallow --tags
+#                      git describe --tags --abbrev=0
+#
+#            - name: Build WASM module
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      ccache -s
+#                      ./scripts/wasm_build_lib.sh release default
+#                      ccache -s
+#
+#            - name: Build WASM module +next
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      ccache -s
+#                      ./scripts/wasm_build_lib.sh release next
+#                      ccache -s
+#
+#            - name: Build WASM module +next +coi
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      ccache -s
+#                      ./scripts/wasm_build_lib.sh release next_coi
+#                      ccache -s
+#
+#            - name: Build @duckdb/duckdb-wasm
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/duckdb-wasm build:release
+#                      yarn workspace @duckdb/duckdb-wasm docs
+#
+#            - name: Build @duckdb/duckdb-wasm-shell
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/duckdb-wasm-shell build:release
+#
+#            - name: Build @duckdb/benchmarks
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/benchmarks build
+#
+#            - name: Test @duckdb/duckdb-wasm on Chrome
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/duckdb-wasm test:chrome
+#
+#            - name: Test @duckdb/duckdb-wasm on Firefox
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/duckdb-wasm test:firefox
+#
+#            - name: Coverage @duckdb/duckdb-wasm
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+#
+#            - name: Build GitHub Pages
+#              if: github.ref == 'refs/heads/master'
+#              run: |
+#                  git config --global user.name 'github-actions[bot]'
+#                  git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+#                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+#                  git fetch origin gh-pages
+#                  ./scripts/build_pages.sh
+#
+#            - name: Deploy GitHub Pages
+#              if: github.ref == 'refs/heads/master'
+#              uses: JamesIves/github-pages-deploy-action@4.1.5
+#              with:
+#                  branch: gh-pages
+#                  folder: ./.pages
+#                  target-folder: ./
+#                  clean: true
+#                  single-commit: true
