@@ -29,6 +29,10 @@ jobs:
         name: ESLint
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
             - name: Cache node_modules
               uses: actions/cache@v2
               with:
@@ -37,17 +41,15 @@ jobs:
                       ./packages/benchmarks/node_modules
                       ./packages/duckdb-wasm/node_modules
                       ./packages/duckdb-wasm-shell/node_modules
-                  key: ${{ runner.os }}-npm-${{ hashFiles('./yarn.lock') }}
-
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.1
               with:
                   script: |-
-                      yarn install --frozen-lockfile
+                      yarn install --frozen-lockfile --prefer-offline
 
             - name: Lint @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.1
@@ -62,16 +64,16 @@ jobs:
             - clang_format
             - eslint
         steps:
-            - name: Cache node_modules
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Cache ccache
               uses: actions/cache@v2
               with:
                   path: |
                       /github/workspace/.ccache
                   key: ${{ runner.os }}-ccache
-
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.1
