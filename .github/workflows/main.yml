@@ -1,4 +1,4 @@
-name: 'Cloud Runners'
+name: 'Main'
 on:
     push:
         branches:
