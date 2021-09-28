@@ -91,7 +91,6 @@ jobs:
                           -S./lib/ \
                           -B./lib/build/debug \
                           -DCODE_COVERAGE=1 \
-                          -DCMAKE_BUILD_TYPE=Debug \
                           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                           -DCMAKE_C_COMPILER=clang \
                           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -118,6 +117,70 @@ jobs:
                           -sparse ./reports/lib.profraw \
                           -o ./reports/lib.profdata
                       llvm-cov show ./lib/build/debug/tester \
+                          --instr-profile ./reports/lib.profdata \
+                          -ignore-filename-regex submodules \
+                          > ./reports/coverage_lib.txt
+
+    linux_x86_release:
+        name: Linux / x86 / Release
+        runs-on: ubuntu-latest
+        needs:
+            - clang_format
+            - eslint
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Cache ccache
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      /github/workspace/.ccache
+                  key: ${{ runner.os }}-ccache
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      mkdir -p ./lib/build/release ./reports
+                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_uni.sh
+
+            - name: Build
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      cmake \
+                          -S./lib/ \
+                          -B./lib/build/release \
+                          -DCODE_COVERAGE=1 \
+                          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_C_COMPILER=clang \
+                          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                          -DCMAKE_CXX_COMPILER=clang++ \
+                          -DCMAKE_BUILD_TYPE=Release
+                      ccache -s
+                      make -C./lib/build/release -j`nproc`
+                      ccache -s
+
+            - name: Test
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      export LLVM_PROFILE_FILE=./reports/lib.profraw
+                      ./lib/build/release/tester \
+                          --source_dir=./lib/ \
+                          --gtest_output=xml:./reports/tests_lib_release.xml
+
+            - name: Code Coverage
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      llvm-profdata merge \
+                          -sparse ./reports/lib.profraw \
+                          -o ./reports/lib.profdata
+                      llvm-cov show ./lib/build/release/tester \
                           --instr-profile ./reports/lib.profdata \
                           -ignore-filename-regex submodules \
                           > ./reports/coverage_lib.txt
