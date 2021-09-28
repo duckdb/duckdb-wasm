@@ -68,12 +68,19 @@ jobs:
               with:
                   submodules: 'recursive'
 
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
             - name: Cache ccache
               uses: actions/cache@v2
               with:
                   path: |
-                      /github/workspace/.ccache
-                  key: ${{ runner.os }}-ccache
+                      ./.ccache
+                      ./.emscripten_cache
+                  key: ${{ runner.os }}-ccache-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-ccache-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.1
@@ -132,12 +139,19 @@ jobs:
               with:
                   submodules: 'recursive'
 
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
             - name: Cache ccache
               uses: actions/cache@v2
               with:
                   path: |
-                      /github/workspace/.ccache
-                  key: ${{ runner.os }}-ccache
+                      ./.ccache
+                      ./.emscripten_cache
+                  key: ${{ runner.os }}-ccache-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-ccache-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.1
