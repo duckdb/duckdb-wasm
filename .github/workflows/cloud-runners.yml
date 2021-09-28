@@ -184,3 +184,129 @@ jobs:
                           --instr-profile ./reports/lib.profdata \
                           -ignore-filename-regex submodules \
                           > ./reports/coverage_lib.txt
+
+    wasm:
+        name: WASM
+        runs-on: ubuntu-latest
+        needs:
+            - linux_x86_debug
+            - linux_x86_release
+
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Cache node_modules
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./node_modules
+                      ./packages/benchmarks/node_modules
+                      ./packages/duckdb-wasm/node_modules
+                      ./packages/duckdb-wasm-shell/node_modules
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
+
+            - name: Cache wasm
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.ccache
+                      ./.emscripten_cache
+                  key: ${{ runner.os }}-wasm
+
+            - name: Prepare repository
+              uses: ./actions/image
+              with:
+                  script: |-
+                      mkdir -p ./lib/build/wasm/release ./reports
+                      yarn install --frozen-lockfile
+                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_tpch_duckdb.sh 0.01
+                      ./scripts/generate_tpch_sqlite.sh 0.01
+                      ./scripts/generate_uni.sh
+                      cd ./submodules/duckdb
+                      git fetch --prune --unshallow --tags
+                      git describe --tags --abbrev=0
+
+            - name: Build WASM module
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release default
+                      ccache -s
+
+            - name: Build WASM module +next
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release next
+                      ccache -s
+
+            - name: Build WASM module +next +coi
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release next_coi
+                      ccache -s
+
+            - name: Build @duckdb/duckdb-wasm
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm build:release
+                      yarn workspace @duckdb/duckdb-wasm docs
+
+            - name: Build @duckdb/duckdb-wasm-shell
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm-shell build:release
+
+            - name: Build @duckdb/benchmarks
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks build
+
+            - name: Test @duckdb/duckdb-wasm on Chrome
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:chrome
+
+            - name: Test @duckdb/duckdb-wasm on Firefox
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:firefox
+
+            - name: Coverage @duckdb/duckdb-wasm
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+
+            - name: Build GitHub Pages
+              if: github.ref == 'refs/heads/master'
+              run: |
+                  git config --global user.name 'github-actions[bot]'
+                  git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+                  git fetch origin gh-pages
+                  ./scripts/build_pages.sh
+
+            - name: Deploy GitHub Pages
+              if: github.ref == 'refs/heads/master'
+              uses: JamesIves/github-pages-deploy-action@4.1.5
+              with:
+                  branch: gh-pages
+                  folder: ./.pages
+                  target-folder: ./
+                  clean: true
+                  single-commit: true
