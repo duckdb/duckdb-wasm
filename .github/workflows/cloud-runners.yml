@@ -32,8 +32,12 @@ jobs:
             - name: Cache node_modules
               uses: actions/cache@v2
               with:
-                  path: '**/node_modules'
-                  key: ${{ runner.os }}-npm-${{ hashFiles('**/yarn.lock') }}
+                  path: |
+                      ./node_modules
+                      ./packages/benchmarks/node_modules
+                      ./packages/duckdb-wasm/node_modules
+                      ./packages/duckdb-wasm-shell/node_modules
+                  key: ${{ runner.os }}-npm-${{ hashFiles('./yarn.lock') }}
 
             - uses: actions/checkout@v2
               with:
