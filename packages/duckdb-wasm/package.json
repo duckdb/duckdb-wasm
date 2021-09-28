@@ -16,7 +16,7 @@
         "@types/jasmine": "^3.9.1",
         "@typescript-eslint/eslint-plugin": "^4.31.0",
         "@typescript-eslint/parser": "^4.30.0",
-        "esbuild": "^0.12.28",
+        "esbuild": "^0.13.2",
         "eslint": "^7.32.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-jasmine": "^4.1.2",
