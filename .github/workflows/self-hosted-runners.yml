@@ -61,7 +61,7 @@ jobs:
               with:
                   script: |-
                       mkdir -p ./lib/build/debug ./reports
-                      ./scripts/generate_tpch.sh 0.01
+                      ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_uni.sh
 
             - name: Build
@@ -119,7 +119,7 @@ jobs:
               with:
                   script: |-
                       mkdir -p ./lib/build/release ./reports
-                      ./scripts/generate_tpch.sh 0.01
+                      ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_uni.sh
 
             - name: Build
@@ -165,7 +165,9 @@ jobs:
                   script: |-
                       mkdir -p ./lib/build/wasm/release ./reports
                       yarn install --frozen-lockfile
-                      ./scripts/generate_tpch.sh 0.01
+                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_tpch_duckdb.sh 0.01
+                      ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
                       cd ./submodules/duckdb
                       git fetch --prune --unshallow --tags

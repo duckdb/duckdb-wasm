@@ -5,27 +5,40 @@
     "private": true,
     "dependencies": {
         "@duckdb/duckdb-wasm": "^0.0.39",
-        "@types/benchmark": "^2.1.1",
-        "benny": "^3.6.15",
+        "@nano-sql/core": "^2.3.7",
+        "alasql": "^1.7.2",
+        "arquero": "^4.3.0",
         "kleur": "^4.1.4",
-        "prettier": "^2.3.2",
-        "web-worker": "^1.1.0"
+        "lovefield-ts": "^0.7.0",
+        "sql.js": "^1.5.0",
+        "web-worker": "^1.0.0",
+        "benchmark": "^2.1.4",
+        "lodash": "^4.17.21"
     },
     "devDependencies": {
-        "@typescript-eslint/eslint-plugin": "^4.31.0",
-        "@typescript-eslint/parser": "^4.30.0",
+        "@types/lodash": "^4.14.175",
+        "@types/sql.js": "^1.4.2",
+        "@types/benchmark": "^2.1.1",
+        "@typescript-eslint/eslint-plugin": "^4.27.0",
+        "@typescript-eslint/parser": "^4.28.2",
+        "assert": "^2.0.0",
         "eslint": "^7.31.0",
-        "eslint-plugin-jasmine": "^4.1.2",
-        "eslint-plugin-prettier": "^4.0.0",
-        "eslint-plugin-react": "^7.25.1",
+        "eslint-plugin-prettier": "^3.3.1",
+        "eslint-plugin-react": "^7.24.0",
+        "karma-custom": "^1.1.9",
+        "karma-webpack": "^5.0.0",
+        "karma": "^6.3.3",
         "prettier": "^2.3.2",
-        "typescript": "^4.4.3"
-    },
-    "optionalDependencies": {
-        "fsevents": "*"
+        "ts-loader": "^9.1.0",
+        "webpack": "^5.35.0",
+        "webpack-inject-plugin": "^1.5.5"
     },
     "scripts": {
-        "build": "tsc",
-        "lint": "eslint src types"
+        "build:node": "node ./bundle.mjs && tsc --noEmit",
+        "build:browser": "webpack --config webpack.config.mjs",
+        "build": "yarn run build:node && yarn run build:browser",
+        "lint": "yarn run eslint src types",
+        "bench:node": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-node.js",
+        "bench:browser": "node ./node_modules/.bin/karma start karma.conf.cjs"
     }
 }
