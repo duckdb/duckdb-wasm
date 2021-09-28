@@ -75,11 +75,9 @@ impl Log for ConsoleLogger {
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace=console)]
-    fn log(text: &str);
-
+    pub fn log(text: &str);
     #[wasm_bindgen(js_namespace=console)]
-    fn warn(text: &str);
-
+    pub fn warn(text: &str);
     #[wasm_bindgen(js_namespace=console)]
-    fn error(text: &str);
+    pub fn error(text: &str);
 }
