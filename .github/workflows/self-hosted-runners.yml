@@ -8,23 +8,23 @@ on:
             - master
 
 jobs:
-    clang_format:
-        name: Clang-Format
-        runs-on: self-hosted
-        steps:
-            - uses: actions/checkout@v2
-              with:
-                  submodules: 'recursive'
-
-            - name: Lint ./lib
-              uses: ./actions/image
-              with:
-                  script: |-
-                      python3 ./scripts/run_clang_format.py \
-                        --exclude ./lib/build \
-                        --exclude ./lib/third_party \
-                        -r ./lib/
-
+#    clang_format:
+#        name: Clang-Format
+#        runs-on: self-hosted
+#        steps:
+#            - uses: actions/checkout@v2
+#              with:
+#                  submodules: 'recursive'
+#
+#            - name: Lint ./lib
+#              uses: ./actions/image
+#              with:
+#                  script: |-
+#                      python3 ./scripts/run_clang_format.py \
+#                        --exclude ./lib/build \
+#                        --exclude ./lib/third_party \
+#                        -r ./lib/
+#
 #    eslint:
 #        name: ESLint
 #        runs-on: self-hosted
