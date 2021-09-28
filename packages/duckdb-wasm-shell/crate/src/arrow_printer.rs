@@ -86,7 +86,7 @@ fn create_table(results: &[RecordBatch], table_width: u16, presets: &str) -> Res
             let mut cells = Vec::new();
             for col in 0..batch.num_columns() {
                 let column = batch.column(col);
-                let cell = Cell::new(&array_value_to_string(&column, row)?);
+                let cell = Cell::new(&array_value_to_string(column, row)?);
                 cells.push(cell.set_alignment(get_column_alignment(column)));
             }
             table.add_row(Row::from(cells));

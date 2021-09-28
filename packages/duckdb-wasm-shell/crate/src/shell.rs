@@ -832,8 +832,8 @@ impl Shell {
         let db_features = db.get_feature_flags().await.unwrap();
 
         Shell::with(|s| {
-            s.write(&vt100::CLEAR_SCREEN);
-            s.write(&vt100::CURSOR_HOME);
+            s.write(vt100::CLEAR_SCREEN);
+            s.write(vt100::CURSOR_HOME);
 
             s.write(&format!(
                 "{bold}DuckDB Web Shell{normal}{endl}",
