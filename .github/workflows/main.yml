@@ -72,15 +72,16 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache ccache
+            - name: Cache native build
               uses: actions/cache@v2
               with:
                   path: |
+                      ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-ccache-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-native-${{ hashFiles('git_submodule_status.txt') }}
                   restore-keys: |
-                      ${{ runner.os }}-ccache-
+                      ${{ runner.os }}-native-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.1
@@ -143,15 +144,16 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache ccache
+            - name: Cache native build
               uses: actions/cache@v2
               with:
                   path: |
+                      ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-ccache-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-native-${{ hashFiles('git_submodule_status.txt') }}
                   restore-keys: |
-                      ${{ runner.os }}-ccache-
+                      ${{ runner.os }}-native-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.1
@@ -227,13 +229,14 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-yarn-
 
-            - name: Cache wasm
+            - name: Cache wasm build
               uses: actions/cache@v2
               with:
                   path: |
+                      ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-wasm-${{ hashFiles('git_submodule_status.txt') }}
                   restore-keys: |
                       ${{ runner.os }}-wasm-
 
