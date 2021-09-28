@@ -197,6 +197,10 @@ jobs:
               with:
                   submodules: 'recursive'
 
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
             - name: Cache node_modules
               uses: actions/cache@v2
               with:
@@ -215,7 +219,9 @@ jobs:
                   path: |
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm
+                  key: ${{ runner.os }}-wasm-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-wasm-
 
             - name: Prepare repository
               uses: ./actions/image
