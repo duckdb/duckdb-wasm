@@ -24,3 +24,29 @@ jobs:
                         --exclude ./lib/build \
                         --exclude ./lib/third_party \
                         -r ./lib/
+
+    eslint:
+        name: ESLint
+        runs-on: self-hosted
+        steps:
+            - name: Cache node_modules
+              uses: actions/cache@v2
+              with:
+                  path: '**/node_modules'
+                  key: ${{ runner.os }}-npm-${{ hashFiles('**/yarn.lock') }}
+
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn install --frozen-lockfile
+
+            - name: Lint @duckdb/duckdb-wasm
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm run lint
