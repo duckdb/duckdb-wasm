@@ -1,13 +1,13 @@
-name: 'main'
-on:
-    push:
-        branches:
-            - master
-    pull_request:
-        branches:
-            - master
-
-jobs:
+# name: 'main'
+# on:
+#     push:
+#         branches:
+#             - master
+#     pull_request:
+#         branches:
+#             - master
+#
+# jobs:
 #    clang_format:
 #        name: Clang-Format
 #        runs-on: self-hosted
