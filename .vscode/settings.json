@@ -1,36 +1,22 @@
 {
+    /* General Editor settings */
     "editor.formatOnSave": true,
     "editor.trimAutoWhitespace": true,
-    "files.insertFinalNewline": true,
-    "eslint.workingDirectories": ["./packages/duckdb-wasm", "./packages/benchmarks", "./packages/duckdb-wasm-shell"],
-    "[javascript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[typscript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[css]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[html]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[dockerfile]": {
-        "editor.formatOnSave": false
-    },
-    "[xml]": {
-        "editor.formatOnSave": false
-    },
-    "[rust]": {
-        "editor.defaultFormatter": "matklad.rust-analyzer"
-    },
-    "rust-analyzer.checkOnSave.command": "clippy",
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": true
     },
+    "files.insertFinalNewline": true,
+
+    /* Rust settings */
+    "rust-analyzer.experimental.procAttrMacros": true,
+    "rust-analyzer.cargo.loadOutDirsFromCheck": true,
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.checkOnSave.command": "clippy",
+
+    /* CMake source directory */
+    "cmake.sourceDirectory": "${workspaceFolder}/lib",
+
+    /* Completion & Watcher */
     "files.watcherExclude": {
         "**/.cache": true,
         "**/.git": true,
@@ -54,5 +40,33 @@
         "**/.emscripten_cache": true,
         "**/lib/build": true
     },
-    "debug.javascript.usePreview": false
+
+    /* Eslint */
+    "eslint.workingDirectories": ["./packages/duckdb-wasm", "./packages/benchmarks", "./packages/duckdb-wasm-shell"],
+
+    /* Language settings */
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typscript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[css]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[dockerfile]": {
+        "editor.formatOnSave": false
+    },
+    "[xml]": {
+        "editor.formatOnSave": false
+    },
+    "[rust]": {
+        "editor.defaultFormatter": "matklad.rust-analyzer"
+    }
 }
