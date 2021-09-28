@@ -238,7 +238,7 @@ jobs:
                       ${{ runner.os }}-wasm-
 
             - name: Prepare repository
-              uses: ./actions/image
+              uses: duckdb/duckdb-wasm-ci-env@v0.1
               with:
                   script: |-
                       mkdir -p ./lib/build/wasm/release ./reports
