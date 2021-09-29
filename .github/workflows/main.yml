@@ -88,7 +88,7 @@ jobs:
                       mkdir -p ./lib/build/debug ./reports
                       ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_uni.sh
-                      ls -lisah ./data
+                      ls -lisah ./data/uni
                       ls -lisah ./lib
                       ls -lisah ./lib/build/debug
 
@@ -113,7 +113,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.3
               with:
                   script: |-
-                      ls -lisah ./data
+                      ls -lisah ./data/uni
                       ls -lisah ./lib
                       ls -lisah ./lib/build/debug
                       export LLVM_PROFILE_FILE=./reports/lib.profraw
