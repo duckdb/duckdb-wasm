@@ -55,8 +55,8 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm run lint
 
-    linux_x86_debug:
-        name: Linux / x86 / Debug
+    native_debug:
+        name: Native / Debug
         runs-on: ubuntu-latest
         needs:
             - clang_format
@@ -144,8 +144,8 @@ jobs:
                           -ignore-filename-regex submodules \
                           > ./reports/coverage_lib.txt
 
-    linux_x86_release:
-        name: Linux / x86 / Release
+    native_release:
+        name: Native / Release
         runs-on: ubuntu-latest
         needs:
             - clang_format
@@ -230,12 +230,161 @@ jobs:
                           -ignore-filename-regex submodules \
                           > ./reports/coverage_lib.txt
 
-    wasm:
-        name: WASM
+    wasm_default:
+        name: WASM / Default
         runs-on: ubuntu-latest
         needs:
-            - linux_x86_debug
-            - linux_x86_release
+            - native_x86_debug
+            - native_x86_release
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Cache wasm build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.ccache
+                      ./.emscripten_cache
+                  key: ${{ runner.os }}-wasm-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-wasm-default-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm-default-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      mkdir -p ./lib/build/wasm/release
+                      ccache --max-size 200M
+                      ccache -s
+
+            - name: Build WASM module
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release default
+                      ccache -s
+
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: wasm-default
+                  path: |
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm.wasm
+
+    wasm_next:
+        name: WASM / Next
+        runs-on: ubuntu-latest
+        needs:
+            - native_x86_debug
+            - native_x86_release
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Cache wasm build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.ccache
+                      ./.emscripten_cache
+                  key: ${{ runner.os }}-wasm-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-wasm-next-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm-next-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      mkdir -p ./lib/build/wasm/release
+                      ccache --max-size 200M
+                      ccache -s
+
+            - name: Build WASM module
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release next
+                      ccache -s
+
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: wasm-next
+                  path: |
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next.wasm
+
+    wasm_next_coi:
+        name: WASM / Next COI
+        runs-on: ubuntu-latest
+        needs:
+            - native_x86_debug
+            - native_x86_release
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Cache wasm build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.ccache
+                      ./.emscripten_cache
+                  key: ${{ runner.os }}-wasm-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-wasm-next-coi-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm-next-coi-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      mkdir -p ./lib/build/wasm/release
+                      ccache --max-size 200M
+                      ccache -s
+
+            - name: Build WASM module
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ccache -s
+                      ./scripts/wasm_build_lib.sh release next_coi
+                      ccache -s
+
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: wasm-next-coi
+                  path: |
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.pthread.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.wasm
+
+    js_libs:
+        name: Javascript Library
+        runs-on: ubuntu-latest
+        needs:
+            - wasm_default
+            - wasm_next
+            - wasm_next_coi
 
         steps:
             - uses: actions/checkout@v2
@@ -246,15 +395,20 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache datagens
-              uses: actions/cache@v2
+            - uses: actions/download-artifact@v2
               with:
-                  path: |
-                      ./submodules/tpch-dbgen/dbgen
-                      ./target/release/parquetgen
-                  key: ${{ runner.os }}-datagen-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
-                  restore-keys: |
-                      ${{ runner.os }}-datagen-
+                  name: wasm-default
+                  path: /packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: wasm-next
+                  path: /packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: wasm-next-coi
+                  path: /packages/duckdb-wasm/src/bindings/
 
             - name: Cache node_modules
               uses: actions/cache@v2
@@ -268,17 +422,15 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-yarn-
 
-            - name: Cache wasm build
+            - name: Cache datagens
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.cargo
-                      ./.ccache
-                      ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm2-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./submodules/tpch-dbgen/dbgen
+                      ./target/release/parquetgen
+                  key: ${{ runner.os }}-datagen-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm2-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm2-
+                      ${{ runner.os }}-datagen-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -293,32 +445,6 @@ jobs:
                       cd ./submodules/duckdb
                       git fetch --prune --unshallow --tags
                       git describe --tags --abbrev=0
-                      ccache --max-size 400M
-                      ccache -s
-
-            - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
-              with:
-                  script: |-
-                      ccache -s
-                      ./scripts/wasm_build_lib.sh release default
-                      ccache -s
-
-            - name: Build WASM module +next
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
-              with:
-                  script: |-
-                      ccache -s
-                      ./scripts/wasm_build_lib.sh release next
-                      ccache -s
-
-            - name: Build WASM module +next +coi
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
-              with:
-                  script: |-
-                      ccache -s
-                      ./scripts/wasm_build_lib.sh release next_coi
-                      ccache -s
 
             - name: Build @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -362,7 +488,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ./scripts/npm_publish_lib.sh
+                      ./scripts/npm_version.sh publish
 
             - name: Build GitHub Pages
               if: github.ref == 'refs/heads/master'
