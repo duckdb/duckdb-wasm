@@ -77,7 +77,7 @@ jobs:
                       ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-native-${{ hashFiles('git_submodule_status.txt') }}
+                  key: ${{ runner.os }}-native-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
                       ${{ runner.os }}-native-
 
@@ -155,7 +155,7 @@ jobs:
                       ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-native-${{ hashFiles('git_submodule_status.txt') }}
+                  key: ${{ runner.os }}-native-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
                       ${{ runner.os }}-native-
 
