@@ -26,9 +26,12 @@
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/main/query_result.hpp"
+#include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/arrow_casts.h"
+#include "duckdb/web/arrow_type_mapping.h"
 #include "duckdb/web/csv_table_options.h"
+#include "duckdb/web/ext/table_function_relation.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/default_filesystem.h"
@@ -256,12 +259,44 @@ arrow::Status WebDB::Connection::ImportCSVTable(std::string_view path, std::stri
         auto schema_name = options.schema_name.empty() ? "main" : options.schema_name;
         if (options.table_name.empty()) return arrow::Status::Invalid("missing 'name' option");
 
-        // TODO explicitly provided arrow types
+        // Pack the unnamed parameters
+        std::vector<Value> unnamed_params;
+        unnamed_params.emplace_back(std::string{path});
+
+        // Pack the named parameters
+        std::unordered_map<std::string, Value> named_params;
+        if (options.header.has_value()) {
+            named_params.insert({"header", Value::BOOLEAN(*options.header)});
+        }
+        if (options.delimiter.has_value()) {
+            named_params.insert({"delim", Value(*options.delimiter)});
+        }
+        if (options.escape.has_value()) {
+            named_params.insert({"escape", Value(*options.escape)});
+        }
+        if (options.quote.has_value()) {
+            named_params.insert({"quote", Value(*options.escape)});
+        }
+        if (options.skip.has_value()) {
+            named_params.insert({"skip", Value::INTEGER(*options.skip)});
+        }
+        if (options.auto_detect.has_value()) {
+            named_params.insert({"auto_detect", Value::BOOLEAN(*options.auto_detect)});
+        }
+        if (options.columns.has_value()) {
+            child_list_t<Value> columns;
+            columns.reserve(options.columns.value().size());
+            for (auto& col : options.columns.value()) {
+                ARROW_ASSIGN_OR_RAISE(auto type, mapArrowType(*col->type()));
+                columns.push_back(make_pair(col->name(), Value(type.ToString())));
+            }
+            named_params.insert({"columns", Value::STRUCT(move(columns))});
+        }
 
         /// Execute the csv scan
-        std::vector<Value> params;
-        params.emplace_back(std::string{path});
-        connection_.TableFunction("read_csv_auto", params)->Create(schema_name, options.table_name);
+        auto func = std::make_shared<TableFunctionRelation>(*connection_.context, "read_csv_auto", unnamed_params,
+                                                            named_params);
+        func->Create(schema_name, options.table_name);
 
     } catch (const std::exception& e) {
         return arrow::Status::UnknownError(e.what());

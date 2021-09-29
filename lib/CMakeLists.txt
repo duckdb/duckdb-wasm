@@ -139,8 +139,10 @@ include_directories("${CMAKE_SOURCE_DIR}/include" "${CMAKE_BINARY_DIR}/include"
 add_library(
   duckdb_web
   ${CMAKE_SOURCE_DIR}/src/arrow_casts.cc
+  ${CMAKE_SOURCE_DIR}/src/arrow_type_mapping.cc
   ${CMAKE_SOURCE_DIR}/src/config.cc
   ${CMAKE_SOURCE_DIR}/src/csv_table_options.cc
+  ${CMAKE_SOURCE_DIR}/src/ext/table_function_relation.cc
   ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc

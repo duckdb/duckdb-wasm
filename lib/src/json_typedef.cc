@@ -106,17 +106,27 @@ Result<std::shared_ptr<DataType>> ReadListType(const rapidjson::Value::ConstObje
     return list(children_fields[0]);
 }
 
+Result<std::shared_ptr<DataType>> ReadDecimalType(const rapidjson::Value::ConstObject& obj) {
+    ARROW_ASSIGN_OR_RAISE(const int32_t precision, GetIntField<int32_t>(obj, "precision"));
+    ARROW_ASSIGN_OR_RAISE(const int32_t scale, GetIntField<int32_t>(obj, "scale"));
+    if (precision <= 0) return Status::Invalid("Decimal precision must be > 0");
+    if (scale < 0) return Status::Invalid("Decimal scale must be >= 0");
+    return decimal(precision, scale);
+}
+
 Result<std::shared_ptr<DataType>> ReadDecimal128Type(const rapidjson::Value::ConstObject& obj) {
     ARROW_ASSIGN_OR_RAISE(const int32_t precision, GetIntField<int32_t>(obj, "precision"));
     ARROW_ASSIGN_OR_RAISE(const int32_t scale, GetIntField<int32_t>(obj, "scale"));
-    if (precision <= 0) return Status::Invalid("FixedSizeBinary byteLength must be > 0");
-    if (scale <= 0) return Status::Invalid("FixedSizeBinary byteLength must be > 0");
+    if (precision <= 0) return Status::Invalid("Decimal128 precision must be > 0");
+    if (scale < 0) return Status::Invalid("Decimal128 scale must be >= 0");
     return decimal128(precision, scale);
 }
 
 Result<std::shared_ptr<DataType>> ReadDecimal256Type(const rapidjson::Value::ConstObject& obj) {
     ARROW_ASSIGN_OR_RAISE(const int32_t precision, GetIntField<int32_t>(obj, "precision", 12));
     ARROW_ASSIGN_OR_RAISE(const int32_t scale, GetIntField<int32_t>(obj, "scale", 2));
+    if (precision <= 0) return Status::Invalid("Decimal256 precision must be > 0");
+    if (scale < 0) return Status::Invalid("Decimal256 scale must be >= 0");
     return decimal256(precision, scale);
 }
 
@@ -198,6 +208,7 @@ arrow::Result<std::shared_ptr<Field>> ReadField(const rapidjson::Value& field) {
         {"date64", [](auto&) { return arrow::date64(); }},
         {"date64[ms]", [](auto&) { return arrow::date64(); }},
         {"daytimeinterval", [](auto&) { return arrow::day_time_interval(); }},
+        {"decimal", &ReadDecimalType},
         {"decimal128", &ReadDecimal128Type},
         {"decimal256", &ReadDecimal256Type},
         {"double", [](auto&) { return arrow::float64(); }},
