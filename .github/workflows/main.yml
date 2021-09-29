@@ -165,12 +165,12 @@ jobs:
             - uses: actions/download-artifact@v2
               with:
                   name: parquetgen
-                  path: ./target/release/parquetgen
+                  path: ./target/release/
 
             - uses: actions/download-artifact@v2
               with:
                   name: tpch-dbgen
-                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/
 
             - name: Git submodule status
               run: |
@@ -253,12 +253,12 @@ jobs:
             - uses: actions/download-artifact@v2
               with:
                   name: parquetgen
-                  path: ./target/release/parquetgen
+                  path: ./target/release/
 
             - uses: actions/download-artifact@v2
               with:
                   name: tpch-dbgen
-                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/
 
             - name: Git submodule status
               run: |
@@ -467,17 +467,17 @@ jobs:
             - uses: actions/download-artifact@v2
               with:
                   name: parquetgen
-                  path: ./target/release/parquetgen
+                  path: ./target/release/
 
             - uses: actions/download-artifact@v2
               with:
                   name: tpch-dbgen
-                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/dbgen/
 
             - uses: actions/download-artifact@v2
               with:
                   name: tpch-dbgen
-                  path: ./submodules/duckdb/build/Release/duckdb
+                  path: ./submodules/duckdb/build/Release/
 
             - uses: actions/download-artifact@v2
               with:
