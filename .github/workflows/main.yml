@@ -322,6 +322,13 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
+            - name: Publish @duckdb/duckdb-wasm
+              if: github.ref == 'refs/heads/master'
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ./scripts/npm_publish_lib.sh
+
             - name: Build GitHub Pages
               if: github.ref == 'refs/heads/master'
               run: |
