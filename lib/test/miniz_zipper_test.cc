@@ -36,7 +36,7 @@ TEST(ZipperTest, LoadFile) {
 
     Zipper zipper{file_page_buffer};
     auto load_status = zipper.LoadFromFile(path.c_str());
-    ASSERT_TRUE(load_status.ok()) << load_status.message();
+    ASSERT_TRUE(load_status.ok()) << load_status.message() << " " << path;
 
     auto maybe_count = zipper.ReadEntryCount();
     ASSERT_TRUE(maybe_count.ok()) << maybe_count.status().message();
@@ -65,7 +65,7 @@ TEST(ZipperTest, ExtractEntryToPath) {
 
     Zipper zipper{file_page_buffer};
     auto load_status = zipper.LoadFromFile(all_path.c_str());
-    ASSERT_TRUE(load_status.ok()) << load_status.message();
+    ASSERT_TRUE(load_status.ok()) << load_status.message() << " " << all_path;
 
     auto maybe_count = zipper.ReadEntryCount();
     ASSERT_TRUE(maybe_count.ok()) << maybe_count.status().message();
@@ -97,7 +97,7 @@ TEST(ZipperTest, ExtractPathToPath) {
 
     Zipper zipper{file_page_buffer};
     auto load_status = zipper.LoadFromFile(all_path.c_str());
-    ASSERT_TRUE(load_status.ok()) << load_status.message();
+    ASSERT_TRUE(load_status.ok()) << load_status.message() << " " << all_path;
 
     std::string to_extract = "assistenten.parquet";
     auto written = zipper.ExtractPathToPath(to_extract.c_str(), out_path.c_str());
