@@ -444,17 +444,17 @@ jobs:
             - uses: actions/download-artifact@v2
               with:
                   name: wasm-default
-                  path: /packages/duckdb-wasm/src/bindings/
+                  path: ./packages/duckdb-wasm/src/bindings/
 
             - uses: actions/download-artifact@v2
               with:
                   name: wasm-next
-                  path: /packages/duckdb-wasm/src/bindings/
+                  path: ./packages/duckdb-wasm/src/bindings/
 
             - uses: actions/download-artifact@v2
               with:
                   name: wasm-next-coi
-                  path: /packages/duckdb-wasm/src/bindings/
+                  path: ./packages/duckdb-wasm/src/bindings/
 
             - name: Git submodule status
               run: |
