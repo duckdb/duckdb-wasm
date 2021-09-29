@@ -16,7 +16,9 @@ TPCH_SF_OUT_DUCKDB=${TPCH_SF_OUT}/duckdb
 TPCH_SF_OUT_DUCKDB_DB=${TPCH_SF_OUT_DUCKDB}/db
 DUCKDB_SCRIPT_FILE=${TPCH_SF_OUT_DUCKDB}/script.sql
 
-${PROJECT_ROOT}/scripts/build_duckdb_shell.sh
+if [ ! -f ${DUCKDB_SHELL} ]; then
+    ${PROJECT_ROOT}/scripts/build_duckdb_shell.sh
+fi
 mkdir -p ${TPCH_SF_OUT_DUCKDB}
 rm -r ${TPCH_SF_OUT_DUCKDB}
 mkdir -p ${TPCH_SF_OUT_DUCKDB}
