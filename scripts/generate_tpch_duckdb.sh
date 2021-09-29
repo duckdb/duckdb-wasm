@@ -19,6 +19,7 @@ DUCKDB_SCRIPT_FILE=${TPCH_SF_OUT_DUCKDB}/script.sql
 if [ ! -f ${DUCKDB_SHELL} ]; then
     ${PROJECT_ROOT}/scripts/build_duckdb_shell.sh
 fi
+chmod +x ${DUCKDB_SHELL}
 mkdir -p ${TPCH_SF_OUT_DUCKDB}
 rm -r ${TPCH_SF_OUT_DUCKDB}
 mkdir -p ${TPCH_SF_OUT_DUCKDB}

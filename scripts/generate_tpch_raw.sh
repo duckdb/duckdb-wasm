@@ -28,11 +28,13 @@ if [ ! -f ${DBGEN} ]; then
     esac
     make -C ${DBGEN_DIR} dbgen
 fi
+chmod +x ${DBGEN}
 echo "DBGEN=${DBGEN}"
 
 if [ ! -f ${PARQUETGEN} ]; then
     cargo build --manifest-path=${PROJECT_ROOT}/Cargo.toml --release -p parquetgen
 fi
+chmod +x ${PARQUETGEN}
 echo "PARQUETGEN=${PARQUETGEN}"
 
 mkdir -p ${TPCH_SF_OUT_TBL}

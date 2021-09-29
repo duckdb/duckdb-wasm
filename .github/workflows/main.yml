@@ -141,7 +141,9 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
+                      ccache -s
                       ./scripts/build_duckdb_shell.sh
+                      ccache -s
 
             - name: Upload artifact
               uses: actions/upload-artifact@v2
