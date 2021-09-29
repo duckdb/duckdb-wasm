@@ -80,7 +80,8 @@ jobs:
                   script: |-
                       cargo build --manifest-path=./Cargo.toml --release -p parquetgen
 
-            - uses: actions/upload-artifact@v2
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
               with:
                   name: parquetgen
                   path: |
@@ -109,7 +110,8 @@ jobs:
                       cd ./submodules/tpch-dbgen/dbgen/
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
 
-            - uses: actions/upload-artifact@v2
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
               with:
                   name: tpch-dbgen
                   path: |
@@ -302,34 +304,25 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache wasm build
+            - name: Cache WASM build
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./lib/build/wasm/release
+                  key: ${{ runner.os }}-wasm2-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm-default-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm-default-
-
-            - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
-              with:
-                  script: |-
-                      mkdir -p ./lib/build/wasm/release
-                      ccache --max-size 200M
-                      ccache -s
+                      ${{ runner.os }}-wasm2-default-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm2-default-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ccache -s
                       ./scripts/wasm_build_lib.sh release default
-                      ccache -s
 
-            - uses: actions/upload-artifact@v2
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
               with:
                   name: wasm-default
                   path: |
@@ -351,24 +344,16 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache wasm build
+            - name: Cache WASM build
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./lib/build/wasm/release
+                  key: ${{ runner.os }}-wasm2-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm-next-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm-next-
-
-            - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
-              with:
-                  script: |-
-                      mkdir -p ./lib/build/wasm/release
-                      ccache --max-size 200M
-                      ccache -s
+                      ${{ runner.os }}-wasm2-next-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm2-next-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -378,7 +363,8 @@ jobs:
                       ./scripts/wasm_build_lib.sh release next
                       ccache -s
 
-            - uses: actions/upload-artifact@v2
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
               with:
                   name: wasm-next
                   path: |
@@ -400,24 +386,16 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache wasm build
+            - name: Cache WASM build
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./lib/build/wasm/release
+                  key: ${{ runner.os }}-wasm2-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm-next-coi-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm-next-coi-
-
-            - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
-              with:
-                  script: |-
-                      mkdir -p ./lib/build/wasm/release
-                      ccache --max-size 200M
-                      ccache -s
+                      ${{ runner.os }}-wasm2-next-coi-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm2-next-coi-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -427,7 +405,8 @@ jobs:
                       ./scripts/wasm_build_lib.sh release next_coi
                       ccache -s
 
-            - uses: actions/upload-artifact@v2
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
               with:
                   name: wasm-next-coi
                   path: |
