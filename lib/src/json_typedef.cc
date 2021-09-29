@@ -260,7 +260,9 @@ arrow::Result<std::shared_ptr<Field>> ReadField(const rapidjson::Value& field) {
     };
 
     // Get type resolver
-    auto iter = ARROW_TYPE_MAPPING.find(obj);
+    std::string objLower{obj.data(), obj.length()};
+    std::transform(objLower.begin(), objLower.end(), objLower.begin(), [](unsigned char c) { return std::tolower(c); });
+    auto iter = ARROW_TYPE_MAPPING.find(objLower);
     if (iter == ARROW_TYPE_MAPPING.end()) return Status::Invalid("Unrecognized type name: ", obj);
     ARROW_ASSIGN_OR_RAISE(const auto type, iter->second(json_field));
     // Build field
