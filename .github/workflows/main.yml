@@ -240,7 +240,7 @@ jobs:
                       ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm-${{ hashFiles('git_submodule_status.txt') }}
+                  key: ${{ runner.os }}-wasm-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
                       ${{ runner.os }}-wasm-
 
