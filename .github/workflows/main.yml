@@ -116,6 +116,39 @@ jobs:
                   path: |
                       ./submodules/tpch-dbgen/dbgen/dbgen
 
+    duckdb_shell:
+        name: DuckDB Shell
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Git submodule status
+              run: |
+                  git submodule status ./submodules/duckdb > git_submodule_status.txt
+
+            - name: Cache ccache
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.ccache
+                  key: ${{ runner.os }}-duckdb-${{ hashFiles('git_submodule_status.txt') }}
+                  restore-keys: |
+                      ${{ runner.os }}-duckdb-
+
+            - name: Build DuckDB shell
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ./scripts/build_duckdb_shell.sh
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              with:
+                  name: duckdb-shell
+                  path: ./submodules/duckdb/build/Release/duckdb
+
     native_debug:
         name: Native / Debug
         runs-on: ubuntu-latest
@@ -440,6 +473,11 @@ jobs:
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/dbgen
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/duckdb/build/Release/duckdb
 
             - uses: actions/download-artifact@v2
               with:
