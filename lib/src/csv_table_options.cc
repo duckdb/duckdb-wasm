@@ -79,6 +79,7 @@ static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{
     {"fields", FieldTag::COLUMNS},  {"escape", FieldTag::ESCAPE},       {"quote", FieldTag::QUOTE},
     {"delim", FieldTag::DELIMITER}, {"delimiter", FieldTag::DELIMITER}, {"skip", FieldTag::SKIP},
     {"header", FieldTag::HEADER},   {"auto_detect", FieldTag::DETECT},  {"detect", FieldTag::DETECT},
+    {"detect", FieldTag::DETECT},   {"autoDetect", FieldTag::DETECT},
 };
 
 }  // namespace
