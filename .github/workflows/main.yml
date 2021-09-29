@@ -347,17 +347,19 @@ jobs:
               with:
                   path: |
                       ./.emscripten_cache
-                      ./lib/build/wasm/release
-                  key: ${{ runner.os }}-wasm2-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./.ccache
+                  key: ${{ runner.os }}-wasm4-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm2-default-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm2-default-
+                      ${{ runner.os }}-wasm4-default-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm4-default-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
+                      ccache -s
                       ./scripts/wasm_build_lib.sh release default
+                      ccache -s
 
             - name: Upload artifact
               uses: actions/upload-artifact@v2
@@ -387,11 +389,11 @@ jobs:
               with:
                   path: |
                       ./.emscripten_cache
-                      ./lib/build/wasm/release_next
-                  key: ${{ runner.os }}-wasm3-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./.ccache
+                  key: ${{ runner.os }}-wasm4-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm3-next-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm3-next-
+                      ${{ runner.os }}-wasm4-next-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm4-next-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -429,11 +431,11 @@ jobs:
               with:
                   path: |
                       ./.emscripten_cache
-                      ./lib/build/wasm/release_next_coi
-                  key: ${{ runner.os }}-wasm3-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./.ccache
+                  key: ${{ runner.os }}-wasm4-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm3-next-coi-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm3-next-coi-
+                      ${{ runner.os }}-wasm4-next-coi-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm4-next-coi-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
