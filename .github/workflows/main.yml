@@ -77,9 +77,11 @@ jobs:
                       ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-native-debug-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-native2-debug-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
-                      ${{ runner.os }}-native-
+                      ${{ runner.os }}-native2-debug-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-native2-debug-
+                      ${{ runner.os }}-native2-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -154,9 +156,11 @@ jobs:
                       ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-native-release-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-native2-release-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
-                      ${{ runner.os }}-native-
+                      ${{ runner.os }}-native2-release-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-native2-release-
+                      ${{ runner.os }}-native2-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -241,9 +245,10 @@ jobs:
                       ./.cargo
                       ./.ccache
                       ./.emscripten_cache
-                  key: ${{ runner.os }}-wasm-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm2-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm-
+                      ${{ runner.os }}-wasm2-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm2-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.4
