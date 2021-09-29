@@ -387,11 +387,11 @@ jobs:
               with:
                   path: |
                       ./.emscripten_cache
-                      ./lib/build/wasm/release
-                  key: ${{ runner.os }}-wasm2-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./lib/build/wasm/release_next
+                  key: ${{ runner.os }}-wasm3-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm2-next-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm2-next-
+                      ${{ runner.os }}-wasm3-next-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm3-next-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -429,11 +429,11 @@ jobs:
               with:
                   path: |
                       ./.emscripten_cache
-                      ./lib/build/wasm/release
-                  key: ${{ runner.os }}-wasm2-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                      ./lib/build/wasm/release_next_coi
+                  key: ${{ runner.os }}-wasm3-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm2-next-coi-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm2-next-coi-
+                      ${{ runner.os }}-wasm3-next-coi-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm3-next-coi-
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
