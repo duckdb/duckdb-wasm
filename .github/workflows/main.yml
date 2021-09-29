@@ -459,6 +459,7 @@ jobs:
             - wasm_next_coi
             - parquet_generator
             - tpch_generator
+            - duckdb_shell
         steps:
             - uses: actions/checkout@v2
               with:
