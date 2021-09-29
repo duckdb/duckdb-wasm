@@ -234,8 +234,8 @@ jobs:
         name: WASM / Default
         runs-on: ubuntu-latest
         needs:
-            - native_x86_debug
-            - native_x86_release
+            - native_debug
+            - native_release
         steps:
             - uses: actions/checkout@v2
               with:
