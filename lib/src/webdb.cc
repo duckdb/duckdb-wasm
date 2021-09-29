@@ -275,13 +275,10 @@ arrow::Status WebDB::Connection::ImportCSVTable(std::string_view path, std::stri
             named_params.insert({"escape", Value(*options.escape)});
         }
         if (options.quote.has_value()) {
-            named_params.insert({"quote", Value(*options.escape)});
+            named_params.insert({"quote", Value(*options.quote)});
         }
         if (options.skip.has_value()) {
             named_params.insert({"skip", Value::INTEGER(*options.skip)});
-        }
-        if (options.auto_detect.has_value()) {
-            named_params.insert({"auto_detect", Value::BOOLEAN(*options.auto_detect)});
         }
         if (options.columns.has_value()) {
             child_list_t<Value> columns;
@@ -292,10 +289,11 @@ arrow::Status WebDB::Connection::ImportCSVTable(std::string_view path, std::stri
             }
             named_params.insert({"columns", Value::STRUCT(move(columns))});
         }
+        named_params.insert({"auto_detect", Value::BOOLEAN(options.auto_detect.value_or(true))});
 
         /// Execute the csv scan
-        auto func = std::make_shared<TableFunctionRelation>(*connection_.context, "read_csv_auto", unnamed_params,
-                                                            named_params);
+        auto func =
+            std::make_shared<TableFunctionRelation>(*connection_.context, "read_csv", unnamed_params, named_params);
         func->Create(schema_name, options.table_name);
 
     } catch (const std::exception& e) {

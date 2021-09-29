@@ -104,8 +104,179 @@ INTEGER	INTEGER	INTEGER
 4	5	6	
 7	8	9	
 
+)TXT",
+    },
+    {
+        .name = "options_1",
+        .input = R"CSV("a","b","c"
+1,2,3
+4,5,6
+7,8,9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int32" },
+                { "name": "c", "type": "int32" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	INTEGER	INTEGER	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
 )TXT"
     },
+    {
+        .name = "options_2",
+        .input = R"CSV("a","b","c"
+1,2,3
+4,5,6
+7,8,9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": true,
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "int64" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	BIGINT	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    },
+    {
+        .name = "options_3",
+        .input = R"CSV(1,2,3
+4,5,6
+7,8,9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": false,
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "int64" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	BIGINT	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    },
+    {
+        .name = "options_4",
+        .input = R"CSV(1,2,3
+4,5,6
+7,8,9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": false,
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "utf8" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	VARCHAR	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    },
+    {
+        .name = "options_5",
+        .input = R"CSV(1|2|3
+4|5|6
+7|8|9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": false,
+            "delimiter": "|",
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "utf8" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	VARCHAR	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    },
+    {
+        .name = "options_6",
+        .input = R"CSV(1|2|3
+4|5|'6'
+7|8|9
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": false,
+            "delimiter": "|",
+            "quote": "'",
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "utf8" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	VARCHAR	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    }
 };
 // clang-format on
 
