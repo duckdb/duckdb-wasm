@@ -123,6 +123,8 @@ jobs:
         needs:
             - clang_format
             - eslint
+            - parquet_generator
+            - tpch_generator
         steps:
             - uses: actions/checkout@v2
               with:
@@ -209,6 +211,8 @@ jobs:
         needs:
             - clang_format
             - eslint
+            - parquet_generator
+            - tpch_generator
         steps:
             - uses: actions/checkout@v2
               with:
@@ -421,6 +425,8 @@ jobs:
             - wasm_default
             - wasm_next
             - wasm_next_coi
+            - parquet_generator
+            - tpch_generator
         steps:
             - uses: actions/checkout@v2
               with:
