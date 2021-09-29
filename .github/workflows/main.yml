@@ -475,11 +475,11 @@ jobs:
             - uses: actions/download-artifact@v2
               with:
                   name: tpch-dbgen
-                  path: ./submodules/tpch-dbgen/dbgen/dbgen/
+                  path: ./submodules/tpch-dbgen/dbgen/
 
             - uses: actions/download-artifact@v2
               with:
-                  name: tpch-dbgen
+                  name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
 
             - uses: actions/download-artifact@v2
