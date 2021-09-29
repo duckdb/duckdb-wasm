@@ -266,7 +266,27 @@ export abstract class DuckDBBindings {
 
     /** Import csv from path */
     public importCSVFromPath(conn: number, path: string, options: CSVTableOptions): void {
-        const optionsJSON = JSON.stringify(options);
+        // Flatten columns.
+        // The arrow DataType classes do not survive the message passing to the web worker.
+        // We therefore always flatten column specs.
+        if (options.columns !== undefined) {
+            const out = [];
+            for (const k in options.columns) {
+                out.push({
+                    name: k,
+                    type: options.columns[k].toString(),
+                });
+            }
+            options.columnsFlat = out;
+        }
+
+        // Stringify options
+        const raw = options as any;
+        raw.columns = raw.columnsFlat;
+        delete raw.columnsFlat;
+        const optionsJSON = JSON.stringify(raw);
+
+        // Pass to wasm
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_import_csv_table',

@@ -1,3 +1,4 @@
+import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
 import { Column, compareTable } from './table_test';
 
@@ -18,6 +19,30 @@ interface CSVImportTest {
 }
 
 const CSV_IMPORT_TESTS: CSVImportTest[] = [
+    {
+        name: 'options_1',
+        input: `1,2,3
+4,5,6
+7,8,9
+`,
+        options: {
+            schema: 'main',
+            name: 'foo2',
+            header: false,
+            detect: false,
+            columns: {
+                a: new arrow.Int16(),
+                b: new arrow.Int32(),
+                c: new arrow.Utf8(),
+            },
+        },
+        query: 'SELECT * FROM main.foo2',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: ['3', '6', '9'] },
+        ],
+    },
     {
         name: 'integers_auto_1',
         input: `"a","b","c"

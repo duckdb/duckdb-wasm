@@ -1,3 +1,5 @@
+import * as arrow from 'apache-arrow';
+
 export enum JSONTableFormat {
     ROW_ARRAY = 'row-array',
     COLUMN_OBJECT = 'column-object',
@@ -12,4 +14,14 @@ export interface JSONTableOptions {
 export interface CSVTableOptions {
     name: string;
     schema?: string;
+    header?: boolean;
+    delimiter?: string;
+    quote?: string;
+    escape?: string;
+    skip?: number;
+    detect?: boolean;
+    columns?: {
+        [key: string]: arrow.DataType;
+    };
+    columnsFlat?: { name: string; type: string }[];
 }

@@ -429,6 +429,20 @@ export class AsyncDuckDB {
 
     /** Import a csv file */
     public async importCSVFromPath(conn: ConnectionID, path: string, options: CSVTableOptions): Promise<void> {
+        // Flatten the table options
+        if (options.columns !== undefined) {
+            const out = [];
+            for (const k in options.columns) {
+                out.push({
+                    name: k,
+                    type: options.columns[k].toString(),
+                });
+            }
+            options.columnsFlat = out;
+            delete options.columns;
+        }
+
+        // Pass to the worker
         const task = new WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>(
             WorkerRequestType.IMPORT_CSV_FROM_PATH,
             [conn, path, options],
