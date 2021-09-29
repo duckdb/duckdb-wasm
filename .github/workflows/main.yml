@@ -88,9 +88,8 @@ jobs:
                       mkdir -p ./lib/build/debug ./reports
                       ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_uni.sh
-                      ls -lisah ./data/uni
-                      ls -lisah ./lib
-                      ls -lisah ./lib/build/debug
+                      ccache --max-size 100M
+                      ccache -s
 
             - name: Build
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -166,6 +165,8 @@ jobs:
                       mkdir -p ./lib/build/release ./reports
                       ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_uni.sh
+                      ccache --max-size 100M
+                      ccache -s
 
             - name: Build
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -257,6 +258,8 @@ jobs:
                       cd ./submodules/duckdb
                       git fetch --prune --unshallow --tags
                       git describe --tags --abbrev=0
+                      ccache --max-size 100M
+                      ccache -s
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
