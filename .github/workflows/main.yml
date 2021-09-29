@@ -55,6 +55,66 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm run lint
 
+    parquet_generator:
+        name: Parquet Generator
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Cache rust build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.cargo
+                      ./target
+                  key: ${{ runner.os }}-datagen-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
+                  restore-keys: |
+                      ${{ runner.os }}-datagen-
+
+            - name: Build generator
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              if: steps.cache-generator.outputs.cache-hit != 'true'
+              with:
+                  script: |-
+                      cargo build --manifest-path=./Cargo.toml --release -p parquetgen
+
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: parquetgen
+                  path: |
+                      ./target/release/parquetgen
+
+    tpch_generator:
+        name: TPCH Generator
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Cache generator
+              uses: actions/cache@v2
+              id: cache-generator
+              with:
+                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+                  key: ${{ runner.os }}-tpch-dben
+
+            - name: Build generator
+              if: steps.cache-generator.outputs.cache-hit != 'true'
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      cd ./submodules/tpch-dbgen/dbgen/
+                      make -C ./submodules/tpch-dbgen/dbgen/ dbgen
+
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: |
+                      ./submodules/tpch-dbgen/dbgen/dbgen
+
     native_debug:
         name: Native / Debug
         runs-on: ubuntu-latest
@@ -66,19 +126,19 @@ jobs:
               with:
                   submodules: 'recursive'
 
+            - uses: actions/download-artifact@v2
+              with:
+                  name: parquetgen
+                  path: ./target/release/parquetgen
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+
             - name: Git submodule status
               run: |
                   git submodule status > git_submodule_status.txt
-
-            - name: Cache datagens
-              uses: actions/cache@v2
-              with:
-                  path: |
-                      ./submodules/tpch-dbgen/dbgen
-                      ./target/release/parquetgen
-                  key: ${{ runner.os }}-datagen-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
-                  restore-keys: |
-                      ${{ runner.os }}-datagen-
 
             - name: Cache native build
               uses: actions/cache@v2
@@ -103,7 +163,7 @@ jobs:
                       ccache --max-size 300M
                       ccache -s
 
-            - name: Build
+            - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
@@ -120,13 +180,10 @@ jobs:
                       make -C./lib/build/debug -j`nproc`
                       ccache -s
 
-            - name: Test
+            - name: Test project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ls -lisah ./data/uni
-                      ls -lisah ./lib
-                      ls -lisah ./lib/build/debug
                       export LLVM_PROFILE_FILE=./reports/lib.profraw
                       ./lib/build/debug/tester \
                           --source_dir=./lib/ \
@@ -155,19 +212,19 @@ jobs:
               with:
                   submodules: 'recursive'
 
+            - uses: actions/download-artifact@v2
+              with:
+                  name: parquetgen
+                  path: ./target/release/parquetgen
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+
             - name: Git submodule status
               run: |
                   git submodule status > git_submodule_status.txt
-
-            - name: Cache datagens
-              uses: actions/cache@v2
-              with:
-                  path: |
-                      ./submodules/tpch-dbgen/dbgen
-                      ./target/release/parquetgen
-                  key: ${{ runner.os }}-datagen-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
-                  restore-keys: |
-                      ${{ runner.os }}-datagen-
 
             - name: Cache native build
               uses: actions/cache@v2
@@ -192,7 +249,7 @@ jobs:
                       ccache --max-size 200M
                       ccache -s
 
-            - name: Build
+            - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
@@ -209,7 +266,7 @@ jobs:
                       make -C./lib/build/release -j`nproc`
                       ccache -s
 
-            - name: Test
+            - name: Test project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
@@ -234,8 +291,8 @@ jobs:
         name: WASM / Default
         runs-on: ubuntu-latest
         needs:
-            - native_debug
-            - native_release
+            - clang_format
+            - eslint
         steps:
             - uses: actions/checkout@v2
               with:
@@ -283,8 +340,8 @@ jobs:
         name: WASM / Next
         runs-on: ubuntu-latest
         needs:
-            - native_debug
-            - native_release
+            - clang_format
+            - eslint
         steps:
             - uses: actions/checkout@v2
               with:
@@ -332,8 +389,8 @@ jobs:
         name: WASM / Next COI
         runs-on: ubuntu-latest
         needs:
-            - native_debug
-            - native_release
+            - clang_format
+            - eslint
         steps:
             - uses: actions/checkout@v2
               with:
@@ -382,18 +439,25 @@ jobs:
         name: Javascript Library
         runs-on: ubuntu-latest
         needs:
+            - native_debug
+            - native_release
             - wasm_default
             - wasm_next
             - wasm_next_coi
-
         steps:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
 
-            - name: Git submodule status
-              run: |
-                  git submodule status > git_submodule_status.txt
+            - uses: actions/download-artifact@v2
+              with:
+                  name: parquetgen
+                  path: ./target/release/parquetgen
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/dbgen
 
             - uses: actions/download-artifact@v2
               with:
@@ -410,6 +474,10 @@ jobs:
                   name: wasm-next-coi
                   path: /packages/duckdb-wasm/src/bindings/
 
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
             - name: Cache node_modules
               uses: actions/cache@v2
               with:
@@ -421,16 +489,6 @@ jobs:
                   key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
                   restore-keys: |
                       ${{ runner.os }}-yarn-
-
-            - name: Cache datagens
-              uses: actions/cache@v2
-              with:
-                  path: |
-                      ./submodules/tpch-dbgen/dbgen
-                      ./target/release/parquetgen
-                  key: ${{ runner.os }}-datagen-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
-                  restore-keys: |
-                      ${{ runner.os }}-datagen-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.4
