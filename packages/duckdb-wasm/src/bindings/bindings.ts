@@ -281,10 +281,10 @@ export abstract class DuckDBBindings {
         }
 
         // Stringify options
-        const raw = options as any;
-        raw.columns = raw.columnsFlat;
-        delete raw.columnsFlat;
-        const optionsJSON = JSON.stringify(raw);
+        const optionsCopy = { ...options } as any;
+        optionsCopy.columns = optionsCopy.columnsFlat;
+        delete optionsCopy.columnsFlat;
+        const optionsJSON = JSON.stringify(optionsCopy);
 
         // Pass to wasm
         const [s, d, n] = callSRet(

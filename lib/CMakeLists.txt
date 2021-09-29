@@ -157,7 +157,6 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/json_table.cc
   ${CMAKE_SOURCE_DIR}/src/json_table_options.cc
   ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
-  ${CMAKE_SOURCE_DIR}/src/miniz_zipper.cc
   ${CMAKE_SOURCE_DIR}/src/utils/parking_lot.cc
   ${CMAKE_SOURCE_DIR}/src/utils/shared_mutex.cc
   ${CMAKE_SOURCE_DIR}/src/utils/thread.cc
@@ -222,12 +221,7 @@ if(EMSCRIPTEN)
           _duckdb_web_query_fetch_results, \
           _duckdb_web_query_run, \
           _duckdb_web_query_send, \
-          _duckdb_web_tokenize, \
-          _duckdb_web_zip_extract_entry_to_path, \
-          _duckdb_web_zip_extract_path_to_path, \
-          _duckdb_web_zip_load_file, \
-          _duckdb_web_zip_read_entry_count, \
-          _duckdb_web_zip_read_entry_info \
+          _duckdb_web_tokenize \
       ]' \
       -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
       --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")
@@ -251,7 +245,6 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
-      ${CMAKE_SOURCE_DIR}/test/miniz_zipper_test.cc
       ${CMAKE_SOURCE_DIR}/test/readahead_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc

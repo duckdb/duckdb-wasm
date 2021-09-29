@@ -1,6 +1,7 @@
 import * as duckdb_sync from '../src/targets/duckdb-browser-sync';
 import * as duckdb_async from '../src/targets/duckdb-browser-async';
 import * as check from 'wasm-feature-detect';
+import { DuckDBBundle, getPlatformFeatures } from '../src/targets/duckdb-browser-async';
 
 // Configure the worker
 const DUCKDB_BUNDLES: duckdb_async.DuckDBBundles = {
@@ -96,11 +97,9 @@ import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
 import { testFilesystem } from './filesystem.test';
-import { testZip, testZipAsync } from './zip.test';
 import { testJSONImport, testJSONImportAsync } from './import_json.test';
 import { testCSVImport, testCSVImportAsync } from './import_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
-import { DuckDBBundle, getPlatformFeatures } from '../src/targets/duckdb-browser-async';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
@@ -110,8 +109,6 @@ testAsyncBindings(() => adb!, dataURL);
 testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
 testFilesystem(() => adb!, resolveData, dataURL);
-testZip(() => db!, resolveData);
-testZipAsync(() => adb!, resolveData);
 testJSONImport(() => db!);
 testJSONImportAsync(() => adb!);
 testCSVImport(() => db!);

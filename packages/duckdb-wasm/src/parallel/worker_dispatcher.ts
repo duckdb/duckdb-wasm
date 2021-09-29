@@ -1,13 +1,10 @@
 import { DuckDBBindings } from '../bindings';
-import { ZipBindings } from '../plugins/zip_bindings';
 import { WorkerResponseVariant, WorkerRequestVariant, WorkerRequestType, WorkerResponseType } from './worker_request';
 import { Logger, LogEntryVariant } from '../log';
 
 export abstract class AsyncDuckDBDispatcher implements Logger {
     /** The bindings */
     protected _bindings: DuckDBBindings | null = null;
-    /** The zip bindings */
-    protected _zip: ZipBindings | null = null;
     /** The next message id */
     protected _nextMessageId = 0;
 
@@ -76,7 +73,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 try {
                     this._bindings = await this.instantiate(request.data[0], request.data[1]);
-                    this._zip = new ZipBindings(this._bindings); // TODO: make optional
                     this.sendOK(request);
                 } catch (e: any) {
                     this._bindings = null;
@@ -246,24 +242,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             requestId: request.messageId,
                             type: WorkerResponseType.FILE_STATISTICS,
                             data: this._bindings.exportFileStatistics(request.data),
-                        },
-                        [],
-                    );
-                    break;
-                }
-                case WorkerRequestType.ZIP_EXTRACT_FILE: {
-                    if (!this._zip) {
-                        this.failWith(request, new Error('zip plugin not loaded'));
-                        return;
-                    }
-                    this._zip!.loadFile(request.data.archiveFile);
-                    const fileSize = this._zip!.extractPathToPath(request.data.entryPath, request.data.outFile);
-                    this.postMessage(
-                        {
-                            messageId: this._nextMessageId++,
-                            requestId: request.messageId,
-                            type: WorkerResponseType.FILE_SIZE,
-                            data: fileSize,
                         },
                         [],
                     );

@@ -12,7 +12,6 @@ echo "MODE=${MODE}"
 
 CPP_BUILD_DIR="${PROJECT_ROOT}/lib/build/wasm/${MODE}"
 CPP_SOURCE_DIR="${PROJECT_ROOT}/lib"
-ANALYZER_LIB_DIR="${PROJECT_ROOT}/packages/core/src/analyzer"
 DUCKDB_LIB_DIR="${PROJECT_ROOT}/packages/duckdb-wasm/src/bindings"
 
 CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
