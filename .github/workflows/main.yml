@@ -107,7 +107,6 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      cd ./submodules/tpch-dbgen/dbgen/
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
 
             - name: Upload artifact
