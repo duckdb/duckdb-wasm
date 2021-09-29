@@ -348,7 +348,6 @@ WebDB::WebDB(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs)
       database_(),
       connections_(),
       file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
-      zip_(std::make_unique<Zipper>(file_page_buffer_)),
       config_() {
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
     if (auto webfs = io::WebFileSystem::Get()) {

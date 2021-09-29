@@ -21,7 +21,6 @@
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/file_stats.h"
-#include "duckdb/web/miniz_zipper.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
@@ -104,8 +103,6 @@ class WebDB {
     std::shared_ptr<io::FileStatisticsRegistry> file_stats_ = {};
     /// The pinned web files (if any)
     std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
-    /// The zipper (if loaded)
-    std::unique_ptr<Zipper> zip_ = nullptr;
     /// The config
     WebDBConfig config_;
 
@@ -121,8 +118,6 @@ class WebDB {
     auto& database() { return *database_; }
     /// Get the buffer manager
     auto& file_page_buffer() { return *file_page_buffer_; }
-    /// Get the zipper
-    auto* zip() { return zip_.get(); }
 
     /// Get the version
     std::string_view GetVersion();

@@ -31,7 +31,6 @@ export enum WorkerRequestType {
     RUN_QUERY = 'RUN_QUERY',
     SEND_QUERY = 'SEND_QUERY',
     TOKENIZE = 'TOKENIZE',
-    ZIP_EXTRACT_FILE = 'ZIP_EXTRACT_FILE',
 }
 
 export enum WorkerResponseType {
@@ -117,8 +116,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.SEND_QUERY, [number, string]>
-    | WorkerRequest<WorkerRequestType.TOKENIZE, string>
-    | WorkerRequest<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs>;
+    | WorkerRequest<WorkerRequestType.TOKENIZE, string>;
 
 export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.CONNECTION_INFO, number>
@@ -161,5 +159,4 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RESET, null, null>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
-    | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>
-    | WorkerTask<WorkerRequestType.ZIP_EXTRACT_FILE, ZipExtractToFileArgs, number>;
+    | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>;

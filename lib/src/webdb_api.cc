@@ -183,41 +183,4 @@ static void RaiseExtensionNotLoaded(WASMResponse* packed, std::string_view ext) 
     WASMResponseBuffer::Get().Store(
         *packed, arrow::Status(arrow::StatusCode::NotImplemented, "Extension is not loaded: " + std::string{ext}));
 }
-
-/// Load zip from file
-void duckdb_web_zip_load_file(WASMResponse* packed, const char* filePath) {
-    auto& webdb = WebDB::Get();
-    if (!webdb.zip()) return RaiseExtensionNotLoaded(packed, "zip");
-    auto archiveID = webdb.zip()->LoadFromFile(filePath);
-    WASMResponseBuffer::Get().Store(*packed, archiveID);
-}
-/// Get the zip entry count
-void duckdb_web_zip_read_entry_count(WASMResponse* packed) {
-    auto& webdb = WebDB::Get();
-    if (!webdb.zip()) return RaiseExtensionNotLoaded(packed, "zip");
-    auto count = webdb.zip()->ReadEntryCount();
-    WASMResponseBuffer::Get().Store(*packed, count);
-}
-/// Get the zip entry count
-void duckdb_web_zip_read_entry_info(WASMResponse* packed, size_t entryID) {
-    auto& webdb = WebDB::Get();
-    if (!webdb.zip()) return RaiseExtensionNotLoaded(packed, "zip");
-    auto entry_info = webdb.zip()->ReadEntryInfoAsJSON(entryID);
-    WASMResponseBuffer::Get().Store(*packed, entry_info);
-}
-/// Load entry to file
-void duckdb_web_zip_extract_entry_to_path(WASMResponse* packed, size_t entryID, const char* out) {
-    auto& webdb = WebDB::Get();
-    if (!webdb.zip()) return RaiseExtensionNotLoaded(packed, "zip");
-    auto bytes = webdb.zip()->ExtractEntryToPath(entryID, out);
-    WASMResponseBuffer::Get().Store(*packed, bytes);
-}
-
-/// Extract file to file
-void duckdb_web_zip_extract_path_to_path(WASMResponse* packed, const char* path, const char* out) {
-    auto& webdb = WebDB::Get();
-    if (!webdb.zip()) return RaiseExtensionNotLoaded(packed, "zip");
-    auto bytes = webdb.zip()->ExtractPathToPath(path, out);
-    WASMResponseBuffer::Get().Store(*packed, bytes);
-}
 }

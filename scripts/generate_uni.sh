@@ -19,15 +19,3 @@ if [ ! -f "${UNI_DIR}/studenten.parquet" ]; then
     ${PARQUETGEN} uni -o ${UNI_DIR}
 fi
 echo "UNI_DIR=${UNI_DIR}"
-
-if [ ! -f "${UNI_DIR}/all.zip" ]; then
-    cd ${UNI_DIR}
-    zip ./all.zip \
-        ./assistenten.parquet \
-        ./hoeren.parquet \
-        ./professoren.parquet \
-        ./pruefen.parquet \
-        ./studenten.parquet \
-        ./vorlesungen.parquet \
-        ./vorraussetzen.parquet
-fi

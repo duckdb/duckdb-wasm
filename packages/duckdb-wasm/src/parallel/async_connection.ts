@@ -18,8 +18,6 @@ interface IAsyncDuckDB {
 
     importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<void>;
     importJSONFromPath(conn: number, path: string, options: JSONTableOptions): Promise<void>;
-
-    extractZipPath(archiveFile: string, outFile: string, entryPath: string): Promise<number>;
 }
 
 /** An async result stream iterator */
