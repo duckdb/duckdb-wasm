@@ -19,8 +19,20 @@ struct TableReaderOptions {
     std::string schema_name = "";
     /// The table name
     std::string table_name = "";
-    /// The fields (if any)
-    std::vector<std::shared_ptr<arrow::Field>> fields = {};
+    /// Contains header?
+    std::optional<bool> header = std::nullopt;
+    /// Specified delimiter?
+    std::optional<std::string> delimiter = std::nullopt;
+    /// Specified quote?
+    std::optional<std::string> quote = std::nullopt;
+    /// Specified escape?
+    std::optional<std::string> escape = std::nullopt;
+    /// Specified skip?
+    std::optional<int64_t> skip = std::nullopt;
+    /// Specified auto-detect?
+    std::optional<bool> auto_detect = std::nullopt;
+    /// Specified columns?
+    std::optional<std::vector<std::shared_ptr<arrow::Field>>> columns = std::nullopt;
 
     /// Read from input stream
     arrow::Status ReadFrom(const rapidjson::Document& doc);
