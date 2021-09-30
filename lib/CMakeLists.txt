@@ -19,11 +19,19 @@ endif()
 # ---------------------------------------------------------------------------
 # Ccache
 
-find_program(CCACHE_PROGRAM ccache)
+if(EMSCRIPTEN)
+  find_program(CCACHE_PROGRAM ccache
+               HINTS $ENV{EMSDK}/ccache/git-emscripten_64bit/bin)
+else()
+  find_program(CCACHE_PROGRAM ccache)
+endif()
+
 if(CCACHE_PROGRAM)
   set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
   set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
+message(STATUS "EMSDK=$ENV{EMSDK}")
+message(STATUS "CCACHE_PROGRAM=${CCACHE_PROGRAM}")
 
 # ---------------------------------------------------------------------------
 # Threads
