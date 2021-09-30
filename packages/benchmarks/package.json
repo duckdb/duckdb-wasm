@@ -10,7 +10,7 @@
         "arquero": "^4.3.0",
         "kleur": "^4.1.4",
         "lovefield-ts": "^0.7.0",
-        "sql.js": "^1.5.0",
+        "sql.js": "^1.6.2",
         "web-worker": "^1.0.0",
         "benchmark": "^2.1.4",
         "lodash": "^4.17.21"
@@ -24,7 +24,7 @@
         "assert": "^2.0.0",
         "eslint": "^7.31.0",
         "eslint-plugin-prettier": "^3.3.1",
-        "eslint-plugin-react": "^7.24.0",
+        "eslint-plugin-react": "^7.26.1",
         "karma-custom": "^1.1.9",
         "karma-webpack": "^5.0.0",
         "karma": "^6.3.3",
