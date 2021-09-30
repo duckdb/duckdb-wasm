@@ -325,16 +325,18 @@ arrow::Status WebDB::Connection::ImportJSONTable(std::string_view path, std::str
         auto ifs = std::make_unique<io::InputFileStream>(webdb_.file_page_buffer_, path);
         // Do we need to run the analyzer?
         json::TableType table_type;
-        if (!options.table_shape || options.table_shape == json::TableShape::UNRECOGNIZED) {
+        if (!options.table_shape || options.table_shape == json::TableShape::UNRECOGNIZED ||
+            options.auto_detect.value_or(false)) {
             io::InputFileStream ifs_copy{*ifs};
             ARROW_RETURN_NOT_OK(json::InferTableType(ifs_copy, table_type));
 
         } else {
             table_type.shape = *options.table_shape;
-            // XXX type
+            table_type.type = arrow::struct_(options.columns.value_or(std::vector<std::shared_ptr<arrow::Field>>{}));
         }
         // Resolve the table reader
         ARROW_ASSIGN_OR_RAISE(auto table_reader, json::TableReader::Resolve(std::move(ifs), table_type));
+
         /// Execute the arrow scan
         vector<Value> params;
         params.push_back(duckdb::Value::POINTER((uintptr_t)&table_reader));

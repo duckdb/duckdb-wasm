@@ -42,6 +42,16 @@ std::string_view GetTypeName(rapidjson::Type type) {
     }
 }
 
+/// Require a boolean field
+arrow::Status RequireBoolField(const rapidjson::Value& value, std::string_view name) {
+    if (!value.IsBool()) {
+        std::stringstream msg;
+        msg << "type mismatch for field '" << name << "': expected bool, received " << GetTypeName(value.GetType());
+        return arrow::Status(arrow::StatusCode::Invalid, msg.str());
+    }
+    return arrow::Status::OK();
+}
+
 /// Requite a certain field type
 arrow::Status RequireFieldType(const rapidjson::Value& value, rapidjson::Type type, std::string_view field) {
     if (value.GetType() != type) {
@@ -53,18 +63,11 @@ arrow::Status RequireFieldType(const rapidjson::Value& value, rapidjson::Type ty
     return arrow::Status::OK();
 };
 
-enum FieldTag {
-    SCHEMA,
-    NAME,
-    FORMAT,
-    FIELDS,
-};
+enum FieldTag { SCHEMA, NAME, FORMAT, COLUMNS, DETECT };
 
 static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{
-    {"schema", FieldTag::SCHEMA},
-    {"name", FieldTag::NAME},
-    {"format", FieldTag::FORMAT},
-    {"fields", FieldTag::FIELDS},
+    {"schema", FieldTag::SCHEMA},   {"name", FieldTag::NAME},     {"format", FieldTag::FORMAT},
+    {"columns", FieldTag::COLUMNS}, {"detect", FieldTag::DETECT}, {"autoDetect", FieldTag::DETECT},
 };
 
 static std::unordered_map<std::string_view, TableShape> FORMATS{
@@ -94,6 +97,11 @@ arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
                 table_name = {iter->value.GetString(), iter->value.GetStringLength()};
                 break;
 
+            case FieldTag::DETECT:
+                ARROW_RETURN_NOT_OK(RequireBoolField(iter->value, name));
+                auto_detect = iter->value.GetBool();
+                break;
+
             case FieldTag::FORMAT: {
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, "format"));
                 auto format_iter =
@@ -105,10 +113,10 @@ arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
                 continue;
             }
 
-            case FieldTag::FIELDS: {
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kArrayType, "fields"));
-                const auto fields_array = iter->value.GetArray();
-                ARROW_ASSIGN_OR_RAISE(fields, ReadFields(fields_array));
+            case FieldTag::COLUMNS: {
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kArrayType, name));
+                const auto columns_array = iter->value.GetArray();
+                ARROW_ASSIGN_OR_RAISE(columns, ReadFields(columns_array));
                 continue;
             }
         }

@@ -88,7 +88,7 @@ TEST(TableReaderOptions, Fields) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({
         "format": "row-array",
-        "fields": [
+        "columns": [
             {"name": "foo", "type": "int32"},
             {"name": "bar", "type": "utf8"}
         ]
@@ -98,11 +98,12 @@ TEST(TableReaderOptions, Fields) {
     auto status = options.ReadFrom(doc);
     ASSERT_TRUE(status.ok());
     ASSERT_EQ(options.table_shape, json::TableShape::ROW_ARRAY);
-    ASSERT_EQ(options.fields.size(), 2);
-    ASSERT_EQ(options.fields[0]->name(), "foo");
-    ASSERT_EQ(options.fields[1]->name(), "bar");
-    ASSERT_EQ(options.fields[0]->type()->id(), arrow::Type::INT32);
-    ASSERT_EQ(options.fields[1]->type()->id(), arrow::Type::STRING);
+    ASSERT_TRUE(options.columns.has_value());
+    ASSERT_EQ(options.columns->size(), 2);
+    ASSERT_EQ(options.columns->at(0)->name(), "foo");
+    ASSERT_EQ(options.columns->at(1)->name(), "bar");
+    ASSERT_EQ(options.columns->at(0)->type()->id(), arrow::Type::INT32);
+    ASSERT_EQ(options.columns->at(1)->type()->id(), arrow::Type::STRING);
 }
 
 static std::shared_ptr<io::InputFileStreamBuffer> CreateStreamBuf(const char* path, std::vector<char> buffer) {
