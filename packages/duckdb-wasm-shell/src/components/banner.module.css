@@ -51,4 +51,5 @@
 .page {
     grid-row: 2;
     grid-column: 1;
+    overflow: hidden;
 }
