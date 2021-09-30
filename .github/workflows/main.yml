@@ -530,7 +530,7 @@ jobs:
                   path: |
                       ./.cargo
                       ./target
-                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/*.rs') }}
+                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/**') }}
                   restore-keys: |
                       ${{ runner.os }}-shell-
 
