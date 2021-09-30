@@ -27,7 +27,7 @@ cd ${PROJECT_ROOT}
 node ${PROJECT_ROOT}/scripts/sync_versions.mjs
 
 if [[ "${GITHUB_REF}" =~ ^(refs/heads/master|refs/tags/v.+)$ && "$1" = "publish" ]] ; then
-	cd ${PROJECT_ROOT}/package/duckdb-wasm
+	cd ${PROJECT_ROOT}/packages/duckdb-wasm
 
 	echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > .npmrc
 	echo '@duckdb:registry=https://npm.pkg.github.com' >> .npmrc
