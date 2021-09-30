@@ -46,7 +46,7 @@
         "@types/react-virtualized": "^9.21.11",
         "@wasm-tool/wasm-pack-plugin": "^1.4.0",
         "copy-webpack-plugin": "^9.0.1",
-        "css-loader": "^6.1.0",
+        "css-loader": "^6.3.0",
         "esbuild-css-modules-plugin": "^2.0.9",
         "eslint": "^7.31.0",
         "eslint-config-prettier": "^8.3.0",
