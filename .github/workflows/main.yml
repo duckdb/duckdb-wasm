@@ -200,6 +200,9 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
+                      git fetch --tags
+                      cd ./submodules/duckdb
+                      git fetch --tags
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -288,6 +291,9 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
+                      git fetch --tags
+                      cd ./submodules/duckdb
+                      git fetch --tags
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -359,6 +365,9 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
+                      git fetch --tags
+                      cd ./submodules/duckdb
+                      git fetch --tags
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -408,6 +417,9 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
+                      git fetch --tags
+                      cd ./submodules/duckdb
+                      git fetch --tags
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -457,6 +469,9 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
+                      git fetch --tags
+                      cd ./submodules/duckdb
+                      git fetch --tags
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -556,11 +571,10 @@ jobs:
                       ./scripts/generate_tpch_duckdb.sh 0.01
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
-                      git fetch --prune --unshallow --tags
-                      git describe --tags --abbrev=0
+                      ./scripts/npm_version.sh
+                      git fetch --tags
                       cd ./submodules/duckdb
-                      git fetch --prune --unshallow --tags
-                      git describe --tags --abbrev=0
+                      git fetch --tags
 
             - name: Build @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.4
