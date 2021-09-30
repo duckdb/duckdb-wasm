@@ -52,8 +52,6 @@ emcmake cmake \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
     ${ADDITIONAL_FLAGS}
 
-cat ${BUILD_DIR}/compile_commands.json
-
 emmake make \
     -C${BUILD_DIR} \
     -j${CORES} \
