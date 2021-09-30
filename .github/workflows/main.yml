@@ -141,7 +141,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ccache -s
+                      ccache -z
                       ./scripts/build_duckdb_shell.sh
                       ccache -s
 
@@ -198,7 +198,7 @@ jobs:
                       mkdir -p ./lib/build/debug ./reports
                       ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_uni.sh
-                      ccache --max-size 300M
+                      ccache --max-size 200M
                       ccache -s
 
             - name: Build project
@@ -348,16 +348,23 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm4-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm5-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm4-default-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm4-default-
+                      ${{ runner.os }}-wasm5-default-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm5-default-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ccache --max-size 300M
+                      ccache -s
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ccache -s
+                      ccache -z
                       ./scripts/wasm_build_lib.sh release default
                       ccache -s
 
@@ -390,16 +397,23 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm4-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm5-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm4-next-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm4-next-
+                      ${{ runner.os }}-wasm5-next-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm5-next-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ccache --max-size 300M
+                      ccache -s
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ccache -s
+                      ccache -z
                       ./scripts/wasm_build_lib.sh release next
                       ccache -s
 
@@ -432,16 +446,23 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm4-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm5-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm4-next-coi-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm4-next-coi-
+                      ${{ runner.os }}-wasm5-next-coi-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm5-next-coi-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      ccache --max-size 300M
+                      ccache -s
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      ccache -s
+                      ccache -z
                       ./scripts/wasm_build_lib.sh release next_coi
                       ccache -s
 
