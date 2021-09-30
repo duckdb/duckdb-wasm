@@ -599,7 +599,7 @@ jobs:
 
             - name: Publish @duckdb/duckdb-wasm
               if: github.ref == 'refs/heads/master'
-              with:
+              run:
                   script: |-
                       ./scripts/npm_version.sh publish
 
