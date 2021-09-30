@@ -31,6 +31,10 @@ struct TableReaderOptions {
     std::optional<int64_t> skip = std::nullopt;
     /// Specified auto-detect?
     std::optional<bool> auto_detect = std::nullopt;
+    /// Specified dateformat?
+    std::optional<std::string> dateformat = std::nullopt;
+    /// Specified timestampformat?
+    std::optional<std::string> timestampformat = std::nullopt;
     /// Specified columns?
     std::optional<std::vector<std::shared_ptr<arrow::Field>>> columns = std::nullopt;
 

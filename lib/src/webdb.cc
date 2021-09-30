@@ -280,6 +280,12 @@ arrow::Status WebDB::Connection::ImportCSVTable(std::string_view path, std::stri
         if (options.skip.has_value()) {
             named_params.insert({"skip", Value::INTEGER(*options.skip)});
         }
+        if (options.dateformat.has_value()) {
+            named_params.insert({"dateformat", Value(*options.dateformat)});
+        }
+        if (options.timestampformat.has_value()) {
+            named_params.insert({"timestampformat", Value(*options.timestampformat)});
+        }
         if (options.columns.has_value()) {
             child_list_t<Value> columns;
             columns.reserve(options.columns.value().size());

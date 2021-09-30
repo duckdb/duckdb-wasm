@@ -276,6 +276,68 @@ INTEGER	SMALLINT	VARCHAR
 7	8	9	
 
 )TXT"
+    },
+    {
+        .name = "options_7",
+        .input = R"CSV(1|2|01/02/2020
+4|5|01/03/2020
+7|8|01/04/2020
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": false,
+            "delimiter": "|",
+            "quote": "'",
+            "dateFormat": "%m/%d/%Y",
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "date" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	DATE	
+[ Rows: 3]
+1	2	2020-01-02	
+4	5	2020-01-03	
+7	8	2020-01-04	
+
+)TXT"
+    },
+    {
+        .name = "options_8",
+        .input = R"CSV(1|2|20:32:45 1992-03-02
+4|5|20:32:50 1992-03-02
+7|8|20:32:55 1992-03-02
+)CSV",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "detect": false,
+            "header": false,
+            "delimiter": "|",
+            "quote": "'",
+            "timestampFormat": "%H:%M:%S %Y-%m-%d",
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "timestamp" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	TIMESTAMP	
+[ Rows: 3]
+1	2	1992-03-02 20:32:45	
+4	5	1992-03-02 20:32:50	
+7	8	1992-03-02 20:32:55	
+
+)TXT"
     }
 };
 // clang-format on

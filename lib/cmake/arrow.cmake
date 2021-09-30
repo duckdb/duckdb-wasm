@@ -5,7 +5,6 @@ set(ARROW_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(ARROW_FLAGS
     -G${CMAKE_GENERATOR}
     -DCMAKE_BUILD_TYPE=Release
-    -DCMAKE_BUILD_PARALLEL_LEVEL=${NPROCS}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}
     -DCMAKE_CXX_FLAGS=${ARROW_CXX_FLAGS}
@@ -72,12 +71,14 @@ ExternalProject_Add(
     ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake
     <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake.bak
   COMMAND
-    sed s/-fcolor-diagnostics//g
+    sed -e s/-fcolor-diagnostics//g
     <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake.bak >
     <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake
-  # Configure as usual
-  COMMAND ${CMAKE_COMMAND} -S<SOURCE_DIR> -B<BINARY_DIR>
-          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> ${ARROW_FLAGS}
+  COMMAND ${CMAKE_COMMAND}
+    -S<SOURCE_DIR>
+    -B<BINARY_DIR>
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    ${ARROW_FLAGS}
   DOWNLOAD_COMMAND ""
   UPDATE_COMMAND ""
   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libarrow.a)
