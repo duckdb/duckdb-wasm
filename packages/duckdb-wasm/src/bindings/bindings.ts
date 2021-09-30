@@ -7,7 +7,7 @@ import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } 
 import { CSVTableOptions, JSONTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
-import { flattenArrowType } from '../flat_arrow';
+import { flattenArrowField } from '../flat_arrow';
 
 declare global {
     // eslint-disable-next-line no-var
@@ -273,10 +273,8 @@ export abstract class DuckDBBindings {
         if (options.columns !== undefined) {
             const out = [];
             for (const k in options.columns) {
-                out.push({
-                    name: k,
-                    ...flattenArrowType(options.columns[k]),
-                });
+                const type = options.columns[k];
+                out.push(flattenArrowField(k, type));
             }
             options.columnsFlat = out;
         }

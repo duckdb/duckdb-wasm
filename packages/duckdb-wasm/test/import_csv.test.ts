@@ -130,11 +130,18 @@ const CSV_IMPORT_TESTS: CSVImportTest[] = [
         expectedColumns: [
             { name: 'a', values: [1, 4, 7] },
             { name: 'b', values: [2, 5, 8] },
-            { name: 'c', values: ['3', '6', '9'] },
+            {
+                name: 'c',
+                values: [
+                    new Date(Date.UTC(2020, 0, 2)),
+                    new Date(Date.UTC(2020, 0, 3)),
+                    new Date(Date.UTC(2020, 0, 4)),
+                ],
+            },
         ],
     },
     {
-        name: 'options_2',
+        name: 'options_3',
         input: `1|2|20:32:45 1992-03-02
 4|5|20:32:50 1992-03-02
 7|8|20:32:55 1992-03-02
@@ -157,7 +164,14 @@ const CSV_IMPORT_TESTS: CSVImportTest[] = [
         expectedColumns: [
             { name: 'a', values: [1, 4, 7] },
             { name: 'b', values: [2, 5, 8] },
-            { name: 'c', values: ['3', '6', '9'] },
+            {
+                name: 'c',
+                values: [
+                    new Date(Date.UTC(1992, 2, 2, 20, 32, 45)).getTime(),
+                    new Date(Date.UTC(1992, 2, 2, 20, 32, 50)).getTime(),
+                    new Date(Date.UTC(1992, 2, 2, 20, 32, 55)).getTime(),
+                ],
+            },
         ],
     },
 ];

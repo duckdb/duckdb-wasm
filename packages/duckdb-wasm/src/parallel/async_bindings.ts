@@ -13,7 +13,7 @@ import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
-import { flattenArrowType } from '../flat_arrow';
+import { flattenArrowField } from '../flat_arrow';
 
 export class AsyncDuckDB {
     /** The message handler */
@@ -427,10 +427,8 @@ export class AsyncDuckDB {
         if (options.columns !== undefined) {
             const out = [];
             for (const k in options.columns) {
-                out.push({
-                    name: k,
-                    ...flattenArrowType(options.columns[k]),
-                });
+                const type = options.columns[k];
+                out.push(flattenArrowField(k, type));
             }
             options.columnsFlat = out;
             delete options.columns;
