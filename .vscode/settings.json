@@ -63,6 +63,9 @@
     "[dockerfile]": {
         "editor.formatOnSave": false
     },
+    "[cmake]": {
+        "editor.formatOnSave": false
+    },
     "[xml]": {
         "editor.formatOnSave": false
     },

@@ -5,6 +5,7 @@ set(ARROW_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(ARROW_FLAGS
     -G${CMAKE_GENERATOR}
     -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_BUILD_PARALLEL_LEVEL=${NPROCS}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}
     -DCMAKE_CXX_FLAGS=${ARROW_CXX_FLAGS}
@@ -44,6 +45,7 @@ set(ARROW_FLAGS
     -DARROW_WITH_SNAPPY=OFF
     -DARROW_WITH_ZLIB=OFF
     -DARROW_WITH_ZSTD=OFF
+    -DARROW_ENABLE_TIMING_TESTS=OFF
     -DBOOST_SOURCE=BUNDLED)
 
 ExternalProject_Add(
@@ -51,7 +53,31 @@ ExternalProject_Add(
   PREFIX "${CMAKE_BINARY_DIR}/third_party/arrow"
   SOURCE_DIR "${CMAKE_SOURCE_DIR}/../submodules/arrow/cpp"
   INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/arrow/install"
-  CMAKE_ARGS ${ARROW_FLAGS}
+  CONFIGURE_COMMAND
+    # This is a hacky, yet non-invasive, way to get rid of the
+    # -fcolor-diagnostics flag in arrow/cpp/cmake_modules/SetupCxxFlags.cmake.
+    # Ccache bails out of caching when this flag is set.
+    #
+    # To reproduce:
+    #   Compile arrow_objlib with
+    #   CCACHE_DEBUG=1
+    #   CCACHE_LOGFILE=./ccache.log
+    #
+    # Search in the log for:
+    #   Failed; falling back to running the real compiler
+    #   Result: unsupported compiler option
+    #
+    # https://github.com/apache/arrow/issues/11279
+  COMMAND
+    ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake
+    <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake.bak
+  COMMAND
+    sed s/-fcolor-diagnostics//g
+    <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake.bak >
+    <SOURCE_DIR>/cmake_modules/SetupCxxFlags.cmake
+  # Configure as usual
+  COMMAND ${CMAKE_COMMAND} -S<SOURCE_DIR> -B<BINARY_DIR>
+          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> ${ARROW_FLAGS}
   DOWNLOAD_COMMAND ""
   UPDATE_COMMAND ""
   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libarrow.a)

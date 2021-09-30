@@ -25,6 +25,7 @@ RUN mkdir -p /opt/emsdk \
     && ./emsdk install ${EMSDK_VERSION} ccache-git-emscripten-64bit \
     && ./emsdk activate ${EMSDK_VERSION} ccache-git-emscripten-64bit \
     && /bin/bash ./emsdk_env.sh \
+    && chmod a+x /opt/emsdk/ccache/git-emscripten_64bit/bin/ccache \
     && rm -rf ./emscripten/tag-*/tests \
     && rm -rf ./emscripten/tag-*/site \
     && rm -rf ./emscripten/tag-*/docs \
