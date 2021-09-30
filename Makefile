@@ -52,28 +52,25 @@ data:
 lib:
 	mkdir -p ${LIB_DEBUG_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
-		-GNinja \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=1
-	ninja -C ${LIB_DEBUG_DIR}
+	make -C${LIB_DEBUG_DIR} -j${CORES}
 
 # Compile the core in release mode
 .PHONY: lib_relwithdebinfo
 lib_relwithdebinfo:
 	mkdir -p ${LIB_RELWITHDEBINFO_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELWITHDEBINFO_DIR} \
-		-GNinja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
-	ninja -C ${LIB_RELWITHDEBINFO_DIR}
+	make -C${LIB_RELWITHDEBINFO_DIR} -j${CORES}
 
 # Compile the core in release mode
 .PHONY: lib_release
 lib_release:
 	mkdir -p ${LIB_RELEASE_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELEASE_DIR} \
-		-GNinja \
 		-DCMAKE_BUILD_TYPE=Release
-	ninja -C ${LIB_RELEASE_DIR}
+	make -C${LIB_RELEASE_DIR} -j${CORES}
 
 # Perf the library
 .PHONY: lib_perf
@@ -240,7 +237,6 @@ yarn_install:
 compile_commands: 
 	mkdir -p ${LIB_DEBUG_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
-		-GNinja \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=1
 	ln -sf ${LIB_DEBUG_DIR}/compile_commands.json ${LIB_SOURCE_DIR}/compile_commands.json
