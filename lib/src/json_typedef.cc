@@ -91,7 +91,7 @@ Result<std::shared_ptr<DataType>> ReadFixedSizeBinaryType(const rapidjson::Value
 }
 
 Result<std::shared_ptr<DataType>> ReadFixedSizeListType(const rapidjson::Value::ConstObject& obj) {
-    ARROW_ASSIGN_OR_RAISE(const auto children, GetArrayField(obj, "valueType"));
+    ARROW_ASSIGN_OR_RAISE(const auto children, GetArrayField(obj, "children"));
     ARROW_ASSIGN_OR_RAISE(const auto children_fields, ReadFields(children));
     ARROW_ASSIGN_OR_RAISE(const int32_t list_size, GetIntField<int32_t>(obj, "listSize"));
     if (children_fields.size() != 1) return Status::Invalid("FixedSizeList must have exactly one child");
@@ -100,7 +100,7 @@ Result<std::shared_ptr<DataType>> ReadFixedSizeListType(const rapidjson::Value::
 }
 
 Result<std::shared_ptr<DataType>> ReadListType(const rapidjson::Value::ConstObject& obj) {
-    ARROW_ASSIGN_OR_RAISE(const auto children, GetArrayField(obj, "valueType"));
+    ARROW_ASSIGN_OR_RAISE(const auto children, GetArrayField(obj, "children"));
     ARROW_ASSIGN_OR_RAISE(const auto children_fields, ReadFields(children));
     if (children_fields.size() != 1) return Status::Invalid("List must have exactly one child");
     return list(children_fields[0]);
