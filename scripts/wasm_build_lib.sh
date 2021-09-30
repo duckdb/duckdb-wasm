@@ -67,6 +67,6 @@ if [ -f ${BUILD_DIR}/duckdb_wasm.worker.js ]; then
 
   # Expose the module.
   # This will allow us to reuse the generated pthread handler and only overwrite the loading.
-  # More info: duckdb-browser-async-eh-mt.pthread.worker.ts
+  # More info: duckdb-browser-async-next-coi.pthread.worker.ts
   printf "\nthis.getModule = () => Module;\nthis.setModule = (m) => { Module = m; };\n" >> ${DUCKDB_LIB_DIR}/duckdb_wasm${SUFFIX}.pthread.js
 fi
