@@ -13,6 +13,7 @@ import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
+import { flattenArrowType } from '../flat_arrow';
 
 export class AsyncDuckDB {
     /** The message handler */
@@ -428,7 +429,7 @@ export class AsyncDuckDB {
             for (const k in options.columns) {
                 out.push({
                     name: k,
-                    type: options.columns[k].toString(),
+                    ...flattenArrowType(options.columns[k]),
                 });
             }
             options.columnsFlat = out;

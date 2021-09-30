@@ -1,4 +1,5 @@
 import * as arrow from 'apache-arrow';
+import { FlatArrowField } from '../flat_arrow';
 
 export enum JSONTableFormat {
     ROW_ARRAY = 'row-array',
@@ -20,8 +21,10 @@ export interface CSVTableOptions {
     escape?: string;
     skip?: number;
     detect?: boolean;
+    dateFormat?: string;
+    timestampFormat?: string;
     columns?: {
         [key: string]: arrow.DataType;
     };
-    columnsFlat?: { name: string; type: string }[];
+    columnsFlat?: FlatArrowField[];
 }
