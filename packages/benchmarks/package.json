@@ -23,7 +23,7 @@
         "@typescript-eslint/parser": "^4.28.2",
         "assert": "^2.0.0",
         "eslint": "^7.31.0",
-        "eslint-plugin-prettier": "^3.3.1",
+        "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-react": "^7.26.1",
         "karma-custom": "^1.1.9",
         "karma-webpack": "^5.0.0",
