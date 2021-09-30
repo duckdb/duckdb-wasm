@@ -636,14 +636,3 @@ jobs:
                   target-folder: ./
                   clean: true
                   single-commit: true
-
-    cleanup:
-        needs: [js_libs]
-        if: always()
-        name: Cleanup
-        runs-on: ubuntu-latest
-        steps:
-            - name: Delete artifacts
-                run: |
-                    echo "Tearing down the state"
-                    sleep 5
