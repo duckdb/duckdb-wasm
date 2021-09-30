@@ -69,7 +69,7 @@ jobs:
                   path: |
                       ./.cargo
                       ./target
-                  key: ${{ runner.os }}-datagen-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
+                  key: ${{ runner.os }}-datagen-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
                   restore-keys: |
                       ${{ runner.os }}-datagen-
 
@@ -523,6 +523,16 @@ jobs:
             - name: Git submodule status
               run: |
                   git submodule status > git_submodule_status.txt
+
+            - name: Cache rust build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.cargo
+                      ./target
+                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/*.rs') }}
+                  restore-keys: |
+                      ${{ runner.os }}-shell-
 
             - name: Cache node_modules
               uses: actions/cache@v2
