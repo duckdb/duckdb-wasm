@@ -86,6 +86,7 @@ jobs:
                   name: parquetgen
                   path: |
                       ./target/release/parquetgen
+                  retention-days: 1
 
     tpch_generator:
         name: TPCH Generator
@@ -115,6 +116,7 @@ jobs:
                   name: tpch-dbgen
                   path: |
                       ./submodules/tpch-dbgen/dbgen/dbgen
+                  retention-days: 1
 
     duckdb_shell:
         name: DuckDB Shell
@@ -150,6 +152,7 @@ jobs:
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/duckdb
+                  retention-days: 1
 
     native_debug:
         name: Native / Debug
@@ -381,6 +384,7 @@ jobs:
                   path: |
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm.js
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm.wasm
+                  retention-days: 1
 
     wasm_next:
         name: WASM / Next
@@ -432,6 +436,7 @@ jobs:
                   path: |
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next.js
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next.wasm
+                  retention-days: 1
 
     wasm_next_coi:
         name: WASM / Next COI
@@ -484,6 +489,7 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.js
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.pthread.js
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.wasm
+                  retention-days: 1
 
     js_libs:
         name: Javascript Library
@@ -630,3 +636,14 @@ jobs:
                   target-folder: ./
                   clean: true
                   single-commit: true
+
+    cleanup:
+        needs: [js_libs]
+        if: always()
+        name: Cleanup
+        runs-on: ubuntu-latest
+        steps:
+            - name: Delete artifacts
+                run: |
+                    echo "Tearing down the state"
+                    sleep 5
