@@ -20,30 +20,6 @@ interface CSVImportTest {
 
 const CSV_IMPORT_TESTS: CSVImportTest[] = [
     {
-        name: 'options_1',
-        input: `1,2,3
-4,5,6
-7,8,9
-`,
-        options: {
-            schema: 'main',
-            name: 'foo2',
-            header: false,
-            detect: false,
-            columns: {
-                a: new arrow.Int16(),
-                b: new arrow.Int32(),
-                c: new arrow.Utf8(),
-            },
-        },
-        query: 'SELECT * FROM main.foo2',
-        expectedColumns: [
-            { name: 'a', values: [1, 4, 7] },
-            { name: 'b', values: [2, 5, 8] },
-            { name: 'c', values: ['3', '6', '9'] },
-        ],
-    },
-    {
         name: 'integers_auto_1',
         input: `"a","b","c"
 1,2,3
@@ -106,6 +82,83 @@ const CSV_IMPORT_TESTS: CSVImportTest[] = [
         },
         query: 'SELECT * FROM main.foo',
         expectedColumns: [{ name: 'a', values: [1, 4, 7] }],
+    },
+    {
+        name: 'options_1',
+        input: `1,2,3
+4,5,6
+7,8,9
+`,
+        options: {
+            schema: 'main',
+            name: 'foo2',
+            header: false,
+            detect: false,
+            columns: {
+                a: new arrow.Int16(),
+                b: new arrow.Int32(),
+                c: new arrow.Utf8(),
+            },
+        },
+        query: 'SELECT * FROM main.foo2',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: ['3', '6', '9'] },
+        ],
+    },
+    {
+        name: 'options_2',
+        input: `1|2|01/02/2020
+4|5|01/03/2020
+7|8|01/04/2020
+`,
+        options: {
+            schema: 'main',
+            name: 'foo',
+            detect: false,
+            header: false,
+            delimiter: '|',
+            dateFormat: '%m/%d/%Y',
+            columns: {
+                a: new arrow.Int16(),
+                b: new arrow.Int32(),
+                c: new arrow.DateDay(),
+            },
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: ['3', '6', '9'] },
+        ],
+    },
+    {
+        name: 'options_2',
+        input: `1|2|20:32:45 1992-03-02
+4|5|20:32:50 1992-03-02
+7|8|20:32:55 1992-03-02
+`,
+        options: {
+            schema: 'main',
+            name: 'foo',
+            detect: false,
+            header: false,
+            delimiter: '|',
+            quote: "'",
+            timestampFormat: '%H:%M:%S %Y-%m-%d',
+            columns: {
+                a: new arrow.Int16(),
+                b: new arrow.Int32(),
+                c: new arrow.TimestampSecond(),
+            },
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: ['3', '6', '9'] },
+        ],
     },
 ];
 
