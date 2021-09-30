@@ -72,14 +72,25 @@ enum FieldTag {
     QUOTE,
     SCHEMA,
     SKIP,
+    DATEFORMAT,
+    TIMESTAMPFORMAT,
 };
 
 static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{
-    {"schema", FieldTag::SCHEMA},   {"name", FieldTag::NAME},           {"columns", FieldTag::COLUMNS},
-    {"fields", FieldTag::COLUMNS},  {"escape", FieldTag::ESCAPE},       {"quote", FieldTag::QUOTE},
-    {"delim", FieldTag::DELIMITER}, {"delimiter", FieldTag::DELIMITER}, {"skip", FieldTag::SKIP},
-    {"header", FieldTag::HEADER},   {"auto_detect", FieldTag::DETECT},  {"detect", FieldTag::DETECT},
-    {"detect", FieldTag::DETECT},   {"autoDetect", FieldTag::DETECT},
+    {"schema", FieldTag::SCHEMA},
+    {"name", FieldTag::NAME},
+    {"columns", FieldTag::COLUMNS},
+    {"fields", FieldTag::COLUMNS},
+    {"escape", FieldTag::ESCAPE},
+    {"quote", FieldTag::QUOTE},
+    {"delim", FieldTag::DELIMITER},
+    {"delimiter", FieldTag::DELIMITER},
+    {"skip", FieldTag::SKIP},
+    {"header", FieldTag::HEADER},
+    {"detect", FieldTag::DETECT},
+    {"autoDetect", FieldTag::DETECT},
+    {"dateFormat", FieldTag::DATEFORMAT},
+    {"timestampFormat", FieldTag::TIMESTAMPFORMAT},
 };
 
 }  // namespace
@@ -139,6 +150,16 @@ arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
             case FieldTag::SKIP:
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kNumberType, name));
                 skip = iter->value.GetInt64();
+                break;
+
+            case FieldTag::DATEFORMAT:
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
+                dateformat = std::string{iter->value.GetString(), iter->value.GetStringLength()};
+                break;
+
+            case FieldTag::TIMESTAMPFORMAT:
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
+                timestampformat = std::string{iter->value.GetString(), iter->value.GetStringLength()};
                 break;
         }
     }
