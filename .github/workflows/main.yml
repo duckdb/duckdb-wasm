@@ -556,6 +556,8 @@ jobs:
                       ./scripts/generate_tpch_duckdb.sh 0.01
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
+                      git fetch --prune --unshallow --tags
+                      git describe --tags --abbrev=0
                       cd ./submodules/duckdb
                       git fetch --prune --unshallow --tags
                       git describe --tags --abbrev=0
