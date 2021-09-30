@@ -348,7 +348,7 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm5-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm5-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
                       ${{ runner.os }}-wasm5-default-${{ hashFiles('git_submodule_status.txt') }}
                       ${{ runner.os }}-wasm5-default-
@@ -397,7 +397,7 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm5-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm5-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
                       ${{ runner.os }}-wasm5-next-${{ hashFiles('git_submodule_status.txt') }}
                       ${{ runner.os }}-wasm5-next-
@@ -446,7 +446,7 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm5-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}-${{ hashFiles('Cargo.lock') }}
+                  key: ${{ runner.os }}-wasm5-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
                       ${{ runner.os }}-wasm5-next-coi-${{ hashFiles('git_submodule_status.txt') }}
                       ${{ runner.os }}-wasm5-next-coi-
