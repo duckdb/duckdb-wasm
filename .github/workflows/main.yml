@@ -599,7 +599,6 @@ jobs:
 
             - name: Publish @duckdb/duckdb-wasm
               if: github.ref == 'refs/heads/master'
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
                       ./scripts/npm_version.sh publish
