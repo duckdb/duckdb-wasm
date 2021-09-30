@@ -91,6 +91,34 @@ INTEGER	INTEGER	INTEGER
 
 )TXT"
     },
+    {
+        .name = "options_1",
+        .input = R"JSON([
+    {"a":1, "b":2, "c":3},
+    {"a":4, "b":5, "c":6},
+    {"a":7, "b":8, "c":9},
+])JSON",
+        .options = R"JSON({
+            "schema": "main",
+            "name": "foo",
+            "format": "row-array",
+            "columns": [
+                { "name": "a", "type": "int32" },
+                { "name": "b", "type": "int16" },
+                { "name": "c", "type": "utf8" }
+            ]
+        })JSON",
+        .query = "SELECT * FROM main.foo",
+        .expected_output = 
+R"TXT(a	b	c	
+INTEGER	SMALLINT	VARCHAR	
+[ Rows: 3]
+1	2	3	
+4	5	6	
+7	8	9	
+
+)TXT"
+    },
 };
 // clang-format on
 

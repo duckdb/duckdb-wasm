@@ -31,10 +31,12 @@ struct TableReaderOptions {
     std::string schema_name = "";
     /// The table name
     std::string table_name = "";
+    /// Specified auto-detect?
+    std::optional<bool> auto_detect = std::nullopt;
     /// The table shape
     std::optional<TableShape> table_shape = std::nullopt;
-    /// The fields (if any)
-    std::vector<std::shared_ptr<arrow::Field>> fields = {};
+    /// Specified columns?
+    std::optional<std::vector<std::shared_ptr<arrow::Field>>> columns = std::nullopt;
 
     /// Read from input stream
     arrow::Status ReadFrom(const rapidjson::Document& doc);
