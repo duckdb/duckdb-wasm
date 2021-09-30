@@ -163,6 +163,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
+                  fetch-depth: 0
 
             - uses: actions/download-artifact@v2
               with:
@@ -200,9 +201,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      git fetch --tags
-                      cd ./submodules/duckdb
-                      git fetch --tags
+                      (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -254,6 +253,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
+                  fetch-depth: 0
 
             - uses: actions/download-artifact@v2
               with:
@@ -291,9 +291,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      git fetch --tags
-                      cd ./submodules/duckdb
-                      git fetch --tags
+                      (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -343,6 +341,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
+                  fetch-depth: 0
 
             - name: Git submodule status
               run: |
@@ -365,9 +364,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      git fetch --tags
-                      cd ./submodules/duckdb
-                      git fetch --tags
+                      (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -395,6 +392,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
+                  fetch-depth: 0
 
             - name: Git submodule status
               run: |
@@ -417,9 +415,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      git fetch --tags
-                      cd ./submodules/duckdb
-                      git fetch --tags
+                      (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -447,6 +443,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
+                  fetch-depth: 0
 
             - name: Git submodule status
               run: |
@@ -469,9 +466,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      git fetch --tags
-                      cd ./submodules/duckdb
-                      git fetch --tags
+                      (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.4
@@ -504,6 +499,7 @@ jobs:
             - uses: actions/checkout@v2
               with:
                   submodules: 'recursive'
+                  fetch-depth: 0
 
             - uses: actions/download-artifact@v2
               with:
@@ -572,9 +568,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
                       ./scripts/npm_version.sh
-                      git fetch --tags
-                      cd ./submodules/duckdb
-                      git fetch --tags
+                      (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.4
