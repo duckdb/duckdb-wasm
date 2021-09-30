@@ -214,7 +214,7 @@ jobs:
                           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                           -DCMAKE_CXX_COMPILER=clang++ \
                           -DCMAKE_BUILD_TYPE=Debug
-                      ccache -s
+                      ccache -z
                       make -C./lib/build/debug -j`nproc`
                       ccache -s
 
@@ -302,7 +302,7 @@ jobs:
                           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                           -DCMAKE_CXX_COMPILER=clang++ \
                           -DCMAKE_BUILD_TYPE=Release
-                      ccache -s
+                      ccache -z
                       make -C./lib/build/release -j`nproc`
                       ccache -s
 
