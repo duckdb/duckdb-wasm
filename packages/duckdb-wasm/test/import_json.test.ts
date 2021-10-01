@@ -1,3 +1,4 @@
+import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
 import { Column, compareTable } from './table_test';
 
@@ -52,6 +53,30 @@ const JSON_IMPORT_TESTS: JSONImportTest[] = [
             { name: 'a', values: [1, 4, 7] },
             { name: 'b', values: [2, 5, 8] },
             { name: 'c', values: [3, 6, 9] },
+        ],
+    },
+    {
+        name: 'options_1',
+        input: `[
+            {"a":1, "b":2, "c":3},
+            {"a":4, "b":5, "c":6},
+            {"a":7, "b":8, "c":9},
+        ]`,
+        options: {
+            schema: 'main',
+            name: 'foo',
+            format: duckdb.JSONTableFormat.ROW_ARRAY,
+            columns: {
+                a: new arrow.Int16(),
+                b: new arrow.Int32(),
+                c: new arrow.Utf8(),
+            },
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: ['3', '6', '9'] },
         ],
     },
 ];

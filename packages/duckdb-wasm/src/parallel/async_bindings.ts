@@ -443,6 +443,18 @@ export class AsyncDuckDB {
     }
     /** Import a json file */
     public async importJSONFromPath(conn: ConnectionID, path: string, options: JSONTableOptions): Promise<void> {
+        // Flatten the table options
+        if (options.columns !== undefined) {
+            const out = [];
+            for (const k in options.columns) {
+                const type = options.columns[k];
+                out.push(flattenArrowField(k, type));
+            }
+            options.columnsFlat = out;
+            delete options.columns;
+        }
+
+        // Pass to the worker
         const task = new WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>(
             WorkerRequestType.IMPORT_JSON_FROM_PATH,
             [conn, path, options],

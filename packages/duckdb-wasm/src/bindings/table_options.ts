@@ -10,6 +10,10 @@ export interface JSONTableOptions {
     name: string;
     schema?: string;
     format?: JSONTableFormat;
+    columns?: {
+        [key: string]: arrow.DataType;
+    };
+    columnsFlat?: FlatArrowField[];
 }
 
 export interface CSVTableOptions {

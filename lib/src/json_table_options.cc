@@ -88,12 +88,12 @@ arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
 
         switch (tag_iter->second) {
             case FieldTag::SCHEMA:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, "schema"));
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 schema_name = {iter->value.GetString(), iter->value.GetStringLength()};
                 break;
 
             case FieldTag::NAME:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, "name"));
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 table_name = {iter->value.GetString(), iter->value.GetStringLength()};
                 break;
 
@@ -103,7 +103,7 @@ arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
                 break;
 
             case FieldTag::FORMAT: {
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, "format"));
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 auto format_iter =
                     FORMATS.find(std::string_view{iter->value.GetString(), iter->value.GetStringLength()});
                 if (format_iter == FORMATS.end()) {

@@ -299,7 +299,25 @@ export abstract class DuckDBBindings {
 
     /** Import json from path */
     public importJSONFromPath(conn: number, path: string, options: JSONTableOptions): void {
-        const optionsJSON = JSON.stringify(options);
+        // Flatten columns.
+        // The arrow DataType classes do not survive the message passing to the web worker.
+        // We therefore always flatten column specs.
+        if (options.columns !== undefined) {
+            const out = [];
+            for (const k in options.columns) {
+                const type = options.columns[k];
+                out.push(flattenArrowField(k, type));
+            }
+            options.columnsFlat = out;
+        }
+
+        // Stringify options
+        const optionsCopy = { ...options } as any;
+        optionsCopy.columns = optionsCopy.columnsFlat;
+        delete optionsCopy.columnsFlat;
+        const optionsJSON = JSON.stringify(optionsCopy);
+
+        // Pass to wasm
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_import_json_table',
