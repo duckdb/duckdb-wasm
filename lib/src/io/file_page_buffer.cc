@@ -272,6 +272,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags, lock_type);
     auto& file = *file_ptr;
     file.handle = filesystem->OpenFile(file.path.c_str(), flags);
+    assert(file.handle != nullptr);
     files_by_name.insert({file.path, file_ptr.get()});
     files.insert({file_id, std::move(file_ptr)});
     file.file_size = filesystem->GetFileSize(*file.handle);
