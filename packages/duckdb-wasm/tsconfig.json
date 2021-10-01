@@ -7,7 +7,7 @@
         "strict": true,
         "sourceMap": false,
         "declaration": true,
-        "declarationMap": true,
+        "declarationMap": false,
         "declarationDir": "./dist/types/",
         "noImplicitAny": true,
         "esModuleInterop": true,
