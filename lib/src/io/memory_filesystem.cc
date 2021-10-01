@@ -47,7 +47,7 @@ arrow::Status MemoryFileSystem::RegisterFileBuffer(std::string name, std::vector
 
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> MemoryFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                               FileCompressionType compression) {
+                                                               FileCompressionType compression, FileOpener *opener) {
     // Resolve the file buffer
     auto file_iter = file_paths.find(path);
     if (file_iter == file_paths.end()) throw new std::logic_error{"File is not registered"};
@@ -176,20 +176,8 @@ void MemoryFileSystem::RemoveFile(const std::string &filename) {
     files.erase(file_id);
 }
 
-/// Path separator for the current file system
-std::string MemoryFileSystem::PathSeparator() { return "/"; }
-/// Join two paths together
-std::string MemoryFileSystem::JoinPath(const std::string &a, const std::string &path) { return path + "/" + a; }
-
 /// Sync a file handle to disk
 void MemoryFileSystem::FileSync(duckdb::FileHandle &handle) {}
-
-/// Sets the working directory
-void MemoryFileSystem::SetWorkingDirectory(const std::string &path) {}
-/// Gets the working directory
-std::string MemoryFileSystem::GetWorkingDirectory() { return "/"; }
-/// Gets the users home directory
-std::string MemoryFileSystem::GetHomeDirectory() { return "/"; }
 
 /// Runs a glob on the file system, returning a list of matching files
 std::vector<std::string> MemoryFileSystem::Glob(const std::string &path) {
@@ -212,6 +200,9 @@ bool MemoryFileSystem::CanSeek() { return true; }
 // Whether or not the FS handles plain files on disk. This is relevant for certain optimizations, as random reads
 // in a file on-disk are much cheaper than e.g. random reads in a file over the network
 bool MemoryFileSystem::OnDiskFile(duckdb::FileHandle &handle) { return true; }
+
+/// Return the name of the filesytem. Used for forming diagnosis messages.
+std::string MemoryFileSystem::GetName() const { return "MemoryFileSystem"; }
 
 }  // namespace io
 }  // namespace web

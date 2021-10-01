@@ -61,7 +61,7 @@ void BufferedFileSystem::DropFiles() {
 
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                                 FileCompressionType compression) {
+                                                                 FileCompressionType compression, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
 
     // Bypass the buffering?
@@ -214,11 +214,6 @@ void BufferedFileSystem::RemoveFile(const std::string &filename) {
     // XXX Invalidate buffer manager!
     return filesystem_.RemoveFile(filename);
 }
-/// Sets the working directory
-void BufferedFileSystem::SetWorkingDirectory(const std::string &path) {
-    // XXX Invalidate buffer manager!
-    return filesystem_.SetWorkingDirectory(path);
-}
 
 /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
 void BufferedFileSystem::Seek(duckdb::FileHandle &handle, idx_t location) {
@@ -264,6 +259,9 @@ bool BufferedFileSystem::OnDiskFile(duckdb::FileHandle &handle) {
     }
     return filesystem_.OnDiskFile(static_cast<BufferedFileHandle &>(handle).GetFileHandle());
 }
+
+/// Return the name of the filesytem. Used for forming diagnosis messages.
+std::string BufferedFileSystem::GetName() const { return "BufferedFileSystem"; }
 
 }  // namespace io
 }  // namespace web

@@ -72,7 +72,8 @@ class MemoryFileSystem : public duckdb::FileSystem {
 
     /// Open a file
     std::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                 FileCompressionType compression) override;
+                                                 FileCompressionType compression,
+                                                 FileOpener *opener = nullptr) override;
     /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read. This is
     /// equivalent to calling SetFilePointer(location) followed by calling Read().
     void Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) override;
@@ -108,19 +109,8 @@ class MemoryFileSystem : public duckdb::FileSystem {
     bool FileExists(const std::string &filename) override;
     /// Remove a file from disk
     void RemoveFile(const std::string &filename) override;
-    // /// Path separator for the current file system
-    std::string PathSeparator() override;
-    // /// Join two paths together
-    std::string JoinPath(const std::string &a, const std::string &path) override;
     /// Sync a file handle to disk
     void FileSync(duckdb::FileHandle &handle) override;
-
-    /// Sets the working directory
-    void SetWorkingDirectory(const std::string &path) override;
-    /// Gets the working directory
-    std::string GetWorkingDirectory() override;
-    /// Gets the users home directory
-    std::string GetHomeDirectory() override;
 
     /// Runs a glob on the file system, returning a list of matching files
     std::vector<std::string> Glob(const std::string &path) override;
@@ -136,6 +126,10 @@ class MemoryFileSystem : public duckdb::FileSystem {
     /// Whether or not the FS handles plain files on disk. This is relevant for certain optimizations, as random reads
     /// in a file on-disk are much cheaper than e.g. random reads in a file over the network
     bool OnDiskFile(duckdb::FileHandle &handle) override;
+
+   protected:
+    /// Return the name of the filesytem. Used for forming diagnosis messages.
+    std::string GetName() const override;
 };
 
 }  // namespace io

@@ -55,8 +55,9 @@ TEST(FilePageBufferTest, FixSingle) {
     std::vector<uint64_t> expected_values(entry_count, 123);
 
     // Write test values to page
-    auto file = buffer->OpenFile(file_path.c_str(),
-                                 duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE);
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     file->Truncate(data_size);
     ASSERT_EQ(file->GetFileID(), 0);
     {
@@ -107,7 +108,8 @@ TEST(FilePageBufferTest, PersistentRestart) {
     std::filesystem::resize_file(file3_path, 10 * page_size);
 
     std::vector<std::unique_ptr<io::FilePageBuffer::FileRef>> files;
-    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     files.push_back(buffer->OpenFile(file1_path.c_str(), file_flags));
     files.push_back(buffer->OpenFile(file2_path.c_str(), file_flags));
     files.push_back(buffer->OpenFile(file3_path.c_str(), file_flags));
@@ -167,7 +169,8 @@ TEST(FilePageBufferTest, FIFOEviction) {
     std::ofstream(file_path).close();
     auto data_size = 10 * buffer->GetPageSize();
     fs::resize_file(file_path, 10 * buffer->GetPageSize());
-    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     file->Truncate(data_size);
 
@@ -209,7 +212,8 @@ TEST(FilePageBufferTest, LRUEviction) {
     std::ofstream(file_path).close();
     auto data_size = 11 * buffer->GetPageSize();
     fs::resize_file(file_path, data_size);
-    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     file->Truncate(data_size);
 
@@ -285,7 +289,8 @@ TEST(FilePageBufferTest, ParallelFix) {
     auto data_size = 10 * buffer->GetPageSize();
     std::ofstream(file_path).close();
     fs::resize_file(file_path, data_size);
-    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     file->Truncate(data_size);
     std::vector<std::thread> threads;
@@ -318,7 +323,8 @@ TEST(FilePageBufferTest, ParallelExclusiveAccess) {
     auto data_size = 10 * buffer->GetPageSize();
     std::ofstream(file_path).close();
     fs::resize_file(file_path, data_size);
-    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     {
         auto page = file->FixPage(0, true);
@@ -375,7 +381,8 @@ TEST(FilePageBufferTest, ParallelScans) {
             // Open file
             std::ofstream(file_path).close();
             fs::resize_file(file_path, PageCount * buffer->GetPageSize());
-            auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+            auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                              duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
             auto file_ref = buffer->OpenFile(file_path.c_str(), file_flags);
 
             // Zero out pages
@@ -407,7 +414,8 @@ TEST(FilePageBufferTest, ParallelScans) {
             // Open all files once per thread to isolate but
             std::vector<std::unique_ptr<TestableFilePageBuffer::FileRef>> file_refs;
             for (auto& file_path : test_files) {
-                auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+                auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                                  duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
                 file_refs.push_back(buffer->OpenFile(file_path.c_str(), file_flags));
             }
 
@@ -456,7 +464,8 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
             // Open file
             std::ofstream(file_path).close();
             fs::resize_file(file_path, PageCount * buffer->GetPageSize());
-            auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+            auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                              duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
             auto file_ref = buffer->OpenFile(file_path.c_str(), file_flags);
 
             // Zero out pages
@@ -502,7 +511,8 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
             for (size_t j = 0; j < JobCount; ++j) {
                 // Open a file
                 uint16_t file_id = segment_distr(engine);
-                auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+                auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                                  duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
                 auto file = buffer->OpenFile(test_files[file_id].c_str(), file_flags);
 
                 // Run a table scan?
@@ -563,7 +573,8 @@ TEST(FilePageBufferTest, BlockStatistics) {
     auto data_size = 2 * buffer->GetPageSize();
     std::ofstream(file_path).close();
     fs::resize_file(file_path, data_size);
-    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
+    auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
+                      duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     auto file = buffer->OpenFile(file_path.c_str(), file_flags);
     file->Truncate(data_size);
 

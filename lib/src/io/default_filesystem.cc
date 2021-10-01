@@ -13,7 +13,7 @@ std::unique_ptr<duckdb::FileSystem> CreateDefaultFileSystem() {
 #if EMSCRIPTEN
     return std::make_unique<WebFileSystem>();
 #else
-    return std::make_unique<duckdb::FileSystem>();
+    return duckdb::FileSystem::CreateLocal();
 #endif
 }
 

@@ -61,7 +61,7 @@ static void ClearLocalStates() {
 /// Stub the filesystem for native tests
 #ifndef EMSCRIPTEN
 /// This is only used for tests.
-static duckdb::FileSystem NATIVE_FS;
+static std::unique_ptr<duckdb::FileSystem> NATIVE_FS = duckdb::FileSystem::CreateLocal();
 /// Get or open a file and throw if something is off
 static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     auto file = WebFileSystem::Get()->GetFile(file_id);
@@ -76,8 +76,9 @@ static duckdb::FileHandle &GetOrOpen(size_t file_id) {
                 return *iter->second;
             }
             auto [it, ok] = infos.handles.insert(
-                {file_id, NATIVE_FS.OpenFile(*file->GetDataURL(), duckdb::FileFlags::FILE_FLAGS_FILE_CREATE |
-                                                                      duckdb::FileFlags::FILE_FLAGS_WRITE)});
+                {file_id, NATIVE_FS->OpenFile(*file->GetDataURL(), duckdb::FileFlags::FILE_FLAGS_FILE_CREATE |
+                                                                       duckdb::FileFlags::FILE_FLAGS_READ |
+                                                                       duckdb::FileFlags::FILE_FLAGS_WRITE)});
             return *it->second;
         }
         case WebFileSystem::DataProtocol::BUFFER:
@@ -97,7 +98,7 @@ RT_FN(void *duckdb_web_fs_file_open(size_t file_id), {
     GetOrOpen(file_id);
     return nullptr;
 });
-RT_FN(void duckdb_web_fs_file_sync(size_t file_id), { NATIVE_FS.FileSync(GetOrOpen(file_id)); });
+RT_FN(void duckdb_web_fs_file_sync(size_t file_id), { NATIVE_FS->FileSync(GetOrOpen(file_id)); });
 RT_FN(void duckdb_web_fs_file_close(size_t file_id), {
     auto &infos = GetLocalState();
     infos.handles.erase(file_id);
@@ -106,7 +107,7 @@ RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOr
 RT_FN(double duckdb_web_fs_file_get_size(size_t file_id), { return GetOrOpen(file_id).GetFileSize(); });
 RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t file_id), {
     auto &file = GetOrOpen(file_id);
-    return NATIVE_FS.GetLastModifiedTime(file);
+    return NATIVE_FS->GetLastModifiedTime(file);
 });
 RT_FN(ssize_t duckdb_web_fs_file_read(size_t file_id, void *buffer, ssize_t bytes, double location), {
     auto &file = GetOrOpen(file_id);
@@ -124,24 +125,24 @@ RT_FN(ssize_t duckdb_web_fs_file_write(size_t file_id, void *buffer, ssize_t byt
     return bytes;
 });
 RT_FN(void duckdb_web_fs_directory_remove(const char *path, size_t pathLen), {
-    NATIVE_FS.RemoveDirectory(std::string{path, pathLen});
+    NATIVE_FS->RemoveDirectory(std::string{path, pathLen});
 });
 RT_FN(bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen), {
-    return NATIVE_FS.DirectoryExists(std::string{path, pathLen});
+    return NATIVE_FS->DirectoryExists(std::string{path, pathLen});
 });
 RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {
-    NATIVE_FS.CreateDirectory(std::string{path, pathLen});
+    NATIVE_FS->CreateDirectory(std::string{path, pathLen});
 });
 RT_FN(bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen), { return false; });
 RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {
     auto &state = GetLocalState();
-    state.glob_results = NATIVE_FS.Glob(std::string{path, pathLen});
+    state.glob_results = NATIVE_FS->Glob(std::string{path, pathLen});
 });
 RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen), {
-    NATIVE_FS.MoveFile(std::string{from, fromLen}, std::string{to, toLen});
+    NATIVE_FS->MoveFile(std::string{from, fromLen}, std::string{to, toLen});
 });
 RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), {
-    return NATIVE_FS.FileExists(std::string{path, pathLen});
+    return NATIVE_FS->FileExists(std::string{path, pathLen});
 });
 #undef RT_FN
 
@@ -412,7 +413,7 @@ void WebFileSystem::CollectFileStatistics(std::string_view path, std::shared_ptr
 
 /// Open a file
 std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
-                                                            FileCompressionType compression) {
+                                                            FileCompressionType compression, FileOpener *opener) {
     DEBUG_TRACE();
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
 
@@ -762,13 +763,6 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
     // Noop, runtime writes directly
 }
 
-/// Sets the working directory
-void WebFileSystem::SetWorkingDirectory(const std::string &path) {}
-/// Gets the working directory
-std::string WebFileSystem::GetWorkingDirectory() { return "/"; }
-/// Gets the users home directory
-std::string WebFileSystem::GetHomeDirectory() { return "/"; }
-
 /// Runs a glob on the file system, returning a list of matching files
 std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
@@ -801,6 +795,9 @@ bool WebFileSystem::CanSeek() { return true; }
 // Whether or not the FS handles plain files on disk. This is relevant for certain optimizations, as random reads
 // in a file on-disk are much cheaper than e.g. random reads in a file over the network
 bool WebFileSystem::OnDiskFile(FileHandle &handle) { return true; }
+
+/// Return the name of the filesytem. Used for forming diagnosis messages.
+std::string WebFileSystem::GetName() const { return "WebFileSystem"; }
 
 }  // namespace io
 }  // namespace web
