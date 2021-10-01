@@ -36,9 +36,9 @@ namespace io {
 ///
 /// Our I/O stack looks rougly like the following:
 ///
-///             DuckDB              json::TableReader  io::Zipper io::InputFileStreamBuffer
-///               |                         |             |                |
-///               V                         +-------------+----------------+
+///             DuckDB              json::TableReader io::InputFileStreamBuffer
+///               |                         |                  |
+///               V                         +------------------+
 ///        io::BufferedFileSystem           |
 ///               |      |                  V
 ///               |      +--------> io::FilePageBuffer <-> Prefetcher
