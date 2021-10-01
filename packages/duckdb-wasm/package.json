@@ -64,7 +64,6 @@
         "lint": "eslint src test types"
     },
     "files": [
-        "src",
         "dist",
         "!dist/types/test"
     ],
