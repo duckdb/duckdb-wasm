@@ -8,6 +8,8 @@ import { CSVTableOptions, JSONTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
+import { InsertOptions } from './insert';
+import { RecordBatchStreamWriter } from 'apache-arrow';
 
 declare global {
     // eslint-disable-next-line no-var
@@ -85,7 +87,6 @@ export abstract class DuckDBBindings {
 
         return this;
     }
-
     /** Open a database at a path */
     public open(config: DuckDBConfig): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_open', ['string'], [JSON.stringify(config)]);
@@ -104,6 +105,21 @@ export abstract class DuckDBBindings {
         dropResponseBuffers(this.mod);
     }
 
+    /** Get the version */
+    public getVersion(): string {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_get_version', [], []);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const version = readString(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return version;
+    }
+    /** Get the feature flags */
+    public getFeatureFlags(): number {
+        return this.mod.ccall('duckdb_web_get_feature_flags', 'number', [], []);
+    }
+
     /** Tokenize a script */
     public tokenize(text: string): ScriptTokens {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize', ['string'], [text]);
@@ -115,57 +131,11 @@ export abstract class DuckDBBindings {
         return JSON.parse(res) as ScriptTokens;
     }
 
-    /** Drop file */
-    public dropFile(name: string): boolean {
-        return this.mod.ccall('duckdb_web_fs_drop_file', 'boolean', ['string'], [name]);
-    }
-    /** Drop files */
-    public dropFiles(): void {
-        this.mod.ccall('duckdb_web_fs_drop_files', null, [], []);
-    }
-    /** Flush all files */
-    public flushFiles(): void {
-        this.mod.ccall('duckdb_web_flush_files', null, [], []);
-    }
-
-    /** Get the version */
-    public getVersion(): string {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_get_version', [], []);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
-        }
-        const version = readString(this.mod, d, n);
-        dropResponseBuffers(this.mod);
-        return version;
-    }
-
-    /** Get the feature flags */
-    public getFeatureFlags(): number {
-        return this.mod.ccall('duckdb_web_get_feature_flags', 'number', [], []);
-    }
-
-    /** Enable tracking of file statistics */
-    public collectFileStatistics(file: string, enable: boolean): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_collect_file_stats', ['string', 'boolean'], [file, enable]);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
-        }
-    }
-    /** Export file statistics */
-    public exportFileStatistics(file: string): FileStatistics {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_export_file_stats', ['string'], [file]);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
-        }
-        return new FileStatistics(this.mod.HEAPU8.subarray(d, d + n));
-    }
-
     /** Connect to database */
     public connect(): DuckDBConnection {
         const conn = this.mod.ccall('duckdb_web_connect', 'number', [], []);
         return new DuckDBConnection(this, conn);
     }
-
     /** Disconnect from database */
     public disconnect(conn: number): void {
         this.mod.ccall('duckdb_web_disconnect', null, ['number'], [conn]);
@@ -181,7 +151,6 @@ export abstract class DuckDBBindings {
         dropResponseBuffers(this.mod);
         return res;
     }
-
     /** Send a query asynchronously. Results have to be fetched with `fetchQueryResults` */
     public sendQuery(conn: number, text: string): Uint8Array {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_send', ['number', 'string'], [conn, text]);
@@ -192,7 +161,6 @@ export abstract class DuckDBBindings {
         dropResponseBuffers(this.mod);
         return res;
     }
-
     /** Fetch query results */
     public fetchQueryResults(conn: number): Uint8Array {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_fetch_results', ['number'], [conn]);
@@ -265,69 +233,66 @@ export abstract class DuckDBBindings {
         return res;
     }
 
-    /** Import csv from path */
-    public importCSVFromPath(conn: number, path: string, options: CSVTableOptions): void {
-        // Flatten columns.
-        // The arrow DataType classes do not survive the message passing to the web worker.
-        // We therefore always flatten column specs.
-        if (options.columns !== undefined) {
-            const out = [];
-            for (const k in options.columns) {
-                const type = options.columns[k];
-                out.push(flattenArrowField(k, type));
-            }
-            options.columnsFlat = out;
-        }
-
+    /** Start importing */
+    public startInsert(conn: number, options: InsertOptions) {
+        return 0 /* inserter-id */;
+    }
+    /** Insert record batches from an arrow ipc stream */
+    public insertRecordBatchesFromStream(conn: number, inserter: number, buffer: Uint8Array) {
+        // XXX
+    }
+    /** Insert csv from path */
+    public insertCSVFromPath(conn: number, inserter: number, path: string, options: CSVTableOptions): void {
         // Stringify options
-        const optionsCopy = { ...options } as any;
-        optionsCopy.columns = optionsCopy.columnsFlat;
-        delete optionsCopy.columnsFlat;
-        const optionsJSON = JSON.stringify(optionsCopy);
+        if (options.columns !== undefined) {
+            options.columnsFlat = [];
+            for (const k in options.columns) {
+                options.columnsFlat.push(flattenArrowField(k, options.columns[k]));
+            }
+        }
+        const opt = { ...options } as any;
+        opt.columns = opt.columnsFlat;
+        delete opt.columnsFlat;
+        const optJSON = JSON.stringify(opt);
 
-        // Pass to wasm
+        // Call wasm function
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_import_csv_table',
-            ['number', 'string', 'string'],
-            [conn, path, optionsJSON],
+            'duckdb_web_insert_csv_from_path',
+            ['number', 'number', 'string', 'string'],
+            [conn, inserter, path, optJSON],
         );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
     }
-
-    /** Import json from path */
-    public importJSONFromPath(conn: number, path: string, options: JSONTableOptions): void {
-        // Flatten columns.
-        // The arrow DataType classes do not survive the message passing to the web worker.
-        // We therefore always flatten column specs.
-        if (options.columns !== undefined) {
-            const out = [];
-            for (const k in options.columns) {
-                const type = options.columns[k];
-                out.push(flattenArrowField(k, type));
-            }
-            options.columnsFlat = out;
-        }
-
+    /** Insert json from path */
+    public insertJSONFromPath(conn: number, inserter: number, path: string, options: JSONTableOptions): void {
         // Stringify options
-        const optionsCopy = { ...options } as any;
-        optionsCopy.columns = optionsCopy.columnsFlat;
-        delete optionsCopy.columnsFlat;
-        const optionsJSON = JSON.stringify(optionsCopy);
+        if (options.columns !== undefined) {
+            options.columnsFlat = [];
+            for (const k in options.columns) {
+                options.columnsFlat.push(flattenArrowField(k, options.columns[k]));
+            }
+        }
+        const opt = { ...options } as any;
+        opt.columns = opt.columnsFlat;
+        delete opt.columnsFlat;
+        const optJSON = JSON.stringify(opt);
 
-        // Pass to wasm
+        // Call wasm function
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_import_json_table',
-            ['number', 'string', 'string'],
-            [conn, path, optionsJSON],
+            'duckdb_web_insert_json_from_path',
+            ['number', 'number', 'string', 'string'],
+            [conn, inserter, path, optJSON],
         );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
     }
+    /** Finish insert */
+    public finishInsert(conn: number, inserter: number): void {}
 
     /** Register a file object URL */
     public registerFileURL(name: string, url: string): void {
@@ -377,6 +342,18 @@ export abstract class DuckDBBindings {
             }
         }
     }
+    /** Drop file */
+    public dropFile(name: string): boolean {
+        return this.mod.ccall('duckdb_web_fs_drop_file', 'boolean', ['string'], [name]);
+    }
+    /** Drop files */
+    public dropFiles(): void {
+        this.mod.ccall('duckdb_web_fs_drop_files', null, [], []);
+    }
+    /** Flush all files */
+    public flushFiles(): void {
+        this.mod.ccall('duckdb_web_flush_files', null, [], []);
+    }
     /** Write a file to a path */
     public copyFileToPath(name: string, path: string): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_copy_file_to_path', ['string', 'string'], [name, path]);
@@ -396,5 +373,21 @@ export abstract class DuckDBBindings {
         copy.set(buffer);
         dropResponseBuffers(this.mod);
         return copy;
+    }
+
+    /** Enable tracking of file statistics */
+    public collectFileStatistics(file: string, enable: boolean): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_collect_file_stats', ['string', 'boolean'], [file, enable]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+    }
+    /** Export file statistics */
+    public exportFileStatistics(file: string): FileStatistics {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_export_file_stats', ['string'], [file]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        return new FileStatistics(this.mod.HEAPU8.subarray(d, d + n));
     }
 }

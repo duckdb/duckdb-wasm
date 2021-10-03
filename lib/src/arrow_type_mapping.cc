@@ -1,10 +1,9 @@
 #include "duckdb/web/arrow_type_mapping.h"
 
-#include <arrow/result.h>
-#include <arrow/status.h>
-#include <arrow/type_fwd.h>
-
+#include "arrow/result.h"
+#include "arrow/status.h"
 #include "arrow/type.h"
+#include "arrow/type_fwd.h"
 #include "duckdb/common/types.hpp"
 #include "duckdb/web/webdb.h"
 
