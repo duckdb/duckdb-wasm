@@ -119,51 +119,20 @@ export class AsyncDuckDBConnection {
     }
 
     /** Insert record batches */
-    public async insertRecordBatches(batches: Iterable<arrow.RecordBatch>, options: ArrowInsertOptions): Promise<void> {
-        let first = true;
-        const inflight = [];
-        for (const batch of batches) {
-            if (inflight.length >= 10) {
-                await inflight[0];
-                inflight.shift();
-            }
-            const writer = new arrow.RecordBatchStreamWriter();
-            writer.write(batch);
-            writer.finish();
-            const buffer = writer.toUint8Array(true);
-            const insert = await this._instance.insertArrowFromIPCStream(
-                this._conn,
-                buffer,
-                first ? options : undefined,
-            );
-            inflight.push(insert);
-            first = false;
-        }
-    }
-    /** Insert record batches from an async iterable */
-    public async insertAsyncRecordBatches(
-        batches: AsyncIterable<arrow.RecordBatch>,
+    public async insertArrowBatches(
+        schema: arrow.Schema,
+        batches: Iterable<arrow.RecordBatch>,
         options: ArrowInsertOptions,
     ): Promise<void> {
-        let first = true;
-        const inflight = [];
-        for await (const batch of batches) {
-            if (inflight.length >= 10) {
-                await inflight[0];
-                inflight.shift();
-            }
-            const writer = new arrow.RecordBatchStreamWriter();
-            writer.write(batch);
-            writer.finish();
-            const buffer = writer.toUint8Array(true);
-            const insert = await this._instance.insertArrowFromIPCStream(
-                this._conn,
-                buffer,
-                first ? options : undefined,
-            );
-            inflight.push(insert);
-            first = false;
-        }
+        // Prepare the IPC stream writer
+        const buffer = new arrow.AsyncByteQueue();
+        const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
+
+        // Check connection.ts for an explanation on why we materialize twice.
+        writer.writeAll(batches);
+        writer.close();
+        const unecessary_copy = writer.toUint8Array(true);
+        await this._instance.insertArrowFromIPCStream(this._conn, unecessary_copy, options);
     }
     /** Insert csv file from path */
     public async insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void> {
