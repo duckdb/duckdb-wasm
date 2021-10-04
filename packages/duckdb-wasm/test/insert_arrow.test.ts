@@ -48,6 +48,34 @@ const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
             { name: 'c', values: [3, 6, 9] },
         ],
     },
+    {
+        name: 'combined_1',
+        schema: new arrow.Schema([
+            new arrow.Field('a', new arrow.Int32()),
+            new arrow.Field('b', new arrow.Int16()),
+            new arrow.Field('c', new arrow.Utf8()),
+        ]),
+        batches: [
+            {
+                numRows: 3,
+                columns: [
+                    arrow.Int32Vector.from([1, 4, 7]),
+                    arrow.Int16Vector.from([2, 5, 8]),
+                    arrow.Utf8Vector.from(['3', '6', '9']),
+                ],
+            },
+        ],
+        options: {
+            schema: 'main',
+            name: 'foo',
+        },
+        query: 'SELECT * FROM main.foo',
+        expectedColumns: [
+            { name: 'a', values: [1, 4, 7] },
+            { name: 'b', values: [2, 5, 8] },
+            { name: 'c', values: ['3', '6', '9'] },
+        ],
+    },
 ];
 
 export function testArrowInsert(db: () => duckdb.DuckDBBindings): void {
