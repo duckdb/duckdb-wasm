@@ -204,7 +204,6 @@ if(EMSCRIPTEN)
           _free, \
           _duckdb_web_clear_response, \
           _duckdb_web_collect_file_stats, \
-          _duckdb_web_reset, \
           _duckdb_web_connect, \
           _duckdb_web_copy_file_to_buffer, \
           _duckdb_web_copy_file_to_path, \
@@ -222,8 +221,9 @@ if(EMSCRIPTEN)
           _duckdb_web_fs_set_file_descriptor, \
           _duckdb_web_get_feature_flags, \
           _duckdb_web_get_version, \
-          _duckdb_web_import_csv_table, \
-          _duckdb_web_import_json_table, \
+          _duckdb_web_insert_arrow_from_ipc_stream, \
+          _duckdb_web_insert_csv_from_path, \
+          _duckdb_web_insert_json_from_path, \
           _duckdb_web_open, \
           _duckdb_web_prepared_statement_close, \
           _duckdb_web_prepared_statement_create, \
@@ -232,6 +232,7 @@ if(EMSCRIPTEN)
           _duckdb_web_query_fetch_results, \
           _duckdb_web_query_run, \
           _duckdb_web_query_send, \
+          _duckdb_web_reset, \
           _duckdb_web_tokenize \
       ]' \
       -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
