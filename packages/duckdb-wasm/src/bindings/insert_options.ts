@@ -1,24 +1,26 @@
 import * as arrow from 'apache-arrow';
 import { FlatArrowField } from '../flat_arrow';
 
-export enum JSONTableFormat {
+export enum JSONTableShape {
     ROW_ARRAY = 'row-array',
     COLUMN_OBJECT = 'column-object',
 }
 
-export interface JSONTableOptions {
+export interface JSONInsertOptions {
     name: string;
     schema?: string;
-    format?: JSONTableFormat;
+    create?: boolean;
+    shape?: JSONTableShape;
     columns?: {
         [key: string]: arrow.DataType;
     };
     columnsFlat?: FlatArrowField[];
 }
 
-export interface CSVTableOptions {
+export interface CSVInsertOptions {
     name: string;
     schema?: string;
+    create?: boolean;
     header?: boolean;
     delimiter?: string;
     quote?: string;
@@ -31,4 +33,10 @@ export interface CSVTableOptions {
         [key: string]: arrow.DataType;
     };
     columnsFlat?: FlatArrowField[];
+}
+
+export interface ArrowInsertOptions {
+    name: string;
+    schema?: string;
+    create?: boolean;
 }

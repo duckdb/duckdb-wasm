@@ -10,15 +10,15 @@ function itBrowser(expectation: string, assertion?: jasmine.ImplementationCallba
 
 const encoder = new TextEncoder();
 
-interface JSONImportTest {
+interface JSONInsertTest {
     name: string;
     input: string;
-    options: duckdb.JSONTableOptions;
+    options: duckdb.JSONInsertOptions;
     query: string;
     expectedColumns: Column[];
 }
 
-const JSON_IMPORT_TESTS: JSONImportTest[] = [
+const JSON_INSERT_TESTS: JSONInsertTest[] = [
     {
         name: 'rows_integers',
         input: `[
@@ -65,7 +65,7 @@ const JSON_IMPORT_TESTS: JSONImportTest[] = [
         options: {
             schema: 'main',
             name: 'foo',
-            format: duckdb.JSONTableFormat.ROW_ARRAY,
+            shape: duckdb.JSONTableShape.ROW_ARRAY,
             columns: {
                 a: new arrow.Int16(),
                 b: new arrow.Int32(),
@@ -83,7 +83,7 @@ const JSON_IMPORT_TESTS: JSONImportTest[] = [
 
 const TEST_FILE = 'TEST';
 
-export function testJSONImport(db: () => duckdb.DuckDBBindings): void {
+export function testJSONInsert(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
 
     beforeEach(async () => {
@@ -95,13 +95,13 @@ export function testJSONImport(db: () => duckdb.DuckDBBindings): void {
         await db().flushFiles();
         await db().dropFiles();
     });
-    describe('JSON Import Sync', () => {
-        for (const test of JSON_IMPORT_TESTS) {
+    describe('JSON Insert Sync', () => {
+        for (const test of JSON_INSERT_TESTS) {
             it(test.name, () => {
                 conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 db().registerFileBuffer(TEST_FILE, buffer);
-                conn.importJSONFromPath(TEST_FILE, test.options);
+                conn.insertJSONFromPath(TEST_FILE, test.options);
                 const results = conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);
             });
@@ -109,7 +109,7 @@ export function testJSONImport(db: () => duckdb.DuckDBBindings): void {
     });
 }
 
-export function testJSONImportAsync(db: () => duckdb.AsyncDuckDB): void {
+export function testJSONInsertAsync(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
 
     beforeEach(async () => {
@@ -121,27 +121,27 @@ export function testJSONImportAsync(db: () => duckdb.AsyncDuckDB): void {
         await db().flushFiles();
         await db().dropFiles();
     });
-    describe('JSON Import Buffer Async', () => {
-        for (const test of JSON_IMPORT_TESTS) {
+    describe('JSON Insert Buffer Async', () => {
+        for (const test of JSON_INSERT_TESTS) {
             it(test.name, async () => {
                 await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 await db().registerFileBuffer(TEST_FILE, buffer);
-                await conn.importJSONFromPath(TEST_FILE, test.options);
+                await conn.insertJSONFromPath(TEST_FILE, test.options);
                 const results = await conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
     });
 
-    describe('JSON Import Blob Async', () => {
-        for (const test of JSON_IMPORT_TESTS) {
+    describe('JSON Insert Blob Async', () => {
+        for (const test of JSON_INSERT_TESTS) {
             itBrowser(test.name, async () => {
                 await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 const blob = new Blob([buffer]);
                 await db().registerFileHandle(TEST_FILE, blob);
-                await conn.importJSONFromPath(TEST_FILE, test.options);
+                await conn.insertJSONFromPath(TEST_FILE, test.options);
                 const results = await conn.runQuery(test.query);
                 compareTable(results, test.expectedColumns);
             });

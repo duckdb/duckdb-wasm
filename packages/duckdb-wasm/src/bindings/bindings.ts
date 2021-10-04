@@ -1,11 +1,10 @@
-import * as arrow from 'apache-arrow';
 import { DuckDBModule, PThread } from './duckdb_module';
 import { DuckDBConfig } from './config';
 import { Logger } from '../log';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } from './runtime';
-import { CSVTableOptions, JSONTableOptions } from './table_options';
+import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
@@ -233,11 +232,27 @@ export abstract class DuckDBBindings {
     }
 
     /** Insert record batches from an arrow ipc stream */
-    public insertArrowFromIPCStrea(conn: number, inserter: number, buffer: Uint8Array) {
-        // XXX
+    public insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: ArrowInsertOptions): void {
+        // Store buffer
+        const bufferPtr = this.mod._malloc(buffer.length);
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + buffer.length);
+        bufferOfs.set(buffer);
+        const optJSON = options ? JSON.stringify(options) : '';
+
+        // Call wasm function
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_insert_arrow_from_ipc_stream',
+            ['number', 'number', 'number', 'string'],
+            [conn, bufferPtr, buffer.length, optJSON],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
     }
+
     /** Insert csv from path */
-    public insertCSVFromPath(conn: number, inserter: number, path: string, options: CSVTableOptions): void {
+    public insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): void {
         // Stringify options
         if (options.columns !== undefined) {
             options.columnsFlat = [];
@@ -254,15 +269,15 @@ export abstract class DuckDBBindings {
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_insert_csv_from_path',
-            ['number', 'number', 'string', 'string'],
-            [conn, inserter, path, optJSON],
+            ['number', 'string', 'string'],
+            [conn, path, optJSON],
         );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
     }
     /** Insert json from path */
-    public insertJSONFromPath(conn: number, inserter: number, path: string, options: JSONTableOptions): void {
+    public insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): void {
         // Stringify options
         if (options.columns !== undefined) {
             options.columnsFlat = [];
@@ -279,8 +294,8 @@ export abstract class DuckDBBindings {
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_insert_json_from_path',
-            ['number', 'number', 'string', 'string'],
-            [conn, inserter, path, optJSON],
+            ['number', 'string', 'string'],
+            [conn, path, optJSON],
         );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));

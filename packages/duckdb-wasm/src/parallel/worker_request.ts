@@ -1,4 +1,4 @@
-import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
+import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from '../bindings/insert_options';
 import { LogEntryVariant } from '../log';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
@@ -19,8 +19,9 @@ export enum WorkerRequestType {
     FLUSH_FILES = 'FLUSH_FILES',
     GET_FEATURE_FLAGS = 'GET_FEATURE_FLAGS',
     GET_VERSION = 'GET_VERSION',
-    IMPORT_CSV_FROM_PATH = 'IMPORT_CSV_FROM_PATH',
-    IMPORT_JSON_FROM_PATH = 'IMPORT_JSON_FROM_PATH',
+    INSERT_ARROW_FROM_IPC_STREAM = 'INSERT_ARROW_FROM_IPC_STREAM',
+    INSERT_CSV_FROM_PATH = 'IMPORT_CSV_FROM_PATH',
+    INSERT_JSON_FROM_PATH = 'IMPORT_JSON_FROM_PATH',
     INSTANTIATE = 'INSTANTIATE',
     OPEN = 'OPEN',
     PING = 'PING',
@@ -105,8 +106,9 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
-    | WorkerRequest<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions]>
-    | WorkerRequest<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions]>
+    | WorkerRequest<WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM, [number, Uint8Array, ArrowInsertOptions]>
+    | WorkerRequest<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions]>
+    | WorkerRequest<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions]>
     | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
     | WorkerRequest<WorkerRequestType.OPEN, DuckDBConfig>
     | WorkerRequest<WorkerRequestType.PING, null>
@@ -148,8 +150,9 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
-    | WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>
-    | WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>
+    | WorkerTask<WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM, [number, Uint8Array, ArrowInsertOptions], null>
+    | WorkerTask<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions], null>
+    | WorkerTask<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions], null>
     | WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>
     | WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>
     | WorkerTask<WorkerRequestType.PING, null, null>

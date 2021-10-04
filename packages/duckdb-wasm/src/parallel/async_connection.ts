@@ -1,6 +1,6 @@
 import { Logger, LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import * as arrow from 'apache-arrow';
-import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
+import { ArrowInsertOptions, CSVInsertOptions, JSONInsertOptions } from '../bindings/insert_options';
 
 interface IAsyncDuckDB {
     logger: Logger;
@@ -16,8 +16,9 @@ interface IAsyncDuckDB {
     sendQuery(conn: number, text: string): Promise<Uint8Array>;
     fetchQueryResults(conn: number): Promise<Uint8Array>;
 
-    importCSVFromPath(conn: number, path: string, options: CSVTableOptions): Promise<void>;
-    importJSONFromPath(conn: number, path: string, options: JSONTableOptions): Promise<void>;
+    insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options: CSVInsertOptions): Promise<void>;
+    insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): Promise<void>;
+    insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): Promise<void>;
 }
 
 /** An async result stream iterator */
@@ -71,10 +72,12 @@ export interface AsyncConnection {
     sendQuery<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
     ): Promise<arrow.AsyncRecordBatchStreamReader<T>>;
-    /** Import csv file from path */
-    importCSVFromPath(text: string, options: CSVTableOptions): Promise<void>;
-    /** Import csv file from path */
-    importJSONFromPath(text: string, options: JSONTableOptions): Promise<void>;
+    /** Insert arrow from an IPC stream */
+    insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void>;
+    /** Insert json file from path */
+    insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void>;
+    /** Insert csv file from path */
+    insertJSONFromPath(text: string, options: JSONInsertOptions): Promise<void>;
 }
 
 /** A thin helper to memoize the connection id */
@@ -136,12 +139,16 @@ export class AsyncDuckDBConnection implements AsyncConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
+    /** Import arrow from ipc stream */
+    public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
+        await this._instance.insertArrowFromIPCStream(this._conn, buffer, options);
+    }
     /** Import csv file from path */
-    public async importCSVFromPath(text: string, options: CSVTableOptions): Promise<void> {
-        await this._instance.importCSVFromPath(this._conn, text, options);
+    public async insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void> {
+        await this._instance.insertCSVFromPath(this._conn, text, options);
     }
     /** Import json file from path */
-    public async importJSONFromPath(text: string, options: JSONTableOptions): Promise<void> {
-        await this._instance.importJSONFromPath(this._conn, text, options);
+    public async insertJSONFromPath(text: string, options: JSONInsertOptions): Promise<void> {
+        await this._instance.insertJSONFromPath(this._conn, text, options);
     }
 }
