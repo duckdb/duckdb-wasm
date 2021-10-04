@@ -128,31 +128,43 @@ export class DuckDBConnection {
     }
 
     /** Insert record batches */
-    public insertRecordBatches(batches: Iterable<arrow.RecordBatch>, options: ArrowInsertOptions): void {
-        let first = true;
-        for (const batch of batches) {
-            const writer = new arrow.RecordBatchStreamWriter();
-            writer.write(batch);
-            writer.finish();
-            const buffer = writer.toUint8Array(true);
-            this._bindings.insertArrowFromIPCStream(this._conn, buffer, first ? options : undefined);
-            first = false;
-        }
-    }
-    /** Insert record batches from an async iterable */
-    public async insertAsyncRecordBatches(
-        batches: AsyncIterable<arrow.RecordBatch>,
+    public insertArrowBatches(
+        schema: arrow.Schema,
+        batches: Iterable<arrow.RecordBatch>,
         options: ArrowInsertOptions,
-    ): Promise<void> {
-        let first = true;
-        for await (const batch of batches) {
-            const writer = new arrow.RecordBatchStreamWriter();
-            writer.write(batch);
-            writer.finish();
-            const buffer = writer.toUint8Array(true);
-            this._bindings.insertArrowFromIPCStream(this._conn, buffer, first ? options : undefined);
-            first = false;
+    ): void {
+        /// Warn the user about an empty schema.
+        if (schema.fields.length == 0) {
+            console.warn(
+                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
+            );
         }
+
+        // Prepare the IPC stream writer
+        const buffer = new arrow.AsyncByteQueue();
+        const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
+
+        // We actually would like to stream the batches over into the wasm memory BUT:
+        //  https://github.com/apache/arrow/blob/612a759d554b838aa201fe08ab357272a6cb1843/js/src/ipc/writer.ts#L161
+        //  https://github.com/apache/arrow/blob/612a759d554b838aa201fe08ab357272a6cb1843/js/src/io/stream.ts#L35
+        //
+        // Arrow uses an AsyncIterable for the individual batch chunks even though the AsyncByteQueue is only a Uint8Array[].
+        // We therefore end up awaiting 5 (!!) Uint8Arrays for a single Record Batch insert!
+        //
+        // This is not quite acceptable in the synchronous case.
+        // If we want to shoot small queries at an asynchronous DuckDB we ideally want to await only 1 promise...
+
+        // We therefore pay the price for materializing everything on the js side for now.
+        // toUint8Array will actually just merge the Uint8Array[].
+        // This merge is an unnecessary copy but at least without a promise.
+
+        // When AsyncByteQueue implements Iterable<Uint8Array>, we can send all chunks directly with:
+        // this._bindings.insertArrowFromIPCStream(this._conn, chunk, first ? options : undefined);
+
+        writer.writeAll(batches);
+        writer.close();
+        const unecessary_copy = writer.toUint8Array(true);
+        this._bindings.insertArrowFromIPCStream(this._conn, unecessary_copy, options);
     }
     /** Inesrt csv file from path */
     public insertCSVFromPath(path: string, options: CSVInsertOptions): void {
