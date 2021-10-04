@@ -1,5 +1,7 @@
 #include "duckdb/web/webdb.h"
 
+#include <arrow/ipc/type_fwd.h>
+
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -59,7 +61,8 @@ WebDB& WebDB::Get() {
 }
 
 /// Constructor
-WebDB::Connection::Connection(WebDB& webdb) : webdb_(webdb), connection_(*webdb.database_) {}
+WebDB::Connection::Connection(WebDB& webdb)
+    : webdb_(webdb), connection_(*webdb.database_), arrow_ipc_stream_(nullptr) {}
 /// Constructor
 WebDB::Connection::~Connection() = default;
 
@@ -169,7 +172,9 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         // Patch the record batch
         ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_));
         // Serialize the record batch
-        return arrow::ipc::SerializeRecordBatch(*batch, arrow::ipc::IpcWriteOptions::Defaults());
+        auto options = arrow::ipc::IpcWriteOptions::Defaults();
+        options.use_threads = false;
+        return arrow::ipc::SerializeRecordBatch(*batch, options);
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
@@ -257,19 +262,17 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
         // First call?
         if (!arrow_ipc_stream_) {
             arrow_insert_options_.reset();
-            arrow_ipc_stream_.reset();
-        }
 
-        /// Read table options
-        if (!options_json.empty()) {
+            /// Read table options.
+            /// We deliberately do this BEFORE creating the ipc stream.
+            /// This ensures that we always have valid options.
             rapidjson::Document options_doc;
             options_doc.Parse(options_json.begin(), options_json.size());
-            arrow_insert_options_.emplace();
-            ARROW_RETURN_NOT_OK(arrow_insert_options_->ReadFrom(options_doc));
-        }
+            ArrowInsertOptions options;
+            ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
+            arrow_insert_options_ = options;
 
-        // Create ipc stream
-        if (!arrow_ipc_stream_) {
+            // Create the IPC stream
             arrow_ipc_stream_ = std::make_unique<BufferingArrowIPCStreamDecoder>();
         }
 
@@ -278,9 +281,7 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
         if (!arrow_ipc_stream_->buffer()->is_eos()) {
             return arrow::Status::OK();
         }
-        if (!arrow_insert_options_) {
-            return arrow::Status::Invalid("reached end of arrow IPC stream without arrow insert options");
-        }
+        assert(arrow_insert_options_);
 
         // Prepare stream reader
         auto stream_reader = std::make_shared<ArrowIPCStreamBufferReader>(arrow_ipc_stream_->buffer());

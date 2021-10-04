@@ -28,9 +28,9 @@ std::filesystem::path CreateTestFile() {
     return file;
 }
 
-struct CSVImportTest {
+struct CSVInsertTest {
     struct TestPrinter {
-        std::string operator()(const ::testing::TestParamInfo<CSVImportTest>& info) const {
+        std::string operator()(const ::testing::TestParamInfo<CSVInsertTest>& info) const {
             return std::string{info.param.name};
         }
     };
@@ -41,9 +41,9 @@ struct CSVImportTest {
     std::string expected_output;
 };
 
-struct CSVImportTestSuite : public testing::TestWithParam<CSVImportTest> {};
+struct CSVInsertTestSuite : public testing::TestWithParam<CSVInsertTest> {};
 
-TEST_P(CSVImportTestSuite, TestImport) {
+TEST_P(CSVInsertTestSuite, TestImport) {
     constexpr const char* path = "TEST";
 
     auto& test = GetParam();
@@ -61,7 +61,7 @@ TEST_P(CSVImportTestSuite, TestImport) {
 }
 
 // clang-format off
-static std::vector<CSVImportTest> CSV_IMPORT_TEST = {
+static std::vector<CSVInsertTest> CSV_IMPORT_TEST = {
     {
         .name = "integers_auto_1",
         .input = R"CSV("a","b","c"
@@ -342,8 +342,8 @@ INTEGER	SMALLINT	TIMESTAMP
 };
 // clang-format on
 
-INSTANTIATE_TEST_SUITE_P(CSVImportTest, CSVImportTestSuite, testing::ValuesIn(CSV_IMPORT_TEST),
-                         CSVImportTest::TestPrinter());
+INSTANTIATE_TEST_SUITE_P(CSVInsertTest, CSVInsertTestSuite, testing::ValuesIn(CSV_IMPORT_TEST),
+                         CSVInsertTest::TestPrinter());
 
 TEST(CSVExportTest, TestExport) {
     auto path = duckdb::web::test::SOURCE_DIR / ".." / "data" / "test.csv";

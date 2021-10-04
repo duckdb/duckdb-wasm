@@ -1,3 +1,4 @@
+import * as arrow from 'apache-arrow';
 import { DuckDBModule, PThread } from './duckdb_module';
 import { DuckDBConfig } from './config';
 import { Logger } from '../log';
@@ -8,8 +9,6 @@ import { CSVTableOptions, JSONTableOptions } from './table_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
-import { InsertOptions } from './insert';
-import { RecordBatchStreamWriter } from 'apache-arrow';
 
 declare global {
     // eslint-disable-next-line no-var
@@ -233,12 +232,8 @@ export abstract class DuckDBBindings {
         return res;
     }
 
-    /** Start importing */
-    public startInsert(conn: number, options: InsertOptions) {
-        return 0 /* inserter-id */;
-    }
     /** Insert record batches from an arrow ipc stream */
-    public insertRecordBatchesFromStream(conn: number, inserter: number, buffer: Uint8Array) {
+    public insertArrowFromIPCStrea(conn: number, inserter: number, buffer: Uint8Array) {
         // XXX
     }
     /** Insert csv from path */

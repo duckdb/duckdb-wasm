@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-TEST(ParquetImportTest, LoadParquet) {
+TEST(ParquetLoadTest, LoadParquet) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};
     std::stringstream ss;
@@ -40,7 +40,7 @@ INTEGER	VARCHAR	INTEGER
 )TXT");
 }
 
-TEST(ParquetImportTest, LoadParquetTwice) {
+TEST(ParquetLoadTest, LoadParquetTwice) {
     auto db = make_shared<WebDB>();
     WebDB::Connection conn{*db};
     std::stringstream ss;

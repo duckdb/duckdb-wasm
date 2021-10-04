@@ -13,9 +13,9 @@ using namespace duckdb::web;
 
 namespace {
 
-struct JSONImportTest {
+struct JSONInsertTest {
     struct TestPrinter {
-        std::string operator()(const ::testing::TestParamInfo<JSONImportTest>& info) const {
+        std::string operator()(const ::testing::TestParamInfo<JSONInsertTest>& info) const {
             return std::string{info.param.name};
         }
     };
@@ -26,9 +26,9 @@ struct JSONImportTest {
     std::string expected_output;
 };
 
-struct JSONImportTestSuite : public testing::TestWithParam<JSONImportTest> {};
+struct JSONInsertTestSuite : public testing::TestWithParam<JSONInsertTest> {};
 
-TEST_P(JSONImportTestSuite, TestImport) {
+TEST_P(JSONInsertTestSuite, TestImport) {
     constexpr const char* path = "TEST";
 
     auto& test = GetParam();
@@ -46,7 +46,7 @@ TEST_P(JSONImportTestSuite, TestImport) {
 }
 
 // clang-format off
-static std::vector<JSONImportTest> JSON_IMPORT_TEST = {
+static std::vector<JSONInsertTest> JSON_IMPORT_TEST = {
     {
         .name = "rows_integers",
         .input = R"JSON([
@@ -122,7 +122,7 @@ INTEGER	SMALLINT	VARCHAR
 };
 // clang-format on
 
-INSTANTIATE_TEST_SUITE_P(JSONImportTest, JSONImportTestSuite, testing::ValuesIn(JSON_IMPORT_TEST),
-                         JSONImportTest::TestPrinter());
+INSTANTIATE_TEST_SUITE_P(JSONInsertTest, JSONInsertTestSuite, testing::ValuesIn(JSON_IMPORT_TEST),
+                         JSONInsertTest::TestPrinter());
 
 }  // namespace
