@@ -101,7 +101,7 @@ INTEGER	INTEGER	INTEGER
         .options = R"JSON({
             "schema": "main",
             "name": "foo",
-            "format": "row-array",
+            "shape": "row-array",
             "columns": [
                 { "name": "a", "type": "int32" },
                 { "name": "b", "type": "int16" },

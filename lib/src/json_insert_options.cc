@@ -26,18 +26,18 @@ enum FieldTag {
     COLUMNS,
     CREATE,
     DETECT,
-    FORMAT,
+    SHAPE,
     NAME,
     SCHEMA,
 };
 
 static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{
     {"create", FieldTag::CREATE}, {"createNew", FieldTag::CREATE},  {"schema", FieldTag::SCHEMA},
-    {"name", FieldTag::NAME},     {"format", FieldTag::FORMAT},     {"columns", FieldTag::COLUMNS},
+    {"name", FieldTag::NAME},     {"shape", FieldTag::SHAPE},       {"columns", FieldTag::COLUMNS},
     {"detect", FieldTag::DETECT}, {"autoDetect", FieldTag::DETECT},
 };
 
-static std::unordered_map<std::string_view, JSONTableShape> FORMATS{
+static std::unordered_map<std::string_view, JSONTableShape> SHAPES{
     {"row-array", JSONTableShape::ROW_ARRAY},
     {"column-object", JSONTableShape::COLUMN_OBJECT},
 };
@@ -75,11 +75,11 @@ arrow::Status JSONInsertOptions::ReadFrom(const rapidjson::Document& doc) {
                 auto_detect = iter->value.GetBool();
                 break;
 
-            case FieldTag::FORMAT: {
+            case FieldTag::SHAPE: {
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 auto format_iter =
-                    FORMATS.find(std::string_view{iter->value.GetString(), iter->value.GetStringLength()});
-                if (format_iter == FORMATS.end()) {
+                    SHAPES.find(std::string_view{iter->value.GetString(), iter->value.GetStringLength()});
+                if (format_iter == SHAPES.end()) {
                     return arrow::Status::Invalid("unknown table format: ", iter->value.GetString());
                 }
                 table_shape = format_iter->second;
