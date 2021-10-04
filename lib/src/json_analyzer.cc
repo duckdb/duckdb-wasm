@@ -14,7 +14,128 @@ namespace duckdb {
 namespace web {
 namespace json {
 
+std::string_view GetReaderEventName(ReaderEvent event) {
+    switch (event) {
+        case ReaderEvent::NONE:
+            return "NONE";
+        case ReaderEvent::KEY:
+            return "KEY";
+        case ReaderEvent::NULL_:
+            return "NULL_";
+        case ReaderEvent::STRING:
+            return "STRING";
+        case ReaderEvent::BOOL:
+            return "BOOL";
+        case ReaderEvent::INT32:
+            return "INT32";
+        case ReaderEvent::INT64:
+            return "INT64";
+        case ReaderEvent::UINT32:
+            return "UINT32";
+        case ReaderEvent::UINT64:
+            return "UINT64";
+        case ReaderEvent::DOUBLE:
+            return "DOUBLE";
+        case ReaderEvent::START_OBJECT:
+            return "START_OBJECT";
+        case ReaderEvent::START_ARRAY:
+            return "START_ARRAY";
+        case ReaderEvent::END_OBJECT:
+            return "END_OBJECT";
+        case ReaderEvent::END_ARRAY:
+            return "END_ARRAY";
+        default:
+            return "?";
+    }
+}
+
 namespace {
+
+/// A helper to remember the last JSON event for iterative parsing
+struct EventReader : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, EventReader> {
+    ReaderEvent event = ReaderEvent::NONE;
+    size_t depth = 0;
+
+    bool SetEvent(ReaderEvent e) {
+        event = e;
+        return true;
+    }
+    bool Key(const char* txt, size_t length, bool copy) { return SetEvent(ReaderEvent::KEY); }
+    bool Null() { return SetEvent(ReaderEvent::NULL_); }
+    bool RawNumber(const Ch* str, size_t len, bool copy) {
+        assert(false);
+        return false;
+    }
+    bool String(const char* txt, size_t length, bool copy) { return SetEvent(ReaderEvent::STRING); }
+    bool Bool(bool v) { return SetEvent(ReaderEvent::BOOL); }
+    bool Int(int32_t v) { return SetEvent(ReaderEvent::INT32); }
+    bool Int64(int64_t v) { return SetEvent(ReaderEvent::INT64); }
+    bool Uint(uint32_t v) { return SetEvent(ReaderEvent::UINT32); }
+    bool Uint64(uint64_t v) { return SetEvent(ReaderEvent::UINT64); }
+    bool Double(double v) { return SetEvent(ReaderEvent::DOUBLE); }
+    bool StartObject() {
+        ++depth;
+        return SetEvent(ReaderEvent::START_OBJECT);
+    }
+    bool StartArray() {
+        ++depth;
+        return SetEvent(ReaderEvent::START_ARRAY);
+    }
+    bool EndObject(size_t count) {
+        --depth;
+        return SetEvent(ReaderEvent::END_OBJECT);
+    }
+    bool EndArray(size_t count) {
+        --depth;
+        return SetEvent(ReaderEvent::END_ARRAY);
+    }
+};
+
+/// A helper to remember the last JSON key for iterative parsing
+struct KeyReader : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, KeyReader> {
+    ReaderEvent event = ReaderEvent::NONE;
+    std::string key_buffer = "";
+    std::string_view key = "";
+
+    std::string ReleaseKey() {
+        if (!key_buffer.empty()) {
+            key = {};
+            return std::move(key_buffer);
+        } else {
+            return std::string{std::move(key)};
+        }
+    }
+    bool SetEvent(ReaderEvent e) {
+        event = e;
+        return true;
+    }
+    bool Key(const char* txt, size_t length, bool copy) {
+        if (copy) {
+            key_buffer = std::string{txt, length};
+            key = key_buffer;
+        } else {
+            key_buffer.clear();
+            key = std::string_view{txt, length};
+        }
+        return SetEvent(ReaderEvent::KEY);
+    }
+    bool Null() { return SetEvent(ReaderEvent::NULL_); }
+    bool RawNumber(const Ch* str, size_t len, bool copy) {
+        assert(false);
+        return false;
+    }
+    bool String(const char* txt, size_t length, bool copy) { return SetEvent(ReaderEvent::STRING); }
+    bool Bool(bool v) { return SetEvent(ReaderEvent::BOOL); }
+    bool Int(int32_t v) { return SetEvent(ReaderEvent::INT32); }
+    bool Int64(int64_t v) { return SetEvent(ReaderEvent::INT64); }
+    bool Uint(uint32_t v) { return SetEvent(ReaderEvent::UINT32); }
+    bool Uint64(uint64_t v) { return SetEvent(ReaderEvent::UINT64); }
+    bool Double(double v) { return SetEvent(ReaderEvent::DOUBLE); }
+    bool StartObject() { return SetEvent(ReaderEvent::START_OBJECT); }
+    bool StartArray() { return SetEvent(ReaderEvent::START_ARRAY); }
+    bool EndObject(size_t count) { return SetEvent(ReaderEvent::END_OBJECT); }
+    bool EndArray(size_t count) { return SetEvent(ReaderEvent::END_ARRAY); }
+};
 
 /// Statistics about a JSON array.
 /// We use this to detect number and boolean types without a sample.

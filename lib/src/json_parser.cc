@@ -37,10 +37,12 @@
 #include "arrow/array/builder_time.h"
 #include "arrow/array/builder_union.h"
 #include "arrow/result.h"
+#include "arrow/status.h"
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
 #include "arrow/type_traits.h"
 #include "arrow/util/value_parsing.h"
+#include "duckdb/web/json_analyzer.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 
@@ -890,39 +892,18 @@ arrow::Result<std::shared_ptr<ArrayParser>> ArrayParser::ArrayParser::Resolve(
     return res;
 }
 
-std::string_view GetReaderEventName(ReaderEvent event) {
-    switch (event) {
-        case ReaderEvent::NONE:
-            return "NONE";
-        case ReaderEvent::KEY:
-            return "KEY";
-        case ReaderEvent::NULL_:
-            return "NULL_";
-        case ReaderEvent::STRING:
-            return "STRING";
-        case ReaderEvent::BOOL:
-            return "BOOL";
-        case ReaderEvent::INT32:
-            return "INT32";
-        case ReaderEvent::INT64:
-            return "INT64";
-        case ReaderEvent::UINT32:
-            return "UINT32";
-        case ReaderEvent::UINT64:
-            return "UINT64";
-        case ReaderEvent::DOUBLE:
-            return "DOUBLE";
-        case ReaderEvent::START_OBJECT:
-            return "START_OBJECT";
-        case ReaderEvent::START_ARRAY:
-            return "START_ARRAY";
-        case ReaderEvent::END_OBJECT:
-            return "END_OBJECT";
-        case ReaderEvent::END_ARRAY:
-            return "END_ARRAY";
-        default:
-            return "?";
+/// Parse an array from json
+arrow::Result<std::shared_ptr<arrow::Array>> ArrayFromJSON(const std::shared_ptr<arrow::DataType>& type,
+                                                           std::string_view json) {
+    rapidjson::Document json_doc;
+    try {
+        json_doc.Parse(json.begin(), json.size());
+    } catch (...) {
+        return arrow::Status::Invalid("invalid json document: ", json);
     }
+    ARROW_ASSIGN_OR_RAISE(auto parser, ArrayParser::Resolve(type));
+    ARROW_RETURN_NOT_OK(parser->AppendValues(json_doc));
+    return parser->Finish();
 }
 
 }  // namespace json

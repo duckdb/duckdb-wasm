@@ -17,6 +17,50 @@ namespace duckdb {
 namespace web {
 namespace json {
 
+/// A type analyzer
+class TypeAnalyzer {
+   protected:
+    /// The exact data type
+    std::shared_ptr<arrow::DataType> type_;
+
+    /// Constructor
+    TypeAnalyzer(std::shared_ptr<arrow::DataType> type);
+
+   public:
+    /// Virtual destructor
+    virtual ~TypeAnalyzer() = default;
+    /// Get the type
+    auto& type() { return type_; }
+    /// Check if a value is of the type
+    virtual bool TestValue(const rapidjson::Value& json_value) = 0;
+    /// Check if multiple values are of the type
+    virtual size_t TestValues(const std::vector<rapidjson::Value>& json_values) = 0;
+
+    /// Resolve a type analyzer
+    static std::unique_ptr<TypeAnalyzer> ResolveScalar(std::shared_ptr<arrow::DataType> type);
+};
+
+/// A reader event
+enum class ReaderEvent {
+    NONE,
+    KEY,
+    NULL_,
+    STRING,
+    BOOL,
+    INT32,
+    INT64,
+    UINT32,
+    UINT64,
+    DOUBLE,
+    START_OBJECT,
+    START_ARRAY,
+    END_OBJECT,
+    END_ARRAY,
+};
+
+/// Get the json reader event name
+std::string_view GetReaderEventName(ReaderEvent event);
+
 /// Infer the type of a JSON table
 arrow::Status InferTableType(std::istream& in, TableType& type);
 /// Find the column boundaries of a column-major JSON table

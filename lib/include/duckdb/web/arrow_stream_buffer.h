@@ -75,7 +75,8 @@ struct BufferingArrowIPCStreamDecoder : public arrow::ipc::StreamDecoder {
 
    public:
     /// Constructor
-    BufferingArrowIPCStreamDecoder();
+    BufferingArrowIPCStreamDecoder(
+        std::shared_ptr<ArrowIPCStreamBuffer> buffer = std::make_shared<ArrowIPCStreamBuffer>());
     /// Get the buffer
     auto& buffer() const { return buffer_; }
 };

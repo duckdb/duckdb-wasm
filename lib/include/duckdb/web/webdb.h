@@ -47,7 +47,7 @@ class WebDB {
         /// The next prepared statement id
         size_t next_prepared_statement_id_ = 0;
         /// The current arrow ipc input stream
-        std::optional<ArrowInsertOptions> arrow_insert_options_;
+        std::optional<ArrowInsertOptions> arrow_insert_options_ = std::nullopt;
         /// The current arrow ipc input stream
         std::unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
 

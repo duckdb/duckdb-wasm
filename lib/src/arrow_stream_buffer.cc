@@ -1,5 +1,7 @@
 #include "duckdb/web/arrow_stream_buffer.h"
 
+#include <iostream>
+
 namespace duckdb {
 namespace web {
 
@@ -62,8 +64,8 @@ std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::Cre
 }
 
 /// Constructor
-BufferingArrowIPCStreamDecoder::BufferingArrowIPCStreamDecoder()
-    : buffer_(std::make_shared<ArrowIPCStreamBuffer>()), arrow::ipc::StreamDecoder(buffer_) {}
+BufferingArrowIPCStreamDecoder::BufferingArrowIPCStreamDecoder(std::shared_ptr<ArrowIPCStreamBuffer> buffer)
+    : buffer_(buffer), arrow::ipc::StreamDecoder(buffer) {}
 
 }  // namespace web
 }  // namespace duckdb

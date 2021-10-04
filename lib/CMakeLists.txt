@@ -249,13 +249,14 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/glob_test.cc
       ${CMAKE_SOURCE_DIR}/test/ifstream_test.cc
-      ${CMAKE_SOURCE_DIR}/test/import_csv_test.cc
-      ${CMAKE_SOURCE_DIR}/test/import_json_test.cc
-      ${CMAKE_SOURCE_DIR}/test/import_parquet_test.cc
+      ${CMAKE_SOURCE_DIR}/test/insert_arrow_test.cc
+      ${CMAKE_SOURCE_DIR}/test/insert_csv_test.cc
+      ${CMAKE_SOURCE_DIR}/test/insert_json_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_analyzer_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
+      ${CMAKE_SOURCE_DIR}/test/parquet_test.cc
       ${CMAKE_SOURCE_DIR}/test/readahead_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc

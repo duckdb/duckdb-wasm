@@ -19,7 +19,7 @@ struct ArrowInsertOptions {
     /// The table name
     std::string table_name = "";
     /// Create a new table?
-    bool create_new = false;
+    bool create_new = true;
 
     /// Read from input stream
     arrow::Status ReadFrom(const rapidjson::Document& doc);
