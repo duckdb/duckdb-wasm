@@ -9,7 +9,7 @@ import {
 } from './worker_request';
 import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
-import { CSVTableOptions, JSONTableOptions } from '../bindings/table_options';
+import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from '../bindings/insert_options';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
@@ -140,8 +140,9 @@ export class AsyncDuckDB {
             case WorkerRequestType.DISCONNECT:
             case WorkerRequestType.DROP_FILES:
             case WorkerRequestType.FLUSH_FILES:
-            case WorkerRequestType.IMPORT_CSV_FROM_PATH:
-            case WorkerRequestType.IMPORT_JSON_FROM_PATH:
+            case WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM:
+            case WorkerRequestType.INSERT_CSV_FROM_PATH:
+            case WorkerRequestType.INSERT_JSON_FROM_PATH:
             case WorkerRequestType.INSTANTIATE:
             case WorkerRequestType.OPEN:
             case WorkerRequestType.PING:
@@ -421,8 +422,22 @@ export class AsyncDuckDB {
         await this.postTask(task);
     }
 
-    /** Import a csv file */
-    public async importCSVFromPath(conn: ConnectionID, path: string, options: CSVTableOptions): Promise<void> {
+    /** Insert arrow from an ipc stream */
+    public async insertArrowFromIPCStream(
+        conn: ConnectionID,
+        buffer: Uint8Array,
+        options: ArrowInsertOptions,
+    ): Promise<void> {
+        // Pass to the worker
+        const task = new WorkerTask<
+            WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
+            [number, Uint8Array, ArrowInsertOptions],
+            null
+        >(WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM, [conn, buffer, options]);
+        await this.postTask(task, [buffer.buffer]);
+    }
+    /** Insert a csv file */
+    public async insertCSVFromPath(conn: ConnectionID, path: string, options: CSVInsertOptions): Promise<void> {
         // Flatten the table options
         if (options.columns !== undefined) {
             const out = [];
@@ -435,14 +450,14 @@ export class AsyncDuckDB {
         }
 
         // Pass to the worker
-        const task = new WorkerTask<WorkerRequestType.IMPORT_CSV_FROM_PATH, [number, string, CSVTableOptions], null>(
-            WorkerRequestType.IMPORT_CSV_FROM_PATH,
+        const task = new WorkerTask<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions], null>(
+            WorkerRequestType.INSERT_CSV_FROM_PATH,
             [conn, path, options],
         );
         await this.postTask(task);
     }
-    /** Import a json file */
-    public async importJSONFromPath(conn: ConnectionID, path: string, options: JSONTableOptions): Promise<void> {
+    /** Insert a json file */
+    public async insertJSONFromPath(conn: ConnectionID, path: string, options: JSONInsertOptions): Promise<void> {
         // Flatten the table options
         if (options.columns !== undefined) {
             const out = [];
@@ -455,8 +470,8 @@ export class AsyncDuckDB {
         }
 
         // Pass to the worker
-        const task = new WorkerTask<WorkerRequestType.IMPORT_JSON_FROM_PATH, [number, string, JSONTableOptions], null>(
-            WorkerRequestType.IMPORT_JSON_FROM_PATH,
+        const task = new WorkerTask<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions], null>(
+            WorkerRequestType.INSERT_JSON_FROM_PATH,
             [conn, path, options],
         );
         await this.postTask(task);

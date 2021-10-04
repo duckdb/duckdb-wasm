@@ -1,5 +1,5 @@
 import * as arrow from 'apache-arrow';
-import { CSVTableOptions, JSONTableOptions } from './table_options';
+import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 
 interface IDuckDBBindings {
     disconnect(conn: number): void;
@@ -10,8 +10,9 @@ interface IDuckDBBindings {
     sendPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array;
     closePreparedStatement(conn: number, statement: number): void;
     fetchQueryResults(conn: number): Uint8Array;
-    importCSVFromPath(conn: number, path: string, options: CSVTableOptions): void;
-    importJSONFromPath(conn: number, path: string, options: JSONTableOptions): void;
+    insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: ArrowInsertOptions): void;
+    insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): void;
+    insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): void;
 }
 
 /** A result stream iterator */
@@ -118,11 +119,10 @@ export class DuckDBConnection {
         return reader as arrow.RecordBatchStreamReader;
     }
 
-    public importCSVFromPath(path: string, options: CSVTableOptions): void {
-        this._bindings.importCSVFromPath(this._conn, path, options);
+    public insertCSVFromPath(path: string, options: CSVInsertOptions): void {
+        this._bindings.insertCSVFromPath(this._conn, path, options);
     }
-
-    public importJSONFromPath(path: string, options: JSONTableOptions): void {
-        this._bindings.importJSONFromPath(this._conn, path, options);
+    public insertJSONFromPath(path: string, options: JSONInsertOptions): void {
+        this._bindings.insertJSONFromPath(this._conn, path, options);
     }
 }

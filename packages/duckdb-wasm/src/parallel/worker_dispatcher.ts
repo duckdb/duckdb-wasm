@@ -247,13 +247,18 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
-                case WorkerRequestType.IMPORT_CSV_FROM_PATH: {
-                    this._bindings.importCSVFromPath(request.data[0], request.data[1], request.data[2]);
+                case WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM: {
+                    this._bindings.insertArrowFromIPCStream(request.data[0], request.data[1], request.data[2]);
                     this.sendOK(request);
                     break;
                 }
-                case WorkerRequestType.IMPORT_JSON_FROM_PATH: {
-                    this._bindings.importJSONFromPath(request.data[0], request.data[1], request.data[2]);
+                case WorkerRequestType.INSERT_CSV_FROM_PATH: {
+                    this._bindings.insertCSVFromPath(request.data[0], request.data[1], request.data[2]);
+                    this.sendOK(request);
+                    break;
+                }
+                case WorkerRequestType.INSERT_JSON_FROM_PATH: {
+                    this._bindings.insertJSONFromPath(request.data[0], request.data[1], request.data[2]);
                     this.sendOK(request);
                     break;
                 }
