@@ -28,7 +28,7 @@ struct JSONAnalyzerTest {
     };
     std::string_view name;
     std::string_view input;
-    TableShape shape;
+    JSONTableShape shape;
     std::string_view type;
     std::vector<std::pair<std::string_view, std::string_view>> columns = {};
 };
@@ -44,7 +44,7 @@ TEST_P(JSONAnalyzerTestSuite, InferTableType) {
     ASSERT_TRUE(status.ok()) << status.message();
 
     ASSERT_EQ(table.shape, test.shape);
-    if (table.shape == TableShape::UNRECOGNIZED) {
+    if (table.shape == JSONTableShape::UNRECOGNIZED) {
         ASSERT_EQ(test.type, nullptr);
         return;
     }
@@ -70,7 +70,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
     {
         .name = "cols_empty",
         .input = R"JSON({})JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<>",
     },
     {
@@ -78,7 +78,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": []
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: null>",
         .columns = {
             {"a", "[]"}
@@ -89,7 +89,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [true, true, false]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: bool>",
         .columns = {
             {"a", "[true, true, false]"}
@@ -100,7 +100,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [1, 2, 3]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: int32>",
         .columns = {
             {"a", "[1, 2, 3]"}
@@ -111,7 +111,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [1, 2, 2147483648]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: uint32>",
         .columns = {
             {"a", "[1, 2, 2147483648]"}
@@ -122,7 +122,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [1, -2, 2147483648]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: int64>",
         .columns = {
             {"a", "[1, -2, 2147483648]"}
@@ -133,7 +133,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [1, 2, 9223372036854775808]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: uint64>",
         .columns = {
             {"a", "[1, 2, 9223372036854775808]"}
@@ -144,7 +144,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [-1, 2, 9223372036854775808]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: double>",
         .columns = {
             {"a", "[-1, 2, 9223372036854775808]"}
@@ -155,7 +155,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [1.0, 2.0, 3.0]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: double>",
         .columns = {
             {"a", "[1.0, 2.0, 3.0]"}
@@ -166,7 +166,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON({
             "a": [1, -2, 3.0, true]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: double>",
         .columns = {
             {"a", "[1, -2, 3.0, true]"}
@@ -183,7 +183,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
                 "2009-06-30 18:30:00"
             ]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: timestamp[s]>",
         .columns = {
             {"a", R"JSON([
@@ -205,7 +205,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
                 "2009-06-30 18:30:00"
             ]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: timestamp[s]>",
         .columns = {
             {"a", R"JSON([
@@ -222,7 +222,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             "a": [1, -2, 3],
             "b": ["c", "d", "e"]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: int32, b: string>",
         .columns = {
             {"a", "[1, -2, 3]"},
@@ -236,7 +236,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             "b": ["c", "d", "e"],
             "f": [true, true, false]
         })JSON",
-        .shape = TableShape::COLUMN_OBJECT,
+        .shape = JSONTableShape::COLUMN_OBJECT,
         .type = "struct<a: int32, b: string, f: bool>",
         .columns = {
             {"a", "[1, -2, 3]"},
@@ -250,7 +250,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
     {
         .name = "rows_empty",
         .input = R"JSON([])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<>"
     },
     {
@@ -260,7 +260,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": true },
             { "a": false }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: bool>"
     },
     {
@@ -270,7 +270,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": 2 },
             { "a": 3 }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: int32>"
     },
     {
@@ -280,7 +280,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": 2 },
             { "a": 2147483648 }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: uint32>"
     },
     {
@@ -290,7 +290,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": -2 },
             { "a": 2147483648 }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: uint64>"
     },
     {
@@ -300,7 +300,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": 2 },
             { "a": 9223372036854775808 }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: uint64>"
     },
     {
@@ -310,7 +310,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": -2 },
             { "a": 9223372036854775808 }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: double>"
     },
     {
@@ -320,7 +320,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": 2.0 },
             { "a": 3.0 }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: double>"
     },
     {
@@ -331,7 +331,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": 3.0 },
             { "a": true }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: double>"
     },
     {
@@ -343,7 +343,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": "2009-01-01 12:00:00" },
             { "a": "2009-06-30 18:30:00" }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: timestamp[s]>"
     },
     {
@@ -355,7 +355,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": "2009-01-01 12:00:00" },
             { "a": "2009-06-30 18:30:00" }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: timestamp[s]>"
     },
     {
@@ -365,7 +365,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": -2, "b": "d" },
             { "a": 3, "b": "e" }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: int32, b: string>"
     },
     {
@@ -375,7 +375,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
             { "a": -2, "b": "d", "f": true },
             { "a": 3, "b": "e", "f": false }
         ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<a: int32, b: string, f: bool>"
     },
     {
@@ -388,7 +388,7 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
     {"Title": "Slam", "US Gross": 1009819, "Worldwide Gross": 1087521, "US DVD Sales": null, "Production Budget": 1000000, "Release Date": "Oct 09 1998", "MPAA Rating": "R", "Running Time min": null, "Distributor": "Trimark", "Source": "Original Screenplay", "Major Genre": "Drama", "Creative Type": "Contemporary Fiction", "Director": null, "Rotten Tomatoes Rating": 62, "IMDB Rating": 3.4, "IMDB Votes": 165},
     {"Title": "Pirates", "US Gross": 1641825, "Worldwide Gross": 6341825, "US DVD Sales": null, "Production Budget": 40000000, "Release Date": "Jul 01 1986", "MPAA Rating": "R", "Running Time min": null, "Distributor": null, "Source": null, "Major Genre": null, "Creative Type": null, "Director": "Roman Polanski", "Rotten Tomatoes Rating": 25, "IMDB Rating": 5.8, "IMDB Votes": 3275},
 ])JSON",
-        .shape = TableShape::ROW_ARRAY,
+        .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<Creative Type: string, Director: string, Distributor: string, IMDB Rating: double, IMDB Votes: int32, MPAA Rating: string, Major Genre: string, Production Budget: int32, Release Date: string, Rotten Tomatoes Rating: int32, Running Time min: null, Source: string, Title: string, US DVD Sales: null, US Gross: int32, Worldwide Gross: int32>",
     }
 };

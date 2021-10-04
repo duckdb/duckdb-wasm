@@ -68,20 +68,16 @@ struct ArrowIPCStreamBufferReader : public arrow::RecordBatchReader {
         duckdb::TableFilterCollection* filters);
 };
 
-struct ArrowIPCStreamDecoder {
+struct BufferingArrowIPCStreamDecoder : public arrow::ipc::StreamDecoder {
    protected:
-    /// The decoder
-    std::unique_ptr<arrow::ipc::StreamDecoder> decoder_;
     /// The buffer
     std::shared_ptr<ArrowIPCStreamBuffer> buffer_;
 
    public:
     /// Constructor
-    ArrowIPCStreamDecoder();
+    BufferingArrowIPCStreamDecoder();
     /// Get the buffer
-    std::shared_ptr<ArrowIPCStreamBuffer> buffer() const;
-    /// Consume a buffer
-    arrow::Status Consume(nonstd::span<uint8_t> buffer);
+    auto& buffer() const { return buffer_; }
 };
 
 }  // namespace web

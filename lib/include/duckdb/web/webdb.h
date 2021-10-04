@@ -9,15 +9,12 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "arrow/io/buffered.h"
-#include "arrow/io/interfaces.h"
-#include "arrow/ipc/writer.h"
 #include "duckdb.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/parser.hpp"
+#include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/config.h"
-#include "duckdb/web/insert.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
@@ -26,6 +23,8 @@
 
 namespace duckdb {
 namespace web {
+
+struct BufferingArrowIPCStreamDecoder;
 
 class WebDB {
    public:
@@ -43,17 +42,15 @@ class WebDB {
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
         /// The current patched arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_patched_ = nullptr;
-        /// The currently active inserts
-        std::vector<Insert> current_inserts_;
         /// The currently active prepared statements
         std::unordered_map<size_t, std::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
-        /// The next insert id
-        size_t next_insert_id = 0;
         /// The next prepared statement id
         size_t next_prepared_statement_id_ = 0;
+        /// The current arrow ipc input stream
+        std::optional<ArrowInsertOptions> arrow_insert_options_;
+        /// The current arrow ipc input stream
+        std::unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
 
-        /// Get the insert
-        arrow::Result<Insert*> GetInsert(uint32_t insert_id);
         // Fully materialize a given result set and return it as an Arrow Buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(
             std::unique_ptr<duckdb::QueryResult> result);
@@ -66,6 +63,8 @@ class WebDB {
        public:
         /// Constructor
         Connection(WebDB& webdb);
+        /// Destructor
+        ~Connection();
 
         /// Get a connection
         auto& connection() { return connection_; }
@@ -90,21 +89,12 @@ class WebDB {
         /// Close a prepared statement by its identifier
         arrow::Status ClosePreparedStatement(size_t statement_id);
 
-        /// Start inserting data
-        arrow::Result<uint32_t> StartInsert(std::string_view options);
         /// Insert an arrow record batch from an IPC stream
-        arrow::Status InsertArrowFromIPCStream(uint32_t inserter_id, nonstd::span<uint8_t> stream);
+        arrow::Status InsertArrowFromIPCStream(nonstd::span<const uint8_t> stream, std::string_view options);
         /// Insert csv data from a path
-        arrow::Status InsertCSVFromPath(uint32_t inserter_id, std::string_view path, std::string_view options);
+        arrow::Status InsertCSVFromPath(std::string_view path, std::string_view options);
         /// Insert json data from a path
-        arrow::Status InsertJSONFromPath(uint32_t inserter_id, std::string_view path, std::string_view options);
-        /// Finish inserting data
-        arrow::Status FinishInsert(uint32_t insert_id);
-
-        /// Import a csv file
-        arrow::Status ImportCSVTable(std::string_view path, std::string_view options);
-        /// Import a json file
-        arrow::Status ImportJSONTable(std::string_view path, std::string_view options);
+        arrow::Status InsertJSONFromPath(std::string_view path, std::string_view options);
     };
 
    protected:

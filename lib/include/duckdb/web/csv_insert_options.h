@@ -14,11 +14,13 @@ namespace web {
 namespace csv {
 
 /// Get the CSV reader options
-struct TableReaderOptions {
+struct CSVInsertOptions {
     /// The schema name
     std::string schema_name = "";
     /// The table name
     std::string table_name = "";
+    /// Create a new table?
+    bool create_new = true;
     /// Contains header?
     std::optional<bool> header = std::nullopt;
     /// Specified delimiter?

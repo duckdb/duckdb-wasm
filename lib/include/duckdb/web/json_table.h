@@ -11,8 +11,8 @@
 #include "duckdb/common/arrow.hpp"
 #include "duckdb/common/arrow_wrapper.hpp"
 #include "duckdb/web/io/ifstream.h"
+#include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_parser.h"
-#include "duckdb/web/json_table_options.h"
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
 
@@ -30,7 +30,7 @@ struct FileRange {
 
 struct TableType {
     /// The shape
-    TableShape shape = TableShape::UNRECOGNIZED;
+    JSONTableShape shape = JSONTableShape::UNRECOGNIZED;
     /// The type
     std::shared_ptr<arrow::DataType> type = nullptr;
     /// The column boundaries

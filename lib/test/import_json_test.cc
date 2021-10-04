@@ -38,7 +38,7 @@ TEST_P(JSONImportTestSuite, TestImport) {
 
     auto db = std::make_shared<WebDB>("", std::move(memory_filesystem));
     WebDB::Connection conn{*db};
-    auto maybe_ok = conn.ImportJSONTable(path, test.options);
+    auto maybe_ok = conn.InsertJSONFromPath(path, test.options);
     ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
 
     auto result = conn.connection().Query(std::string{test.query});
