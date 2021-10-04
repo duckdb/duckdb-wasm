@@ -5,8 +5,8 @@
 #include "arrow/record_batch.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/json_analyzer.h"
+#include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_parser.h"
-#include "duckdb/web/json_table_options.h"
 #include "duckdb/web/test/config.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
@@ -21,7 +21,7 @@ namespace {
 TEST(TableReaderOptions, NoFormat1) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({})JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     ASSERT_TRUE(options.ReadFrom(doc).ok());
     ASSERT_EQ(options.table_shape, std::nullopt);
@@ -32,7 +32,7 @@ TEST(TableReaderOptions, NoFormat2) {
     doc.Parse(R"JSON({
         "foo": "bar"
     })JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     ASSERT_TRUE(options.ReadFrom(doc).ok());
     ASSERT_EQ(options.table_shape, std::nullopt);
@@ -43,11 +43,11 @@ TEST(TableReaderOptions, FormatRowArray) {
     doc.Parse(R"JSON({
         "format": "row-array"
     })JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     ASSERT_TRUE(options.ReadFrom(doc).ok());
     ASSERT_TRUE(options.table_shape.has_value());
-    ASSERT_EQ(*options.table_shape, json::TableShape::ROW_ARRAY);
+    ASSERT_EQ(*options.table_shape, json::JSONTableShape::ROW_ARRAY);
 }
 
 TEST(TableReaderOptions, FormatColumnObject) {
@@ -55,11 +55,11 @@ TEST(TableReaderOptions, FormatColumnObject) {
     doc.Parse(R"JSON({
         "format": "column-object"
     })JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     ASSERT_TRUE(options.ReadFrom(doc).ok());
     ASSERT_TRUE(options.table_shape.has_value());
-    ASSERT_EQ(*options.table_shape, json::TableShape::COLUMN_OBJECT);
+    ASSERT_EQ(*options.table_shape, json::JSONTableShape::COLUMN_OBJECT);
 }
 
 TEST(TableReaderOptions, FormatInvalidString) {
@@ -67,7 +67,7 @@ TEST(TableReaderOptions, FormatInvalidString) {
     doc.Parse(R"JSON({
         "format": "invalid"
     })JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     auto status = options.ReadFrom(doc);
     ASSERT_FALSE(status.ok());
@@ -78,7 +78,7 @@ TEST(TableReaderOptions, FormatInvalidInt) {
     doc.Parse(R"JSON({
         "format": 42 
     })JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     auto status = options.ReadFrom(doc);
     ASSERT_FALSE(status.ok());
@@ -93,11 +93,11 @@ TEST(TableReaderOptions, Fields) {
             {"name": "bar", "type": "utf8"}
         ]
     })JSON");
-    json::TableReaderOptions options;
+    json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
     auto status = options.ReadFrom(doc);
     ASSERT_TRUE(status.ok());
-    ASSERT_EQ(options.table_shape, json::TableShape::ROW_ARRAY);
+    ASSERT_EQ(options.table_shape, json::JSONTableShape::ROW_ARRAY);
     ASSERT_TRUE(options.columns.has_value());
     ASSERT_EQ(options.columns->size(), 2);
     ASSERT_EQ(options.columns->at(0)->name(), "foo");
@@ -122,7 +122,7 @@ struct TableReaderTest {
     std::string_view name;
     std::string_view input;
     size_t batch_size;
-    json::TableShape expected_shape;
+    json::JSONTableShape expected_shape;
     std::string_view expected_type;
     std::vector<std::string_view> expected_batches;
 };
@@ -178,7 +178,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "foo": [1, 4]
         })JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<foo: int32>",
         .expected_batches = {
             "foo:   [\n    1,\n    4\n  ]\n"
@@ -191,7 +191,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "bar": [3, 2]
         })JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<bar: int32, foo: int32>",
         .expected_batches = {
             "bar:   [\n    3,\n    2\n  ]\nfoo:   [\n    1,\n    4\n  ]\n"
@@ -204,7 +204,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "bar": [3]
         })JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<bar: int32, foo: int32>",
         .expected_batches = {
             "bar:   [\n    3,\n    null\n  ]\nfoo:   [\n    1,\n    4\n  ]\n"
@@ -217,7 +217,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "bar": []
         })JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<bar: null, foo: int32>",
         .expected_batches = {
             "bar: 2 nulls\nfoo:   [\n    1,\n    4\n  ]\n"
@@ -230,7 +230,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "bar": [3, 2]
         })JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<bar: int32, foo: int32>",
         .expected_batches = {
             "bar:   [\n    3,\n    2\n  ]\nfoo:   [\n    1,\n    null\n  ]\n"
@@ -242,7 +242,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "foo": [1, 2, 3, 4, 5, 6, 7, 8]
         })JSON",
         .batch_size = 4,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<foo: int32>",
         .expected_batches = {
             "foo:   [\n    1,\n    2,\n    3,\n    4\n  ]\n",
@@ -255,7 +255,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "foo": [1, 2, 3, 4, 5, 6, 7, 8, 9]
         })JSON",
         .batch_size = 4,
-        .expected_shape = json::TableShape::COLUMN_OBJECT,
+        .expected_shape = json::JSONTableShape::COLUMN_OBJECT,
         .expected_type = "struct<foo: int32>",
         .expected_batches = {
             "foo:   [\n    1,\n    2,\n    3,\n    4\n  ]\n",
@@ -273,7 +273,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             {"foo": 4}
         ])JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::ROW_ARRAY,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
         .expected_type = "struct<foo: int32>",
         .expected_batches = {
             "foo:   [\n    1,\n    4\n  ]\n"
@@ -286,7 +286,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             {"foo": 4, "bar": 3}
         ])JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::ROW_ARRAY,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
         .expected_type = "struct<bar: int32, foo: int32>",
         .expected_batches = {
             "bar:   [\n    2,\n    3\n  ]\nfoo:   [\n    1,\n    4\n  ]\n"
@@ -299,7 +299,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             {"foo": 4}
         ])JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::ROW_ARRAY,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
         .expected_type = "struct<bar: int32, foo: int32>",
         .expected_batches = {
             "bar:   [\n    2,\n    null\n  ]\nfoo:   [\n    1,\n    4\n  ]\n"
@@ -312,7 +312,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             {}
         ])JSON",
         .batch_size = 10,
-        .expected_shape = json::TableShape::ROW_ARRAY,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
         .expected_type = "struct<bar: int32, foo: int32>",
         .expected_batches = {
             "bar:   [\n    2,\n    null\n  ]\nfoo:   [\n    1,\n    null\n  ]\n"
@@ -331,7 +331,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             {"foo": 8}
         ])JSON",
         .batch_size = 4,
-        .expected_shape = json::TableShape::ROW_ARRAY,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
         .expected_type = "struct<foo: int32>",
         .expected_batches = {
             "foo:   [\n    1,\n    2,\n    3,\n    4\n  ]\n",
@@ -352,7 +352,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             {"foo": 9},
         ])JSON",
         .batch_size = 4,
-        .expected_shape = json::TableShape::ROW_ARRAY,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
         .expected_type = "struct<foo: int32>",
         .expected_batches = {
             "foo:   [\n    1,\n    2,\n    3,\n    4\n  ]\n",
@@ -389,7 +389,7 @@ TEST_P(TableImportTestSuite, ImportFile) {
     auto options = R"JSON({
         "name": "sometable"
     })JSON";
-    auto status = conn.ImportJSONTable(input.string(), options);
+    auto status = conn.InsertJSONFromPath(input.string(), options);
     ASSERT_TRUE(status.ok()) << status.message();
 }
 

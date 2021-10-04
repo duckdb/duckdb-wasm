@@ -53,7 +53,7 @@ TEST_P(CSVImportTestSuite, TestImport) {
 
     auto db = std::make_shared<WebDB>("", std::move(memory_filesystem));
     WebDB::Connection conn{*db};
-    auto maybe_ok = conn.ImportCSVTable(path, test.options);
+    auto maybe_ok = conn.InsertCSVFromPath(path, test.options);
     ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
 
     auto result = conn.connection().Query(std::string{test.query});
@@ -351,7 +351,7 @@ TEST(CSVExportTest, TestExport) {
     // Import csv
     auto db = std::make_shared<WebDB>();
     WebDB::Connection conn{*db};
-    auto maybe_ok = conn.ImportCSVTable(path.c_str(), R"JSON({
+    auto maybe_ok = conn.InsertCSVFromPath(path.c_str(), R"JSON({
         "schema": "main",
         "name": "foo"
     })JSON");
@@ -363,7 +363,7 @@ TEST(CSVExportTest, TestExport) {
         .ok();
 
     // Import csv again
-    maybe_ok = conn.ImportCSVTable(path.c_str(), R"JSON({
+    maybe_ok = conn.InsertCSVFromPath(path.c_str(), R"JSON({
         "schema": "main",
         "name": "foo2"
     })JSON");

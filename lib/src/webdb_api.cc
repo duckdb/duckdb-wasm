@@ -166,16 +166,24 @@ void duckdb_web_query_fetch_results(WASMResponse* packed, ConnectionHdl connHdl)
     auto r = c->FetchQueryResults();
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
-/// Import csv table from file
-void duckdb_web_import_csv_table(WASMResponse* packed, ConnectionHdl connHdl, const char* path, const char* options) {
+/// Insert arrow from an ipc stream
+void duckdb_web_insert_arrow_from_ipc_stream(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
+                                             size_t buffer_length, const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->ImportCSVTable(std::string_view{path}, std::string_view{options});
+    auto r = c->InsertArrowFromIPCStream(nonstd::span{buffer, buffer_length}, std::string_view{options});
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
-/// Import json table from file
-void duckdb_web_import_json_table(WASMResponse* packed, ConnectionHdl connHdl, const char* path, const char* options) {
+/// Insert csv from a file
+void duckdb_web_insert_csv_table(WASMResponse* packed, ConnectionHdl connHdl, const char* path, const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->ImportJSONTable(std::string_view{path}, std::string_view{options});
+    auto r = c->InsertCSVFromPath(std::string_view{path}, std::string_view{options});
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
+/// Insert json from a file
+void duckdb_web_insert_json_from_path(WASMResponse* packed, ConnectionHdl connHdl, const char* path,
+                                      const char* options) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->InsertJSONFromPath(std::string_view{path}, std::string_view{options});
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 

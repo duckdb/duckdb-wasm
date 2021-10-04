@@ -62,14 +62,8 @@ std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::Cre
 }
 
 /// Constructor
-ArrowIPCStreamDecoder::ArrowIPCStreamDecoder() : decoder_(), buffer_() {}
-/// Get the buffer
-std::shared_ptr<ArrowIPCStreamBuffer> ArrowIPCStreamDecoder::buffer() const { return buffer_; }
-/// Consume a buffer
-arrow::Status ArrowIPCStreamDecoder::Consume(nonstd::span<uint8_t> buffer) {
-    assert(decoder_.get() != nullptr);
-    return decoder_->Consume(buffer.data(), buffer.size());
-}
+BufferingArrowIPCStreamDecoder::BufferingArrowIPCStreamDecoder()
+    : buffer_(std::make_shared<ArrowIPCStreamBuffer>()), arrow::ipc::StreamDecoder(buffer_) {}
 
 }  // namespace web
 }  // namespace duckdb

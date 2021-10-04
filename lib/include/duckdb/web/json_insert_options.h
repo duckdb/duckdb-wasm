@@ -14,7 +14,7 @@ namespace web {
 namespace json {
 
 /// Get the table shape
-enum TableShape {
+enum JSONTableShape {
     // Unknown table shape
     UNRECOGNIZED,
     // Document is an array of rows.
@@ -26,15 +26,17 @@ enum TableShape {
 };
 
 /// Get the JSON reader options
-struct TableReaderOptions {
+struct JSONInsertOptions {
     /// The schema name
     std::string schema_name = "";
     /// The table name
     std::string table_name = "";
+    /// Create a new table?
+    bool create_new = true;
     /// Specified auto-detect?
     std::optional<bool> auto_detect = std::nullopt;
     /// The table shape
-    std::optional<TableShape> table_shape = std::nullopt;
+    std::optional<JSONTableShape> table_shape = std::nullopt;
     /// Specified columns?
     std::optional<std::vector<std::shared_ptr<arrow::Field>>> columns = std::nullopt;
 

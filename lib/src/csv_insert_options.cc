@@ -1,4 +1,4 @@
-#include "duckdb/web/csv_table_options.h"
+#include "duckdb/web/csv_insert_options.h"
 
 #include <iostream>
 #include <memory>
@@ -9,6 +9,7 @@
 #include "arrow/status.h"
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
+#include "duckdb/web/insert_options.h"
 #include "duckdb/web/json_typedef.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
@@ -20,48 +21,6 @@ namespace csv {
 
 namespace {
 
-/// Get a type name
-std::string_view GetTypeName(rapidjson::Type type) {
-    switch (type) {
-        case rapidjson::Type::kArrayType:
-            return "array";
-        case rapidjson::Type::kTrueType:;
-        case rapidjson::Type::kFalseType:
-            return "boolean";
-        case rapidjson::Type::kNumberType:
-            return "number";
-        case rapidjson::Type::kObjectType:
-            return "object";
-        case rapidjson::Type::kNullType:
-            return "null";
-        case rapidjson::Type::kStringType:
-            return "string";
-        default:
-            return "?";
-    }
-}
-
-/// Require a boolean field
-arrow::Status RequireBoolField(const rapidjson::Value& value, std::string_view name) {
-    if (!value.IsBool()) {
-        std::stringstream msg;
-        msg << "type mismatch for field '" << name << "': expected bool, received " << GetTypeName(value.GetType());
-        return arrow::Status(arrow::StatusCode::Invalid, msg.str());
-    }
-    return arrow::Status::OK();
-}
-
-/// Require a certain field type
-arrow::Status RequireFieldType(const rapidjson::Value& value, rapidjson::Type type, std::string_view field) {
-    if (value.GetType() != type) {
-        std::stringstream msg;
-        msg << "type mismatch for field '" << field << "': expected " << GetTypeName(type) << ", received "
-            << GetTypeName(value.GetType());
-        return arrow::Status(arrow::StatusCode::Invalid, msg.str());
-    }
-    return arrow::Status::OK();
-};
-
 enum FieldTag {
     COLUMNS,
     DELIMITER,
@@ -70,6 +29,7 @@ enum FieldTag {
     HEADER,
     NAME,
     QUOTE,
+    CREATE,
     SCHEMA,
     SKIP,
     DATEFORMAT,
@@ -77,26 +37,28 @@ enum FieldTag {
 };
 
 static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{
-    {"schema", FieldTag::SCHEMA},
-    {"name", FieldTag::NAME},
+    {"autoDetect", FieldTag::DETECT},
     {"columns", FieldTag::COLUMNS},
-    {"fields", FieldTag::COLUMNS},
-    {"escape", FieldTag::ESCAPE},
-    {"quote", FieldTag::QUOTE},
+    {"create", FieldTag::CREATE},
+    {"createNew", FieldTag::CREATE},
+    {"dateFormat", FieldTag::DATEFORMAT},
     {"delim", FieldTag::DELIMITER},
     {"delimiter", FieldTag::DELIMITER},
-    {"skip", FieldTag::SKIP},
-    {"header", FieldTag::HEADER},
     {"detect", FieldTag::DETECT},
-    {"autoDetect", FieldTag::DETECT},
-    {"dateFormat", FieldTag::DATEFORMAT},
+    {"escape", FieldTag::ESCAPE},
+    {"fields", FieldTag::COLUMNS},
+    {"header", FieldTag::HEADER},
+    {"name", FieldTag::NAME},
+    {"quote", FieldTag::QUOTE},
+    {"schema", FieldTag::SCHEMA},
+    {"skip", FieldTag::SKIP},
     {"timestampFormat", FieldTag::TIMESTAMPFORMAT},
 };
 
 }  // namespace
 
 /// Read from document
-arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
+arrow::Status CSVInsertOptions::ReadFrom(const rapidjson::Document& doc) {
     if (!doc.IsObject()) return arrow::Status::OK();
     for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
         std::string_view name{iter->name.GetString(), iter->name.GetStringLength()};
@@ -105,6 +67,12 @@ arrow::Status TableReaderOptions::ReadFrom(const rapidjson::Document& doc) {
         if (tag_iter == FIELD_TAGS.end()) continue;
 
         switch (tag_iter->second) {
+            case FieldTag::CREATE: {
+                ARROW_RETURN_NOT_OK(RequireBoolField(iter->value, name));
+                create_new = iter->value.GetBool();
+                break;
+            }
+
             case FieldTag::COLUMNS: {
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kArrayType, name));
                 const auto columns_array = iter->value.GetArray();

@@ -29,8 +29,10 @@
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/arrow_casts.h"
+#include "duckdb/web/arrow_insert_options.h"
+#include "duckdb/web/arrow_stream_buffer.h"
 #include "duckdb/web/arrow_type_mapping.h"
-#include "duckdb/web/csv_table_options.h"
+#include "duckdb/web/csv_insert_options.h"
 #include "duckdb/web/ext/table_function_relation.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
@@ -38,8 +40,8 @@
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/json_analyzer.h"
+#include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_table.h"
-#include "duckdb/web/json_table_options.h"
 #include "parquet-extension.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
@@ -58,15 +60,8 @@ WebDB& WebDB::Get() {
 
 /// Constructor
 WebDB::Connection::Connection(WebDB& webdb) : webdb_(webdb), connection_(*webdb.database_) {}
-
-arrow::Result<Insert*> WebDB::Connection::GetInsert(uint32_t insert_id) {
-    auto insert_iter = std::find_if(current_inserts_.begin(), current_inserts_.end(),
-                                    [&](auto& v) { return v.insert_id == insert_id; });
-    if (insert_iter == current_inserts_.end()) {
-        return arrow::Status::Invalid("invalid insert id: ", insert_id);
-    }
-    return &*insert_iter;
-}
+/// Constructor
+WebDB::Connection::~Connection() = default;
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(
     std::unique_ptr<duckdb::QueryResult> result) {
@@ -256,39 +251,39 @@ arrow::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
 }
 
 /// Insert a record batch
-arrow::Result<uint32_t> WebDB::Connection::StartInsert(std::string_view options_json) {
-    /// Read table options
-    rapidjson::Document options_doc;
-    options_doc.Parse(options_json.begin(), options_json.size());
-
-    // Create insert
-    auto insert_id = next_insert_id++;
-    InsertOptions options;
-    ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
-    current_inserts_.emplace_back(insert_id, options);
-
-    // Return insert id
-    return insert_id;
-}
-
-/// Insert a record batch
-arrow::Status WebDB::Connection::InsertArrowFromIPCStream(uint32_t insert_id, nonstd::span<uint8_t> stream) {
-    ARROW_ASSIGN_OR_RAISE(auto* insert, GetInsert(insert_id));
+arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uint8_t> stream,
+                                                          std::string_view options_json) {
     try {
-        // Already reached end of stream?
-        auto& ipc_stream = insert->getArrowIPCStream();
-        if (ipc_stream.buffer()->is_eos()) {
-            return arrow::Status::OK();
+        // First call?
+        if (!arrow_ipc_stream_) {
+            arrow_insert_options_.reset();
+            arrow_ipc_stream_.reset();
+        }
+
+        /// Read table options
+        if (!options_json.empty()) {
+            rapidjson::Document options_doc;
+            options_doc.Parse(options_json.begin(), options_json.size());
+            arrow_insert_options_.emplace();
+            ARROW_RETURN_NOT_OK(arrow_insert_options_->ReadFrom(options_doc));
+        }
+
+        // Create ipc stream
+        if (!arrow_ipc_stream_) {
+            arrow_ipc_stream_ = std::make_unique<BufferingArrowIPCStreamDecoder>();
         }
 
         /// Consume stream bytes
-        ARROW_RETURN_NOT_OK(ipc_stream.Consume(stream));
-        if (!ipc_stream.buffer()->is_eos()) {
+        ARROW_RETURN_NOT_OK(arrow_ipc_stream_->Consume(stream.data(), stream.size()));
+        if (!arrow_ipc_stream_->buffer()->is_eos()) {
             return arrow::Status::OK();
+        }
+        if (!arrow_insert_options_) {
+            return arrow::Status::Invalid("reached end of arrow IPC stream without arrow insert options");
         }
 
         // Prepare stream reader
-        auto stream_reader = std::make_shared<ArrowIPCStreamBufferReader>(ipc_stream.buffer());
+        auto stream_reader = std::make_shared<ArrowIPCStreamBufferReader>(arrow_ipc_stream_->buffer());
         auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
         stream_wrapper->arrow_array_stream.release = nullptr;
         ARROW_RETURN_NOT_OK(arrow::ExportRecordBatchReader(stream_reader, &stream_wrapper->arrow_array_stream));
@@ -302,26 +297,29 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(uint32_t insert_id, no
         auto func = connection_.TableFunction("arrow_scan", params);
 
         /// Create or insert
-        if (insert->options.create_new && insert->insert_calls == 0) {
-            func->Create(insert->options.schema_name, insert->options.table_name);
+        if (arrow_insert_options_->create_new) {
+            func->Create(arrow_insert_options_->schema_name, arrow_insert_options_->table_name);
         } else {
-            func->Insert(insert->options.schema_name, insert->options.table_name);
+            func->Insert(arrow_insert_options_->schema_name, arrow_insert_options_->table_name);
         }
-        insert->insert_calls += 1;
+
+        // Reset the ipc stream
+        arrow_insert_options_.reset();
+        arrow_ipc_stream_.reset();
     } catch (const std::exception& e) {
+        arrow_insert_options_.reset();
+        arrow_ipc_stream_.reset();
         return arrow::Status::UnknownError(e.what());
     }
     return arrow::Status::OK();
 }
 /// Import a csv file
-arrow::Status WebDB::Connection::InsertCSVFromPath(uint32_t insert_id, std::string_view path,
-                                                   std::string_view options_json) {
-    ARROW_ASSIGN_OR_RAISE(auto* insert, GetInsert(insert_id));
+arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::string_view options_json) {
     try {
         /// Read table options
         rapidjson::Document options_doc;
         options_doc.Parse(options_json.begin(), options_json.size());
-        csv::TableReaderOptions options;
+        csv::CSVInsertOptions options;
         ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
 
         /// Get table name and schema
@@ -371,12 +369,11 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(uint32_t insert_id, std::stri
             std::make_shared<TableFunctionRelation>(*connection_.context, "read_csv", unnamed_params, named_params);
 
         /// Create or insert
-        if (insert->options.create_new && insert->insert_calls == 0) {
-            func->Create(schema_name, options.table_name);
+        if (options.create_new) {
+            func->Create(options.schema_name, options.table_name);
         } else {
-            func->Insert(schema_name, options.table_name);
+            func->Insert(options.schema_name, options.table_name);
         }
-        insert->insert_calls += 1;
 
     } catch (const std::exception& e) {
         return arrow::Status::UnknownError(e.what());
@@ -385,14 +382,12 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(uint32_t insert_id, std::stri
 }
 
 /// Import a json file
-arrow::Status WebDB::Connection::InsertJSONFromPath(uint32_t insert_id, std::string_view path,
-                                                    std::string_view options_json) {
-    ARROW_ASSIGN_OR_RAISE(auto* insert, GetInsert(insert_id));
+arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::string_view options_json) {
     try {
         /// Read table options
         rapidjson::Document options_doc;
         options_doc.Parse(options_json.begin(), options_json.size());
-        json::TableReaderOptions options;
+        json::JSONInsertOptions options;
         ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
 
         /// Get table name and schema
@@ -403,7 +398,7 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(uint32_t insert_id, std::str
         auto ifs = std::make_unique<io::InputFileStream>(webdb_.file_page_buffer_, path);
         // Do we need to run the analyzer?
         json::TableType table_type;
-        if (!options.table_shape || options.table_shape == json::TableShape::UNRECOGNIZED ||
+        if (!options.table_shape || options.table_shape == json::JSONTableShape::UNRECOGNIZED ||
             options.auto_detect.value_or(false)) {
             io::InputFileStream ifs_copy{*ifs};
             ARROW_RETURN_NOT_OK(json::InferTableType(ifs_copy, table_type));
@@ -423,21 +418,17 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(uint32_t insert_id, std::str
         auto func = connection_.TableFunction("arrow_scan", params);
 
         /// Create or insert
-        if (insert->options.create_new && insert->insert_calls == 0) {
+        if (options.create_new) {
             func->Create(schema_name, options.table_name);
         } else {
             func->Insert(schema_name, options.table_name);
         }
-        insert->insert_calls += 1;
 
     } catch (const std::exception& e) {
         return arrow::Status::UnknownError(e.what());
     }
     return arrow::Status::OK();
 }
-
-/// Insert a record batch
-arrow::Status WebDB::Connection::FinishInsert(uint32_t _insert_id) {}
 
 /// Constructor
 WebDB::WebDB(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs)

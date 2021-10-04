@@ -297,7 +297,7 @@ arrow::Result<std::shared_ptr<arrow::DataType>> InferDataTypeImpl(
 }
 
 /// Type detection base class
-template <TableShape SHAPE, typename DERIVED>
+template <JSONTableShape SHAPE, typename DERIVED>
 class JSONArrayAnalyzer : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, DERIVED> {
    protected:
     /// The nesting depth at which the actual data can be found.
@@ -426,7 +426,7 @@ class JSONArrayAnalyzer : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>,
 /// Nested types are only inferred based on a reservoir sample.
 ///
 /// Assumes to see 1 additional unmatched array event after which Done() will return true.
-struct JSONFlatArrayAnalyzer : public JSONArrayAnalyzer<TableShape::COLUMN_OBJECT, JSONFlatArrayAnalyzer> {
+struct JSONFlatArrayAnalyzer : public JSONArrayAnalyzer<JSONTableShape::COLUMN_OBJECT, JSONFlatArrayAnalyzer> {
     /// The top level stats
     JSONArrayStats root_stats_ = {};
 
@@ -445,7 +445,7 @@ struct JSONFlatArrayAnalyzer : public JSONArrayAnalyzer<TableShape::COLUMN_OBJEC
 /// Deeper nesting levels are again inferred from a sample.
 ///
 /// Assumes to see 1 additional unmatched array event after which Done() will return true.
-class JSONStructArrayAnalyzer : public JSONArrayAnalyzer<TableShape::ROW_ARRAY, JSONStructArrayAnalyzer> {
+class JSONStructArrayAnalyzer : public JSONArrayAnalyzer<JSONTableShape::ROW_ARRAY, JSONStructArrayAnalyzer> {
    protected:
     /// The first-level field limit
     size_t field_limit = 100;
@@ -518,7 +518,7 @@ arrow::Status InferTableType(std::istream& raw_in, TableType& table) {
 
         // Infer the struct type
         ARROW_ASSIGN_OR_RAISE(table.type, analyzer.InferDataType());
-        table.shape = TableShape::ROW_ARRAY;
+        table.shape = JSONTableShape::ROW_ARRAY;
         return arrow::Status::OK();
     }
 
@@ -536,7 +536,7 @@ arrow::Status InferTableType(std::istream& raw_in, TableType& table) {
             // That violates the assumption that we have a column-major layout.
             // We failed and give up.
             if (!next() || cache.event != ReaderEvent::START_ARRAY) {
-                table.shape = TableShape::UNRECOGNIZED;
+                table.shape = JSONTableShape::UNRECOGNIZED;
                 return arrow::Status::OK();
             }
 
@@ -564,13 +564,13 @@ arrow::Status InferTableType(std::istream& raw_in, TableType& table) {
                 {column_name, FileRange{.offset = column_begin, .size = column_end - column_begin}});
         }
         std::sort(fields.begin(), fields.end(), [&](auto& l, auto& r) { return l->name() < r->name(); });
-        table.shape = TableShape::COLUMN_OBJECT;
+        table.shape = JSONTableShape::COLUMN_OBJECT;
         table.type = arrow::struct_(std::move(fields));
         return arrow::Status::OK();
     }
 
     // Unknown structure
-    table.shape = TableShape::UNRECOGNIZED;
+    table.shape = JSONTableShape::UNRECOGNIZED;
     return arrow::Status::OK();
 }
 

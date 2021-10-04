@@ -160,7 +160,7 @@ struct RowArrayTableReader : public TableReader {
 
 arrow::Status RowArrayTableReader::Prepare() {
     /// Shape must be a row array
-    assert(table_type_.shape == TableShape::ROW_ARRAY);
+    assert(table_type_.shape == JSONTableShape::ROW_ARRAY);
     // Create the schema
     if (!this->schema_) {
         arrow::FieldVector schema_fields;
@@ -234,7 +234,7 @@ arrow::Status ColumnObjectTableReader::Rewind() {
 
 arrow::Status ColumnObjectTableReader::Prepare() {
     /// Shape must be a column object
-    assert(table_type_.shape == TableShape::COLUMN_OBJECT);
+    assert(table_type_.shape == JSONTableShape::COLUMN_OBJECT);
 
     // Need to find the column boundaries?
     // User might have provided the types explicitly which forces us to find the column boundaries.
@@ -320,9 +320,9 @@ std::shared_ptr<arrow::Schema> TableReader::schema() const { return schema_; }
 arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr<io::InputFileStream> table,
                                                                  TableType type, size_t batch_size) {
     switch (type.shape) {
-        case TableShape::COLUMN_OBJECT:
+        case JSONTableShape::COLUMN_OBJECT:
             return std::make_shared<ColumnObjectTableReader>(std::move(table), std::move(type), batch_size);
-        case TableShape::ROW_ARRAY:
+        case JSONTableShape::ROW_ARRAY:
             return std::make_shared<RowArrayTableReader>(std::move(table), std::move(type), batch_size);
         default:
             return arrow::Status::Invalid("Table type not specified");
