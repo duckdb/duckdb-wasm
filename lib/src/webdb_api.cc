@@ -174,7 +174,8 @@ void duckdb_web_insert_arrow_from_ipc_stream(WASMResponse* packed, ConnectionHdl
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Insert csv from a file
-void duckdb_web_insert_csv_table(WASMResponse* packed, ConnectionHdl connHdl, const char* path, const char* options) {
+void duckdb_web_insert_csv_from_path(WASMResponse* packed, ConnectionHdl connHdl, const char* path,
+                                     const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     auto r = c->InsertCSVFromPath(std::string_view{path}, std::string_view{options});
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
