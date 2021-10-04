@@ -390,7 +390,17 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
 ])JSON",
         .shape = JSONTableShape::ROW_ARRAY,
         .type = "struct<Creative Type: string, Director: string, Distributor: string, IMDB Rating: double, IMDB Votes: int32, MPAA Rating: string, Major Genre: string, Production Budget: int32, Release Date: string, Rotten Tomatoes Rating: int32, Running Time min: null, Source: string, Title: string, US DVD Sales: null, US Gross: int32, Worldwide Gross: int32>",
-    }
+    },
+    {
+        .name = "rows_nested_1",
+        .input = R"JSON([
+            { "a": { "b": 1, "c": 2 } },
+            { "a": { "b": 3, "c": 4 } },
+            { "a": { "b": 5, "c": 6 } }
+        ])JSON",
+        .shape = JSONTableShape::ROW_ARRAY,
+        .type = "struct<a: struct<b: double, c: double>>"
+    },
 };
 // clang-format on
 

@@ -359,7 +359,34 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
             "foo:   [\n    5,\n    6,\n    7,\n    8\n  ]\n",
             "foo:   [\n    9\n  ]\n",
         }
-    }
+    },
+    {
+        .name = "rows_nested_1",
+        .input = R"JSON([
+            { "a": { "b": 1, "c": 2 } },
+            { "a": { "b": 3, "c": 4 } },
+            { "a": { "b": 5, "c": 6 } }
+        ])JSON",
+        .batch_size = 4,
+        .expected_shape = json::JSONTableShape::ROW_ARRAY,
+        .expected_type = "struct<a: struct<b: double, c: double>>",
+        .expected_batches = {
+R"RAW(a:   -- is_valid: all not null
+  -- child 0 type: double
+    [
+      1,
+      3,
+      5
+    ]
+  -- child 1 type: double
+    [
+      2,
+      4,
+      6
+    ]
+)RAW",
+        }
+    },
 };
 // clang-shape on
 
