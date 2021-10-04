@@ -106,7 +106,10 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
-    | WorkerRequest<WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM, [number, Uint8Array, ArrowInsertOptions]>
+    | WorkerRequest<
+          WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
+          [number, Uint8Array, ArrowInsertOptions | undefined]
+      >
     | WorkerRequest<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions]>
     | WorkerRequest<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions]>
     | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
@@ -150,7 +153,11 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
-    | WorkerTask<WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM, [number, Uint8Array, ArrowInsertOptions], null>
+    | WorkerTask<
+          WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
+          [number, Uint8Array, ArrowInsertOptions | undefined],
+          null
+      >
     | WorkerTask<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions], null>
     | WorkerTask<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions], null>
     | WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>

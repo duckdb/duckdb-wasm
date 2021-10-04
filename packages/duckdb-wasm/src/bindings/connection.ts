@@ -61,14 +61,17 @@ export class DuckDBConnection {
         this._conn = conn;
     }
 
+    /** Get the connection helper */
     public get handle(): number {
         return this._conn;
     }
 
+    /** Close a connection */
     public close(): void {
         this._bindings.disconnect(this._conn);
     }
 
+    /** Run a query */
     public runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): arrow.Table<T> {
         const buffer = this._bindings.runQuery(this._conn, text);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
@@ -77,6 +80,7 @@ export class DuckDBConnection {
         return arrow.Table.from(reader);
     }
 
+    /** Send a query */
     public sendQuery<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
     ): arrow.RecordBatchStreamReader<T> {
@@ -88,14 +92,17 @@ export class DuckDBConnection {
         return reader;
     }
 
+    /** Create a prepared statement */
     public createPreparedStatement(text: string): number {
         return this._bindings.createPreparedStatement(this._conn, text);
     }
 
+    /** Close a prepared statement */
     public closePreparedStatement(statement: number): void {
         this._bindings.closePreparedStatement(this._conn, statement);
     }
 
+    /** Run a prepared statement */
     public runPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
         statement: number,
         params: any[],
@@ -107,6 +114,7 @@ export class DuckDBConnection {
         return arrow.Table.from(reader as arrow.RecordBatchFileReader);
     }
 
+    /** Send a prepared statement */
     public sendPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
         statement: number,
         params: any[],
@@ -119,9 +127,38 @@ export class DuckDBConnection {
         return reader as arrow.RecordBatchStreamReader;
     }
 
+    /** Insert record batches */
+    public insertRecordBatches(batches: Iterable<arrow.RecordBatch>, options: ArrowInsertOptions): void {
+        let first = true;
+        for (const batch of batches) {
+            const writer = new arrow.RecordBatchStreamWriter();
+            writer.write(batch);
+            writer.finish();
+            const buffer = writer.toUint8Array(true);
+            this._bindings.insertArrowFromIPCStream(this._conn, buffer, first ? options : undefined);
+            first = false;
+        }
+    }
+    /** Insert record batches from an async iterable */
+    public async insertAsyncRecordBatches(
+        batches: AsyncIterable<arrow.RecordBatch>,
+        options: ArrowInsertOptions,
+    ): Promise<void> {
+        let first = true;
+        for await (const batch of batches) {
+            const writer = new arrow.RecordBatchStreamWriter();
+            writer.write(batch);
+            writer.finish();
+            const buffer = writer.toUint8Array(true);
+            this._bindings.insertArrowFromIPCStream(this._conn, buffer, first ? options : undefined);
+            first = false;
+        }
+    }
+    /** Inesrt csv file from path */
     public insertCSVFromPath(path: string, options: CSVInsertOptions): void {
         this._bindings.insertCSVFromPath(this._conn, path, options);
     }
+    /** Insert json file from path */
     public insertJSONFromPath(path: string, options: JSONInsertOptions): void {
         this._bindings.insertJSONFromPath(this._conn, path, options);
     }
