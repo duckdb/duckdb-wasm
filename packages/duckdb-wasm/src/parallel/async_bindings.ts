@@ -426,12 +426,12 @@ export class AsyncDuckDB {
     public async insertArrowFromIPCStream(
         conn: ConnectionID,
         buffer: Uint8Array,
-        options: ArrowInsertOptions,
+        options?: ArrowInsertOptions,
     ): Promise<void> {
         // Pass to the worker
         const task = new WorkerTask<
             WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
-            [number, Uint8Array, ArrowInsertOptions],
+            [number, Uint8Array, ArrowInsertOptions | undefined],
             null
         >(WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM, [conn, buffer, options]);
         await this.postTask(task, [buffer.buffer]);
