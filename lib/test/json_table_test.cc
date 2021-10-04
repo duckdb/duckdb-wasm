@@ -41,7 +41,7 @@ TEST(TableReaderOptions, NoFormat2) {
 TEST(TableReaderOptions, FormatRowArray) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({
-        "format": "row-array"
+        "shape": "row-array"
     })JSON");
     json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
@@ -53,7 +53,7 @@ TEST(TableReaderOptions, FormatRowArray) {
 TEST(TableReaderOptions, FormatColumnObject) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({
-        "format": "column-object"
+        "shape": "column-object"
     })JSON");
     json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
@@ -65,7 +65,7 @@ TEST(TableReaderOptions, FormatColumnObject) {
 TEST(TableReaderOptions, FormatInvalidString) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({
-        "format": "invalid"
+        "shape": "invalid"
     })JSON");
     json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
@@ -76,7 +76,7 @@ TEST(TableReaderOptions, FormatInvalidString) {
 TEST(TableReaderOptions, FormatInvalidInt) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({
-        "format": 42 
+        "shape": 42 
     })JSON");
     json::JSONInsertOptions options;
     ASSERT_EQ(options.table_shape, std::nullopt);
@@ -87,7 +87,7 @@ TEST(TableReaderOptions, FormatInvalidInt) {
 TEST(TableReaderOptions, Fields) {
     rapidjson::Document doc;
     doc.Parse(R"JSON({
-        "format": "row-array",
+        "shape": "row-array",
         "columns": [
             {"name": "foo", "type": "int32"},
             {"name": "bar", "type": "utf8"}
@@ -361,7 +361,7 @@ static std::vector<TableReaderTest> TABLE_READER_TESTS = {
         }
     }
 };
-// clang-format on
+// clang-shape on
 
 INSTANTIATE_TEST_SUITE_P(TableReaderTest, TableReaderTestSuite, testing::ValuesIn(TABLE_READER_TESTS),
                          TableReaderTest::TestPrinter());
@@ -392,8 +392,8 @@ TEST_P(TableImportTestSuite, ImportFile) {
     auto status = conn.InsertJSONFromPath(input.string(), options);
     ASSERT_TRUE(status.ok()) << status.message();
 }
+// clang-format on
 
-// clang-format off
 static std::vector<TableImportTest> TABLE_IMPORT_TESTS = {
     {
         .name = "vega_movies_1",
