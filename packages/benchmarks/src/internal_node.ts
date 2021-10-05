@@ -4,6 +4,8 @@ import path from 'path';
 import Worker from 'web-worker';
 
 import { benchmarkFormat, benchmarkIterator, benchmarkIteratorAsync } from './internal';
+import { runBenchmarks } from './suite';
+import Benchmark from 'buffalo-bench/lib';
 
 async function main() {
     let db: duckdb_sync.DuckDB | null = null;
@@ -33,18 +35,11 @@ async function main() {
     adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_BUNDLE.mainModule);
 
-    for (const bm of benchmarkFormat(() => db!)) {
-        await bm.run();
-        console.log(bm.toJSON());
-    }
-    for (const bm of benchmarkIterator(() => db!)) {
-        await bm.run();
-        console.log(bm.toJSON());
-    }
-    for (const bm of benchmarkIteratorAsync(() => adb!)) {
-        await bm.run();
-        console.log(bm.toJSON());
-    }
+    let suite: Benchmark[] = [];
+    suite = suite.concat(benchmarkFormat(() => db!));
+    suite = suite.concat(benchmarkIterator(() => db!));
+    suite = suite.concat(benchmarkIteratorAsync(() => adb!));
+    await runBenchmarks(suite);
 }
 
 main();

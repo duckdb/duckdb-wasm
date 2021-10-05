@@ -13,7 +13,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
             value: null,
         };
         benches.push(
-            new Benchmark(`Single DOUBLE column | ${tupleCount} rows | columns (iterator)`, {
+            new Benchmark(`scan_double_columns_iterator_${tupleCount}`, {
                 before: async () => {
                     const conn = db().connect();
                     container.value = conn.runQuery<{ foo: arrow.Float64 }>(`
@@ -40,7 +40,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
             value: null,
         };
         benches.push(
-            new Benchmark(`Single DOUBLE column | ${tupleCount} rows | rows (iterator)`, {
+            new Benchmark(`scan_double_rows_iterator_${tupleCount}`, {
                 before: async () => {
                     const conn = db().connect();
                     container.value = conn.runQuery<{ foo: arrow.Float64 }>(`
@@ -67,7 +67,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
             value: null,
         };
         benches.push(
-            new Benchmark(`Single DOUBLE column | ${tupleCount} rows | columns (scan + bind)`, {
+            new Benchmark(`scan_double_rows_iterator_bind_${tupleCount}`, {
                 before: async () => {
                     const conn = db().connect();
                     container.value = conn.runQuery<{ foo: arrow.Float64 }>(`
