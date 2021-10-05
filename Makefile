@@ -109,10 +109,16 @@ lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
 # Run the node benchmark
-.PHONY: bench_node
-bench_node:
+.PHONY: bench_node_internal
+bench_node_internal:
 	yarn workspace @duckdb/benchmarks build:node
-	yarn workspace @duckdb/benchmarks bench:node
+	yarn workspace @duckdb/benchmarks bench:node:internal
+
+# Run the node benchmark
+.PHONY: bench_node_system
+bench_node_system:
+	yarn workspace @duckdb/benchmarks build:node
+	yarn workspace @duckdb/benchmarks bench:node:system
 
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches

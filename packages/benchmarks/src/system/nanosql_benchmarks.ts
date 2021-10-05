@@ -4,97 +4,117 @@ import { SystemBenchmark, SystemBenchmarkContext, noop } from './system_benchmar
 import { shuffle } from '../utils';
 
 export class NanoSQLSimpleScanBenchmark implements SystemBenchmark {
-    database: nano.nanoSQL | null;
-    tupleCount: number;
+    tuples: number;
 
-    constructor(tupleCount: number) {
-        this.database = null;
-        this.tupleCount = tupleCount;
+    constructor(tuples: number) {
+        this.tuples = tuples;
     }
     getName(): string {
-        return `scan_benchmark_${this.tupleCount}`;
+        return `nanosql_scan_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        await this.database!.dropDatabase(this.getName());
+        await nano.nSQL().dropDatabase(this.getName());
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
 
         // Create the database & table
-        this.database = await nano.nSQL().createDatabase({
+        await nano.nSQL().createDatabase({
             id: this.getName(),
             mode: 'TEMP',
         });
-        await this.database!.query('create table', {
-            name: this.getName(),
-            model: {
-                'v:int': {},
-            },
-        }).exec();
+        await nano
+            .nSQL()
+            .query('create table', {
+                name: `${this.getName()}`,
+                model: {
+                    'v:int': {},
+                },
+            })
+            .exec();
 
         // Generate values
-        const values = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
-            values.push({ v: i });
+        const rows = [];
+        for (let i = 0; i < this.tuples; ++i) {
+            rows.push({ v: i });
         }
-        shuffle(values);
+        shuffle(rows);
 
         // Insert values
-        await this.database!.loadJS(values);
+        await nano.nSQL(this.getName()).loadJS(rows);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        for (const row of await this.database!.query('select', ['v']).exec()) {
+        for (const row of await nano.nSQL(this.getName()).query('select', ['v']).exec()) {
             noop(row);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        await this.database!.dropDatabase(this.getName());
+        await nano.nSQL().dropDatabase(this.getName());
     }
 }
 
 export class NanoSQLSimpleSumBenchmark implements SystemBenchmark {
-    database: nano.nanoSQL | null;
-    tupleCount: number;
+    tuples: number;
 
-    constructor(tupleCount: number) {
-        this.database = null;
-        this.tupleCount = tupleCount;
+    constructor(tuples: number) {
+        this.tuples = tuples;
     }
     getName(): string {
-        return `sum_benchmark_${this.tupleCount}`;
+        return `nanosql_scan_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        await nano.nSQL().dropDatabase(this.getName());
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        this.database = await nano.nSQL().createDatabase({
+
+        // Create the database & table
+        await nano.nSQL().createDatabase({
             id: this.getName(),
             mode: 'TEMP',
         });
-        const values = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
-            values.push({ v: i });
+        await nano
+            .nSQL()
+            .query('create table', {
+                name: `${this.getName()}`,
+                model: {
+                    'v:int': {},
+                },
+            })
+            .exec();
+
+        // Generate values
+        const rows = [];
+        for (let i = 0; i < this.tuples; ++i) {
+            rows.push({ v: i });
         }
-        shuffle(values);
-        await this.database!.query('create table', {
-            name: this.getName(),
-            model: {
-                'v:int': {},
-            },
-        }).exec();
-        await this.database!.loadJS(values);
+        shuffle(rows);
+
+        // Insert values
+        await nano.nSQL(this.getName()).loadJS(rows);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        for (const row of await this.database!.query('select', ['sum(v)']).exec()) {
+        for (const row of await nano.nSQL(this.getName()).query('select', ['sum(v)']).exec()) {
             noop(row);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        await this.database!.dropDatabase(this.getName());
-    }
-    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        await this.database!.dropDatabase(this.getName());
+        await nano.nSQL().dropDatabase(this.getName());
     }
 }

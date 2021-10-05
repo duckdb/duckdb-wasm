@@ -2,9 +2,9 @@ import * as arrow from 'apache-arrow';
 
 /// Create a sql create statement.
 /// This function and the generated sql statement are never benchmarked directly.
-export function sqlCreate(table: string, data: arrow.Table, keys: string[][] = []): string {
+export function sqlCreate(table: string, fields: arrow.Field[], keys: string[][] = []): string {
     let sql = `CREATE TABLE IF NOT EXISTS ${table} (`;
-    for (const f of data.schema.fields) {
+    for (const f of fields) {
         sql += f.name + ' ';
         switch (f.typeId) {
             case arrow.Type.Int:
@@ -37,27 +37,27 @@ export function sqlCreate(table: string, data: arrow.Table, keys: string[][] = [
 
 /// Create a naive sql insert statement.
 /// This function and the generated sql statement are never benchmarked directly.
-export function* sqlInsert(table: string, data: arrow.Table): Generator<string, any, unknown> {
+export function* sqlInsert(table: string, fields: arrow.Field[], columns: any[][]): Generator<string, any, unknown> {
     const MAX_VALUES_PER_STATEMENT = 1000;
-    for (let i = 0; i < data.length; ) {
+    for (let i = 0; i < columns[0].length; ) {
         let query = `INSERT INTO ${table} VALUES `;
-        for (let j = i; j < Math.min(i + MAX_VALUES_PER_STATEMENT, data.length); j++) {
-            const row = data.get(j);
-            if (j > i) query += ',';
+        const n = Math.min(MAX_VALUES_PER_STATEMENT, columns[0].length - i);
+        for (let j = 0; j < n; ++j) {
+            if (j > 0) query += ',';
             query += '(';
-            for (let k = 0; k < data.numCols; ++k) {
+            for (let k = 0; k < fields.length; ++k) {
                 if (k > 0) query += ',';
-                const f = data.schema.fields[k];
+                const f = fields[k];
                 switch (f.typeId) {
                     case arrow.Type.Int:
                     case arrow.Type.Float:
-                        query += row[k];
+                        query += columns[k][i + j];
                         break;
                     case arrow.Type.Utf8:
-                        query += "'" + row[k] + "'";
+                        query += "'" + columns[k][i + j] + "'";
                         break;
                     case arrow.Type.Date:
-                        query += "'" + row[k].toISOString().slice(0, 19).replace('T', ' ') + "'";
+                        query += "'" + columns[k][i + j].toISOString().slice(0, 19).replace('T', ' ') + "'";
                         break;
                     default:
                         throw 'Type not implemented: ' + f.typeId;
@@ -66,5 +66,6 @@ export function* sqlInsert(table: string, data: arrow.Table): Generator<string, 
             query += ')';
         }
         yield query;
+        i += n;
     }
 }

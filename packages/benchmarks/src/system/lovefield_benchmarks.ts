@@ -6,29 +6,35 @@ import { shuffle } from '../utils';
 export class LovefieldSimpleScanBenchmark implements SystemBenchmark {
     builder?: lf.Builder | null;
     database?: lf.DatabaseConnection | null;
-    tupleCount: number;
+    tuples: number;
 
-    constructor(tupleCount: number) {
+    constructor(tuples: number) {
         this.builder = null;
         this.database = null;
-        this.tupleCount = tupleCount;
+        this.tuples = tuples;
     }
     getName(): string {
-        return `scan_benchmark_${this.tupleCount}`;
+        return `lovefield_scan_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
 
         // Create table
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
-        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
         const tableBuilder = this.builder!.createTable(this.getName());
         tableBuilder.addColumn('v', lf.Type.INTEGER);
-        const table = this.database!.getSchema().table(this.getName());
 
-        // Generate values
+        // Get table
+        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+        const table = this.database!.getSchema().table(this.getName());
         const rows = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
+        for (let i = 0; i < this.tuples; ++i) {
             rows.push(table.createRow({ v: i }));
         }
         shuffle(rows);
@@ -39,7 +45,7 @@ export class LovefieldSimpleScanBenchmark implements SystemBenchmark {
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         const table = this.database!.getSchema().table(this.getName());
-        const rows = (await this.database!.select().from(table).exec()) as Iterable<{ a: number }>;
+        const rows = (await this.database!.select().from(table).exec()) as Iterable<{ v: number }>;
         for (const row of rows) {
             noop(row);
         }

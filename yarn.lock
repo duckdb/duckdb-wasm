@@ -1231,10 +1231,9 @@ browserslist@^4.14.5, browserslist@^4.16.6:
     nanocolors "^0.2.12"
     node-releases "^1.1.76"
 
-buffalo-bench@^1.0.2:
+"buffalo-bench@https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd":
   version "1.0.2"
-  resolved "https://registry.yarnpkg.com/buffalo-bench/-/buffalo-bench-1.0.2.tgz#0a8ca39920d628b7b9ceeedb3586f1f0dc669fe9"
-  integrity sha512-+dj+CpJwvkX9NrE6Br6ybAVE6wuOO8O07BSUrWnZFs4Ob3ERSMi7xjYV+mdfQLhfwGw6D8m5Ig45rMZbQKPR+Q==
+  resolved "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd"
   dependencies:
     esbuild "^0.12.19"
     pirates "^4.0.1"

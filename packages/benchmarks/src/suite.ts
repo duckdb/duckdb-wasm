@@ -1,4 +1,5 @@
 import Benchmark from 'buffalo-bench/lib';
+import { createSystemBenchmark, SystemBenchmark, SystemBenchmarkContext } from './system';
 
 export interface JsonBenchmark {
     name: string;
@@ -21,7 +22,30 @@ export async function runBenchmarks(benchmarks: Benchmark[]): Promise<JsonBenchm
         console.log(`[ RUN ] ${bm.name}`);
         await bm.run();
         console.log(`[ OK  ] ${bm.name}`);
-        results.push(bm.toJSON());
+        results.push({
+            ...bm.toJSON(),
+        });
+    }
+    return results;
+}
+
+export async function runSystemBenchmarks(
+    ctx: SystemBenchmarkContext,
+    benchmarks: SystemBenchmark[],
+): Promise<JsonBenchmark[]> {
+    const bms = benchmarks.map(bm => ({
+        bench: createSystemBenchmark(ctx, bm),
+        meta: bm.getMetadata(),
+    }));
+    const results: JsonBenchmark[] = [];
+    for (const bm of bms) {
+        console.log(`[ RUN ] ${bm.bench.name}`);
+        await bm.bench.run();
+        console.log(`[ OK  ] ${bm.bench.name}`);
+        results.push({
+            ...bm.bench.toJSON(),
+            ...bm.meta,
+        });
     }
     return results;
 }

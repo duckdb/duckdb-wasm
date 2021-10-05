@@ -5,25 +5,38 @@ import { SystemBenchmark, SystemBenchmarkContext, noop } from './system_benchmar
 import { shuffle } from '../utils';
 
 export class ArqueroSimpleScanBenchmark implements SystemBenchmark {
-    tupleCount: number;
+    tuples: number;
     tables: { [key: string]: aq.internal.Table } = {};
 
-    constructor(tupleCount: number) {
-        this.tupleCount = tupleCount;
+    constructor(tuples: number) {
+        this.tuples = tuples;
     }
     getName(): string {
-        return `scan_benchmark_${this.tupleCount}`;
+        return `arquero_scan_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
         const values = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
-            values.push(i);
+        for (let i = 0; i < this.tuples; ++i) {
+            values.push({
+                v: i,
+            });
         }
         shuffle(values);
-        const table = arrow.Table.from({
-            v: arrow.Int32Vector.from(values),
-        });
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        const batches = [];
+        for (let i = 0; i < this.tuples; ) {
+            const n = Math.min(1000, this.tuples - i);
+            batches.push(new arrow.RecordBatch(schema, n, [arrow.Int32Vector.from(values.slice(i, i + n))]));
+            i += n;
+        }
+        const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -42,25 +55,36 @@ export class ArqueroSimpleScanBenchmark implements SystemBenchmark {
 }
 
 export class ArqueroSimpleSumBenchmark implements SystemBenchmark {
-    tupleCount: number;
+    tuples: number;
     tables: { [key: string]: aq.internal.Table } = {};
 
-    constructor(tupleCount: number) {
-        this.tupleCount = tupleCount;
+    constructor(tuples: number) {
+        this.tuples = tuples;
     }
     getName(): string {
-        return `sum_benchmark_${this.tupleCount}`;
+        return `arquero_sum_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
         const values = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
+        for (let i = 0; i < this.tuples; ++i) {
             values.push(i);
         }
         shuffle(values);
-        const table = arrow.Table.from({
-            v: arrow.Int32Vector.from(values),
-        });
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        const batches = [];
+        for (let i = 0; i < this.tuples; ) {
+            const n = Math.min(1000, this.tuples - i);
+            batches.push(new arrow.RecordBatch(schema, n, [arrow.Int32Vector.from(values.slice(i, i + n))]));
+            i += n;
+        }
+        const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}

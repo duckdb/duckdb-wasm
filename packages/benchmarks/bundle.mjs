@@ -28,6 +28,7 @@ fs.copyFile(
 // ESM
 
 const TARGET = 'es2020';
+const EXTERNALS = ['web-worker', 'react-native-fetch-blob'];
 
 console.log('[ ESBUILD ] bench-internal-node.js');
 esbuild.build({
@@ -39,6 +40,18 @@ esbuild.build({
     bundle: true,
     minify: false,
     sourcemap: 'both',
-    // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
-    external: ['web-worker'],
+    external: EXTERNALS,
+});
+
+console.log('[ ESBUILD ] bench-system-node.js');
+esbuild.build({
+    entryPoints: ['./src/system_node.ts'],
+    outfile: 'dist/node/bench-system-node.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: 'both',
+    external: EXTERNALS,
 });
