@@ -1,11 +1,10 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import WebpackInjectPlugin from 'webpack-inject-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
-    entry: './src/index_browser.ts',
+    entry: './src/internal_browser.ts',
     mode: 'production',
     devtool: 'source-map',
     module: {
@@ -23,8 +22,8 @@ export default {
     },
     output: {
         path: path.resolve(__dirname, 'dist', 'browser'),
-        filename: 'bench-browser.js',
-        library: 'bench_browser',
+        filename: 'bench-internal-browser.js',
+        library: 'bench_internal',
         libraryTarget: 'window',
         libraryExport: 'default',
     },
@@ -33,9 +32,4 @@ export default {
         maxEntrypointSize: 512000,
         maxAssetSize: 512000,
     },
-    plugins: [
-        new WebpackInjectPlugin.default(
-            () => 'window._ = require("lodash");window.Benchmark = require("benchmark");var exports = {};',
-        ),
-    ],
 };

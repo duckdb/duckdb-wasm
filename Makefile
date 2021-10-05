@@ -108,10 +108,11 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
-# Build the benchmarks
-.PHONY: benchmarks
-benchmarks:
-	yarn workspace @duckdb/benchmarks build
+# Run the node benchmark
+.PHONY: bench_node
+bench_node:
+	yarn workspace @duckdb/benchmarks build:node
+	yarn workspace @duckdb/benchmarks bench:node
 
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches
