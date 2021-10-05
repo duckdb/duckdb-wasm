@@ -19,7 +19,7 @@
         "@types/lodash": "^4.14.175",
         "@types/sql.js": "^1.4.2",
         "@types/benchmark": "^2.1.1",
-        "@typescript-eslint/eslint-plugin": "^4.27.0",
+        "@typescript-eslint/eslint-plugin": "^4.33.0",
         "@typescript-eslint/parser": "^4.28.2",
         "assert": "^2.0.0",
         "eslint": "^7.31.0",
