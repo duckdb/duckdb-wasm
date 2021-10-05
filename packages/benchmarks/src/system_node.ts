@@ -4,7 +4,6 @@ import {
     SqljsSimpleScanBenchmark,
     AlasqlSimpleScanBenchmark,
     ArqueroSimpleScanBenchmark,
-    NanoSQLSimpleScanBenchmark,
     LovefieldSimpleScanBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
@@ -18,8 +17,6 @@ async function main() {
     };
     const suite: SystemBenchmark[] = [
         new LovefieldSimpleScanBenchmark(1000),
-        new NanoSQLSimpleScanBenchmark(1000),
-        new NanoSQLSimpleScanBenchmark(10000),
         new AlasqlSimpleScanBenchmark(1000),
         new AlasqlSimpleScanBenchmark(100000),
         new ArqueroSimpleScanBenchmark(1000),

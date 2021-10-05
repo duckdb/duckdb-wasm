@@ -39,7 +39,7 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: false,
-    sourcemap: 'both',
+    sourcemap: true,
     external: EXTERNALS,
 });
 
@@ -52,6 +52,6 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     minify: false,
-    sourcemap: 'both',
+    sourcemap: true,
     external: EXTERNALS,
 });

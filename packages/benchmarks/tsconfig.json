@@ -12,7 +12,6 @@
         "allowJs": true,
         "allowSyntheticDefaultImports": true,
         "resolveJsonModule": true,
-        "strictNullChecks": false,
 
         // Insanity mode due to:
         // https://issues.apache.org/jira/browse/ARROW-10794
