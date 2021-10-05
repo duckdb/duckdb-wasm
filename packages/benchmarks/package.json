@@ -7,38 +7,40 @@
         "@duckdb/duckdb-wasm": "^0.0.39",
         "@nano-sql/core": "^2.3.7",
         "alasql": "^1.7.2",
+        "apache-arrow": "^4.0.0",
         "arquero": "^4.3.0",
         "kleur": "^4.1.4",
+        "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
         "sql.js": "^1.6.2",
-        "web-worker": "^1.0.0",
-        "benchmark": "^2.1.4",
-        "lodash": "^4.17.21"
+        "web-worker": "^1.0.0"
     },
     "devDependencies": {
+        "@types/faker": "^5.5.8",
         "@types/lodash": "^4.14.175",
         "@types/sql.js": "^1.4.2",
-        "@types/benchmark": "^2.1.1",
         "@typescript-eslint/eslint-plugin": "^4.33.0",
         "@typescript-eslint/parser": "^4.33.0",
         "assert": "^2.0.0",
+        "buffalo-bench": "^1.0.2",
         "eslint": "^7.31.0",
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-react": "^7.26.1",
+        "faker": "^5.5.3",
+        "karma": "^6.3.3",
         "karma-custom": "^1.1.9",
         "karma-webpack": "^5.0.0",
-        "karma": "^6.3.3",
         "prettier": "^2.4.1",
         "ts-loader": "^9.1.0",
         "webpack": "^5.56.1",
         "webpack-inject-plugin": "^1.5.5"
     },
     "scripts": {
-        "build:node": "node ./bundle.mjs && tsc --noEmit",
+        "build:node": "node ./bundle.mjs",
         "build:browser": "webpack --config webpack.config.mjs",
         "build": "yarn run build:node && yarn run build:browser",
         "lint": "yarn run eslint src types",
-        "bench:node": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-node.js",
+        "bench:node": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-internal-node.js",
         "bench:browser": "node ./node_modules/.bin/karma start karma.conf.cjs"
     }
 }

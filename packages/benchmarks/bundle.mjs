@@ -29,10 +29,10 @@ fs.copyFile(
 
 const TARGET = 'es2020';
 
-console.log('[ ESBUILD ] bench-node.js');
+console.log('[ ESBUILD ] bench-internal-node.js');
 esbuild.build({
-    entryPoints: ['./src/index_node.ts'],
-    outfile: 'dist/node/bench-node.js',
+    entryPoints: ['./src/internal_node.ts'],
+    outfile: 'dist/node/bench-internal-node.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -40,5 +40,5 @@ esbuild.build({
     minify: false,
     sourcemap: 'both',
     // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
-    external: ['web-worker', 'alasql'],
+    external: ['web-worker'],
 });
