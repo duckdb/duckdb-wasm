@@ -16,13 +16,13 @@
         "web-worker": "^1.0.0"
     },
     "devDependencies": {
+        "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
         "@types/faker": "^5.5.8",
         "@types/lodash": "^4.14.175",
         "@types/sql.js": "^1.4.2",
         "@typescript-eslint/eslint-plugin": "^4.33.0",
         "@typescript-eslint/parser": "^4.33.0",
         "assert": "^2.0.0",
-        "buffalo-bench": "^1.0.2",
         "eslint": "^7.31.0",
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-react": "^7.26.1",
@@ -36,11 +36,12 @@
         "webpack-inject-plugin": "^1.5.5"
     },
     "scripts": {
-        "build:node": "node ./bundle.mjs",
+        "build:node": "node ./bundle.mjs & tsc --noEmit",
         "build:browser": "webpack --config webpack.config.mjs",
         "build": "yarn run build:node && yarn run build:browser",
         "lint": "yarn run eslint src types",
-        "bench:node": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-internal-node.js",
-        "bench:browser": "node ./node_modules/.bin/karma start karma.conf.cjs"
+        "bench:browser": "node ./node_modules/.bin/karma start karma.conf.cjs",
+        "bench:node:internal": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-internal-node.js",
+        "bench:node:system": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-system-node.js"
     }
 }

@@ -7,27 +7,31 @@ import { shuffle } from '../utils';
 
 export class SqljsSimpleScanBenchmark implements SystemBenchmark {
     database: sqljs.Database;
-    tupleCount: number;
+    tuples: number;
 
-    constructor(tupleCount: number) {
-        this.database = new sqljs.Database();
-        this.tupleCount = tupleCount;
+    constructor(database: sqljs.Database, tuples: number) {
+        this.database = database;
+        this.tuples = tuples;
     }
     getName(): string {
-        return `scan_benchmark_${this.tupleCount}`;
+        return `sqljs_scan_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
         const values = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
+        for (let i = 0; i < this.tuples; ++i) {
             values.push(i);
         }
         shuffle(values);
-        const table = arrow.Table.from({
-            v: arrow.Int32Vector.from(values),
-        });
-        this.database.run(sqlCreate(this.getName(), table));
-        for (const query of sqlInsert(this.getName(), table)) {
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        this.database.run(sqlCreate(this.getName(), schema.fields));
+        for (const query of sqlInsert(this.getName(), schema.fields, [values])) {
             this.database.run(query);
         }
     }
@@ -49,27 +53,31 @@ export class SqljsSimpleScanBenchmark implements SystemBenchmark {
 
 export class SqljsSimpleSumBenchmark implements SystemBenchmark {
     database: sqljs.Database;
-    tupleCount: number;
+    tuples: number;
 
-    constructor(tupleCount: number) {
+    constructor(tuples: number) {
         this.database = new sqljs.Database();
-        this.tupleCount = tupleCount;
+        this.tuples = tuples;
     }
     getName(): string {
-        return `sum_benchmark_${this.tupleCount}`;
+        return `sqljs_sum_${this.tuples}`;
+    }
+    getMetadata(): any {
+        return {
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
         const values = [];
-        for (let i = 0; i < this.tupleCount; ++i) {
+        for (let i = 0; i < this.tuples; ++i) {
             values.push(i);
         }
         shuffle(values);
-        const table = arrow.Table.from({
-            v: arrow.Int32Vector.from(values),
-        });
-        this.database.run(sqlCreate(this.getName(), table));
-        for (const query of sqlInsert(this.getName(), table)) {
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        this.database.run(sqlCreate(this.getName(), schema.fields));
+        for (const query of sqlInsert(this.getName(), schema.fields, [values])) {
             this.database.run(query);
         }
     }

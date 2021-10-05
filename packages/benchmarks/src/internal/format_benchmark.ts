@@ -1,6 +1,6 @@
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
 import * as arrow from 'apache-arrow';
-import Benchmark from 'buffalo-bench/lib/index';
+import Benchmark from 'buffalo-bench/lib';
 
 interface Container<T> {
     value: T | null;

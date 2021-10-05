@@ -1,4 +1,4 @@
-import Benchmark from 'buffalo-bench/lib/index';
+import Benchmark from 'buffalo-bench/lib';
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function noop(_arg0?: any): void {}
@@ -11,6 +11,8 @@ export interface SystemBenchmarkContext {
 export interface SystemBenchmark {
     /// Get the benchmark name
     getName(): string;
+    /// Get benchmark metadata
+    getMetadata(): any;
     /// Executed on error
     onError(ctx: SystemBenchmarkContext): Promise<void>;
     /// Executed before all benchmarks are run.
@@ -30,10 +32,10 @@ export function createSystemBenchmark(ctx: SystemBenchmarkContext, bm: SystemBen
     return new Benchmark(bm.getName(), {
         maxTime: 5,
         minSamples: 1,
-        before: async () => bm.beforeAll(ctx),
-        beforeEach: async () => bm.beforeEach(ctx),
-        after: async () => bm.afterAll(ctx),
-        afterEach: async () => bm.afterEach(ctx),
-        fn: async () => bm.afterEach(ctx),
+        before: async () => await bm.beforeAll(ctx),
+        beforeEach: async () => await bm.beforeEach(ctx),
+        after: async () => await bm.afterAll(ctx),
+        afterEach: async () => await bm.afterEach(ctx),
+        fn: async () => await bm.run(ctx),
     });
 }
