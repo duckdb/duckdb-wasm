@@ -41,7 +41,7 @@
         "build": "yarn run build:node && yarn run build:browser",
         "lint": "yarn run eslint src types",
         "bench:browser": "node ./node_modules/.bin/karma start karma.conf.cjs",
-        "bench:node:internal": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-internal-node.js",
-        "bench:node:system": "node --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-system-node.js"
+        "bench:node:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-internal-node.js",
+        "bench:node:system": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-system-node.js"
     }
 }
