@@ -56,7 +56,6 @@ module.exports = function (config) {
             { pattern: 'data/tpch/0*/duckdb/db', included: false, watched: false, served: true },
             { pattern: 'data/tpch/0*/parquet/*.parquet', included: false, watched: false, served: true },
             { pattern: 'data/uni/*.parquet', included: false, watched: false, served: true },
-            { pattern: 'data/**/*.zip', included: false, watched: false, served: true },
         ],
         preprocessors: {
             '**/tests-**.js': ['sourcemap', 'coverage'],
