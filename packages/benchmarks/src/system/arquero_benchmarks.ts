@@ -63,20 +63,23 @@ export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
     }
 }
 
-export class ArqueroSimpleSumBenchmark implements SystemBenchmark {
+export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
     tuples: number;
     tables: { [key: string]: aq.internal.Table } = {};
+    chars: number;
 
-    constructor(tuples: number) {
+    constructor(tuples: number, chars: number) {
         this.tuples = tuples;
+        this.chars = chars;
     }
     getName(): string {
-        return `arquero_simple_sum_${this.tuples}`;
+        return `arquero_varchar_scan_${this.tuples}`;
     }
-    getMetadata(): any {
+    getMetadata(): SystemBenchmarkMetadata {
         return {
+            benchmark: 'varchar_scan',
             system: 'arquero',
-            group: 'simple_sum',
+            tags: [],
             timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
@@ -86,14 +89,17 @@ export class ArqueroSimpleSumBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const values = [];
         for (let i = 0; i < this.tuples; ++i) {
-            values.push(i);
+            const v = i.toString();
+            values.push({
+                v: v.padEnd(this.chars, '#'),
+            });
         }
         shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
         const batches = [];
         for (let i = 0; i < this.tuples; ) {
             const n = Math.min(1000, this.tuples - i);
-            batches.push(new arrow.RecordBatch(schema, n, [arrow.Int32Vector.from(values.slice(i, i + n))]));
+            batches.push(new arrow.RecordBatch(schema, n, [arrow.Utf8Vector.from(values.slice(i, i + n))]));
             i += n;
         }
         const table = new arrow.Table(schema, batches);
@@ -101,8 +107,14 @@ export class ArqueroSimpleSumBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const rows = this.tables[this.getName()].rollup({ sum_v: `aq.op.sum(d['a'])` }).objects();
-        return rows[0].sum_v;
+        let n = 0;
+        for (const v of this.tables[this.getName()].array('v')) {
+            noop(v);
+            n += 1;
+        }
+        if (n !== this.tuples) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {

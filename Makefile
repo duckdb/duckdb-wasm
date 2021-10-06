@@ -110,15 +110,19 @@ lib_debug: lib
 
 # Run the node benchmark
 .PHONY: bench_node_internal
-bench_node_internal:
-	yarn workspace @duckdb/benchmarks build:node
-	yarn workspace @duckdb/benchmarks bench:node:internal
+bench_internal:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:internal
 
-# Run the node benchmark
-.PHONY: bench_node_system
-bench_node_system:
-	yarn workspace @duckdb/benchmarks build:node
-	yarn workspace @duckdb/benchmarks bench:node:system
+.PHONY: bench_system_scan_int
+bench_system_scan_int:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:scanint
+
+.PHONY: bench_system_scan_text
+bench_system_scan_text:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:scantext
 
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches

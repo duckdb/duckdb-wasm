@@ -12,7 +12,7 @@ function printErr(err) {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dist = path.resolve(__dirname, 'dist', 'node');
+const dist = path.resolve(__dirname, 'dist');
 mkdir.sync(dist);
 
 // -------------------------------
@@ -30,10 +30,10 @@ fs.copyFile(
 const TARGET = 'es2020';
 const EXTERNALS = ['web-worker', 'react-native-fetch-blob'];
 
-console.log('[ ESBUILD ] bench-internal-node.js');
+console.log('[ ESBUILD ] internal.js');
 esbuild.build({
-    entryPoints: ['./src/internal_node.ts'],
-    outfile: 'dist/node/bench-internal-node.js',
+    entryPoints: ['./src/suite_internal.ts'],
+    outfile: 'dist/internal.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -43,10 +43,23 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] bench-system-node.js');
+console.log('[ ESBUILD ] system-scan-int.js');
 esbuild.build({
-    entryPoints: ['./src/system_node.ts'],
-    outfile: 'dist/node/bench-system-node.js',
+    entryPoints: ['./src/suite_system_scan_int.ts'],
+    outfile: 'dist/system-scan-int.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});
+
+console.log('[ ESBUILD ] system-scan-text.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_scan_text.ts'],
+    outfile: 'dist/system-scan-text.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,

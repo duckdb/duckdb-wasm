@@ -27,21 +27,14 @@
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-react": "^7.26.1",
         "faker": "^5.5.3",
-        "karma": "^6.3.3",
-        "karma-custom": "^1.1.9",
-        "karma-webpack": "^5.0.0",
         "prettier": "^2.4.1",
-        "ts-loader": "^9.1.0",
-        "webpack": "^5.57.1",
-        "webpack-inject-plugin": "^1.5.5"
+        "ts-loader": "^9.1.0"
     },
     "scripts": {
-        "build:node": "node ./bundle.mjs & tsc --noEmit",
-        "build:browser": "webpack --config webpack.config.mjs",
-        "build": "yarn run build:node && yarn run build:browser",
+        "build": "node ./bundle.mjs & tsc --noEmit",
         "lint": "yarn run eslint src types",
-        "bench:browser": "node ./node_modules/.bin/karma start karma.conf.cjs",
-        "bench:node:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-internal-node.js",
-        "bench:node:system": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/node/bench-system-node.js"
+        "bench:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/internal.js",
+        "bench:system:scanint": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-scan-int.js",
+        "bench:system:scantext": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-scan-text.js"
     }
 }
