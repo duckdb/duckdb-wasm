@@ -48,6 +48,16 @@ jobs:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
+            - name: Cache rust build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.cargo
+                      ./target
+                  key: ${{ runner.os }}-datagen-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
+                  restore-keys: |
+                      ${{ runner.os }}-datagen-
+
             - name: Cache node_modules
               uses: actions/cache@v2
               with:
