@@ -28,9 +28,7 @@ export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const values = [];
         for (let i = 0; i < this.tuples; ++i) {
-            values.push({
-                v: i,
-            });
+            values.push(i);
         }
         shuffle(values);
         const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
@@ -89,10 +87,7 @@ export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const values = [];
         for (let i = 0; i < this.tuples; ++i) {
-            const v = i.toString();
-            values.push({
-                v: v.padEnd(this.chars, '#'),
-            });
+            values.push(i.toString().padEnd(this.chars, '#'));
         }
         shuffle(values);
         const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
@@ -114,6 +109,65 @@ export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
         }
         if (n !== this.tuples) {
             throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+}
+
+export class ArqueroVarcharFilterBenchmark implements SystemBenchmark {
+    tuples: number;
+    tables: { [key: string]: aq.internal.Table } = {};
+    chars: number;
+
+    constructor(tuples: number, chars: number) {
+        this.tuples = tuples;
+        this.chars = chars;
+    }
+    getName(): string {
+        return `arquero_varchar_filter_${this.tuples}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'varchar_filter',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            tuples: this.tuples,
+            bytes: this.tuples * 4,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const values = [];
+        for (let i = 0; i < this.tuples; ++i) {
+            values.push(i.toString().padEnd(this.chars, '#'));
+        }
+        shuffle(values);
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
+        const batches = [];
+        for (let i = 0; i < this.tuples; ) {
+            const n = Math.min(1000, this.tuples - i);
+            batches.push(new arrow.RecordBatch(schema, n, [arrow.Utf8Vector.from(values.slice(i, i + n))]));
+            i += n;
+        }
+        const table = new arrow.Table(schema, batches);
+        this.tables[this.getName()] = aq.fromArrow(table);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        let n = 0;
+        for (const v of this.tables[this.getName()].filter((d: any) => aq.op.match(d.v, /^.#+$/g, null)).array('v')) {
+            noop(v);
+            n += 1;
+        }
+        if (n !== 10) {
+            throw Error(`invalid tuple count. expected 10, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
