@@ -10,6 +10,7 @@ import { runSystemBenchmarks } from './suite';
 //import initSQLJs from 'sql.js';
 import Worker from 'web-worker';
 import path from 'path';
+import fs from 'fs/promises';
 
 async function main() {
     // Setup DuckDB sync & async
@@ -54,10 +55,14 @@ async function main() {
         new ArqueroIntegerJoin2Benchmark(100000, 1000000, 100, 10),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
-    console.log(results);
 
     // Terminate the worker
-    duckdbAsyncDB.terminate();
+    await duckdbAsyncDB.terminate();
+
+    // Write results
+    const reports = path.resolve(__dirname, '../../../reports');
+    await fs.mkdir(reports);
+    await fs.writeFile(path.resolve(reports, './suite_system_join_2.json'), JSON.stringify(results), 'utf8');
 }
 
 main();
