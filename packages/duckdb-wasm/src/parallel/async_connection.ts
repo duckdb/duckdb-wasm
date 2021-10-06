@@ -28,6 +28,8 @@ class ResultStreamIterator implements AsyncIterable<Uint8Array> {
     protected _first: boolean;
     /** Reached end of stream? */
     protected _depleted: boolean;
+    /** In-flight */
+    protected _inFlight: Promise<Uint8Array> | null;
 
     constructor(
         protected readonly db: AsyncDuckDB,
@@ -36,6 +38,7 @@ class ResultStreamIterator implements AsyncIterable<Uint8Array> {
     ) {
         this._first = true;
         this._depleted = false;
+        this._inFlight = null;
     }
 
     async next(): Promise<IteratorResult<Uint8Array>> {
@@ -46,11 +49,20 @@ class ResultStreamIterator implements AsyncIterable<Uint8Array> {
         if (this._depleted) {
             return { done: true, value: null };
         }
-        const bufferI8 = await this.db.fetchQueryResults(this.conn);
-        this._depleted = bufferI8.length == 0;
+        let buffer: Uint8Array;
+        if (this._inFlight != null) {
+            buffer = await this._inFlight;
+            this._inFlight = null;
+        } else {
+            buffer = await this.db.fetchQueryResults(this.conn);
+        }
+        this._depleted = buffer.length == 0;
+        if (!this._depleted) {
+            this._inFlight = this.db.fetchQueryResults(this.conn);
+        }
         return {
             done: this._depleted,
-            value: bufferI8,
+            value: buffer,
         };
     }
 
