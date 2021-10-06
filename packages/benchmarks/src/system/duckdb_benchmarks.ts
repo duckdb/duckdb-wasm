@@ -233,10 +233,7 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
         faker.seed(ctx.seed);
         const values = [];
         for (let i = 0; i < this.tuples; ++i) {
-            const v = i.toString();
-            values.push({
-                v: v.padEnd(this.chars, '#'),
-            });
+            values.push(i.toString().padEnd(this.chars, '#'));
         }
         shuffle(values);
         const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
@@ -262,6 +259,76 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
         }
         if (n !== this.tuples) {
             throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+}
+
+export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    tuples: number;
+    chars: number;
+
+    constructor(database: duckdb.DuckDBBindings, tuples: number, chars: number) {
+        this.database = database;
+        this.connection = null;
+        this.tuples = tuples;
+        this.chars = chars;
+    }
+    getName(): string {
+        return `duckdb_sync_materializing_filter_scan_${this.tuples}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'varchar_filter',
+            system: 'duckdb',
+            tags: ['sync', 'materializing'],
+            timestamp: new Date(),
+            tuples: this.tuples,
+            bytes: this.tuples * this.chars,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const values = [];
+        for (let i = 0; i < this.tuples; ++i) {
+            values.push(i.toString().padEnd(this.chars, '#'));
+        }
+        shuffle(values);
+        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
+        const batches = [];
+        for (let i = 0; i < this.tuples; ) {
+            const n = Math.min(1000, this.tuples - i);
+            batches.push(new arrow.RecordBatch(schema, n, [arrow.Utf8Vector.from(values.slice(i, i + n))]));
+            i += n;
+        }
+        this.connection = this.database.connect();
+        this.connection.insertArrowBatches(schema, batches, {
+            schema: 'main',
+            name: this.getName(),
+        });
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(
+            `SELECT * FROM ${this.getName()} WHERE v LIKE '_#%'`,
+        );
+        let n = 0;
+        for (const v of result.getChildAt(0)!) {
+            noop(v);
+            n += 1;
+        }
+        if (n !== 10) {
+            throw Error(`invalid tuple count. expected 10, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}

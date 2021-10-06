@@ -68,3 +68,16 @@ esbuild.build({
     sourcemap: true,
     external: EXTERNALS,
 });
+
+console.log('[ ESBUILD ] system-filter-text.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_filter_text.ts'],
+    outfile: 'dist/system-filter-text.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});

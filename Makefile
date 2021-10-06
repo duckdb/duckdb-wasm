@@ -108,7 +108,6 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
-# Run the node benchmark
 .PHONY: bench_node_internal
 bench_internal:
 	yarn workspace @duckdb/benchmarks build
@@ -117,12 +116,17 @@ bench_internal:
 .PHONY: bench_system_scan_int
 bench_system_scan_int:
 	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:scanint
+	yarn workspace @duckdb/benchmarks bench:system:scan:int
 
 .PHONY: bench_system_scan_text
 bench_system_scan_text:
 	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:scantext
+	yarn workspace @duckdb/benchmarks bench:system:scan:text
+
+.PHONY: bench_system_filter_text
+bench_system_filter_text:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:filter:text
 
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches
