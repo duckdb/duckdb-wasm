@@ -2,7 +2,7 @@ import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
-import { shuffle } from '../utils';
+import { generateArrowInt32Table, generateArrowUtf8Table } from './data_generator';
 
 export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
@@ -29,20 +29,7 @@ export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchm
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const values = [];
-        for (let i = 0; i < this.tuples; ++i) {
-            values.push({
-                v: i,
-            });
-        }
-        shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
-        const batches = [];
-        for (let i = 0; i < this.tuples; ) {
-            const n = Math.min(1000, this.tuples - i);
-            batches.push(new arrow.RecordBatch(schema, n, [arrow.Int32Vector.from(values.slice(i, i + n))]));
-            i += n;
-        }
+        const [schema, batches] = generateArrowInt32Table(this.tuples);
         this.connection = this.database.connect();
         this.connection.insertArrowBatches(schema, batches, {
             schema: 'main',
@@ -129,20 +116,7 @@ export class DuckDBAsyncMaterializingIntegerScanBenchmark implements SystemBench
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const values = [];
-        for (let i = 0; i < this.tuples; ++i) {
-            values.push({
-                v: i,
-            });
-        }
-        shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
-        const batches = [];
-        for (let i = 0; i < this.tuples; ) {
-            const n = Math.min(1000, this.tuples - i);
-            batches.push(new arrow.RecordBatch(schema, n, [arrow.Int32Vector.from(values.slice(i, i + n))]));
-            i += n;
-        }
+        const [schema, batches] = generateArrowInt32Table(this.tuples);
         this.connection = await this.database.connect();
         await this.connection.insertArrowBatches(schema, batches, {
             schema: 'main',
@@ -231,18 +205,7 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const values = [];
-        for (let i = 0; i < this.tuples; ++i) {
-            values.push(i.toString().padEnd(this.chars, '#'));
-        }
-        shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
-        const batches = [];
-        for (let i = 0; i < this.tuples; ) {
-            const n = Math.min(1000, this.tuples - i);
-            batches.push(new arrow.RecordBatch(schema, n, [arrow.Utf8Vector.from(values.slice(i, i + n))]));
-            i += n;
-        }
+        const [schema, batches] = generateArrowUtf8Table(this.tuples, this.chars);
         this.connection = this.database.connect();
         this.connection.insertArrowBatches(schema, batches, {
             schema: 'main',
@@ -299,18 +262,7 @@ export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenc
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const values = [];
-        for (let i = 0; i < this.tuples; ++i) {
-            values.push(i.toString().padEnd(this.chars, '#'));
-        }
-        shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Utf8())]);
-        const batches = [];
-        for (let i = 0; i < this.tuples; ) {
-            const n = Math.min(1000, this.tuples - i);
-            batches.push(new arrow.RecordBatch(schema, n, [arrow.Utf8Vector.from(values.slice(i, i + n))]));
-            i += n;
-        }
+        const [schema, batches] = generateArrowUtf8Table(this.tuples, this.chars);
         this.connection = this.database.connect();
         this.connection.insertArrowBatches(schema, batches, {
             schema: 'main',
