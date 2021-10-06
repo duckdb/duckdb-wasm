@@ -15,12 +15,12 @@ async function main() {
     // Configure the worker
     const DUCKDB_BUNDLE = await duckdb.selectBundle({
         asyncDefault: {
-            mainModule: path.resolve(__dirname, '../../../duckdb-wasm/dist/duckdb.wasm'),
-            mainWorker: path.resolve(__dirname, '../../../duckdb-wasm/dist/duckdb-node-async.worker.js'),
+            mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
+            mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async.worker.js'),
         },
         asyncNext: {
-            mainModule: path.resolve(__dirname, '../../../duckdb-wasm/dist/duckdb-next.wasm'),
-            mainWorker: path.resolve(__dirname, '../../../duckdb-wasm/dist/duckdb-node-async-next.worker.js'),
+            mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-next.wasm'),
+            mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-async-next.worker.js'),
         },
     });
 
@@ -28,7 +28,7 @@ async function main() {
     db = await new duckdb_sync.DuckDB(
         logger,
         duckdb_sync.NODE_RUNTIME,
-        path.resolve(__dirname, '../../../duckdb-wasm/dist/duckdb.wasm'),
+        path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
     ).instantiate();
 
     worker = new Worker(DUCKDB_BUNDLE.mainWorker);
