@@ -40,10 +40,13 @@ async function main() {
     };
     const suite: SystemBenchmark[] = [
         new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 1000, 20),
+        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 10000, 20),
+        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 100000, 20),
+        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 1000000, 20),
         new ArqueroVarcharFilterBenchmark(1000, 20),
-        //new ArqueroVarcharFilterBenchmark(10000, 20),
-        //new ArqueroVarcharFilterBenchmark(100000, 20),
-        //new ArqueroVarcharFilterBenchmark(1000000, 20),
+        new ArqueroVarcharFilterBenchmark(10000, 20),
+        new ArqueroVarcharFilterBenchmark(100000, 20),
+        new ArqueroVarcharFilterBenchmark(1000000, 20),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);

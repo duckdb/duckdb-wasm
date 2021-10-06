@@ -593,7 +593,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks build:node
+                      yarn workspace @duckdb/benchmarks build
 
             - name: Test @duckdb/duckdb-wasm on Chrome
               uses: duckdb/duckdb-wasm-ci-env@v0.4
