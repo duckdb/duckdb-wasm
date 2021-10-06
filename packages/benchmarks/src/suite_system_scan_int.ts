@@ -1,4 +1,4 @@
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm';
 import * as duckdb_sync from '@duckdb/duckdb-wasm/dist/duckdb-node-sync';
 import {
     SystemBenchmarkContext,

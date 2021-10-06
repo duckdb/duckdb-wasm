@@ -1,4 +1,4 @@
-import * as async from './targets/duckdb.module';
+import * as async from './targets/duckdb-esm';
 import * as sync_browser from './targets/duckdb-browser-sync';
 import * as sync_node from './targets/duckdb-node-sync';
 

@@ -1,4 +1,4 @@
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm';
 import Benchmark from 'buffalo-bench/lib';
 
 const noop = () => {};

@@ -55,9 +55,9 @@ fs.copyFile(
 const TARGET = ['esnext'];
 const EXTERNALS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 
-console.log('[ ESBUILD ] duckdb.module.js');
+console.log('[ ESBUILD ] duckdb-esm.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb.module.ts'],
+    entryPoints: ['./src/targets/duckdb-esm.ts'],
     entryNames: '[name]',
     outdir: './dist',
     platform: 'neutral',
@@ -266,7 +266,7 @@ esbuild.build({
 // Write declaration files
 
 // ESM declarations
-fs.writeFile(path.join(dist, 'duckdb.module.d.ts'), "export * from './types/src/';", printErr);
+fs.writeFile(path.join(dist, 'duckdb-esm.d.ts'), "export * from './types/src/';", printErr);
 
 // Browser declarations
 fs.writeFile(
