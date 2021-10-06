@@ -616,7 +616,7 @@ jobs:
             - name: Publish @duckdb/duckdb-wasm
               if: github.ref == 'refs/heads/master'
               run: |
-                  GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./scripts/npm_version.sh publish
+                  NPM_PUBLISH_TOKEN=${{ secrets.NPM_PUBLISH_TOKEN }} ./scripts/npm_version.sh publish
 
             - name: Build GitHub Pages
               if: github.ref == 'refs/heads/master'

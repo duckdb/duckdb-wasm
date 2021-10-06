@@ -29,7 +29,6 @@ node ${PROJECT_ROOT}/scripts/sync_versions.mjs
 if [[ "${GITHUB_REF}" =~ ^(refs/heads/master|refs/tags/v.+)$ && "$1" = "publish" ]] ; then
 	cd ${PROJECT_ROOT}/packages/duckdb-wasm
 
-	echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > .npmrc
-	echo '@duckdb:registry=https://npm.pkg.github.com' >> .npmrc
-	npm publish --access public ${TAG}
+	npm config set //registry.npmjs.org/:_authToken ${NPM_PUBLISH_TOKEN}
+	npm publish --ignore-scripts --access public ${TAG}
 fi
