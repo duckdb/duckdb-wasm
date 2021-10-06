@@ -3,10 +3,6 @@
     "version": "0.0.39",
     "description": "DuckDB powered by WebAssembly",
     "license": "MIT",
-    "repository": "git://github.com/duckdb/duckdb-wasm.git",
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
-    },
     "dependencies": {
         "apache-arrow": "^4.0.0",
         "wasm-feature-detect": "^1.2.11"
