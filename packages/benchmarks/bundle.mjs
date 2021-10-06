@@ -82,10 +82,10 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] system-join-int.js');
+console.log('[ ESBUILD ] system-join-1.js');
 esbuild.build({
-    entryPoints: ['./src/suite_system_join_int.ts'],
-    outfile: 'dist/system-join-int.js',
+    entryPoints: ['./src/suite_system_join_1.ts'],
+    outfile: 'dist/system-join-1.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
