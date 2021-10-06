@@ -22,8 +22,9 @@ export class SqljsIntegerScanBenchmark implements SystemBenchmark {
             system: 'sqljs',
             tags: [],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -33,7 +34,7 @@ export class SqljsIntegerScanBenchmark implements SystemBenchmark {
             values.push(i);
         }
         shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Int32())]);
         this.database.run(sqlCreate(this.getName(), schema.fields));
         for (const query of sqlInsert(this.getName(), schema.fields, [values])) {
             this.database.run(query);

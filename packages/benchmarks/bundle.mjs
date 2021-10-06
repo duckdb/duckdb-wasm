@@ -81,3 +81,16 @@ esbuild.build({
     sourcemap: true,
     external: EXTERNALS,
 });
+
+console.log('[ ESBUILD ] system-join-int.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_join_int.ts'],
+    outfile: 'dist/system-join-int.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});
