@@ -2,10 +2,10 @@ import * as arrow from 'apache-arrow';
 import * as faker from 'faker';
 import * as sqljs from 'sql.js';
 import { sqlCreate, sqlInsert } from './simple_sql';
-import { SystemBenchmark, SystemBenchmarkContext, noop } from './system_benchmark';
+import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { shuffle } from '../utils';
 
-export class SqljsSimpleScanBenchmark implements SystemBenchmark {
+export class SqljsIntegerScanBenchmark implements SystemBenchmark {
     database: sqljs.Database;
     tuples: number;
 
@@ -14,12 +14,13 @@ export class SqljsSimpleScanBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `sqljs_simple_scan_${this.tuples}`;
+        return `sqljs_integer_scan_${this.tuples}`;
     }
-    getMetadata(): any {
+    getMetadata(): SystemBenchmarkMetadata {
         return {
+            benchmark: 'integer_scan',
             system: 'sqljs',
-            group: 'simple_scan',
+            tags: [],
             timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
@@ -41,8 +42,13 @@ export class SqljsSimpleScanBenchmark implements SystemBenchmark {
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         const results = this.database.exec(`SELECT v FROM ${this.getName()}`);
+        let n = 0;
         for (const row of results[0].values) {
             noop(row);
+            n += 1;
+        }
+        if (n !== this.tuples) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}

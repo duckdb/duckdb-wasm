@@ -4,20 +4,22 @@ import alasql from 'alasql/dist/alasql';
 import { sqlCreate, sqlInsert } from './simple_sql';
 import { SystemBenchmark, SystemBenchmarkContext, noop } from './system_benchmark';
 import { shuffle } from '../utils';
+import { SystemBenchmarkMetadata } from '.';
 
-export class AlasqlSimpleScanBenchmark implements SystemBenchmark {
+export class AlasqlIntegerScanBenchmark implements SystemBenchmark {
     tuples: number;
 
     constructor(tuples: number) {
         this.tuples = tuples;
     }
     getName(): string {
-        return `alasql_simple_scan_${this.tuples}`;
+        return `alasql_integer_scan_${this.tuples}`;
     }
-    getMetadata(): any {
+    getMetadata(): SystemBenchmarkMetadata {
         return {
+            benchmark: 'integer_scan',
             system: 'alasql',
-            group: 'simple_scan',
+            tags: [],
             timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
@@ -39,8 +41,13 @@ export class AlasqlSimpleScanBenchmark implements SystemBenchmark {
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         const rows = await alasql(`SELECT v FROM ${this.getName()}`);
+        let n = 0;
         for (const row of rows) {
             noop(row);
+            n += 1;
+        }
+        if (n !== this.tuples) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -61,10 +68,11 @@ export class AlasqlSimpleSumBenchmark implements SystemBenchmark {
     getName(): string {
         return `alasql_simple_sum_${this.tuples}`;
     }
-    getMetadata(): any {
+    getMetadata(): SystemBenchmarkMetadata {
         return {
+            benchmark: 'simple_sum',
             system: 'alasql',
-            group: 'simple_sum',
+            tags: [],
             timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
