@@ -14,10 +14,13 @@ export class SqljsSimpleScanBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `sqljs_scan_${this.tuples}`;
+        return `sqljs_simple_scan_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'sqljs',
+            group: 'simple_scan',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };
@@ -60,10 +63,13 @@ export class SqljsSimpleSumBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `sqljs_sum_${this.tuples}`;
+        return `sqljs_simple_sum_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'sqljs',
+            group: 'simple_sum',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };

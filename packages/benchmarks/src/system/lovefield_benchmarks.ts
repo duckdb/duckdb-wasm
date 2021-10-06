@@ -14,10 +14,13 @@ export class LovefieldSimpleScanBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `lovefield_scan_${this.tuples}`;
+        return `lovefield_simple_scan_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'lovefield',
+            group: 'simple_scan',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };

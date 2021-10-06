@@ -43,8 +43,8 @@ export async function runSystemBenchmarks(
         await bm.bench.run();
         console.log(`[ OK  ] ${bm.bench.name}`);
         results.push({
-            ...bm.bench.toJSON(),
             ...bm.meta,
+            ...bm.bench.toJSON(),
         });
     }
     return results;
