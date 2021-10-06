@@ -41,7 +41,7 @@ export async function runSystemBenchmarks(
     for (const bm of bms) {
         console.log(`[ RUN ] ${bm.bench.name}`);
         await bm.bench.run();
-        console.log(`[ OK  ] ${bm.bench.name}`);
+        console.log(`[ OK  ] ${bm.bench.name}${' '.repeat(Math.max(40 - bm.bench.name.length, 0))}`);
         results.push({
             ...bm.meta,
             ...bm.bench.toJSON(),

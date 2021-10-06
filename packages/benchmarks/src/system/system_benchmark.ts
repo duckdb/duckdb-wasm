@@ -8,11 +8,20 @@ export interface SystemBenchmarkContext {
     seed: number;
 }
 
+export interface SystemBenchmarkMetadata {
+    benchmark: string;
+    system: string;
+    tags: string[];
+    timestamp: Date;
+    tuples: number;
+    bytes: number;
+}
+
 export interface SystemBenchmark {
     /// Get the benchmark name
     getName(): string;
     /// Get benchmark metadata
-    getMetadata(): any;
+    getMetadata(): SystemBenchmarkMetadata;
     /// Executed on error
     onError(ctx: SystemBenchmarkContext): Promise<void>;
     /// Executed before all benchmarks are run.

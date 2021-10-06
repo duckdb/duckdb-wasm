@@ -1,9 +1,9 @@
 import * as lf from 'lovefield-ts/dist/es6/lf.js';
 import * as faker from 'faker';
-import { SystemBenchmark, SystemBenchmarkContext, noop } from './system_benchmark';
+import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { shuffle } from '../utils';
 
-export class LovefieldSimpleScanBenchmark implements SystemBenchmark {
+export class LovefieldIntegerScanBenchmark implements SystemBenchmark {
     builder?: lf.Builder | null;
     database?: lf.DatabaseConnection | null;
     tuples: number;
@@ -14,12 +14,13 @@ export class LovefieldSimpleScanBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `lovefield_simple_scan_${this.tuples}`;
+        return `lovefield_integer_scan_${this.tuples}`;
     }
-    getMetadata(): any {
+    getMetadata(): SystemBenchmarkMetadata {
         return {
+            benchmark: 'integer_scan',
             system: 'lovefield',
-            group: 'simple_scan',
+            tags: [],
             timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
@@ -49,8 +50,13 @@ export class LovefieldSimpleScanBenchmark implements SystemBenchmark {
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         const table = this.database!.getSchema().table(this.getName());
         const rows = (await this.database!.select().from(table).exec()) as Iterable<{ v: number }>;
+        let n = 0;
         for (const row of rows) {
             noop(row);
+            n += 1;
+        }
+        if (n !== this.tuples) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
