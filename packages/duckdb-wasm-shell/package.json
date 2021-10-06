@@ -1,6 +1,6 @@
 {
     "name": "@duckdb/duckdb-wasm-shell",
-    "version": "0.1.0",
+    "version": "0.0.41-dev163.0",
     "description": "",
     "author": "Andre Kohn <kohn.a@outlook.com>",
     "license": "MIT",
@@ -20,7 +20,7 @@
     },
     "dependencies": {
         "apache-arrow": "^4.0.0",
-        "@duckdb/duckdb-wasm": "^0.0.39",
+        "@duckdb/duckdb-wasm": "^0.0.41-dev163.0",
         "@popperjs/core": "^2.10.2",
         "bootstrap": "^5.1.2",
         "classnames": "^2.3.1",
