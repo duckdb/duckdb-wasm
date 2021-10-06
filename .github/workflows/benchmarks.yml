@@ -68,4 +68,13 @@ jobs:
                       ./scripts/generate_tpch_raw.sh 0.01
                       ./scripts/generate_tpch_duckdb.sh 0.01
                       ./scripts/generate_tpch_sqlite.sh 0.01
-                      ./scripts/npm_restore.sh
+
+            - name: Restore NPM release
+              run: |
+                  ./scripts/npm_restore.sh
+
+            - name: Build @duckdb/benchmarks
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks build
