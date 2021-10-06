@@ -195,21 +195,7 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
         this.chars = chars;
     }
     getName(): string {
-        return `duckdb_sync_materializing_v
-        benchmark: 'varchar_filter',
-        system: 'duckdb',
-        tags: ['sync', 'materializing'],
-        timestamp: new Date(),
-        parameters: [this.tuples],
-        throughputTuples: this.tuples,
-        throughputBytes: this.tuples * this.chars,
-    };
-}
-async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-    faker.seed(ctx.seed);
-    const [schema, batches] = generateArrowUtf8Table(this.tuples, this.chars);
-    this.connection = this.database.connect();
-    this.connection.insertArrarchar_scan_${this.tuples}`;
+        return `duckdb_sync_materializing_varchar_scan_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
