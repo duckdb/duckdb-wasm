@@ -44,14 +44,14 @@ async function main() {
         seed: Math.random(),
     };
     const suite: SystemBenchmark[] = [
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 1000, 10000, 5, 100),
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 10000, 100000, 5, 1000),
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 20000, 100000, 5, 10000),
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 100000, 1000000, 5, 200000),
-        new ArqueroIntegerJoinBenchmark(1000, 10000, 5, 100),
-        new ArqueroIntegerJoinBenchmark(10000, 100000, 5, 1000),
-        new ArqueroIntegerJoinBenchmark(20000, 100000, 5, 10000),
-        new ArqueroIntegerJoinBenchmark(100000, 1000000, 5, 200000),
+        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 1000, 10000, 10, 100),
+        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 10000, 100000, 10, 100),
+        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 100000, 100000, 10, 100),
+        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 100000, 1000000, 10, 100),
+        new ArqueroIntegerJoinBenchmark(1000, 10000, 10, 100),
+        new ArqueroIntegerJoinBenchmark(10000, 100000, 10, 100),
+        new ArqueroIntegerJoinBenchmark(100000, 100000, 10, 100),
+        new ArqueroIntegerJoinBenchmark(100000, 1000000, 10, 100),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);

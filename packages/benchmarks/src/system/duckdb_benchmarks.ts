@@ -376,11 +376,13 @@ export class DuckDBSyncMaterializingIntegerJoinBenchmark implements SystemBenchm
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_l`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_r`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_l`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_r`);
         this.connection?.close();
     }
 }

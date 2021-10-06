@@ -128,10 +128,10 @@ bench_system_filter_text:
 	yarn workspace @duckdb/benchmarks build
 	yarn workspace @duckdb/benchmarks bench:system:filter:text
 
-.PHONY: bench_system_join_int
-bench_system_join_int:
+.PHONY: bench_system_join_1
+bench_system_join_1:
 	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:join:int
+	yarn workspace @duckdb/benchmarks bench:system:join:1
 
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches
