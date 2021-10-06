@@ -62,7 +62,7 @@ async function main() {
     // Write results
     const reports = path.resolve(__dirname, '../../../reports');
     await fs.mkdir(reports);
-    await fs.writeFile(path.resolve(reports, './suite_system_join_2.json'), JSON.stringify(results), 'utf8');
+    await fs.writeFile(path.resolve(reports, './benchmark_system_join_2.json'), JSON.stringify(results), 'utf8');
 }
 
 main();
