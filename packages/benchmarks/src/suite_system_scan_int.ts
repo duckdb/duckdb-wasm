@@ -89,7 +89,7 @@ async function main() {
     // Write results
     const reports = path.resolve(__dirname, '../../../reports');
     await fs.mkdir(reports);
-    await fs.writeFile(path.resolve(__dirname, './suite_system_scan_int.json'), JSON.stringify(results), 'utf8');
+    await fs.writeFile(path.resolve(__dirname, './benchmark_system_scan_int.json'), JSON.stringify(results), 'utf8');
 }
 
 main();
