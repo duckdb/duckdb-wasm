@@ -9,6 +9,7 @@ import {
 import { runSystemBenchmarks } from './suite';
 import Worker from 'web-worker';
 import path from 'path';
+import fs from 'fs/promises';
 
 async function main() {
     // Setup DuckDB sync & async
@@ -50,7 +51,12 @@ async function main() {
     console.log(results);
 
     // Terminate the worker
-    duckdbAsyncDB.terminate();
+    await duckdbAsyncDB.terminate();
+
+    // Write results
+    const reports = path.resolve(__dirname, '../../../reports');
+    await fs.mkdir(reports);
+    await fs.writeFile(path.resolve(reports, './suite_system_regex.json'), JSON.stringify(results), 'utf8');
 }
 
 main();
