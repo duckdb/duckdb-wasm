@@ -69,10 +69,10 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] system-filter-text.js');
+console.log('[ ESBUILD ] system-regex.js');
 esbuild.build({
-    entryPoints: ['./src/suite_system_filter_text.ts'],
-    outfile: 'dist/system-filter-text.js',
+    entryPoints: ['./src/suite_system_regex.ts'],
+    outfile: 'dist/system-regex.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
@@ -82,10 +82,23 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] system-join-1.js');
+console.log('[ ESBUILD ] system-join-2.js');
 esbuild.build({
-    entryPoints: ['./src/suite_system_join_1.ts'],
-    outfile: 'dist/system-join-1.js',
+    entryPoints: ['./src/suite_system_join_2.ts'],
+    outfile: 'dist/system-join-2.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});
+
+console.log('[ ESBUILD ] system-join-3.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_join_3.ts'],
+    outfile: 'dist/system-join-3.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,

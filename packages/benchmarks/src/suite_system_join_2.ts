@@ -1,8 +1,8 @@
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
 import * as duckdb_sync from '@duckdb/duckdb-wasm/dist/duckdb-node-sync';
 import {
-    ArqueroIntegerJoinBenchmark,
-    DuckDBSyncMaterializingIntegerJoinBenchmark,
+    ArqueroIntegerJoin2Benchmark,
+    DuckDBSyncMaterializingIntegerJoin2Benchmark,
     SystemBenchmark,
     SystemBenchmarkContext,
 } from './system';
@@ -44,14 +44,14 @@ async function main() {
         seed: Math.random(),
     };
     const suite: SystemBenchmark[] = [
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 1000, 10000, 10, 100),
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 10000, 100000, 10, 100),
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 100000, 100000, 10, 100),
-        new DuckDBSyncMaterializingIntegerJoinBenchmark(duckdbDB, 100000, 1000000, 10, 100),
-        new ArqueroIntegerJoinBenchmark(1000, 10000, 10, 100),
-        new ArqueroIntegerJoinBenchmark(10000, 100000, 10, 100),
-        new ArqueroIntegerJoinBenchmark(100000, 100000, 10, 100),
-        new ArqueroIntegerJoinBenchmark(100000, 1000000, 10, 100),
+        new DuckDBSyncMaterializingIntegerJoin2Benchmark(duckdbDB, 1000, 10000, 100, 10),
+        new DuckDBSyncMaterializingIntegerJoin2Benchmark(duckdbDB, 10000, 100000, 100, 10),
+        new DuckDBSyncMaterializingIntegerJoin2Benchmark(duckdbDB, 100000, 100000, 100, 10),
+        new DuckDBSyncMaterializingIntegerJoin2Benchmark(duckdbDB, 100000, 1000000, 100, 10),
+        new ArqueroIntegerJoin2Benchmark(1000, 10000, 100, 10),
+        new ArqueroIntegerJoin2Benchmark(10000, 100000, 100, 10),
+        new ArqueroIntegerJoin2Benchmark(100000, 100000, 100, 10),
+        new ArqueroIntegerJoin2Benchmark(100000, 1000000, 100, 10),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);

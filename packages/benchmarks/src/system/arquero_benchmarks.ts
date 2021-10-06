@@ -51,57 +51,139 @@ export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
     }
 }
 
-export class ArqueroIntegerJoinBenchmark implements SystemBenchmark {
-    tuplesLeft: number;
-    tuplesRight: number;
-    stepLR: number;
-    filterLeft: number;
+export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
+    tuplesA: number;
+    tuplesB: number;
+    filterA: number;
+    stepAB: number;
     tables: { [key: string]: aq.internal.Table } = {};
 
-    constructor(l: number, r: number, stepLR: number, filterLeft: number) {
-        this.tuplesLeft = l;
-        this.tuplesRight = r;
-        this.stepLR = stepLR;
-        this.filterLeft = filterLeft;
+    constructor(a: number, b: number, filterA: number, stepAB: number) {
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.filterA = filterA;
+        this.stepAB = stepAB;
     }
     getName(): string {
-        return `arquero_integer_join_${this.tuplesLeft}_${this.tuplesRight}_${this.stepLR}_${this.filterLeft}`;
+        return `arquero_integer_join2_${this.tuplesA}_${this.tuplesB}_${this.filterA}_${this.stepAB}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
-            benchmark: 'integer_join',
+            benchmark: 'integer_join2',
             system: 'arquero',
             tags: [],
             timestamp: new Date(),
-            parameters: [this.tuplesLeft, this.tuplesRight, this.stepLR, this.filterLeft],
+            parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schemaL, batchesL] = generateArrowInt32Table(this.tuplesLeft);
-        const [schemaR, batchesR] = generateArrow2Int32Table(this.tuplesRight, this.stepLR);
-        const tableL = new arrow.Table(schemaL, batchesL);
-        const tableR = new arrow.Table(schemaR, batchesR);
-        this.tables['L'] = aq.fromArrow(tableL);
-        this.tables['R'] = aq.fromArrow(tableR);
+        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesA);
+        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesB, this.stepAB);
+        const tableA = new arrow.Table(schemaA, batchesA);
+        const tableB = new arrow.Table(schemaB, batchesB);
+        this.tables['A'] = aq.fromArrow(tableA);
+        this.tables['B'] = aq.fromArrow(tableB);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const filter = this.filterLeft;
-        const result = this.tables['L']
+        const filter = this.filterA;
+        const result = this.tables['A']
             .params({ filter })
             .filter((row: any) => row.v0 < filter)
-            .join(this.tables['R'], ['v0', 'v1']);
+            .rename({ v0: 'a0' })
+            .join(this.tables['B'].rename({ v0: 'b0', v1: 'b1' }), ['a0', 'b1']);
+        let n = 0;
         for (const v of result) {
             noop(v);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        delete this.tables[this.getName()];
+        delete this.tables['A'];
+        delete this.tables['B'];
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        delete this.tables[this.getName()];
+        delete this.tables['A'];
+        delete this.tables['B'];
+    }
+}
+
+export class ArqueroIntegerJoin3Benchmark implements SystemBenchmark {
+    tuplesA: number;
+    tuplesB: number;
+    tuplesC: number;
+    stepAB: number;
+    stepBC: number;
+    filterA: number;
+    tables: { [key: string]: aq.internal.Table } = {};
+
+    constructor(a: number, b: number, c: number, filterA: number, stepAB: number, stepBC: number) {
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.tuplesC = c;
+        this.stepAB = stepAB;
+        this.stepBC = stepBC;
+        this.filterA = filterA;
+    }
+    getName(): string {
+        return `arquero_integer_join3_${this.tuplesA}_${this.tuplesB}_${this.tuplesC}_${this.filterA}_${this.stepAB}_${this.stepBC}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join3',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesA);
+        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesB, this.stepAB);
+        const [schemaC, batchesC] = generateArrow2Int32Table(this.tuplesC, this.stepBC);
+        const tableA = new arrow.Table(schemaA, batchesA);
+        const tableB = new arrow.Table(schemaB, batchesB);
+        const tableC = new arrow.Table(schemaC, batchesC);
+        this.tables['A'] = aq.fromArrow(tableA);
+        this.tables['B'] = aq.fromArrow(tableB);
+        this.tables['C'] = aq.fromArrow(tableC);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const filter = this.filterA;
+        const result = this.tables['A']
+            .params({ filter })
+            .filter((row: any) => row.v0 < filter)
+            .rename({ v0: 'a0' })
+            .join(this.tables['B'].rename({ v0: 'b0', v1: 'b1' }), ['a0', 'b1'])
+            .join(this.tables['C'].rename({ v0: 'c0', v1: 'c1' }), ['b0', 'c1']);
+        let n = 0;
+        for (const v of result) {
+            noop(v);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB * this.stepBC;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables['A'];
+        delete this.tables['B'];
+        delete this.tables['C'];
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables['A'];
+        delete this.tables['B'];
+        delete this.tables['C'];
     }
 }
 
@@ -154,7 +236,7 @@ export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
     }
 }
 
-export class ArqueroVarcharFilterBenchmark implements SystemBenchmark {
+export class ArqueroRegexBenchmark implements SystemBenchmark {
     tuples: number;
     tables: { [key: string]: aq.internal.Table } = {};
     chars: number;
@@ -164,11 +246,11 @@ export class ArqueroVarcharFilterBenchmark implements SystemBenchmark {
         this.chars = chars;
     }
     getName(): string {
-        return `arquero_varchar_filter_${this.tuples}`;
+        return `arquero_regex_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
-            benchmark: 'varchar_filter',
+            benchmark: 'regex',
             system: 'arquero',
             tags: [],
             timestamp: new Date(),
@@ -186,7 +268,7 @@ export class ArqueroVarcharFilterBenchmark implements SystemBenchmark {
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         let n = 0;
-        for (const v of this.tables[this.getName()].filter((d: any) => aq.op.match(d.v, /^.#+$/g, null)).array('v0')) {
+        for (const v of this.tables[this.getName()].filter((d: any) => aq.op.match(d.v0, /^.#+$/g, null)).array('v0')) {
             noop(v);
             n += 1;
         }
