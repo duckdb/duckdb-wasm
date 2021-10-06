@@ -11,7 +11,7 @@ import './globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'xterm/css/xterm.css';
 
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module.js';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm.js';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
 import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-next.wasm';
 import duckdb_wasm_next_coi from '@duckdb/duckdb-wasm/dist/duckdb-next-coi.wasm';

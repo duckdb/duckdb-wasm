@@ -1,5 +1,5 @@
 import * as arrow from 'apache-arrow';
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { generateArrowInt32Table, generateArrowUtf8Table, generateArrow2Int32Table } from './data_generator';

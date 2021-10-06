@@ -65,7 +65,7 @@
     ],
     "main": "./dist/duckdb-node-async.js",
     "types": "./dist/duckdb-node-async.d.ts",
-    "module": "./dist/duckdb.module.js",
+    "module": "./dist/duckdb-esm.js",
     "browser": {
         "./dist/duckdb-node-async.js": "./dist/duckdb-browser-async.js",
         "temp-write": false,
