@@ -1,10 +1,10 @@
 {
     "name": "@duckdb/benchmarks",
-    "version": "0.0.0",
+    "version": "0.0.41-dev163.0",
     "license": "MPL-2.0",
     "private": true,
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^0.0.39",
+        "@duckdb/duckdb-wasm": "^0.0.41-dev163.0",
         "@nano-sql/core": "^2.3.7",
         "alasql": "^1.7.2",
         "apache-arrow": "^4.0.0",

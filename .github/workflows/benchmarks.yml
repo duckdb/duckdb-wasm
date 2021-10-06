@@ -59,3 +59,13 @@ jobs:
                   key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
                   restore-keys: |
                       ${{ runner.os }}-yarn-
+
+            - name: Prepare repository
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      yarn install --frozen-lockfile
+                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_tpch_duckdb.sh 0.01
+                      ./scripts/generate_tpch_sqlite.sh 0.01
+                      ./scripts/npm_restore.sh
