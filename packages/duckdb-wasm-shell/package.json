@@ -62,7 +62,7 @@
         "karma-jasmine": "^4.0.1",
         "karma-spec-reporter": "^0.0.32",
         "karma-webpack": "^5.0.0",
-        "mini-css-extract-plugin": "^2.3.0",
+        "mini-css-extract-plugin": "^2.4.1",
         "source-map-loader": "^3.0.0",
         "style-loader": "^3.3.0",
         "ts-loader": "^9.2.2",
