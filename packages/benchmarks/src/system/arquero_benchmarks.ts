@@ -12,10 +12,13 @@ export class ArqueroSimpleScanBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `arquero_scan_${this.tuples}`;
+        return `arquero_simple_scan_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'arquero',
+            group: 'simple_scan',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };
@@ -62,10 +65,13 @@ export class ArqueroSimpleSumBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `arquero_sum_${this.tuples}`;
+        return `arquero_simple_sum_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'arquero',
+            group: 'simple_sum',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };

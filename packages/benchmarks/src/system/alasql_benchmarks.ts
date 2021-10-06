@@ -12,10 +12,13 @@ export class AlasqlSimpleScanBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `alasql_scan_${this.tuples}`;
+        return `alasql_simple_scan_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'alasql',
+            group: 'simple_scan',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };
@@ -56,10 +59,13 @@ export class AlasqlSimpleSumBenchmark implements SystemBenchmark {
         this.tuples = tuples;
     }
     getName(): string {
-        return `alasql_sum_${this.tuples}`;
+        return `alasql_simple_sum_${this.tuples}`;
     }
     getMetadata(): any {
         return {
+            system: 'alasql',
+            group: 'simple_sum',
+            timestamp: new Date(),
             tuples: this.tuples,
             bytes: this.tuples * 4,
         };
