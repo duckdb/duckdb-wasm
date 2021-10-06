@@ -3,8 +3,8 @@ import * as duckdb_sync from '@duckdb/duckdb-wasm/dist/duckdb-node-sync';
 import {
     SystemBenchmarkContext,
     SystemBenchmark,
-    ArqueroVarcharFilterBenchmark,
-    DuckDBSyncMaterializingVarcharFilterBenchmark,
+    ArqueroRegexBenchmark,
+    DuckDBSyncMaterializingRegexBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
 import Worker from 'web-worker';
@@ -39,14 +39,12 @@ async function main() {
         seed: Math.random(),
     };
     const suite: SystemBenchmark[] = [
-        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 1000, 20),
-        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 10000, 20),
-        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 100000, 20),
-        new DuckDBSyncMaterializingVarcharFilterBenchmark(duckdbDB, 1000000, 20),
-        new ArqueroVarcharFilterBenchmark(1000, 20),
-        new ArqueroVarcharFilterBenchmark(10000, 20),
-        new ArqueroVarcharFilterBenchmark(100000, 20),
-        new ArqueroVarcharFilterBenchmark(1000000, 20),
+        new DuckDBSyncMaterializingRegexBenchmark(duckdbDB, 1000, 20),
+        new DuckDBSyncMaterializingRegexBenchmark(duckdbDB, 10000, 20),
+        new DuckDBSyncMaterializingRegexBenchmark(duckdbDB, 100000, 20),
+        new ArqueroRegexBenchmark(1000, 20),
+        new ArqueroRegexBenchmark(10000, 20),
+        new ArqueroRegexBenchmark(100000, 20),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);

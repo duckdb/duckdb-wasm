@@ -254,7 +254,7 @@ async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
     }
 }
 
-export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenchmark {
+export class DuckDBSyncMaterializingRegexBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
     tuples: number;
@@ -267,11 +267,11 @@ export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenc
         this.chars = chars;
     }
     getName(): string {
-        return `duckdb_sync_materializing_filter_scan_${this.tuples}`;
+        return `duckdb_sync_materializing_regex_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
-            benchmark: 'varchar_filter',
+            benchmark: 'regex',
             system: 'duckdb',
             tags: ['sync', 'materializing'],
             timestamp: new Date(),
@@ -291,8 +291,8 @@ export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenc
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(
-            `SELECT * FROM ${this.getName()} WHERE v LIKE '_#%'`,
+        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(
+            `SELECT * FROM ${this.getName()} WHERE v0 LIKE '_#%'`,
         );
         let n = 0;
         for (const v of result.getChildAt(0)!) {
@@ -314,75 +314,168 @@ export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenc
     }
 }
 
-export class DuckDBSyncMaterializingIntegerJoinBenchmark implements SystemBenchmark {
+export class DuckDBSyncMaterializingIntegerJoin2Benchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
-    tuplesLeft: number;
-    tuplesRight: number;
-    stepLR: number;
-    filterLeft: number;
+    tuplesA: number;
+    tuplesB: number;
+    stepAB: number;
+    filterA: number;
 
-    constructor(database: duckdb.DuckDBBindings, l: number, r: number, stepLR: number, filterLeft: number) {
+    constructor(database: duckdb.DuckDBBindings, a: number, b: number, filterA: number, stepAB: number) {
         this.database = database;
         this.connection = null;
-        this.tuplesLeft = l;
-        this.tuplesRight = r;
-        this.stepLR = stepLR;
-        this.filterLeft = filterLeft;
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.filterA = filterA;
+        this.stepAB = stepAB;
     }
     getName(): string {
-        return `duckdb_sync_materializing_integer_join_${this.tuplesLeft}_${this.tuplesRight}_${this.stepLR}_${this.filterLeft}`;
+        return `duckdb_sync_materializing_integer_join2_${this.tuplesA}_${this.tuplesB}_${this.stepAB}_${this.filterA}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
-            benchmark: 'integer_join',
+            benchmark: 'integer_join2',
             system: 'duckdb',
             tags: ['sync', 'materializing'],
             timestamp: new Date(),
-            parameters: [this.tuplesLeft, this.tuplesRight, this.stepLR, this.filterLeft],
+            parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesLeft);
-        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesRight, this.stepLR);
+        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesA);
+        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesB, this.stepAB);
         this.connection = this.database.connect();
         this.connection.insertArrowBatches(schemaA, batchesA, {
             schema: 'main',
-            name: `${this.getName()}_l`,
+            name: `${this.getName()}_a`,
         });
         this.connection.insertArrowBatches(schemaB, batchesB, {
             schema: 'main',
-            name: `${this.getName()}_r`,
+            name: `${this.getName()}_b`,
         });
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`
             SELECT *
-            FROM ${this.getName()}_l l, ${this.getName()}_r r
-            WHERE l.v0 = r.v1
-            AND l.v0 < ${this.filterLeft}
+            FROM ${this.getName()}_a a, ${this.getName()}_b b
+            WHERE a.v0 = b.v1
+            AND a.v0 < ${this.filterA}
         `);
         let n = 0;
         for (const v of result.getChildAt(0)!) {
             noop(v);
             n += 1;
         }
-        const expected = this.filterLeft * this.stepLR;
+        const expected = this.filterA * this.stepAB;
         if (n !== expected) {
             throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_l`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_r`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_l`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_r`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.close();
+    }
+}
+
+export class DuckDBSyncMaterializingIntegerJoin3Benchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    tuplesA: number;
+    tuplesB: number;
+    tuplesC: number;
+    stepAB: number;
+    stepBC: number;
+    filterA: number;
+
+    constructor(
+        database: duckdb.DuckDBBindings,
+        a: number,
+        b: number,
+        c: number,
+        filterA: number,
+        stepAB: number,
+        stepBC: number,
+    ) {
+        this.database = database;
+        this.connection = null;
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.tuplesC = c;
+        this.stepAB = stepAB;
+        this.stepBC = stepBC;
+        this.filterA = filterA;
+    }
+    getName(): string {
+        return `duckdb_sync_materializing_integer_join3_${this.tuplesA}_${this.tuplesB}_${this.tuplesC}_${this.filterA}_${this.stepAB}_${this.stepBC}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join3',
+            system: 'duckdb',
+            tags: ['sync', 'materializing'],
+            timestamp: new Date(),
+            parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesA);
+        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesB, this.stepAB);
+        const [schemaC, batchesC] = generateArrow2Int32Table(this.tuplesC, this.stepBC);
+        this.connection = this.database.connect();
+        this.connection.insertArrowBatches(schemaA, batchesA, {
+            schema: 'main',
+            name: `${this.getName()}_a`,
+        });
+        this.connection.insertArrowBatches(schemaB, batchesB, {
+            schema: 'main',
+            name: `${this.getName()}_b`,
+        });
+        this.connection.insertArrowBatches(schemaC, batchesC, {
+            schema: 'main',
+            name: `${this.getName()}_c`,
+        });
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`
+            SELECT *
+            FROM ${this.getName()}_a a, ${this.getName()}_b b, ${this.getName()}_c c
+            WHERE a.v0 = b.v1
+            AND b.v0 = c.v1
+            AND a.v0 < ${this.filterA}
+        `);
+        let n = 0;
+        for (const v of result.getChildAt(0)!) {
+            noop(v);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB * this.stepBC;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_c`);
+        this.connection?.close();
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_c`);
         this.connection?.close();
     }
 }

@@ -123,15 +123,21 @@ bench_system_scan_text:
 	yarn workspace @duckdb/benchmarks build
 	yarn workspace @duckdb/benchmarks bench:system:scan:text
 
-.PHONY: bench_system_filter_text
-bench_system_filter_text:
+.PHONY: bench_system_regex
+bench_system_regex:
 	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:filter:text
+	yarn workspace @duckdb/benchmarks bench:system:regex
 
-.PHONY: bench_system_join_1
-bench_system_join_1:
+.PHONY: bench_system_join_2
+bench_system_join_2:
 	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:join:1
+	yarn workspace @duckdb/benchmarks bench:system:join:2
+
+.PHONY: bench_system_join_3
+bench_system_join_3:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:join:3
+
 
 # Make sure we can access the wasm caches
 .PHONY: wasm_caches
