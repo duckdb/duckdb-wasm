@@ -21,8 +21,9 @@ export class AlasqlIntegerScanBenchmark implements SystemBenchmark {
             system: 'alasql',
             tags: [],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -32,7 +33,7 @@ export class AlasqlIntegerScanBenchmark implements SystemBenchmark {
             values.push(i);
         }
         shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
+        const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Int32())]);
         await alasql(sqlCreate(this.getName(), schema.fields));
         for (const query of sqlInsert(this.getName(), schema.fields, [values])) {
             await alasql(query);
@@ -74,8 +75,9 @@ export class AlasqlSimpleSumBenchmark implements SystemBenchmark {
             system: 'alasql',
             tags: [],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -85,8 +87,8 @@ export class AlasqlSimpleSumBenchmark implements SystemBenchmark {
             values.push(i);
         }
         shuffle(values);
-        const schema = new arrow.Schema([new arrow.Field('v', new arrow.Int32())]);
-        await alasql(sqlCreate(this.getName(), [new arrow.Field('v', new arrow.Int32())]));
+        const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Int32())]);
+        await alasql(sqlCreate(this.getName(), [new arrow.Field('v0', new arrow.Int32())]));
         for (const query of sqlInsert(this.getName(), schema.fields, [values])) {
             await alasql(query);
         }

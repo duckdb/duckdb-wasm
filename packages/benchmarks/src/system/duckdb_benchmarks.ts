@@ -2,7 +2,7 @@ import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb.module';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
-import { generateArrowInt32Table, generateArrowUtf8Table } from './data_generator';
+import { generateArrowInt32Table, generateArrowUtf8Table, generateArrow2Int32Table } from './data_generator';
 
 export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
@@ -23,8 +23,9 @@ export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchm
             system: 'duckdb',
             tags: ['sync', 'materializing'],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -72,8 +73,9 @@ export class DuckDBSyncStreamingIntegerScanBenchmark extends DuckDBSyncMateriali
             system: 'duckdb',
             tags: ['sync', 'streaming'],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
@@ -110,8 +112,9 @@ export class DuckDBAsyncMaterializingIntegerScanBenchmark implements SystemBench
             system: 'duckdb',
             tags: ['async', 'materializing'],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -159,8 +162,9 @@ export class DuckDBAsyncStreamingIntegerScanBenchmark extends DuckDBAsyncMateria
             system: 'duckdb',
             tags: ['async', 'streaming'],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
@@ -191,7 +195,21 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
         this.chars = chars;
     }
     getName(): string {
-        return `duckdb_sync_materializing_varchar_scan_${this.tuples}`;
+        return `duckdb_sync_materializing_v
+        benchmark: 'varchar_filter',
+        system: 'duckdb',
+        tags: ['sync', 'materializing'],
+        timestamp: new Date(),
+        parameters: [this.tuples],
+        throughputTuples: this.tuples,
+        throughputBytes: this.tuples * this.chars,
+    };
+}
+async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+    faker.seed(ctx.seed);
+    const [schema, batches] = generateArrowUtf8Table(this.tuples, this.chars);
+    this.connection = this.database.connect();
+    this.connection.insertArrarchar_scan_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
@@ -199,8 +217,9 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
             system: 'duckdb',
             tags: ['sync', 'materializing'],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * this.chars,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * this.chars,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -256,8 +275,9 @@ export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenc
             system: 'duckdb',
             tags: ['sync', 'materializing'],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * this.chars,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * this.chars,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -281,6 +301,77 @@ export class DuckDBSyncMaterializingVarcharFilterBenchmark implements SystemBenc
         }
         if (n !== 10) {
             throw Error(`invalid tuple count. expected 10, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+}
+
+export class DuckDBSyncMaterializingIntegerJoinBenchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    tuplesLeft: number;
+    tuplesRight: number;
+    stepLR: number;
+    filterLeft: number;
+
+    constructor(database: duckdb.DuckDBBindings, l: number, r: number, stepLR: number, filterLeft: number) {
+        this.database = database;
+        this.connection = null;
+        this.tuplesLeft = l;
+        this.tuplesRight = r;
+        this.stepLR = stepLR;
+        this.filterLeft = filterLeft;
+    }
+    getName(): string {
+        return `duckdb_sync_materializing_integer_join_${this.tuplesLeft}_${this.tuplesRight}_${this.stepLR}_${this.filterLeft}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join',
+            system: 'duckdb',
+            tags: ['sync', 'materializing'],
+            timestamp: new Date(),
+            parameters: [this.tuplesLeft, this.tuplesRight, this.stepLR, this.filterLeft],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesLeft);
+        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesRight, this.stepLR);
+        this.connection = this.database.connect();
+        this.connection.insertArrowBatches(schemaA, batchesA, {
+            schema: 'main',
+            name: `${this.getName()}_l`,
+        });
+        this.connection.insertArrowBatches(schemaB, batchesB, {
+            schema: 'main',
+            name: `${this.getName()}_r`,
+        });
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`
+            SELECT *
+            FROM ${this.getName()}_l l, ${this.getName()}_r r
+            WHERE l.v0 = r.v1
+            AND l.v0 < ${this.filterLeft}
+        `);
+        let n = 0;
+        for (const v of result.getChildAt(0)!) {
+            noop(v);
+            n += 1;
+        }
+        const expected = this.filterLeft * this.stepLR;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}

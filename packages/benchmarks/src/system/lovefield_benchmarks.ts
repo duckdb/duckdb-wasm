@@ -22,8 +22,9 @@ export class LovefieldIntegerScanBenchmark implements SystemBenchmark {
             system: 'lovefield',
             tags: [],
             timestamp: new Date(),
-            tuples: this.tuples,
-            bytes: this.tuples * 4,
+            parameters: [this.tuples],
+            throughputTuples: this.tuples,
+            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -32,7 +33,7 @@ export class LovefieldIntegerScanBenchmark implements SystemBenchmark {
         // Create table
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
         const tableBuilder = this.builder!.createTable(this.getName());
-        tableBuilder.addColumn('v', lf.Type.INTEGER);
+        tableBuilder.addColumn('v0', lf.Type.INTEGER);
 
         // Get table
         this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
