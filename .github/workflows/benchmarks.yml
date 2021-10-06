@@ -1,0 +1,61 @@
+name: 'Benchmarks'
+on:
+    workflow_dispatch:
+
+jobs:
+    tpch_generator:
+        name: TPCH Generator
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - name: Cache generator
+              uses: actions/cache@v2
+              id: cache-generator
+              with:
+                  path: ./submodules/tpch-dbgen/dbgen/dbgen
+                  key: ${{ runner.os }}-tpch-dben
+
+            - name: Build generator
+              if: steps.cache-generator.outputs.cache-hit != 'true'
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      make -C ./submodules/tpch-dbgen/dbgen/ dbgen
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: |
+                      ./submodules/tpch-dbgen/dbgen/dbgen
+                  retention-days: 1
+
+    dummy_benchmark:
+        name: Dummy Benchmark
+        runs-on: ubuntu-latest
+        needs:
+            - tpch_generator
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: 'recursive'
+
+            - uses: actions/download-artifact@v2
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/
+
+            - name: Cache node_modules
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./node_modules
+                      ./packages/benchmarks/node_modules
+                      ./packages/duckdb-wasm/node_modules
+                      ./packages/duckdb-wasm-shell/node_modules
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
