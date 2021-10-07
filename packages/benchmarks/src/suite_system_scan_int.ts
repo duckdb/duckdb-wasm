@@ -16,10 +16,6 @@ async function main() {
     const duckdbAsync = await setupDuckDBAsync();
     const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
-        new SqljsIntegerScanBenchmark(sqljsDB, 1000),
-        new SqljsIntegerScanBenchmark(sqljsDB, 10000),
-        new SqljsIntegerScanBenchmark(sqljsDB, 100000),
-        new SqljsIntegerScanBenchmark(sqljsDB, 1000000),
         new ArqueroIntegerScanBenchmark(1000),
         new ArqueroIntegerScanBenchmark(10000),
         new ArqueroIntegerScanBenchmark(100000),
@@ -28,6 +24,10 @@ async function main() {
         new AlasqlIntegerScanBenchmark(10000),
         new AlasqlIntegerScanBenchmark(100000),
         new LovefieldIntegerScanBenchmark(1000),
+        new SqljsIntegerScanBenchmark(sqljsDB, 1000),
+        new SqljsIntegerScanBenchmark(sqljsDB, 10000),
+        new SqljsIntegerScanBenchmark(sqljsDB, 100000),
+        new SqljsIntegerScanBenchmark(sqljsDB, 1000000),
         new DuckDBSyncIntegerScanBenchmark(duckdbSync, 1000),
         new DuckDBSyncIntegerScanBenchmark(duckdbSync, 10000),
         new DuckDBSyncIntegerScanBenchmark(duckdbSync, 100000),
