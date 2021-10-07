@@ -25,20 +25,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .subcommand(
             App::new("tpch")
-                .about("Generates parquet files from the TPCH TBL files")
-                .arg(
-                    Arg::new("out")
-                        .short('o')
-                        .takes_value(true)
-                        .required(true)
-                        .about("Directory where the parquet files are written"),
-                )
+                .about("Generates arrow & parquet files from the TPCH TBL files")
                 .arg(
                     Arg::new("in")
-                        .short('i')
+                        .long("in")
                         .takes_value(true)
                         .required(true)
                         .about("Directory with generated tbl files"),
+                )
+                .arg(
+                    Arg::new("out-arrow")
+                        .long("out-arrow")
+                        .takes_value(true)
+                        .required(true)
+                        .about("Directory where the arrow files are written"),
+                )
+                .arg(
+                    Arg::new("out-parquet")
+                        .long("out-parquet")
+                        .takes_value(true)
+                        .required(true)
+                        .about("Directory where the parquet files are written"),
                 ),
         )
         .get_matches();
@@ -61,9 +68,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(matches) = matches.subcommand_matches("tpch") {
-        let out_dir = require_dir_arg(matches, "out");
+        let out_parquet_dir = require_dir_arg(matches, "out-parquet");
+        let out_arrow_dir = require_dir_arg(matches, "out-arrow");
         let in_dir = require_dir_arg(matches, "in");
-        tpch::convert_tbls(&in_dir, &out_dir)?;
+        tpch::convert_tbls(&in_dir, &out_parquet_dir, &out_arrow_dir)?;
         process::exit(0);
     }
 

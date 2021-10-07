@@ -200,7 +200,8 @@ jobs:
               with:
                   script: |-
                       mkdir -p ./lib/build/debug ./reports
-                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_tpch_tbl.sh 0.01
+                      ./scripts/generate_tpch_arrow.sh 0.01
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
@@ -290,7 +291,8 @@ jobs:
               with:
                   script: |-
                       mkdir -p ./lib/build/release ./reports
-                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_tpch_tbl.sh 0.01
+                      ./scripts/generate_tpch_arrow.sh 0.01
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
@@ -569,7 +571,8 @@ jobs:
                   script: |-
                       mkdir -p ./lib/build/wasm/release ./reports
                       yarn install --frozen-lockfile
-                      ./scripts/generate_tpch_raw.sh 0.01
+                      ./scripts/generate_tpch_tbl.sh 0.01
+                      ./scripts/generate_tpch_arrow.sh 0.01
                       ./scripts/generate_tpch_duckdb.sh 0.01
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh

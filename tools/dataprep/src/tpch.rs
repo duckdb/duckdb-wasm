@@ -6,7 +6,8 @@ use std::sync::Arc;
 
 fn convert_tbl(
     tbl_file_path: PathBuf,
-    out_file_path: PathBuf,
+    parquet_out_path: PathBuf,
+    arrow_out_path: PathBuf,
     schema: Arc<Schema>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tbl_md = fs::metadata(&tbl_file_path);
@@ -16,26 +17,34 @@ fn convert_tbl(
     }
     print!(
         "{:.<24}",
-        out_file_path.file_name().unwrap().to_str().unwrap()
+        tbl_file_path.file_name().unwrap().to_str().unwrap()
     );
+
+    // Create arrow writer
+    let arrow_file = fs::File::create(arrow_out_path)?;
+    let mut arrow_writer = arrow::ipc::writer::FileWriter::try_new(arrow_file, &schema)?;
+
+    // Create parquet writer
+    let parquet_file = fs::File::create(parquet_out_path)?;
+    let mut parquet_writer =
+        parquet::arrow::ArrowWriter::try_new(parquet_file, schema.clone(), None)?;
 
     // Create csv reader
     let tbl_file = fs::File::open(tbl_file_path)?;
     let reader = arrow::csv::ReaderBuilder::new()
         .with_delimiter(b'|')
-        .with_schema(schema.clone())
+        .with_schema(schema)
         .with_batch_size(20000)
         .build(tbl_file)?;
 
-    // Stream to parquet writer
-    let parquet_file = fs::File::create(out_file_path)?;
-    let mut writer = parquet::arrow::ArrowWriter::try_new(parquet_file, schema, None)?;
-
     // Write all batches
     for batch in reader {
-        writer.write(&batch?)?;
+        let b = batch?;
+        parquet_writer.write(&b)?;
+        arrow_writer.write(&b)?;
     }
-    writer.close()?;
+    parquet_writer.close()?;
+    arrow_writer.finish()?;
 
     println!("OK");
     Ok(())
@@ -45,10 +54,15 @@ fn convert_tbl(
 // Not supported by the parquet arrow writer at the moment.
 const DECIMAL_12_2: DataType = DataType::Float64;
 
-pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn convert_tbls(
+    tbl_dir: &Path,
+    parquet_dir: &Path,
+    arrow_dir: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     convert_tbl(
         tbl_dir.join("lineitem.tbl"),
-        out_dir.join("lineitem.parquet"),
+        parquet_dir.join("lineitem.parquet"),
+        arrow_dir.join("lineitem.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("l_orderkey", DataType::Int32, false),
             Field::new("l_partkey", DataType::Int32, false),
@@ -70,7 +84,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("supplier.tbl"),
-        out_dir.join("supplier.parquet"),
+        parquet_dir.join("supplier.parquet"),
+        arrow_dir.join("supplier.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("s_suppkey", DataType::Int32, false),
             Field::new("s_name", DataType::Utf8, false),
@@ -83,7 +98,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("customer.tbl"),
-        out_dir.join("customer.parquet"),
+        parquet_dir.join("customer.parquet"),
+        arrow_dir.join("customer.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("c_custkey", DataType::Int32, false),
             Field::new("c_name", DataType::Utf8, false),
@@ -97,7 +113,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("orders.tbl"),
-        out_dir.join("orders.parquet"),
+        parquet_dir.join("orders.parquet"),
+        arrow_dir.join("orders.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("o_orderkey", DataType::Int32, false),
             Field::new("o_custkey", DataType::Int32, false),
@@ -112,7 +129,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("part.tbl"),
-        out_dir.join("part.parquet"),
+        parquet_dir.join("part.parquet"),
+        arrow_dir.join("part.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("p_partkey", DataType::Int32, false),
             Field::new("p_name", DataType::Utf8, false),
@@ -127,7 +145,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("partsupp.tbl"),
-        out_dir.join("partsupp.parquet"),
+        parquet_dir.join("partsupp.parquet"),
+        arrow_dir.join("partsupp.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("ps_partkey", DataType::Int32, false),
             Field::new("ps_suppkey", DataType::Int32, false),
@@ -138,7 +157,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("region.tbl"),
-        out_dir.join("region.parquet"),
+        parquet_dir.join("region.parquet"),
+        arrow_dir.join("region.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("r_regionkey", DataType::Int32, false),
             Field::new("r_name", DataType::Utf8, false),
@@ -147,7 +167,8 @@ pub fn convert_tbls(tbl_dir: &Path, out_dir: &Path) -> Result<(), Box<dyn std::e
     )?;
     convert_tbl(
         tbl_dir.join("nation.tbl"),
-        out_dir.join("nation.parquet"),
+        parquet_dir.join("nation.parquet"),
+        arrow_dir.join("nation.arrow"),
         Arc::new(Schema::new(vec![
             Field::new("n_nationkey", DataType::Int32, false),
             Field::new("n_name", DataType::Utf8, false),
