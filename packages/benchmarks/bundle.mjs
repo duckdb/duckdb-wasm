@@ -56,6 +56,19 @@ esbuild.build({
     external: EXTERNALS,
 });
 
+console.log('[ ESBUILD ] system-sum-int.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_sum_int.ts'],
+    outfile: 'dist/system-sum-int.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});
+
 console.log('[ ESBUILD ] system-scan-text.js');
 esbuild.build({
     entryPoints: ['./src/suite_system_scan_text.ts'],

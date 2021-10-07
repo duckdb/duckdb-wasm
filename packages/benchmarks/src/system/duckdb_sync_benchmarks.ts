@@ -2,7 +2,12 @@ import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
-import { generateArrowInt32Table, generateArrowUtf8Table, generateArrow2Int32Table } from './data_generator';
+import {
+    generateArrowInt32Table,
+    generateArrowUtf8Table,
+    generateArrow2Int32Table,
+    generateArrowGroupedInt32Table,
+} from './data_generator';
 
 export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
@@ -39,13 +44,73 @@ export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
+        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
         let n = 0;
         for (const v of result.getChildAt(0)!) {
             noop(v);
             n += 1;
         }
         if (n !== this.tuples) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+}
+
+export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    tuples: number;
+    groupSize: number;
+
+    constructor(database: duckdb.DuckDBBindings, tuples: number, groupSize: number) {
+        this.database = database;
+        this.connection = null;
+        this.tuples = tuples;
+        this.groupSize = groupSize;
+    }
+    getName(): string {
+        return `duckdb_sync_integer_sum_${this.tuples}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_sum',
+            system: 'duckdb',
+            tags: ['sync'],
+            timestamp: new Date(),
+            parameters: [this.tuples, this.groupSize],
+            throughputTuples: this.tuples,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const [schema, batches] = generateArrowGroupedInt32Table(this.tuples, this.groupSize);
+        this.connection = this.database.connect();
+        this.connection.insertArrowBatches(schema, batches, {
+            schema: 'main',
+            name: this.getName(),
+        });
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(
+            `SELECT SUM(v1) FROM ${this.getName()} GROUP BY v0`,
+        );
+        let n = 0;
+        for (const v of result.getChildAt(0)!) {
+            noop(v);
+            n += 1;
+        }
+        const expectedGroups = this.tuples / this.groupSize;
+        if (n !== expectedGroups) {
             throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
         }
     }
@@ -97,7 +162,7 @@ export class DuckDBSyncVarcharScanBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
+        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
         let n = 0;
         for (const v of result.getChildAt(0)!) {
             noop(v);
@@ -222,7 +287,7 @@ export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`
+        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`
             SELECT *
             FROM ${this.getName()}_a a, ${this.getName()}_b b
             WHERE a.v0 = b.v1
@@ -312,7 +377,7 @@ export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v: arrow.Int32 }>(`
+        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`
             SELECT *
             FROM ${this.getName()}_a a, ${this.getName()}_b b, ${this.getName()}_c c
             WHERE a.v0 = b.v1

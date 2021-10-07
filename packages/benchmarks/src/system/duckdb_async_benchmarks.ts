@@ -39,7 +39,7 @@ export class DuckDBAsyncIntegerScanBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = await this.connection!.runQuery<{ v: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
+        const result = await this.connection!.runQuery<{ v0: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
         let n = 0;
         for (const v of result.getChildAt(0)!) {
             noop(v);
