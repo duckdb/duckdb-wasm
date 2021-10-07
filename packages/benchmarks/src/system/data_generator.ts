@@ -66,7 +66,7 @@ export function generateArrowGroupedInt32Table(n: number, groupSize: number): [a
     const values0 = [];
     const values1 = [];
     for (let i = 0; i < n; ++i) {
-        values0.push(i / groupSize);
+        values0.push(Math.floor(i / groupSize));
     }
     for (let i = 0; i < n; ++i) {
         values1.push(Math.floor(i % groupSize));
@@ -89,4 +89,42 @@ export function generateArrowGroupedInt32Table(n: number, groupSize: number): [a
         i += rows;
     }
     return [schema, batches];
+}
+
+export function generateCSVGroupedInt32(n: number, groupSize: number): string {
+    const values0 = [];
+    const values1 = [];
+    for (let i = 0; i < n; ++i) {
+        values0.push(Math.floor(i / groupSize));
+    }
+    for (let i = 0; i < n; ++i) {
+        values1.push(Math.floor(i % groupSize));
+    }
+    shuffle(values0);
+    shuffle(values1);
+    let buffer = '';
+    for (let i = 0; i < n; ++i) {
+        buffer += values0[i].toString();
+        buffer += '|';
+        buffer += values1[i].toString();
+        buffer += '\n';
+    }
+    return buffer;
+}
+
+export function generateJSONGroupedInt32(n: number, groupSize: number): string {
+    const values0 = [];
+    const values1 = [];
+    for (let i = 0; i < n; ++i) {
+        values0.push(Math.floor(i / groupSize));
+    }
+    for (let i = 0; i < n; ++i) {
+        values1.push(Math.floor(i % groupSize));
+    }
+    shuffle(values0);
+    shuffle(values1);
+    return JSON.stringify({
+        v0: values0,
+        v1: values1,
+    });
 }

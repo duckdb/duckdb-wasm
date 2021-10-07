@@ -39,6 +39,7 @@
         "bench:system:join:2": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-2.js",
         "bench:system:join:3": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-3.js",
         "bench:system:regex": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-regex.js",
+        "bench:system:sum:csv": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sum-csv.js",
         "bench:system:sum:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sum-int.js"
     }
 }
