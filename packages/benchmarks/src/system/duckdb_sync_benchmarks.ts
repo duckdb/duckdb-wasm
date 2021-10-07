@@ -111,7 +111,7 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
         }
         const expectedGroups = this.tuples / this.groupSize;
         if (n !== expectedGroups) {
-            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+            throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
