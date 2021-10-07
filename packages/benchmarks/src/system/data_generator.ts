@@ -62,14 +62,14 @@ export function generateArrowUtf8Table(n: number, chars: number): [arrow.Schema,
     return [schema, batches];
 }
 
-export function generateArrowGroupedInt32Table(n: number, group: number): [arrow.Schema, arrow.RecordBatch[]] {
+export function generateArrowGroupedInt32Table(n: number, groupSize: number): [arrow.Schema, arrow.RecordBatch[]] {
     const values0 = [];
     const values1 = [];
     for (let i = 0; i < n; ++i) {
         values0.push(i);
     }
     for (let i = 0; i < n; ++i) {
-        values1.push(Math.floor(i % group));
+        values1.push(Math.floor(i % groupSize));
     }
     shuffle(values0);
     shuffle(values1);
