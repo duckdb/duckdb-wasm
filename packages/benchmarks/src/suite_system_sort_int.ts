@@ -11,9 +11,6 @@ import { runSystemBenchmarks } from './suite';
 
 async function main() {
     const duckdbSync = await setupDuckDBSync();
-    const ctx: SystemBenchmarkContext = {
-        seed: Math.random(),
-    };
     const suite: SystemBenchmark[] = [
         new ArqueroIntegerSortBenchmark(1000, 1, 1),
         new ArqueroIntegerSortBenchmark(10000, 1, 1),
@@ -34,6 +31,9 @@ async function main() {
         new DuckDBSyncIntegerTopKBenchmark(duckdbSync, 10000, 1, 1, 100),
         new DuckDBSyncIntegerTopKBenchmark(duckdbSync, 100000, 1, 1, 100),
     ];
+    const ctx: SystemBenchmarkContext = {
+        seed: Math.random(),
+    };
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
     await writeReport(results, './benchmark_system_sort_int.json');

@@ -15,9 +15,6 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const duckdbAsync = await setupDuckDBAsync();
     const sqljsDB = await setupSqljs();
-    const ctx: SystemBenchmarkContext = {
-        seed: Math.random(),
-    };
     const suite: SystemBenchmark[] = [
         new SqljsIntegerScanBenchmark(sqljsDB, 1000),
         new SqljsIntegerScanBenchmark(sqljsDB, 10000),
@@ -40,6 +37,9 @@ async function main() {
         new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 100000),
         new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 1000000),
     ];
+    const ctx: SystemBenchmarkContext = {
+        seed: Math.random(),
+    };
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
     await duckdbAsync.terminate();
