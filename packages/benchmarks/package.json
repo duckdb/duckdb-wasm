@@ -31,7 +31,7 @@
         "ts-loader": "^9.1.0"
     },
     "scripts": {
-        "build": "node ./bundle.mjs & tsc --noEmit",
+        "build": "node ./bundle.mjs && tsc --noEmit",
         "lint": "yarn run eslint src types",
         "bench:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/internal.js",
         "bench:system:scan:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-scan-int.js",

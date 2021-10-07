@@ -4,7 +4,7 @@ import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { generateArrowInt32Table, generateArrowUtf8Table, generateArrow2Int32Table } from './data_generator';
 
-export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchmark {
+export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
     tuples: number;
@@ -15,13 +15,13 @@ export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchm
         this.tuples = tuples;
     }
     getName(): string {
-        return `duckdb_sync_materializing_integer_scan_${this.tuples}`;
+        return `duckdb_sync_integer_scan_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
             benchmark: 'integer_scan',
             system: 'duckdb',
-            tags: ['sync', 'materializing'],
+            tags: ['sync'],
             timestamp: new Date(),
             parameters: [this.tuples],
             throughputTuples: this.tuples,
@@ -60,129 +60,7 @@ export class DuckDBSyncMaterializingIntegerScanBenchmark implements SystemBenchm
     }
 }
 
-export class DuckDBSyncStreamingIntegerScanBenchmark extends DuckDBSyncMaterializingIntegerScanBenchmark {
-    constructor(database: duckdb.DuckDBBindings, tuples: number) {
-        super(database, tuples);
-    }
-    getName(): string {
-        return `duckdb_sync_streaming_integer_scan_${this.tuples}`;
-    }
-    getMetadata(): SystemBenchmarkMetadata {
-        return {
-            benchmark: 'integer_scan',
-            system: 'duckdb',
-            tags: ['sync', 'streaming'],
-            timestamp: new Date(),
-            parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
-        };
-    }
-    async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const stream = this.connection!.sendQuery<{ v: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
-        let n = 0;
-        for (const batch of stream) {
-            for (const v of batch.getChildAt(0)!) {
-                noop(v);
-                n += 1;
-            }
-        }
-        if (n !== this.tuples) {
-            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
-        }
-    }
-}
-
-export class DuckDBAsyncMaterializingIntegerScanBenchmark implements SystemBenchmark {
-    database: duckdb.AsyncDuckDB;
-    connection: duckdb.AsyncDuckDBConnection | null;
-    tuples: number;
-
-    constructor(database: duckdb.AsyncDuckDB, tuples: number) {
-        this.database = database;
-        this.connection = null;
-        this.tuples = tuples;
-    }
-    getName(): string {
-        return `duckdb_async_materializing_integer_scan_${this.tuples}`;
-    }
-    getMetadata(): SystemBenchmarkMetadata {
-        return {
-            benchmark: 'integer_scan',
-            system: 'duckdb',
-            tags: ['async', 'materializing'],
-            timestamp: new Date(),
-            parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
-        };
-    }
-    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowInt32Table(this.tuples);
-        this.connection = await this.database.connect();
-        await this.connection.insertArrowBatches(schema, batches, {
-            schema: 'main',
-            name: this.getName(),
-        });
-    }
-    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = await this.connection!.runQuery<{ v: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
-        let n = 0;
-        for (const v of result.getChildAt(0)!) {
-            noop(v);
-            n += 1;
-        }
-        if (n !== this.tuples) {
-            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
-        }
-    }
-    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
-        this.connection?.close();
-    }
-    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
-        this.connection?.close();
-    }
-}
-
-export class DuckDBAsyncStreamingIntegerScanBenchmark extends DuckDBAsyncMaterializingIntegerScanBenchmark {
-    constructor(database: duckdb.AsyncDuckDB, tuples: number) {
-        super(database, tuples);
-    }
-    getName(): string {
-        return `duckdb_async_streaming_integer_scan_${this.tuples}`;
-    }
-    getMetadata(): SystemBenchmarkMetadata {
-        return {
-            benchmark: 'integer_scan',
-            system: 'duckdb',
-            tags: ['async', 'streaming'],
-            timestamp: new Date(),
-            parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
-        };
-    }
-    async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const stream = await this.connection!.sendQuery<{ v: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
-        let n = 0;
-        for await (const batch of stream) {
-            for (const v of batch.getChildAt(0)!) {
-                noop(v);
-                n += 1;
-            }
-        }
-        if (n !== this.tuples) {
-            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
-        }
-    }
-}
-
-export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchmark {
+export class DuckDBSyncVarcharScanBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
     tuples: number;
@@ -195,13 +73,13 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
         this.chars = chars;
     }
     getName(): string {
-        return `duckdb_sync_materializing_varchar_scan_${this.tuples}`;
+        return `duckdb_sync_varchar_scan_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
             benchmark: 'varchar_scan',
             system: 'duckdb',
-            tags: ['sync', 'materializing'],
+            tags: ['sync'],
             timestamp: new Date(),
             parameters: [this.tuples],
             throughputTuples: this.tuples,
@@ -240,7 +118,7 @@ export class DuckDBSyncMaterializingVarcharScanBenchmark implements SystemBenchm
     }
 }
 
-export class DuckDBSyncMaterializingRegexBenchmark implements SystemBenchmark {
+export class DuckDBSyncRegexBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
     tuples: number;
@@ -253,13 +131,13 @@ export class DuckDBSyncMaterializingRegexBenchmark implements SystemBenchmark {
         this.chars = chars;
     }
     getName(): string {
-        return `duckdb_sync_materializing_regex_${this.tuples}`;
+        return `duckdb_sync_regex_${this.tuples}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
             benchmark: 'regex',
             system: 'duckdb',
-            tags: ['sync', 'materializing'],
+            tags: ['sync'],
             timestamp: new Date(),
             parameters: [this.tuples],
             throughputTuples: this.tuples,
@@ -300,7 +178,7 @@ export class DuckDBSyncMaterializingRegexBenchmark implements SystemBenchmark {
     }
 }
 
-export class DuckDBSyncMaterializingIntegerJoin2Benchmark implements SystemBenchmark {
+export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
     tuplesA: number;
@@ -317,13 +195,13 @@ export class DuckDBSyncMaterializingIntegerJoin2Benchmark implements SystemBench
         this.stepAB = stepAB;
     }
     getName(): string {
-        return `duckdb_sync_materializing_integer_join2_${this.tuplesA}_${this.tuplesB}_${this.stepAB}_${this.filterA}`;
+        return `duckdb_sync_integer_join2_${this.tuplesA}_${this.tuplesB}_${this.stepAB}_${this.filterA}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
             benchmark: 'integer_join2',
             system: 'duckdb',
-            tags: ['sync', 'materializing'],
+            tags: ['sync'],
             timestamp: new Date(),
             parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
         };
@@ -373,7 +251,7 @@ export class DuckDBSyncMaterializingIntegerJoin2Benchmark implements SystemBench
     }
 }
 
-export class DuckDBSyncMaterializingIntegerJoin3Benchmark implements SystemBenchmark {
+export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
     tuplesA: number;
@@ -402,13 +280,13 @@ export class DuckDBSyncMaterializingIntegerJoin3Benchmark implements SystemBench
         this.filterA = filterA;
     }
     getName(): string {
-        return `duckdb_sync_materializing_integer_join3_${this.tuplesA}_${this.tuplesB}_${this.tuplesC}_${this.filterA}_${this.stepAB}_${this.stepBC}`;
+        return `duckdb_sync_integer_join3_${this.tuplesA}_${this.tuplesB}_${this.tuplesC}_${this.filterA}_${this.stepAB}_${this.stepBC}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
             benchmark: 'integer_join3',
             system: 'duckdb',
-            tags: ['sync', 'materializing'],
+            tags: ['sync'],
             timestamp: new Date(),
             parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
         };
