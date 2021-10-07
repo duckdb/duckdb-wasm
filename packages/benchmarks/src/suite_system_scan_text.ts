@@ -1,4 +1,4 @@
-import { setupDuckDBSync } from './setup';
+import { setupDuckDBSync, writeReport } from './setup';
 import {
     SystemBenchmarkContext,
     SystemBenchmark,
@@ -6,12 +6,9 @@ import {
     ArqueroVarcharScanBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
-import path from 'path';
-import fs from 'fs/promises';
 
 async function main() {
     const duckdbSync = await setupDuckDBSync();
-
     const ctx: SystemBenchmarkContext = {
         seed: Math.random(),
     };
@@ -27,11 +24,7 @@ async function main() {
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
-
-    // Write results
-    const reports = path.resolve(__dirname, '../../../reports');
-    await fs.mkdir(reports);
-    await fs.writeFile(path.resolve(__dirname, './benchmark_system_scan_text.json'), JSON.stringify(results), 'utf8');
+    await writeReport(results, './benchmark_system_scan_text.json');
 }
 
 main();
