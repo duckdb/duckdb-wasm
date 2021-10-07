@@ -13,12 +13,12 @@ async function main() {
         seed: Math.random(),
     };
     const suite: SystemBenchmark[] = [
-        new DuckDBSyncIntegerJoin3Benchmark(duckdbDB, 100, 1000, 10000, 100, 10, 10),
-        new DuckDBSyncIntegerJoin3Benchmark(duckdbDB, 1000, 10000, 100000, 100, 10, 10),
-        new DuckDBSyncIntegerJoin3Benchmark(duckdbDB, 10000, 100000, 1000000, 100, 10, 10),
         new ArqueroIntegerJoin3Benchmark(100, 1000, 10000, 100, 10, 10),
         new ArqueroIntegerJoin3Benchmark(1000, 10000, 100000, 100, 10, 10),
         new ArqueroIntegerJoin3Benchmark(10000, 100000, 1000000, 100, 10, 10),
+        new DuckDBSyncIntegerJoin3Benchmark(duckdbDB, 100, 1000, 10000, 100, 10, 10),
+        new DuckDBSyncIntegerJoin3Benchmark(duckdbDB, 1000, 10000, 100000, 100, 10, 10),
+        new DuckDBSyncIntegerJoin3Benchmark(duckdbDB, 10000, 100000, 1000000, 100, 10, 10),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);

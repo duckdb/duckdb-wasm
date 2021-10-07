@@ -19,14 +19,6 @@ async function main() {
         seed: Math.random(),
     };
     const suite: SystemBenchmark[] = [
-        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 1000),
-        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 10000),
-        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 100000),
-        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 1000000),
-        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 1000),
-        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 10000),
-        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 100000),
-        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 1000000),
         new SqljsIntegerScanBenchmark(sqljsDB, 1000),
         new SqljsIntegerScanBenchmark(sqljsDB, 10000),
         new SqljsIntegerScanBenchmark(sqljsDB, 100000),
@@ -39,6 +31,14 @@ async function main() {
         new AlasqlIntegerScanBenchmark(10000),
         new AlasqlIntegerScanBenchmark(100000),
         new LovefieldIntegerScanBenchmark(1000),
+        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 1000),
+        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 10000),
+        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 100000),
+        new DuckDBSyncIntegerScanBenchmark(duckdbSync, 1000000),
+        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 1000),
+        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 10000),
+        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 100000),
+        new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 1000000),
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
