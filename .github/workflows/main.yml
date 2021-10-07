@@ -508,6 +508,32 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Cache rust build
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./.cargo
+                      ./target
+                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-shell-
+
+            - name: Cache node_modules
+              uses: actions/cache@v2
+              with:
+                  path: |
+                      ./node_modules
+                      ./packages/benchmarks/node_modules
+                      ./packages/duckdb-wasm/node_modules
+                      ./packages/duckdb-wasm-shell/node_modules
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
+
             - uses: actions/download-artifact@v2
               with:
                   name: dataprep
@@ -537,32 +563,6 @@ jobs:
               with:
                   name: wasm-next-coi
                   path: ./packages/duckdb-wasm/src/bindings/
-
-            - name: Git submodule status
-              run: |
-                  git submodule status > git_submodule_status.txt
-
-            - name: Cache rust build
-              uses: actions/cache@v2
-              with:
-                  path: |
-                      ./.cargo
-                      ./target
-                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/**') }}
-                  restore-keys: |
-                      ${{ runner.os }}-shell-
-
-            - name: Cache node_modules
-              uses: actions/cache@v2
-              with:
-                  path: |
-                      ./node_modules
-                      ./packages/benchmarks/node_modules
-                      ./packages/duckdb-wasm/node_modules
-                      ./packages/duckdb-wasm-shell/node_modules
-                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-yarn-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.4
