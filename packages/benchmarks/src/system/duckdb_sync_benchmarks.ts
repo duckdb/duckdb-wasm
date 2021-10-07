@@ -7,6 +7,7 @@ import {
     generateArrowUtf8Table,
     generateArrow2Int32Table,
     generateArrowGroupedInt32Table,
+    generateCSVGroupedInt32,
 } from './data_generator';
 
 export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
@@ -121,6 +122,65 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
         this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.close();
+    }
+}
+
+export class DuckDBSyncCSVSumBenchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    tuples: number;
+    groupSize: number;
+
+    constructor(database: duckdb.DuckDBBindings, tuples: number, groupSize: number) {
+        this.database = database;
+        this.connection = null;
+        this.tuples = tuples;
+        this.groupSize = groupSize;
+    }
+    getName(): string {
+        return `duckdb_sync_csv_sum_${this.tuples}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'csv_sum',
+            system: 'duckdb',
+            tags: ['sync'],
+            timestamp: new Date(),
+            parameters: [this.tuples, this.groupSize],
+            throughputTuples: this.tuples,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const csv = generateCSVGroupedInt32(this.tuples, this.groupSize);
+        const encoder = new TextEncoder();
+        const buffer = encoder.encode(csv);
+        this.database.registerFileBuffer('TEMP', buffer);
+        this.connection = this.database.connect();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const result = this.connection!.runQuery(
+            `SELECT SUM(v1) FROM read_csv('TEMP', delim = '|', header = False, columns={'v0': 'INTEGER', 'v1': 'INTEGER'}) GROUP BY v0`,
+        );
+        let n = 0;
+        for (const v of result.getChildAt(0)!) {
+            noop(v);
+            n += 1;
+        }
+        const expectedGroups = this.tuples / this.groupSize;
+        if (n !== expectedGroups) {
+            throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database.dropFile('TEMP');
+        this.connection?.close();
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database.dropFile('TEMP');
         this.connection?.close();
     }
 }

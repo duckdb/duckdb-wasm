@@ -7,6 +7,8 @@ import {
     generateArrowGroupedInt32Table,
     generateArrowInt32Table,
     generateArrowUtf8Table,
+    generateCSVGroupedInt32,
+    generateJSONGroupedInt32,
 } from './data_generator';
 
 export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
@@ -106,6 +108,106 @@ export class ArqueroIntegerSumBenchmark implements SystemBenchmark {
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
         delete this.tables[this.getName()];
     }
+}
+
+export class ArqueroCSVSumBenchmark implements SystemBenchmark {
+    tuples: number;
+    groupSize: number;
+    csvBuffer: string | null;
+
+    constructor(tuples: number, groupSize: number) {
+        this.tuples = tuples;
+        this.groupSize = groupSize;
+        this.csvBuffer = null;
+    }
+    getName(): string {
+        return `arquero_csv_sum_${this.tuples}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'csv_sum',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.tuples, this.groupSize],
+            throughputTuples: this.tuples,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        this.csvBuffer = generateCSVGroupedInt32(this.tuples, this.groupSize);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const table = aq.fromCSV(this.csvBuffer!, {
+            header: false,
+            names: ['v0', 'v1'],
+            delimiter: '|',
+        });
+        let n = 0;
+        for (const v of table
+            .groupby('v0')
+            .rollup({ sum: (d: any) => aq.op.sum(d.v1) })
+            .array('sum')) {
+            noop(v);
+            n += 1;
+        }
+        const expectedGroups = this.tuples / this.groupSize;
+        if (n !== expectedGroups) {
+            throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {}
+}
+
+export class ArqueroJSONSumBenchmark implements SystemBenchmark {
+    tuples: number;
+    groupSize: number;
+    jsonBuffer: string | null;
+
+    constructor(tuples: number, groupSize: number) {
+        this.tuples = tuples;
+        this.groupSize = groupSize;
+        this.jsonBuffer = null;
+    }
+    getName(): string {
+        return `arquero_json_sum_${this.tuples}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'json_sum',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.tuples, this.groupSize],
+            throughputTuples: this.tuples,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        this.jsonBuffer = generateJSONGroupedInt32(this.tuples, this.groupSize);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const table = aq.fromJSON(this.jsonBuffer!);
+        let n = 0;
+        for (const v of table
+            .groupby('v0')
+            .rollup({ sum: (d: any) => aq.op.sum(d.v1) })
+            .array('sum')) {
+            noop(v);
+            n += 1;
+        }
+        const expectedGroups = this.tuples / this.groupSize;
+        if (n !== expectedGroups) {
+            throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {}
 }
 
 export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
