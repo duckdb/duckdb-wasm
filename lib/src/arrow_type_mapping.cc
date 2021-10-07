@@ -60,6 +60,8 @@ arrow::Result<duckdb::LogicalType> mapArrowType(const arrow::DataType& type) {
             return duckdb::LogicalType::INTERVAL;
         case arrow::Type::type::INTERVAL_DAY_TIME:
             return duckdb::LogicalType::INTERVAL;
+        case arrow::Type::type::INTERVAL_MONTH_DAY_NANO:
+            return duckdb::LogicalType::INTERVAL;
         case arrow::Type::type::DECIMAL128: {
             auto& decimal = *dynamic_cast<const arrow::Decimal128Type*>(&type);
             return duckdb::LogicalType::DECIMAL(decimal.precision(), decimal.scale());

@@ -66,7 +66,7 @@ export function generateArrowGroupedInt32Table(n: number, groupSize: number): [a
     const values0 = [];
     const values1 = [];
     for (let i = 0; i < n; ++i) {
-        values0.push(i);
+        values0.push(i / groupSize);
     }
     for (let i = 0; i < n; ++i) {
         values1.push(Math.floor(i % groupSize));
