@@ -130,6 +130,15 @@ export class AsyncDuckDBConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
+    /** Insert an arrow table */
+    public async insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): Promise<void> {
+        if (table.schema.fields.length == 0) {
+            console.warn(
+                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
+            );
+        }
+        await this.insertArrowBatches(table.schema, table.chunks, options);
+    }
     /** Insert record batches */
     public async insertArrowBatches(
         schema: arrow.Schema,

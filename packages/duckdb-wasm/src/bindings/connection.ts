@@ -127,6 +127,16 @@ export class DuckDBConnection {
         return reader as arrow.RecordBatchStreamReader;
     }
 
+    /** Insert an arrow table */
+    public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
+        if (table.schema.fields.length == 0) {
+            console.warn(
+                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
+            );
+        }
+        this.insertArrowBatches(table.schema, table.chunks, options);
+    }
+
     /** Insert record batches */
     public insertArrowBatches(
         schema: arrow.Schema,
