@@ -1,6 +1,6 @@
 [workspace]
 
 members = [
-    "tools/parquetgen",
+    "tools/dataprep",
     "packages/duckdb-wasm-shell/crate",
 ]
