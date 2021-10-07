@@ -42,7 +42,7 @@
     "devDependencies": {
         "@types/node": "^16.10.3",
         "@types/react-dom": "^17.0.9",
-        "@types/react-router-dom": "^5.3.0",
+        "@types/react-router-dom": "^5.3.1",
         "@types/react-virtualized": "^9.21.11",
         "@wasm-tool/wasm-pack-plugin": "^1.6.0",
         "copy-webpack-plugin": "^9.0.1",
