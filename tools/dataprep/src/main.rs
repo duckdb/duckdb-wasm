@@ -9,7 +9,7 @@ mod tpch;
 mod uni;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = App::new("Parquet Generator")
+    let matches = App::new("Data Preparation")
         .version("0.1")
         .author("Andre Kohn. <kohn.a@outlook.com>")
         .subcommand(
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .subcommand(
             App::new("tpch")
-                .about("Generates parquet files for the university schema")
+                .about("Generates parquet files from the TPCH TBL files")
                 .arg(
                     Arg::new("out")
                         .short('o')

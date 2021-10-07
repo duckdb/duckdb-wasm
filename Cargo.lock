@@ -255,6 +255,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dataprep"
+version = "0.1.0"
+dependencies = [
+ "arrow",
+ "clap",
+ "parquet",
+]
+
+[[package]]
 name = "duckdb-wasm-shell"
 version = "0.1.0"
 dependencies = [
@@ -607,15 +616,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5bc6b23543b5dedc8f6cce50758a35e5582e148e0cfa26bd0cacd569cda5b71"
 dependencies = [
  "thrift",
-]
-
-[[package]]
-name = "parquetgen"
-version = "0.1.0"
-dependencies = [
- "arrow",
- "clap",
- "parquet",
 ]
 
 [[package]]

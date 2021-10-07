@@ -7,15 +7,15 @@ trap exit SIGINT
 PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 
 UNI_DIR=${PROJECT_ROOT}/data/uni
-PARQUETGEN=${PROJECT_ROOT}/target/release/parquetgen
+DATAPREP=${PROJECT_ROOT}/target/release/dataprep
 
-if [ ! -f ${PARQUETGEN} ]; then
-    cargo build --manifest-path=${PROJECT_ROOT}/Cargo.toml --release -p parquetgen
+if [ ! -f ${DATAPREP} ]; then
+    cargo build --manifest-path=${PROJECT_ROOT}/Cargo.toml --release -p dataprep
 fi
-echo "PARQUETGEN=${PARQUETGEN}"
+echo "DATAPREP=${DATAPREP}"
 
 if [ ! -f "${UNI_DIR}/studenten.parquet" ]; then
     mkdir -p ${UNI_DIR}
-    ${PARQUETGEN} uni -o ${UNI_DIR}
+    ${DATAPREP} uni -o ${UNI_DIR}
 fi
 echo "UNI_DIR=${UNI_DIR}"

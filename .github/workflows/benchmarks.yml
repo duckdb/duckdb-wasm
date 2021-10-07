@@ -3,7 +3,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    tpch_generator:
+    tpchgen:
         name: TPCH Generator
         runs-on: ubuntu-latest
         steps:
@@ -33,8 +33,8 @@ jobs:
                       ./submodules/tpch-dbgen/dbgen/dbgen
                   retention-days: 1
 
-    parquet_generator:
-        name: Parquet Generator
+    dataprep:
+        name: Dataprep
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -47,23 +47,23 @@ jobs:
                   path: |
                       ./.cargo
                       ./target
-                  key: ${{ runner.os }}-datagen-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./tools/parquetgen/src/*.rs') }}
+                  key: ${{ runner.os }}-dataprep-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./tools/dataprep/src/*.rs') }}
                   restore-keys: |
-                      ${{ runner.os }}-datagen-
+                      ${{ runner.os }}-dataprep-
 
             - name: Build generator
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               if: steps.cache-generator.outputs.cache-hit != 'true'
               with:
                   script: |-
-                      cargo build --manifest-path=./Cargo.toml --release -p parquetgen
+                      cargo build --manifest-path=./Cargo.toml --release -p dataprep
 
             - name: Upload artifact
               uses: actions/upload-artifact@v2
               with:
-                  name: parquetgen
+                  name: dataprep
                   path: |
-                      ./target/release/parquetgen
+                      ./target/release/dataprep
                   retention-days: 1
 
     duckdb_shell:
@@ -106,8 +106,8 @@ jobs:
         name: Dummy Benchmark
         runs-on: ubuntu-latest
         needs:
-            - parquet_generator
-            - tpch_generator
+            - dataprep
+            - tpchgen
             - duckdb_shell
         steps:
             - uses: actions/checkout@v2
@@ -117,7 +117,7 @@ jobs:
 
             - uses: actions/download-artifact@v2
               with:
-                  name: parquetgen
+                  name: dataprep
                   path: ./target/release/
 
             - uses: actions/download-artifact@v2
