@@ -9,9 +9,6 @@ import { runSystemBenchmarks } from './suite';
 
 async function main() {
     const duckdbSync = await setupDuckDBSync();
-    const ctx: SystemBenchmarkContext = {
-        seed: Math.random(),
-    };
     const suite: SystemBenchmark[] = [
         new ArqueroIntegerSumBenchmark(1000, 10),
         new ArqueroIntegerSumBenchmark(10000, 10),
@@ -22,6 +19,9 @@ async function main() {
         new DuckDBSyncIntegerSumBenchmark(duckdbSync, 100000, 10),
         new DuckDBSyncIntegerSumBenchmark(duckdbSync, 1000000, 10),
     ];
+    const ctx: SystemBenchmarkContext = {
+        seed: Math.random(),
+    };
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
     await writeReport(results, './benchmark_system_sum_int.json');
