@@ -1,4 +1,4 @@
-import { setupDuckDBSync, setupDuckDBAsync, setupSqljs } from './setup';
+import { setupDuckDBSync, setupDuckDBAsync, setupSqljs, writeReport } from './setup';
 import {
     SystemBenchmarkContext,
     SystemBenchmark,
@@ -10,14 +10,11 @@ import {
     DuckDBSyncIntegerScanBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
-import path from 'path';
-import fs from 'fs/promises';
 
 async function main() {
     const duckdbSync = await setupDuckDBSync();
     const duckdbAsync = await setupDuckDBAsync();
     const sqljsDB = await setupSqljs();
-
     const ctx: SystemBenchmarkContext = {
         seed: Math.random(),
     };
@@ -45,14 +42,8 @@ async function main() {
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
-
-    // Terminate the worker
     await duckdbAsync.terminate();
-
-    // Write results
-    const reports = path.resolve(__dirname, '../../../reports');
-    await fs.mkdir(reports);
-    await fs.writeFile(path.resolve(__dirname, './benchmark_system_scan_int.json'), JSON.stringify(results), 'utf8');
+    await writeReport(results, './benchmark_system_scan_int.json');
 }
 
 main();

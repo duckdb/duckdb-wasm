@@ -1,12 +1,9 @@
-import { setupDuckDBSync } from './setup';
+import { setupDuckDBSync, writeReport } from './setup';
 import { SystemBenchmarkContext, SystemBenchmark, ArqueroRegexBenchmark, DuckDBSyncRegexBenchmark } from './system';
 import { runSystemBenchmarks } from './suite';
-import path from 'path';
-import fs from 'fs/promises';
 
 async function main() {
     const duckdbDB = await setupDuckDBSync();
-
     const ctx: SystemBenchmarkContext = {
         seed: Math.random(),
     };
@@ -20,11 +17,7 @@ async function main() {
     ];
     const results = await runSystemBenchmarks(ctx, suite);
     console.log(results);
-
-    // Write results
-    const reports = path.resolve(__dirname, '../../../reports');
-    await fs.mkdir(reports);
-    await fs.writeFile(path.resolve(reports, './benchmark_system_regex.json'), JSON.stringify(results), 'utf8');
+    await writeReport(results, './benchmark_system_regex.json');
 }
 
 main();

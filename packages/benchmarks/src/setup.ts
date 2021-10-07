@@ -3,6 +3,8 @@ import * as duckdb_sync from '@duckdb/duckdb-wasm/dist/duckdb-node-sync';
 import * as sqljs from 'sql.js';
 import initSQLJs from 'sql.js';
 import path from 'path';
+import fs from 'fs/promises';
+import fsSync from 'fs';
 import Worker from 'web-worker';
 
 export async function setupDuckDBSync(): Promise<duckdb_sync.DuckDBBindings> {
@@ -38,4 +40,13 @@ export async function setupDuckDBAsync(): Promise<duckdb.AsyncDuckDB> {
 export async function setupSqljs(): Promise<sqljs.Database> {
     const sqljsConfig = await initSQLJs();
     return new sqljsConfig.Database();
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export async function writeReport(report: any, dst: string): Promise<void> {
+    const reports = path.resolve(__dirname, '../../../reports');
+    if (!fsSync.existsSync(reports)) {
+        await fs.mkdir(reports);
+    }
+    await fs.writeFile(path.resolve(__dirname, dst), JSON.stringify(report), 'utf8');
 }
