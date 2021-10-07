@@ -118,6 +118,11 @@ bench_system_scan_int:
 	yarn workspace @duckdb/benchmarks build
 	yarn workspace @duckdb/benchmarks bench:system:scan:int
 
+.PHONY: bench_system_sort_int
+bench_system_sort_int:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:sort:int
+
 .PHONY: bench_system_sum_csv
 bench_system_sum_csv:
 	yarn workspace @duckdb/benchmarks build

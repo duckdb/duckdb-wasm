@@ -3,10 +3,11 @@ import * as aq from 'arquero';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import {
-    generateArrow2Int32Table,
-    generateArrowGroupedInt32Table,
-    generateArrowInt32Table,
-    generateArrowUtf8Table,
+    generateArrow2Int32,
+    generateArrowGroupedInt32,
+    generateArrowInt32,
+    generateArrowUtf8,
+    generateArrowXInt32,
     generateCSVGroupedInt32,
     generateJSONGroupedInt32,
 } from './data_generator';
@@ -34,7 +35,7 @@ export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowInt32Table(this.tuples);
+        const [schema, batches] = generateArrowInt32(this.tuples);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
@@ -82,7 +83,7 @@ export class ArqueroIntegerSumBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowGroupedInt32Table(this.tuples, this.groupSize);
+        const [schema, batches] = generateArrowGroupedInt32(this.tuples, this.groupSize);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
@@ -99,6 +100,117 @@ export class ArqueroIntegerSumBenchmark implements SystemBenchmark {
         const expectedGroups = this.tuples / this.groupSize;
         if (n !== expectedGroups) {
             throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+}
+
+export class ArqueroIntegerSortBenchmark implements SystemBenchmark {
+    tuples: number;
+    columnCount: number;
+    orderBy: string[];
+    tables: { [key: string]: aq.internal.Table } = {};
+
+    constructor(tuples: number, columnCount: number, orderCriteria: number) {
+        this.tuples = tuples;
+        this.columnCount = columnCount;
+        this.orderBy = [];
+        for (let i = 0; i < orderCriteria; ++i) {
+            this.orderBy.push(`v${i}`);
+        }
+    }
+    getName(): string {
+        return `arquero_integer_sort_${this.tuples}_${this.columnCount}_${this.orderBy.length}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_sort',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.tuples, this.columnCount, this.orderBy.length],
+            throughputTuples: this.tuples,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
+        const table = new arrow.Table(schema, batches);
+        this.tables[this.getName()] = aq.fromArrow(table);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        let n = 0;
+        for (const v of this.tables[this.getName()].orderby(this.orderBy).array('v0')) {
+            noop(v);
+            n += 1;
+        }
+        if (n !== this.tuples) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+}
+
+export class ArqueroIntegerTopKBenchmark implements SystemBenchmark {
+    tuples: number;
+    columnCount: number;
+    orderBy: string[];
+    k: number;
+    tables: { [key: string]: aq.internal.Table } = {};
+
+    constructor(tuples: number, columnCount: number, orderCriteria: number, k: number) {
+        this.tuples = tuples;
+        this.columnCount = columnCount;
+        this.orderBy = [];
+        this.k = k;
+        for (let i = 0; i < orderCriteria; ++i) {
+            this.orderBy.push(`v${i}`);
+        }
+    }
+    getName(): string {
+        return `arquero_integer_topk_${this.tuples}_${this.columnCount}_${this.orderBy.length}_${this.k}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_topk',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.tuples, this.columnCount, this.orderBy.length],
+            throughputTuples: this.tuples,
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
+        const table = new arrow.Table(schema, batches);
+        this.tables[this.getName()] = aq.fromArrow(table);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        let n = 0;
+        for (const v of this.tables[this.getName()].orderby(this.orderBy).array('v0')) {
+            noop(v);
+            n += 1;
+            if (n >= this.k) {
+                break;
+            }
+        }
+        if (n !== this.k) {
+            throw Error(`invalid tuple count. expected ${this.k}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -237,8 +349,8 @@ export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesA);
-        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesB, this.stepAB);
+        const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
+        const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         const tableA = new arrow.Table(schemaA, batchesA);
         const tableB = new arrow.Table(schemaB, batchesB);
         this.tables['A'] = aq.fromArrow(tableA);
@@ -304,9 +416,9 @@ export class ArqueroIntegerJoin3Benchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schemaA, batchesA] = generateArrowInt32Table(this.tuplesA);
-        const [schemaB, batchesB] = generateArrow2Int32Table(this.tuplesB, this.stepAB);
-        const [schemaC, batchesC] = generateArrow2Int32Table(this.tuplesC, this.stepBC);
+        const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
+        const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
+        const [schemaC, batchesC] = generateArrow2Int32(this.tuplesC, this.stepBC);
         const tableA = new arrow.Table(schemaA, batchesA);
         const tableB = new arrow.Table(schemaB, batchesB);
         const tableC = new arrow.Table(schemaC, batchesC);
@@ -371,7 +483,7 @@ export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowUtf8Table(this.tuples, this.chars);
+        const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
@@ -420,7 +532,7 @@ export class ArqueroRegexBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowUtf8Table(this.tuples, this.chars);
+        const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }

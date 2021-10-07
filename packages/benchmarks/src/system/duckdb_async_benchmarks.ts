@@ -2,7 +2,7 @@ import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
-import { generateArrowInt32Table } from './data_generator';
+import { generateArrowInt32 } from './data_generator';
 
 export class DuckDBAsyncIntegerScanBenchmark implements SystemBenchmark {
     database: duckdb.AsyncDuckDB;
@@ -30,7 +30,7 @@ export class DuckDBAsyncIntegerScanBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowInt32Table(this.tuples);
+        const [schema, batches] = generateArrowInt32(this.tuples);
         this.connection = await this.database.connect();
         await this.connection.insertArrowBatches(schema, batches, {
             schema: 'main',
