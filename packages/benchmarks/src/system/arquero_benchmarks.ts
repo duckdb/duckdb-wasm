@@ -174,6 +174,47 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 7: {
+                const s = this.tables['supplier'];
+                const n1 = this.tables['nation'].rename({
+                    n_nationkey: 'n1_nationkey',
+                    n_name: 'n1_name',
+                });
+                const n2 = this.tables['nation'].rename({
+                    n_nationkey: 'n2_nationkey',
+                    n_name: 'n2_name',
+                });
+                const c = this.tables['customer'];
+                const o = this.tables['orders'];
+                const l = this.tables['lineitem']
+                    .filter((d: any) => d.l_shipdate >= aq.op.timestamp('1995-01-01'))
+                    .filter((d: any) => d.l_shipdate < aq.op.timestamp('1996-12-31'))
+                    .derive({
+                        l_year: (d: any) => aq.op.year(d.l_shipdate),
+                        volume: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    });
+                const nations = n1.join(
+                    n2,
+                    (a: any, b: any) =>
+                        (a.n1_nationkey == 'FRANCE' && b.n2_nationkey == 'GERMANY') ||
+                        (a.n1_nationkey == 'GERMANY' && b.n2_nationkey == 'FRANCE'),
+                );
+                const right = nations
+                    .join(c, ['n2_nationkey', 'c_nationkey'])
+                    .join(o, ['c_custkey', 'o_custkey'])
+                    .join(l, ['o_orderkey', 'l_orderkey']);
+                const query = s
+                    .join(right, ['s_suppkey', 'l_suppkey'])
+                    .groupby('n1_name', 'n2_name', 'l_year')
+                    .rollup({
+                        revenue: (d: any) => aq.op.sum(d.volume),
+                    })
+                    .orderby('n1_name', 'n2_name', 'l_year');
+                for (const v of query.objects()) {
+                    noop(v);
+                }
+                break;
+            }
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
