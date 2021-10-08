@@ -40,8 +40,21 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         const lineitem = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'lineitem.arrow');
-        console.log(lineitem.schema.toString());
+        const orders = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'orders.arrow');
+        const customer = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'customer.arrow');
+        const supplier = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'supplier.arrow');
+        const region = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'region.arrow');
+        const nation = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'nation.arrow');
+        const partsupp = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'partsupp.arrow');
+        const part = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'part.arrow');
         this.tables['lineitem'] = aq.fromArrow(lineitem);
+        this.tables['orders'] = aq.fromArrow(orders);
+        this.tables['customer'] = aq.fromArrow(customer);
+        this.tables['supplier'] = aq.fromArrow(supplier);
+        this.tables['region'] = aq.fromArrow(region);
+        this.tables['nation'] = aq.fromArrow(nation);
+        this.tables['partsupp'] = aq.fromArrow(partsupp);
+        this.tables['part'] = aq.fromArrow(part);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
@@ -49,11 +62,11 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             case 1: {
                 const query = this.tables['lineitem']
                     .filter((d: any) => d.l_shipdate <= aq.op.timestamp('1998-09-02'))
-                    .groupby('l_returnflag', 'l_linestatus')
                     .derive({
                         disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
                         charge: (d: any) => d.l_extendedprice * (1 - d.l_discount) * (1 + d.l_tax),
                     })
+                    .groupby('l_returnflag', 'l_linestatus')
                     .rollup({
                         sum_qty: (d: any) => aq.op.sum(d.l_quantity),
                         sum_base_price: (d: any) => aq.op.sum(d.l_extendedprice),
@@ -68,6 +81,28 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 for (const v of query.objects()) {
                     noop(v);
                 }
+                break;
+            }
+            case 3: {
+                const c = this.tables['customer'].filter((d: any) => d.c_mktsegment == 'BUILDING');
+                const o = this.tables['orders'].filter((d: any) => d.o_orderdate < aq.op.timestamp('1995-03-15'));
+                const l = this.tables['lineitem'].filter((d: any) => d.l_shipdate < aq.op.timestamp('1995-03-15'));
+                const query = c
+                    .join(o, ['c_custkey', 'o_custkey'])
+                    .join(l, ['o_orderkey', 'l_orderkey'])
+                    .derive({
+                        disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    })
+                    .groupby('l_orderkey', 'o_orderdate', 'o_shippriority')
+                    .rollup({
+                        revenue: (d: any) => aq.op.sum(d.disc_price),
+                    })
+                    .orderby(aq.desc('revenue'), 'o_orderdate')
+                    .objects({ limit: 10, grouped: true });
+                for (const v of query) {
+                    noop(v);
+                }
+                break;
             }
         }
     }
