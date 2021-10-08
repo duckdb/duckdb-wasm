@@ -155,6 +155,25 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 6: {
+                const l = this.tables['lineitem'];
+                const query = l
+                    .filter((d: any) => d.l_quantity < 24)
+                    .filter((d: any) => d.l_discount >= 0.05)
+                    .filter((d: any) => d.l_discount <= 0.07)
+                    .filter((d: any) => d.l_shipdate >= aq.op.timestamp('1994-01-01'))
+                    .filter((d: any) => d.l_shipdate < aq.op.timestamp('1995-01-01'))
+                    .derive({
+                        realprice: (d: any) => d.l_extendedprice * d.l_discount,
+                    })
+                    .rollup({
+                        revenue: (d: any) => aq.op.sum(d.realprice),
+                    });
+                for (const v of query.objects()) {
+                    noop(v);
+                }
+                break;
+            }
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
