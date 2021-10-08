@@ -375,12 +375,9 @@ export class ArqueroIntegerTopKBenchmark implements SystemBenchmark {
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         let n = 0;
-        for (const v of this.tables[this.getName()].orderby(this.orderBy).array('v0')) {
+        for (const v of this.tables[this.getName()].orderby(this.orderBy).objects({ limit: this.k })) {
             noop(v);
             n += 1;
-            if (n >= this.k) {
-                break;
-            }
         }
         if (n !== this.k) {
             throw Error(`invalid tuple count. expected ${this.k}, received ${n}`);
