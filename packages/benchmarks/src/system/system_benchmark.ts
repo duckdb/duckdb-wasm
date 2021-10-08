@@ -4,6 +4,8 @@ import Benchmark from 'buffalo-bench/lib';
 export function noop(_arg0?: any): void {}
 
 export interface SystemBenchmarkContext {
+    /// The path to the project root directory
+    projectRootPath: string;
     /// The random seed for all benchmarks
     seed: number;
 }

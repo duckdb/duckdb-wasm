@@ -11,6 +11,7 @@ import {
     generateCSVGroupedInt32,
     generateJSONGroupedInt32,
 } from './data_generator';
+import { getTPCHArrowTable } from './tpch_loader';
 
 export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
     tuples: number;
@@ -547,6 +548,44 @@ export class ArqueroRegexBenchmark implements SystemBenchmark {
             throw Error(`invalid tuple count. expected 10, received ${n}`);
         }
     }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables[this.getName()];
+    }
+}
+
+export class ArqueroTPCHBenchmark implements SystemBenchmark {
+    baseDir: string;
+    scaleFactor: number;
+    query: number;
+    tables: { [key: string]: aq.internal.Table } = {};
+
+    constructor(baseDir: string, scaleFactor: number, query: number) {
+        this.baseDir = baseDir;
+        this.scaleFactor = scaleFactor;
+        this.query = query;
+    }
+    getName(): string {
+        return `arquero_tpch_${this.scaleFactor}_${this.query}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'tpch',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.scaleFactor, this.query],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        this.tables['lineitem'] = aq.fromArrow(getTPCHArrowTable(this.baseDir, this.scaleFactor, 'lineitem.arrow'));
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
         delete this.tables[this.getName()];

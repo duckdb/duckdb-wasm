@@ -10,8 +10,10 @@ import {
     DuckDBSyncIntegerScanBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
+import * as path from 'path';
 
 async function main() {
+    const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
     const duckdbAsync = await setupDuckDBAsync();
     const sqljsDB = await setupSqljs();
@@ -38,6 +40,7 @@ async function main() {
         new DuckDBAsyncIntegerScanBenchmark(duckdbAsync, 1000000),
     ];
     const ctx: SystemBenchmarkContext = {
+        projectRootPath: baseDir,
         seed: Math.random(),
     };
     const results = await runSystemBenchmarks(ctx, suite);

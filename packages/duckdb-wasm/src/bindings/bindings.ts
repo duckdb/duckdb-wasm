@@ -305,7 +305,10 @@ export abstract class DuckDBBindings {
     public finishInsert(conn: number, inserter: number): void {}
 
     /** Register a file object URL */
-    public registerFileURL(name: string, url: string): void {
+    public registerFileURL(name: string, url?: string): void {
+        if (url === undefined) {
+            url = name;
+        }
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
