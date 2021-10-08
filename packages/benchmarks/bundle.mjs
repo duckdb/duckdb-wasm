@@ -159,3 +159,16 @@ esbuild.build({
     sourcemap: true,
     external: EXTERNALS,
 });
+
+console.log('[ ESBUILD ] system-tpch-large.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_tpch_large.ts'],
+    outfile: 'dist/system-tpch-large.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});

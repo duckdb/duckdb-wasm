@@ -1,10 +1,5 @@
 import { writeReport, setupDuckDBSync } from './setup';
-import {
-    SystemBenchmarkContext,
-    SystemBenchmark,
-    DuckDBSyncLoadedTPCHBenchmark,
-    DuckDBSyncParquetTPCHBenchmark,
-} from './system';
+import { SystemBenchmarkContext, SystemBenchmark, DuckDBSyncLoadedTPCHBenchmark } from './system';
 import { JsonBenchmark, runSystemBenchmarks } from './suite';
 import * as path from 'path';
 
@@ -20,11 +15,9 @@ async function main() {
     const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
 
-    const duckdbLoadedSF01: SystemBenchmark[] = [];
-    const duckdbParquetSF01: SystemBenchmark[] = [];
+    const duckdbLoaded: SystemBenchmark[] = [];
     for (let i = 0; i < 22; ++i) {
-        duckdbLoadedSF01.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i + 1));
-        duckdbParquetSF01.push(new DuckDBSyncParquetTPCHBenchmark(duckdbSync, sf, i + 1));
+        duckdbLoaded.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i + 1));
     }
     const ctx: SystemBenchmarkContext = {
         projectRootPath: baseDir,
@@ -32,16 +25,11 @@ async function main() {
     };
 
     await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
-    const r1 = await runSystemBenchmarks(ctx, duckdbLoadedSF01);
+    const r1 = await runSystemBenchmarks(ctx, duckdbLoaded);
     await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
-
-    await DuckDBSyncParquetTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
-    const r2 = await runSystemBenchmarks(ctx, duckdbParquetSF01);
-    await DuckDBSyncParquetTPCHBenchmark.afterGroup(duckdbSync);
 
     let results: JsonBenchmark[] = [];
     results = results.concat(r1);
-    results = results.concat(r2);
     console.log(results);
     await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}.json`);
 }
