@@ -27,7 +27,7 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
         this.queryText = null;
     }
     getName(): string {
-        return `duckdb_sync_tpch_${this.scaleFactor.toString().replace('.', '')}_${this.query}`;
+        return `duckdb_sync_loaded_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.query}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
@@ -87,6 +87,85 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
         connection.runQuery('DROP TABLE IF EXISTS supplier');
         connection.runQuery('DROP TABLE IF EXISTS part');
         connection.runQuery('DROP TABLE IF EXISTS partsupp');
+        database.dropFiles();
+        connection.close();
+    }
+}
+
+export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    scaleFactor: number;
+    query: number;
+    queryText: string | null;
+
+    constructor(database: duckdb.DuckDBBindings, scaleFactor: number, query: number) {
+        this.database = database;
+        this.connection = null;
+        this.scaleFactor = scaleFactor;
+        this.query = query;
+        this.queryText = null;
+    }
+    getName(): string {
+        return `duckdb_sync_tpch_parquet_${this.scaleFactor.toString().replace('.', '')}_q${this.query}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'tpch',
+            system: 'duckdb',
+            tags: ['sync', 'parquet'],
+            timestamp: new Date(),
+            parameters: [this.scaleFactor, this.query],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        this.queryText = await getTPCHQuery(ctx.projectRootPath, `${this.query}.sql`);
+        this.connection = this.database.connect();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection!.runQuery(this.queryText!);
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {}
+
+    static async beforeGroup(
+        database: duckdb.DuckDBBindings,
+        ctx: SystemBenchmarkContext,
+        scaleFactor: number,
+    ): Promise<void> {
+        const connection = database.connect();
+        const importTPCH = (name: string) => {
+            console.log(`[ RUN ]   ${name}.parquet`);
+            const path = getTPCHParquetFilePath(ctx.projectRootPath, scaleFactor, `${name}.parquet`);
+            database.registerFileURL(`${name}.parquet`, path);
+            connection!.runQuery(`CREATE VIEW ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
+            console.log(`[ OK  ]   ${name}.parquet`);
+        };
+        console.log(`[ RUN ] create parquet views TPC-H SF ${scaleFactor}`);
+        importTPCH('lineitem');
+        importTPCH('customer');
+        importTPCH('orders');
+        importTPCH('region');
+        importTPCH('nation');
+        importTPCH('supplier');
+        importTPCH('part');
+        importTPCH('partsupp');
+        connection.close();
+        console.log(`[ OK  ] create parquet views TPC-H SF ${scaleFactor}`);
+    }
+
+    static async afterGroup(database: duckdb.DuckDBBindings): Promise<void> {
+        const connection = database.connect();
+        connection.runQuery('DROP VIEW IF EXISTS lineitem');
+        connection.runQuery('DROP VIEW IF EXISTS customer');
+        connection.runQuery('DROP VIEW IF EXISTS orders');
+        connection.runQuery('DROP VIEW IF EXISTS region');
+        connection.runQuery('DROP VIEW IF EXISTS nation');
+        connection.runQuery('DROP VIEW IF EXISTS supplier');
+        connection.runQuery('DROP VIEW IF EXISTS part');
+        connection.runQuery('DROP VIEW IF EXISTS partsupp');
         database.dropFiles();
         connection.close();
     }
