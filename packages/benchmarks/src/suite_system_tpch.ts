@@ -1,6 +1,13 @@
-import { writeReport, setupDuckDBSync, setupSqljs } from './setup';
-import { SystemBenchmarkContext, SystemBenchmark, DuckDBSyncLoadedTPCHBenchmark, SqljsTPCHBenchmark } from './system';
-import { JsonBenchmark, runSystemBenchmarks } from './suite';
+//import { writeReport, setupDuckDBSync, setupSqljs } from './setup';
+import { writeReport } from './setup';
+import {
+    SystemBenchmarkContext,
+    SystemBenchmark,
+    //    DuckDBSyncLoadedTPCHBenchmark,
+    //    SqljsTPCHBenchmark,
+    ArqueroTPCHBenchmark,
+} from './system';
+import { runSystemBenchmarks } from './suite';
 import * as path from 'path';
 
 async function main() {
@@ -13,28 +20,29 @@ async function main() {
     console.log(`Scale Factor ${sf}`);
 
     const baseDir = path.resolve(__dirname, '../../../');
-    const duckdbSync = await setupDuckDBSync();
-    const sqljsDB = await setupSqljs();
+    //const duckdbSync = await setupDuckDBSync();
+    //const sqljsDB = await setupSqljs();
 
-    const benchSqljs: SystemBenchmark[] = [];
-    const benchDuckDB: SystemBenchmark[] = [];
-    for (let i = 0; i < 22; ++i) {
-        benchSqljs.push(new SqljsTPCHBenchmark(sqljsDB, sf, i + 1));
-        benchDuckDB.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i + 1));
-    }
+    const bench: SystemBenchmark[] = [new ArqueroTPCHBenchmark(sf, 1)];
+
+    // const benchDuckDB: SystemBenchmark[] = [];
+    // for (let i = 0; i < 22; ++i) {
+    //     bench.push(new SqljsTPCHBenchmark(sqljsDB, sf, i + 1));
+    //     benchDuckDB.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i + 1));
+    // }
+
     const ctx: SystemBenchmarkContext = {
         projectRootPath: baseDir,
         seed: Math.random(),
     };
 
-    const resultsSqljs = await runSystemBenchmarks(ctx, benchSqljs);
-    await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
-    const resultsDuckDB = await runSystemBenchmarks(ctx, benchDuckDB);
-    await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
+    const results = await runSystemBenchmarks(ctx, bench);
 
-    let results: JsonBenchmark[] = [];
-    results = results.concat(resultsSqljs);
-    results = results.concat(resultsDuckDB);
+    // await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
+    // const resultsDuckDB = await runSystemBenchmarks(ctx, benchDuckDB);
+    // await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
+    // results = results.concat(resultsDuckDB);
+
     console.log(results);
     await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}.json`);
 }
