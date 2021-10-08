@@ -20,15 +20,12 @@ async function main() {
     const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
 
-    const duckdbLoadedSF01: SystemBenchmark[] = [
-        new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, 1),
-        new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, 2),
-    ];
-    const duckdbParquetSF01: SystemBenchmark[] = [
-        new DuckDBSyncParquetTPCHBenchmark(duckdbSync, sf, 1),
-        new DuckDBSyncParquetTPCHBenchmark(duckdbSync, sf, 2),
-    ];
-
+    const duckdbLoadedSF01: SystemBenchmark[] = [];
+    const duckdbParquetSF01: SystemBenchmark[] = [];
+    for (let i = 0; i < 22; ++i) {
+        duckdbLoadedSF01.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i + 1));
+        duckdbParquetSF01.push(new DuckDBSyncParquetTPCHBenchmark(duckdbSync, sf, i + 1));
+    }
     const ctx: SystemBenchmarkContext = {
         projectRootPath: baseDir,
         seed: Math.random(),
