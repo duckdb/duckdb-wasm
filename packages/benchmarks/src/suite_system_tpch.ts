@@ -28,13 +28,13 @@ async function main() {
     };
 
     const resultsSqljs = await runSystemBenchmarks(ctx, benchSqljs);
-    // await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
-    // const resultsDuckDB = await runSystemBenchmarks(ctx, benchDuckDB);
-    // await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
+    await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
+    const resultsDuckDB = await runSystemBenchmarks(ctx, benchDuckDB);
+    await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
 
     let results: JsonBenchmark[] = [];
     results = results.concat(resultsSqljs);
-    //results = results.concat(resultsDuckDB);
+    results = results.concat(resultsDuckDB);
     console.log(results);
     await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}.json`);
 }
