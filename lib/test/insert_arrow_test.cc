@@ -90,7 +90,7 @@ TEST_P(ArrowInsertTestSuite, TestInsert) {
     WebDB::Connection conn{*db};
     for (size_t ofs = 0; ofs < buffer->size();) {
         auto chunk_begin = buffer->data() + ofs;
-        auto chunk_size = std::min(buffer->size() - ofs, test.chunk_size);
+        auto chunk_size = std::min<size_t>(buffer->size() - ofs, test.chunk_size);
         nonstd::span chunk{chunk_begin, chunk_size};
         auto maybe_ok = conn.InsertArrowFromIPCStream(chunk, ofs == 0 ? test.options : "");
         ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
