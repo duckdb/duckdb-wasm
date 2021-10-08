@@ -18,13 +18,11 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
     scaleFactor: number;
     queryId: number;
     queryText: string | null;
-    query: aq.internal.Query | null;
 
     constructor(scaleFactor: number, queryId: number) {
         this.scaleFactor = scaleFactor;
         this.queryId = queryId;
         this.queryText = null;
-        this.query = null;
     }
     getName(): string {
         return `arquero_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.queryId}`;
@@ -35,7 +33,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             system: 'arquero',
             tags: [],
             timestamp: new Date(),
-            parameters: [this.scaleFactor, this.query],
+            parameters: [this.scaleFactor, this.queryId],
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -100,6 +98,59 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .orderby(aq.desc('revenue'), 'o_orderdate')
                     .objects({ limit: 10, grouped: true });
                 for (const v of query) {
+                    noop(v);
+                }
+                break;
+            }
+            case 4: {
+                const o = this.tables['orders']
+                    .filter((d: any) => d.o_orderdate >= aq.op.timestamp('1993-07-01'))
+                    .filter((d: any) => d.o_orderdate < aq.op.timestamp('1993-10-01'));
+                const l = this.tables['lineitem'].filter((d: any) => d.l_commitdate < d.l_receiptdate);
+                const query = o
+                    .join(l, ['o_orderkey', 'l_orderkey'])
+                    .groupby('o_orderpriority')
+                    .rollup({
+                        order_count: aq.op.count(),
+                    })
+                    .orderby('o_orderpriority');
+                for (const v of query) {
+                    noop(v);
+                }
+                break;
+            }
+            case 5: {
+                const r = this.tables['region'].filter((d: any) => d.r_name == 'ASIA');
+                const c = this.tables['customer'];
+                const l = this.tables['lineitem'];
+                const s = this.tables['supplier'];
+                const o = this.tables['orders']
+                    .filter((d: any) => d.o_orderdate >= aq.op.timestamp('1994-01-01'))
+                    .filter((d: any) => d.o_orderdate < aq.op.timestamp('1995-01-01'));
+                const n = this.tables['nation'];
+
+                const right = r
+                    .join(n, ['r_regionkey', 'n_regionkey'])
+                    .join(c, ['n_nationkey', 'c_nationkey'])
+                    .join(o, ['c_custkey', 'o_custkey'])
+                    .join(l, ['o_orderkey', 'l_orderkey']);
+                const query = s
+                    .join(
+                        right,
+                        (a: any, b: any) =>
+                            aq.op.equal(a.s_nationkey, b.n_nationkey) &&
+                            aq.op.equal(a.s_nationkey, b.c_nationkey) &&
+                            aq.op.equal(a.s_suppkey, b.l_suppkey),
+                    )
+                    .derive({
+                        disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    })
+                    .groupby('n_name')
+                    .rollup({
+                        revenue: (d: any) => aq.op.sum(d.disc_price),
+                    })
+                    .orderby(aq.desc('revenue'));
+                for (const v of query.objects()) {
                     noop(v);
                 }
                 break;
