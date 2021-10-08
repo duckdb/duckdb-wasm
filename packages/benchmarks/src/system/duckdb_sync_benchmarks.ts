@@ -10,6 +10,87 @@ import {
     generateCSVGroupedInt32,
     generateArrowXInt32,
 } from './data_generator';
+import { getTPCHParquetFilePath, getTPCHQuery } from './tpch_loader';
+
+export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
+    database: duckdb.DuckDBBindings;
+    connection: duckdb.DuckDBConnection | null;
+    scaleFactor: number;
+    query: number;
+    queryText: string | null;
+
+    constructor(database: duckdb.DuckDBBindings, scaleFactor: number, query: number) {
+        this.database = database;
+        this.connection = null;
+        this.scaleFactor = scaleFactor;
+        this.query = query;
+        this.queryText = null;
+    }
+    getName(): string {
+        return `duckdb_sync_tpch_${this.scaleFactor.toString().replace('.', '')}_${this.query}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'tpch',
+            system: 'duckdb',
+            tags: ['sync', 'loaded'],
+            timestamp: new Date(),
+            parameters: [this.scaleFactor, this.query],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        this.queryText = await getTPCHQuery(ctx.projectRootPath, `${this.query}.sql`);
+        this.connection = this.database.connect();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.connection!.runQuery(this.queryText!);
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {}
+
+    static async beforeGroup(
+        database: duckdb.DuckDBBindings,
+        ctx: SystemBenchmarkContext,
+        scaleFactor: number,
+    ): Promise<void> {
+        const connection = database.connect();
+        const importTPCH = (name: string) => {
+            console.log(`[ RUN ]   ${name}.parquet`);
+            const path = getTPCHParquetFilePath(ctx.projectRootPath, scaleFactor, `${name}.parquet`);
+            database.registerFileURL(`${name}.parquet`, path);
+            connection!.runQuery(`CREATE TABLE ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
+            console.log(`[ OK  ]   ${name}.parquet`);
+        };
+        console.log(`[ RUN ] importing TPC-H SF ${scaleFactor}`);
+        importTPCH('lineitem');
+        importTPCH('customer');
+        importTPCH('orders');
+        importTPCH('region');
+        importTPCH('nation');
+        importTPCH('supplier');
+        importTPCH('part');
+        importTPCH('partsupp');
+        connection.close();
+        database.dropFiles();
+        console.log(`[ OK  ] importing TPC-H SF ${scaleFactor}`);
+    }
+
+    static async afterGroup(database: duckdb.DuckDBBindings): Promise<void> {
+        const connection = database.connect();
+        connection.runQuery('DROP TABLE IF EXISTS lineitem');
+        connection.runQuery('DROP TABLE IF EXISTS customer');
+        connection.runQuery('DROP TABLE IF EXISTS orders');
+        connection.runQuery('DROP TABLE IF EXISTS region');
+        connection.runQuery('DROP TABLE IF EXISTS nation');
+        connection.runQuery('DROP TABLE IF EXISTS supplier');
+        connection.runQuery('DROP TABLE IF EXISTS part');
+        connection.runQuery('DROP TABLE IF EXISTS partsupp');
+        database.dropFiles();
+        connection.close();
+    }
+}
 
 export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;

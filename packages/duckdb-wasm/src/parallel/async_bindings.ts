@@ -352,6 +352,9 @@ export class AsyncDuckDB {
 
     /** Register a file path. */
     public async registerFileURL(name: string, url: string): Promise<void> {
+        if (url === undefined) {
+            url = name;
+        }
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>(
             WorkerRequestType.REGISTER_FILE_URL,
             [name, url],

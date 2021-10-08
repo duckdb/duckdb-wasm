@@ -6,8 +6,10 @@ import {
     SystemBenchmarkContext,
 } from './system';
 import { runSystemBenchmarks } from './suite';
+import * as path from 'path';
 
 async function main() {
+    const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
     const suite: SystemBenchmark[] = [
         new ArqueroIntegerSumBenchmark(1000, 10),
@@ -20,6 +22,7 @@ async function main() {
         new DuckDBSyncIntegerSumBenchmark(duckdbSync, 1000000, 10),
     ];
     const ctx: SystemBenchmarkContext = {
+        projectRootPath: baseDir,
         seed: Math.random(),
     };
     const results = await runSystemBenchmarks(ctx, suite);

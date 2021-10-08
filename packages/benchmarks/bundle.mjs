@@ -146,3 +146,16 @@ esbuild.build({
     sourcemap: true,
     external: EXTERNALS,
 });
+
+console.log('[ ESBUILD ] system-tpch.js');
+esbuild.build({
+    entryPoints: ['./src/suite_system_tpch.ts'],
+    outfile: 'dist/system-tpch.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});

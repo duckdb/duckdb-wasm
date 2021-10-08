@@ -1,8 +1,10 @@
 import { setupDuckDBSync, writeReport } from './setup';
 import { ArqueroCSVSumBenchmark, DuckDBSyncCSVSumBenchmark, SystemBenchmark, SystemBenchmarkContext } from './system';
 import { runSystemBenchmarks } from './suite';
+import * as path from 'path';
 
 async function main() {
+    const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
     const suite: SystemBenchmark[] = [
         new ArqueroCSVSumBenchmark(1000, 10),
@@ -15,6 +17,7 @@ async function main() {
         new DuckDBSyncCSVSumBenchmark(duckdbSync, 1000000, 10000),
     ];
     const ctx: SystemBenchmarkContext = {
+        projectRootPath: baseDir,
         seed: Math.random(),
     };
     const results = await runSystemBenchmarks(ctx, suite);
