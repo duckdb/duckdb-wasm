@@ -215,6 +215,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            default:
+                throw new Error(`TPC-H query ${this.queryId} is not supported`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
