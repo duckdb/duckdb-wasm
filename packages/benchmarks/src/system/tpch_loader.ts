@@ -3,6 +3,20 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as fsAsync from 'fs/promises';
 
+export function getTPCHSQLiteDBPath(base: string, sf: number): string {
+    const dirName = sf.toString().replace('.', '_');
+    const filePath = path.resolve(base, 'data', 'tpch', dirName, 'sqlite.db');
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`file does not exists: ${filePath}`);
+    }
+    return filePath;
+}
+
+export async function getTPCHSQLiteDB(base: string, sf: number): Promise<Buffer> {
+    const dbPath = getTPCHSQLiteDBPath(base, sf);
+    return await fsAsync.readFile(dbPath);
+}
+
 export function getTPCHCSVFilePath(base: string, sf: number, name: string): string {
     const dirName = sf.toString().replace('.', '_');
     const filePath = path.resolve(base, 'data', 'tpch', dirName, 'tbl', name);

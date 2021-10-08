@@ -4,13 +4,70 @@ import * as sqljs from 'sql.js';
 import { sqlCreate, sqlInsert } from './simple_sql';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { shuffle } from '../utils';
+import { getTPCHQuery, getTPCHSQLiteDB } from './tpch_loader';
+
+export class SqljsTPCHBenchmark implements SystemBenchmark {
+    initDB: sqljs.SqlJsStatic;
+    database: sqljs.Database | null;
+    scaleFactor: number;
+    query: number;
+    queryText: string | null;
+
+    constructor(initDB: sqljs.SqlJsStatic, scaleFactor: number, query: number) {
+        this.initDB = initDB;
+        this.database = null;
+        this.scaleFactor = scaleFactor;
+        this.query = query;
+        this.queryText = null;
+    }
+    getName(): string {
+        return `sqljs_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.query}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'tpch',
+            system: 'sqljs',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.scaleFactor, this.query],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        switch (this.query) {
+            case 7:
+            case 8:
+            case 9:
+            case 22:
+                this.queryText = await getTPCHQuery(ctx.projectRootPath, `${this.query}-sqlite.sql`);
+                break;
+            default:
+                this.queryText = await getTPCHQuery(ctx.projectRootPath, `${this.query}.sql`);
+                break;
+        }
+        const buffer = await getTPCHSQLiteDB(ctx.projectRootPath, this.scaleFactor);
+        this.database = new this.initDB.Database(buffer);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(this.queryText!);
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database = null;
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database = null;
+    }
+}
 
 export class SqljsIntegerScanBenchmark implements SystemBenchmark {
-    database: sqljs.Database;
+    initDB: sqljs.SqlJsStatic;
+    database: sqljs.Database | null;
     tuples: number;
 
-    constructor(database: sqljs.Database, tuples: number) {
-        this.database = database;
+    constructor(initDB: sqljs.SqlJsStatic, tuples: number) {
+        this.initDB = initDB;
+        this.database = null;
         this.tuples = tuples;
     }
     getName(): string {
@@ -34,6 +91,7 @@ export class SqljsIntegerScanBenchmark implements SystemBenchmark {
             values.push(i);
         }
         shuffle(values);
+        this.database = new this.initDB.Database();
         const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Int32())]);
         this.database.run(sqlCreate(this.getName(), schema.fields));
         for (const query of sqlInsert(this.getName(), schema.fields, [values])) {
@@ -42,7 +100,7 @@ export class SqljsIntegerScanBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const results = this.database.exec(`SELECT v FROM ${this.getName()}`);
+        const results = this.database!.exec(`SELECT v0 FROM ${this.getName()}`);
         let n = 0;
         for (const row of results[0].values) {
             noop(row);
@@ -54,9 +112,9 @@ export class SqljsIntegerScanBenchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.database.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.database.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
     }
 }
