@@ -47,7 +47,9 @@ export function getTPCHArrowFilePath(base: string, sf: number, name: string): st
 export async function getTPCHArrowTable(base: string, sf: number, name: string): Promise<arrow.Table> {
     const filePath = await getTPCHArrowFilePath(base, sf, name);
     const buffer = fsAsync.readFile(filePath);
-    return arrow.Table.fromAsync([buffer]);
+    const reader = await arrow.AsyncRecordBatchFileReader.from(buffer);
+    const batches: arrow.RecordBatch[] = [...reader];
+    return new arrow.Table(batches[0].schema, batches);
 }
 
 export async function getTPCHQuery(base: string, name: string): Promise<string> {

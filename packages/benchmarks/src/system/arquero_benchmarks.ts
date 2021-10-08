@@ -13,6 +13,73 @@ import {
 } from './data_generator';
 import { getTPCHArrowTable } from './tpch_loader';
 
+export class ArqueroTPCHBenchmark implements SystemBenchmark {
+    tables: { [key: string]: aq.internal.Table } = {};
+    scaleFactor: number;
+    queryId: number;
+    queryText: string | null;
+    query: aq.internal.Query | null;
+
+    constructor(scaleFactor: number, queryId: number) {
+        this.scaleFactor = scaleFactor;
+        this.queryId = queryId;
+        this.queryText = null;
+        this.query = null;
+    }
+    getName(): string {
+        return `arquero_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.queryId}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'tpch',
+            system: 'arquero',
+            tags: [],
+            timestamp: new Date(),
+            parameters: [this.scaleFactor, this.query],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        const lineitem = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'lineitem.arrow');
+        console.log(lineitem.schema.toString());
+        this.tables['lineitem'] = aq.fromArrow(lineitem);
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        switch (this.queryId) {
+            case 1: {
+                const query = this.tables['lineitem']
+                    .filter((d: any) => d.l_shipdate <= aq.op.timestamp('1998-09-02'))
+                    .groupby('l_returnflag', 'l_linestatus')
+                    .derive({
+                        disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                        charge: (d: any) => d.l_extendedprice * (1 - d.l_discount) * (1 + d.l_tax),
+                    })
+                    .rollup({
+                        sum_qty: (d: any) => aq.op.sum(d.l_quantity),
+                        sum_base_price: (d: any) => aq.op.sum(d.l_extendedprice),
+                        sum_disc_price: (d: any) => aq.op.sum(d.disc_price),
+                        sum_charge: (d: any) => aq.op.sum(d.charge),
+                        avg_qty: (d: any) => aq.op.average(d.l_quantity),
+                        avg_price: (d: any) => aq.op.average(d.l_extendedprice),
+                        avg_disc: (d: any) => aq.op.average(d.l_discount),
+                        count_order: (d: any) => aq.op.count(),
+                    })
+                    .orderby('l_returnflag', 'l_linestatus');
+                for (const v of query.objects()) {
+                    noop(v);
+                }
+            }
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables['lineitem'];
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        delete this.tables['lineitem'];
+    }
+}
+
 export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
     tuples: number;
     tables: { [key: string]: aq.internal.Table } = {};
@@ -548,44 +615,6 @@ export class ArqueroRegexBenchmark implements SystemBenchmark {
             throw Error(`invalid tuple count. expected 10, received ${n}`);
         }
     }
-    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        delete this.tables[this.getName()];
-    }
-    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        delete this.tables[this.getName()];
-    }
-}
-
-export class ArqueroTPCHBenchmark implements SystemBenchmark {
-    baseDir: string;
-    scaleFactor: number;
-    query: number;
-    tables: { [key: string]: aq.internal.Table } = {};
-
-    constructor(baseDir: string, scaleFactor: number, query: number) {
-        this.baseDir = baseDir;
-        this.scaleFactor = scaleFactor;
-        this.query = query;
-    }
-    getName(): string {
-        return `arquero_tpch_${this.scaleFactor}_${this.query}`;
-    }
-    getMetadata(): SystemBenchmarkMetadata {
-        return {
-            benchmark: 'tpch',
-            system: 'arquero',
-            tags: [],
-            timestamp: new Date(),
-            parameters: [this.scaleFactor, this.query],
-        };
-    }
-    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-        this.tables['lineitem'] = aq.fromArrow(getTPCHArrowTable(this.baseDir, this.scaleFactor, 'lineitem.arrow'));
-    }
-    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async run(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
         delete this.tables[this.getName()];
