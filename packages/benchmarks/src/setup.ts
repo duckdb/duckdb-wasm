@@ -37,9 +37,8 @@ export async function setupDuckDBAsync(): Promise<duckdb.AsyncDuckDB> {
     return db;
 }
 
-export async function setupSqljs(): Promise<sqljs.Database> {
-    const sqljsConfig = await initSQLJs();
-    return new sqljsConfig.Database();
+export async function setupSqljs(): Promise<sqljs.SqlJsStatic> {
+    return await initSQLJs();
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
