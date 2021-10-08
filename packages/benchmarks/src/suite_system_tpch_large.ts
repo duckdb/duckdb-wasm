@@ -6,7 +6,7 @@ import * as path from 'path';
 async function main() {
     const args = process.argv.slice(2);
     if (args.length < 1) {
-        console.error('usage: node suite-system-tpch.js <scalefactor>');
+        console.error('usage: node suite-system-tpch-large.js <scalefactor>');
         process.exit(-1);
     }
     const sf = parseFloat(args[0]);
