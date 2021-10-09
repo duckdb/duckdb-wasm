@@ -264,16 +264,6 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 break;
             }
             case 8: {
-                const r2 = this.tables['region']
-                    .filter((d: any) => d.r_name == 'AMERICA')
-                    .rename({
-                        r_regionkey: 'r2_regionkey',
-                    });
-                const n2 = this.tables['nation'].rename({
-                    n_regionkey: 'n2_regionkey',
-                    n_nationkey: 'n2_nationkey',
-                    n_name: 'n2_name',
-                });
                 const p = this.tables['part'].filter((d: any) => d.p_type == 'ECONOMY ANODIZED STEEL');
                 const o = this.tables['orders'].filter(
                     (d: any) =>
@@ -284,6 +274,16 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .join(this.tables['lineitem'], ['p_partkey', 'l_partkey'])
                     .join(o, ['l_orderkey', 'o_orderkey'])
                     .join(this.tables['customer'], ['o_custkey', 'c_custkey']);
+                const r2 = this.tables['region']
+                    .filter((d: any) => d.r_name == 'AMERICA')
+                    .rename({
+                        r_regionkey: 'r2_regionkey',
+                    });
+                const n2 = this.tables['nation'].rename({
+                    n_regionkey: 'n2_regionkey',
+                    n_nationkey: 'n2_nationkey',
+                    n_name: 'n2_name',
+                });
                 const sub2 = r2
                     .join(n2, ['r2_regionkey', 'n2_regionkey'])
                     .join(sub, ['n2_nationkey', 'c_nationkey'])
@@ -295,10 +295,11 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         volume: (d: any) => d.l_extendedprice * (1 - d.l_discount),
                     })
                     .groupby('o_year')
-                    .derive({
-                        mkt_share: (d: any) => aq.op.sum(d.n2_name == 'BRAZIL' ? d.volume : 0),
+                    .rollup({
+                        mkt_share: (d: any) => aq.op.sum(d.n2_name == 'BRAZIL' ? d.volume : 0) / aq.op.sum(d.volume),
                     })
-                    .orderby('o_year');
+                    .orderby('o_year')
+                    .select('o_year', 'mkt_share');
                 for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
