@@ -56,6 +56,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        // XXX We should probably also do manual projection pushdown
+
         switch (this.queryId) {
             case 1: {
                 const query = this.tables['lineitem']
@@ -76,7 +78,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         count_order: (d: any) => aq.op.count(),
                     })
                     .orderby('l_returnflag', 'l_linestatus');
-                for (const v of query.objects()) {
+                for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
                 break;
@@ -121,9 +123,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .rollup({
                         revenue: (d: any) => aq.op.sum(d.disc_price),
                     })
-                    .orderby(aq.desc('revenue'), 'o_orderdate')
-                    .objects({ limit: 10, grouped: true });
-                for (const v of query) {
+                    .orderby(aq.desc('revenue'), 'o_orderdate');
+                for (const v of query.objects({ limit: 10, grouped: true })) {
                     noop(v);
                 }
                 break;
@@ -140,7 +141,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         order_count: aq.op.count(),
                     })
                     .orderby('o_orderpriority');
-                for (const v of query) {
+                for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
                 break;
@@ -176,7 +177,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         revenue: (d: any) => aq.op.sum(d.disc_price),
                     })
                     .orderby(aq.desc('revenue'));
-                for (const v of query.objects()) {
+                for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
                 break;
@@ -195,7 +196,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .rollup({
                         revenue: (d: any) => aq.op.sum(d.realprice),
                     });
-                for (const v of query.objects()) {
+                for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
                 break;
