@@ -587,24 +587,37 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
-            // case 20: {
-            //     const sub1 = this.tables['lineitem']
-            //         .filter(
-            //             (d: any) =>
-            //                 d.l_shipdate >= aq.op.timestamp('1994-01-01') &&
-            //                 d.l_shipdate < aq.op.timestamp('1995-01-01'),
-            //         )
-            //         .groupby('l_partkey', 'l_suppkey')
-            //         .rollup({
-            //             quantity: aq.op.sum('l_quantity'),
-            //         });
-            //     const sub2 = this.tables['nation']
-            //         .filter((d: any) => d.n_name == 'CANADA')
-            //         .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
-            //     const sub3 = this.tables['nation']
-            //         .filter((d: any) => d.n_name == 'CANADA')
-            //         .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
-            // }
+            case 20: {
+                const qty = this.tables['lineitem']
+                    .filter(
+                        (d: any) =>
+                            d.l_shipdate >= aq.op.timestamp('1994-01-01') &&
+                            d.l_shipdate < aq.op.timestamp('1995-01-01'),
+                    )
+                    .groupby('l_partkey', 'l_suppkey')
+                    .rollup({
+                        quantity: aq.op.sum('l_quantity'),
+                    });
+                const sub = this.tables['part']
+                    .filter((d: any) => aq.op.match(d.p_name, /^forest.*$/, 0) != null)
+                    .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
+                    .join(
+                        qty,
+                        (a: any, b: any) =>
+                            a.ps_partkey == b.l_partkey &&
+                            a.ps_suppkey == b.l_suppkey &&
+                            a.ps_availqty > 0.5 * b.quantity,
+                    );
+                const query = this.tables['nation']
+                    .filter((d: any) => d.n_name == 'CANADA')
+                    .join(this.tables['supplier'], ['n_nationkey', 's_nationkey'])
+                    .semijoin(sub, ['s_suppkey', 'ps_suppkey'])
+                    .orderby('s_name');
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+            }
             case 21: {
                 const lineitem = this.tables['lineitem'].filter((d: any) => d.l_receiptdate > d.l_commitdate);
                 const orders = this.tables['orders'].filter((d: any) => d.o_orderstatus == 'F');
