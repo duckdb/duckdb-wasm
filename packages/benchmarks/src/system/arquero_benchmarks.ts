@@ -81,6 +81,54 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 2: {
+                // const r2 = this.tables['region']
+                //     .rename({
+                //         r_regionkey: 'r2_regionkey',
+                //         r_name: 'r2_name',
+                //     })
+                //     .filter((d: any) => d.op.equal(d.r2_name, 'EUROPE'));
+                // const n2 = this.tables['nation'].rename({
+                //     n_regionkey: 'n2_regionkey',
+                //     n_nationkey: 'n2_nationkey',
+                // });
+                // const s2 = this.tables['supplier'].rename({
+                //     s_nationkey: 's2_nationkey',
+                //     s_suppkey: 's2_suppkey',
+                // });
+                // const ps = this.tables['partsupp'].filter((d: any) => d.ps_partkey != null);
+                // const sub = r2
+                //     .join(n2, ['r2_regionkey', 'n2_regionkey'])
+                //     .join(s2, ['n2_nationkey', 's2_nationkey'])
+                //     .join(ps, ['s2_suppkey', 'ps_suppkey'])
+                //     .rollup({
+                //         min_ps_supplycost: (d: any) => aq.op.min(d.ps_supplycost),
+                //     });
+                // const p = this.tables['part']
+                //     .filter((d: any) => d.p_size == 15)
+                //     .filter((d: any) => aq.op.match(d.p_type, /.*BRASS/g, 0));
+                // const ps2 = this.tables['partsupp'].rename({
+                //     ps_partkey: 'ps2_partkey',
+                //     ps_supplycost: 'ps2_supplycost',
+                // });
+                // const sub2 = p
+                //     .join(sub, ['p_partkey', 'ps_partkey'])
+                //     .join(
+                //         ps2,
+                //         (a: any, b: any) => a.p_partkey == b.ps2_partkey && a.min_ps_supplycost == b.ps2_supplycost,
+                //     );
+                // const query = this.tables['region']
+                //     .filter((d: any) => d.op.equal(d.r_name, 'EUROPE'))
+                //     .join(this.tables['nation'], ['r_regionkey', 'n_regionkey'])
+                //     .join(this.tables['supplier'], ['n_nationkey', 's_nationkey'])
+                //     .join(sub2, ['s_suppkey', 'ps2_suppkey'])
+                //     .orderby(aq.desc('s_acctbal'), 'n_name', 's_name', 'p_partkey');
+                // for (const v of query.objects()) {
+                //     noop(v);
+                // }
+                // break;
+                throw new Error('not implemented');
+            }
             case 3: {
                 const c = this.tables['customer'].filter((d: any) => d.c_mktsegment == 'BUILDING');
                 const o = this.tables['orders'].filter((d: any) => d.o_orderdate < aq.op.timestamp('1995-03-15'));
@@ -138,9 +186,9 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .join(
                         right,
                         (a: any, b: any) =>
-                            aq.op.equal(a.s_nationkey, b.n_nationkey) &&
-                            aq.op.equal(a.s_nationkey, b.c_nationkey) &&
-                            aq.op.equal(a.s_suppkey, b.l_suppkey),
+                            a.s_nationkey == b.n_nationkey &&
+                            a.s_nationkey == b.c_nationkey &&
+                            a.s_suppkey == b.l_suppkey,
                     )
                     .derive({
                         disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
