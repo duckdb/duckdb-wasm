@@ -586,7 +586,72 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     noop(v);
                 }
                 break;
-
+            }
+            // case 20: {
+            //     const sub1 = this.tables['lineitem']
+            //         .filter(
+            //             (d: any) =>
+            //                 d.l_shipdate >= aq.op.timestamp('1994-01-01') &&
+            //                 d.l_shipdate < aq.op.timestamp('1995-01-01'),
+            //         )
+            //         .groupby('l_partkey', 'l_suppkey')
+            //         .rollup({
+            //             quantity: aq.op.sum('l_quantity'),
+            //         });
+            //     const sub2 = this.tables['nation']
+            //         .filter((d: any) => d.n_name == 'CANADA')
+            //         .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
+            //     const sub3 = this.tables['nation']
+            //         .filter((d: any) => d.n_name == 'CANADA')
+            //         .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
+            // }
+            case 21: {
+                const lineitem = this.tables['lineitem'].filter((d: any) => d.l_receiptdate > d.l_commitdate);
+                const orders = this.tables['orders'].filter((d: any) => d.o_orderstatus == 'F');
+                const query = this.tables['nation']
+                    .filter((d: any) => d.n_name == 'SAUDI ARABIA')
+                    .join(this.tables['supplier'], ['n_nationkey', 's_nationkey'])
+                    .join(lineitem, ['s_suppkey', 'l_suppkey'])
+                    .join(orders, ['l_orderkey', 'o_orderkey'])
+                    .antijoin(lineitem, (a: any, b: any) => a.l_suppkey != b.l_suppkey && a.l_orderkey == b.l_orderkey)
+                    .semijoin(
+                        this.tables['lineitem'],
+                        (a: any, b: any) => a.l_suppkey != b.l_suppkey && a.l_orderkey == b.l_orderkey,
+                    )
+                    .groupby('s_name')
+                    .rollup({
+                        numwait: aq.op.count(),
+                    })
+                    .orderby(aq.desc('numwait'), 's_name');
+                for (const v of query.objects({ grouped: true, limit: 100 })) {
+                    noop(v);
+                }
+                break;
+            }
+            case 22: {
+                const customers = this.tables['customer'].filter(
+                    (d: any) =>
+                        d.c_acctbal > 0.0 &&
+                        aq.op.match(d.c_phone, /^((13)|(31)|(23)|(29)|(30)|(18)|(17))/g, 0) != null,
+                );
+                const total_avg = customers.rollup({
+                    avg_c_acctbal: aq.op.mean('c_acctbal'),
+                });
+                const query = customers
+                    .join(total_avg, (a: any, b: any) => a.c_acctbal > b.avg_c_acctbal)
+                    .antijoin(this.tables['orders'], ['c_custkey', 'o_custkey'])
+                    .derive({
+                        cntrycode: (d: any) => aq.op.substring(d.c_phone, 0, 2),
+                    })
+                    .groupby('cntrycode')
+                    .rollup({
+                        numcust: aq.op.count(),
+                        totacctbal: aq.op.sum('c_acctbal'),
+                    })
+                    .orderby('cntrycode');
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
                 break;
             }
             default:
