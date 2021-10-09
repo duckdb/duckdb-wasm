@@ -441,6 +441,34 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 15: {
+                const temp = this.tables['lineitem']
+                    .filter(
+                        (d: any) =>
+                            d.l_receiptdate >= aq.op.timestamp('1996-01-01') &&
+                            d.l_receiptdate <= aq.op.timestamp('1996-03-31'),
+                    )
+                    .derive({
+                        realprice: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    })
+                    .groupby('l_suppkey')
+                    .rollup({
+                        revenue: (d: any) => aq.op.sum(d.realprice),
+                    });
+                const query = temp
+                    .rollup({
+                        total_revenue: (d: any) => aq.op.max(d.revenue),
+                    })
+                    .join(temp, (a: any, b: any) => aq.op.equal(a.total_revenue, b.revenue))
+                    .join(this.tables['supplier'], ['l_suppkey', 's_suppkey'])
+                    .orderby('s_suppkey');
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+
+                break;
+            }
             default:
                 throw new Error(`TPC-H query ${this.queryId} is not supported`);
         }
