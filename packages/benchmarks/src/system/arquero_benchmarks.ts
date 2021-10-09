@@ -90,8 +90,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
                 const sub = tmp.join(this.tables['partsupp'], ['s_suppkey', 'ps_suppkey']);
                 const sub2 = this.tables['part']
-                    .filter((d: any) => d.p_size == 15)
-                    .filter((d: any) => aq.op.match(d.p_type, /.*BRASS/g, 0))
+                    .filter((d: any) => d.p_size == 15 && aq.op.match(d.p_type, /.*BRASS/g, 0))
                     .join(sub, ['p_partkey', 'ps_partkey'])
                     .groupby('p_partkey')
                     .rollup({
@@ -130,9 +129,10 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 break;
             }
             case 4: {
-                const o = this.tables['orders']
-                    .filter((d: any) => d.o_orderdate >= aq.op.timestamp('1993-07-01'))
-                    .filter((d: any) => d.o_orderdate < aq.op.timestamp('1993-10-01'));
+                const o = this.tables['orders'].filter(
+                    (d: any) =>
+                        d.o_orderdate >= aq.op.timestamp('1993-07-01') && d.o_orderdate < aq.op.timestamp('1993-10-01'),
+                );
                 const l = this.tables['lineitem'].filter((d: any) => d.l_commitdate < d.l_receiptdate);
                 const query = o
                     .join(l, ['o_orderkey', 'l_orderkey'])
@@ -151,9 +151,10 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 const c = this.tables['customer'];
                 const l = this.tables['lineitem'];
                 const s = this.tables['supplier'];
-                const o = this.tables['orders']
-                    .filter((d: any) => d.o_orderdate >= aq.op.timestamp('1994-01-01'))
-                    .filter((d: any) => d.o_orderdate < aq.op.timestamp('1995-01-01'));
+                const o = this.tables['orders'].filter(
+                    (d: any) =>
+                        d.o_orderdate >= aq.op.timestamp('1994-01-01') && d.o_orderdate < aq.op.timestamp('1995-01-01'),
+                );
                 const n = this.tables['nation'];
 
                 const right = r
@@ -185,11 +186,14 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             case 6: {
                 const l = this.tables['lineitem'];
                 const query = l
-                    .filter((d: any) => d.l_quantity < 24)
-                    .filter((d: any) => d.l_discount >= 0.05)
-                    .filter((d: any) => d.l_discount <= 0.07)
-                    .filter((d: any) => d.l_shipdate >= aq.op.timestamp('1994-01-01'))
-                    .filter((d: any) => d.l_shipdate < aq.op.timestamp('1995-01-01'))
+                    .filter(
+                        (d: any) =>
+                            d.l_quantity < 24 &&
+                            d.l_discount >= 0.05 &&
+                            d.l_discount <= 0.07 &&
+                            d.l_shipdate >= aq.op.timestamp('1994-01-01') &&
+                            d.l_shipdate < aq.op.timestamp('1995-01-01'),
+                    )
                     .derive({
                         realprice: (d: any) => d.l_extendedprice * d.l_discount,
                     })
@@ -214,8 +218,11 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 const c = this.tables['customer'];
                 const o = this.tables['orders'];
                 const l = this.tables['lineitem']
-                    .filter((d: any) => d.l_shipdate >= aq.op.timestamp('1995-01-01'))
-                    .filter((d: any) => d.l_shipdate < aq.op.timestamp('1996-12-31'))
+                    .filter(
+                        (d: any) =>
+                            d.l_shipdate >= aq.op.timestamp('1995-01-01') &&
+                            d.l_shipdate < aq.op.timestamp('1996-12-31'),
+                    )
                     .derive({
                         l_year: (d: any) => aq.op.year(d.l_shipdate),
                         volume: (d: any) => d.l_extendedprice * (1 - d.l_discount),
@@ -353,6 +360,34 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     })
                     .join(total, (a: any, b: any) => a.value_sum > b.threshold)
                     .orderby(aq.desc('value_sum'));
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+            }
+            case 12: {
+                const query = this.tables['lineitem']
+                    .filter(
+                        (d: any) =>
+                            (d.l_shipmode == 'MAIL' || d.l_shipmode == 'SHIP') &&
+                            d.l_commitdate < d.l_receiptdate &&
+                            d.l_shipdate < d.l_commitdate &&
+                            d.l_receiptdate >= aq.op.timestamp('1994-01-01') &&
+                            d.l_receiptdate <= aq.op.timestamp('1994-12-31'),
+                    )
+                    .join(this.tables['orders'], ['l_orderkey', 'o_orderkey'])
+                    .derive({
+                        high_line: (d: any) =>
+                            d.o_orderpriority == '1-URGENT' || d.o_orderpriority == '2-HIGH' ? 1 : 0,
+                        low_line: (d: any) =>
+                            d.o_orderpriority != '1-URGENT' && d.o_orderpriority != '2-HIGH' ? 1 : 0,
+                    })
+                    .groupby('l_shipmode')
+                    .rollup({
+                        high_line: (d: any) => aq.op.sum(d.high_line),
+                        low_line: (d: any) => aq.op.sum(d.low_line),
+                    })
+                    .orderby('l_shipmode');
                 for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
