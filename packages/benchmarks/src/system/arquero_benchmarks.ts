@@ -56,7 +56,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        // XXX We should probably also do manual projection pushdown
+        // XXX Check if explicit projection pushdown helps arquero here
 
         switch (this.queryId) {
             case 1: {
@@ -279,6 +279,31 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     })
                     .orderby('o_year')
                     .select('o_year', 'mkt_share');
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+            }
+            case 9: {
+                const sub = this.tables['nation'].join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
+                const query = this.tables['part']
+                    .filter((d: any) => aq.op.match(d.p_name, /.*green.*/g, 0))
+                    .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
+                    .join(sub, ['ps_suppkey', 's_suppkey'])
+                    .join(
+                        this.tables['lineitem'],
+                        (a: any, b: any) => a.p_partkey == b.l_partkey && a.s_suppkey == b.l_suppkey,
+                    )
+                    .join(this.tables['orders'], ['l_orderkey', 'o_orderkey'])
+                    .derive({
+                        o_year: (d: any) => aq.op.year(d.o_orderdate),
+                        amount: (d: any) => d.l_extendedprice * (1 - d.l_discount) - d.ps_supplycost * d.l_quantity,
+                    })
+                    .groupby('n_name', 'o_year')
+                    .rollup({
+                        sum_profit: (d: any) => aq.op.sum(d.amount),
+                    })
+                    .orderby('n_name', aq.desc('o_year'));
                 for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
