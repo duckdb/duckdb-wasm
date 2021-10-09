@@ -496,6 +496,99 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 17: {
+                // XXX br
+                // const part = this.tables['part']
+                //     .filter((d: any) => d.p_brand == 'Brand#23' && d.p_container == 'MED BOX')
+                break;
+            }
+            case 18: {
+                const query = this.tables['lineitem']
+                    .groupby('l_orderkey')
+                    .rollup({
+                        quantity: aq.op.sum('l_quantity'),
+                    })
+                    .filter((d: any) => d.quantity > 300)
+                    .join(this.tables['orders'], ['l_orderkey', 'o_orderkey'])
+                    .join(this.tables['customer'], ['o_custkey', 'c_custkey'])
+                    .join(this.tables['lineitem'], ['o_orderkey', 'l_orderkey'])
+                    .groupby('c_name', 'c_custkey', 'o_orderkey', 'o_orderdate', 'o_totalprice')
+                    .rollup({
+                        quantity: aq.op.sum('l_quantity'),
+                    })
+                    .orderby(aq.desc('o_totalprice'), 'o_orderdate');
+                for (const v of query.objects({ grouped: true, limit: 100 })) {
+                    noop(v);
+                }
+                break;
+            }
+            case 19: {
+                const part = this.tables['part'].filter(
+                    (d: any) =>
+                        (d.p_size >= 1 &&
+                            d.p_size <= 5 &&
+                            d.p_brand == 'Brand#12' &&
+                            (d.p_container == 'SM BOX' || d.p_container == 'SM CASE' || d.p_container == 'SM PKG')) ||
+                        (d.p_size >= 1 &&
+                            d.p_size <= 10 &&
+                            d.p_brand == 'Brand#32' &&
+                            (d.p_container == 'MED BOX' ||
+                                d.p_container == 'MED CASE' ||
+                                d.p_container == 'MED PKG')) ||
+                        (d.p_size >= 1 &&
+                            d.p_size <= 15 &&
+                            d.p_brand == 'Brand#34' &&
+                            (d.p_container == 'LG BOX' || d.p_container == 'LG CASE' || d.p_container == 'LG PKG')),
+                );
+                const lineitem = this.tables['lineitem'].filter(
+                    (d: any) =>
+                        d.l_shipinstruct == 'DELIVER IN PERSON' &&
+                        (d.l_shipmode == 'AIR' || d.l_shipmode == 'AIR REG') &&
+                        d.l_quantity >= 1 &&
+                        d.l_quantity <= 30,
+                );
+                const query = part
+                    .join(
+                        lineitem,
+                        (a: any, b: any) =>
+                            (a.p_size >= 1 &&
+                                a.p_size <= 5 &&
+                                a.p_brand == 'Brand#12' &&
+                                (a.p_container == 'SM BOX' ||
+                                    a.p_container == 'SM CASE' ||
+                                    a.p_container == 'SM PKG') &&
+                                b.l_quantity >= 1 &&
+                                b.l_quantity <= 11) ||
+                            (a.p_size >= 1 &&
+                                a.p_size <= 10 &&
+                                a.p_brand == 'Brand#32' &&
+                                (a.p_container == 'MED BOX' ||
+                                    a.p_container == 'MED CASE' ||
+                                    a.p_container == 'MED PKG') &&
+                                b.l_quantity >= 10 &&
+                                b.l_quantity <= 20) ||
+                            (a.p_size >= 1 &&
+                                a.p_size <= 15 &&
+                                a.p_brand == 'Brand#34' &&
+                                (a.p_container == 'LG BOX' ||
+                                    a.p_container == 'LG CASE' ||
+                                    a.p_container == 'LG PKG') &&
+                                b.l_quantity >= 20 &&
+                                b.l_quantity <= 30),
+                    )
+                    .derive({
+                        realprice: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    })
+                    .rollup({
+                        revenue: aq.op.sum('realprice'),
+                    });
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+
+                break;
+            }
             default:
                 throw new Error(`TPC-H query ${this.queryId} is not supported`);
         }
