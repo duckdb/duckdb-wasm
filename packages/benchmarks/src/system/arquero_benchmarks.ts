@@ -263,6 +263,47 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 8: {
+                const r2 = this.tables['region']
+                    .filter((d: any) => d.r_name == 'AMERICA')
+                    .rename({
+                        r_regionkey: 'r2_regionkey',
+                    });
+                const n2 = this.tables['nation'].rename({
+                    n_regionkey: 'n2_regionkey',
+                    n_nationkey: 'n2_nationkey',
+                    n_name: 'n2_name',
+                });
+                const p = this.tables['part'].filter((d: any) => d.p_type == 'ECONOMY ANODIZED STEEL');
+                const o = this.tables['orders'].filter(
+                    (d: any) =>
+                        d.o_orderdate >= aq.op.timestamp('1995-01-01') &&
+                        d.o_orderdate <= aq.op.timestamp('1996-12-31'),
+                );
+                const sub = p
+                    .join(this.tables['lineitem'], ['p_partkey', 'l_partkey'])
+                    .join(o, ['l_orderkey', 'o_orderkey'])
+                    .join(this.tables['customer'], ['o_custkey', 'c_custkey']);
+                const sub2 = r2
+                    .join(n2, ['r2_regionkey', 'n2_regionkey'])
+                    .join(sub, ['n2_nationkey', 'c_nationkey'])
+                    .join(this.tables['supplier'], ['l_suppkey', 's_suppkey']);
+                const query = this.tables['nation']
+                    .join(sub2, ['n_nationkey', 's_nationkey'])
+                    .derive({
+                        o_year: (d: any) => aq.op.year(d.o_orderdate),
+                        volume: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                    })
+                    .groupby('o_year')
+                    .derive({
+                        mkt_share: (d: any) => aq.op.sum(d.n2_name == 'BRAZIL' ? d.volume : 0),
+                    })
+                    .orderby('o_year');
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+            }
             default:
                 throw new Error(`TPC-H query ${this.queryId} is not supported`);
         }
