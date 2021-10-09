@@ -90,7 +90,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
                 const sub = tmp.join(this.tables['partsupp'], ['s_suppkey', 'ps_suppkey']);
                 const sub2 = this.tables['part']
-                    .filter((d: any) => d.p_size == 15 && aq.op.match(d.p_type, /.*BRASS/g, 0))
+                    .filter((d: any) => d.p_size == 15 && aq.op.match(d.p_type, /.*BRASS$/g, 0) != null)
                     .join(sub, ['p_partkey', 'ps_partkey'])
                     .groupby('p_partkey')
                     .rollup({
@@ -294,7 +294,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             case 9: {
                 const sub = this.tables['nation'].join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
                 const query = this.tables['part']
-                    .filter((d: any) => aq.op.match(d.p_name, /.*green.*/g, 0))
+                    .filter((d: any) => aq.op.match(d.p_name, /.*green.*/g, 0) != null)
                     .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
                     .join(sub, ['ps_suppkey', 's_suppkey'])
                     .join(
@@ -395,7 +395,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             }
             case 13: {
                 const o = this.tables['orders'].filter(
-                    (d: any) => !aq.op.match(d.o_comment, /.*special.*requests.*/g, 0),
+                    (d: any) => aq.op.match(d.o_comment, /^.*special.*requests.*$/g, 0) == null,
                 );
                 const query = this.tables['customer']
                     .join_left(o, ['c_custkey', 'o_custkey'])
@@ -411,6 +411,31 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         custdist: (d: any) => aq.op.count(),
                     })
                     .orderby(aq.desc('custdist'), aq.desc('c_count'));
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
+                break;
+            }
+            case 14: {
+                const query = this.tables['lineitem']
+                    .filter(
+                        (d: any) =>
+                            d.l_receiptdate >= aq.op.timestamp('1995-09-01') &&
+                            d.l_receiptdate <= aq.op.timestamp('1995-09-30'),
+                    )
+                    .join(this.tables['part'], ['l_partkey', 'p_partkey'])
+                    .derive({
+                        realprice: (d: any) => d.l_extendedprice * (1 - d.l_discount),
+                        promoprice: (d: any) =>
+                            aq.op.match(d.p_type, /^PROMO.*/g, 0) != null ? d.l_extendedprice * (1 - d.l_discount) : 0,
+                    })
+                    .rollup({
+                        sum_total: (d: any) => aq.op.sum(d.realprice),
+                        sum_promo: (d: any) => aq.op.sum(d.promoprice),
+                    })
+                    .derive({
+                        rel_promo: (d: any) => (d.sum_total == 0 ? 0 : (100 * d.sum_promo) / d.sum_total),
+                    });
                 for (const v of query.objects({ grouped: true })) {
                     noop(v);
                 }
