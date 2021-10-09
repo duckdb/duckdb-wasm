@@ -22,9 +22,9 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
 
-    const bench: SystemBenchmark[] = [new ArqueroTPCHBenchmark(sf, 15)];
+    const bench: SystemBenchmark[] = [new ArqueroTPCHBenchmark(sf, 16)];
     const benchDuckDB: SystemBenchmark[] = [];
-    for (let i = 15; i < 16; ++i) {
+    for (let i = 16; i < 17; ++i) {
         bench.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
         benchDuckDB.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i));
     }

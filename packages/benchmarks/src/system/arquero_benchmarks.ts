@@ -466,7 +466,34 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     noop(v);
                 }
                 break;
-
+            }
+            case 16: {
+                const supplier = this.tables['supplier'].filter(
+                    (d: any) => d.match(d.s_comment, /^.*Customer.*Complaints.*$/, 0) != null,
+                );
+                const query = this.tables['part']
+                    .filter(
+                        (d: any) =>
+                            d.p_brand != 'Brand#45' &&
+                            aq.op.match(d.p_type, /^MEDIUM POLISHED.*$/, 0) == null &&
+                            (d.p_size == 49 ||
+                                d.p_size == 14 ||
+                                d.p_size == 19 ||
+                                d.p_size == 23 ||
+                                d.p_size == 36 ||
+                                d.p_size == 45 ||
+                                d.p_size == 19),
+                    )
+                    .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
+                    .antijoin(supplier, ['ps_partkey', 's_suppkey'])
+                    .groupby('p_brand', 'p_type', 'p_size')
+                    .rollup({
+                        supplier_cnt: aq.op.distinct('ps_suppkey'),
+                    })
+                    .orderby(aq.desc('supplier_cnt'), 'p_brand', 'p_type', 'p_size');
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
                 break;
             }
             default:
