@@ -18,5 +18,4 @@ git reset .pages
 
 echo "[ RUN ] Copy benchmarks.arrow"
 
-mkdir -p ${PAGES_DIR}/reports/
 cp -r ${PROJECT_ROOT}/reports/benchmarks.arrow ${PAGES_DIR}/reports/benchmarks.arrow
