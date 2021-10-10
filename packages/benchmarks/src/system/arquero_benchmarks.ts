@@ -497,9 +497,20 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 break;
             }
             case 17: {
-                // XXX br
-                // const part = this.tables['part']
-                //     .filter((d: any) => d.p_brand == 'Brand#23' && d.p_container == 'MED BOX')
+                const tmp = this.tables['part']
+                    .filter((d: any) => d.p_brand == 'Brand#23' && d.p_container == 'MED BOX')
+                    .join(this.tables['lineitem'], ['p_partkey', 'l_partkey']);
+                const agg = tmp.groupby('p_partkey').rollup({
+                    avg_qty: aq.op.mean('l_quantity'),
+                });
+                const query = tmp
+                    .join(agg, (a: any, b: any) => a.p_partkey == b.p_partkey && a.l_quantity < 0.2 * b.avg_qty)
+                    .rollup({
+                        avg_yearly: (d: any) => aq.op.sum(d.l_extendedprice) / 7.0,
+                    });
+                for (const v of query.objects({ grouped: true })) {
+                    noop(v);
+                }
                 break;
             }
             case 18: {
