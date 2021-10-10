@@ -249,7 +249,7 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.wasm
                   retention-days: 1
 
-    benchmark_base:
+    benchmark_simple:
         name: Benchmarks
         runs-on: ubuntu-latest
         needs:
@@ -318,10 +318,10 @@ jobs:
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:scan:int
+                      yarn workspace @duckdb/benchmarks bench:system:scan:text
                       yarn workspace @duckdb/benchmarks bench:system:sort:int
                       yarn workspace @duckdb/benchmarks bench:system:sum:int
                       yarn workspace @duckdb/benchmarks bench:system:sum:csv
-                      yarn workspace @duckdb/benchmarks bench:system:scan:text
                       yarn workspace @duckdb/benchmarks bench:system:regex
                       yarn workspace @duckdb/benchmarks bench:system:join:2
                       yarn workspace @duckdb/benchmarks bench:system:join:3
@@ -331,6 +331,21 @@ jobs:
               with:
                   script: |-
                       ./target/release/dataprep merge-benchmarks -r ./reports/
+
+            - name: Upload benchmark reports
+              uses: actions/upload-artifact@v2
+              with:
+                  name: benchmarks-simple
+                  path: |
+                      ./reports/benchmark_system_scan_int.json
+                      ./reports/benchmark_system_scan_text.json
+                      ./reports/benchmark_system_sort_int.json
+                      ./reports/benchmark_system_sum_int.json
+                      ./reports/benchmark_system_sum_csv.json
+                      ./reports/benchmark_system_regex.json
+                      ./reports/benchmark_system_join_2.json
+                      ./reports/benchmark_system_join_3.json
+                  retention-days: 1
 
     benchmarks_tpch_0_01:
         name: Benchmarks
