@@ -637,4 +637,7 @@ jobs:
                   folder: ./.pages
                   target-folder: ./
                   clean: true
+                  clean-exclude: |
+                      reports/*
+                      branches/*
                   single-commit: true
