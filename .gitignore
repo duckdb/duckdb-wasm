@@ -1,5 +1,4 @@
 /.deploy
-/.pages
 /perf.data*
 /.cache
 /.ccache
