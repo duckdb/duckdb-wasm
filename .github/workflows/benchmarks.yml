@@ -735,13 +735,3 @@ jobs:
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
                   ./scripts/deploy_benchmarks.sh
-
-            - name: Deploy GitHub Pages
-              if: github.ref == 'refs/heads/master'
-              uses: JamesIves/github-pages-deploy-action@4.1.5
-              with:
-                  branch: gh-pages
-                  folder: ./.pages/reports
-                  target-folder: ./reports
-                  clean: false
-                  single-commit: true

@@ -628,16 +628,3 @@ jobs:
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
                   ./scripts/deploy_web_shell.sh
-
-            - name: Deploy GitHub Pages
-              if: github.ref == 'refs/heads/master'
-              uses: JamesIves/github-pages-deploy-action@4.1.5
-              with:
-                  branch: gh-pages
-                  folder: ./.pages
-                  target-folder: ./
-                  clean: true
-                  clean-exclude: |
-                      reports/*
-                      branches/*
-                  single-commit: true
