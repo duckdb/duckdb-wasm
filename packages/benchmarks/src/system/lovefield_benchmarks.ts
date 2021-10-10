@@ -21,10 +21,8 @@ export class LovefieldIntegerScanBenchmark implements SystemBenchmark {
             benchmark: 'integer_scan',
             system: 'lovefield',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {

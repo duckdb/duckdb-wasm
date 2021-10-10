@@ -20,10 +20,8 @@ export class AlasqlIntegerScanBenchmark implements SystemBenchmark {
             benchmark: 'integer_scan',
             system: 'alasql',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -74,10 +72,8 @@ export class AlasqlSimpleSumBenchmark implements SystemBenchmark {
             benchmark: 'simple_sum',
             system: 'alasql',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {

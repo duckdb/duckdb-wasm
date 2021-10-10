@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
 
+mod bench;
 mod error;
 mod tpch;
 mod uni;
@@ -21,6 +22,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .takes_value(true)
                         .required(true)
                         .about("Directory where the parquet files are written"),
+                ),
+        )
+        .subcommand(
+            App::new("merge-benchmarks")
+                .about("Merges benchmark reports")
+                .arg(
+                    Arg::new("reports")
+                        .short('r')
+                        .long("reports")
+                        .takes_value(true)
+                        .required(true)
+                        .about("Report directory"),
                 ),
         )
         .subcommand(
@@ -72,6 +85,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let out_arrow_dir = require_dir_arg(matches, "out-arrow");
         let in_dir = require_dir_arg(matches, "in");
         tpch::convert_tbls(&in_dir, &out_parquet_dir, &out_arrow_dir)?;
+        process::exit(0);
+    }
+
+    if let Some(matches) = matches.subcommand_matches("merge-benchmarks") {
+        let report_dir = require_dir_arg(matches, "reports");
+        bench::merge_benchmark_reports(&report_dir)?;
         process::exit(0);
     }
 

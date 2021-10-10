@@ -28,7 +28,7 @@ export class SqljsTPCHBenchmark implements SystemBenchmark {
             benchmark: 'tpch',
             system: 'sqljs',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.scaleFactor, this.query],
         };
     }
@@ -78,10 +78,8 @@ export class SqljsIntegerScanBenchmark implements SystemBenchmark {
             benchmark: 'integer_scan',
             system: 'sqljs',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
