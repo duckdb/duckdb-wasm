@@ -417,6 +417,14 @@ jobs:
                   script: |-
                       ./target/release/dataprep merge-benchmarks -r ./reports/
 
+            - name: Upload benchmark report
+              uses: actions/upload-artifact@v2
+              with:
+                  name: benchmarks-tpch-001
+                  path: |
+                      ./reports/benchmark_system_tpch_001.json
+                  retention-days: 1
+
     benchmarks_tpch_0_1:
         name: Benchmarks
         runs-on: ubuntu-latest
@@ -501,6 +509,14 @@ jobs:
               with:
                   script: |-
                       ./target/release/dataprep merge-benchmarks -r ./reports/
+
+            - name: Upload benchmark report
+              uses: actions/upload-artifact@v2
+              with:
+                  name: benchmarks-tpch-01
+                  path: |
+                      ./reports/benchmark_system_tpch_01.json
+                  retention-days: 1
 
     benchmarks_tpch_0_25:
         name: Benchmarks
@@ -587,6 +603,14 @@ jobs:
                   script: |-
                       ./target/release/dataprep merge-benchmarks -r ./reports/
 
+            - name: Upload benchmark report
+              uses: actions/upload-artifact@v2
+              with:
+                  name: benchmarks-tpch-025
+                  path: |
+                      ./reports/benchmark_system_tpch_025.json
+                  retention-days: 1
+
     benchmarks_tpch_0_5:
         name: Benchmarks
         runs-on: ubuntu-latest
@@ -672,6 +696,14 @@ jobs:
                   script: |-
                       ./target/release/dataprep merge-benchmarks -r ./reports/
 
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              with:
+                  name: benchmarks-tpch-05
+                  path: |
+                      ./reports/benchmark_system_tpch_05.json
+                  retention-days: 1
+
     benchmarks_tpch_1:
         name: Benchmarks
         runs-on: ubuntu-latest
@@ -756,3 +788,11 @@ jobs:
               with:
                   script: |-
                       ./target/release/dataprep merge-benchmarks -r ./reports/
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              with:
+                  name: benchmarks-tpch-1
+                  path: |
+                      ./reports/benchmark_system_tpch_1.json
+                  retention-days: 1
