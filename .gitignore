@@ -1,6 +1,8 @@
 /.deploy
 /perf.data*
 /.cache
+/.pages
+/.cache
 /.ccache
 .tmp
 /.flatc
