@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { FileRegistryProvider, StaticOverlayProvider } from './model';
+import { Benchmarks } from './benchmarks';
 import { Shell } from './shell';
 import { Route, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
@@ -51,11 +52,14 @@ const Shell_ = withNavBar(
     withBanner(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
 );
 
+const Benchmarks_ = withNavBar(() => <Benchmarks />);
+
 const element = document.getElementById('root');
 ReactDOM.render(
     <FileRegistryProvider>
         <StaticOverlayProvider>
             <BrowserRouter>
+                <Route path="/benchmarks" component={Benchmarks_} />
                 <Route component={Shell_} />
             </BrowserRouter>
         </StaticOverlayProvider>
