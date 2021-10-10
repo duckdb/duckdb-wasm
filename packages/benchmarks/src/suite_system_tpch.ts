@@ -26,8 +26,12 @@ async function main() {
     const benchSQLjs: SystemBenchmark[] = [];
     const benchDuckDB: SystemBenchmark[] = [];
     for (let i = 1; i <= 22; ++i) {
-        benchArquero.push(new ArqueroTPCHBenchmark(sf, i));
-        benchSQLjs.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
+        if (sf <= 0.25 || (i != 9 && i != 21)) {
+            benchArquero.push(new ArqueroTPCHBenchmark(sf, i));
+        }
+        if (sf <= 0.25 || (i != 17 && i != 20)) {
+            benchSQLjs.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
+        }
         benchDuckDB.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i));
     }
 
