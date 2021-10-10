@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -ex
 
 PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
+PAGES=${PROJECT_ROOT}/worktrees/gh-pages
 
-PAGES_DIR=${PROJECT_ROOT}/.pages
-rm -rf ${PAGES_DIR}
-mkdir -p ${PAGES_DIR}
+mkdir -p ${PROJECT_ROOT}/worktrees
+if [ ! -d ${PAGES} ]; then
+    echo "[ RUN ] Add worktree origin/gh-pages"
+    git worktree add ${PAGES} origin/gh-pages
+fi
 
-set -x
+cd ${PAGES}
+git fetch origin gh-pages
+git reset --hard origin/gh-pages
 
-echo "[ RUN ] Import existing gh-pages branch"
+mkdir -p data
+cp -r ${PROJECT_ROOT}/reports/benchmarks.arrow ./data/benchmarks.arrow
+git add ./data/benchmarks.arrow
+git commit --amend -m "Update benchmarks"
 
-cd ${PROJECT_ROOT}
-git read-tree --prefix=.pages origin/gh-pages
-git reset .pages
-
-echo "[ RUN ] Copy benchmarks.arrow"
-
-cp -r ${PROJECT_ROOT}/reports/benchmarks.arrow ${PAGES_DIR}/reports/benchmarks.arrow
+git push origin HEAD:gh-pages --force

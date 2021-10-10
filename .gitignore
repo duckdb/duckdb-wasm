@@ -2,6 +2,7 @@
 /perf.data*
 /.cache
 /.pages
+/worktrees
 /.cache
 /.ccache
 .tmp
