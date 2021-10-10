@@ -47,5 +47,7 @@ export async function writeReport(report: any, dst: string): Promise<void> {
     if (!fsSync.existsSync(reports)) {
         await fs.mkdir(reports);
     }
-    await fs.writeFile(path.resolve(__dirname, dst), JSON.stringify(report), 'utf8');
+    const out = path.resolve(reports, dst);
+    console.log(`writing report to: ${out.toString()}`);
+    await fs.writeFile(out, JSON.stringify(report), 'utf8');
 }
