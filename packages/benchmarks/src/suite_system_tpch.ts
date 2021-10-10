@@ -22,10 +22,12 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
 
-    const bench: SystemBenchmark[] = [new ArqueroTPCHBenchmark(sf, 17)];
+    const benchArquero: SystemBenchmark[] = [];
+    const benchSQLjs: SystemBenchmark[] = [];
     const benchDuckDB: SystemBenchmark[] = [];
-    for (let i = 17; i < 18; ++i) {
-        bench.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
+    for (let i = 1; i <= 22; ++i) {
+        benchArquero.push(new ArqueroTPCHBenchmark(sf, i));
+        benchSQLjs.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
         benchDuckDB.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i));
     }
 
@@ -34,12 +36,13 @@ async function main() {
         seed: Math.random(),
     };
 
-    let results = await runSystemBenchmarks(ctx, bench);
+    const resultsArquero = await runSystemBenchmarks(ctx, benchArquero);
+    const resultsSQLjs = await runSystemBenchmarks(ctx, benchArquero);
     await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
     const resultsDuckDB = await runSystemBenchmarks(ctx, benchDuckDB);
     await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
-    results = results.concat(resultsDuckDB);
 
+    const results = resultsArquero.concat(resultsSQLjs).concat(resultsDuckDB);
     console.log(results);
     await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}.json`);
 }
