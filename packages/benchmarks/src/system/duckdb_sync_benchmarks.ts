@@ -34,7 +34,7 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
             benchmark: 'tpch',
             system: 'duckdb',
             tags: ['sync', 'loaded'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.scaleFactor, this.query],
         };
     }
@@ -114,7 +114,7 @@ export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
             benchmark: 'tpch',
             system: 'duckdb',
             tags: ['sync', 'parquet'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.scaleFactor, this.query],
         };
     }
@@ -189,10 +189,8 @@ export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
             benchmark: 'integer_scan',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -252,9 +250,8 @@ export class DuckDBSyncIntegerSortBenchmark implements SystemBenchmark {
             benchmark: 'integer_sort',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.columnCount, this.orderBy.length],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -324,9 +321,8 @@ export class DuckDBSyncIntegerTopKBenchmark implements SystemBenchmark {
             benchmark: 'integer_topk',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.columnCount, this.orderBy.length, this.k],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -383,9 +379,8 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
             benchmark: 'integer_sum',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.groupSize],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -443,9 +438,8 @@ export class DuckDBSyncCSVSumBenchmark implements SystemBenchmark {
             benchmark: 'csv_sum',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.groupSize],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -502,10 +496,8 @@ export class DuckDBSyncVarcharScanBenchmark implements SystemBenchmark {
             benchmark: 'varchar_scan',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * this.chars,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -560,10 +552,8 @@ export class DuckDBSyncRegexBenchmark implements SystemBenchmark {
             benchmark: 'regex',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * this.chars,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -624,7 +614,7 @@ export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
             benchmark: 'integer_join2',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
         };
     }
@@ -709,7 +699,7 @@ export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
             benchmark: 'integer_join3',
             system: 'duckdb',
             tags: ['sync'],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
         };
     }

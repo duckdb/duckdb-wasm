@@ -32,7 +32,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             benchmark: 'tpch',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.scaleFactor, this.queryId],
         };
     }
@@ -706,10 +706,8 @@ export class ArqueroIntegerScanBenchmark implements SystemBenchmark {
             benchmark: 'integer_scan',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * 4,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -755,9 +753,8 @@ export class ArqueroIntegerSumBenchmark implements SystemBenchmark {
             benchmark: 'integer_sum',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.groupSize],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -812,9 +809,8 @@ export class ArqueroIntegerSortBenchmark implements SystemBenchmark {
             benchmark: 'integer_sort',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.columnCount, this.orderBy.length],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -867,9 +863,8 @@ export class ArqueroIntegerTopKBenchmark implements SystemBenchmark {
             benchmark: 'integer_topk',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.columnCount, this.orderBy.length],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -916,9 +911,8 @@ export class ArqueroCSVSumBenchmark implements SystemBenchmark {
             benchmark: 'csv_sum',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.groupSize],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -968,9 +962,8 @@ export class ArqueroJSONSumBenchmark implements SystemBenchmark {
             benchmark: 'json_sum',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples, this.groupSize],
-            throughputTuples: this.tuples,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -1019,7 +1012,7 @@ export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
             benchmark: 'integer_join2',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
         };
     }
@@ -1086,7 +1079,7 @@ export class ArqueroIntegerJoin3Benchmark implements SystemBenchmark {
             benchmark: 'integer_join3',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
         };
     }
@@ -1151,10 +1144,8 @@ export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
             benchmark: 'varchar_scan',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * this.chars,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
@@ -1200,10 +1191,8 @@ export class ArqueroRegexBenchmark implements SystemBenchmark {
             benchmark: 'regex',
             system: 'arquero',
             tags: [],
-            timestamp: new Date(),
+            timestamp: +new Date(),
             parameters: [this.tuples],
-            throughputTuples: this.tuples,
-            throughputBytes: this.tuples * this.chars,
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {

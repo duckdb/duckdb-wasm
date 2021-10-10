@@ -14,10 +14,8 @@ export interface SystemBenchmarkMetadata {
     benchmark: string;
     system: string;
     tags: string[];
-    timestamp: Date;
-    parameters: any[];
-    throughputTuples?: number;
-    throughputBytes?: number;
+    timestamp: number;
+    parameters: number[];
 }
 
 export interface SystemBenchmark {
