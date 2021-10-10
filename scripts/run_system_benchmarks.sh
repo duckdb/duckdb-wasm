@@ -15,8 +15,8 @@ ${PROJECT_ROOT}/scripts/generate_tpch_tbl.sh 10
 yarn workspace @duckdb/benchmarks build
 yarn workspace @duckdb/benchmarks bench:system:scan:int
 yarn workspace @duckdb/benchmarks bench:system:sort:int
-yarn workspace @duckdb/benchmarks bench:system:sum:csv
 yarn workspace @duckdb/benchmarks bench:system:sum:int
+yarn workspace @duckdb/benchmarks bench:system:sum:csv
 yarn workspace @duckdb/benchmarks bench:system:scan:text
 yarn workspace @duckdb/benchmarks bench:system:regex
 yarn workspace @duckdb/benchmarks bench:system:join:2
