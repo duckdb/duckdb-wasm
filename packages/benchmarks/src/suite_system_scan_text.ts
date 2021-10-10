@@ -15,11 +15,9 @@ async function main() {
         new ArqueroVarcharScanBenchmark(1000, 20),
         new ArqueroVarcharScanBenchmark(10000, 20),
         new ArqueroVarcharScanBenchmark(100000, 20),
-        new ArqueroVarcharScanBenchmark(1000000, 20),
         new DuckDBSyncVarcharScanBenchmark(duckdbSync, 1000, 20),
         new DuckDBSyncVarcharScanBenchmark(duckdbSync, 10000, 20),
         new DuckDBSyncVarcharScanBenchmark(duckdbSync, 100000, 20),
-        new DuckDBSyncVarcharScanBenchmark(duckdbSync, 1000000, 20),
     ];
     const ctx: SystemBenchmarkContext = {
         projectRootPath: baseDir,
