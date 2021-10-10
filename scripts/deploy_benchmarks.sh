@@ -17,7 +17,7 @@ git reset --hard origin/gh-pages
 
 mkdir -p data
 cp -r ${PROJECT_ROOT}/reports/benchmarks.arrow ./data/benchmarks.arrow
+
 git add ./data/benchmarks.arrow
 git commit --amend -m "Update benchmarks"
-
 git push origin HEAD:gh-pages --force
