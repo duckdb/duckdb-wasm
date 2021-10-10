@@ -249,8 +249,8 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.wasm
                   retention-days: 1
 
-    benchmark_simple:
-        name: Benchmarks
+    benchmarks_simple:
+        name: Simple Benchmarks
         runs-on: ubuntu-latest
         needs:
             - dataprep
@@ -342,7 +342,7 @@ jobs:
                   retention-days: 1
 
     benchmarks_tpch_001:
-        name: Benchmarks
+        name: TPCH Scale Factor 0.01
         runs-on: ubuntu-latest
         needs:
             - dataprep
@@ -429,7 +429,7 @@ jobs:
                   retention-days: 1
 
     benchmarks_tpch_01:
-        name: Benchmarks
+        name: TPCH Scale Factor 0.1
         runs-on: ubuntu-latest
         needs:
             - dataprep
@@ -516,7 +516,7 @@ jobs:
                   retention-days: 1
 
     benchmarks_tpch_025:
-        name: Benchmarks
+        name: TPCH Scale Factor 0.25
         runs-on: ubuntu-latest
         needs:
             - dataprep
@@ -603,7 +603,7 @@ jobs:
                   retention-days: 1
 
     benchmarks_tpch_05:
-        name: Benchmarks
+        name: TPCH Scale Factor 0.5
         runs-on: ubuntu-latest
         needs:
             - dataprep
@@ -690,7 +690,7 @@ jobs:
                   retention-days: 1
 
     benchmarks_tpch_1:
-        name: Benchmarks
+        name: TPCH Scale Factor 1
         runs-on: ubuntu-latest
         needs:
             - dataprep
@@ -776,8 +776,8 @@ jobs:
                       ./reports/benchmark_system_tpch_1.json
                   retention-days: 1
 
-    js_libs:
-        name: Javascript Library
+    merge_benchmarks:
+        name: Merge benchmark reports
         runs-on: ubuntu-latest
         needs:
             - dataprep
