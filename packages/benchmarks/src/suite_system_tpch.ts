@@ -37,7 +37,7 @@ async function main() {
     };
 
     const resultsArquero = await runSystemBenchmarks(ctx, benchArquero);
-    const resultsSQLjs = await runSystemBenchmarks(ctx, benchArquero);
+    const resultsSQLjs = await runSystemBenchmarks(ctx, benchSQLjs);
     await DuckDBSyncLoadedTPCHBenchmark.beforeGroup(duckdbSync, ctx, sf);
     const resultsDuckDB = await runSystemBenchmarks(ctx, benchDuckDB);
     await DuckDBSyncLoadedTPCHBenchmark.afterGroup(duckdbSync);
