@@ -620,14 +620,14 @@ jobs:
               run: |
                   NPM_PUBLISH_TOKEN=${{ secrets.NPM_PUBLISH_TOKEN }} ./scripts/npm_version.sh publish
 
-            - name: Build GitHub Pages
+            - name: Deploy Web Shell
               if: github.ref == 'refs/heads/master'
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
-                  ./scripts/build_pages.sh
+                  ./scripts/deploy_web_shell.sh
 
             - name: Deploy GitHub Pages
               if: github.ref == 'refs/heads/master'
