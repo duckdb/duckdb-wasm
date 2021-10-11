@@ -131,7 +131,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
         <div className={styles.table}>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_05" title="TPCH 0.05 [s]" />
+                    <BenchmarkGroupHeader key="tpch_05" title="TPCH 0.5 [s]" />
                     <BenchmarkRow id={91} bk="tpch_05_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={92} bk="tpch_05_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={93} bk="tpch_05_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -158,7 +158,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_025" title="TPCH 0.025 [s]" />
+                    <BenchmarkGroupHeader key="tpch_025" title="TPCH 0.25 [s]" />
                     <BenchmarkRow id={61} bk="tpch_025_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={62} bk="tpch_025_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={63} bk="tpch_025_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -185,7 +185,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_01" title="TPCH 0.01 [s]" />
+                    <BenchmarkGroupHeader key="tpch_01" title="TPCH 0.1 [s]" />
                     <BenchmarkRow id={31} bk="tpch_01_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={32} bk="tpch_01_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={33} bk="tpch_01_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -212,7 +212,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_001" title="TPCH 0.001 [s]" />
+                    <BenchmarkGroupHeader key="tpch_001" title="TPCH 0.01 [s]" />
                     <BenchmarkRow id={1} bk="tpch_001_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={2} bk="tpch_001_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={3} bk="tpch_001_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
