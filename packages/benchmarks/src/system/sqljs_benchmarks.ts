@@ -4,7 +4,7 @@ import * as sqljs from 'sql.js';
 import { sqlCreate, sqlInsert } from './simple_sql';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { getTPCHQuery, getTPCHSQLiteDB } from './tpch_loader';
-import { generateGroupedInt32, generateInt32, generateUtf8 } from './data_generator';
+import { generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
 
 export class SqljsTPCHBenchmark implements SystemBenchmark {
     initDB: sqljs.SqlJsStatic;
@@ -271,6 +271,130 @@ export class SqljsIntegerSumBenchmark implements SystemBenchmark {
         const expectedGroups = this.tuples / this.groupSize;
         if (n !== expectedGroups) {
             throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+    }
+}
+
+export class SqljsIntegerSortBenchmark implements SystemBenchmark {
+    initDB: sqljs.SqlJsStatic;
+    database: sqljs.Database | null;
+    tuples: number;
+    columnCount: number;
+    orderBy: string[];
+
+    constructor(initDB: sqljs.SqlJsStatic, tuples: number, columnCount: number, orderCriteria: number) {
+        this.initDB = initDB;
+        this.database = null;
+        this.columnCount = columnCount;
+        this.tuples = tuples;
+        this.orderBy = [];
+        for (let i = 0; i < orderCriteria; ++i) {
+            this.orderBy.push(`v${i}`);
+        }
+    }
+    getName(): string {
+        return `sqljs_integer_sort_${this.tuples}_${this.columnCount}_${this.orderBy.length}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_sort',
+            system: 'sqljs',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuples, this.columnCount, this.orderBy.length],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const columns = generateXInt32(this.tuples, this.columnCount);
+        this.database = new this.initDB.Database();
+        const fields = columns.map((_c, i) => new arrow.Field(`v${i}`, new arrow.Int32()));
+        this.database.run(sqlCreate(this.getName(), fields));
+        for (const query of sqlInsert(this.getName(), fields, columns)) {
+            this.database.run(query);
+        }
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const results = this.database!.exec(`SELECT * FROM ${this.getName()} ORDER BY ${this.orderBy.join(',')}`);
+        let n = 0;
+        for (const row of results[0].values) {
+            noop(row);
+            n += 1;
+        }
+        if (this.tuples !== n) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+    }
+}
+
+export class SqljsIntegerTopKBenchmark implements SystemBenchmark {
+    initDB: sqljs.SqlJsStatic;
+    database: sqljs.Database | null;
+    tuples: number;
+    columnCount: number;
+    orderBy: string[];
+    k: number;
+
+    constructor(initDB: sqljs.SqlJsStatic, tuples: number, columnCount: number, orderCriteria: number, k: number) {
+        this.initDB = initDB;
+        this.database = null;
+        this.columnCount = columnCount;
+        this.tuples = tuples;
+        this.orderBy = [];
+        this.k = k;
+        for (let i = 0; i < orderCriteria; ++i) {
+            this.orderBy.push(`v${i}`);
+        }
+    }
+    getName(): string {
+        return `sqljs_integer_topk_${this.tuples}_${this.columnCount}_${this.orderBy.length}_${this.k}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_sort',
+            system: 'sqljs',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuples, this.columnCount, this.orderBy.length, this.k],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const columns = generateXInt32(this.tuples, this.columnCount);
+        this.database = new this.initDB.Database();
+        const fields = columns.map((_c, i) => new arrow.Field(`v${i}`, new arrow.Int32()));
+        this.database.run(sqlCreate(this.getName(), fields));
+        for (const query of sqlInsert(this.getName(), fields, columns)) {
+            this.database.run(query);
+        }
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const results = this.database!.exec(
+            `SELECT * FROM ${this.getName()} ORDER BY (${this.orderBy.join(',')}) LIMIT ${this.k}`,
+        );
+        let n = 0;
+        for (const row of results[0].values) {
+            noop(row);
+            n += 1;
+        }
+        if (n !== this.k) {
+            throw Error(`invalid tuple count. expected ${this.k}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}

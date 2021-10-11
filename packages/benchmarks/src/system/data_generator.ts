@@ -149,9 +149,8 @@ export function generateJSONGroupedInt32(n: number, groupSize: number): string {
     });
 }
 
-export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arrow.RecordBatch[]] {
+export function generateXInt32(n: number, cols: number): number[][] {
     const columns = [];
-    const fields = [];
     for (let j = 0; j < cols; ++j) {
         const column = [];
         for (let i = 0; i < n; ++i) {
@@ -159,6 +158,14 @@ export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arr
         }
         shuffle(column);
         columns.push(column);
+    }
+    return columns;
+}
+
+export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arrow.RecordBatch[]] {
+    const columns = generateXInt32(n, cols);
+    const fields = [];
+    for (let j = 0; j < cols; ++j) {
         fields.push(new arrow.Field(`v${j}`, new arrow.Int32()));
     }
     const schema = new arrow.Schema(fields);

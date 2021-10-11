@@ -1,4 +1,4 @@
-import { setupDuckDBSync, writeReport } from './setup';
+import { setupDuckDBSync, setupSqljs, writeReport } from './setup';
 import {
     SystemBenchmarkContext,
     SystemBenchmark,
@@ -6,6 +6,8 @@ import {
     DuckDBSyncIntegerSortBenchmark,
     DuckDBSyncIntegerTopKBenchmark,
     ArqueroIntegerTopKBenchmark,
+    SqljsIntegerSortBenchmark,
+    SqljsIntegerTopKBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
 import * as path from 'path';
@@ -13,7 +15,17 @@ import * as path from 'path';
 async function main() {
     const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
+    const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new SqljsIntegerSortBenchmark(sqljsDB, 1000, 1, 1),
+        new SqljsIntegerSortBenchmark(sqljsDB, 10000, 1, 1),
+        new SqljsIntegerSortBenchmark(sqljsDB, 100000, 1, 1),
+        new SqljsIntegerSortBenchmark(sqljsDB, 1000, 2, 2),
+        new SqljsIntegerSortBenchmark(sqljsDB, 10000, 2, 2),
+        new SqljsIntegerSortBenchmark(sqljsDB, 100000, 2, 2),
+        new SqljsIntegerTopKBenchmark(sqljsDB, 1000, 1, 1, 100),
+        new SqljsIntegerTopKBenchmark(sqljsDB, 10000, 1, 1, 100),
+        new SqljsIntegerTopKBenchmark(sqljsDB, 100000, 1, 1, 100),
         new ArqueroIntegerSortBenchmark(1000, 1, 1),
         new ArqueroIntegerSortBenchmark(10000, 1, 1),
         new ArqueroIntegerSortBenchmark(100000, 1, 1),
