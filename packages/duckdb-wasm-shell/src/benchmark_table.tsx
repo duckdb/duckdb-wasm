@@ -427,7 +427,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
                     />
                     <BenchmarkRow
                         id={1003}
-                        bk="integer_join3_10_100_1000_10_10_100"
+                        bk="integer_join3_10_100_1000_10_10_10"
                         title="leftdeep-3-s"
                         d={props.data}
                         m={Metric.FREQUENCY}
