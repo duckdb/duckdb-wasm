@@ -1,7 +1,7 @@
 import * as lf from 'lovefield-ts/dist/es6/lf.js';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
-import { generateGroupedInt32, generateUtf8 } from './data_generator';
+import { generateGroupedInt32, generateUtf8, generateXInt32 } from './data_generator';
 
 export class LovefieldRegexScanBenchmark implements SystemBenchmark {
     builder?: lf.Builder | null;
@@ -132,6 +132,170 @@ export class LovefieldIntegerSumBenchmark implements SystemBenchmark {
         const expectedGroups = this.tuples / this.groupSize;
         if (n !== expectedGroups) {
             throw Error(`invalid tuple count. expected ${expectedGroups}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        const table = this.database!.getSchema().table(this.getName());
+        await this.database!.delete().from(table).exec();
+        this.database!.close();
+    }
+    async onError(ctx: SystemBenchmarkContext): Promise<void> {
+        await this.afterAll(ctx);
+    }
+}
+
+export class LovefieldIntegerSortBenchmark implements SystemBenchmark {
+    builder?: lf.Builder | null;
+    database?: lf.DatabaseConnection | null;
+    tuples: number;
+    columnCount: number;
+    orderBy: string[];
+
+    constructor(tuples: number, columnCount: number, orderCriteria: number) {
+        this.builder = null;
+        this.database = null;
+        this.tuples = tuples;
+        this.columnCount = columnCount;
+        this.orderBy = [];
+        for (let i = 0; i < orderCriteria; ++i) {
+            this.orderBy.push(`v${i}`);
+        }
+    }
+    getName(): string {
+        return `lovefield_integer_sort_${this.tuples}_${this.columnCount}_${this.orderBy.length}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_sort',
+            system: 'lovefield',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuples, this.columnCount, this.orderBy.length],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+
+        this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
+        const tableBuilder = this.builder!.createTable(this.getName());
+        const columns = generateXInt32(this.tuples, this.columnCount);
+        for (let i = 0; i < columns.length; ++i) {
+            tableBuilder.addColumn(`v${i}`, lf.Type.INTEGER);
+        }
+
+        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+        const table = this.database!.getSchema().table(this.getName());
+        const rows = [];
+        for (let i = 0; i < columns[0].length; ++i) {
+            const row: any = {};
+            for (let j = 0; j < columns.length; ++j) {
+                row[`v${j}`] = columns[j][i];
+            }
+            rows.push(table.createRow(row));
+        }
+        await this.database!.insert().into(table).values(rows).exec();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const table = this.database!.getSchema().table(this.getName());
+        let query = this.database!.select().from(table);
+        for (let i = 0; i < this.columnCount; ++i) {
+            query = query.orderBy(table.col(`v${i}`));
+        }
+        const rows = (await query.exec()) as Iterable<{
+            v0: number;
+        }>;
+        let n = 0;
+        for (const row of rows) {
+            noop(row);
+            n += 1;
+        }
+        if (this.tuples !== n) {
+            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        const table = this.database!.getSchema().table(this.getName());
+        await this.database!.delete().from(table).exec();
+        this.database!.close();
+    }
+    async onError(ctx: SystemBenchmarkContext): Promise<void> {
+        await this.afterAll(ctx);
+    }
+}
+
+export class LovefieldIntegerTopKBenchmark implements SystemBenchmark {
+    builder?: lf.Builder | null;
+    database?: lf.DatabaseConnection | null;
+    tuples: number;
+    columnCount: number;
+    orderBy: string[];
+    k: number;
+
+    constructor(tuples: number, columnCount: number, orderCriteria: number, k: number) {
+        this.builder = null;
+        this.database = null;
+        this.tuples = tuples;
+        this.columnCount = columnCount;
+        this.orderBy = [];
+        this.k = k;
+        for (let i = 0; i < orderCriteria; ++i) {
+            this.orderBy.push(`v${i}`);
+        }
+    }
+    getName(): string {
+        return `lovefield_integer_sort_${this.tuples}_${this.columnCount}_${this.orderBy.length}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_topk',
+            system: 'lovefield',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuples, this.columnCount, this.orderBy.length, this.k],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+
+        this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
+        const tableBuilder = this.builder!.createTable(this.getName());
+        const columns = generateXInt32(this.tuples, this.columnCount);
+        for (let i = 0; i < columns.length; ++i) {
+            tableBuilder.addColumn(`v${i}`, lf.Type.INTEGER);
+        }
+
+        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+        const table = this.database!.getSchema().table(this.getName());
+        const rows = [];
+        for (let i = 0; i < columns[0].length; ++i) {
+            const row: any = {};
+            for (let j = 0; j < columns.length; ++j) {
+                row[`v${j}`] = columns[j][i];
+            }
+            rows.push(table.createRow(row));
+        }
+        await this.database!.insert().into(table).values(rows).exec();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const table = this.database!.getSchema().table(this.getName());
+        let query = this.database!.select().from(table);
+        for (let i = 0; i < this.columnCount; ++i) {
+            query = query.orderBy(table.col(`v${i}`));
+        }
+        const rows = (await query.limit(this.k).exec()) as Iterable<{
+            v0: number;
+        }>;
+        let n = 0;
+        for (const row of rows) {
+            noop(row);
+            n += 1;
+        }
+        if (n !== this.k) {
+            throw Error(`invalid tuple count. expected ${this.k}, received ${n}`);
         }
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}

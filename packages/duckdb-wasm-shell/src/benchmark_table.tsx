@@ -270,34 +270,6 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
                         m={Metric.FREQUENCY}
                     />
                     <BenchmarkRow
-                        id={1002}
-                        bk="csv_sum_1000_10"
-                        title="csvsum-1k-10"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1002}
-                        bk="csv_sum_10000_100"
-                        title="csvsum-10k-100"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1002}
-                        bk="csv_sum_100000_1000"
-                        title="csvsum-100k-1k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1002}
-                        bk="csv_sum_1000000_10000"
-                        title="csvsum-1m-10k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
                         id={2}
                         bk="integer_sort_1000_1_1"
                         title="sort-i32-1k"
