@@ -18,7 +18,9 @@ export type BenchmarkType = {
 };
 
 export interface BenchmarkEntry {
+    key: string;
     benchmarkKey: string;
+    systemKey: string;
 
     timestamp: number;
     name: string;
@@ -80,7 +82,9 @@ export function readBenchmarks(bm: arrow.Table<BenchmarkType>): BenchmarkEntry[]
                 tagStrings.push(tags?.get(k) || '');
             }
             const entry: BenchmarkEntry = {
+                key: '',
                 benchmarkKey: '',
+                systemKey: '',
 
                 timestamp: timestampChunk.get(j) || 0,
                 name: nameChunk.get(j) || '',
@@ -98,19 +102,36 @@ export function readBenchmarks(bm: arrow.Table<BenchmarkType>): BenchmarkEntry[]
                 runTime: runTimeChunk.get(j) || 0,
                 totalTime: totalTimeChunk.get(j) || 0,
             };
-            entry.benchmarkKey = `${entry.benchmark}_${entry.parameters.join('_')}`.replace('.', '');
+            entry.benchmarkKey = `${entry.benchmark}${entry.parameters.length > 0 ? '_' : ''}${entry.parameters.join(
+                '_',
+            )}`.replace('.', '');
+            entry.systemKey = `${entry.system}${entry.tags.length > 0 ? '_' : ''}${entry.tags.join('_')}`.replace(
+                '.',
+                '',
+            );
+            entry.key = `${entry.benchmarkKey}_${entry.systemKey}`;
             entries.push(entry);
         }
     }
     return entries;
 }
 
-export function groupBenchmarks(entries: BenchmarkEntry[]): Map<string, BenchmarkEntry[]> {
-    const map = new Map<string, BenchmarkEntry[]>();
-    for (const entry of entries) {
-        const m = map.get(entry.benchmarkKey) || [];
-        m.push(entry);
-        map.set(entry.benchmarkKey, m);
+export interface GroupedBenchmarks {
+    benchmarks: Map<string, true>;
+    systems: Map<string, true>;
+    entries: Map<string, BenchmarkEntry>;
+}
+
+export function groupBenchmarks(e: BenchmarkEntry[]): GroupedBenchmarks {
+    const groups = {
+        benchmarks: new Map(),
+        systems: new Map(),
+        entries: new Map(),
+    };
+    for (const entry of e) {
+        groups.benchmarks.set(entry.benchmarkKey, true);
+        groups.systems.set(entry.systemKey, true);
+        groups.entries.set(entry.key, true);
     }
-    return map;
+    return groups;
 }

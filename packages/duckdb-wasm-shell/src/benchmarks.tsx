@@ -1,7 +1,7 @@
 import * as arrow from 'apache-arrow';
 import React from 'react';
 import styles from './benchmarks.module.css';
-import { BenchmarkType, BenchmarkEntry, readBenchmarks, groupBenchmarks } from './benchmark_reader';
+import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from './benchmark_reader';
 
 const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow';
 
@@ -17,16 +17,18 @@ type Props = Record<string, string>;
 interface State {
     status: LoadingStatus;
     table: arrow.Table<BenchmarkType> | null;
-    benchmarks: BenchmarkEntry[];
-    benchmarkGroups: Map<string, BenchmarkEntry[]>;
+    benchmarks: GroupedBenchmarks;
 }
 
 export const Benchmarks: React.FC<Props> = (props: Props) => {
     const [state, setState] = React.useState<State>({
         status: LoadingStatus.PENDING,
         table: null,
-        benchmarks: [],
-        benchmarkGroups: new Map(),
+        benchmarks: {
+            benchmarks: new Map(),
+            systems: new Map(),
+            entries: new Map(),
+        },
     });
 
     const fetch_data = async () => {
@@ -35,14 +37,13 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
         setState(s => {
             const table = arrow.Table.from(new Uint8Array(buffer));
             const entries = readBenchmarks(table);
-            const entryGroups = groupBenchmarks(entries);
-            console.log(entryGroups);
+            const grouped = groupBenchmarks(entries);
+            console.log(grouped);
             return {
                 ...s,
                 status: LoadingStatus.SUCCEEDED,
                 table: arrow.Table.from(new Uint8Array(buffer)),
-                benchmarks: entries,
-                benchmarkGroups: entryGroups,
+                benchmarks: grouped,
             };
         });
     };
