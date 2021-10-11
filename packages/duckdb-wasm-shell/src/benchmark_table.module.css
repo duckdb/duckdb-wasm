@@ -16,7 +16,7 @@
 @media only screen and (min-width: 600px) {
     .row_group {
         display: grid;
-        grid-template-columns: max-content 1fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: max-content 1fr 1fr 1fr 1fr;
         border: 1px solid rgb(180, 180, 180);
         overflow-x: auto;
         width: 90%;
@@ -26,7 +26,7 @@
 @media only screen and (max-width: 600px) {
     .row_group {
         display: grid;
-        grid-template-columns: max-content 1fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: max-content 1fr 1fr 1fr 1fr;
         border: 1px solid rgb(180, 180, 180);
         overflow-x: auto;
     }
