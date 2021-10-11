@@ -54,7 +54,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             minMeanTime = Math.min(minMeanTime, entry?.meanTime || Number.POSITIVE_INFINITY);
             maxMeanTime = Math.max(maxMeanTime, entry?.meanTime || 0.0);
         }
-        maxMeanTime = Math.min(minMeanTime * 10, maxMeanTime);
+        maxMeanTime = Math.min(minMeanTime * 4, maxMeanTime);
         for (const entry of entries) {
             if (entry === undefined) {
                 values.push(null);
