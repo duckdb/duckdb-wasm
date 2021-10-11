@@ -1,7 +1,8 @@
-import { setupDuckDBSync, writeReport } from './setup';
+import { setupDuckDBSync, setupSqljs, writeReport } from './setup';
 import {
     ArqueroIntegerJoin3Benchmark,
     DuckDBSyncIntegerJoin3Benchmark,
+    SqljsIntegerJoin3Benchmark,
     SystemBenchmark,
     SystemBenchmarkContext,
 } from './system';
@@ -11,7 +12,12 @@ import * as path from 'path';
 async function main() {
     const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
+    const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new SqljsIntegerJoin3Benchmark(sqljsDB, 10, 100, 1000, 10, 10, 10),
+        new SqljsIntegerJoin3Benchmark(sqljsDB, 100, 1000, 10000, 100, 10, 10),
+        new SqljsIntegerJoin3Benchmark(sqljsDB, 1000, 10000, 100000, 100, 10, 10),
+        new SqljsIntegerJoin3Benchmark(sqljsDB, 10000, 100000, 1000000, 100, 10, 10),
         new ArqueroIntegerJoin3Benchmark(10, 100, 1000, 10, 10, 10),
         new ArqueroIntegerJoin3Benchmark(100, 1000, 10000, 100, 10, 10),
         new ArqueroIntegerJoin3Benchmark(1000, 10000, 100000, 100, 10, 10),

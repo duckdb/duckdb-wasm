@@ -4,7 +4,7 @@ import styles from './benchmarks.module.css';
 import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from './benchmark_reader';
 import { BenchmarkTable } from './benchmark_table';
 
-const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow?10';
+const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow?12';
 
 enum LoadingStatus {
     PENDING,
