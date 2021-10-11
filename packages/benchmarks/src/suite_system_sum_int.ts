@@ -5,6 +5,7 @@ import {
     SystemBenchmark,
     SystemBenchmarkContext,
     SqljsIntegerSumBenchmark,
+    LovefieldIntegerSumBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
 import * as path from 'path';
@@ -14,6 +15,10 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new LovefieldIntegerSumBenchmark(1000, 10),
+        new LovefieldIntegerSumBenchmark(10000, 10),
+        new LovefieldIntegerSumBenchmark(100000, 10),
+        new LovefieldIntegerSumBenchmark(1000000, 10),
         new SqljsIntegerSumBenchmark(sqljsDB, 1000, 10),
         new SqljsIntegerSumBenchmark(sqljsDB, 10000, 10),
         new SqljsIntegerSumBenchmark(sqljsDB, 100000, 10),
