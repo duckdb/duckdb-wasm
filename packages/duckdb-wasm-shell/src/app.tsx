@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import { FileRegistryProvider, StaticOverlayProvider } from './model';
 import { Benchmarks } from './benchmarks';
 import { Shell } from './shell';
-import { Route, BrowserRouter } from 'react-router-dom';
+import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
 
@@ -59,8 +59,11 @@ ReactDOM.render(
     <FileRegistryProvider>
         <StaticOverlayProvider>
             <BrowserRouter>
-                <Route path="/benchmarks" component={Benchmarks_} />
-                <Route component={Shell_} />
+                <Switch>
+                    <Route exact path="/benchmarks" component={Benchmarks_} />
+                    <Route exact path="/" component={Shell_} />
+                    <Redirect to="/" />
+                </Switch>
             </BrowserRouter>
         </StaticOverlayProvider>
     </FileRegistryProvider>,
