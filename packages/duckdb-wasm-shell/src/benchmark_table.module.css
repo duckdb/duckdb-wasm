@@ -2,7 +2,7 @@
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 4px 8px;
+    padding: 8px 8px;
 }
 
 .row_group_container {
@@ -15,7 +15,7 @@
 
 .row_group {
     display: grid;
-    grid-template-columns: 40px 120px 120px 120px 120px 120px;
+    grid-template-columns: max-content 120px 120px 120px 120px 120px;
     border: 1px solid rgb(180, 180, 180);
     overflow-x: auto;
 }
@@ -49,7 +49,7 @@
     grid-column: 1;
     text-align: right;
     font-size: 85%;
-    padding: 0px 8px;
+    padding: 0px 8px 0px 16px;
     background-color: rgb(90, 90, 90);
     color: white;
 }

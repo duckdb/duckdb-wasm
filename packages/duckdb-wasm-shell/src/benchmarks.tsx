@@ -58,7 +58,7 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
     }
     return (
         <div className={styles.root}>
-            <BenchmarkTable benchmarks={state.benchmarks!} />
+            <BenchmarkTable data={state.benchmarks!} />
         </div>
     );
 };
