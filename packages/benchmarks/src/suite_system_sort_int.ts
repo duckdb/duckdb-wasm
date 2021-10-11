@@ -8,6 +8,8 @@ import {
     ArqueroIntegerTopKBenchmark,
     SqljsIntegerSortBenchmark,
     SqljsIntegerTopKBenchmark,
+    LovefieldIntegerSortBenchmark,
+    LovefieldIntegerTopKBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
 import * as path from 'path';
@@ -17,6 +19,15 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new LovefieldIntegerSortBenchmark(1000, 1, 1),
+        new LovefieldIntegerSortBenchmark(10000, 1, 1),
+        new LovefieldIntegerSortBenchmark(100000, 1, 1),
+        new LovefieldIntegerSortBenchmark(1000, 2, 2),
+        new LovefieldIntegerSortBenchmark(10000, 2, 2),
+        new LovefieldIntegerSortBenchmark(100000, 2, 2),
+        new LovefieldIntegerTopKBenchmark(1000, 1, 1, 100),
+        new LovefieldIntegerTopKBenchmark(10000, 1, 1, 100),
+        new LovefieldIntegerTopKBenchmark(100000, 1, 1, 100),
         new SqljsIntegerSortBenchmark(sqljsDB, 1000, 1, 1),
         new SqljsIntegerSortBenchmark(sqljsDB, 10000, 1, 1),
         new SqljsIntegerSortBenchmark(sqljsDB, 100000, 1, 1),
