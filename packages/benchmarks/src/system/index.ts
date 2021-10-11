@@ -1,4 +1,3 @@
-export * from './alasql_benchmarks';
 export * from './arquero_benchmarks';
 export * from './lovefield_benchmarks';
 export * from './sqljs_benchmarks';
