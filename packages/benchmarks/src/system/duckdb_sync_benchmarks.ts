@@ -344,7 +344,7 @@ export class DuckDBSyncIntegerTopKBenchmark implements SystemBenchmark {
             noop(v);
             n += 1;
         }
-        if (this.tuples !== this.k) {
+        if (n !== this.k) {
             throw Error(`invalid tuple count. expected ${this.k}, received ${n}`);
         }
     }
