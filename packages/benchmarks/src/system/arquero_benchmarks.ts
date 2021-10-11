@@ -864,7 +864,7 @@ export class ArqueroIntegerTopKBenchmark implements SystemBenchmark {
             system: 'arquero',
             tags: [],
             timestamp: +new Date(),
-            parameters: [this.tuples, this.columnCount, this.orderBy.length],
+            parameters: [this.tuples, this.columnCount, this.orderBy.length, this.k],
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
