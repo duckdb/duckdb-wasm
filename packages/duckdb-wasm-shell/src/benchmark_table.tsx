@@ -3,7 +3,7 @@ import { GroupedBenchmarks } from './benchmark_reader';
 
 import styles from './benchmark_table.module.css';
 
-const SYSTEMS = ['duckdb_sync', 'sqljs', 'arquero', 'lovefield'];
+const SYSTEMS = ['duckdb_sync', 'sqljs', 'lovefield', 'arquero'];
 
 enum Metric {
     MEAN_TIME,
@@ -20,8 +20,8 @@ const BenchmarkGroupHeader: React.FC<GroupHeaderProps> = (props: GroupHeaderProp
         <div className={styles.row_group_anchor} />
         <div className={styles.row_group_column_header}>DuckDB-wasm</div>
         <div className={styles.row_group_column_header}>sql.js</div>
-        <div className={styles.row_group_column_header}>Arquero</div>
         <div className={styles.row_group_column_header}>Lovefield</div>
+        <div className={styles.row_group_column_header}>Arquero</div>
     </>
 );
 
@@ -238,7 +238,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_001" title="Primitive Benchmarks [1/s]" />
+                    <BenchmarkGroupHeader key="tpch_001" title="Micro Benchmarks [1/s]" />
                     <BenchmarkRow
                         id={1000}
                         bk="integer_scan_1000"
@@ -262,28 +262,34 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
                     />
                     <BenchmarkRow
                         id={1000}
-                        bk="varchar_scan_1000"
+                        bk="varchar_scan_1000_20"
                         title="scan-utf8-1k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
                     <BenchmarkRow
                         id={1001}
-                        bk="varchar_scan_10000"
+                        bk="varchar_scan_10000_20"
                         title="scan-utf8-10k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
                     <BenchmarkRow
                         id={1002}
-                        bk="varchar_scan_100000"
+                        bk="varchar_scan_100000_20"
                         title="scan-utf8-100k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
-                    <BenchmarkRow id={1000} bk="regex_1000" title="regex-1k" d={props.data} m={Metric.FREQUENCY} />
-                    <BenchmarkRow id={1000} bk="regex_10000" title="regex-10k" d={props.data} m={Metric.FREQUENCY} />
-                    <BenchmarkRow id={1000} bk="regex_100000" title="regex-100k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow id={1000} bk="regex_1000_20" title="regex-1k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow id={1000} bk="regex_10000_20" title="regex-10k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow
+                        id={1000}
+                        bk="regex_100000_20"
+                        title="regex-100k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
                     <BenchmarkRow
                         id={1002}
                         bk="integer_sum_1000_10"
@@ -378,21 +384,21 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
                     <BenchmarkRow
                         id={2}
                         bk="integer_topk_1000_1_1_100"
-                        title="topk-1k"
+                        title="top100-1k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
                     <BenchmarkRow
                         id={2}
                         bk="integer_topk_10000_1_1_100"
-                        title="topk-10k"
+                        title="top100-10k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
                     <BenchmarkRow
                         id={2}
                         bk="integer_topk_100000_1_1_100"
-                        title="topk-100k"
+                        title="top100-100k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
