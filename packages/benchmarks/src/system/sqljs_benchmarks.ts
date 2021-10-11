@@ -366,7 +366,7 @@ export class SqljsIntegerTopKBenchmark implements SystemBenchmark {
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
-            benchmark: 'integer_sort',
+            benchmark: 'integer_topk',
             system: 'sqljs',
             tags: [],
             timestamp: +new Date(),
