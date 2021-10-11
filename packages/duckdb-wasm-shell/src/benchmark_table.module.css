@@ -1,28 +1,39 @@
 .table {
     width: 100%;
     height: 100%;
-    overflow: scroll;
+    overflow-y: auto;
     padding: 4px 8px;
+}
+
+.row_group_container {
+    width: 100%;
+    padding: 8px;
+    display: grid;
+    justify-content: center;
+    align-items: center;
 }
 
 .row_group {
     display: grid;
-    grid-template-columns: 40px 100px 100px 100px 100px 100px;
+    grid-template-columns: 40px 120px 120px 120px 120px 120px;
     border: 1px solid rgb(180, 180, 180);
-    margin-top: 4px;
-
-    overflow: auto;
+    overflow-x: auto;
 }
 
 .row_group_title {
     grid-column: 1 / span 6;
     font-size: 95%;
     padding: 0px 8px;
-    background-color: rgb(220, 220, 220);
+    background-color: rgb(30, 30, 30);
+    color: white;
 }
 
 .row_group_anchor {
     grid-column: 1;
+    background-color: rgb(30, 30, 30);
+    color: white;
+    font-size: 95%;
+    text-align: center;
 }
 
 .row_group_column_header {
@@ -30,6 +41,8 @@
     padding: 0px 8px;
     background-color: rgb(220, 220, 220);
     text-align: center;
+    background-color: rgb(30, 30, 30);
+    color: white;
 }
 
 .row_header {
@@ -37,7 +50,8 @@
     text-align: right;
     font-size: 85%;
     padding: 0px 8px;
-    background-color: rgb(240, 240, 240);
+    background-color: rgb(90, 90, 90);
+    color: white;
 }
 
 .table_entry {
@@ -49,4 +63,5 @@
 .table_entry_missing {
     font-size: 85%;
     text-align: center;
+    background-color: rgb(245, 245, 245);
 }
