@@ -131,7 +131,7 @@ export function groupBenchmarks(e: BenchmarkEntry[]): GroupedBenchmarks {
     for (const entry of e) {
         groups.benchmarks.set(entry.benchmarkKey, true);
         groups.systems.set(entry.systemKey, true);
-        groups.entries.set(entry.key, true);
+        groups.entries.set(entry.key, entry);
     }
     return groups;
 }

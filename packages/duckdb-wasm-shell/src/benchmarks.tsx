@@ -2,6 +2,7 @@ import * as arrow from 'apache-arrow';
 import React from 'react';
 import styles from './benchmarks.module.css';
 import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from './benchmark_reader';
+import { BenchmarkTable } from './benchmark_table';
 
 const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow';
 
@@ -16,19 +17,15 @@ type Props = Record<string, string>;
 
 interface State {
     status: LoadingStatus;
-    table: arrow.Table<BenchmarkType> | null;
-    benchmarks: GroupedBenchmarks;
+    benchmarkTable: arrow.Table<BenchmarkType> | null;
+    benchmarks: GroupedBenchmarks | null;
 }
 
 export const Benchmarks: React.FC<Props> = (props: Props) => {
     const [state, setState] = React.useState<State>({
         status: LoadingStatus.PENDING,
-        table: null,
-        benchmarks: {
-            benchmarks: new Map(),
-            systems: new Map(),
-            entries: new Map(),
-        },
+        benchmarkTable: null,
+        benchmarks: null,
     });
 
     const fetch_data = async () => {
@@ -48,12 +45,20 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
         });
     };
 
-    if (state.status == LoadingStatus.PENDING && state.table == null) {
+    if (state.status == LoadingStatus.PENDING) {
         setState(s => ({
             ...s,
             status: LoadingStatus.INFLIGHT,
         }));
         fetch_data();
+        return <div className={styles.root}>loading</div>;
     }
-    return <div className={styles.root}>foo</div>;
+    if (state.benchmarks == null || state.status == LoadingStatus.FAILED) {
+        return <div className={styles.root}>failed</div>;
+    }
+    return (
+        <div className={styles.root}>
+            <BenchmarkTable benchmarks={state.benchmarks!} />
+        </div>
+    );
 };

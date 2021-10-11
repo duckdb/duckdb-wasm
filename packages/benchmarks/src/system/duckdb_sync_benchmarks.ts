@@ -27,13 +27,13 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
         this.queryText = null;
     }
     getName(): string {
-        return `duckdb_sync_loaded_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.query}`;
+        return `duckdb_sync_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.query}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
         return {
             benchmark: 'tpch',
             system: 'duckdb',
-            tags: ['sync', 'loaded'],
+            tags: ['sync'],
             timestamp: +new Date(),
             parameters: [this.scaleFactor, this.query],
         };
