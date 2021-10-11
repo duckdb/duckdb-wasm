@@ -497,7 +497,7 @@ export class DuckDBSyncVarcharScanBenchmark implements SystemBenchmark {
             system: 'duckdb',
             tags: ['sync'],
             timestamp: +new Date(),
-            parameters: [this.tuples],
+            parameters: [this.tuples, this.chars],
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {

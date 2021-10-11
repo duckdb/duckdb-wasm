@@ -1145,7 +1145,7 @@ export class ArqueroVarcharScanBenchmark implements SystemBenchmark {
             system: 'arquero',
             tags: [],
             timestamp: +new Date(),
-            parameters: [this.tuples],
+            parameters: [this.tuples, this.chars],
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {

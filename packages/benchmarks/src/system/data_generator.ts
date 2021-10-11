@@ -1,12 +1,17 @@
 import * as arrow from 'apache-arrow';
 import { shuffle } from '../utils';
 
-export function generateArrowInt32(n: number): [arrow.Schema, arrow.RecordBatch[]] {
+export function generateInt32(n: number): number[] {
     const values = [];
     for (let i = 0; i < n; ++i) {
         values.push(i);
     }
     shuffle(values);
+    return values;
+}
+
+export function generateArrowInt32(n: number): [arrow.Schema, arrow.RecordBatch[]] {
+    const values = generateInt32(n);
     const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Int32())]);
     const batches = [];
     for (let i = 0; i < n; ) {
@@ -17,7 +22,7 @@ export function generateArrowInt32(n: number): [arrow.Schema, arrow.RecordBatch[
     return [schema, batches];
 }
 
-export function generateArrow2Int32(n: number, step: number): [arrow.Schema, arrow.RecordBatch[]] {
+export function generate2Int32(n: number, step: number): [number[], number[]] {
     const values0 = [];
     const values1 = [];
     for (let i = 0; i < n; ++i) {
@@ -28,6 +33,11 @@ export function generateArrow2Int32(n: number, step: number): [arrow.Schema, arr
     }
     shuffle(values0);
     shuffle(values1);
+    return [values0, values1];
+}
+
+export function generateArrow2Int32(n: number, step: number): [arrow.Schema, arrow.RecordBatch[]] {
+    const [values0, values1] = generate2Int32(n, step);
     const schema = new arrow.Schema([
         new arrow.Field('v0', new arrow.Int32()),
         new arrow.Field('v1', new arrow.Int32()),
@@ -46,12 +56,17 @@ export function generateArrow2Int32(n: number, step: number): [arrow.Schema, arr
     return [schema, batches];
 }
 
-export function generateArrowUtf8(n: number, chars: number): [arrow.Schema, arrow.RecordBatch[]] {
+export function generateUtf8(n: number, chars: number): string[] {
     const values = [];
     for (let i = 0; i < n; ++i) {
         values.push(i.toString().padEnd(chars, '#'));
     }
     shuffle(values);
+    return values;
+}
+
+export function generateArrowUtf8(n: number, chars: number): [arrow.Schema, arrow.RecordBatch[]] {
+    const values = generateUtf8(n, chars);
     const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Utf8())]);
     const batches = [];
     for (let i = 0; i < n; ) {
@@ -62,7 +77,7 @@ export function generateArrowUtf8(n: number, chars: number): [arrow.Schema, arro
     return [schema, batches];
 }
 
-export function generateArrowGroupedInt32(n: number, groupSize: number): [arrow.Schema, arrow.RecordBatch[]] {
+export function generateGroupedInt32(n: number, groupSize: number): [number[], number[]] {
     const values0 = [];
     const values1 = [];
     for (let i = 0; i < n; ++i) {
@@ -73,6 +88,11 @@ export function generateArrowGroupedInt32(n: number, groupSize: number): [arrow.
     }
     shuffle(values0);
     shuffle(values1);
+    return [values0, values1];
+}
+
+export function generateArrowGroupedInt32(n: number, groupSize: number): [arrow.Schema, arrow.RecordBatch[]] {
+    const [values0, values1] = generateGroupedInt32(n, groupSize);
     const schema = new arrow.Schema([
         new arrow.Field('v0', new arrow.Int32()),
         new arrow.Field('v1', new arrow.Int32()),
