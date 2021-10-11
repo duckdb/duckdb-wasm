@@ -3,7 +3,7 @@ import { GroupedBenchmarks } from './benchmark_reader';
 
 import styles from './benchmark_table.module.css';
 
-const SYSTEMS = ['duckdb_sync', 'sqljs', 'arquero', 'alasql', 'lovefield'];
+const SYSTEMS = ['duckdb_sync', 'sqljs', 'arquero', 'lovefield'];
 
 enum Metric {
     MEAN_TIME,
@@ -21,7 +21,6 @@ const BenchmarkGroupHeader: React.FC<GroupHeaderProps> = (props: GroupHeaderProp
         <div className={styles.row_group_column_header}>DuckDB-wasm</div>
         <div className={styles.row_group_column_header}>sql.js</div>
         <div className={styles.row_group_column_header}>Arquero</div>
-        <div className={styles.row_group_column_header}>AlaSQL</div>
         <div className={styles.row_group_column_header}>Lovefield</div>
     </>
 );
