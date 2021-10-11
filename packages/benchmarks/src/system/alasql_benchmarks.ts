@@ -39,7 +39,7 @@ export class AlasqlIntegerScanBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const rows = await alasql(`SELECT v FROM ${this.getName()}`);
+        const rows = await alasql(`SELECT v0 FROM ${this.getName()}`);
         let n = 0;
         for (const row of rows) {
             noop(row);
@@ -91,7 +91,7 @@ export class AlasqlSimpleSumBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const rows = await alasql(`SELECT sum(v) FROM ${this.getName()}`);
+        const rows = await alasql(`SELECT sum(v0) FROM ${this.getName()}`);
         for (const row of rows) {
             noop(row);
         }
