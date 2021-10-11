@@ -239,48 +239,6 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
                     <BenchmarkGroupHeader key="tpch_001" title="Micro Benchmarks [1/s]" />
-                    <BenchmarkRow
-                        id={1000}
-                        bk="integer_scan_1000"
-                        title="scan-i32-1k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1001}
-                        bk="integer_scan_10000"
-                        title="scan-i32-10k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1002}
-                        bk="integer_scan_100000"
-                        title="scan-i32-100k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1000}
-                        bk="varchar_scan_1000_20"
-                        title="scan-utf8-1k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1001}
-                        bk="varchar_scan_10000_20"
-                        title="scan-utf8-10k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
-                    <BenchmarkRow
-                        id={1002}
-                        bk="varchar_scan_100000_20"
-                        title="scan-utf8-100k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
                     <BenchmarkRow id={1000} bk="regex_1000_20" title="regex-1k" d={props.data} m={Metric.FREQUENCY} />
                     <BenchmarkRow id={1000} bk="regex_10000_20" title="regex-10k" d={props.data} m={Metric.FREQUENCY} />
                     <BenchmarkRow

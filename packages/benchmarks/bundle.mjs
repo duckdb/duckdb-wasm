@@ -43,19 +43,6 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] system-scan-int.js');
-esbuild.build({
-    entryPoints: ['./src/suite_system_scan_int.ts'],
-    outfile: 'dist/system-scan-int.js',
-    platform: 'node',
-    format: 'cjs',
-    target: TARGET,
-    bundle: true,
-    minify: false,
-    sourcemap: true,
-    external: EXTERNALS,
-});
-
 console.log('[ ESBUILD ] system-sort-int.js');
 esbuild.build({
     entryPoints: ['./src/suite_system_sort_int.ts'],
@@ -86,19 +73,6 @@ console.log('[ ESBUILD ] system-sum-csv.js');
 esbuild.build({
     entryPoints: ['./src/suite_system_sum_csv.ts'],
     outfile: 'dist/system-sum-csv.js',
-    platform: 'node',
-    format: 'cjs',
-    target: TARGET,
-    bundle: true,
-    minify: false,
-    sourcemap: true,
-    external: EXTERNALS,
-});
-
-console.log('[ ESBUILD ] system-scan-text.js');
-esbuild.build({
-    entryPoints: ['./src/suite_system_scan_text.ts'],
-    outfile: 'dist/system-scan-text.js',
     platform: 'node',
     format: 'cjs',
     target: TARGET,
