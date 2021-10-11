@@ -5,6 +5,7 @@ import {
     SqljsRegexBenchmark,
     ArqueroRegexBenchmark,
     DuckDBSyncRegexBenchmark,
+    LovefieldRegexScanBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
 import * as path from 'path';
@@ -14,6 +15,9 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new LovefieldRegexScanBenchmark(1000, 20),
+        new LovefieldRegexScanBenchmark(10000, 20),
+        new LovefieldRegexScanBenchmark(100000, 20),
         new SqljsRegexBenchmark(sqljsDB, 1000, 20),
         new SqljsRegexBenchmark(sqljsDB, 10000, 20),
         new SqljsRegexBenchmark(sqljsDB, 100000, 20),
