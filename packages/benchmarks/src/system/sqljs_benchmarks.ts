@@ -4,7 +4,7 @@ import * as sqljs from 'sql.js';
 import { sqlCreate, sqlInsert } from './simple_sql';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { getTPCHQuery, getTPCHSQLiteDB } from './tpch_loader';
-import { generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
+import { generate2Int32, generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
 
 export class SqljsTPCHBenchmark implements SystemBenchmark {
     initDB: sqljs.SqlJsStatic;
@@ -403,5 +403,173 @@ export class SqljsIntegerTopKBenchmark implements SystemBenchmark {
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
         this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}`);
+    }
+}
+
+export class SqljsIntegerJoin2Benchmark implements SystemBenchmark {
+    initDB: sqljs.SqlJsStatic;
+    database: sqljs.Database | null;
+    tuplesA: number;
+    tuplesB: number;
+    stepAB: number;
+    filterA: number;
+
+    constructor(initDB: sqljs.SqlJsStatic, a: number, b: number, filterA: number, stepAB: number) {
+        this.initDB = initDB;
+        this.database = null;
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.filterA = filterA;
+        this.stepAB = stepAB;
+    }
+    getName(): string {
+        return `sqljs_integer_join2_${this.tuplesA}_${this.tuplesB}_${this.stepAB}_${this.filterA}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join2',
+            system: 'sqljs',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const valuesA = generateInt32(this.tuplesA);
+        const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
+        this.database = new this.initDB.Database();
+        const fieldsA = [new arrow.Field('v0', new arrow.Int32())];
+        const fieldsB = [new arrow.Field('v0', new arrow.Int32()), new arrow.Field('v1', new arrow.Int32())];
+        this.database.run(sqlCreate(`${this.getName()}_a`, fieldsA));
+        this.database.run(sqlCreate(`${this.getName()}_b`, fieldsB));
+        for (const query of sqlInsert(`${this.getName()}_a`, fieldsA, [valuesA])) {
+            this.database.run(query);
+        }
+        for (const query of sqlInsert(`${this.getName()}_b`, fieldsB, [valuesB0, valuesB1])) {
+            this.database.run(query);
+        }
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const results = this.database!.exec(`
+            SELECT *
+            FROM ${this.getName()}_a a, ${this.getName()}_b b
+            WHERE a.v0 = b.v1
+            AND a.v0 < ${this.filterA}
+        `);
+        let n = 0;
+        for (const row of results[0].values) {
+            noop(row);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+    }
+}
+
+export class SqljsIntegerJoin3Benchmark implements SystemBenchmark {
+    initDB: sqljs.SqlJsStatic;
+    database: sqljs.Database | null;
+    tuplesA: number;
+    tuplesB: number;
+    tuplesC: number;
+    stepAB: number;
+    stepBC: number;
+    filterA: number;
+
+    constructor(
+        initDB: sqljs.SqlJsStatic,
+        a: number,
+        b: number,
+        c: number,
+        filterA: number,
+        stepAB: number,
+        stepBC: number,
+    ) {
+        this.initDB = initDB;
+        this.database = null;
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.tuplesC = c;
+        this.stepAB = stepAB;
+        this.stepBC = stepBC;
+        this.filterA = filterA;
+    }
+    getName(): string {
+        return `sqljs_integer_join3_${this.tuplesA}_${this.tuplesB}_${this.tuplesC}_${this.filterA}_${this.stepAB}_${this.stepBC}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join3',
+            system: 'sqljs',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        faker.seed(ctx.seed);
+        const valuesA = generateInt32(this.tuplesA);
+        const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
+        const [valuesC0, valuesC1] = generate2Int32(this.tuplesC, this.stepBC);
+        this.database = new this.initDB.Database();
+        const fieldsA = [new arrow.Field('v0', new arrow.Int32())];
+        const fieldsB = [new arrow.Field('v0', new arrow.Int32()), new arrow.Field('v1', new arrow.Int32())];
+        const fieldsC = [new arrow.Field('v0', new arrow.Int32()), new arrow.Field('v1', new arrow.Int32())];
+        this.database.run(sqlCreate(`${this.getName()}_a`, fieldsA));
+        this.database.run(sqlCreate(`${this.getName()}_b`, fieldsB));
+        this.database.run(sqlCreate(`${this.getName()}_c`, fieldsC));
+        for (const query of sqlInsert(`${this.getName()}_a`, fieldsA, [valuesA])) {
+            this.database.run(query);
+        }
+        for (const query of sqlInsert(`${this.getName()}_b`, fieldsB, [valuesB0, valuesB1])) {
+            this.database.run(query);
+        }
+        for (const query of sqlInsert(`${this.getName()}_c`, fieldsC, [valuesC0, valuesC1])) {
+            this.database.run(query);
+        }
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const results = this.database!.exec(`
+            SELECT *
+            FROM ${this.getName()}_a a, ${this.getName()}_b b, ${this.getName()}_c c
+            WHERE a.v0 = b.v1
+            AND b.v0 = c.v1
+            AND a.v0 < ${this.filterA}
+        `);
+        let n = 0;
+        for (const row of results[0].values) {
+            noop(row);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB * this.stepBC;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_c`);
+    }
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.database!.run(`DROP TABLE IF EXISTS ${this.getName()}_c`);
     }
 }
