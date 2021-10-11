@@ -239,15 +239,6 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
                     <BenchmarkGroupHeader key="tpch_001" title="Micro Benchmarks [1/s]" />
-                    <BenchmarkRow id={1000} bk="regex_1000_20" title="regex-1k" d={props.data} m={Metric.FREQUENCY} />
-                    <BenchmarkRow id={1000} bk="regex_10000_20" title="regex-10k" d={props.data} m={Metric.FREQUENCY} />
-                    <BenchmarkRow
-                        id={1000}
-                        bk="regex_100000_20"
-                        title="regex-100k"
-                        d={props.data}
-                        m={Metric.FREQUENCY}
-                    />
                     <BenchmarkRow
                         id={1002}
                         bk="integer_sum_1000_10"
@@ -266,6 +257,15 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
                         id={1002}
                         bk="integer_sum_100000_10"
                         title="sum-i32-100k-10"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow id={1000} bk="regex_1000_20" title="regex-1k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow id={1000} bk="regex_10000_20" title="regex-10k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow
+                        id={1000}
+                        bk="regex_100000_20"
+                        title="regex-100k"
                         d={props.data}
                         m={Metric.FREQUENCY}
                     />
