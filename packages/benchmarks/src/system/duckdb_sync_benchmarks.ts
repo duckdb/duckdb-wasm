@@ -171,60 +171,6 @@ export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
     }
 }
 
-export class DuckDBSyncIntegerScanBenchmark implements SystemBenchmark {
-    database: duckdb.DuckDBBindings;
-    connection: duckdb.DuckDBConnection | null;
-    tuples: number;
-
-    constructor(database: duckdb.DuckDBBindings, tuples: number) {
-        this.database = database;
-        this.connection = null;
-        this.tuples = tuples;
-    }
-    getName(): string {
-        return `duckdb_sync_integer_scan_${this.tuples}`;
-    }
-    getMetadata(): SystemBenchmarkMetadata {
-        return {
-            benchmark: 'integer_scan',
-            system: 'duckdb',
-            tags: ['sync'],
-            timestamp: +new Date(),
-            parameters: [this.tuples],
-        };
-    }
-    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowInt32(this.tuples);
-        this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schema, batches, {
-            schema: 'main',
-            name: this.getName(),
-        });
-    }
-    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
-        let n = 0;
-        for (const v of result.getChildAt(0)!) {
-            noop(v);
-            n += 1;
-        }
-        if (n !== this.tuples) {
-            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
-        }
-    }
-    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
-        this.connection?.close();
-    }
-    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
-        this.connection?.close();
-    }
-}
-
 export class DuckDBSyncIntegerSortBenchmark implements SystemBenchmark {
     database: duckdb.DuckDBBindings;
     connection: duckdb.DuckDBConnection | null;
@@ -472,62 +418,6 @@ export class DuckDBSyncCSVSumBenchmark implements SystemBenchmark {
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
         this.database.dropFile('TEMP');
-        this.connection?.close();
-    }
-}
-
-export class DuckDBSyncVarcharScanBenchmark implements SystemBenchmark {
-    database: duckdb.DuckDBBindings;
-    connection: duckdb.DuckDBConnection | null;
-    tuples: number;
-    chars: number;
-
-    constructor(database: duckdb.DuckDBBindings, tuples: number, chars: number) {
-        this.database = database;
-        this.connection = null;
-        this.tuples = tuples;
-        this.chars = chars;
-    }
-    getName(): string {
-        return `duckdb_sync_varchar_scan_${this.tuples}`;
-    }
-    getMetadata(): SystemBenchmarkMetadata {
-        return {
-            benchmark: 'varchar_scan',
-            system: 'duckdb',
-            tags: ['sync'],
-            timestamp: +new Date(),
-            parameters: [this.tuples, this.chars],
-        };
-    }
-    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-        const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
-        this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schema, batches, {
-            schema: 'main',
-            name: this.getName(),
-        });
-    }
-    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`SELECT * FROM ${this.getName()}`);
-        let n = 0;
-        for (const v of result.getChildAt(0)!) {
-            noop(v);
-            n += 1;
-        }
-        if (n !== this.tuples) {
-            throw Error(`invalid tuple count. expected ${this.tuples}, received ${n}`);
-        }
-    }
-    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
-        this.connection?.close();
-    }
-    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
 }
