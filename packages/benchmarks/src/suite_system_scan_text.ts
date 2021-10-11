@@ -5,6 +5,7 @@ import {
     DuckDBSyncVarcharScanBenchmark,
     SqljsVarcharScanBenchmark,
     ArqueroVarcharScanBenchmark,
+    LovefieldVarcharScanBenchmark,
 } from './system';
 import { runSystemBenchmarks } from './suite';
 import * as path from 'path';
@@ -14,6 +15,9 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new LovefieldVarcharScanBenchmark(1000, 20),
+        new LovefieldVarcharScanBenchmark(10000, 20),
+        new LovefieldVarcharScanBenchmark(100000, 20),
         new SqljsVarcharScanBenchmark(sqljsDB, 1000, 20),
         new SqljsVarcharScanBenchmark(sqljsDB, 10000, 20),
         new SqljsVarcharScanBenchmark(sqljsDB, 100000, 20),
