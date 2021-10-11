@@ -63,7 +63,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             }
             const cappedMeanTime = Math.min(entry.meanTime, maxMeanTime);
             const factor = (cappedMeanTime - minMeanTime) / (maxMeanTime - minMeanTime);
-            values.push(`${(entry.meanTime / 1000).toFixed(3)} s`);
+            values.push(`${(entry.meanTime / 1000).toFixed(3)}`);
             colors.push(
                 `hsl(${BASE_COLOR_HUE},${BASE_COLOR_SATURATION * 100}%,${
                     (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
@@ -87,8 +87,8 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
                 continue;
             }
             const freq = entry.meanTime == 0 ? 0 : 1 / entry.meanTime;
-            const factor = freq / maxFrequency;
-            values.push(`${(1 / freq).toFixed(2)} /s`);
+            const factor = 1 - freq / maxFrequency;
+            values.push(`${freq.toFixed(2)}`);
             colors.push(
                 `hsl(${BASE_COLOR_HUE},${BASE_COLOR_SATURATION * 100}%,${
                     (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
@@ -96,13 +96,10 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             );
         }
     }
-    console.log(values);
-    console.log(colors);
     for (let i = 0; i < values.length; ++i) {
         const id = props.id * SYSTEMS.length + i;
         const value = values[i];
         const color = colors[i];
-        console.log(color);
         if (value == null || color == null) {
             elements.push(
                 <div key={id} className={styles.table_entry_missing}>
@@ -134,7 +131,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
         <div className={styles.table}>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_05" title="TPCH 0.05" />
+                    <BenchmarkGroupHeader key="tpch_05" title="TPCH 0.05 [s]" />
                     <BenchmarkRow id={91} bk="tpch_05_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={92} bk="tpch_05_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={93} bk="tpch_05_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -161,7 +158,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_025" title="TPCH 0.025" />
+                    <BenchmarkGroupHeader key="tpch_025" title="TPCH 0.025 [s]" />
                     <BenchmarkRow id={61} bk="tpch_025_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={62} bk="tpch_025_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={63} bk="tpch_025_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -188,7 +185,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_01" title="TPCH 0.01" />
+                    <BenchmarkGroupHeader key="tpch_01" title="TPCH 0.01 [s]" />
                     <BenchmarkRow id={31} bk="tpch_01_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={32} bk="tpch_01_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={33} bk="tpch_01_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -215,7 +212,7 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
             </div>
             <div className={styles.row_group_container}>
                 <div className={styles.row_group}>
-                    <BenchmarkGroupHeader key="tpch_001" title="TPCH 0.001" />
+                    <BenchmarkGroupHeader key="tpch_001" title="TPCH 0.001 [s]" />
                     <BenchmarkRow id={1} bk="tpch_001_1" title="1" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={2} bk="tpch_001_2" title="2" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={3} bk="tpch_001_3" title="3" d={props.data} m={Metric.MEAN_TIME} />
@@ -238,6 +235,224 @@ export const BenchmarkTable: React.FC<Props> = (props: Props) => {
                     <BenchmarkRow id={20} bk="tpch_001_20" title="20" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={21} bk="tpch_001_21" title="21" d={props.data} m={Metric.MEAN_TIME} />
                     <BenchmarkRow id={22} bk="tpch_001_22" title="22" d={props.data} m={Metric.MEAN_TIME} />
+                </div>
+            </div>
+            <div className={styles.row_group_container}>
+                <div className={styles.row_group}>
+                    <BenchmarkGroupHeader key="tpch_001" title="Primitive Benchmarks [1/s]" />
+                    <BenchmarkRow
+                        id={1000}
+                        bk="integer_scan_1000"
+                        title="scan-i32-1k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1001}
+                        bk="integer_scan_10000"
+                        title="scan-i32-10k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="integer_scan_100000"
+                        title="scan-i32-100k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1000}
+                        bk="varchar_scan_1000"
+                        title="scan-utf8-1k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1001}
+                        bk="varchar_scan_10000"
+                        title="scan-utf8-10k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="varchar_scan_100000"
+                        title="scan-utf8-100k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow id={1000} bk="regex_1000" title="regex-1k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow id={1000} bk="regex_10000" title="regex-10k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow id={1000} bk="regex_100000" title="regex-100k" d={props.data} m={Metric.FREQUENCY} />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="integer_sum_1000_10"
+                        title="sum-i32-1k-1"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="integer_sum_10000_10"
+                        title="sum-i32-10k-10"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="integer_sum_100000_10"
+                        title="sum-i32-100k-10"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="csv_sum_1000_10"
+                        title="csvsum-1k-10"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="csv_sum_10000_100"
+                        title="csvsum-10k-100"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="csv_sum_100000_1000"
+                        title="csvsum-100k-1k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1002}
+                        bk="csv_sum_1000000_10000"
+                        title="csvsum-1m-10k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_sort_1000_1_1"
+                        title="sort-i32-1k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_sort_10000_1_1"
+                        title="sort-i32-10k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_sort_100000_1_1"
+                        title="sort-i32-100k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_sort_1000_2_2"
+                        title="sort-i32x2-1k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_sort_10000_2_2"
+                        title="sort-i32x2-10k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_sort_100000_2_2"
+                        title="sort-i32x2-100k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_topk_1000_1_1_100"
+                        title="topk-1k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_topk_10000_1_1_100"
+                        title="topk-10k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_topk_100000_1_1_100"
+                        title="topk-100k"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1003}
+                        bk="integer_join2_1000_10000_10_100"
+                        title="leftdeep-2-s"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1003}
+                        bk="integer_join2_10000_100000_10_100"
+                        title="leftdeep-2-m"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1003}
+                        bk="integer_join2_100000_100000_10_100"
+                        title="leftdeep-2-l"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1003}
+                        bk="integer_join2_100000_1000000_10_100"
+                        title="leftdeep-2-xl"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={1003}
+                        bk="integer_join3_10_100_1000_10_10_100"
+                        title="leftdeep-3-s"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_join3_100_1000_10000_10_10_100"
+                        title="leftdeep-3-m"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_join3_1000_10000_100000_10_10_100"
+                        title="leftdeep-3-l"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
+                    <BenchmarkRow
+                        id={2}
+                        bk="integer_join3_10000_100000_1000000_10_10_100"
+                        title="leftdeep-3-xl"
+                        d={props.data}
+                        m={Metric.FREQUENCY}
+                    />
                 </div>
             </div>
         </div>

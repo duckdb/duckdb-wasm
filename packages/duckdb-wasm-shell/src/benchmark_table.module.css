@@ -8,16 +8,28 @@
 .row_group_container {
     width: 100%;
     padding: 8px;
-    display: grid;
+    display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.row_group {
-    display: grid;
-    grid-template-columns: max-content 120px 120px 120px 120px 120px;
-    border: 1px solid rgb(180, 180, 180);
-    overflow-x: auto;
+@media only screen and (min-width: 600px) {
+    .row_group {
+        display: grid;
+        grid-template-columns: max-content 1fr 1fr 1fr 1fr 1fr;
+        border: 1px solid rgb(180, 180, 180);
+        overflow-x: auto;
+        width: 90%;
+        max-width: 880px;
+    }
+}
+@media only screen and (max-width: 600px) {
+    .row_group {
+        display: grid;
+        grid-template-columns: max-content 1fr 1fr 1fr 1fr 1fr;
+        border: 1px solid rgb(180, 180, 180);
+        overflow-x: auto;
+    }
 }
 
 .row_group_title {
@@ -47,9 +59,9 @@
 
 .row_header {
     grid-column: 1;
-    text-align: right;
+    text-align: left;
     font-size: 85%;
-    padding: 0px 8px 0px 16px;
+    padding: 0px 16px 0px 8px;
     background-color: rgb(90, 90, 90);
     color: white;
 }
