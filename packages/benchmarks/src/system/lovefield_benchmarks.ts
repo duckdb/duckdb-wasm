@@ -29,6 +29,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
             tags: [],
             timestamp: +new Date(),
             parameters: [this.scaleFactor, this.queryId],
+            warning: `Lovefield does not support arithmetic operations, temporary tables and nested subqueries. Aggregates and order by clauses were often simplified. Some queries with nesting were dropped.`,
         };
     }
 
@@ -355,11 +356,14 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         // XXX
+        //
         // Lovefield docs contains
         // * / % + -	User shall use JavaScript for arithmetic operations.
         //
         // Does that mean Lovefield cannot to to arithmetic within the query plan?
         // We "bypass" that limitation by splitting up the aggregates, s.t. the required work stays almost the same.
+        // As a result, most lovefield queries won't produce the exact TPC-H results!
+        //
         switch (this.queryId) {
             case 1: {
                 const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
@@ -512,6 +516,51 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     )
                     .exec()) as Iterable<{
                     revenue: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            case 7: {
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const supplier = LovefieldTPCHBenchmark.database!.getSchema().table('supplier');
+                const nation1 = LovefieldTPCHBenchmark.database!.getSchema().table('nation').as('n1');
+                const nation2 = LovefieldTPCHBenchmark.database!.getSchema().table('nation').as('n2');
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    nation1.col('n_name').as('supp_nation'),
+                    nation2.col('n_name').as('cust_nation'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('volume'),
+                )
+                    .from(nation1)
+                    .innerJoin(
+                        nation2,
+                        lf.op.or(
+                            lf.op.and(nation1.col('n_name').eq('FRANCE'), nation2.col('n_name').eq('GERMANY')),
+                            lf.op.and(nation1.col('n_name').eq('GERMANY'), nation2.col('n_name').eq('FRANCY')),
+                        ),
+                    )
+                    .innerJoin(supplier, nation1.col('n_nationkey').eq(supplier.col('s_nationkey')))
+                    .innerJoin(customer, nation2.col('n_nationkey').eq(customer.col('c_nationkey')))
+                    .innerJoin(orders, customer.col('c_custkey').eq(orders.col('o_custkey')))
+                    .innerJoin(
+                        lineitem,
+                        lf.op.and(
+                            supplier.col('s_suppkey').eq(lineitem.col('l_suppkey')),
+                            orders.col('o_orderkey').eq(lineitem.col('l_orderkey')),
+                        ),
+                    )
+                    .where(lineitem.col('l_shipdate').between(new Date(1995, 1, 1), new Date(1996, 12, 31)))
+                    .groupBy(nation1.col('n_name'), nation2.col('n_name'))
+                    .orderBy(nation1.col('n_name'))
+                    .orderBy(nation2.col('n_name'))
+                    .exec()) as Iterable<{
+                    supp_nation: string;
+                    cust_nation: string;
+                    volume: number;
                 }>;
                 for (const row of query) {
                     noop(row);

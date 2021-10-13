@@ -32,6 +32,8 @@ pub struct BenchmarkReport {
     run_time: f64,
     #[serde(rename = "totalTime")]
     total_time: f64,
+    #[serde(rename = "warning")]
+    warning: Option<String>,
 }
 
 pub fn merge_benchmark_reports(report_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -96,6 +98,7 @@ pub fn merge_benchmark_reports(report_dir: &Path) -> Result<(), Box<dyn std::err
         Field::new("min_time", DataType::Float64, false),
         Field::new("run_time", DataType::Float64, false),
         Field::new("total_time", DataType::Float64, false),
+        Field::new("warning", DataType::Utf8, false),
     ]));
 
     // Create arrow writer
@@ -119,6 +122,7 @@ pub fn merge_benchmark_reports(report_dir: &Path) -> Result<(), Box<dyn std::err
     let mut min_time = arrow::array::Float64Array::builder(reports.len());
     let mut run_time = arrow::array::Float64Array::builder(reports.len());
     let mut total_time = arrow::array::Float64Array::builder(reports.len());
+    let mut warning: Vec<String> = Vec::new();
 
     for mut report in reports {
         name.push(report.name);
@@ -142,6 +146,7 @@ pub fn merge_benchmark_reports(report_dir: &Path) -> Result<(), Box<dyn std::err
         min_time.append_value(report.min_time as f64)?;
         run_time.append_value(report.run_time as f64)?;
         total_time.append_value(report.total_time as f64)?;
+        warning.push(report.warning.unwrap_or_default());
     }
 
     let batch = arrow::record_batch::RecordBatch::try_new(
@@ -164,6 +169,7 @@ pub fn merge_benchmark_reports(report_dir: &Path) -> Result<(), Box<dyn std::err
             Arc::new(min_time.finish()),
             Arc::new(run_time.finish()),
             Arc::new(total_time.finish()),
+            Arc::new(arrow::array::StringArray::from_iter_values(warning.iter())),
         ],
     )?;
     arrow_writer.write(&batch)?;
