@@ -15,7 +15,7 @@ async function main() {
     const baseDir = path.resolve(__dirname, '../../../');
     const duckdbSync = await setupDuckDBSync();
     const benchmarks: SystemBenchmark[] = [];
-    for (let i = 1; i <= 1; ++i) {
+    for (let i = 1; i <= 22; ++i) {
         benchmarks.push(new DuckDBSyncLoadedTPCHBenchmark(duckdbSync, sf, i));
     }
     const ctx: SystemBenchmarkContext = {
