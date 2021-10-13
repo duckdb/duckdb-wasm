@@ -27,7 +27,7 @@ async function main() {
     };
     const results = await runSystemBenchmarks(ctx, benchmarks);
     console.log(results);
-    await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}_lovefield.json`);
+    await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}_sqljs.json`);
 }
 
 main();

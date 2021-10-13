@@ -15,7 +15,7 @@ async function main() {
     const baseDir = path.resolve(__dirname, '../../../');
     const benchmarks: SystemBenchmark[] = [];
     for (let i = 1; i <= 22; ++i) {
-        if (sf > 0.25 && (i == 9 || i == 21)) {
+        if (sf >= 0.25 && (i == 9 || i == 21)) {
             continue;
         }
         benchmarks.push(new ArqueroTPCHBenchmark(sf, i));
