@@ -21,7 +21,11 @@ async function main() {
         projectRootPath: baseDir,
         seed: Math.random(),
     };
+
+    await LovefieldTPCHBenchmark.beforeGroup(ctx, sf);
     const results = await runSystemBenchmarks(ctx, benchmarks);
+    await LovefieldTPCHBenchmark.afterGroup(ctx);
+
     console.log(results);
     await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}_lovefield.json`);
 }
