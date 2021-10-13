@@ -23,13 +23,17 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         return `lovefield_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.queryId}`;
     }
     getMetadata(): SystemBenchmarkMetadata {
+        let warning = `Lovefield does not support arithmetic operations and nested subqueries. Aggregates and order by clauses were often simplified. Some queries with nesting were dropped.`;
+        if (this.queryId == 13 || this.queryId == 14) {
+            warning = '';
+        }
         return {
             benchmark: 'tpch',
             system: 'lovefield',
             tags: [],
             timestamp: +new Date(),
             parameters: [this.scaleFactor, this.queryId],
-            warning: `Lovefield does not support arithmetic operations, temporary tables and nested subqueries. Aggregates and order by clauses were often simplified. Some queries with nesting were dropped.`,
+            warning,
         };
     }
 
@@ -727,6 +731,65 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 for (const row of query) {
                     noop(row);
                 }
+                break;
+            }
+            case 13: {
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    customer.col('c_custkey').as('c_custkey'),
+                    lf.fn.count(orders.col('o_orderkey')).as('c_count'),
+                )
+                    .from(customer)
+                    .leftOuterJoin(orders, customer.col('c_custkey').eq(orders.col('o_custkey')))
+                    .where(lf.op.not(orders.col('o_comment').match(/.*special.*request.*/)))
+                    .groupBy(customer.col('c_custkey'))
+                    .exec()) as Iterable<{
+                    c_custkey: number;
+                    c_count: number;
+                }>;
+
+                // How do we do this in lovefield instead of js?
+                const custdist = new Map();
+                for (const row of query) {
+                    custdist.set(row.c_count, (custdist.get(row.c_count) || 0) + 1);
+                }
+                const entries = [...custdist.entries()];
+                entries.sort((l, r) => (l[1] < r[1] || (l[1] == r[1] && l[0] <= r[0]) ? -1 : 1));
+                for (const [k, v] of custdist) {
+                    noop([k, v]);
+                }
+                break;
+            }
+            case 14: {
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const part = LovefieldTPCHBenchmark.database!.getSchema().table('part');
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    part.col('p_type').as('p_type'),
+                    lineitem.col('l_extendedprice').as('l_extendedprice'),
+                    lineitem.col('l_discount').as('l_discount'),
+                )
+                    .from(lineitem, part)
+                    .where(
+                        lf.op.and(
+                            lineitem.col('l_partkey').eq(part.col('p_partkey')),
+                            lineitem.col('l_shipdate').gte(new Date(1995, 9, 1)),
+                            lineitem.col('l_shipdate').lt(new Date(1995, 10, 1)),
+                        ),
+                    )
+                    .exec()) as Iterable<{
+                    p_type: string;
+                    l_extendedprice: number;
+                    l_discount: number;
+                }>;
+                let sum_promo = 0;
+                let sum_total = 0;
+                for (const row of query) {
+                    sum_promo += row.p_type.match(/^PROMO.*/) ? row.l_extendedprice * (1 - row.l_discount) : 0;
+                    sum_total += row.l_extendedprice * (1 - row.l_discount);
+                }
+                noop((100 * sum_promo) / sum_total);
                 break;
             }
             default: {
