@@ -14,8 +14,8 @@ async function main() {
 
     const baseDir = path.resolve(__dirname, '../../../');
     const benchmarks: SystemBenchmark[] = [];
-    for (let i = 1; i <= 1; ++i) {
-        benchmarks.push(new LovefieldTPCHBenchmark(sf, i));
+    for (const q of [1, 3, 4, 5, 6]) {
+        benchmarks.push(new LovefieldTPCHBenchmark(sf, q));
     }
     const ctx: SystemBenchmarkContext = {
         projectRootPath: baseDir,

@@ -368,8 +368,8 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     lineitem.col('l_linestatus'),
                     lf.fn.sum(lineitem.col('l_quantity')).as('sum_qty'),
                     lf.fn.sum(lineitem.col('l_extendedprice')).as('sum_base_price'),
-                    lf.fn.sum(lineitem.col('l_discount')).as('sum_discount'),
-                    lf.fn.sum(lineitem.col('l_tax')).as('sum_tax'),
+                    lf.fn.sum(lineitem.col('l_discount')).as('sum_discount_xxx'),
+                    lf.fn.sum(lineitem.col('l_tax')).as('sum_tax_xxx'),
                     lf.fn.avg(lineitem.col('l_quantity')).as('avg_qty'),
                     lf.fn.avg(lineitem.col('l_extendedprice')).as('avg_price'),
                     lf.fn.avg(lineitem.col('l_discount')).as('avg_disc'),
@@ -396,6 +396,130 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     noop(row);
                 }
                 break;
+            }
+            case 3: {
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    lineitem.col('l_orderkey'),
+                    orders.col('o_orderdate'),
+                    orders.col('o_shippriority'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('sum_price'),
+                )
+                    .from(customer)
+                    .innerJoin(orders, customer.col('c_custkey').eq(orders.col('o_custkey')))
+                    .innerJoin(lineitem, lineitem.col('l_orderkey').eq(orders.col('o_orderkey')))
+                    .where(
+                        lf.op.and(
+                            customer.col('c_mktsegment').eq('BUILDING'),
+                            lineitem.col('l_shipdate').gt(new Date(1995, 3, 15)),
+                            orders.col('o_orderdate').lt(new Date(1995, 3, 15)),
+                        ),
+                    )
+                    .groupBy(lineitem.col('l_orderkey'), orders.col('o_orderdate'), orders.col('o_shippriority'))
+                    .orderBy(orders.col('o_orderdate'), lf.Order.DESC)
+                    .limit(10)
+                    .exec()) as Iterable<{
+                    l_orderkey: number;
+                    o_orderdate: Date;
+                    o_shippriority: string;
+                    sum_price: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            case 4: {
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    orders.col('o_orderpriority'),
+                    lf.fn.count().as('order_count'),
+                )
+                    .from(orders)
+                    .innerJoin(lineitem, lineitem.col('l_orderkey').eq(orders.col('o_orderkey')))
+                    .where(
+                        lf.op.and(
+                            lineitem.col('l_commitdate').lt(lineitem.col('l_receiptdate')),
+                            orders.col('o_orderdate').gte(new Date(1993, 7, 1)),
+                            orders.col('o_orderdate').lt(new Date(1993, 10, 1)),
+                        ),
+                    )
+                    .groupBy(orders.col('o_orderpriority'))
+                    .orderBy(orders.col('o_orderpriority'))
+                    .exec()) as Iterable<{
+                    o_orderpriority: number;
+                    order_count: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            case 5: {
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const supplier = LovefieldTPCHBenchmark.database!.getSchema().table('supplier');
+                const nation = LovefieldTPCHBenchmark.database!.getSchema().table('nation');
+                const region = LovefieldTPCHBenchmark.database!.getSchema().table('region');
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    nation.col('n_name'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('revenue'),
+                )
+                    .from(region)
+                    .innerJoin(nation, region.col('r_regionkey').eq(nation.col('n_regionkey')))
+                    .innerJoin(customer, nation.col('n_regionkey').eq(customer.col('c_nationkey')))
+                    .innerJoin(orders, customer.col('c_custkey').eq(orders.col('o_custkey')))
+                    .innerJoin(lineitem, orders.col('o_orderkey').eq(lineitem.col('l_orderkey')))
+                    .innerJoin(
+                        supplier,
+                        lf.op.and(
+                            supplier.col('s_nationkey').eq(nation.col('n_nationkey')),
+                            supplier.col('s_suppkey').eq(lineitem.col('l_suppkey')),
+                        ),
+                    )
+                    .where(
+                        lf.op.and(
+                            region.col('r_name').eq('ASIA'),
+                            orders.col('o_orderdate').between(new Date(1994, 1, 1), new Date(1994, 12, 32)),
+                        ),
+                    )
+                    .groupBy(nation.col('n_name'))
+                    .orderBy(nation.col('n_name'))
+                    .exec()) as Iterable<{
+                    n_name: string;
+                    revenue: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            case 6: {
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const query = (await LovefieldTPCHBenchmark.database!.select(lf.fn.sum(lineitem.col('l_extendedprice')))
+                    .from(lineitem)
+                    .where(
+                        lf.op.and(
+                            lineitem.col('l_shipdate').gte(new Date(1994, 1, 1)),
+                            lineitem.col('l_shipdate').lt(new Date(1995, 1, 1)),
+                            lineitem.col('l_quantity').lt(24),
+                            lineitem.col('l_discount').between(0.05, 0.07),
+                        ),
+                    )
+                    .exec()) as Iterable<{
+                    revenue: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            default: {
+                throw new Error('not implemented');
             }
         }
     }
