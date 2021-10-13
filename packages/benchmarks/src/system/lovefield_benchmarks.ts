@@ -621,7 +621,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     lf.fn.sum(lineitem.col('l_quantity')).as('quantity_sum'),
                     lf.fn.sum(partsupp.col('ps_supplycost')).as('supplycost_sum'),
                 )
-                    .from(nation, supplier, lineitem, partsupp, orders, nation)
+                    .from(nation, supplier, lineitem, partsupp, orders, nation, part)
                     .where(
                         lf.op.and(
                             supplier.col('s_suppkey').eq(lineitem.col('l_suppkey')),
@@ -641,6 +641,58 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     discount_sum: number;
                     quantity_sum: number;
                     supplycost_sum: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            case 10: {
+                const nation = LovefieldTPCHBenchmark.database!.getSchema().table('nation');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    customer.col('c_custkey'),
+                    customer.col('c_name'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('revenue'),
+                    customer.col('c_acctbal'),
+                    nation.col('n_name'),
+                    customer.col('c_address'),
+                    customer.col('c_phone'),
+                    customer.col('c_comment'),
+                )
+                    .from(customer, orders, lineitem, orders)
+                    .where(
+                        lf.op.and(
+                            customer.col('c_custkey').eq(orders.col('o_custkey')),
+                            lineitem.col('l_orderkey').eq(orders.col('o_orderkey')),
+                            orders.col('o_orderdate').between(new Date(1993, 10, 1), new Date(1994, 1, 1)),
+                            lineitem.col('l_returnflag').eq('R'),
+                            customer.col('c_nationkey').eq(nation.col('n_nationkey')),
+                        ),
+                    )
+                    .groupBy(
+                        customer.col('c_custkey'),
+                        customer.col('c_name'),
+                        customer.col('c_acctbal'),
+                        nation.col('n_name'),
+                        customer.col('c_address'),
+                        customer.col('c_phone'),
+                        customer.col('c_comment'),
+                    )
+                    .orderBy(lf.fn.sum(lineitem.col('l_extendedprice')))
+                    .limit(20)
+                    .exec()) as Iterable<{
+                    c_custkey: number;
+                    c_name: string;
+                    revenue: number;
+                    c_acctbal: number;
+                    n_name: string;
+                    c_address: string;
+                    c_phone: string;
+                    c_comment: string;
                 }>;
                 for (const row of query) {
                     noop(row);
