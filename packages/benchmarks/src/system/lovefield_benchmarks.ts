@@ -24,7 +24,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
     }
     getMetadata(): SystemBenchmarkMetadata {
         let warning = `Lovefield does not support arithmetic operations and nested subqueries. Aggregates and order by clauses were often simplified. Some queries with nesting were dropped.`;
-        if (this.queryId == 13 || this.queryId == 14) {
+        if (this.queryId == 13 || this.queryId == 14 || this.queryId == 16) {
             warning = '';
         }
         return {
@@ -70,7 +70,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         supplierBuilder.addColumn('s_nationkey', lf.Type.INTEGER);
         supplierBuilder.addColumn('s_phone', lf.Type.STRING);
         supplierBuilder.addColumn('s_acctbal', lf.Type.NUMBER);
-        supplierBuilder.addColumn('s_comment', lf.Type.INTEGER);
+        supplierBuilder.addColumn('s_comment', lf.Type.STRING);
 
         const partsuppBuilder = builder.createTable(`partsupp`);
         partsuppBuilder.addColumn('ps_partkey', lf.Type.INTEGER);
@@ -790,6 +790,47 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     sum_total += row.l_extendedprice * (1 - row.l_discount);
                 }
                 noop((100 * sum_promo) / sum_total);
+                break;
+            }
+            case 16: {
+                const supplier = LovefieldTPCHBenchmark.database!.getSchema().table('supplier');
+                const part = LovefieldTPCHBenchmark.database!.getSchema().table('part');
+                const partsupp = LovefieldTPCHBenchmark.database!.getSchema().table('partsupp');
+
+                const supp = (await LovefieldTPCHBenchmark.database!.select(supplier.col('s_suppkey').as('s_suppkey'))
+                    .from(supplier)
+                    .where(supplier.col('s_comment').match(/.*Customer.*Complaints.*/))
+                    .exec()) as Iterable<{ s_suppkey: number }>;
+                const suppkeys = [...supp].map(s => s.s_suppkey);
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    part.col('p_brand'),
+                    part.col('p_type'),
+                    part.col('p_size'),
+                    lf.fn.count(lf.fn.distinct(partsupp.col('ps_suppkey'))).as('supplier_cnt'),
+                )
+                    .from(part, partsupp)
+                    .where(
+                        lf.op.and(
+                            part.col('p_partkey').eq(partsupp.col('ps_partkey')),
+                            lf.op.not(part.col('p_brand').eq('Brand#45')),
+                            lf.op.not(part.col('p_type').match(/^MEDIUM POLISHED.*/)),
+                            part.col('p_size').in([49, 14, 23, 45, 19, 3, 36, 9]),
+                            lf.op.not(partsupp.col('ps_suppkey').in(suppkeys)),
+                        ),
+                    )
+                    .groupBy(part.col('p_brand'), part.col('p_type'), part.col('p_size'), partsupp.col('ps_suppkey'))
+                    .orderBy(part.col('p_brand'))
+                    .orderBy(part.col('p_type'))
+                    .orderBy(part.col('p_size'))
+                    .exec()) as Iterable<{
+                    p_brand: string;
+                    p_type: string;
+                    p_size: number;
+                    supplier_cnt: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
                 break;
             }
             default: {
