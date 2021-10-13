@@ -606,6 +606,47 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 9: {
+                const nation = LovefieldTPCHBenchmark.database!.getSchema().table('nation');
+                const supplier = LovefieldTPCHBenchmark.database!.getSchema().table('supplier');
+                const part = LovefieldTPCHBenchmark.database!.getSchema().table('part');
+                const partsupp = LovefieldTPCHBenchmark.database!.getSchema().table('partsupp');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    nation.col('n_name'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('price_sum'),
+                    lf.fn.sum(lineitem.col('l_discount')).as('discount_sum'),
+                    lf.fn.sum(lineitem.col('l_quantity')).as('quantity_sum'),
+                    lf.fn.sum(partsupp.col('ps_supplycost')).as('supplycost_sum'),
+                )
+                    .from(nation, supplier, lineitem, partsupp, orders, nation)
+                    .where(
+                        lf.op.and(
+                            supplier.col('s_suppkey').eq(lineitem.col('l_suppkey')),
+                            partsupp.col('ps_suppkey').eq(lineitem.col('l_suppkey')),
+                            partsupp.col('ps_partkey').eq(lineitem.col('l_partkey')),
+                            part.col('p_partkey').eq(lineitem.col('l_partkey')),
+                            orders.col('o_orderkey').eq(lineitem.col('l_orderkey')),
+                            supplier.col('s_nationkey').eq(nation.col('n_nationkey')),
+                            part.col('p_name').match(/.*green.*/),
+                        ),
+                    )
+                    .groupBy(nation.col('n_name'))
+                    .orderBy(nation.col('n_name'))
+                    .exec()) as Iterable<{
+                    n_name: string;
+                    price_sum: number;
+                    discount_sum: number;
+                    quantity_sum: number;
+                    supplycost_sum: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
             default: {
                 throw new Error('not implemented');
             }
