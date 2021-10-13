@@ -93,7 +93,7 @@ pub fn convert_tbls(
             Field::new("s_address", DataType::Utf8, false),
             Field::new("s_nationkey", DataType::Int32, false),
             Field::new("s_phone", DataType::Utf8, false),
-            Field::new("s_acctbal", DataType::Float64, false),
+            Field::new("s_acctbal", DECIMAL_12_2, false),
             Field::new("s_comment", DataType::Utf8, false),
         ])),
     )?;
@@ -107,7 +107,7 @@ pub fn convert_tbls(
             Field::new("c_address", DataType::Utf8, false),
             Field::new("c_nationkey", DataType::Int32, false),
             Field::new("c_phone", DataType::Utf8, false),
-            Field::new("c_acctbal", DataType::Float64, false),
+            Field::new("c_acctbal", DECIMAL_12_2, false),
             Field::new("c_mktsegment", DataType::Utf8, false),
             Field::new("c_comment", DataType::Utf8, false),
         ])),
@@ -140,7 +140,7 @@ pub fn convert_tbls(
             Field::new("p_type", DataType::Utf8, false),
             Field::new("p_size", DataType::Int32, false),
             Field::new("p_container", DataType::Utf8, false),
-            Field::new("p_retailprice", DataType::Float64, false),
+            Field::new("p_retailprice", DECIMAL_12_2, false),
             Field::new("p_comment", DataType::Utf8, false),
         ])),
     )?;
@@ -152,7 +152,7 @@ pub fn convert_tbls(
             Field::new("ps_partkey", DataType::Int32, false),
             Field::new("ps_suppkey", DataType::Int32, false),
             Field::new("ps_availqty", DataType::Int32, false),
-            Field::new("ps_supplycost", DataType::Float64, false),
+            Field::new("ps_supplycost", DECIMAL_12_2, false),
             Field::new("ps_comment", DataType::Utf8, false),
         ])),
     )?;

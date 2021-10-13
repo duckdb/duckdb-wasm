@@ -36,6 +36,65 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
 
+        const nationBuilder = this.builder!.createTable(`nation`);
+        nationBuilder.addColumn('n_nationkey', lf.Type.INTEGER);
+        nationBuilder.addColumn('n_name', lf.Type.STRING);
+        nationBuilder.addColumn('n_regionkey', lf.Type.NUMBER);
+        nationBuilder.addColumn('n_comment', lf.Type.STRING);
+
+        const regionBuilder = this.builder!.createTable(`region`);
+        regionBuilder.addColumn('r_regionkey', lf.Type.INTEGER);
+        regionBuilder.addColumn('r_name', lf.Type.INTEGER);
+        regionBuilder.addColumn('r_comment', lf.Type.STRING);
+
+        const partBuilder = this.builder!.createTable(`part`);
+        partBuilder.addColumn('p_partkey', lf.Type.INTEGER);
+        partBuilder.addColumn('p_name', lf.Type.STRING);
+        partBuilder.addColumn('p_mfgr', lf.Type.STRING);
+        partBuilder.addColumn('p_brand', lf.Type.STRING);
+        partBuilder.addColumn('p_type', lf.Type.STRING);
+        partBuilder.addColumn('p_size', lf.Type.INTEGER);
+        partBuilder.addColumn('p_container', lf.Type.STRING);
+        partBuilder.addColumn('p_retailprice', lf.Type.NUMBER);
+        partBuilder.addColumn('p_comment', lf.Type.STRING);
+
+        const supplierBuilder = this.builder!.createTable(`supplier`);
+        supplierBuilder.addColumn('s_suppkey', lf.Type.INTEGER);
+        supplierBuilder.addColumn('s_name', lf.Type.STRING);
+        supplierBuilder.addColumn('s_address', lf.Type.STRING);
+        supplierBuilder.addColumn('s_nationkey', lf.Type.INTEGER);
+        supplierBuilder.addColumn('s_phone', lf.Type.STRING);
+        supplierBuilder.addColumn('s_acctbal', lf.Type.NUMBER);
+        supplierBuilder.addColumn('s_comment', lf.Type.INTEGER);
+
+        const partsuppBuilder = this.builder!.createTable(`partsupp`);
+        partsuppBuilder.addColumn('ps_partkey', lf.Type.INTEGER);
+        partsuppBuilder.addColumn('ps_suppkey', lf.Type.INTEGER);
+        partsuppBuilder.addColumn('ps_availqty', lf.Type.INTEGER);
+        partsuppBuilder.addColumn('ps_supplycost', lf.Type.NUMBER);
+        partsuppBuilder.addColumn('ps_comment', lf.Type.STRING);
+
+        const customerBuilder = this.builder!.createTable(`customer`);
+        customerBuilder.addColumn('c_custkey', lf.Type.INTEGER);
+        customerBuilder.addColumn('c_name', lf.Type.STRING);
+        customerBuilder.addColumn('c_address', lf.Type.STRING);
+        customerBuilder.addColumn('c_nationkey', lf.Type.INTEGER);
+        customerBuilder.addColumn('c_phone', lf.Type.STRING);
+        customerBuilder.addColumn('c_acctbal', lf.Type.INTEGER);
+        customerBuilder.addColumn('c_mktsegment', lf.Type.STRING);
+        customerBuilder.addColumn('c_comment', lf.Type.STRING);
+
+        const ordersBuilder = this.builder!.createTable(`orders`);
+        ordersBuilder.addColumn('o_orderkey', lf.Type.INTEGER);
+        ordersBuilder.addColumn('o_custkey', lf.Type.INTEGER);
+        ordersBuilder.addColumn('o_orderstatus', lf.Type.STRING);
+        ordersBuilder.addColumn('o_totalprice', lf.Type.NUMBER);
+        ordersBuilder.addColumn('o_orderdate', lf.Type.DATE_TIME);
+        ordersBuilder.addColumn('o_orderpriority', lf.Type.STRING);
+        ordersBuilder.addColumn('o_clerk', lf.Type.STRING);
+        ordersBuilder.addColumn('o_shippriority', lf.Type.INTEGER);
+        ordersBuilder.addColumn('o_comment', lf.Type.STRING);
+
         const lineitemBuilder = this.builder!.createTable(`lineitem`);
         lineitemBuilder.addColumn('l_orderkey', lf.Type.INTEGER);
         lineitemBuilder.addColumn('l_partkey', lf.Type.INTEGER);
@@ -47,9 +106,9 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         lineitemBuilder.addColumn('l_tax', lf.Type.NUMBER);
         lineitemBuilder.addColumn('l_returnflag', lf.Type.STRING);
         lineitemBuilder.addColumn('l_linestatus', lf.Type.STRING);
-        lineitemBuilder.addColumn('l_shipdate', lf.Type.STRING);
-        lineitemBuilder.addColumn('l_commitdate', lf.Type.STRING);
-        lineitemBuilder.addColumn('l_receiptdate', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_shipdate', lf.Type.DATE_TIME);
+        lineitemBuilder.addColumn('l_commitdate', lf.Type.DATE_TIME);
+        lineitemBuilder.addColumn('l_receiptdate', lf.Type.DATE_TIME);
         lineitemBuilder.addColumn('l_shipinstruct', lf.Type.STRING);
         lineitemBuilder.addColumn('l_shipmode', lf.Type.STRING);
         lineitemBuilder.addColumn('l_comment', lf.Type.STRING);
@@ -166,13 +225,13 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
             await this.database!.delete().from(table).exec();
         };
         await drop('lineitem');
-        //await drop('orders');
-        //await drop('customers');
-        //await drop('supplier');
-        //await drop('part');
-        //await drop('partsupp');
-        //await drop('region');
-        //await drop('nation');
+        await drop('orders');
+        await drop('customers');
+        await drop('supplier');
+        await drop('part');
+        await drop('partsupp');
+        await drop('region');
+        await drop('nation');
         this.database!.close();
     }
     async onError(ctx: SystemBenchmarkContext): Promise<void> {
