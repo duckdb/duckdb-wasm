@@ -567,6 +567,45 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 8: {
+                const part = LovefieldTPCHBenchmark.database!.getSchema().table('part');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const supplier = LovefieldTPCHBenchmark.database!.getSchema().table('supplier');
+                const region = LovefieldTPCHBenchmark.database!.getSchema().table('region');
+                const nation1 = LovefieldTPCHBenchmark.database!.getSchema().table('nation').as('n1');
+                const nation2 = LovefieldTPCHBenchmark.database!.getSchema().table('nation').as('n2');
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    nation2.col('n_name'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('volume'),
+                )
+                    .from(part, region, nation1, nation2, lineitem, orders, customer, supplier)
+                    .where(
+                        lf.op.and(
+                            part.col('p_partkey').eq(lineitem.col('l_partkey')),
+                            supplier.col('s_suppkey').eq(lineitem.col('l_suppkey')),
+                            lineitem.col('l_orderkey').eq(orders.col('o_orderkey')),
+                            orders.col('o_custkey').eq(customer.col('c_custkey')),
+                            customer.col('c_nationkey').eq(nation1.col('n_nationkey')),
+                            nation1.col('n_regionkey').eq(region.col('r_regionkey')),
+                            region.col('r_name').eq('AMERICA'),
+                            supplier.col('s_nationkey').eq(nation2.col('n_nationkey')),
+                            orders.col('o_orderdate').between(new Date(1995, 1, 1), new Date(1996, 12, 31)),
+                            part.col('p_type').eq('ECONOMY ANODIZED STEEL'),
+                        ),
+                    )
+                    .groupBy(nation2.col('n_name'))
+                    .exec()) as Iterable<{
+                    n_name: string;
+                    volume: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
             default: {
                 throw new Error('not implemented');
             }

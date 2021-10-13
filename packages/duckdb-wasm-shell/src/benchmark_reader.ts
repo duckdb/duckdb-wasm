@@ -15,6 +15,7 @@ export type BenchmarkType = {
     min_time: arrow.Float64;
     run_time: arrow.Float64;
     total_time: arrow.Float64;
+    warning: arrow.Utf8;
 };
 
 export interface BenchmarkEntry {
@@ -28,6 +29,7 @@ export interface BenchmarkEntry {
     system: string;
     tags: string[];
     parameters: Float64Array;
+    warning: string;
 
     cycles: number;
     samples: number;
@@ -57,6 +59,7 @@ export function readBenchmarks(bm: arrow.Table<BenchmarkType>): BenchmarkEntry[]
     const minTimeColumn = bm.getColumn('min_time');
     const runTimeColumn = bm.getColumn('run_time');
     const totalTimeColumn = bm.getColumn('total_time');
+    const warningColumn = bm.getColumn('warning');
 
     for (let i = 0; i < nameColumn.chunks.length; ++i) {
         const timestampChunk = timestampColumn.chunks[i];
@@ -74,6 +77,7 @@ export function readBenchmarks(bm: arrow.Table<BenchmarkType>): BenchmarkEntry[]
         const minTimeChunk = minTimeColumn.chunks[i];
         const runTimeChunk = runTimeColumn.chunks[i];
         const totalTimeChunk = totalTimeColumn.chunks[i];
+        const warningChunk = warningColumn.chunks[i];
 
         for (let j = 0; j < nameChunk.length; ++j) {
             const tags = tagsChunk.get(j);
@@ -92,6 +96,7 @@ export function readBenchmarks(bm: arrow.Table<BenchmarkType>): BenchmarkEntry[]
                 parameters: parametersChunk.get(j)?.values || new Float64Array(),
                 system: systemChunk.get(j) || '',
                 tags: tagStrings,
+                warning: warningChunk.get(j) || '',
 
                 cycles: cyclesChunk.get(j) || 0,
                 samples: samplesChunk.get(j) || 0,

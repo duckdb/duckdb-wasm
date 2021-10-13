@@ -2,6 +2,7 @@ import React from 'react';
 import { GroupedBenchmarks } from './benchmark_reader';
 
 import styles from './benchmark_table.module.css';
+import warn from '../static/svg/icons/warn.svg';
 
 const SYSTEMS = ['duckdb_sync', 'sqljs', 'lovefield', 'arquero'];
 
@@ -41,6 +42,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
     const elements: React.ReactElement[] = [];
     const values: (string | null)[] = [];
     const colors: (string | null)[] = [];
+    const warnings: (string | null)[] = [];
 
     if (props.m == Metric.MEAN_TIME) {
         const entries = [];
@@ -58,6 +60,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             if (entry === undefined) {
                 values.push(null);
                 colors.push(null);
+                warnings.push(null);
                 continue;
             }
             const cappedMeanTime = Math.min(entry.meanTime, maxMeanTime);
@@ -68,6 +71,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
                     (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
                 }%)`,
             );
+            warnings.push(entry.warning == '' ? null : entry.warning);
         }
     } else if (props.m == Metric.FREQUENCY) {
         const entries = [];
@@ -83,6 +87,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             if (entry === undefined) {
                 values.push(null);
                 colors.push(null);
+                warnings.push(null);
                 continue;
             }
             const freq = entry.meanTime == 0 ? 0 : 1 / entry.meanTime;
@@ -93,12 +98,14 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
                     (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
                 }%)`,
             );
+            warnings.push(entry.warning == '' ? null : entry.warning);
         }
     }
     for (let i = 0; i < values.length; ++i) {
         const id = props.id * SYSTEMS.length + i;
         const value = values[i];
         const color = colors[i];
+        const warning = warnings[i];
         if (value == null || color == null) {
             elements.push(
                 <div key={id} className={styles.table_entry_missing}>
@@ -108,7 +115,14 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
         } else {
             elements.push(
                 <div key={id} className={styles.table_entry} style={{ backgroundColor: color }}>
-                    {value}
+                    <div className={styles.table_entry_value}>{value}</div>
+                    {warning && (
+                        <div className={styles.table_entry_icon}>
+                            <svg width="12px" height="12px">
+                                <use xlinkHref={`${warn}#sym`} />
+                            </svg>
+                        </div>
+                    )}
                 </div>,
             );
         }
