@@ -884,7 +884,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 noop(revenue);
                 break;
             }
-            case 18: {
+            case 19: {
                 const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
                 const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
                 const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
