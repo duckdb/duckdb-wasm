@@ -29,14 +29,14 @@ yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 # yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
 # yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.1
 # yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
-# yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
+yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
 
 # yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
 # yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.25
 # yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.25
-# yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
+yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
 
 # yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
 # yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.5
 # yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
-# yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
+yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5

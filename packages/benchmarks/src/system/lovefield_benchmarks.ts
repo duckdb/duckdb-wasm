@@ -621,7 +621,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     lf.fn.sum(lineitem.col('l_quantity')).as('quantity_sum'),
                     lf.fn.sum(partsupp.col('ps_supplycost')).as('supplycost_sum'),
                 )
-                    .from(nation, supplier, lineitem, partsupp, orders, nation, part)
+                    .from(supplier, lineitem, partsupp, orders, nation, part)
                     .where(
                         lf.op.and(
                             supplier.col('s_suppkey').eq(lineitem.col('l_suppkey')),
@@ -693,6 +693,36 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     c_address: string;
                     c_phone: string;
                     c_comment: string;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+            case 12: {
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    lineitem.col('l_shipmode'),
+                    lf.fn.count().as('count_xx'),
+                )
+                    .from(lineitem, orders)
+                    .where(
+                        lf.op.and(
+                            orders.col('o_orderkey').eq(lineitem.col('l_orderkey')),
+                            lf.op.or(lineitem.col('l_shipmode').eq('MAIL'), lineitem.col('l_shipmode').eq('SHIP')),
+                            lineitem.col('l_commitdate').lt(lineitem.col('l_receiptdate')),
+                            lineitem.col('l_shipdate').lt(lineitem.col('l_commitdate')),
+                            lineitem.col('l_receiptdate').gte(new Date(1994, 1, 1)),
+                            lineitem.col('l_receiptdate').lt(new Date(1995, 1, 1)),
+                        ),
+                    )
+                    .groupBy(lineitem.col('l_shipmode'))
+                    .orderBy(lineitem.col('l_shipmode'))
+                    .exec()) as Iterable<{
+                    l_shipmode: string;
+                    count_xx: number;
                 }>;
                 for (const row of query) {
                     noop(row);
