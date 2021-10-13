@@ -121,28 +121,17 @@ esbuild.build({
     external: EXTERNALS,
 });
 
-console.log('[ ESBUILD ] system-tpch.js');
-esbuild.build({
-    entryPoints: ['./src/suite_system_tpch.ts'],
-    outfile: 'dist/system-tpch.js',
-    platform: 'node',
-    format: 'cjs',
-    target: TARGET,
-    bundle: true,
-    minify: false,
-    sourcemap: true,
-    external: EXTERNALS,
-});
-
-console.log('[ ESBUILD ] system-tpch-large.js');
-esbuild.build({
-    entryPoints: ['./src/suite_system_tpch_large.ts'],
-    outfile: 'dist/system-tpch-large.js',
-    platform: 'node',
-    format: 'cjs',
-    target: TARGET,
-    bundle: true,
-    minify: false,
-    sourcemap: true,
-    external: EXTERNALS,
-});
+for (const sys of ['arquero', 'duckdb', 'lovefield', 'sqljs']) {
+    console.log(`[ ESBUILD ] system-tpch-${sys}.js`);
+    esbuild.build({
+        entryPoints: [`./src/suite_system_tpch_${sys}.ts`],
+        outfile: `dist/system-tpch-${sys}.js`,
+        platform: 'node',
+        format: 'cjs',
+        target: TARGET,
+        bundle: true,
+        minify: false,
+        sourcemap: true,
+        external: EXTERNALS,
+    });
+}
