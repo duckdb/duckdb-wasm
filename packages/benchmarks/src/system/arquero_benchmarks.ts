@@ -17,12 +17,10 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
     tables: { [key: string]: aq.internal.Table } = {};
     scaleFactor: number;
     queryId: number;
-    queryText: string | null;
 
     constructor(scaleFactor: number, queryId: number) {
         this.scaleFactor = scaleFactor;
         this.queryId = queryId;
-        this.queryText = null;
     }
     getName(): string {
         return `arquero_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.queryId}`;

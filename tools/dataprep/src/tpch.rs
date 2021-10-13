@@ -52,6 +52,7 @@ fn convert_tbl(
 
 // const DECIMAL_12_2: DataType = DataType::Decimal(12, 2);
 // Not supported by the parquet arrow writer at the moment.
+// Also not supported by the arrow javascript library.
 const DECIMAL_12_2: DataType = DataType::Float64;
 
 pub fn convert_tbls(

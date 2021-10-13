@@ -1,7 +1,184 @@
 import * as lf from 'lovefield-ts/dist/es6/lf.js';
 import * as faker from 'faker';
+import * as arrow from 'apache-arrow';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { generate2Int32, generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
+import { getTPCHArrowTable } from './tpch_loader';
+
+// Decimals are not properly supported by the arrow javascript library atm.
+type DECIMAL_12_2 = arrow.Float64;
+
+export class LovefieldTPCHBenchmark implements SystemBenchmark {
+    builder?: lf.Builder | null;
+    database?: lf.DatabaseConnection | null;
+    scaleFactor: number;
+    queryId: number;
+
+    constructor(scaleFactor: number, queryId: number) {
+        this.builder = null;
+        this.database = null;
+        this.scaleFactor = scaleFactor;
+        this.queryId = queryId;
+    }
+    getName(): string {
+        return `lovefield_tpch_${this.scaleFactor.toString().replace('.', '')}_q${this.queryId}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'tpch',
+            system: 'lovefield',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.scaleFactor, this.queryId],
+        };
+    }
+
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
+
+        const lineitemBuilder = this.builder!.createTable(`lineitem`);
+        lineitemBuilder.addColumn('l_orderkey', lf.Type.INTEGER);
+        lineitemBuilder.addColumn('l_partkey', lf.Type.INTEGER);
+        lineitemBuilder.addColumn('l_suppkey', lf.Type.INTEGER);
+        lineitemBuilder.addColumn('l_linenumber', lf.Type.INTEGER);
+        lineitemBuilder.addColumn('l_quantity', lf.Type.NUMBER);
+        lineitemBuilder.addColumn('l_extendedprice', lf.Type.NUMBER);
+        lineitemBuilder.addColumn('l_discount', lf.Type.NUMBER);
+        lineitemBuilder.addColumn('l_tax', lf.Type.NUMBER);
+        lineitemBuilder.addColumn('l_returnflag', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_linestatus', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_shipdate', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_commitdate', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_receiptdate', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_shipinstruct', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_shipmode', lf.Type.STRING);
+        lineitemBuilder.addColumn('l_comment', lf.Type.STRING);
+        lineitemBuilder.addPrimaryKey(['l_orderkey', 'l_linenumber']);
+
+        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+        const lineitemTable = this.database!.getSchema().table('lineitem');
+        const lineitemRows = [];
+        for (const row of (await getTPCHArrowTable(
+            ctx.projectRootPath,
+            this.scaleFactor,
+            'lineitem.arrow',
+        )) as arrow.Table<{
+            l_orderkey: arrow.Int32;
+            l_partkey: arrow.Int32;
+            l_suppkey: arrow.Int32;
+            l_linenumber: arrow.Int32;
+            l_quantity: DECIMAL_12_2;
+            l_extendedprice: DECIMAL_12_2;
+            l_discount: DECIMAL_12_2;
+            l_tax: DECIMAL_12_2;
+            l_returnflag: arrow.Utf8;
+            l_linestatus: arrow.Utf8;
+            l_shipdate: arrow.DateDay;
+            l_commitdate: arrow.DateDay;
+            l_receiptdate: arrow.DateDay;
+            l_shipinstruct: arrow.DateDay;
+            l_shipmode: arrow.Utf8;
+            l_comment: arrow.Utf8;
+        }>) {
+            lineitemRows.push(
+                lineitemTable.createRow({
+                    l_orderkey: row.l_orderkey,
+                    l_partkey: row.l_partkey,
+                    l_suppkey: row.l_suppkey,
+                    l_linenumber: row.l_linenumber,
+                    l_quantity: row.l_quantity,
+                    l_extendedprice: row.l_extendedprice,
+                    l_discount: row.l_extendedprice,
+                    l_tax: row.l_tax,
+                    l_returnflag: row.l_returnflag,
+                    l_linestatus: row.l_linestatus,
+                    l_shipdate: row.l_shipdate,
+                    l_commitdate: row.l_commitdate,
+                    l_receiptdate: row.l_receiptdate,
+                    l_shipinstruct: row.l_shipinstruct,
+                    l_shipmode: row.l_shipmode,
+                    l_comment: row.l_comment,
+                }),
+            );
+        }
+        await this.database!.insert().into(lineitemTable).values(lineitemRows).exec();
+
+        // const orders = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'orders.arrow');
+        // const customer = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'customer.arrow');
+        // const supplier = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'supplier.arrow');
+        // const region = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'region.arrow');
+        // const nation = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'nation.arrow');
+        // const partsupp = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'partsupp.arrow');
+        // const part = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'part.arrow');
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        // XXX
+        // Lovefield docs contains
+        // * / % + -	User shall use JavaScript for arithmetic operations.
+        //
+        // Does that mean Lovefield cannot to to arithmetic within the query plan?
+        // We "bypass" that limitation by splitting up the aggregates, s.t. the required work stays almost the same.
+        switch (this.queryId) {
+            case 1: {
+                const lineitem = this.database!.getSchema().table('lineitem');
+                const query = (await this.database!.select(
+                    lineitem.col('l_returnflag'),
+                    lineitem.col('l_linestatus'),
+                    lf.fn.sum(lineitem.col('l_quantity')).as('sum_qty'),
+                    lf.fn.sum(lineitem.col('l_extendedprice')).as('sum_base_price'),
+                    lf.fn.sum(lineitem.col('l_discount')).as('sum_discount'),
+                    lf.fn.sum(lineitem.col('l_tax')).as('sum_tax'),
+                    lf.fn.avg(lineitem.col('l_quantity')).as('avg_qty'),
+                    lf.fn.avg(lineitem.col('l_extendedprice')).as('avg_price'),
+                    lf.fn.avg(lineitem.col('l_discount')).as('avg_disc'),
+                    lf.fn.count().as('count_order'),
+                )
+                    .from(lineitem)
+                    .where(lineitem.col('l_shipdate').lt(new Date(1998, 9, 2)))
+                    .groupBy(lineitem.col('l_returnflag'), lineitem.col('l_linestatus'))
+                    .orderBy(lineitem.col('l_returnflag'))
+                    .orderBy(lineitem.col('l_linestatus'))
+                    .exec()) as Iterable<{
+                    l_returnflag: number;
+                    l_linestatus: string;
+                    sum_qty: number;
+                    sum_base_price: number;
+                    sum_discount: number;
+                    sum_tax: number;
+                    avg_qty: number;
+                    avg_price: number;
+                    avg_disc: number;
+                    count_order: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
+                break;
+            }
+        }
+    }
+
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        const drop = async (name: string) => {
+            const table = this.database!.getSchema().table(name);
+            await this.database!.delete().from(table).exec();
+        };
+        await drop('lineitem');
+        //await drop('orders');
+        //await drop('customers');
+        //await drop('supplier');
+        //await drop('part');
+        //await drop('partsupp');
+        //await drop('region');
+        //await drop('nation');
+        this.database!.close();
+    }
+    async onError(ctx: SystemBenchmarkContext): Promise<void> {
+        this.afterAll(ctx);
+    }
+}
 
 export class LovefieldRegexScanBenchmark implements SystemBenchmark {
     builder?: lf.Builder | null;
