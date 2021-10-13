@@ -4,19 +4,18 @@ import * as arrow from 'apache-arrow';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { generate2Int32, generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
 import { getTPCHArrowTable } from './tpch_loader';
+import { Utf8 } from 'apache-arrow';
 
 // Decimals are not properly supported by the arrow javascript library atm.
 type DECIMAL_12_2 = arrow.Float64;
 
 export class LovefieldTPCHBenchmark implements SystemBenchmark {
-    builder?: lf.Builder | null;
-    database?: lf.DatabaseConnection | null;
+    static builder?: lf.Builder | null;
+    static database?: lf.DatabaseConnection | null;
     scaleFactor: number;
     queryId: number;
 
     constructor(scaleFactor: number, queryId: number) {
-        this.builder = null;
-        this.database = null;
         this.scaleFactor = scaleFactor;
         this.queryId = queryId;
     }
@@ -33,21 +32,22 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         };
     }
 
-    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
+    static async beforeGroup(ctx: SystemBenchmarkContext, scaleFactor: number): Promise<void> {
+        LovefieldTPCHBenchmark.builder = lf.schema.create(`tpch_schema`, 1);
+        const builder = LovefieldTPCHBenchmark.builder;
 
-        const nationBuilder = this.builder!.createTable(`nation`);
+        const nationBuilder = builder.createTable(`nation`);
         nationBuilder.addColumn('n_nationkey', lf.Type.INTEGER);
         nationBuilder.addColumn('n_name', lf.Type.STRING);
         nationBuilder.addColumn('n_regionkey', lf.Type.NUMBER);
         nationBuilder.addColumn('n_comment', lf.Type.STRING);
 
-        const regionBuilder = this.builder!.createTable(`region`);
+        const regionBuilder = builder.createTable(`region`);
         regionBuilder.addColumn('r_regionkey', lf.Type.INTEGER);
         regionBuilder.addColumn('r_name', lf.Type.INTEGER);
         regionBuilder.addColumn('r_comment', lf.Type.STRING);
 
-        const partBuilder = this.builder!.createTable(`part`);
+        const partBuilder = builder.createTable(`part`);
         partBuilder.addColumn('p_partkey', lf.Type.INTEGER);
         partBuilder.addColumn('p_name', lf.Type.STRING);
         partBuilder.addColumn('p_mfgr', lf.Type.STRING);
@@ -58,7 +58,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         partBuilder.addColumn('p_retailprice', lf.Type.NUMBER);
         partBuilder.addColumn('p_comment', lf.Type.STRING);
 
-        const supplierBuilder = this.builder!.createTable(`supplier`);
+        const supplierBuilder = builder.createTable(`supplier`);
         supplierBuilder.addColumn('s_suppkey', lf.Type.INTEGER);
         supplierBuilder.addColumn('s_name', lf.Type.STRING);
         supplierBuilder.addColumn('s_address', lf.Type.STRING);
@@ -67,14 +67,14 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         supplierBuilder.addColumn('s_acctbal', lf.Type.NUMBER);
         supplierBuilder.addColumn('s_comment', lf.Type.INTEGER);
 
-        const partsuppBuilder = this.builder!.createTable(`partsupp`);
+        const partsuppBuilder = builder.createTable(`partsupp`);
         partsuppBuilder.addColumn('ps_partkey', lf.Type.INTEGER);
         partsuppBuilder.addColumn('ps_suppkey', lf.Type.INTEGER);
         partsuppBuilder.addColumn('ps_availqty', lf.Type.INTEGER);
         partsuppBuilder.addColumn('ps_supplycost', lf.Type.NUMBER);
         partsuppBuilder.addColumn('ps_comment', lf.Type.STRING);
 
-        const customerBuilder = this.builder!.createTable(`customer`);
+        const customerBuilder = builder.createTable(`customer`);
         customerBuilder.addColumn('c_custkey', lf.Type.INTEGER);
         customerBuilder.addColumn('c_name', lf.Type.STRING);
         customerBuilder.addColumn('c_address', lf.Type.STRING);
@@ -84,7 +84,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         customerBuilder.addColumn('c_mktsegment', lf.Type.STRING);
         customerBuilder.addColumn('c_comment', lf.Type.STRING);
 
-        const ordersBuilder = this.builder!.createTable(`orders`);
+        const ordersBuilder = builder.createTable(`orders`);
         ordersBuilder.addColumn('o_orderkey', lf.Type.INTEGER);
         ordersBuilder.addColumn('o_custkey', lf.Type.INTEGER);
         ordersBuilder.addColumn('o_orderstatus', lf.Type.STRING);
@@ -95,7 +95,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         ordersBuilder.addColumn('o_shippriority', lf.Type.INTEGER);
         ordersBuilder.addColumn('o_comment', lf.Type.STRING);
 
-        const lineitemBuilder = this.builder!.createTable(`lineitem`);
+        const lineitemBuilder = builder.createTable(`lineitem`);
         lineitemBuilder.addColumn('l_orderkey', lf.Type.INTEGER);
         lineitemBuilder.addColumn('l_partkey', lf.Type.INTEGER);
         lineitemBuilder.addColumn('l_suppkey', lf.Type.INTEGER);
@@ -114,62 +114,43 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         lineitemBuilder.addColumn('l_comment', lf.Type.STRING);
         lineitemBuilder.addPrimaryKey(['l_orderkey', 'l_linenumber']);
 
-        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
-
-        // Load nation
-        const nationTable = this.database!.getSchema().table('nation');
-        const nationRows = [];
-        for (const row of (await getTPCHArrowTable(
-            ctx.projectRootPath,
-            this.scaleFactor,
-            'nation.arrow',
-        )) as arrow.Table<{
-            n_nationkey: arrow.Int32;
-            n_name: arrow.Utf8;
-            n_regionkey: arrow.Int32;
-            n_comment: arrow.Utf8;
-        }>) {
-            nationRows.push(
-                nationTable.createRow({
-                    n_nationkey: row.n_nationkey,
-                    n_name: row.n_name,
-                    n_regionkey: row.n_regionkey,
-                    n_comment: row.n_comment,
-                }),
-            );
-        }
-        await this.database!.insert().into(nationTable).values(nationRows).exec();
-
-        // Load region
-        const regionTable = this.database!.getSchema().table('region');
-        const regionRows = [];
-        for (const row of (await getTPCHArrowTable(
-            ctx.projectRootPath,
-            this.scaleFactor,
-            'region.arrow',
-        )) as arrow.Table<{
-            r_regionkey: arrow.Int32;
-            r_name: arrow.Utf8;
-            r_comment: arrow.Utf8;
-        }>) {
-            regionRows.push(
-                regionTable.createRow({
-                    r_nationkey: row.r_regionkey,
-                    r_name: row.r_name,
-                    r_comment: row.r_comment,
-                }),
-            );
-        }
-        await this.database!.insert().into(regionTable).values(regionRows).exec();
+        LovefieldTPCHBenchmark.database = await builder.connect({ storeType: lf.DataStoreType.MEMORY });
+        const database = LovefieldTPCHBenchmark.database;
 
         // Load partsupp
-        const partsuppTable = this.database!.getSchema().table('partsupp');
+        const partTable = database.getSchema().table('part');
+        const partRows = [];
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'part.arrow')) as arrow.Table<{
+            p_partkey: arrow.Int32;
+            p_name: arrow.Utf8;
+            p_mfgr: arrow.Utf8;
+            p_brand: arrow.Utf8;
+            p_type: arrow.Utf8;
+            p_size: arrow.Int32;
+            p_container: arrow.Utf8;
+            p_retailprice: DECIMAL_12_2;
+            p_comment: arrow.Utf8;
+        }>) {
+            partRows.push(
+                partTable.createRow({
+                    p_partkey: row.p_partkey,
+                    p_name: row.p_name,
+                    p_mfgr: row.p_mfgr,
+                    p_brand: row.p_brand,
+                    p_type: row.p_type,
+                    p_size: row.p_size,
+                    p_container: row.p_container,
+                    p_retailprice: row.p_retailprice,
+                    p_comment: row.p_comment,
+                }),
+            );
+        }
+        await database.insert().into(partTable).values(partRows).exec();
+
+        // Load partsupp
+        const partsuppTable = database.getSchema().table('partsupp');
         const partsuppRows = [];
-        for (const row of (await getTPCHArrowTable(
-            ctx.projectRootPath,
-            this.scaleFactor,
-            'partsupp.arrow',
-        )) as arrow.Table<{
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'partsupp.arrow')) as arrow.Table<{
             ps_partkey: arrow.Int32;
             ps_suppkey: arrow.Int32;
             ps_availqty: arrow.Int32;
@@ -186,16 +167,134 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 }),
             );
         }
-        await this.database!.insert().into(regionTable).values(regionRows).exec();
+        await database.insert().into(partsuppTable).values(partsuppRows).exec();
+
+        // Load region
+        const regionTable = database!.getSchema().table('region');
+        const regionRows = [];
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'region.arrow')) as arrow.Table<{
+            r_regionkey: arrow.Int32;
+            r_name: arrow.Utf8;
+            r_comment: arrow.Utf8;
+        }>) {
+            regionRows.push(
+                regionTable.createRow({
+                    r_nationkey: row.r_regionkey,
+                    r_name: row.r_name,
+                    r_comment: row.r_comment,
+                }),
+            );
+        }
+        await database!.insert().into(regionTable).values(regionRows).exec();
+
+        // Load nation
+        const nationTable = database!.getSchema().table('nation');
+        const nationRows = [];
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'nation.arrow')) as arrow.Table<{
+            n_nationkey: arrow.Int32;
+            n_name: arrow.Utf8;
+            n_regionkey: arrow.Int32;
+            n_comment: arrow.Utf8;
+        }>) {
+            nationRows.push(
+                nationTable.createRow({
+                    n_nationkey: row.n_nationkey,
+                    n_name: row.n_name,
+                    n_regionkey: row.n_regionkey,
+                    n_comment: row.n_comment,
+                }),
+            );
+        }
+        await database!.insert().into(nationTable).values(nationRows).exec();
+
+        // Load customer
+        const customerTable = database!.getSchema().table('customer');
+        const customerRows = [];
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'customer.arrow')) as arrow.Table<{
+            c_custkey: arrow.Int32;
+            c_name: arrow.Utf8;
+            c_address: arrow.Utf8;
+            c_nationkey: arrow.Int32;
+            c_phone: arrow.Utf8;
+            c_acctbal: DECIMAL_12_2;
+            c_mktsegment: Utf8;
+            c_comment: Utf8;
+        }>) {
+            customerRows.push(
+                customerTable.createRow({
+                    c_custkey: row.c_custkey,
+                    c_name: row.c_name,
+                    c_address: row.c_address,
+                    c_nationkey: row.c_nationkey,
+                    c_phone: row.c_phone,
+                    c_acctbal: row.c_acctbal,
+                    c_mktsegment: row.c_mktsegment,
+                    c_comment: row.c_comment,
+                }),
+            );
+        }
+        await database!.insert().into(customerTable).values(customerRows).exec();
+
+        // Load orders
+        const ordersTable = database!.getSchema().table('orders');
+        const ordersRows = [];
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'orders.arrow')) as arrow.Table<{
+            o_orderkey: arrow.Int32;
+            o_custkey: arrow.Int32;
+            o_orderstatus: arrow.Utf8;
+            o_totalprice: DECIMAL_12_2;
+            o_orderdate: arrow.DateDay;
+            o_orderpriority: arrow.Utf8;
+            o_clerk: arrow.Utf8;
+            o_shippriority: arrow.Int32;
+            o_comment: arrow.Utf8;
+        }>) {
+            ordersRows.push(
+                ordersTable.createRow({
+                    o_orderkey: row.o_orderkey,
+                    o_custkey: row.o_custkey,
+                    o_orderstatus: row.o_orderstatus,
+                    o_totalprice: row.o_totalprice,
+                    o_orderdate: row.o_orderdate,
+                    o_orderpriority: row.o_orderpriority,
+                    o_clerk: row.o_clerk,
+                    o_shippriority: row.o_shippriority,
+                    o_comment: row.o_comment,
+                }),
+            );
+        }
+        await database!.insert().into(ordersTable).values(ordersRows).exec();
+
+        // Load supplier
+        const supplierTable = database!.getSchema().table('supplier');
+        const supplierRows = [];
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'supplier.arrow')) as arrow.Table<{
+            s_suppkey: arrow.Int32;
+            s_name: arrow.Utf8;
+            s_address: arrow.Utf8;
+            s_nationkey: arrow.Int32;
+            s_phone: arrow.Utf8;
+            s_acctbal: DECIMAL_12_2;
+            s_comment: arrow.Utf8;
+        }>) {
+            supplierRows.push(
+                supplierTable.createRow({
+                    s_suppkey: row.s_suppkey,
+                    s_name: row.s_name,
+                    s_address: row.s_address,
+                    s_nationkey: row.s_nationkey,
+                    s_phone: row.s_phone,
+                    s_acctbal: row.s_acctbal,
+                    s_comment: row.s_comment,
+                }),
+            );
+        }
+        await database!.insert().into(supplierTable).values(supplierRows).exec();
 
         // Load lineitem
-        const lineitemTable = this.database!.getSchema().table('lineitem');
+        const lineitemTable = database!.getSchema().table('lineitem');
         const lineitemRows = [];
-        for (const row of (await getTPCHArrowTable(
-            ctx.projectRootPath,
-            this.scaleFactor,
-            'lineitem.arrow',
-        )) as arrow.Table<{
+        for (const row of (await getTPCHArrowTable(ctx.projectRootPath, scaleFactor, 'lineitem.arrow')) as arrow.Table<{
             l_orderkey: arrow.Int32;
             l_partkey: arrow.Int32;
             l_suppkey: arrow.Int32;
@@ -234,8 +333,25 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 }),
             );
         }
-        await this.database!.insert().into(lineitemTable).values(lineitemRows).exec();
+        await database!.insert().into(lineitemTable).values(lineitemRows).exec();
     }
+    static async afterGroup(_ctx: SystemBenchmarkContext): Promise<void> {
+        const drop = async (name: string) => {
+            const table = LovefieldTPCHBenchmark.database!.getSchema().table(name);
+            await LovefieldTPCHBenchmark.database!.delete().from(table).exec();
+        };
+        await drop('lineitem');
+        await drop('orders');
+        await drop('customer');
+        await drop('supplier');
+        await drop('part');
+        await drop('partsupp');
+        await drop('region');
+        await drop('nation');
+        LovefieldTPCHBenchmark.database!.close();
+    }
+
+    async beforeAll(_ctx: SystemBenchmarkContext): Promise<void> {}
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
         // XXX
@@ -246,8 +362,8 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         // We "bypass" that limitation by splitting up the aggregates, s.t. the required work stays almost the same.
         switch (this.queryId) {
             case 1: {
-                const lineitem = this.database!.getSchema().table('lineitem');
-                const query = (await this.database!.select(
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const query = (await LovefieldTPCHBenchmark.database!.select(
                     lineitem.col('l_returnflag'),
                     lineitem.col('l_linestatus'),
                     lf.fn.sum(lineitem.col('l_quantity')).as('sum_qty'),
@@ -285,21 +401,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
     }
 
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        const drop = async (name: string) => {
-            const table = this.database!.getSchema().table(name);
-            await this.database!.delete().from(table).exec();
-        };
-        await drop('lineitem');
-        await drop('orders');
-        await drop('customer');
-        await drop('supplier');
-        await drop('part');
-        await drop('partsupp');
-        await drop('region');
-        await drop('nation');
-        this.database!.close();
-    }
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
     async onError(ctx: SystemBenchmarkContext): Promise<void> {
         this.afterAll(ctx);
     }
