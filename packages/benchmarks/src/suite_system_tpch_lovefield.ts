@@ -14,8 +14,10 @@ async function main() {
 
     const baseDir = path.resolve(__dirname, '../../../');
     const benchmarks: SystemBenchmark[] = [];
-    //for (const q of [1, 3, 4, 5, 6, 7, 8, 10, 12]) {
-    for (const q of [12]) {
+    for (const q of [1, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]) {
+        if (sf >= 0.25 && q == 9) {
+            continue;
+        }
         benchmarks.push(new LovefieldTPCHBenchmark(sf, q));
     }
     const ctx: SystemBenchmarkContext = {
