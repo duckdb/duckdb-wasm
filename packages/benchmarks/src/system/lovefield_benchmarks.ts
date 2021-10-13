@@ -833,6 +833,57 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 }
                 break;
             }
+            case 17: {
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+                const part = LovefieldTPCHBenchmark.database!.getSchema().table('part');
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    lineitem.col('l_extendedprice'),
+                    lineitem.col('l_discount'),
+                )
+                    .from(lineitem)
+                    .innerJoin(part, part.col('p_partkey').eq(lineitem.col('l_partkey')))
+                    .where(
+                        lf.op.or(
+                            lf.op.and(
+                                part.col('p_brand').eq('Brand#12'),
+                                part.col('p_container').in(['SM CASE', 'SM BOX', 'SM PACK', 'SM PKG']),
+                                part.col('p_size').between(1, 5),
+                                lineitem.col('l_quantity').gte(1),
+                                lineitem.col('l_quantity').lte(11),
+                                lineitem.col('l_shipmode').in(['AIR', 'AIR REG']),
+                                lineitem.col('l_shipinstruct').eq('DELIVER IN PERSON'),
+                            ),
+                            lf.op.and(
+                                part.col('p_brand').eq('Brand#23'),
+                                part.col('p_container').in(['MED BAG', 'MED BOX', 'MED PKG', 'MED PACK']),
+                                part.col('p_size').between(1, 10),
+                                lineitem.col('l_quantity').gte(10),
+                                lineitem.col('l_quantity').lte(20),
+                                lineitem.col('l_shipmode').in(['AIR', 'AIR REG']),
+                                lineitem.col('l_shipinstruct').eq('DELIVER IN PERSON'),
+                            ),
+                            lf.op.and(
+                                part.col('p_brand').eq('Brand#34'),
+                                part.col('p_container').in(['LG CASE', 'LG BOX', 'LG PACK', 'LG PKG']),
+                                part.col('p_size').between(1, 15),
+                                lineitem.col('l_quantity').gte(20),
+                                lineitem.col('l_quantity').lte(30),
+                                lineitem.col('l_shipmode').in(['AIR', 'AIR REG']),
+                                lineitem.col('l_shipinstruct').eq('DELIVER IN PERSON'),
+                            ),
+                        ),
+                    )
+                    .exec()) as Iterable<{
+                    l_extendedprice: number;
+                    l_discount: number;
+                }>;
+                let revenue = 0;
+                for (const row of query) {
+                    revenue += row.l_extendedprice * (1 - row.l_discount);
+                }
+                noop(revenue);
+                break;
+            }
             default: {
                 throw new Error('not implemented');
             }
