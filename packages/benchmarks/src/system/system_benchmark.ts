@@ -16,6 +16,7 @@ export interface SystemBenchmarkMetadata {
     tags: string[];
     timestamp: number;
     parameters: number[];
+    warning?: string;
 }
 
 export interface SystemBenchmark {
