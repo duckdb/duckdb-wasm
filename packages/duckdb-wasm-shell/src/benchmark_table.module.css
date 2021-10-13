@@ -67,9 +67,24 @@
 }
 
 .table_entry {
+    display: flex;
+    flex-direction: row;
+}
+
+.table_entry_value {
+    flex: 1;
     text-align: right;
     font-size: 85%;
-    padding: 0px 8px;
+    padding: 0px 4px 0px 8px;
+}
+
+.table_entry_icon {
+    display: grid;
+    height: 100%;
+    padding: 0 8px 0px 4px;
+    justify-content: center;
+    align-items: center;
+    color: hsl(56, 100%, 30%);
 }
 
 .table_entry_missing {
