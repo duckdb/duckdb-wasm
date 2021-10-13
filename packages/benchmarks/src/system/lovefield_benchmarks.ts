@@ -115,6 +115,80 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         lineitemBuilder.addPrimaryKey(['l_orderkey', 'l_linenumber']);
 
         this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+
+        // Load nation
+        const nationTable = this.database!.getSchema().table('nation');
+        const nationRows = [];
+        for (const row of (await getTPCHArrowTable(
+            ctx.projectRootPath,
+            this.scaleFactor,
+            'nation.arrow',
+        )) as arrow.Table<{
+            n_nationkey: arrow.Int32;
+            n_name: arrow.Utf8;
+            n_regionkey: arrow.Int32;
+            n_comment: arrow.Utf8;
+        }>) {
+            nationRows.push(
+                nationTable.createRow({
+                    n_nationkey: row.n_nationkey,
+                    n_name: row.n_name,
+                    n_regionkey: row.n_regionkey,
+                    n_comment: row.n_comment,
+                }),
+            );
+        }
+        await this.database!.insert().into(nationTable).values(nationRows).exec();
+
+        // Load region
+        const regionTable = this.database!.getSchema().table('region');
+        const regionRows = [];
+        for (const row of (await getTPCHArrowTable(
+            ctx.projectRootPath,
+            this.scaleFactor,
+            'region.arrow',
+        )) as arrow.Table<{
+            r_regionkey: arrow.Int32;
+            r_name: arrow.Utf8;
+            r_comment: arrow.Utf8;
+        }>) {
+            regionRows.push(
+                regionTable.createRow({
+                    r_nationkey: row.r_regionkey,
+                    r_name: row.r_name,
+                    r_comment: row.r_comment,
+                }),
+            );
+        }
+        await this.database!.insert().into(regionTable).values(regionRows).exec();
+
+        // Load partsupp
+        const partsuppTable = this.database!.getSchema().table('partsupp');
+        const partsuppRows = [];
+        for (const row of (await getTPCHArrowTable(
+            ctx.projectRootPath,
+            this.scaleFactor,
+            'partsupp.arrow',
+        )) as arrow.Table<{
+            ps_partkey: arrow.Int32;
+            ps_suppkey: arrow.Int32;
+            ps_availqty: arrow.Int32;
+            ps_supplycost: DECIMAL_12_2;
+            ps_comment: arrow.Utf8;
+        }>) {
+            partsuppRows.push(
+                partsuppTable.createRow({
+                    ps_partkey: row.ps_partkey,
+                    ps_suppkey: row.ps_suppkey,
+                    ps_availqty: row.ps_availqty,
+                    ps_supplycost: row.ps_supplycost,
+                    ps_comment: row.ps_comment,
+                }),
+            );
+        }
+        await this.database!.insert().into(regionTable).values(regionRows).exec();
+
+        // Load lineitem
         const lineitemTable = this.database!.getSchema().table('lineitem');
         const lineitemRows = [];
         for (const row of (await getTPCHArrowTable(
@@ -161,14 +235,6 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
             );
         }
         await this.database!.insert().into(lineitemTable).values(lineitemRows).exec();
-
-        // const orders = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'orders.arrow');
-        // const customer = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'customer.arrow');
-        // const supplier = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'supplier.arrow');
-        // const region = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'region.arrow');
-        // const nation = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'nation.arrow');
-        // const partsupp = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'partsupp.arrow');
-        // const part = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'part.arrow');
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
@@ -226,7 +292,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         };
         await drop('lineitem');
         await drop('orders');
-        await drop('customers');
+        await drop('customer');
         await drop('supplier');
         await drop('part');
         await drop('partsupp');
