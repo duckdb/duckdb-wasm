@@ -24,7 +24,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
     }
     getMetadata(): SystemBenchmarkMetadata {
         let warning = `Lovefield does not support arithmetic operations and nested subqueries. Aggregates and order by clauses were often simplified. Some queries with nesting were dropped.`;
-        if (this.queryId == 13 || this.queryId == 14 || this.queryId == 16) {
+        if (this.queryId == 13 || this.queryId == 14 || this.queryId == 16 || this.queryId == 18) {
             warning = '';
         }
         return {
@@ -882,6 +882,59 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                     revenue += row.l_extendedprice * (1 - row.l_discount);
                 }
                 noop(revenue);
+                break;
+            }
+            case 18: {
+                const customer = LovefieldTPCHBenchmark.database!.getSchema().table('customer');
+                const orders = LovefieldTPCHBenchmark.database!.getSchema().table('orders');
+                const lineitem = LovefieldTPCHBenchmark.database!.getSchema().table('lineitem');
+
+                const sub = (await LovefieldTPCHBenchmark.database!.select(
+                    lineitem.col('l_orderkey'),
+                    lf.fn.sum(lineitem.col('l_quantity')).as('sum_quantity'),
+                )
+                    .from(lineitem)
+                    .groupBy(lineitem.col('l_orderkey'))
+                    .exec()) as Iterable<{ l_orderkey: number; sum_quantity: number }>;
+                const orderkeys = [...sub].filter(o => o.sum_quantity > 300).map(o => o.l_orderkey);
+
+                const query = (await LovefieldTPCHBenchmark.database!.select(
+                    customer.col('c_name'),
+                    customer.col('c_custkey'),
+                    orders.col('o_orderkey'),
+                    orders.col('o_orderdate'),
+                    orders.col('o_totalprice'),
+                    lf.fn.sum(lineitem.col('l_quantity')).as('sum_quantity'),
+                )
+                    .from(customer, orders, lineitem)
+                    .where(
+                        lf.op.and(
+                            customer.col('c_custkey').eq(orders.col('o_custkey')),
+                            orders.col('o_orderkey').eq(lineitem.col('l_orderkey')),
+                            orders.col('o_orderkey').in(orderkeys),
+                        ),
+                    )
+                    .groupBy(
+                        customer.col('c_name'),
+                        customer.col('c_custkey'),
+                        orders.col('o_orderkey'),
+                        orders.col('o_orderdate'),
+                        orders.col('o_totalprice'),
+                    )
+                    .orderBy(orders.col('o_totalprice'), lf.Order.DESC)
+                    .orderBy(orders.col('o_orderdate'))
+                    .limit(100)
+                    .exec()) as Iterable<{
+                    c_name: string;
+                    c_custkey: number;
+                    o_orderkey: number;
+                    o_orderdate: Date;
+                    o_totalprice: number;
+                    sum_quantity: number;
+                }>;
+                for (const row of query) {
+                    noop(row);
+                }
                 break;
             }
             default: {
