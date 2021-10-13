@@ -87,7 +87,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             }
             const freq = entry.meanTime == 0 ? 0 : 1 / entry.meanTime;
             const factor = 1 - freq / maxFrequency;
-            values.push(`${freq.toFixed(2)}`);
+            values.push(`${freq.toFixed(3)}`);
             colors.push(
                 `hsl(${BASE_COLOR_HUE},${BASE_COLOR_SATURATION * 100}%,${
                     (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
