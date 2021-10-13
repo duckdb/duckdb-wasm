@@ -1,7 +1,7 @@
 import * as lf from 'lovefield-ts/dist/es6/lf.js';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
-import { generateGroupedInt32, generateUtf8, generateXInt32 } from './data_generator';
+import { generate2Int32, generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
 
 export class LovefieldRegexScanBenchmark implements SystemBenchmark {
     builder?: lf.Builder | null;
@@ -302,6 +302,214 @@ export class LovefieldIntegerTopKBenchmark implements SystemBenchmark {
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
         const table = this.database!.getSchema().table(this.getName());
         await this.database!.delete().from(table).exec();
+        this.database!.close();
+    }
+    async onError(ctx: SystemBenchmarkContext): Promise<void> {
+        await this.afterAll(ctx);
+    }
+}
+
+export class LovefieldIntegerJoin2Benchmark implements SystemBenchmark {
+    builder?: lf.Builder | null;
+    database?: lf.DatabaseConnection | null;
+    tuplesA: number;
+    tuplesB: number;
+    filterA: number;
+    stepAB: number;
+
+    constructor(a: number, b: number, filterA: number, stepAB: number) {
+        this.builder = null;
+        this.database = null;
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.filterA = filterA;
+        this.stepAB = stepAB;
+    }
+    getName(): string {
+        return `lovefield_integer_join2_${this.tuplesA}_${this.tuplesB}_${this.filterA}_${this.stepAB}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join2',
+            system: 'lovefield',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuplesA, this.tuplesB, this.stepAB, this.filterA],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const valuesA = generateInt32(this.tuplesA);
+        const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
+
+        this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
+        const tableABuilder = this.builder!.createTable(`${this.getName()}_a`);
+        tableABuilder.addColumn('v0', lf.Type.INTEGER);
+        const tableBBuilder = this.builder!.createTable(`${this.getName()}_b`);
+        tableBBuilder.addColumn('v0', lf.Type.INTEGER);
+        tableBBuilder.addColumn('v1', lf.Type.INTEGER);
+
+        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+        const tableA = this.database!.getSchema().table(`${this.getName()}_a`);
+        const rowsA = valuesA.map(v0 => tableA.createRow({ v0 }));
+        await this.database!.insert().into(tableA).values(rowsA).exec();
+
+        const tableB = this.database!.getSchema().table(`${this.getName()}_b`);
+        const rowsB = [];
+        for (let i = 0; i < valuesB0.length; ++i) {
+            rowsB.push(
+                tableB.createRow({
+                    v0: valuesB0[i],
+                    v1: valuesB1[i],
+                }),
+            );
+        }
+        await this.database!.insert().into(tableB).values(rowsB).exec();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const tableA = this.database!.getSchema().table(`${this.getName()}_a`);
+        const tableB = this.database!.getSchema().table(`${this.getName()}_b`);
+        const query = (await this.database!.select()
+            .from(tableA)
+            .innerJoin(tableB, tableA.col('v0').eq(tableB.col('v1')))
+            .where(tableA.col('v0').lt(this.filterA))
+            .exec()) as Iterable<{
+            v0: number;
+            v1: number;
+        }>;
+        let n = 0;
+        for (const row of query) {
+            noop(row);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        const tableA = this.database!.getSchema().table(`${this.getName()}_a`);
+        const tableB = this.database!.getSchema().table(`${this.getName()}_b`);
+        await this.database!.delete().from(tableA).exec();
+        await this.database!.delete().from(tableB).exec();
+        this.database!.close();
+    }
+    async onError(ctx: SystemBenchmarkContext): Promise<void> {
+        await this.afterAll(ctx);
+    }
+}
+
+export class LovefieldIntegerJoin3Benchmark implements SystemBenchmark {
+    builder?: lf.Builder | null;
+    database?: lf.DatabaseConnection | null;
+    tuplesA: number;
+    tuplesB: number;
+    tuplesC: number;
+    filterA: number;
+    stepAB: number;
+    stepBC: number;
+
+    constructor(a: number, b: number, c: number, filterA: number, stepAB: number, stepBC: number) {
+        this.builder = null;
+        this.database = null;
+        this.tuplesA = a;
+        this.tuplesB = b;
+        this.tuplesC = c;
+        this.filterA = filterA;
+        this.stepAB = stepAB;
+        this.stepBC = stepBC;
+    }
+    getName(): string {
+        return `lovefield_integer_join3_${this.tuplesA}_${this.tuplesB}_${this.tuplesC}_${this.filterA}_${this.stepAB}_${this.stepBC}`;
+    }
+    getMetadata(): SystemBenchmarkMetadata {
+        return {
+            benchmark: 'integer_join3',
+            system: 'lovefield',
+            tags: [],
+            timestamp: +new Date(),
+            parameters: [this.tuplesA, this.tuplesB, this.tuplesC, this.stepAB, this.stepBC, this.filterA],
+        };
+    }
+    async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
+        faker.seed(ctx.seed);
+        const valuesA = generateInt32(this.tuplesA);
+        const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
+        const [valuesC0, valuesC1] = generate2Int32(this.tuplesC, this.stepBC);
+
+        this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
+        const tableABuilder = this.builder!.createTable(`${this.getName()}_a`);
+        tableABuilder.addColumn('v0', lf.Type.INTEGER);
+        const tableBBuilder = this.builder!.createTable(`${this.getName()}_b`);
+        tableBBuilder.addColumn('v0', lf.Type.INTEGER);
+        tableBBuilder.addColumn('v1', lf.Type.INTEGER);
+        const tableCBuilder = this.builder!.createTable(`${this.getName()}_c`);
+        tableCBuilder.addColumn('v0', lf.Type.INTEGER);
+        tableCBuilder.addColumn('v1', lf.Type.INTEGER);
+
+        this.database = await this.builder!.connect({ storeType: lf.DataStoreType.MEMORY });
+        const tableA = this.database!.getSchema().table(`${this.getName()}_a`);
+        const rowsA = valuesA.map(v0 => tableA.createRow({ v0 }));
+        await this.database!.insert().into(tableA).values(rowsA).exec();
+
+        const tableB = this.database!.getSchema().table(`${this.getName()}_b`);
+        const rowsB = [];
+        for (let i = 0; i < valuesB0.length; ++i) {
+            rowsB.push(
+                tableB.createRow({
+                    v0: valuesB0[i],
+                    v1: valuesB1[i],
+                }),
+            );
+        }
+        await this.database!.insert().into(tableB).values(rowsB).exec();
+
+        const tableC = this.database!.getSchema().table(`${this.getName()}_c`);
+        const rowsC = [];
+        for (let i = 0; i < valuesC0.length; ++i) {
+            rowsC.push(
+                tableC.createRow({
+                    v0: valuesC0[i],
+                    v1: valuesC1[i],
+                }),
+            );
+        }
+        await this.database!.insert().into(tableC).values(rowsC).exec();
+    }
+    async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async run(_ctx: SystemBenchmarkContext): Promise<void> {
+        const tableA = this.database!.getSchema().table(`${this.getName()}_a`);
+        const tableB = this.database!.getSchema().table(`${this.getName()}_b`);
+        const tableC = this.database!.getSchema().table(`${this.getName()}_c`);
+        const query = (await this.database!.select()
+            .from(tableA)
+            .innerJoin(tableB, tableA.col('v0').eq(tableB.col('v1')))
+            .innerJoin(tableC, tableB.col('v0').eq(tableC.col('v1')))
+            .where(tableA.col('v0').lt(this.filterA))
+            .exec()) as Iterable<{
+            v0: number;
+            v1: number;
+        }>;
+        let n = 0;
+        for (const row of query) {
+            noop(row);
+            n += 1;
+        }
+        const expected = this.filterA * this.stepAB * this.stepBC;
+        if (n !== expected) {
+            throw Error(`invalid tuple count. expected ${expected}, received ${n}`);
+        }
+    }
+    async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
+        const tableA = this.database!.getSchema().table(`${this.getName()}_a`);
+        const tableB = this.database!.getSchema().table(`${this.getName()}_b`);
+        const tableC = this.database!.getSchema().table(`${this.getName()}_c`);
+        await this.database!.delete().from(tableA).exec();
+        await this.database!.delete().from(tableB).exec();
+        await this.database!.delete().from(tableC).exec();
         this.database!.close();
     }
     async onError(ctx: SystemBenchmarkContext): Promise<void> {

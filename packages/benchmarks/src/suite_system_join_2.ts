@@ -2,6 +2,7 @@ import { setupDuckDBSync, setupSqljs, writeReport } from './setup';
 import {
     ArqueroIntegerJoin2Benchmark,
     DuckDBSyncIntegerJoin2Benchmark,
+    LovefieldIntegerJoin2Benchmark,
     SqljsIntegerJoin2Benchmark,
     SystemBenchmark,
     SystemBenchmarkContext,
@@ -14,6 +15,10 @@ async function main() {
     const duckdbSync = await setupDuckDBSync();
     const sqljsDB = await setupSqljs();
     const suite: SystemBenchmark[] = [
+        new LovefieldIntegerJoin2Benchmark(1000, 10000, 100, 10),
+        new LovefieldIntegerJoin2Benchmark(10000, 100000, 100, 10),
+        new LovefieldIntegerJoin2Benchmark(100000, 100000, 100, 10),
+        new LovefieldIntegerJoin2Benchmark(100000, 1000000, 100, 10),
         new SqljsIntegerJoin2Benchmark(sqljsDB, 1000, 10000, 100, 10),
         new SqljsIntegerJoin2Benchmark(sqljsDB, 10000, 100000, 100, 10),
         new SqljsIntegerJoin2Benchmark(sqljsDB, 100000, 100000, 100, 10),
