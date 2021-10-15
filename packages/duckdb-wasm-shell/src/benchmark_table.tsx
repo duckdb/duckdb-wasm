@@ -1,5 +1,6 @@
 import React from 'react';
 import { GroupedBenchmarks } from './benchmark_reader';
+import { MiniBarChart } from './components/minibar_chart';
 
 import styles from './benchmark_table.module.css';
 import warn from '../static/svg/icons/warn.svg';
@@ -34,43 +35,35 @@ interface GroupProps {
     m: Metric;
 }
 
-const BASE_COLOR_HUE = 56;
-const BASE_COLOR_SATURATION = 1.0;
-const BASE_COLOR_LIGHTNESS = 0.5;
-
 const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
     const elements: React.ReactElement[] = [];
-    const values: (string | null)[] = [];
-    const colors: (string | null)[] = [];
+    const valueStrings: (string | null)[] = [];
+    const valueFractions: number[] = [];
     const warnings: (string | null)[] = [];
 
     if (props.m == Metric.MEAN_TIME) {
         const entries = [];
         let minMeanTime = Number.POSITIVE_INFINITY;
         let maxMeanTime = 0.0;
+        let maxFrequency = 0.0;
         for (let i = 0; i < SYSTEMS.length; ++i) {
             const system = SYSTEMS[i];
             const entry = props.d.entries.get(`${props.bk}_${system}`);
+            const meanTime = entry?.meanTime || 0.0;
             entries.push(entry);
             minMeanTime = Math.min(minMeanTime, entry?.meanTime || Number.POSITIVE_INFINITY);
             maxMeanTime = Math.max(maxMeanTime, entry?.meanTime || 0.0);
+            maxFrequency = Math.max(maxFrequency, meanTime == 0 ? 0 : 1 / meanTime);
         }
-        maxMeanTime = Math.min(minMeanTime * 4, maxMeanTime);
         for (const entry of entries) {
             if (entry === undefined) {
-                values.push(null);
-                colors.push(null);
+                valueFractions.push(0.0);
+                valueStrings.push(null);
                 warnings.push(null);
                 continue;
             }
-            const cappedMeanTime = Math.min(entry.meanTime, maxMeanTime);
-            const factor = (cappedMeanTime - minMeanTime) / (maxMeanTime - minMeanTime);
-            values.push(`${(entry.meanTime / 1000).toFixed(3)} s`);
-            colors.push(
-                `hsl(${BASE_COLOR_HUE},${BASE_COLOR_SATURATION * 100}%,${
-                    (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
-                }%)`,
-            );
+            valueFractions.push((entry?.meanTime == 0 ? 0 : 1 / entry?.meanTime) / maxFrequency);
+            valueStrings.push(`${(entry.meanTime / 1000).toFixed(3)} s`);
             warnings.push(entry.warning == '' ? null : entry.warning);
         }
     } else if (props.m == Metric.FREQUENCY) {
@@ -85,28 +78,23 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
         }
         for (const entry of entries) {
             if (entry === undefined) {
-                values.push(null);
-                colors.push(null);
+                valueFractions.push(0.0);
+                valueStrings.push(null);
                 warnings.push(null);
                 continue;
             }
             const freq = entry.meanTime == 0 ? 0 : 1 / entry.meanTime;
-            const factor = 1 - freq / maxFrequency;
-            values.push(`${freq.toFixed(3)} hz`);
-            colors.push(
-                `hsl(${BASE_COLOR_HUE},${BASE_COLOR_SATURATION * 100}%,${
-                    (BASE_COLOR_LIGHTNESS + 0.4 * factor) * 100
-                }%)`,
-            );
+            valueFractions.push(freq / maxFrequency);
+            valueStrings.push(`${freq.toFixed(2)} hz`);
             warnings.push(entry.warning == '' ? null : entry.warning);
         }
     }
-    for (let i = 0; i < values.length; ++i) {
+    for (let i = 0; i < valueStrings.length; ++i) {
         const id = props.id * SYSTEMS.length + i;
-        const value = values[i];
-        const color = colors[i];
+        const fraction = valueFractions[i];
+        const value = valueStrings[i];
         const warning = warnings[i];
-        if (value == null || color == null) {
+        if (value == null) {
             elements.push(
                 <div key={id} className={styles.table_entry_missing}>
                     -
@@ -114,7 +102,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
             );
         } else {
             elements.push(
-                <div key={id} className={styles.table_entry} style={{ backgroundColor: color }}>
+                <div key={id} className={styles.table_entry}>
                     <div className={styles.table_entry_value}>{value}</div>
                     {warning && (
                         <div className={styles.table_entry_icon}>
@@ -123,6 +111,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
                             </svg>
                         </div>
                     )}
+                    <MiniBarChart className={styles.table_entry_bar} value={fraction} />
                 </div>,
             );
         }
