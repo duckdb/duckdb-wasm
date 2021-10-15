@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { FileRegistryProvider, StaticOverlayProvider } from './model';
-import { Benchmarks } from './benchmarks';
-import { Shell } from './shell';
+import { Benchmarks } from './pages/benchmarks';
+import { Shell } from './pages/shell';
 import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';

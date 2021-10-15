@@ -1,9 +1,9 @@
 import React from 'react';
-import { GroupedBenchmarks } from './benchmark_reader';
-import { MiniBarChart } from './components/minibar_chart';
+import { GroupedBenchmarks } from '../model/benchmark_reader';
+import { MiniBarChart } from './minibar_chart';
 
 import styles from './benchmark_table.module.css';
-import warn from '../static/svg/icons/warn.svg';
+import warn from '../../static/svg/icons/warn.svg';
 
 const SYSTEMS = ['duckdb_sync', 'sqljs', 'arquero', 'lovefield'];
 
