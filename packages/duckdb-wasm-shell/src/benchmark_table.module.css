@@ -21,6 +21,7 @@
         overflow-x: auto;
         width: 90%;
         max-width: 880px;
+        background-color: rgb(255, 255, 255);
     }
 }
 @media only screen and (max-width: 600px) {
@@ -29,6 +30,7 @@
         grid-template-columns: max-content 1fr 1fr 1fr 1fr;
         border: 1px solid rgb(180, 180, 180);
         overflow-x: auto;
+        background-color: rgb(255, 255, 255);
     }
 }
 
@@ -66,29 +68,40 @@
     color: white;
 }
 
+.table_entry_missing {
+    font-size: 85%;
+    text-align: center;
+    border-left: 1px solid rgb(220, 220, 220);
+    border-top: 1px solid rgb(220, 220, 220);
+}
+
 .table_entry {
     display: flex;
     flex-direction: row;
+    justify-content: right;
+    align-items: center;
+    border-left: 1px solid rgb(220, 220, 220);
+    border-top: 1px solid rgb(220, 220, 220);
+    padding: 0 4px 0px 4px;
 }
 
 .table_entry_value {
-    flex: 1;
     text-align: right;
     font-size: 85%;
-    padding: 0px 4px 0px 8px;
+    padding: 0px 8px 0px 8px;
+}
+
+.table_entry_bar {
+    width: 48px;
+    padding: 0px 4px;
 }
 
 .table_entry_icon {
     display: grid;
-    height: 100%;
-    padding: 0 8px 0px 4px;
+    height: 75%;
+    border-radius: 8px;
+    padding: 0 4px 0px 4px;
     justify-content: center;
     align-items: center;
     color: hsl(56, 100%, 30%);
-}
-
-.table_entry_missing {
-    font-size: 85%;
-    text-align: center;
-    background-color: rgb(245, 245, 245);
 }
