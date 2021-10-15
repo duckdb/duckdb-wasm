@@ -1,8 +1,9 @@
 import * as arrow from 'apache-arrow';
 import React from 'react';
 import styles from './benchmarks.module.css';
+import { PageSection } from '../components/page_structure';
 import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from '../model/benchmark_reader';
-import { BenchmarkTable } from '../components/benchmark_table';
+import { BenchmarkTableTPCH, BenchmarkTableMicro } from '../components/benchmark_table';
 
 const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow?35';
 
@@ -58,7 +59,17 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
     }
     return (
         <div className={styles.root}>
-            <BenchmarkTable data={state.benchmarks!} />
+            <PageSection>
+                <h2>TPC-H</h2>
+                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
+                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
+                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
+                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.01} />
+            </PageSection>
+            <PageSection>
+                <h2>Microbenchmarks</h2>
+                <BenchmarkTableMicro data={state.benchmarks!} />
+            </PageSection>
         </div>
     );
 };
