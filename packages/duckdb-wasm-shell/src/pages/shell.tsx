@@ -1,11 +1,11 @@
-import * as model from './model';
-import * as shell from '../crate/pkg';
+import * as model from '../model';
+import * as shell from '../../crate/pkg';
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm.js';
 import React from 'react';
-import { FileExplorer } from './components/file_explorer';
-import { Overlay } from './components/overlay';
+import { FileExplorer } from '../components/file_explorer';
+import { Overlay } from '../components/overlay';
 import { useResizeDetector } from 'react-resize-detector';
-import { HistoryStore } from './utils/history_store';
+import { HistoryStore } from '../utils/history_store';
 
 import styles from './shell.module.css';
 
