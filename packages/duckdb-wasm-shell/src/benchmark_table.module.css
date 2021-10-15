@@ -20,7 +20,7 @@
         border: 1px solid rgb(180, 180, 180);
         overflow-x: auto;
         width: 90%;
-        max-width: 880px;
+        max-width: 800px;
         background-color: rgb(255, 255, 255);
     }
 }
@@ -84,6 +84,8 @@
     border-left: 1px solid rgb(220, 220, 220);
     border-top: 1px solid rgb(220, 220, 220);
     padding: 0 4px 0px 4px;
+    min-width: 160px;
+    font-weight: 500;
 }
 
 .table_entry_value {
