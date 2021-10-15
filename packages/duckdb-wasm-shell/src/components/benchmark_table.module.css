@@ -5,37 +5,36 @@
     border: 1px solid rgb(180, 180, 180);
     overflow-x: auto;
     background-color: rgb(255, 255, 255);
+    font-size: 0.75rem;
 }
 
 .table_title {
     grid-column: 1 / span 6;
-    font-size: 95%;
     padding: 0px 8px;
     background-color: rgb(30, 30, 30);
     color: white;
+    font-size: 0.9rem;
 }
 
 .table_anchor {
     grid-column: 1;
     background-color: rgb(30, 30, 30);
     color: white;
-    font-size: 95%;
     text-align: center;
 }
 
 .table_column_header {
-    font-size: 95%;
     padding: 0px 8px;
     background-color: rgb(220, 220, 220);
     text-align: center;
     background-color: rgb(30, 30, 30);
     color: white;
+    font-size: 0.9rem;
 }
 
 .row_header {
     grid-column: 1;
     text-align: left;
-    font-size: 85%;
     font-weight: 500;
     padding: 0px 16px 0px 8px;
     background-color: rgb(90, 90, 90);
@@ -43,7 +42,6 @@
 }
 
 .table_entry_missing {
-    font-size: 85%;
     text-align: center;
     border-left: 1px solid rgb(220, 220, 220);
     border-top: 1px solid rgb(220, 220, 220);
@@ -63,7 +61,6 @@
 
 .table_entry_value {
     text-align: right;
-    font-size: 85%;
     padding: 0px 8px 0px 8px;
 }
 

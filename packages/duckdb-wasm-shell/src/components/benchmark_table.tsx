@@ -136,7 +136,6 @@ interface TPCHTableProps extends TableProps {
 
 export const BenchmarkTableTPCH: React.FC<TPCHTableProps> = (props: TPCHTableProps) => {
     const sf = props.scaleFactor.toString().replace(/\.|,/, '');
-    console.log(sf);
     const rows = [];
     for (let i = 1; i <= 22; ++i) {
         rows.push(
@@ -146,7 +145,7 @@ export const BenchmarkTableTPCH: React.FC<TPCHTableProps> = (props: TPCHTablePro
     return (
         <div className={cn(styles.table_container, props.className)}>
             <div className={styles.table}>
-                <BenchmarkGroupHeader key={`tpch_${sf}`} title="TPCH 0.5" />
+                <BenchmarkGroupHeader key={`tpch_${sf}`} title={`TPCH ${props.scaleFactor}`} />
                 {rows}
             </div>
         </div>
