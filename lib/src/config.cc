@@ -28,6 +28,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         return {
             .path = ":memory:",
             .emit_bigint = bigint,
+            .maximum_threads = 1,
         };
     }
     auto path = (!doc.HasMember("path") || !doc["path"].IsString()) ? ":memory:" : doc["path"].GetString();
@@ -37,7 +38,11 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     } else {
         bigint = duckdb_web_test_platform_feature(PlatformFeature::BIGINT64ARRAY);
     }
-    return {.path = path, .emit_bigint = bigint};
+    uint32_t max_threads = 1;
+    if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
+        max_threads = doc["maximumThreads"].GetInt();
+    }
+    return {.path = path, .emit_bigint = bigint, .maximum_threads = max_threads};
 }
 
 }  // namespace web
