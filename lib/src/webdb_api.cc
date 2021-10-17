@@ -19,21 +19,38 @@ void duckdb_web_clear_response() { WASMResponseBuffer::Get().Clear(); }
 /// Throw a (wasm) exception
 extern "C" void duckdb_web_fail_with(const char* path) { throw std::runtime_error{std::string{path}}; }
 
+#define GET_WEBDB(PACKED)                                              \
+    auto maybe_webdb = WebDB::Get();                                   \
+    if (!maybe_webdb.ok()) {                                           \
+        WASMResponseBuffer::Get().Store(PACKED, maybe_webdb.status()); \
+        return;                                                        \
+    }                                                                  \
+    auto& webdb = maybe_webdb.ValueUnsafe().get();
+
+#define GET_WEBDB_OR_RETURN(DEFAULT) \
+    auto maybe_webdb = WebDB::Get(); \
+    if (!maybe_webdb.ok()) {         \
+        return DEFAULT;              \
+    }                                \
+    auto& webdb = maybe_webdb.ValueUnsafe().get();
+
 /// Reset the database
 void duckdb_web_reset(WASMResponse* packed) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.Reset());
 }
 
 /// Create a conn
 ConnectionHdl duckdb_web_connect() {
-    auto conn = reinterpret_cast<ConnectionHdl>(WebDB::Get().Connect());
+    GET_WEBDB_OR_RETURN(0);
+    auto conn = reinterpret_cast<ConnectionHdl>(webdb.Connect());
     return conn;
 }
 /// End a conn
 void duckdb_web_disconnect(ConnectionHdl connHdl) {
+    GET_WEBDB_OR_RETURN();
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    WebDB::Get().Disconnect(c);
+    webdb.Disconnect(c);
 }
 /// Access a buffer
 void* duckdb_web_access_buffer(ConnectionHdl /*connHdl*/, BufferHdl bufferHdl) {
@@ -41,53 +58,53 @@ void* duckdb_web_access_buffer(ConnectionHdl /*connHdl*/, BufferHdl bufferHdl) {
 }
 /// Flush all file buffers
 void duckdb_web_flush_files() {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB_OR_RETURN();
     webdb.FlushFiles();
 }
 /// Flush file buffer by path
 void duckdb_web_flush_file(const char* path) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB_OR_RETURN();
     webdb.FlushFile(path);
 }
 /// Open a database
 void duckdb_web_open(WASMResponse* packed, const char* args) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.Open(args));
 }
 /// Collect file statistics
 void duckdb_web_collect_file_stats(WASMResponse* packed, const char* file_name, bool enable) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.CollectFileStatistics(file_name, enable));
 }
 /// Export file statistics
 void duckdb_web_export_file_stats(WASMResponse* packed, const char* file_name) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.ExportFileStatistics(file_name));
 }
 /// Drop a file
 void duckdb_web_fs_drop_file(WASMResponse* packed, const char* file_name) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.DropFile(file_name));
 }
 /// Drop a file
 void duckdb_web_fs_drop_files(WASMResponse* packed) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.DropFiles());
 }
 /// Lookup file info
 void duckdb_web_fs_get_file_info(WASMResponse* packed, size_t file_id) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(file_id));
 }
 /// Set a file descriptor of an existing file
 void duckdb_web_fs_set_file_descriptor(WASMResponse* packed, uint32_t file_id, uint32_t file_descriptor) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.SetFileDescriptor(file_id, file_descriptor));
 }
 /// Register a file at a url
 void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name, const char* file_url,
                                      double file_size) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(
         *packed, webdb.RegisterFileURL(
                      file_name, file_url,
@@ -95,31 +112,35 @@ void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name
 }
 /// Register a file buffer
 void duckdb_web_fs_register_file_buffer(WASMResponse* packed, const char* file_name, char* data, uint32_t data_length) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     auto data_ptr = std::unique_ptr<char[]>(data);
     WASMResponseBuffer::Get().Store(*packed, webdb.RegisterFileBuffer(file_name, std::move(data_ptr), data_length));
 }
 
 /// Copy file buffer to path
 void duckdb_web_copy_file_to_buffer(WASMResponse* packed, const char* path) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.CopyFileToBuffer(path));
 }
 /// Copy file buffer to buffer
 void duckdb_web_copy_file_to_path(WASMResponse* packed, const char* path, const char* out) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.CopyFileToPath(path, out));
 }
 /// Get the duckdb version
 void duckdb_web_get_version(WASMResponse* packed) {
-    auto& webdb = WebDB::Get();
+    GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.GetVersion());
 }
 /// Get the duckdb feature flags
-uint32_t duckdb_web_get_feature_flags() { return WebDB::Get().GetFeatureFlags(); }
+uint32_t duckdb_web_get_feature_flags() {
+    GET_WEBDB_OR_RETURN(0);
+    return webdb.GetFeatureFlags();
+}
 /// Tokenize a query
 void duckdb_web_tokenize(WASMResponse* packed, const char* query) {
-    auto tokens = WebDB::Get().Tokenize(query);
+    GET_WEBDB(*packed);
+    auto tokens = webdb.Tokenize(query);
     WASMResponseBuffer::Get().Store(*packed, arrow::Result(std::move(tokens)));
 }
 /// Prepare a query statement

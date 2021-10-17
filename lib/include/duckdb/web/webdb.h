@@ -172,7 +172,7 @@ class WebDB {
     arrow::Result<std::shared_ptr<arrow::Buffer>> ExportFileStatistics(std::string_view path);
 
     /// Get the static webdb instance
-    static WebDB& Get();
+    static arrow::Result<std::reference_wrapper<WebDB>> Get();
 };
 
 }  // namespace web

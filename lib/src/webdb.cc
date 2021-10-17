@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -55,7 +56,7 @@ namespace duckdb {
 namespace web {
 
 /// Get the static webdb instance
-WebDB& WebDB::Get() {
+arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
     static std::unique_ptr<WebDB> db = std::make_unique<WebDB>();
     return *db;
 }
@@ -506,7 +507,7 @@ arrow::Status WebDB::Reset() { return Open(""); }
 /// Open a database
 arrow::Status WebDB::Open(std::string_view args_json) {
     config_ = WebDBConfig::ReadFrom(args_json);
-    bool in_memory = config_.path == ":memory:";
+    bool in_memory = config_.path == ":memory:" || config_.path == "";
     try {
         // Setup new database
         auto buffered_fs = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
@@ -514,7 +515,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(buffered_fs);
-        db_config.maximum_threads = 1;
+        db_config.maximum_threads = config_.maximum_threads;
         db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
 
         auto db = std::make_shared<duckdb::DuckDB>(config_.path, &db_config);

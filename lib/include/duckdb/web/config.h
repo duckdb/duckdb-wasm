@@ -37,6 +37,8 @@ struct WebDBConfig {
     /// Emit BigInt values?
     /// This depends on the browser supporting BigInt64Array.
     bool emit_bigint;
+    /// The thread count
+    uint32_t maximum_threads;
 
     /// Read from a document
     static WebDBConfig ReadFrom(std::string_view args_json);
