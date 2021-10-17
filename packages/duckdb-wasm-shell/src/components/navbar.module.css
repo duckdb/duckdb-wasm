@@ -48,7 +48,7 @@
 
     .tabs {
         display: grid;
-        grid-template-columns: repeat(2, 56px);
+        grid-template-columns: repeat(3, 56px);
         grid-template-rows: 100%;
     }
 }

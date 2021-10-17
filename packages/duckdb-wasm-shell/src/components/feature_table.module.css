@@ -9,7 +9,7 @@
 }
 
 .table_title {
-    grid-column: 1 / span 6;
+    grid-column: 1 / span 5;
     padding: 0px 8px;
     background-color: rgb(30, 30, 30);
     color: white;
@@ -32,7 +32,7 @@
     font-size: 1rem;
 }
 
-.row_header {
+.table_row_header {
     grid-column: 1;
     text-align: left;
     font-weight: 500;
@@ -41,40 +41,14 @@
     color: white;
 }
 
-.table_entry_missing {
-    text-align: center;
-    border-left: 1px solid rgb(220, 220, 220);
-    border-top: 1px solid rgb(220, 220, 220);
-}
-
 .table_entry {
     display: flex;
     flex-direction: row;
-    justify-content: right;
+    justify-content: center;
     align-items: center;
     border-left: 1px solid rgb(220, 220, 220);
     border-top: 1px solid rgb(220, 220, 220);
-    padding: 1px 4px 1px 4px;
+    padding: 2px 4px 2px 4px;
     min-width: 160px;
     font-weight: 500;
-}
-
-.table_entry_value {
-    text-align: right;
-    padding: 0px 8px 0px 8px;
-}
-
-.table_entry_bar {
-    width: 48px;
-    padding: 0px 4px;
-}
-
-.table_entry_icon {
-    display: grid;
-    height: 75%;
-    border-radius: 8px;
-    padding: 0 4px 0px 4px;
-    justify-content: center;
-    align-items: center;
-    color: hsl(56, 100%, 30%);
 }

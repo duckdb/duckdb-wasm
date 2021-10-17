@@ -4,6 +4,7 @@ import styles from './benchmarks.module.css';
 import { PageSection } from '../components/page_structure';
 import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from '../model/benchmark_reader';
 import { BenchmarkTableTPCH, BenchmarkTableMicro } from '../components/benchmark_table';
+import { FeatureTable } from '../components/feature_table';
 import { RectangleWaveSpinner } from '../components/spinners';
 
 const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow?35';
@@ -67,17 +68,28 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
         case LoadingStatus.SUCCEEDED:
             return (
                 <div className={styles.root}>
-                    <PageSection>
-                        <h2>TPC-H Benchmarks</h2>
-                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
-                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
-                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
-                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.01} />
-                    </PageSection>
-                    <PageSection>
-                        <h2>Microbenchmarks</h2>
-                        <BenchmarkTableMicro data={state.benchmarks!} />
-                    </PageSection>
+                    <div className={styles.content}>
+                        <PageSection>
+                            <h1>Why DuckDB-wasm?</h1>
+                            <p>blabla</p>
+                        </PageSection>
+                        <PageSection>
+                            <h2>Feature Matrix</h2>
+                            <FeatureTable />
+                        </PageSection>
+                        <PageSection>
+                            <h2>TPC-H Benchmarks</h2>
+
+                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
+                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
+                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
+                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.01} />
+                        </PageSection>
+                        <PageSection>
+                            <h2>Microbenchmarks</h2>
+                            <BenchmarkTableMicro data={state.benchmarks!} />
+                        </PageSection>
+                    </div>
                 </div>
             );
     }
