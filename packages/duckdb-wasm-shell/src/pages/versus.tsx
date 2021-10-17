@@ -1,11 +1,12 @@
 import * as arrow from 'apache-arrow';
 import React from 'react';
-import styles from './benchmarks.module.css';
 import { PageSection } from '../components/page_structure';
 import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from '../model/benchmark_reader';
 import { BenchmarkTableTPCH, BenchmarkTableMicro } from '../components/benchmark_table';
 import { FeatureTable } from '../components/feature_table';
 import { RectangleWaveSpinner } from '../components/spinners';
+
+import styles from './versus.module.css';
 
 const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow?35';
 
@@ -24,7 +25,7 @@ interface State {
     benchmarks: GroupedBenchmarks | null;
 }
 
-export const Benchmarks: React.FC<Props> = (props: Props) => {
+export const Versus: React.FC<Props> = (props: Props) => {
     const [state, setState] = React.useState<State>({
         status: LoadingStatus.PENDING,
         benchmarkTable: null,
@@ -70,7 +71,7 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
                 <div className={styles.root}>
                     <div className={styles.content}>
                         <PageSection>
-                            <h1>Why DuckDB-wasm?</h1>
+                            <h1>DuckDB versus X</h1>
                             <p className={styles.tldr}>
                                 TL;DR: Consider <b>DuckDB-wasm</b> for efficient SQL queries, for partial file reads
                                 (locally & remote), for file formats such as JSON, CSV, Arrow, Parquet, for shared SQL
@@ -78,15 +79,65 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
                                 simple queries on &lt;= 10k tuples or if bundle size and cold startup time are more
                                 important than query performance.
                             </p>
-                            <p>blabla</p>
+                            <p className={styles.section_text}>
+                                This page outlines advantages and disadvantages of
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://www.npmjs.com/package/@duckdb/duckdb-wasm"
+                                    rel="noreferrer"
+                                >
+                                    @duckdb/duckdb-wasm
+                                </a>
+                                . It compares the npm library with the projects
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://github.com/sql-js/sql.js"
+                                    rel="noreferrer"
+                                >
+                                    sql.js
+                                </a>
+                                ,
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://github.com/uwdata/arquero"
+                                    rel="noreferrer"
+                                >
+                                    arquero
+                                </a>
+                                &nbsp;and
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://https://github.com/google/lovefield"
+                                    rel="noreferrer"
+                                >
+                                    lovefield
+                                </a>
+                                &nbsp;based on features, several microbenchmarks and the TPC-H benchmark at the scale
+                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to guide you through the selection process
+                                for your next data processing library. Feel free to modify or extend our benchmarks
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://github.com/duckdb/duckdb-wasm/tree/master/packages/benchmarks"
+                                    rel="noreferrer"
+                                >
+                                    here
+                                </a>
+                                .
+                            </p>
                         </PageSection>
                         <PageSection>
                             <h2>Feature Matrix</h2>
+                            <p className={styles.section_text}>todo</p>
                             <FeatureTable />
                         </PageSection>
                         <PageSection>
                             <h2>TPC-H Benchmarks</h2>
-
+                            <p className={styles.section_text}>todo</p>
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
@@ -94,6 +145,7 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
                         </PageSection>
                         <PageSection>
                             <h2>Microbenchmarks</h2>
+                            <p className={styles.section_text}>todo</p>
                             <BenchmarkTableMicro data={state.benchmarks!} />
                         </PageSection>
                     </div>

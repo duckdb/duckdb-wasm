@@ -157,7 +157,7 @@ export const FeatureTable: React.FC<TableProps> = (props: TableProps) => {
                 <FeatureTableRow feature={FeatureID.LICENSE} name="License" />
                 <FeatureTableRow feature={FeatureID.BUNDLE_SIZE} name="Bundle Size" />
                 <FeatureTableRow feature={FeatureID.EVALUATION_STRATEGY} name="Evaluation Strategy" />
-                <FeatureTableRow feature={FeatureID.SQL_FRONTEND} name="SQL Frontend" />
+                <FeatureTableRow feature={FeatureID.SQL_FRONTEND} name="SQL Queries" />
                 <FeatureTableRow feature={FeatureID.WORKER_OFFLOADING} name="Worker Offloading" />
                 <FeatureTableRow feature={FeatureID.CSV_IMPORT} name="Raw CSV Import" />
                 <FeatureTableRow feature={FeatureID.JSON_IMPORT} name="Raw JSON Import" />
