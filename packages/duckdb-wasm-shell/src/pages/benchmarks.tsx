@@ -45,7 +45,6 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
             };
         });
     };
-
     if (state.status == LoadingStatus.PENDING) {
         setState(s => ({
             ...s,
@@ -54,22 +53,27 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
         fetch_data();
         return <div className={styles.root}>loading</div>;
     }
-    if (state.benchmarks == null || state.status == LoadingStatus.FAILED) {
-        return <div className={styles.root}>failed</div>;
+
+    switch (state.status) {
+        case LoadingStatus.FAILED:
+            return <div className={styles.root}>failed</div>;
+        case LoadingStatus.INFLIGHT:
+            return <div className={styles.root}>loading</div>;
+        case LoadingStatus.SUCCEEDED:
+            return (
+                <div className={styles.root}>
+                    <PageSection>
+                        <h2>TPC-H Benchmarks</h2>
+                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
+                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
+                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
+                        <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.01} />
+                    </PageSection>
+                    <PageSection>
+                        <h2>Microbenchmarks</h2>
+                        <BenchmarkTableMicro data={state.benchmarks!} />
+                    </PageSection>
+                </div>
+            );
     }
-    return (
-        <div className={styles.root}>
-            <PageSection>
-                <h2>TPC-H Benchmarks</h2>
-                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
-                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
-                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
-                <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.01} />
-            </PageSection>
-            <PageSection>
-                <h2>Microbenchmarks</h2>
-                <BenchmarkTableMicro data={state.benchmarks!} />
-            </PageSection>
-        </div>
-    );
 };
