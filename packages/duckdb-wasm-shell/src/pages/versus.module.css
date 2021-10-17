@@ -23,24 +23,15 @@
 .tldr {
     font-style: italic;
     text-align: justify;
+    padding: 0px 4px;
 }
 
-.section_container {
-    width: 100%;
-    padding: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.section_link {
+    margin-left: 4px;
 }
 
-@media only screen and (min-width: 600px) {
-    .section {
-        width: 90%;
-        max-width: 800px;
-    }
-}
-@media only screen and (max-width: 600px) {
-    .section {
-        width: 100%;
-    }
+.section_text {
+    padding: 0px 4px;
+    text-align: justify;
+    margin-bottom: 4px !important;
 }

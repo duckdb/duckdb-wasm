@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { FileRegistryProvider, StaticOverlayProvider } from './model';
-import { Benchmarks } from './pages/benchmarks';
+import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
@@ -52,7 +52,7 @@ const Shell_ = withNavBar(
     withBanner(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
 );
 
-const Benchmarks_ = withNavBar(() => <Benchmarks />);
+const Versus_ = withNavBar(() => <Versus />);
 
 const element = document.getElementById('root');
 ReactDOM.render(
@@ -60,7 +60,7 @@ ReactDOM.render(
         <StaticOverlayProvider>
             <BrowserRouter>
                 <Switch>
-                    <Route exact path="/benchmarks" component={Benchmarks_} />
+                    <Route exact path="/versus" component={Versus_} />
                     <Route exact path="/" component={Shell_} />
                     <Redirect to="/" />
                 </Switch>
