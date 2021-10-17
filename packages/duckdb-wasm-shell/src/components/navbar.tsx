@@ -8,7 +8,13 @@ import logo from '../../static/svg/logo/duckdb.svg';
 import icon_shell from '../../static/svg/icons/shell.svg';
 import icon_book from '../../static/svg/icons/book.svg';
 
-type TabProps = { route: string; location: string; icon: string; external?: boolean };
+type TabProps = {
+    route: string;
+    location: string;
+    icon?: string;
+    text?: string;
+    external?: boolean;
+};
 
 const Tab: React.FC<TabProps> = (props: TabProps) => (
     <div
@@ -20,17 +26,25 @@ const Tab: React.FC<TabProps> = (props: TabProps) => (
         {props.external ? (
             <a href={props.route} target="blank">
                 <div className={styles.tabButton}>
-                    <svg className={styles.tabIcon} width="18px" height="18px">
-                        <use xlinkHref={`${props.icon}#sym`} />
-                    </svg>
+                    {props.text ? (
+                        <div className={styles.tabTextIcon}>{props.text}</div>
+                    ) : (
+                        <svg className={styles.tabIcon} width="18px" height="18px">
+                            <use xlinkHref={`${props.icon}#sym`} />
+                        </svg>
+                    )}
                 </div>
             </a>
         ) : (
             <Link to={props.route}>
                 <div className={styles.tabButton}>
-                    <svg className={styles.tabIcon} width="18px" height="18px">
-                        <use xlinkHref={`${props.icon}#sym`} />
-                    </svg>
+                    {props.text ? (
+                        <div className={styles.tabTextIcon}>{props.text}</div>
+                    ) : (
+                        <svg className={styles.tabIcon} width="18px" height="18px">
+                            <use xlinkHref={`${props.icon}#sym`} />
+                        </svg>
+                    )}
                 </div>
             </Link>
         )}
@@ -51,6 +65,7 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
             <div className={styles.tabs}>
                 <Tab route="./" location={location.pathname} icon={icon_shell} />
                 <Tab route="docs/modules/index.html" location={location.pathname} icon={icon_book} external={true} />
+                <Tab route="./benchmarks" location={location.pathname} text="vs" external={true} />
             </div>
         </div>
     );
