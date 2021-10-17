@@ -45,6 +45,10 @@ beforeAll(async () => {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
         },
+        asyncNext: {
+            mainModule: path.resolve(__dirname, './duckdb-next.wasm'),
+            mainWorker: path.resolve(__dirname, './duckdb-node-async-next.worker.js'),
+        },
     });
 
     const logger = new duckdb_sync.VoidLogger();
@@ -56,7 +60,7 @@ beforeAll(async () => {
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb_async.AsyncDuckDB(logger, worker);
-    await adb.instantiate(DUCKDB_CONFIG.mainModule);
+    await adb.instantiate(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
 });
 
 afterAll(async () => {
