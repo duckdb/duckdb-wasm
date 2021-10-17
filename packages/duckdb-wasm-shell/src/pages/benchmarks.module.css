@@ -20,6 +20,11 @@
     padding: 16px 0px;
 }
 
+.tldr {
+    font-style: italic;
+    text-align: justify;
+}
+
 .section_container {
     width: 100%;
     padding: 8px;
