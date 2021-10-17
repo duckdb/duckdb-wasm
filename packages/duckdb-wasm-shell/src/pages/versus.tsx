@@ -118,8 +118,9 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 &nbsp;based on features, several microbenchmarks and the TPC-H benchmark at the scale
                                 factors 0.01, 0.1, 0.25 and 0.5. It is meant to guide you through the selection process
-                                for your next data processing library in the web. Feel free to modify or extend our
-                                benchmarks
+                                for your next data processing library in the web. All benchmarks are measured using
+                                public GitHub Actions and are therefore subject to fluctuations. Feel free to modify and
+                                extend our benchmarks
                                 <a
                                     className={styles.section_link}
                                     target="_blank"
@@ -132,7 +133,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             </p>
                         </PageSection>
                         <PageSection>
-                            <h2>Feature Matrix</h2>
+                            <h2>General Features</h2>
                             <p className={styles.section_text}>todo</p>
                             <FeatureTable />
                         </PageSection>
