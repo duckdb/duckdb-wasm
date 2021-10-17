@@ -217,6 +217,10 @@ js_tests_debug: js_debug
 js_tests_node: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:node
 
+.PHONY: js_tests_node
+js_tests_node_debug: js_debug
+	yarn workspace @duckdb/duckdb-wasm test:node:debug
+
 # Run the duckdb javascript tests on nodejs
 .PHONY: js_tests_node_filter
 js_tests_node_filter:
