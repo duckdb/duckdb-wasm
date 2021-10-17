@@ -4,6 +4,7 @@ import styles from './benchmarks.module.css';
 import { PageSection } from '../components/page_structure';
 import { BenchmarkType, readBenchmarks, groupBenchmarks, GroupedBenchmarks } from '../model/benchmark_reader';
 import { BenchmarkTableTPCH, BenchmarkTableMicro } from '../components/benchmark_table';
+import { RectangleWaveSpinner } from '../components/spinners';
 
 const DATA_URL = 'https://shell.duckdb.org/data/benchmarks.arrow?35';
 
@@ -51,14 +52,18 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
             status: LoadingStatus.INFLIGHT,
         }));
         fetch_data();
-        return <div className={styles.root}>loading</div>;
     }
 
     switch (state.status) {
+        case LoadingStatus.PENDING:
+        case LoadingStatus.INFLIGHT:
+            return (
+                <div className={styles.root_spinner}>
+                    <RectangleWaveSpinner active />
+                </div>
+            );
         case LoadingStatus.FAILED:
             return <div className={styles.root}>failed</div>;
-        case LoadingStatus.INFLIGHT:
-            return <div className={styles.root}>loading</div>;
         case LoadingStatus.SUCCEEDED:
             return (
                 <div className={styles.root}>
