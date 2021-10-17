@@ -16,6 +16,10 @@
     justify-content: center;
 }
 
+.content {
+    padding: 16px 0px;
+}
+
 .section_container {
     width: 100%;
     padding: 8px;
