@@ -60,7 +60,7 @@ export const Benchmarks: React.FC<Props> = (props: Props) => {
     return (
         <div className={styles.root}>
             <PageSection>
-                <h2>TPC-H</h2>
+                <h2>TPC-H Benchmarks</h2>
                 <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
                 <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
                 <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />

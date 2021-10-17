@@ -72,7 +72,6 @@
 .tab {
     position: relative;
     font-weight: 400;
-    font-size: 0.75em;
     background-color: var(--nav_tab_bg);
     color: var(--nav_tab_fg);
     text-decoration: none;
@@ -99,6 +98,10 @@
     display: grid;
     justify-content: center;
     align-items: center;
+}
+
+.tabTextIcon {
+    font-size: 1.2rem;
 }
 
 .tab:hover,
