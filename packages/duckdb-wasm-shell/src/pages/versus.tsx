@@ -71,7 +71,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                 <div className={styles.root}>
                     <div className={styles.content}>
                         <PageSection>
-                            <h1>DuckDB versus X</h1>
+                            <h1>DuckDB-wasm versus X</h1>
                             <p className={styles.tldr}>
                                 TL;DR: Consider <b>DuckDB-wasm</b> for efficient SQL queries, for file formats such as
                                 JSON, CSV, Arrow, Parquet, for partial file reads (locally & remote), for shared SQL
@@ -117,7 +117,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                     lovefield
                                 </a>
                                 &nbsp;based on features, several microbenchmarks and the TPC-H benchmark at the scale
-                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to guide you through the selection process
+                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to help you through the selection process
                                 for your next data processing library in the web. All benchmarks are measured using
                                 public GitHub Actions and are therefore subject to fluctuations. Feel free to modify and
                                 extend our benchmarks
