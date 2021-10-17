@@ -73,8 +73,8 @@ export const Versus: React.FC<Props> = (props: Props) => {
                         <PageSection>
                             <h1>DuckDB versus X</h1>
                             <p className={styles.tldr}>
-                                TL;DR: Consider <b>DuckDB-wasm</b> for efficient SQL queries, for partial file reads
-                                (locally & remote), for file formats such as JSON, CSV, Arrow, Parquet, for shared SQL
+                                TL;DR: Consider <b>DuckDB-wasm</b> for efficient SQL queries, for file formats such as
+                                JSON, CSV, Arrow, Parquet, for partial file reads (locally & remote), for shared SQL
                                 queries between client and server and for larger datasets. Consider an alternative for
                                 simple queries on &lt;= 10k tuples or if bundle size and cold startup time are more
                                 important than query performance.
