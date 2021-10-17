@@ -63,9 +63,9 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
                 </svg>
             </div>
             <div className={styles.tabs}>
-                <Tab route="./" location={location.pathname} icon={icon_shell} />
-                <Tab route="docs/modules/index.html" location={location.pathname} icon={icon_book} external={true} />
-                <Tab route="./benchmarks" location={location.pathname} text="vs" external={true} />
+                <Tab route="/" location={location.pathname} icon={icon_shell} />
+                <Tab route="docs/modules/index.html" location={location.pathname} icon={icon_book} external />
+                <Tab route="/benchmarks" location={location.pathname} text="vs" />
             </div>
         </div>
     );
