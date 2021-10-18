@@ -181,10 +181,10 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 in the web browser or isolated environments such as WebAssembly CDN Workers. In the
                                 past, these workloads have usually been pushed to more powerful database servers since
                                 the language Javascript is not well equipped to evaluate complex queries efficiently.
-                                Today, the WebAssembly MVP has been implemented by most browser vendors and serves as a
-                                herald for disruptive changes in this traditional client-server world. With WebAssembly,
-                                browsers are now capable to perform many tasks themselves which allows for more
-                                decentralized, or even serveless data processing.
+                                Today, the WebAssembly MVP has landed in most browsers serves as a herald for disruptive
+                                changes in this traditional client-server world. With WebAssembly, browsers are now
+                                capable to perform many tasks themselves which allows for more decentralized data
+                                processing.
                             </p>
                             <p className={styles.section_text}>
                                 TPC-H is a decision support benchmark that is commonly used to benchmark relational
@@ -203,14 +203,25 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 optimization.
                             </p>
                             <p className={styles.section_text}>
-                                In the following benchmarks, we cautiously measured TPC-H queries at the scale factors
-                                0.01, 0.1, 0.25 and 0.5. Sqljs is a WebAssembly version of SQLite and thus also supports
-                                TPC-H with the exception of general query unnesting. Lovefield only supports a custom
-                                SQL-like API but optimizes query plans internally. Yet, Lovefield does not support
-                                arithmetic and nested subqueries within the plan which made it difficult to build some
-                                of the more complex TPC-H queries. Arquero only provides a DataFrame-like API without
-                                any upfront optimization. We therefore rebuilt the TPCH queries in Arquero using the
-                                optimized plans produced by a relational database.
+                                In the following benchmarks, we measured TPC-H queries at the scale factors 0.01, 0.1,
+                                0.25 and 0.5. Sqljs is a WebAssembly version of SQLite and thus supports TPC-H out of
+                                the box. Lovefield only supports a custom SQL-like API but optimizes query plans
+                                internally. Yet, Lovefield does not support arithmetic operations and nested subqueries
+                                within the plan which made it difficult to run some of the more complex TPC-H queries.
+                                Arquero only provides a DataFrame-like API without any upfront optimization. We
+                                therefore rebuilt the TPC-H queries in Arquero using the optimized plans produced by the
+                                optimizer of a relational database. We include these manual plans to present the
+                                interesting performance characteristics of Arquero and show that optimizing the plans by
+                                hand is usually
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://github.com/duckdb/duckdb-wasm/blob/master/packages/benchmarks/src/system/arquero_benchmarks.ts"
+                                    rel="noreferrer"
+                                >
+                                    non-trivial
+                                </a>
+                                .
                             </p>
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
