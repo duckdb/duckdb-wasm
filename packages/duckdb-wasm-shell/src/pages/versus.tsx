@@ -150,12 +150,12 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <FeatureTable className={styles.feature_table} />
                             <p className={styles.section_text}>
                                 The broad function scope comes at the price of a larger bundle size. When using the
-                                asynchronous version of DuckDB-wasm, the database requires approximately XX KB of
-                                compressed javascript and a XX MB compressed WebAssembly Module. Modern browsers provide
-                                some relief in regards to the large module size as WebAssembly can be instantiated in a
-                                streaming fashion, which means that browsers can already compile the module while
-                                downloading it. This can reduce the initial startup latency but won&apos;t eliminate the
-                                bandwidth requirement with cold caches.
+                                synchronous version of DuckDB-wasm, the database requires approximately 68 KB of
+                                compressed javascript and a 1.8 MB compressed WebAssembly Module. Modern browsers
+                                provide some relief in regards to the large module size as WebAssembly can be
+                                instantiated in a streaming fashion, which means that browsers can already compile the
+                                module while downloading it. This can reduce the initial startup latency but won&apos;t
+                                eliminate the bandwidth requirement with cold caches.
                             </p>
                             <p className={styles.section_text}>
                                 DuckDB-wasm can therefore show its strengths in situations where this initial startup
@@ -203,16 +203,16 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 optimization.
                             </p>
                             <p className={styles.section_text}>
-                                In the following benchmarks, we measured TPC-H queries at the scale factors 0.01, 0.1,
+                                In the following benchmarks, we measure TPC-H queries at the scale factors 0.01, 0.1,
                                 0.25 and 0.5. Sqljs is a WebAssembly version of SQLite and thus supports TPC-H out of
                                 the box. Lovefield only supports a custom SQL-like API but optimizes query plans
                                 internally. Yet, Lovefield does not support arithmetic operations and nested subqueries
-                                within the plan which made it difficult to run some of the more complex TPC-H queries.
+                                within the plan which makes it difficult to run some of the more complex TPC-H queries.
                                 Arquero only provides a DataFrame-like API without any upfront optimization. We
-                                therefore rebuilt the TPC-H queries in Arquero using the optimized plans produced by the
-                                optimizer of a relational database. We include these manual plans to present the
-                                interesting performance characteristics of Arquero and show that optimizing the plans by
-                                hand is usually
+                                therefore manually crafted the TPC-H queries in Arquero using the optimized plans
+                                produced by the optimizer of a relational database. We include these plans to present
+                                the interesting performance characteristics of Arquero and show that optimizing the
+                                plans by hand is usually
                                 <a
                                     className={styles.link}
                                     target="_blank"
@@ -263,13 +263,14 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 pros and cons of the measured systems.
                             </p>
                             <p className={styles.section_text}>
-                                In the following table, you can see seven Microbenchmarks that were scaled at least
-                                three times. You can see consitently accross all of them that DuckDB-wasm loses against
-                                Arquero if the data contains only 1000 rows. Tasks such as adding up a single native
+                                The following table lists seven Microbenchmarks that were scaled at least three times.
+                                We observe consistently accross all of them that DuckDB-wasm loses against libraries
+                                like Arquero if the data contains only 1000 rows. Tasks like adding up a single native
                                 integer array is simple enough that the overhead of the WebAssembly interaction will
                                 easily eat up any performance benefits. The situation becomes even worse in the regex
                                 microbenchmark since WebAssembly additionally has to pay for UTF-8/16 conversions.
-                                Sorting and Top-K look more promising since sorting fast is
+                                Sorting and Top-K on the other hand is an interesting case for WebAssembly since sorting
+                                fast is
                                 <a
                                     className={styles.link}
                                     target="_blank"
@@ -280,7 +281,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 and arguably better implemented in C++. The last two benchmarks first filter very few
                                 integers of a small relation and then join them with either one or two additional
-                                slightly larger relations with.
+                                slightly larger relations.
                             </p>
                             <BenchmarkTableMicro className={styles.micro_table} data={state.benchmarks!} />
                             <p className={styles.section_text}>
