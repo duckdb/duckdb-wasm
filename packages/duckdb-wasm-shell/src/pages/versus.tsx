@@ -80,7 +80,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 important than query performance.
                             </p>
                             <p className={styles.section_text}>
-                                This page outlines advantages and disadvantages of
+                                This page outlines advantages and disadvantages of the npm library
                                 <a
                                     className={styles.section_link}
                                     target="_blank"
@@ -89,7 +89,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 >
                                     @duckdb/duckdb-wasm
                                 </a>
-                                . It compares the npm library with the projects
+                                . It compares the library with the projects
                                 <a
                                     className={styles.section_link}
                                     target="_blank"
@@ -117,9 +117,10 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                     lovefield
                                 </a>
                                 &nbsp;based on features, several microbenchmarks and the TPC-H benchmark at the scale
-                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to help you selecting your next data
-                                processing library in the web. All benchmarks are measured using public GitHub Actions
-                                and are therefore subject to fluctuations. Feel free to modify and extend our benchmarks
+                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to guide you through the selection process
+                                of your next data processing library in the web. All benchmarks are measured using
+                                public GitHub Actions and are therefore affected by fluctuations. Feel free to modify
+                                and extend our benchmarks
                                 <a
                                     className={styles.section_link}
                                     target="_blank"
@@ -133,8 +134,45 @@ export const Versus: React.FC<Props> = (props: Props) => {
                         </PageSection>
                         <PageSection>
                             <h2>General Features</h2>
-                            <p className={styles.section_text}>todo</p>
-                            <FeatureTable />
+                            <p className={styles.section_text}>
+                                DuckDB-wasm follows the philosophy of <i>bundling with batteries included</i> to
+                                leverage the full potential of WebAssembly as an embedded database. DuckDB-wasm provides
+                                many features that are necessary for efficient ad-hoc analytics in the browser such as a
+                                full SQL frontend and automatic Web-Worker offloading. It also comes with a powerful
+                                virtual filesystem specifically tailored to the browser that allows for partially
+                                reading files either through HTTP range requests or the HTML 5 File APIs. Additionally,
+                                DuckDB-wasm supports a variety of file formats out-of-the-box such as CSV, JSON, Arrow
+                                and Parquet.
+                            </p>
+                            <p className={styles.section_text}>
+                                The following table provides an overview of key features in DuckDB-wasm:
+                            </p>
+                            <FeatureTable className={styles.feature_table} />
+                            <p className={styles.section_text}>
+                                The broad function scope comes at the price of a larger bundle size. When using the
+                                asynchronous version of DuckDB-wasm, the database requires approximately XX KB of
+                                compressed javascript and a XX MB compressed WebAssembly Module. Modern browsers provide
+                                some relief in regards to the large module size as WebAssembly can be instantiated in a
+                                streaming fashion, which means that browsers can already compile the module while
+                                downloading it. This can reduce the initial startup latency but won&apos;t eliminate the
+                                bandwidth requirement with cold caches.
+                            </p>
+                            <p className={styles.section_text}>
+                                DuckDB-wasm can therefore show its strengths in situations where this initial startup
+                                latency can be concealed. DuckDB-wasm might not <i>yet</i> be the right tool for you, if
+                                you&apos;re aiming for a smallest-possible duration until your website is fully
+                                interactive. Reducing this latency is still subject of ongoing research, please share
+                                your thoughts with us
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://github.com/duckdb/duckdb-wasm/discussions"
+                                    rel="noreferrer"
+                                >
+                                    here
+                                </a>
+                                .
+                            </p>
                         </PageSection>
                         <PageSection>
                             <h2>TPC-H Benchmarks</h2>
