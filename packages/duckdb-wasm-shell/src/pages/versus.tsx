@@ -285,12 +285,12 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             </p>
                             <BenchmarkTableMicro className={styles.micro_table} data={state.benchmarks!} />
                             <p className={styles.section_text}>
-                                These micro benchmarks show that <i>there is no such thing as free lunch</i>. We are
-                                paying for the increased processing efficiency in WebAssembly with a sightly less
-                                efficient evaluation on very small input. Our recommendation is therefore to use
-                                DuckDB-wasm if you need SQL, the features or the raw speed on medium to large data
-                                sizes. Stick to existing frameworks if your dataset is very small or if your queries
-                                only contain simple scans and filters.
+                                These micro benchmarks show that there is also <i>no such thing as free lunch</i> in the
+                                browser. We are paying for the increased processing efficiency in WebAssembly with a
+                                sightly less efficient evaluation on very small input. Our recommendation is therefore
+                                to use DuckDB-wasm if you need SQL, the features or the raw speed on medium to large
+                                data sizes. Stick to existing frameworks if your dataset is very small or if your
+                                queries only contain simple scans and filters.
                             </p>
                         </PageSection>
                     </div>
