@@ -35,7 +35,7 @@ interface FeatureValue {
 const DUCKDB_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'C++ & TS' }],
     [FeatureID.LICENSE, { text: 'MIT' }],
-    [FeatureID.BUNDLE_SIZE, { text: 'XX KB + XX MB', restrictions: ['Streaming WASM compilation'] }],
+    [FeatureID.BUNDLE_SIZE, { text: '68 KB + 1.8 MB', restrictions: ['Streaming WASM compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Vector at a time' }],
     [FeatureID.SQL_FRONTEND, { available: true }],
     [FeatureID.WORKER_OFFLOADING, { available: true }],
@@ -52,7 +52,7 @@ const DUCKDB_FEATURES = new Map<FeatureID, FeatureValue>([
 const SQLJS_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'C & JS' }],
     [FeatureID.LICENSE, { text: 'MIT' }],
-    [FeatureID.BUNDLE_SIZE, { text: 'XX KB' }],
+    [FeatureID.BUNDLE_SIZE, { text: '15 KB + 332 KB', restrictions: ['Streaming WASM compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Tuple at a time' }],
     [FeatureID.SQL_FRONTEND, { available: true }],
     [FeatureID.WORKER_OFFLOADING, { available: false, restrictions: ['Example available'] }],
@@ -69,7 +69,7 @@ const SQLJS_FEATURES = new Map<FeatureID, FeatureValue>([
 const ARQUERO_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'JS' }],
     [FeatureID.LICENSE, { text: 'BSD-3' }],
-    [FeatureID.BUNDLE_SIZE, { text: 'XX KB' }],
+    [FeatureID.BUNDLE_SIZE, { text: '53 KB' }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Full Materialization' }],
     [FeatureID.SQL_FRONTEND, { available: false }],
     [FeatureID.WORKER_OFFLOADING, { available: false, restrictions: ['Proof-of-concept available'] }],
@@ -86,7 +86,7 @@ const ARQUERO_FEATURES = new Map<FeatureID, FeatureValue>([
 const LOVEFIELD_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'JS' }],
     [FeatureID.LICENSE, { text: 'Apache-2' }],
-    [FeatureID.BUNDLE_SIZE, { text: 'XX KB' }],
+    [FeatureID.BUNDLE_SIZE, { text: '37 KB' }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Full Materialization' }],
     [FeatureID.SQL_FRONTEND, { available: false }],
     [FeatureID.WORKER_OFFLOADING, { available: false }],
@@ -155,7 +155,7 @@ export const FeatureTable: React.FC<TableProps> = (props: TableProps) => {
 
                 <FeatureTableRow feature={FeatureID.LANGUAGE} name="Language" />
                 <FeatureTableRow feature={FeatureID.LICENSE} name="License" />
-                <FeatureTableRow feature={FeatureID.BUNDLE_SIZE} name="Bundle Size" />
+                <FeatureTableRow feature={FeatureID.BUNDLE_SIZE} name="Compressed Size" />
                 <FeatureTableRow feature={FeatureID.EVALUATION_STRATEGY} name="Evaluation Strategy" />
                 <FeatureTableRow feature={FeatureID.SQL_FRONTEND} name="SQL Queries" />
                 <FeatureTableRow feature={FeatureID.WORKER_OFFLOADING} name="Worker Offloading" />
