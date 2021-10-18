@@ -181,10 +181,10 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 in the web browser or isolated environments such as WebAssembly CDN Workers. In the
                                 past, these workloads have usually been pushed to more powerful database servers since
                                 the language Javascript is not well equipped to evaluate complex queries efficiently.
-                                Today, the WebAssembly MVP has landed in most browsers serves as a herald for disruptive
-                                changes in this traditional client-server world. With WebAssembly, browsers are now
-                                capable to perform many tasks themselves which allows for more decentralized data
-                                processing.
+                                Today, the WebAssembly MVP has landed in most browsers and serves as a herald for
+                                disruptive changes in this traditional client-server world. With WebAssembly, browsers
+                                are now capable to perform many tasks themselves which allows for more decentralized
+                                data processing.
                             </p>
                             <p className={styles.section_text}>
                                 TPC-H is a decision support benchmark that is commonly used to benchmark relational
