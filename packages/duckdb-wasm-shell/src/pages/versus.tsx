@@ -118,7 +118,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 &nbsp;based on features, several microbenchmarks and the TPC-H benchmark at the scale
                                 factors 0.01, 0.1, 0.25 and 0.5. It is meant to guide you through the selection process
-                                of your next data processing library in the web. All benchmarks are measured using
+                                for your next data processing library in the web. All benchmarks are measured using
                                 public GitHub Actions and are therefore affected by fluctuations. Feel free to modify
                                 and extend our benchmarks
                                 <a
@@ -136,13 +136,13 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <h2>General Features</h2>
                             <p className={styles.section_text}>
                                 DuckDB-wasm follows the philosophy of <i>bundling with batteries included</i> to
-                                leverage the full potential of WebAssembly as an embedded database. DuckDB-wasm provides
-                                many features that are necessary for efficient ad-hoc analytics in the browser such as a
-                                full SQL frontend and automatic Web-Worker offloading. It also comes with a powerful
-                                virtual filesystem specifically tailored to the browser that allows for partially
-                                reading files either through HTTP range requests or the HTML 5 File APIs. Additionally,
-                                DuckDB-wasm supports a variety of file formats out-of-the-box such as CSV, JSON, Arrow
-                                and Parquet.
+                                leverage the full potential of WebAssembly as an embedded database. DuckDB-wasm
+                                implements many features that are necessary for efficient ad-hoc analytics in the
+                                browser such as a full SQL frontend and automatic Web-Worker offloading. It also comes
+                                with a powerful virtual filesystem specifically tailored to the browser that allows for
+                                partially reading files either through HTTP range requests or the HTML 5 File APIs.
+                                Additionally, DuckDB-wasm supports a variety of file formats out-of-the-box such as CSV,
+                                JSON, Arrow and Parquet.
                             </p>
                             <p className={styles.section_text}>
                                 The following table provides an overview of key features in DuckDB-wasm:
