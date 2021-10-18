@@ -2,3 +2,4 @@
 
 [![Main](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml)
 [![Benchmarks](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml)
+[![npm version](https://badge.fury.io/js/@duckdb%2Fduckdb-wasm.svg)](https://badge.fury.io/js/@duckdb%2Fduckdb-wasm)
