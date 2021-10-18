@@ -82,7 +82,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <p className={styles.section_text}>
                                 This page outlines advantages and disadvantages of the npm library
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://www.npmjs.com/package/@duckdb/duckdb-wasm"
                                     rel="noreferrer"
@@ -91,7 +91,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 . It compares the library with the projects
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://github.com/sql-js/sql.js"
                                     rel="noreferrer"
@@ -100,7 +100,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 ,
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://github.com/uwdata/arquero"
                                     rel="noreferrer"
@@ -109,7 +109,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 &nbsp;and
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://https://github.com/google/lovefield"
                                     rel="noreferrer"
@@ -122,7 +122,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 public GitHub Actions and are therefore affected by fluctuations. Feel free to modify
                                 and extend our benchmarks
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://github.com/duckdb/duckdb-wasm/tree/master/packages/benchmarks"
                                     rel="noreferrer"
@@ -133,7 +133,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             </p>
                         </PageSection>
                         <PageSection>
-                            <h2>General Features</h2>
+                            <h2 className={styles.header2}>General Features</h2>
                             <p className={styles.section_text}>
                                 DuckDB-wasm follows the philosophy of <i>bundling with batteries included</i> to
                                 leverage the full potential of WebAssembly as an embedded database. DuckDB-wasm
@@ -164,7 +164,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 interactive. Reducing this latency is still subject of ongoing research, please share
                                 your thoughts with us
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://github.com/duckdb/duckdb-wasm/discussions"
                                     rel="noreferrer"
@@ -175,10 +175,10 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             </p>
                         </PageSection>
                         <PageSection>
-                            <h2>TPC-H Benchmarks</h2>
+                            <h2 className={styles.header2}>TPC-H Benchmarks</h2>
                             <p className={styles.section_text}>
                                 The biggest strength of DuckDB-wasm is its capability to run complex analytical queries
-                                in the web browser or isolated environments such as WebAssembly CDN Workers. In the
+                                in the web browser or in isolated environments such as WebAssembly CDN Workers. In the
                                 past, these workloads have usually been pushed to more powerful database servers since
                                 the language Javascript is not well equipped to evaluate complex queries efficiently.
                                 Today, the WebAssembly MVP has landed in most browsers and serves as a herald for
@@ -190,7 +190,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 TPC-H is a decision support benchmark that is commonly used to benchmark relational
                                 database systems. It contains 22 queries on 8 relations with a schema that can be found
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://github.com/duckdb/duckdb/blob/master/tools/rest/frontend/images/tpch-schema.png"
                                     rel="noreferrer"
@@ -214,7 +214,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 interesting performance characteristics of Arquero and show that optimizing the plans by
                                 hand is usually
                                 <a
-                                    className={styles.section_link}
+                                    className={styles.link}
                                     target="_blank"
                                     href="https://github.com/duckdb/duckdb-wasm/blob/master/packages/benchmarks/src/system/arquero_benchmarks.ts"
                                     rel="noreferrer"
@@ -254,9 +254,43 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             </p>
                         </PageSection>
                         <PageSection>
-                            <h2>Microbenchmarks</h2>
-                            <p className={styles.section_text}>todo</p>
-                            <BenchmarkTableMicro data={state.benchmarks!} />
+                            <h2 className={styles.header2}>Microbenchmarks</h2>
+                            <p className={styles.section_text}>
+                                TPC-H is unrealisticly complex, you might say? We&apos;d like to argue that the absence
+                                of more demanding analytical processing in the browser roots in the ingrained
+                                limitations of Javascript that have only been lifted very recently. Nevertheless, we
+                                want to dedicate this section to a few less complex Microbenchmarks that demonstrate
+                                pros and cons of the measured systems.
+                            </p>
+                            <p className={styles.section_text}>
+                                In the following table, you can see seven Microbenchmarks that were scaled at least
+                                three times. You can see consitently accross all of them that DuckDB-wasm loses against
+                                Arquero if the data contains only 1000 rows. Tasks such as adding up a single native
+                                integer array is simple enough that the overhead of the WebAssembly interaction will
+                                easily eat up any performance benefits. The situation becomes even worse in the regex
+                                microbenchmark since WebAssembly additionally has to pay for UTF-8/16 conversions.
+                                Sorting and Top-K look more promising since sorting fast is
+                                <a
+                                    className={styles.link}
+                                    target="_blank"
+                                    href="https://duckdb.org/2021/08/27/external-sorting.html"
+                                    rel="noreferrer"
+                                >
+                                    non-trivial
+                                </a>
+                                and arguably better implemented in C++. The last two benchmarks first filter very few
+                                integers of a small relation and then join them with either one or two additional
+                                slightly larger relations with.
+                            </p>
+                            <BenchmarkTableMicro className={styles.micro_table} data={state.benchmarks!} />
+                            <p className={styles.section_text}>
+                                These micro benchmarks show that <i>there is no such thing as free lunch</i>. We are
+                                paying for the increased processing efficiency in WebAssembly with a sightly less
+                                efficient evaluation on very small input. Our recommendation is therefore to use
+                                DuckDB-wasm if you need SQL, the features or the raw speed on medium to large data
+                                sizes. Stick to existing frameworks if your dataset is very small or if your queries
+                                only contain simple scans and filters.
+                            </p>
                         </PageSection>
                     </div>
                 </div>

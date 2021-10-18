@@ -26,8 +26,13 @@
     padding: 4px 4px;
 }
 
-.section_link {
+.header2 {
+    margin-bottom: 16px;
+}
+
+.link {
     margin-left: 4px;
+    margin-right: 4px;
 }
 
 .section_text {
@@ -42,4 +47,8 @@
 
 .tpch_table {
     margin: 16px 0px;
+}
+
+.micro_table {
+    margin: 24px 0px 24px 0px;
 }
