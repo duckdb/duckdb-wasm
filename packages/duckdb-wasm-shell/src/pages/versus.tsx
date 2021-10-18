@@ -179,9 +179,9 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <p className={styles.section_text}>
                                 The biggest strength of DuckDB-wasm is its capability to run complex analytical queries
                                 in the web browser or isolated environments such as WebAssembly CDN Workers. In the
-                                past, these workloads have been pushed to more powerful database servers since the
-                                language Javascript is not well equipped to evaluate complex queries efficiently. Today,
-                                the WebAssembly MVP has already been implemented by most browser vendors and serves as a
+                                past, these workloads have usually been pushed to more powerful database servers since
+                                the language Javascript is not well equipped to evaluate complex queries efficiently.
+                                Today, the WebAssembly MVP has been implemented by most browser vendors and serves as a
                                 herald for disruptive changes in this traditional client-server world. With WebAssembly,
                                 browsers are now capable to perform many tasks themselves which allows for more
                                 decentralized, or even serveless data processing.
@@ -198,7 +198,19 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                     here
                                 </a>
                                 . The benchmark can be resized using a single scale factor. A scale factor of 0.1 refers
-                                to approximately 100 MB of combined data.
+                                to approximately 100 MB of combined data. Most of the 22 queries in TPC-H go beyond
+                                simple scans or filters and introduce the additional challenge of general query
+                                optimization.
+                            </p>
+                            <p className={styles.section_text}>
+                                In the following benchmarks, we cautiously measured TPC-H queries at the scale factors
+                                0.01, 0.1, 0.25 and 0.5. Sqljs is a WebAssembly version of SQLite and thus also supports
+                                TPC-H with the exception of general query unnesting. Lovefield only supports a custom
+                                SQL-like API but optimizes query plans internally. Yet, Lovefield does not support
+                                arithmetic and nested subqueries within the plan which made it difficult to build some
+                                of the more complex TPC-H queries. Arquero only provides a DataFrame-like API without
+                                any upfront optimization. We therefore rebuilt the TPCH queries in Arquero using the
+                                optimized plans produced by a relational database.
                             </p>
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
