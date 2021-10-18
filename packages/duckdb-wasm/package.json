@@ -38,7 +38,7 @@
         "prettier": "^2.4.1",
         "puppeteer": "^10.4.0",
         "rimraf": "^3.0.2",
-        "typedoc": "^0.22.5",
+        "typedoc": "^0.22.6",
         "typescript": "^4.4.4",
         "web-worker": "^1.1.0"
     },
