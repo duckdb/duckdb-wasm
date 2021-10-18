@@ -111,7 +111,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 <a
                                     className={styles.link}
                                     target="_blank"
-                                    href="https://https://github.com/google/lovefield"
+                                    href="https://github.com/google/lovefield"
                                     rel="noreferrer"
                                 >
                                     lovefield
