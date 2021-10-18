@@ -259,11 +259,11 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 TPC-H is unrealisticly complex, you might say? We&apos;d like to argue that the absence
                                 of more demanding analytical processing in the browser roots in the ingrained
                                 limitations of Javascript that have only been lifted very recently. Nevertheless, we
-                                want to dedicate this section to a few less complex Microbenchmarks that demonstrate
+                                want to dedicate this section to a few less complex microbenchmarks that demonstrate
                                 pros and cons of the measured systems.
                             </p>
                             <p className={styles.section_text}>
-                                The following table lists seven Microbenchmarks that were scaled at least three times.
+                                The following table lists seven microbenchmarks that were scaled at least three times.
                                 We observe consistently accross all of them that DuckDB-wasm loses against libraries
                                 like Arquero if the data contains only 1000 rows. Tasks like adding up a single native
                                 integer array is simple enough that the overhead of the WebAssembly interaction will
