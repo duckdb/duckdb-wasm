@@ -15,7 +15,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Lint ./lib
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       python3 ./scripts/run_clang_format.py \
@@ -44,13 +44,13 @@ jobs:
                       ${{ runner.os }}-yarn-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn install --frozen-lockfile --prefer-offline
 
             - name: Lint @duckdb/duckdb-wasm
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm run lint
@@ -72,7 +72,7 @@ jobs:
 
             - name: Build generator
               if: steps.cache-generator.outputs.cache-hit != 'true'
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
@@ -104,7 +104,7 @@ jobs:
                       ${{ runner.os }}-dataprep-
 
             - name: Build generator
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
@@ -139,7 +139,7 @@ jobs:
                       ${{ runner.os }}-duckdb-
 
             - name: Build DuckDB shell
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache -z
@@ -195,7 +195,7 @@ jobs:
                       ${{ runner.os }}-native2-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       mkdir -p ./lib/build/debug ./reports
@@ -207,7 +207,7 @@ jobs:
                       (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build project
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       cmake \
@@ -224,7 +224,7 @@ jobs:
                       ccache -s
 
             - name: Test project
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       export LLVM_PROFILE_FILE=./reports/lib.profraw
@@ -233,7 +233,7 @@ jobs:
                           --gtest_output=xml:./reports/tests_lib_debug.xml
 
             - name: Code Coverage
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       llvm-profdata merge \
@@ -286,7 +286,7 @@ jobs:
                       ${{ runner.os }}-native2-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       mkdir -p ./lib/build/release ./reports
@@ -298,7 +298,7 @@ jobs:
                       (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build project
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       cmake \
@@ -315,7 +315,7 @@ jobs:
                       ccache -s
 
             - name: Test project
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       export LLVM_PROFILE_FILE=./reports/lib.profraw
@@ -324,7 +324,7 @@ jobs:
                           --gtest_output=xml:./reports/tests_lib_release.xml
 
             - name: Code Coverage
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       llvm-profdata merge \
@@ -363,7 +363,7 @@ jobs:
                       ${{ runner.os }}-wasm6-default-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache --max-size 300M
@@ -371,7 +371,7 @@ jobs:
                       (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache -z
@@ -415,7 +415,7 @@ jobs:
                       ${{ runner.os }}-wasm6-next-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache --max-size 300M
@@ -423,7 +423,7 @@ jobs:
                       (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache -z
@@ -467,7 +467,7 @@ jobs:
                       ${{ runner.os }}-wasm6-next-coi-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache --max-size 300M
@@ -475,7 +475,7 @@ jobs:
                       (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       ccache -z
@@ -565,7 +565,7 @@ jobs:
                   path: ./packages/duckdb-wasm/src/bindings/
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       mkdir -p ./lib/build/wasm/release ./reports
@@ -579,44 +579,44 @@ jobs:
                       (cd ./submodules/duckdb && git fetch --tags)
 
             - name: Build @duckdb/duckdb-wasm
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm build:release
                       yarn workspace @duckdb/duckdb-wasm docs
 
             - name: Build @duckdb/duckdb-wasm-shell
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm-shell build:release
 
             - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
             - name: Test @duckdb/duckdb-wasm on Chrome
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:chrome
 
             - name: Test @duckdb/duckdb-wasm on Firefox
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:firefox
 
             - name: Test @duckdb/duckdb-wasm on Node.js
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Coverage @duckdb/duckdb-wasm
-              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
