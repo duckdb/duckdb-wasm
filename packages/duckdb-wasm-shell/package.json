@@ -40,7 +40,7 @@
         "xterm-addon-webgl": "^0.11.2"
     },
     "devDependencies": {
-        "@types/node": "^16.10.4",
+        "@types/node": "^16.11.1",
         "@types/react-dom": "^17.0.9",
         "@types/react-router-dom": "^5.3.1",
         "@types/react-virtualized": "^9.21.11",
@@ -54,7 +54,7 @@
         "eslint-plugin-react": "^7.26.1",
         "file-loader": "^6.2.0",
         "html-webpack-plugin": "^5.4.0",
-        "jasmine-core": "^3.8.0",
+        "jasmine-core": "^3.10.0",
         "jasmine-spec-reporter": "^7.0.0",
         "karma": "^6.3.4",
         "karma-chrome-launcher": "^3.1.0",
