@@ -223,10 +223,35 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 </a>
                                 .
                             </p>
-                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
-                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
-                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
-                            <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.01} />
+                            <BenchmarkTableTPCH
+                                className={styles.tpch_table}
+                                data={state.benchmarks!}
+                                scaleFactor={0.5}
+                            />
+                            <BenchmarkTableTPCH
+                                className={styles.tpch_table}
+                                data={state.benchmarks!}
+                                scaleFactor={0.25}
+                            />
+                            <BenchmarkTableTPCH
+                                className={styles.tpch_table}
+                                data={state.benchmarks!}
+                                scaleFactor={0.1}
+                            />
+                            <BenchmarkTableTPCH
+                                className={styles.tpch_table}
+                                data={state.benchmarks!}
+                                scaleFactor={0.01}
+                            />
+                            <p className={styles.section_text}>
+                                The benchmarks show that DuckDB-wasm outperforms the competition by a factor of 10 - 100
+                                on larger data sizes. They also show that this relative speedup shrinks on smaller scale
+                                factors. On scale factor 0.01 (10MB), all three alternatives are able to compete for a
+                                small subset of the queries. This is caused by the interface design of DuckDB-wasm that
+                                always materializes input and output as Arrow IPC streams. If the query performs only
+                                very little work, the overhead through this serialization and copying can outweigh the
+                                increased processing efficiency.
+                            </p>
                         </PageSection>
                         <PageSection>
                             <h2>Microbenchmarks</h2>
