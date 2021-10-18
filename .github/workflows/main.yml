@@ -609,6 +609,12 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:firefox
 
+            - name: Test @duckdb/duckdb-wasm on Node.js
+              uses: duckdb/duckdb-wasm-ci-env@v0.4
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm test:node
+
             - name: Coverage @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.4
               with:
