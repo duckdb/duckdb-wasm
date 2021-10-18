@@ -151,7 +151,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <p className={styles.section_text}>
                                 The broad function scope comes at the price of a larger bundle size. When using the
                                 synchronous version of DuckDB-wasm, the database requires approximately 68 KB of
-                                compressed javascript and a 1.8 MB compressed WebAssembly Module. Modern browsers
+                                compressed Javascript and a 1.8 MB compressed WebAssembly Module. Modern browsers
                                 provide some relief in regards to the large module size as WebAssembly can be
                                 instantiated in a streaming fashion, which means that browsers can already compile the
                                 module while downloading it. This can reduce the initial startup latency but won&apos;t
