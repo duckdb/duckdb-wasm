@@ -117,10 +117,9 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                     lovefield
                                 </a>
                                 &nbsp;based on features, several microbenchmarks and the TPC-H benchmark at the scale
-                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to help you through the selection process
-                                for your next data processing library in the web. All benchmarks are measured using
-                                public GitHub Actions and are therefore subject to fluctuations. Feel free to modify and
-                                extend our benchmarks
+                                factors 0.01, 0.1, 0.25 and 0.5. It is meant to help you selecting your next data
+                                processing library in the web. All benchmarks are measured using public GitHub Actions
+                                and are therefore subject to fluctuations. Feel free to modify and extend our benchmarks
                                 <a
                                     className={styles.section_link}
                                     target="_blank"
