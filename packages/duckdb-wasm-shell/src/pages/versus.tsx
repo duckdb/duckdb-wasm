@@ -176,7 +176,30 @@ export const Versus: React.FC<Props> = (props: Props) => {
                         </PageSection>
                         <PageSection>
                             <h2>TPC-H Benchmarks</h2>
-                            <p className={styles.section_text}>todo</p>
+                            <p className={styles.section_text}>
+                                The biggest strength of DuckDB-wasm is its capability to run complex analytical queries
+                                in the web browser or isolated environments such as WebAssembly CDN Workers. In the
+                                past, these workloads have been pushed to more powerful database servers since the
+                                language Javascript is not well equipped to evaluate complex queries efficiently. Today,
+                                the WebAssembly MVP has already been implemented by most browser vendors and serves as a
+                                herald for disruptive changes in this traditional client-server world. With WebAssembly,
+                                browsers are now capable to perform many tasks themselves which allows for more
+                                decentralized, or even serveless data processing.
+                            </p>
+                            <p className={styles.section_text}>
+                                TPC-H is a decision support benchmark that is commonly used to benchmark relational
+                                database systems. It contains 22 queries on 8 relations with a schema that can be found
+                                <a
+                                    className={styles.section_link}
+                                    target="_blank"
+                                    href="https://github.com/duckdb/duckdb/blob/master/tools/rest/frontend/images/tpch-schema.png"
+                                    rel="noreferrer"
+                                >
+                                    here
+                                </a>
+                                . The benchmark can be resized using a single scale factor. A scale factor of 0.1 refers
+                                to approximately 100 MB of combined data.
+                            </p>
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.5} />
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.25} />
                             <BenchmarkTableTPCH data={state.benchmarks!} scaleFactor={0.1} />
