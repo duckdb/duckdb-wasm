@@ -2,6 +2,8 @@
 #define INCLUDE_DUCKDB_WEB_IO_WEB_FILESYSTEM_H_
 
 #include <atomic>
+#include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <stack>
 

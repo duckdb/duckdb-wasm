@@ -86,7 +86,9 @@ lib_release:
 # Instrument execution traces with xray
 .PHONY: xray_tester
 xray_tester: lib_xray
-	XRAY_OPTIONS="patch_premain=true xray_mode=xray-basic" ${LIB_XRAY_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
+	rm ${LIB_XRAY_DIR}/xray-log.tester.*
+	cd ${LIB_XRAY_DIR} && XRAY_OPTIONS="patch_premain=true xray_mode=xray-basic" ${LIB_XRAY_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
+	llvm-xray-12 convert -symbolize ${LIB_XRAY_DIR}/xray-log.tester.* -instr_map ${LIB_XRAY_DIR}/tester -output-format=trace_event | gzip -9 > ${LIB_XRAY_DIR}/xray-log.tester.gz
 
 # Perf the library with linux perf
 .PHONY: lib_perf
