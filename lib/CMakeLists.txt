@@ -50,9 +50,10 @@ set(THREAD_LIBS Threads::Threads)
 # https://github.com/llvm/llvm-test-suite/blob/main/MicroBenchmarks/XRay/ReturnReference/CMakeLists.txt
 # https://github.com/llvm/llvm-test-suite/commit/8e6f9886fd739f5a297e6d95d88d3617418b3595
 if (WITH_XRAY)
-  # Disable ccache
   set(CMAKE_C_COMPILER_LAUNCHER "")
   set(CMAKE_CXX_COMPILER_LAUNCHER "")
+  set(CMAKE_C_COMPILER "clang")
+  set(CMAKE_CXX_COMPILER "clang++")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fxray-instrument")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fxray-instrument")
 endif ()
