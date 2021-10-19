@@ -266,7 +266,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 The following table lists seven microbenchmarks that were scaled at least three times.
                                 We observe consistently accross all of them that DuckDB-wasm loses against libraries
                                 like Arquero if the data contains only 1000 rows. Tasks like adding up a single native
-                                integer array is simple enough that the overhead of the WebAssembly interaction will
+                                integer array are simple enough that the overhead of the WebAssembly interaction will
                                 easily eat up any performance benefits. The situation becomes even worse in the regex
                                 microbenchmark since WebAssembly additionally has to pay for UTF-8/16 conversions.
                                 Sorting and Top-K on the other hand is an interesting case for WebAssembly since sorting
