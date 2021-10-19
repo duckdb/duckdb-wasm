@@ -47,6 +47,8 @@ set(THREAD_LIBS Threads::Threads)
 # Fails under macOS
 # https://reviews.llvm.org/rT2c3c4a6286d453f763c0245c6536ddd368f0db99
 # https://lists.llvm.org/pipermail/llvm-dev/2020-November/146834.html
+# https://github.com/llvm/llvm-test-suite/blob/main/MicroBenchmarks/XRay/ReturnReference/CMakeLists.txt
+# https://github.com/llvm/llvm-test-suite/commit/8e6f9886fd739f5a297e6d95d88d3617418b3595
 if (WITH_XRAY)
   # Disable ccache
   set(CMAKE_C_COMPILER_LAUNCHER "")
