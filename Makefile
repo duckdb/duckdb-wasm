@@ -12,6 +12,7 @@ LIB_SOURCE_DIR="${ROOT_DIR}/lib"
 LIB_DEBUG_DIR="${ROOT_DIR}/lib/build/Debug"
 LIB_RELEASE_DIR="${ROOT_DIR}/lib/build/Release"
 LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/lib/build/RelWithDebInfo"
+LIB_XRAY_DIR="${ROOT_DIR}/lib/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
 CI_IMAGE_NAMESPACE="duckdb"
@@ -25,7 +26,7 @@ EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_I
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
-GTEST_FILTER=*
+GTEST_FILTER=*FilePageBufferTest.ParallelReaderWriter*
 
 # ---------------------------------------------------------------------------
 # Formatting
@@ -56,13 +57,22 @@ lib:
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=1
 	make -C${LIB_DEBUG_DIR} -j${CORES}
 
-# Compile the core in release mode
+# Compile the core in release mode with debug symbols
 .PHONY: lib_relwithdebinfo
 lib_relwithdebinfo:
 	mkdir -p ${LIB_RELWITHDEBINFO_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELWITHDEBINFO_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
 	make -C${LIB_RELWITHDEBINFO_DIR} -j${CORES}
+
+# Compile the core in release mode with debug symbols
+.PHONY: lib_xray
+lib_xray:
+	mkdir -p ${LIB_XRAY_DIR}
+	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_XRAY_DIR} \
+		-DWITH_XRAY=1 \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo
+	make -C${LIB_XRAY_DIR} -j${CORES}
 
 # Compile the core in release mode
 .PHONY: lib_release
@@ -72,9 +82,14 @@ lib_release:
 		-DCMAKE_BUILD_TYPE=Release
 	make -C${LIB_RELEASE_DIR} -j${CORES}
 
-# Perf the library
+# Instrument execution traces with xray
 .PHONY: lib_perf
-lib_perf: lib_relwithdebinfo
+xray_tester: lib_xray
+	XRAY_OPTIONS="patch_premain=true xray_mode=xray-basic" ${LIB_XRAY_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
+
+# Perf the library with linux perf
+.PHONY: lib_perf
+perf_tester: lib_relwithdebinfo
 	perf record --call-graph dwarf ${LIB_RELWITHDEBINFO_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 	hotspot ./perf.data
 

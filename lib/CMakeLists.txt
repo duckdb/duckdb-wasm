@@ -42,6 +42,13 @@ find_package(Threads REQUIRED)
 set(THREAD_LIBS Threads::Threads)
 
 # ---------------------------------------------------------------------------
+# XRay
+
+if (WITH_XRAY)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fxray-instrument")
+endif ()
+
+# ---------------------------------------------------------------------------
 # Emscripten settings
 
 if(EMSCRIPTEN)
