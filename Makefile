@@ -66,13 +66,14 @@ lib_relwithdebinfo:
 	make -C${LIB_RELWITHDEBINFO_DIR} -j${CORES}
 
 # Compile the core in release mode with debug symbols
-.PHONY: lib_xray
-lib_xray:
-	mkdir -p ${LIB_XRAY_DIR}
-	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_XRAY_DIR} \
-		-DWITH_XRAY=1 \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo
-	make -C${LIB_XRAY_DIR} -j${CORES}
+# Compiling gtest with a recent clang fails at the moment, recheck xray on linux when fixed
+# .PHONY: lib_xray
+# lib_xray:
+# 	mkdir -p ${LIB_XRAY_DIR}
+# 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_XRAY_DIR} \
+# 		-DWITH_XRAY=1 \
+# 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
+# 	make -C${LIB_XRAY_DIR} -j${CORES}
 
 # Compile the core in release mode
 .PHONY: lib_release
@@ -83,9 +84,9 @@ lib_release:
 	make -C${LIB_RELEASE_DIR} -j${CORES}
 
 # Instrument execution traces with xray
-.PHONY: lib_perf
-xray_tester: lib_xray
-	XRAY_OPTIONS="patch_premain=true xray_mode=xray-basic" ${LIB_XRAY_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
+# .PHONY: xray_tester
+# xray_tester: lib_xray
+# 	XRAY_OPTIONS="patch_premain=true xray_mode=xray-basic" ${LIB_XRAY_DIR}/tester --source_dir ${LIB_SOURCE_DIR} --gtest_filter=${GTEST_FILTER}
 
 # Perf the library with linux perf
 .PHONY: lib_perf
