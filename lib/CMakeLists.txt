@@ -48,7 +48,11 @@ set(THREAD_LIBS Threads::Threads)
 # https://reviews.llvm.org/rT2c3c4a6286d453f763c0245c6536ddd368f0db99
 # https://lists.llvm.org/pipermail/llvm-dev/2020-November/146834.html
 if (WITH_XRAY)
+  # Disable ccache
+  set(CMAKE_C_COMPILER_LAUNCHER "")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fxray-instrument")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fxray-instrument")
 endif ()
 
 # ---------------------------------------------------------------------------
