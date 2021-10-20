@@ -5,7 +5,6 @@ import { MiniBarChart } from './minibar_chart';
 import { usePopperTooltip } from 'react-popper-tooltip';
 
 import styles from './benchmark_table.module.css';
-import warn from '../../static/svg/icons/warn.svg';
 
 const SYSTEMS = ['duckdb_sync', 'sqljs', 'arquero', 'lovefield'];
 
@@ -129,12 +128,7 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
         } else if (warning) {
             elements.push(
                 <WithWarning key={id} className={styles.table_entry} warning={warning!}>
-                    <div className={styles.table_entry_value}>{value}</div>
-                    <div className={styles.table_entry_icon}>
-                        <svg width="12px" height="12px">
-                            <use xlinkHref={`${warn}#sym`} />
-                        </svg>
-                    </div>
+                    <div className={styles.table_entry_value}>{value} *</div>
                     <MiniBarChart className={styles.table_entry_bar} value={fraction} />
                 </WithWarning>,
             );
