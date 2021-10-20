@@ -12,7 +12,7 @@ enum FeatureID {
     LICENSE = 2,
     BUNDLE_SIZE = 15,
 
-    SQL_FRONTEND = 3,
+    QUERY_INPUT = 3,
     WORKER_OFFLOADING = 4,
 
     CSV_IMPORT = 5,
@@ -38,7 +38,7 @@ const DUCKDB_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LICENSE, { text: 'MIT' }],
     [FeatureID.BUNDLE_SIZE, { text: '68 KB + 1.8 MB', restrictions: ['Streaming WASM compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Vector at a time' }],
-    [FeatureID.SQL_FRONTEND, { available: true }],
+    [FeatureID.QUERY_INPUT, { text: 'SQL Text' }],
     [FeatureID.WORKER_OFFLOADING, { available: true }],
     [FeatureID.CSV_IMPORT, { available: true }],
     [FeatureID.JSON_IMPORT, { available: true }],
@@ -55,7 +55,7 @@ const SQLJS_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LICENSE, { text: 'MIT' }],
     [FeatureID.BUNDLE_SIZE, { text: '15 KB + 332 KB', restrictions: ['Streaming WASM compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Tuple at a time' }],
-    [FeatureID.SQL_FRONTEND, { available: true }],
+    [FeatureID.QUERY_INPUT, { text: 'SQL Text' }],
     [FeatureID.WORKER_OFFLOADING, { available: true, restrictions: ['Manual message passing'] }],
     [FeatureID.CSV_IMPORT, { available: false }],
     [FeatureID.JSON_IMPORT, { available: false }],
@@ -72,7 +72,7 @@ const ARQUERO_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LICENSE, { text: 'BSD-3' }],
     [FeatureID.BUNDLE_SIZE, { text: '53 KB' }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Full Materialization' }],
-    [FeatureID.SQL_FRONTEND, { available: false }],
+    [FeatureID.QUERY_INPUT, { text: 'Builder API' }],
     [FeatureID.WORKER_OFFLOADING, { available: true }],
     [FeatureID.CSV_IMPORT, { available: true }],
     [FeatureID.JSON_IMPORT, { available: true }],
@@ -89,7 +89,7 @@ const LOVEFIELD_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LICENSE, { text: 'Apache-2' }],
     [FeatureID.BUNDLE_SIZE, { text: '37 KB' }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Full Materialization' }],
-    [FeatureID.SQL_FRONTEND, { available: false }],
+    [FeatureID.QUERY_INPUT, { text: 'Builder API' }],
     [FeatureID.WORKER_OFFLOADING, { available: false }],
     [FeatureID.CSV_IMPORT, { available: false }],
     [FeatureID.JSON_IMPORT, { available: false }],
@@ -169,7 +169,7 @@ export const FeatureTable: React.FC<TableProps> = (props: TableProps) => {
                 <FeatureTableRow feature={FeatureID.LICENSE} name="License" />
                 <FeatureTableRow feature={FeatureID.BUNDLE_SIZE} name="Compressed Size" />
                 <FeatureTableRow feature={FeatureID.EVALUATION_STRATEGY} name="Evaluation Strategy" />
-                <FeatureTableRow feature={FeatureID.SQL_FRONTEND} name="SQL Text Input" />
+                <FeatureTableRow feature={FeatureID.QUERY_INPUT} name="Query Input" />
                 <FeatureTableRow feature={FeatureID.WORKER_OFFLOADING} name="Worker Offloading" />
                 <FeatureTableRow feature={FeatureID.CSV_IMPORT} name="Raw CSV Import" />
                 <FeatureTableRow feature={FeatureID.JSON_IMPORT} name="Raw JSON Import" />
