@@ -58,6 +58,7 @@
     padding: 1px 4px 1px 4px;
     min-width: 160px;
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
 }
 
 .table_entry_value {
