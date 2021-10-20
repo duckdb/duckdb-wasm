@@ -6,6 +6,7 @@ import { FileExplorer } from '../components/file_explorer';
 import { Overlay } from '../components/overlay';
 import { useResizeDetector } from 'react-resize-detector';
 import { HistoryStore } from '../utils/history_store';
+import { isSafari } from '../utils/platform';
 
 import styles from './shell.module.css';
 
@@ -18,6 +19,9 @@ interface ShellProps {
 }
 
 const hasWebGL = (): boolean => {
+    if (isSafari) {
+        return false;
+    }
     const canvas = document.createElement('canvas') as any;
     const supports = 'probablySupportsContext' in canvas ? 'probablySupportsContext' : 'supportsContext';
     if (supports in canvas) {
