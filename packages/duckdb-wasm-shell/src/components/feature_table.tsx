@@ -1,5 +1,6 @@
 import React from 'react';
 import cn from 'classnames';
+import { usePopperTooltip } from 'react-popper-tooltip';
 
 import styles from './feature_table.module.css';
 
@@ -55,7 +56,7 @@ const SQLJS_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.BUNDLE_SIZE, { text: '15 KB + 332 KB', restrictions: ['Streaming WASM compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Tuple at a time' }],
     [FeatureID.SQL_FRONTEND, { available: true }],
-    [FeatureID.WORKER_OFFLOADING, { available: false, restrictions: ['Example available'] }],
+    [FeatureID.WORKER_OFFLOADING, { available: true, restrictions: ['Manual message passing'] }],
     [FeatureID.CSV_IMPORT, { available: false }],
     [FeatureID.JSON_IMPORT, { available: false }],
     [FeatureID.PARQUET_IMPORT, { available: false }],
@@ -72,7 +73,7 @@ const ARQUERO_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.BUNDLE_SIZE, { text: '53 KB' }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Full Materialization' }],
     [FeatureID.SQL_FRONTEND, { available: false }],
-    [FeatureID.WORKER_OFFLOADING, { available: false, restrictions: ['Proof-of-concept available'] }],
+    [FeatureID.WORKER_OFFLOADING, { available: true }],
     [FeatureID.CSV_IMPORT, { available: true }],
     [FeatureID.JSON_IMPORT, { available: true }],
     [FeatureID.PARQUET_IMPORT, { available: false }],
@@ -104,22 +105,33 @@ interface TableEntryProps {
     value: FeatureValue;
 }
 
-const FeatureTableEntry: React.FC<TableEntryProps> = (props: TableEntryProps) => (
-    <div className={styles.table_entry}>
-        {props.value.available !== undefined &&
-            (props.value.available ? (
-                <svg width="18px" height="18px">
-                    <use xlinkHref={`${icon_check}#sym`} />
-                </svg>
-            ) : (
-                <svg width="18px" height="18px">
-                    <use xlinkHref={`${icon_close}#sym`} />
-                </svg>
-            ))}
-        {props.value.text}
-        {props.value.restrictions ? ' *' : ''}
-    </div>
-);
+const FeatureTableEntry: React.FC<TableEntryProps> = (props: TableEntryProps) => {
+    const { getArrowProps, getTooltipProps, setTooltipRef, setTriggerRef, visible } = usePopperTooltip();
+    return (
+        <>
+            <div className={styles.table_entry} ref={setTriggerRef}>
+                {props.value.available !== undefined &&
+                    (props.value.available ? (
+                        <svg width="18px" height="18px">
+                            <use xlinkHref={`${icon_check}#sym`} />
+                        </svg>
+                    ) : (
+                        <svg width="18px" height="18px">
+                            <use xlinkHref={`${icon_close}#sym`} />
+                        </svg>
+                    ))}
+                {props.value.text}
+                {props.value.restrictions ? ' *' : ''}
+            </div>
+            {props.value.restrictions && visible && (
+                <div ref={setTooltipRef} {...getTooltipProps({ className: 'tooltip-container' })}>
+                    <div {...getArrowProps({ className: 'tooltip-arrow' })} />
+                    {props.value.restrictions}
+                </div>
+            )}
+        </>
+    );
+};
 
 interface TableRowProps {
     className?: string;

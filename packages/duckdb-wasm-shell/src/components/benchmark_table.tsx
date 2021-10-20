@@ -2,6 +2,7 @@ import React from 'react';
 import cn from 'classnames';
 import { GroupedBenchmarks } from '../model/benchmark_reader';
 import { MiniBarChart } from './minibar_chart';
+import { usePopperTooltip } from 'react-popper-tooltip';
 
 import styles from './benchmark_table.module.css';
 import warn from '../../static/svg/icons/warn.svg';
@@ -27,6 +28,30 @@ const BenchmarkGroupHeader: React.FC<GroupHeaderProps> = (props: GroupHeaderProp
         <div className={styles.table_column_header}>Lovefield</div>
     </>
 );
+
+interface WithWarningProps {
+    children: React.ReactFragment;
+    warning: string;
+    className: string;
+}
+
+const WithWarning: React.FC<WithWarningProps> = (props: WithWarningProps) => {
+    const { getArrowProps, getTooltipProps, setTooltipRef, setTriggerRef, visible } = usePopperTooltip();
+    return (
+        <div ref={setTriggerRef} className={props.className}>
+            {props.children}
+            {visible && (
+                <div
+                    ref={setTooltipRef}
+                    {...getTooltipProps({ className: cn('tooltip-container', styles.table_entry_tooltip) })}
+                >
+                    <div {...getArrowProps({ className: 'tooltip-arrow' })} />
+                    {props.warning}
+                </div>
+            )}
+        </div>
+    );
+};
 
 interface GroupProps {
     id: number;
@@ -101,17 +126,22 @@ const BenchmarkRow: React.FC<GroupProps> = (props: GroupProps) => {
                     -
                 </div>,
             );
+        } else if (warning) {
+            elements.push(
+                <WithWarning key={id} className={styles.table_entry} warning={warning!}>
+                    <div className={styles.table_entry_value}>{value}</div>
+                    <div className={styles.table_entry_icon}>
+                        <svg width="12px" height="12px">
+                            <use xlinkHref={`${warn}#sym`} />
+                        </svg>
+                    </div>
+                    <MiniBarChart className={styles.table_entry_bar} value={fraction} />
+                </WithWarning>,
+            );
         } else {
             elements.push(
                 <div key={id} className={styles.table_entry}>
                     <div className={styles.table_entry_value}>{value}</div>
-                    {warning && (
-                        <div className={styles.table_entry_icon}>
-                            <svg width="12px" height="12px">
-                                <use xlinkHref={`${warn}#sym`} />
-                            </svg>
-                        </div>
-                    )}
                     <MiniBarChart className={styles.table_entry_bar} value={fraction} />
                 </div>,
             );

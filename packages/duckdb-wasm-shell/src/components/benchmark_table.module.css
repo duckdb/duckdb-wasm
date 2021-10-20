@@ -81,3 +81,7 @@
     align-items: center;
     color: hsl(56, 100%, 30%);
 }
+
+.table_entry_tooltip {
+    max-width: 300px;
+}
