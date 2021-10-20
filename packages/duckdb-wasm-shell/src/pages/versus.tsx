@@ -258,7 +258,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <p className={styles.section_text}>
                                 TPC-H is unrealisticly complex, you might say? We&apos;d like to argue that the absence
                                 of more demanding analytical processing in the browser is rooted in the ingrained
-                                limitations of Javascript that were lifted very recently. Nevertheless, we want to
+                                limitations of Javascript that were only lifted very recently. Nevertheless, we want to
                                 dedicate this section to a few less complex microbenchmarks that demonstrate pros and
                                 cons of the measured systems.
                             </p>
