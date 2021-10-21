@@ -41,7 +41,7 @@
     },
     "devDependencies": {
         "@types/node": "^16.11.1",
-        "@types/react-dom": "^17.0.9",
+        "@types/react-dom": "^17.0.10",
         "@types/react-router-dom": "^5.3.1",
         "@types/react-virtualized": "^9.21.11",
         "@wasm-tool/wasm-pack-plugin": "^1.6.0",
