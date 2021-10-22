@@ -2,4 +2,5 @@
 
 [![Main](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml)
 [![Benchmarks](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml)
-[![npm version](https://badge.fury.io/js/@duckdb%2Fduckdb-wasm.svg)](https://badge.fury.io/js/@duckdb%2Fduckdb-wasm)
+![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)
+![Discord](https://img.shields.io/discord/901025998382989322?color=%235865F2&logo=discord)
