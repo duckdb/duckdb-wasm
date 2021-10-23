@@ -130,6 +130,10 @@ export class AsyncDuckDBConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
+    /** Insert an arrow table from an ipc stream */
+    public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
+        await this._instance.insertArrowFromIPCStream(this._conn, buffer, options);
+    }
     /** Insert an arrow table */
     public async insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): Promise<void> {
         if (table.schema.fields.length == 0) {
