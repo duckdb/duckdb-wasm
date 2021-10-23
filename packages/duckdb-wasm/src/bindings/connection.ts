@@ -127,6 +127,10 @@ export class DuckDBConnection {
         return reader as arrow.RecordBatchStreamReader;
     }
 
+    /** Insert an arrow table from an ipc stream */
+    public insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): void {
+        this._bindings.insertArrowFromIPCStream(this._conn, buffer, options);
+    }
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
         if (table.schema.fields.length == 0) {
@@ -136,7 +140,6 @@ export class DuckDBConnection {
         }
         this.insertArrowBatches(table.schema, table.chunks, options);
     }
-
     /** Insert record batches */
     public insertArrowBatches(
         schema: arrow.Schema,
