@@ -15,6 +15,8 @@ import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { flattenArrowField } from '../flat_arrow';
 
+const TEXT_ENCODER = new TextEncoder();
+
 export class AsyncDuckDB {
     /** The message handler */
     protected readonly _onMessageHandler: (event: MessageEvent) => void;
@@ -349,7 +351,11 @@ export class AsyncDuckDB {
         );
         return await this.postTask(task);
     }
-
+    /** Register file text */
+    public async registerFileText(name: string, text: string): Promise<void> {
+        const buffer = TEXT_ENCODER.encode(text);
+        await this.registerFileBuffer(name, buffer);
+    }
     /** Register a file path. */
     public async registerFileURL(name: string, url: string): Promise<void> {
         if (url === undefined) {

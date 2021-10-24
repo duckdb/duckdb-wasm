@@ -9,6 +9,8 @@ import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
 
+const TEXT_ENCODER = new TextEncoder();
+
 declare global {
     // eslint-disable-next-line no-var
     var DUCKDB_RUNTIME: any;
@@ -314,6 +316,11 @@ export abstract class DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
         dropResponseBuffers(this.mod);
+    }
+    /** Register file text */
+    public registerFileText(name: string, text: string): void {
+        const buffer = TEXT_ENCODER.encode(text);
+        this.registerFileBuffer(name, buffer);
     }
     /** Register a file buffer */
     public registerFileBuffer(name: string, buffer: Uint8Array): void {
