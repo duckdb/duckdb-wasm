@@ -99,7 +99,10 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.cargo
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
                       ./target
                   key: ${{ runner.os }}-dataprep-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./tools/dataprep/src/*.rs') }}
                   restore-keys: |
@@ -187,7 +190,10 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.cargo
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
                       ./.ccache
                       ./.emscripten_cache
                   key: ${{ runner.os }}-native2-debug-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
@@ -278,7 +284,10 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.cargo
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
                       ./.ccache
                       ./.emscripten_cache
                   key: ${{ runner.os }}-native2-release-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
@@ -518,7 +527,10 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.cargo
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
                       ./target
                   key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/**') }}
                   restore-keys: |
