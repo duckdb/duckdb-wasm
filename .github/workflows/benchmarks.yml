@@ -170,11 +170,29 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
-            - name: Run benchmarks
+            - name: Benchmark DuckDB
               uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch 0.01
+                      yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.01
+
+            - name: Benchmark SQL.js
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.01
+
+            - name: Benchmark Arquero
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
+
+            - name: Benchmark Lovefield
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 
             - name: Upload report
               uses: actions/upload-artifact@v2
