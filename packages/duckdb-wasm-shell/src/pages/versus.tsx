@@ -151,11 +151,11 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             <p className={styles.section_text}>
                                 The broad function scope comes at the price of a larger bundle size. When using the
                                 synchronous version of DuckDB-wasm, the database requires approximately 68 KB of
-                                compressed Javascript and a 1.8 MB compressed WebAssembly Module. Modern browsers
-                                provide some relief in regards to the large module size as WebAssembly can be
-                                instantiated in a streaming fashion, which means that browsers can already compile the
-                                module while downloading it. This can reduce the initial startup latency but won&apos;t
-                                eliminate the bandwidth requirement with cold caches.
+                                compressed Javascript and a 1.8 MB compressed WebAssembly Module. Modern browsers reduce
+                                the impact of the large module sizes by instantiating WebAssembly in a streaming
+                                fashion. Browsers start compiling WebAssembly modules while downloading them which can
+                                reduce the initial startup latency but won&apos;t eliminate the bandwidth requirement
+                                with cold caches.
                             </p>
                             <p className={styles.section_text}>
                                 DuckDB-wasm can therefore show its strengths in situations where this initial startup
@@ -256,11 +256,11 @@ export const Versus: React.FC<Props> = (props: Props) => {
                         <PageSection>
                             <h2 className={styles.header2}>Microbenchmarks</h2>
                             <p className={styles.section_text}>
-                                TPC-H is unrealistically complex, you might say? We&apos;d like to argue that the absence
-                                of more demanding analytical processing in the browser is rooted in the ingrained
-                                limitations of Javascript that were only lifted very recently. Nevertheless, we want to
-                                dedicate this section to a few less complex microbenchmarks that demonstrate pros and
-                                cons of the measured systems.
+                                TPC-H is unrealistically complex, you might say? We&apos;d like to argue that the
+                                absence of more demanding analytical processing in the browser is rooted in the
+                                ingrained limitations of Javascript that were only lifted very recently. Nevertheless,
+                                we want to dedicate this section to a few less complex microbenchmarks that demonstrate
+                                pros and cons of the measured systems.
                             </p>
                             <p className={styles.section_text}>
                                 The following table lists seven microbenchmarks that were scaled at least three times.
