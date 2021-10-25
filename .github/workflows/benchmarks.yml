@@ -198,7 +198,11 @@ jobs:
               uses: actions/upload-artifact@v2
               with:
                   name: benchmark_system_tpch_001
-                  path: ./reports/benchmark_system_tpch_001.json
+                  path: |
+                      ./reports/benchmark_system_tpch_001_duckdb.json
+                      ./reports/benchmark_system_tpch_001_sqljs.json
+                      ./reports/benchmark_system_tpch_001_arquero.json
+                      ./reports/benchmark_system_tpch_001_lovefield.json
                   retention-days: 1
 
     merge_benchmarks:
