@@ -51,7 +51,10 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: |
-                      ./.cargo
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
                       ./target
                   key: ${{ runner.os }}-dataprep-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./tools/dataprep/src/*.rs') }}
                   restore-keys: |
