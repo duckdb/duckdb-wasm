@@ -214,6 +214,11 @@ jobs:
         steps:
             - uses: actions/download-artifact@v2
               with:
+                  name: dataprep
+                  path: ./target/release/
+
+            - uses: actions/download-artifact@v2
+              with:
                   name: reports_tpch_0_01
                   path: ./reports/
 
