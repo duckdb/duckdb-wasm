@@ -224,7 +224,7 @@ impl Shell {
         self.prompt();
     }
 
-    pub async fn configure_command() {
+    pub async fn features_command() {
         let mut buffer = String::new();
         let write_feature = |buffer: &mut String, name: &str, description: &str, value: bool| {
             write!(
@@ -492,7 +492,7 @@ impl Shell {
                         "\r\n",
                         "{bold}Commands:{normal}\r\n",
                         ".clear                 Clear the shell.\r\n",
-                        ".config                Shell configuration.\r\n",
+                        ".features              Shell features.\r\n",
                         ".files                 Open file picker.\r\n",
                         ".fstats collect $FILE  Collect file statistics.\r\n",
                         ".fstats disable $FILE  Disable file statistics.\r\n",
@@ -515,8 +515,8 @@ impl Shell {
                 ));
             }),
             ".reset" => Shell::with(|s| s.writeln("Not implemented yet")),
-            ".config" => {
-                Shell::configure_command().await;
+            ".features" => {
+                Shell::features_command().await;
             }
             ".timer" => Shell::with_mut(|s| {
                 if args.ends_with("on") {
@@ -854,7 +854,7 @@ impl Shell {
 
             if (db_features & 0b01) == 0 {
                 s.write(&format!(
-                    "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter {bold}.config{normal} for details.{normal}{endl}{endl}",
+                    "{fg}{bg}{bold} ! {normal} DuckDB is not running at full speed.{endl}    Enter {bold}.features{normal} for details.{normal}{endl}{endl}",
                     fg = vt100::COLOR_FG_BLACK,
                     bg = vt100::COLOR_BG_BRIGHT_WHITE,
                     bold = vt100::MODE_BOLD,
