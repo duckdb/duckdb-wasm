@@ -3973,10 +3973,10 @@ make-dir@^3.0.0, make-dir@^3.0.2, make-dir@^3.1.0:
   dependencies:
     semver "^6.0.0"
 
-marked@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/marked/-/marked-3.0.4.tgz#b8a1539e5e05c6ea9e93f15c0bad1d54ce890406"
-  integrity sha512-jBo8AOayNaEcvBhNobg6/BLhdsK3NvnKWJg33MAAPbvTWiG4QBn9gpW1+7RssrKu4K1dKlN+0goVQwV41xEfOA==
+marked@^3.0.8:
+  version "3.0.8"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-3.0.8.tgz#2785f0dc79cbdc6034be4bb4f0f0a396bd3f8aeb"
+  integrity sha512-0gVrAjo5m0VZSJb4rpL59K1unJAMb/hm8HRXqasD8VeC8m91ytDPMritgFSlKonfdt+rRYYpP/JfLxgIX8yoSw==
 
 mdn-data@2.0.14:
   version "2.0.14"
@@ -5365,10 +5365,10 @@ shebang-regex@^3.0.0:
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
 
-shiki@^0.9.11:
-  version "0.9.11"
-  resolved "https://registry.yarnpkg.com/shiki/-/shiki-0.9.11.tgz#07d75dab2abb6dc12a01f79a397cb1c391fa22d8"
-  integrity sha512-tjruNTLFhU0hruCPoJP0y+B9LKOmcqUhTpxn7pcJB3fa+04gFChuEmxmrUfOJ7ZO6Jd+HwMnDHgY3lv3Tqonuw==
+shiki@^0.9.12:
+  version "0.9.12"
+  resolved "https://registry.yarnpkg.com/shiki/-/shiki-0.9.12.tgz#70cbc8c1bb78ff7b356f84a7eecdb040efddd247"
+  integrity sha512-VXcROdldv0/Qu0w2XvzU4IrvTeBNs/Kj/FCmtcEXGz7Tic/veQzliJj6tEiAgoKianhQstpYmbPDStHU5Opqcw==
   dependencies:
     jsonc-parser "^3.0.0"
     onigasm "^2.2.5"
@@ -5957,16 +5957,16 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typedoc@^0.22.6:
-  version "0.22.6"
-  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.22.6.tgz#1122f83a6eb5cd7dbb26d1924de1f9de9e8c7c7e"
-  integrity sha512-ePbJqOaz0GNkU2ehRwFwBpLD4Gp6m7jbJfHysXmDdjVKc1g8DFJ83r/LOZ9TZrkC661vgpoIY3FjSPEtUilHNA==
+typedoc@^0.22.7:
+  version "0.22.7"
+  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.22.7.tgz#e5e095ab14676296f4b12ac3355321eae650e447"
+  integrity sha512-ndxxp+tU1Wczvdxp4u2/PvT1qjD6hdFdSdehpORHjE+JXmMkl2bftXCR0upHmsnesBG7VCcr8vfgloGHIH8glQ==
   dependencies:
     glob "^7.2.0"
     lunr "^2.3.9"
-    marked "^3.0.4"
+    marked "^3.0.8"
     minimatch "^3.0.4"
-    shiki "^0.9.11"
+    shiki "^0.9.12"
 
 typescript-plugin-css-modules@^3.3.0:
   version "3.4.0"
