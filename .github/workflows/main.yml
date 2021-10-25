@@ -1,6 +1,8 @@
 name: 'Main'
 on:
     push:
+        branches-ignore:
+            - benchmarks
     pull_request:
         branches:
             - master
