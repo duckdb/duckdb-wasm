@@ -16,19 +16,19 @@ async function main() {
     const sqljsDB = await setupSqljs();
     const benchmarks: SystemBenchmark[] = [];
     for (let i = 1; i <= 22; ++i) {
-        if (sf >= 0.25 && (i == 17 || i == 18 || i == 20 || i == 22)) {
+        if (sf >= 0.25 && (i == 17 || i == 20 || i == 22)) {
             continue;
         }
-        if (sf >= 0.5 && i == 19) {
-            continue;
-        }
-        benchmarks.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
+        benchmarks.push(new SqljsTPCHBenchmark(sf, i));
     }
     const ctx: SystemBenchmarkContext = {
         projectRootPath: baseDir,
         seed: Math.random(),
     };
+    await SqljsTPCHBenchmark.beforeGroup(sqljsDB, ctx, sf);
     const results = await runSystemBenchmarks(ctx, benchmarks);
+    await SqljsTPCHBenchmark.afterGroup();
+
     console.log(results);
     await writeReport(results, `./benchmark_system_tpch_${sf.toString().replace('.', '')}_sqljs.json`);
 }
