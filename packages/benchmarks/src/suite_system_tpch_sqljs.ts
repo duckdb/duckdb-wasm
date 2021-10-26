@@ -16,7 +16,7 @@ async function main() {
     const sqljsDB = await setupSqljs();
     const benchmarks: SystemBenchmark[] = [];
     for (let i = 1; i <= 22; ++i) {
-        if (sf > 0.25 && (i == 17 || i == 20)) {
+        if (sf >= 0.25 && (i == 17 || i == 18 || i == 20 || i == 22)) {
             continue;
         }
         benchmarks.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
