@@ -6,16 +6,14 @@ import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop 
 import { getTPCHQuery, getTPCHSQLiteDB } from './tpch_loader';
 import { generate2Int32, generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
 
+let DATABASE: sqljs.Database | null = null;
+
 export class SqljsTPCHBenchmark implements SystemBenchmark {
-    initDB: sqljs.SqlJsStatic;
-    database: sqljs.Database | null;
     scaleFactor: number;
     query: number;
     queryText: string | null;
 
-    constructor(initDB: sqljs.SqlJsStatic, scaleFactor: number, query: number) {
-        this.initDB = initDB;
-        this.database = null;
+    constructor(scaleFactor: number, query: number) {
         this.scaleFactor = scaleFactor;
         this.query = query;
         this.queryText = null;
@@ -32,6 +30,25 @@ export class SqljsTPCHBenchmark implements SystemBenchmark {
             parameters: [this.scaleFactor, this.query],
         };
     }
+    static async beforeGroup(
+        initDB: sqljs.SqlJsStatic,
+        ctx: SystemBenchmarkContext,
+        scaleFactor: number,
+    ): Promise<void> {
+        const buffer = await getTPCHSQLiteDB(ctx.projectRootPath, scaleFactor);
+        DATABASE = new initDB.Database(buffer);
+    }
+    static async afterGroup(): Promise<void> {
+        DATABASE!.run('DROP TABLE IF EXISTS lineitem');
+        DATABASE!.run('DROP TABLE IF EXISTS customer');
+        DATABASE!.run('DROP TABLE IF EXISTS orders');
+        DATABASE!.run('DROP TABLE IF EXISTS region');
+        DATABASE!.run('DROP TABLE IF EXISTS nation');
+        DATABASE!.run('DROP TABLE IF EXISTS supplier');
+        DATABASE!.run('DROP TABLE IF EXISTS part');
+        DATABASE!.run('DROP TABLE IF EXISTS partsupp');
+    }
+
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         switch (this.query) {
             case 7:
@@ -44,20 +61,14 @@ export class SqljsTPCHBenchmark implements SystemBenchmark {
                 this.queryText = await getTPCHQuery(ctx.projectRootPath, `${this.query}.sql`);
                 break;
         }
-        const buffer = await getTPCHSQLiteDB(ctx.projectRootPath, this.scaleFactor);
-        this.database = new this.initDB.Database(buffer);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.database!.run(this.queryText!);
+        DATABASE!.run(this.queryText!);
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
-    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.database = null;
-    }
-    async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.database = null;
-    }
+    async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
+    async onError(_ctx: SystemBenchmarkContext): Promise<void> {}
 }
 
 export class SqljsRegexBenchmark implements SystemBenchmark {
