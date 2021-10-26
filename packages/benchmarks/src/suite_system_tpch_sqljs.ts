@@ -19,6 +19,9 @@ async function main() {
         if (sf >= 0.25 && (i == 17 || i == 18 || i == 20 || i == 22)) {
             continue;
         }
+        if (sf >= 0.5 && i == 19) {
+            continue;
+        }
         benchmarks.push(new SqljsTPCHBenchmark(sqljsDB, sf, i));
     }
     const ctx: SystemBenchmarkContext = {
