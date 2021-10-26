@@ -30,5 +30,5 @@ if [[ "${GITHUB_REF}" =~ ^(refs/heads/master|refs/tags/v.+)$ && "$1" = "publish"
 	cd ${PROJECT_ROOT}/packages/duckdb-wasm
 
 	npm config set //registry.npmjs.org/:_authToken ${NPM_PUBLISH_TOKEN}
-	npm publish --ignore-scripts --access public ${TAG}
+	npm publish --ignore-scripts --access public ${TAG} || true
 fi
