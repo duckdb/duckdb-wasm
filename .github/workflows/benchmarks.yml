@@ -226,6 +226,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
+                      chmod +x ./target/release/dataprep
                       ./target/release/dataprep merge-benchmarks -r ./reports/
 
             - name: List reports
