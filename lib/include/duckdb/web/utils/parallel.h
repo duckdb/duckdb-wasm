@@ -24,12 +24,15 @@ using LightMutex = PseudoMutex;
 
 #else
 
-#include "duckdb/web/utils/shared_mutex.h"
+// #include "duckdb/web/utils/shared_mutex.h"
+#include <shared_mutex>
+
 #include "duckdb/web/utils/spin_mutex.h"
 
 namespace duckdb {
 namespace web {
 
+using SharedMutex = std::shared_mutex;
 using LightMutex = SpinMutex;
 
 }  // namespace web
