@@ -33,8 +33,6 @@
         "build": "node ./bundle.mjs && tsc --noEmit",
         "lint": "yarn run eslint src types",
         "bench:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/internal.js",
-        "bench:system:scan:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-scan-int.js",
-        "bench:system:scan:text": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-scan-text.js",
         "bench:system:sort:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sort-int.js",
         "bench:system:join:2": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-2.js",
         "bench:system:join:3": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-3.js",
