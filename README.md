@@ -5,6 +5,6 @@
 ![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)
 
 **DuckDB-wasm**
-is an embedded analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads JSON, CSV and Parquet files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. You can try it in your browser at [shell.duckdb.org](https://shell.duckdb.org).
+is an embedded analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads JSON, CSV and Parquet files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Try it out at [shell.duckdb.org](https://shell.duckdb.org).
 
 _DuckDB-wasm is fast! If you're here for performance numbers, head over to our benchmarks at [shell.duckdb.org/versus](https://shell.duckdb.org/versus)._
