@@ -13,7 +13,7 @@
         "build:tests": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.tests.js",
         "analyze:debug": "webpack --config webpack.app.debug.js --analyze",
         "analyze:release": "webpack --config webpack.app.release.js --analyze",
-        "lint": "eslint src types"
+        "lint": "eslint src"
     },
     "engines": {
         "node": ">=14.13"

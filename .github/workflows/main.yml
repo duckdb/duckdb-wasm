@@ -57,6 +57,18 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm run lint
 
+            - name: Lint @duckdb/duckdb-wasm-shell
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm-shell run lint
+
+            - name: Lint @duckdb/benchmarks
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      yarn workspace @duckdb/benchmarks run lint
+
     tpchgen:
         name: TPCH Generator
         runs-on: ubuntu-latest
