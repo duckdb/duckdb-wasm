@@ -40,7 +40,7 @@
         "xterm-addon-webgl": "^0.11.2"
     },
     "devDependencies": {
-        "@types/node": "^16.11.4",
+        "@types/node": "^16.11.6",
         "@types/react-dom": "^17.0.10",
         "@types/react-router-dom": "^5.3.2",
         "@types/react-virtualized": "^9.21.14",
