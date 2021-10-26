@@ -1,19 +1,13 @@
 {
     "root": true,
     "parser": "@typescript-eslint/parser",
-    "plugins": ["@typescript-eslint", "prettier", "react"],
-    "extends": [
-        "eslint:recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:prettier/recommended",
-        "plugin:react/recommended"
-    ],
+    "plugins": ["react"],
+    "extends": ["eslint:recommended", "plugin:react/recommended", "plugin:@typescript-eslint/recommended"],
     "env": {
         "browser": true,
         "node": true
     },
     "rules": {
-        "prettier/prettier": "warn",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/ban-types": "warn",
         "@typescript-eslint/prefer-for-of": "off",
@@ -48,5 +42,13 @@
     },
     "parserOptions": {
         "extraFileExtensions": [".cjs", ".mjs"]
-    }
+    },
+    "overrides": [
+        {
+            "files": ["*.js", "*.jsx"],
+            "rules": {
+                "@typescript-eslint/...": "off"
+            }
+        }
+    ]
 }

@@ -1,2 +1,4 @@
-/*.js
+*.cjs
+*.js
+*.mjs
 /*.json

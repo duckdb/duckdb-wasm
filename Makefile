@@ -286,6 +286,8 @@ clang_format:
 .PHONY: eslint
 eslint:
 	yarn workspace @duckdb/duckdb-wasm run lint
+	yarn workspace @duckdb/duckdb-wasm-shell run lint
+	yarn workspace @duckdb/benchmarks run lint
 
 # Install all yarn packages
 .PHONY: yarn_install
