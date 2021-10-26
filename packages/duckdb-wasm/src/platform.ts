@@ -23,7 +23,6 @@ function getWorkerURL(url: string) {
 }
 
 export function getJsDelivrBundles(): DuckDBBundles {
-    // XXX This must be changed when we switch to github packages.
     const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
         asyncDefault: {
