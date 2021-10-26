@@ -40,7 +40,7 @@
         "xterm-addon-webgl": "^0.11.2"
     },
     "devDependencies": {
-        "@types/node": "^16.11.4",
+        "@types/node": "^16.11.6",
         "@types/react-dom": "^17.0.10",
         "@types/react-router-dom": "^5.3.1",
         "@types/react-virtualized": "^9.21.14",
@@ -68,7 +68,7 @@
         "ts-loader": "^9.2.2",
         "typescript": "^4.4.4",
         "typescript-plugin-css-modules": "^3.3.0",
-        "webpack": "^5.59.1",
+        "webpack": "^5.60.0",
         "webpack-bundle-analyzer": "^4.5.0",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.3.1",
