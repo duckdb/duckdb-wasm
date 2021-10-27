@@ -650,12 +650,12 @@ jobs:
                       yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
             - name: Publish @duckdb/duckdb-wasm
-              if: github.ref == 'refs/heads/master'
+              if: (github.event_name == 'release' && github.event.action == 'created') || github.ref == 'refs/heads/master'
               run: |
                   NPM_PUBLISH_TOKEN=${{ secrets.NPM_PUBLISH_TOKEN }} ./scripts/npm_version.sh publish
 
             - name: Deploy Web Shell
-              if: github.ref == 'refs/heads/master'
+              if: (github.event_name == 'release' && github.event.action == 'created') || github.ref == 'refs/heads/master'
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
