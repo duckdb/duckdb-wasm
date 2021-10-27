@@ -62,14 +62,14 @@ export class DuckDBConnection {
         this._conn = conn;
     }
 
-    /** Get the connection helper */
-    public get handle(): number {
-        return this._conn;
-    }
-
     /** Close a connection */
     public close(): void {
         this._bindings.disconnect(this._conn);
+    }
+
+    /** Brave souls may use this function to consume the underlying connection id */
+    public unsafeWithConnection<R>(callback: (bindings: IDuckDBBindings, conn: number) => R) {
+        return callback(this._bindings, this._conn);
     }
 
     /** Run a query */

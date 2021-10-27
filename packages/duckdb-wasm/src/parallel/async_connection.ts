@@ -94,6 +94,11 @@ export class AsyncDuckDBConnection {
         return this._instance.disconnect(this._conn);
     }
 
+    /** Brave souls may use this function to consume the underlying connection id */
+    public unsafeWithConnection<R>(callback: (bindings: AsyncDuckDB, conn: number) => R) {
+        return callback(this._instance, this._conn);
+    }
+
     /** Run a query */
     public async runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>> {
         this._instance.logger.log({

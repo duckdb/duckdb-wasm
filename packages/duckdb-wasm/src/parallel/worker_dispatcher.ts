@@ -148,7 +148,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             messageId: this._nextMessageId++,
                             requestId: request.messageId,
                             type: WorkerResponseType.CONNECTION_INFO,
-                            data: conn.handle,
+                            data: conn.unsafeWithConnection((_, c) => c),
                         },
                         [],
                     );
