@@ -140,6 +140,27 @@ export function testArrowInsert(db: () => duckdb.DuckDBBindings): void {
             });
         }
     });
+    describe('Arrow insert from vectors', () => {
+        it('simple integers', () => {
+            conn.runQuery(`DROP TABLE IF EXISTS insert_from_vectors`);
+            conn.insertArrowVectors(
+                {
+                    a: arrow.Int32Vector.from([1, 4, 7]),
+                    b: arrow.Int32Vector.from([2, 5, 8]),
+                    c: arrow.Utf8Vector.from(['3', '6', '9']),
+                },
+                {
+                    name: 'insert_from_vectors',
+                },
+            );
+            const results = conn.runQuery('select * from insert_from_vectors');
+            compareTable(results, [
+                { name: 'a', values: [1, 4, 7] },
+                { name: 'b', values: [2, 5, 8] },
+                { name: 'c', values: ['3', '6', '9'] },
+            ]);
+        });
+    });
 }
 
 export function testArrowInsertAsync(db: () => duckdb.AsyncDuckDB): void {
@@ -167,5 +188,26 @@ export function testArrowInsertAsync(db: () => duckdb.AsyncDuckDB): void {
                 compareTable(results, test.expectedColumns);
             });
         }
+    });
+    describe('Arrow insert from vectors', () => {
+        it('simple integers', async () => {
+            await conn.runQuery(`DROP TABLE IF EXISTS insert_from_vectors`);
+            await conn.insertArrowVectors(
+                {
+                    a: arrow.Int32Vector.from([1, 4, 7]),
+                    b: arrow.Int32Vector.from([2, 5, 8]),
+                    c: arrow.Utf8Vector.from(['3', '6', '9']),
+                },
+                {
+                    name: 'insert_from_vectors',
+                },
+            );
+            const results = await conn.runQuery('select * from insert_from_vectors');
+            compareTable(results, [
+                { name: 'a', values: [1, 4, 7] },
+                { name: 'b', values: [2, 5, 8] },
+                { name: 'c', values: ['3', '6', '9'] },
+            ]);
+        });
     });
 }

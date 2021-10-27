@@ -1,4 +1,5 @@
 import * as arrow from 'apache-arrow';
+import * as utils from '../utils';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 
 interface IDuckDBBindings {
@@ -127,9 +128,12 @@ export class DuckDBConnection {
         return reader as arrow.RecordBatchStreamReader;
     }
 
-    /** Insert an arrow table from an ipc stream */
-    public insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): void {
-        this._bindings.insertArrowFromIPCStream(this._conn, buffer, options);
+    /** Insert arrow vectors */
+    public insertArrowVectors<T extends { [key: string]: arrow.Vector } = any>(
+        children: T,
+        options: ArrowInsertOptions,
+    ): void {
+        this.insertArrowTable(arrow.Table.new(children), options);
     }
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
@@ -154,31 +158,26 @@ export class DuckDBConnection {
         }
 
         // Prepare the IPC stream writer
-        const buffer = new arrow.AsyncByteQueue();
+        const buffer = new utils.IPCBuffer();
         const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
 
-        // We actually would like to stream the batches over into the wasm memory BUT:
-        //  https://github.com/apache/arrow/blob/612a759d554b838aa201fe08ab357272a6cb1843/js/src/ipc/writer.ts#L161
-        //  https://github.com/apache/arrow/blob/612a759d554b838aa201fe08ab357272a6cb1843/js/src/io/stream.ts#L35
-        //
-        // Arrow uses an AsyncIterable for the individual batch chunks even though the AsyncByteQueue is only a Uint8Array[].
-        // We therefore end up awaiting 5 (!!) Uint8Arrays for a single Record Batch insert!
-        //
-        // This is not quite acceptable in the synchronous case.
-        // If we want to shoot small queries at an asynchronous DuckDB we ideally want to await only 1 promise...
-
-        // We therefore pay the price for materializing everything on the js side for now.
-        // toUint8Array will actually just merge the Uint8Array[].
-        // This merge is an unnecessary copy but at least without a promise.
-
-        // When AsyncByteQueue implements Iterable<Uint8Array>, we can send all chunks directly with:
-        // this._bindings.insertArrowFromIPCStream(this._conn, chunk, first ? options : undefined);
-
-        writer.writeAll(batches);
+        // Write all batches to the ipc buffer
+        let first = true;
+        for (const batch of batches) {
+            if (!first) {
+                this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
+            }
+            first = false;
+            writer.write(batch);
+        }
         writer.close();
-        const unecessary_copy = writer.toUint8Array(true);
-        this._bindings.insertArrowFromIPCStream(this._conn, unecessary_copy, options);
+        this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
     }
+    /** Insert an arrow table from an ipc stream */
+    public insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): void {
+        this._bindings.insertArrowFromIPCStream(this._conn, buffer, options);
+    }
+
     /** Inesrt csv file from path */
     public insertCSVFromPath(path: string, options: CSVInsertOptions): void {
         this._bindings.insertCSVFromPath(this._conn, path, options);

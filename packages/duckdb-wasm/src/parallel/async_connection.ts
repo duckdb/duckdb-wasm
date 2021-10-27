@@ -1,5 +1,6 @@
-import { Logger, LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import * as arrow from 'apache-arrow';
+import * as utils from '../utils';
+import { Logger, LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import { ArrowInsertOptions, CSVInsertOptions, JSONInsertOptions } from '../bindings/insert_options';
 
 /** An interface for the async DuckDB bindings */
@@ -130,9 +131,12 @@ export class AsyncDuckDBConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
-    /** Insert an arrow table from an ipc stream */
-    public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
-        await this._instance.insertArrowFromIPCStream(this._conn, buffer, options);
+    /** Insert arrow vectors */
+    public async insertArrowVectors<T extends { [key: string]: arrow.Vector } = any>(
+        children: T,
+        options: ArrowInsertOptions,
+    ): Promise<void> {
+        await this.insertArrowTable(arrow.Table.new(children), options);
     }
     /** Insert an arrow table */
     public async insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): Promise<void> {
@@ -150,15 +154,26 @@ export class AsyncDuckDBConnection {
         options: ArrowInsertOptions,
     ): Promise<void> {
         // Prepare the IPC stream writer
-        const buffer = new arrow.AsyncByteQueue();
+        const buffer = new utils.IPCBuffer();
         const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
 
-        // Check connection.ts for an explanation on why we materialize twice.
-        writer.writeAll(batches);
+        // Write all batches to the ipc buffer
+        let first = true;
+        for (const batch of batches) {
+            if (!first) {
+                await this._instance.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
+            }
+            first = false;
+            writer.write(batch);
+        }
         writer.close();
-        const unecessary_copy = writer.toUint8Array(true);
-        await this._instance.insertArrowFromIPCStream(this._conn, unecessary_copy, options);
+        await this._instance.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
     }
+    /** Insert an arrow table from an ipc stream */
+    public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
+        await this._instance.insertArrowFromIPCStream(this._conn, buffer, options);
+    }
+
     /** Insert csv file from path */
     public async insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void> {
         await this._instance.insertCSVFromPath(this._conn, text, options);
