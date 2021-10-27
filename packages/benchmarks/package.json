@@ -6,7 +6,7 @@
     "dependencies": {
         "@duckdb/duckdb-wasm": "^0.0.41-dev163.0",
         "@nano-sql/core": "^2.3.7",
-        "apache-arrow": "^4.0.0",
+        "apache-arrow": "^6.0.0",
         "arquero": "^4.3.0",
         "kleur": "^4.1.4",
         "lodash": "^4.17.21",
