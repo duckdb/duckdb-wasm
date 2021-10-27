@@ -53,7 +53,8 @@ fs.copyFile(
 // ESM
 
 const TARGET = ['esnext'];
-const EXTERNALS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const EXTERNALS_CJS = ['crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 
 console.log('[ ESBUILD ] duckdb-esm.js');
 esbuild.build({
@@ -67,7 +68,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: true,
-    external: EXTERNALS,
+    external: EXTERNALS_ESM,
 });
 
 // -------------------------------
@@ -177,7 +178,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    external: EXTERNALS,
+    external: EXTERNALS_CJS,
 });
 
 console.log('[ ESBUILD ] duckdb-node-sync-next.js');
@@ -190,7 +191,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    external: EXTERNALS,
+    external: EXTERNALS_CJS,
 });
 
 console.log('[ ESBUILD ] duckdb-node-async.js');
@@ -203,7 +204,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    external: EXTERNALS,
+    external: EXTERNALS_CJS,
 });
 
 console.log('[ ESBUILD ] duckdb-node-async.worker.js');
@@ -216,7 +217,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    external: EXTERNALS,
+    external: EXTERNALS_CJS,
 });
 
 console.log('[ ESBUILD ] duckdb-node-async-next.worker.js');
@@ -229,7 +230,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    external: EXTERNALS,
+    external: EXTERNALS_CJS,
 });
 
 // -------------------------------
@@ -258,7 +259,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
     // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
-    external: [...EXTERNALS, 'web-worker'],
+    external: [...EXTERNALS_CJS, 'web-worker'],
 });
 
 // -------------------------------
