@@ -61,11 +61,14 @@ endif ()
 # ---------------------------------------------------------------------------
 # Emscripten settings
 
+# -Os shrinks the module by 600KB but slows down TPC-H by a factor of 2!
+# Dedicated module?
+
 if(EMSCRIPTEN)
   if(CMAKE_BUILD_TYPE MATCHES Release)
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto")
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --profiling")
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sASSERTIONS=1 -sSAFE_HEAP=1")
@@ -74,9 +77,9 @@ if(EMSCRIPTEN)
   if(WITH_WASM_FAST_LINKING)
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
   else()
+    # set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Os")
     # set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3 -flto")
-    # set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Os")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
   endif()
 
   if(WITH_WASM_EXCEPTIONS)
