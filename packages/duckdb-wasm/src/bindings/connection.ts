@@ -68,7 +68,7 @@ export class DuckDBConnection {
     }
 
     /** Brave souls may use this function to consume the underlying connection id */
-    public unsafeWithConnection<R>(callback: (bindings: IDuckDBBindings, conn: number) => R) {
+    public useUnsafe<R>(callback: (bindings: IDuckDBBindings, conn: number) => R) {
         return callback(this._bindings, this._conn);
     }
 
