@@ -1,8 +1,0 @@
-{
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-        "paths": {
-            "apache-arrow": ["../../node_modules/apache-arrow/Arrow.mjs"]
-        }
-    }
-}

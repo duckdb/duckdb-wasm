@@ -21,7 +21,7 @@ export function configure(params) {
             clean: true,
         },
         resolve: {
-            extensions: ['.ts', '.tsx', '.js', '.jsx', '.css', '.wasm'],
+            extensions: ['.ts', '.tsx', '.js', '.mjs', '.jsx', '.css', '.wasm'],
         },
         module: {
             rules: [
@@ -96,7 +96,7 @@ export function configure(params) {
                     },
                 },
                 {
-                    test: /\.js$/,
+                    test: /\.m?js$/,
                     enforce: 'pre',
                     use: [
                         {

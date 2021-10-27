@@ -72,15 +72,6 @@ esbuild.build({
 
 // -------------------------------
 // Browser
-
-// Esbuild somehow hits node imports when importing apache-arrow with platform "browser".
-//
-//  > ../../node_modules/apache-arrow/io/node/iterable.js:21:25: error: Could not resolve "stream" (use "platform: 'node'" when building for node)
-//    21 │ const stream_1 = require("stream");
-const FIX_ARROW_6_BROWSER = {
-    tsconfig: './tsconfig.browser.json',
-};
-
 console.log('[ ESBUILD ] duckdb-browser-sync.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-browser-sync.ts'],
@@ -93,7 +84,6 @@ esbuild.build({
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-sync-next.js');
@@ -108,7 +98,6 @@ esbuild.build({
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async.js');
@@ -122,7 +111,6 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async.worker.js');
@@ -136,7 +124,6 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async-next.worker.js');
@@ -150,7 +137,6 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async-next-coi.worker.js');
@@ -164,7 +150,6 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async-next-coi.pthread.worker.js');
@@ -177,7 +162,6 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 // -------------------------------
@@ -261,7 +245,6 @@ esbuild.build({
     target: TARGET,
     bundle: true,
     sourcemap: is_debug ? 'inline' : true,
-    ...FIX_ARROW_6_BROWSER,
 });
 
 console.log('[ ESBUILD ] tests-node.js');
