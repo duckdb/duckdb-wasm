@@ -25,7 +25,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
     describe('Arrow Record-Batches Row-Major', () => {
         describe('single column', () => {
             it('TINYINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -39,7 +39,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('SMALLINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -53,7 +53,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('INTEGER', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -67,7 +67,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('BIGINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -81,7 +81,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('STRING', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -97,7 +97,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
 
         describe('scripts', () => {
             it('test1', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::INTEGER AS x, (sin(v) * 100 + 100)::INTEGER AS y FROM generate_series(0, ${testRows}) as t(v)
                 `);
                 let i = 0;
@@ -115,7 +115,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
     describe('Arrow Record-Batches Column-Major', () => {
         describe('single column', () => {
             it('TINYINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -129,7 +129,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('SMALLINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -143,7 +143,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('INTEGER', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -157,7 +157,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('BIGINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -171,7 +171,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('STRING', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -189,7 +189,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
     describe('Arrow Table Row-Major', () => {
         describe('single column', () => {
             it('TINYINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -201,7 +201,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('SMALLINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -213,7 +213,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('INTEGER', async () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -225,7 +225,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('BIGINT', async () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -237,7 +237,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('STRING', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -253,7 +253,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
     describe('Arrow Table Column-Major', () => {
         describe('single column', () => {
             it('TINYINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -265,7 +265,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('SMALLINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -277,7 +277,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('INTEGER', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -289,7 +289,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('BIGINT', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);
@@ -301,7 +301,7 @@ export function testAsyncBatchStream(db: () => duckdb.AsyncDuckDB): void {
             });
 
             it('STRING', async () => {
-                const result = await conn.sendQuery(`
+                const result = await conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = await arrow.Table.from(result);

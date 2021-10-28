@@ -19,7 +19,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
     describe('Arrow Record-Batches Row-Major', () => {
         describe('single column', () => {
             it('TINYINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -33,7 +33,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('SMALLINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -47,7 +47,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('INTEGER', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -61,7 +61,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('BIGINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -75,7 +75,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('STRING', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -93,7 +93,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
     describe('Arrow Record-Batches Column-Major', () => {
         describe('single column', () => {
             it('TINYINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -107,7 +107,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('SMALLINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -121,7 +121,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('INTEGER', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -135,7 +135,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('BIGINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -149,7 +149,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('STRING', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 let i = 0;
@@ -167,7 +167,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
     describe('Arrow Table Row-Major', () => {
         describe('single column', () => {
             it('TINYINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -179,7 +179,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('SMALLINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -191,7 +191,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('INTEGER', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -203,7 +203,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('BIGINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -215,7 +215,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('STRING', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -231,7 +231,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
     describe('Arrow Table Column-Major', () => {
         describe('single column', () => {
             it('TINYINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -243,7 +243,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('SMALLINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -255,7 +255,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('INTEGER', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -267,7 +267,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('BIGINT', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);
@@ -279,7 +279,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
             });
 
             it('STRING', () => {
-                const result = conn.sendQuery(`
+                const result = conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
                 const table = arrow.Table.from(result);

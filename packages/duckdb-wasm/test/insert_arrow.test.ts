@@ -163,20 +163,20 @@ export function testArrowInsert(db: () => duckdb.DuckDBBindings): void {
     describe('Arrow insert from iterable', () => {
         for (const test of ARROW_INSERT_TESTS) {
             it(test.name, () => {
-                conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 conn.insertArrowBatches(
                     test.schema,
                     test.batches.map(b => new arrow.RecordBatch(test.schema, b.numRows, b.columns)),
                     test.options,
                 );
-                const results = conn.runQuery(test.query);
+                const results = conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
     });
     describe('Arrow insert from vectors', () => {
         it('simple integers', () => {
-            conn.runQuery(`DROP TABLE IF EXISTS insert_from_vectors`);
+            conn.query(`DROP TABLE IF EXISTS insert_from_vectors`);
             conn.insertArrowVectors(
                 {
                     a: arrow.Int32Vector.from([1, 4, 7]),
@@ -187,24 +187,24 @@ export function testArrowInsert(db: () => duckdb.DuckDBBindings): void {
                     name: 'insert_from_vectors',
                 },
             );
-            const results = conn.runQuery('select * from insert_from_vectors');
+            const results = conn.query('select * from insert_from_vectors');
             compareTable(results, [
                 { name: 'a', values: [1, 4, 7] },
                 { name: 'b', values: [2, 5, 8] },
                 { name: 'c', values: ['3', '6', '9'] },
             ]);
-            conn.runQuery(`DROP TABLE IF EXISTS insert_from_vectors`);
+            conn.query(`DROP TABLE IF EXISTS insert_from_vectors`);
         });
     });
     describe('Arrow benchmark inserts', () => {
         it('generated integer batches', () => {
-            conn.runQuery(`DROP TABLE IF EXISTS insert_generated_batches`);
+            conn.query(`DROP TABLE IF EXISTS insert_generated_batches`);
             const [schema, batches] = generateArrowXInt32(10000, 2);
             conn.insertArrowBatches(schema, batches, {
                 schema: 'main',
                 name: 'insert_generated_batches',
             });
-            conn.runQuery(`DROP TABLE IF EXISTS insert_generated_batches`);
+            conn.query(`DROP TABLE IF EXISTS insert_generated_batches`);
         });
     });
 }
@@ -224,20 +224,20 @@ export function testArrowInsertAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('Arrow insert from iterable', () => {
         for (const test of ARROW_INSERT_TESTS) {
             it(test.name, async () => {
-                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 await conn.insertArrowBatches(
                     test.schema,
                     test.batches.map(b => new arrow.RecordBatch(test.schema, b.numRows, b.columns)),
                     test.options,
                 );
-                const results = await conn.runQuery(test.query);
+                const results = await conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
     });
     describe('Arrow insert from vectors', () => {
         it('simple integers', async () => {
-            await conn.runQuery(`DROP TABLE IF EXISTS insert_from_vectors`);
+            await conn.query(`DROP TABLE IF EXISTS insert_from_vectors`);
             await conn.insertArrowVectors(
                 {
                     a: arrow.Int32Vector.from([1, 4, 7]),
@@ -248,7 +248,7 @@ export function testArrowInsertAsync(db: () => duckdb.AsyncDuckDB): void {
                     name: 'insert_from_vectors',
                 },
             );
-            const results = await conn.runQuery('select * from insert_from_vectors');
+            const results = await conn.query('select * from insert_from_vectors');
             compareTable(results, [
                 { name: 'a', values: [1, 4, 7] },
                 { name: 'b', values: [2, 5, 8] },

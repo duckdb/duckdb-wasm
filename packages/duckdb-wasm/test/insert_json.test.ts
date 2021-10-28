@@ -98,11 +98,11 @@ export function testJSONInsert(db: () => duckdb.DuckDBBindings): void {
     describe('JSON Insert Sync', () => {
         for (const test of JSON_INSERT_TESTS) {
             it(test.name, () => {
-                conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 db().registerFileBuffer(TEST_FILE, buffer);
                 conn.insertJSONFromPath(TEST_FILE, test.options);
-                const results = conn.runQuery(test.query);
+                const results = conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
@@ -124,11 +124,11 @@ export function testJSONInsertAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('JSON Insert Buffer Async', () => {
         for (const test of JSON_INSERT_TESTS) {
             it(test.name, async () => {
-                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 await db().registerFileBuffer(TEST_FILE, buffer);
                 await conn.insertJSONFromPath(TEST_FILE, test.options);
-                const results = await conn.runQuery(test.query);
+                const results = await conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
@@ -137,12 +137,12 @@ export function testJSONInsertAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('JSON Insert Blob Async', () => {
         for (const test of JSON_INSERT_TESTS) {
             itBrowser(test.name, async () => {
-                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 const blob = new Blob([buffer]);
                 await db().registerFileHandle(TEST_FILE, blob);
                 await conn.insertJSONFromPath(TEST_FILE, test.options);
-                const results = await conn.runQuery(test.query);
+                const results = await conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }

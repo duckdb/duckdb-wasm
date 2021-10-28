@@ -32,7 +32,7 @@ export class AsyncDuckDBConnection {
     }
 
     /** Run a query */
-    public async runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>> {
+    public async query<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>> {
         this._bindings.logger.log({
             timestamp: new Date(),
             level: LogLevel.INFO,
@@ -49,7 +49,7 @@ export class AsyncDuckDBConnection {
     }
 
     /** Send a query */
-    public async sendQuery<T extends { [key: string]: arrow.DataType } = any>(
+    public async send<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
     ): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
         this._bindings.logger.log({
@@ -69,7 +69,7 @@ export class AsyncDuckDBConnection {
     }
 
     /** Create a prepared statement */
-    public async prepareStatement<T extends { [key: string]: arrow.DataType } = any>(
+    public async prepare<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
     ): Promise<AsyncPreparedStatement> {
         const stmt = await this._bindings.createPrepared(this._conn, text);

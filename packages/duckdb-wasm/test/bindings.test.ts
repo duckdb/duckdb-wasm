@@ -19,7 +19,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             it('INVALID SQL', async () => {
                 let error: Error | null = null;
                 try {
-                    conn.sendQuery('INVALID');
+                    conn.send('INVALID');
                 } catch (e: any) {
                     error = e;
                 }
@@ -39,14 +39,14 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             it('table must disappear', async () => {
                 await db().reset();
                 conn = db().connect();
-                conn.runQuery('CREATE TABLE foo (a int)');
-                let table = conn.runQuery<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
+                conn.query('CREATE TABLE foo (a int)');
+                let table = conn.query<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
                 let rows = table.toArray();
                 expect(rows.length).toEqual(1);
                 expect(rows[0].name).toEqual('foo');
                 await db().reset();
                 conn = db().connect();
-                table = conn.runQuery<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
+                table = conn.query<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
                 rows = table.toArray();
                 expect(rows.length).toEqual(0);
             });
@@ -54,18 +54,14 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
 
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
-                const stmt = conn.prepareStatement(
-                    'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
-                );
-                const result = stmt.run([234]);
+                const stmt = conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
+                const result = stmt.query([234]);
                 expect(result.length).toBe(10001);
                 stmt.close();
             });
 
             it('Streaming', async () => {
-                const stmt = conn.prepareStatement(
-                    'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
-                );
+                const stmt = conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
                 const stream = stmt.send([234]);
                 let size = 0;
                 for (const batch of stream) {
@@ -75,7 +71,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                 conn.close();
             });
             it('Typecheck', async () => {
-                conn.runQuery(`CREATE TABLE typecheck (
+                conn.query(`CREATE TABLE typecheck (
                     a BOOLEAN DEFAULT NULL,
                     b TINYINT DEFAULT NULL,
                     c SMALLINT DEFAULT NULL,
@@ -87,12 +83,12 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     i VARCHAR(11) DEFAULT NULL
                 )`);
 
-                const stmt = conn.prepareStatement('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
+                const stmt = conn.prepare('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
                 expect(() =>
-                    stmt.run([true, 100, 10_000, 1_000_000, 5_000_000_000, 0.5, Math.PI, 'hello world', 'hi']),
+                    stmt.query([true, 100, 10_000, 1_000_000, 5_000_000_000, 0.5, Math.PI, 'hello world', 'hi']),
                 ).not.toThrow();
                 expect(() =>
-                    stmt.run([
+                    stmt.query([
                         'test', // varchar for bool
                         100,
                         10_000,
@@ -105,7 +101,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     ]),
                 ).toThrow();
                 expect(() =>
-                    stmt.run([
+                    stmt.query([
                         true,
                         10_000, // smallint for tinyint
                         10_000,
@@ -118,7 +114,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     ]),
                 ).toThrow();
                 expect(() =>
-                    stmt.run([
+                    stmt.query([
                         true,
                         100,
                         1_000_000, // int for smallint
@@ -131,7 +127,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     ]),
                 ).toThrow();
                 expect(() =>
-                    stmt.run([
+                    stmt.query([
                         true,
                         100,
                         10_000,
@@ -168,7 +164,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     path: 'tpch_0_01.db',
                 });
                 const conn = await adb().connect();
-                const table = await conn.runQuery<{
+                const table = await conn.query<{
                     a: arrow.Int;
                 }>('select count(*)::INTEGER as a from lineitem');
                 const rows = table.toArray();
@@ -184,7 +180,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     emitBigInt: true,
                 });
                 const conn = await adb().connect();
-                const table = await conn.runQuery('select 1::BIGINT');
+                const table = await conn.query('select 1::BIGINT');
                 expect(table.schema.fields.length).toEqual(1);
                 expect(table.schema.fields[0].typeId).toEqual(arrow.Type.Int);
             });
@@ -195,7 +191,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     emitBigInt: false,
                 });
                 const conn = await adb().connect();
-                const table = await conn.runQuery('select 1::BIGINT');
+                const table = await conn.query('select 1::BIGINT');
                 expect(table.schema.fields.length).toEqual(1);
                 expect(table.schema.fields[0].typeId).toEqual(arrow.Type.Float);
             });
@@ -204,9 +200,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
                 const conn = await adb().connect();
-                const stmt = await conn.prepareStatement(
-                    'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
-                );
+                const stmt = await conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
                 const result = await stmt.run([234]);
                 expect(result.length).toBe(10001);
                 await stmt.close();
@@ -214,9 +208,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
 
             it('Streaming', async () => {
                 const conn = await adb().connect();
-                const stmt = await conn.prepareStatement(
-                    'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
-                );
+                const stmt = await conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
                 const stream = await stmt.send([234]);
                 let size = 0;
                 for await (const batch of stream) {
@@ -227,7 +219,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
             });
             it('Typecheck', async () => {
                 const conn = await adb().connect();
-                await conn.runQuery(`CREATE TABLE typecheck (
+                await conn.query(`CREATE TABLE typecheck (
                     a BOOLEAN DEFAULT NULL,
                     b TINYINT DEFAULT NULL,
                     c SMALLINT DEFAULT NULL,
@@ -239,7 +231,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     i VARCHAR(11) DEFAULT NULL
                 )`);
 
-                const stmt = await conn.prepareStatement('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
+                const stmt = await conn.prepare('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
 
                 const expectToThrow = async (fn: () => Promise<void>) => {
                     let throwed = false;

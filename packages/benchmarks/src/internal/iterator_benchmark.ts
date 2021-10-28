@@ -20,7 +20,7 @@ export function benchmarkIterator(db: () => duckdb.DuckDBBindings): Benchmark[] 
             new Benchmark(`chunks_materialized_${type}_${tupleCount}`, {
                 fn: async () => {
                     const conn = db().connect();
-                    const result = conn.runQuery(query);
+                    const result = conn.query(query);
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     for (const _v of result.getChildAt(0)!) {
                         noop();
@@ -50,7 +50,7 @@ export function benchmarkIteratorAsync(db: () => duckdb.AsyncDuckDB): Benchmark[
             new Benchmark(`chunks_materialized_${type}_async_${tupleCount}`, {
                 fn: async () => {
                     const conn = await db().connect();
-                    const result = await conn.runQuery(query);
+                    const result = await conn.query(query);
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     for (const _v of result.getChildAt(0)!) {
                         noop();

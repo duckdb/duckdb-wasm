@@ -16,7 +16,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
             new Benchmark(`scan_double_columns_iterator_${tupleCount}`, {
                 before: async () => {
                     const conn = db().connect();
-                    container.value = conn.runQuery<{ foo: arrow.Float64 }>(`
+                    container.value = conn.query<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
                     conn.close();
@@ -43,7 +43,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
             new Benchmark(`scan_double_rows_iterator_${tupleCount}`, {
                 before: async () => {
                     const conn = db().connect();
-                    container.value = conn.runQuery<{ foo: arrow.Float64 }>(`
+                    container.value = conn.query<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
                     conn.close();
@@ -70,7 +70,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
             new Benchmark(`scan_double_rows_iterator_bind_${tupleCount}`, {
                 before: async () => {
                     const conn = db().connect();
-                    container.value = conn.runQuery<{ foo: arrow.Float64 }>(`
+                    container.value = conn.query<{ foo: arrow.Float64 }>(`
                     SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
                 `);
                     conn.close();

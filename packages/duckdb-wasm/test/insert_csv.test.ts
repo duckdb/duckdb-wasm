@@ -193,11 +193,11 @@ export function testCSVInsert(db: () => duckdb.DuckDBBindings): void {
     describe('CSV Insert Sync', () => {
         for (const test of CSV_INSERT_TESTS) {
             it(test.name, () => {
-                conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 db().registerFileBuffer(TEST_FILE, buffer);
                 conn.insertCSVFromPath(TEST_FILE, test.options);
-                const results = conn.runQuery(test.query);
+                const results = conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
@@ -219,11 +219,11 @@ export function testCSVInsertAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('CSV Insert Buffer Async', () => {
         for (const test of CSV_INSERT_TESTS) {
             it(test.name, async () => {
-                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 await db().registerFileBuffer(TEST_FILE, buffer);
                 await conn.insertCSVFromPath(TEST_FILE, test.options);
-                const results = await conn.runQuery(test.query);
+                const results = await conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }
@@ -232,12 +232,12 @@ export function testCSVInsertAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('CSV Insert Blob Async', () => {
         for (const test of CSV_INSERT_TESTS) {
             itBrowser(test.name, async () => {
-                await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
+                await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 const blob = new Blob([buffer]);
                 await db().registerFileHandle(TEST_FILE, blob);
                 await conn.insertCSVFromPath(TEST_FILE, test.options);
-                const results = await conn.runQuery(test.query);
+                const results = await conn.query(test.query);
                 compareTable(results, test.expectedColumns);
             });
         }

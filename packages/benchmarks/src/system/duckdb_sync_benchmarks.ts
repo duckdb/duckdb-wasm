@@ -44,7 +44,7 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection!.runQuery(this.queryText!);
+        this.connection!.query(this.queryText!);
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -60,7 +60,7 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
             console.log(`[ RUN ]   ${name}.parquet`);
             const path = getTPCHParquetFilePath(ctx.projectRootPath, scaleFactor, `${name}.parquet`);
             database.registerFileURL(`${name}.parquet`, path);
-            connection!.runQuery(`CREATE TABLE ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
+            connection!.query(`CREATE TABLE ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
             console.log(`[ OK  ]   ${name}.parquet`);
         };
         console.log(`[ RUN ] importing TPC-H SF ${scaleFactor}`);
@@ -79,14 +79,14 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
 
     static async afterGroup(database: duckdb.DuckDBBindings): Promise<void> {
         const connection = database.connect();
-        connection.runQuery('DROP TABLE IF EXISTS lineitem');
-        connection.runQuery('DROP TABLE IF EXISTS customer');
-        connection.runQuery('DROP TABLE IF EXISTS orders');
-        connection.runQuery('DROP TABLE IF EXISTS region');
-        connection.runQuery('DROP TABLE IF EXISTS nation');
-        connection.runQuery('DROP TABLE IF EXISTS supplier');
-        connection.runQuery('DROP TABLE IF EXISTS part');
-        connection.runQuery('DROP TABLE IF EXISTS partsupp');
+        connection.query('DROP TABLE IF EXISTS lineitem');
+        connection.query('DROP TABLE IF EXISTS customer');
+        connection.query('DROP TABLE IF EXISTS orders');
+        connection.query('DROP TABLE IF EXISTS region');
+        connection.query('DROP TABLE IF EXISTS nation');
+        connection.query('DROP TABLE IF EXISTS supplier');
+        connection.query('DROP TABLE IF EXISTS part');
+        connection.query('DROP TABLE IF EXISTS partsupp');
         database.dropFiles();
         connection.close();
     }
@@ -124,7 +124,7 @@ export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection!.runQuery(this.queryText!);
+        this.connection!.query(this.queryText!);
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -140,7 +140,7 @@ export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
             console.log(`[ RUN ]   ${name}.parquet`);
             const path = getTPCHParquetFilePath(ctx.projectRootPath, scaleFactor, `${name}.parquet`);
             database.registerFileURL(`${name}.parquet`, path);
-            connection!.runQuery(`CREATE VIEW ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
+            connection!.query(`CREATE VIEW ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
             console.log(`[ OK  ]   ${name}.parquet`);
         };
         console.log(`[ RUN ] create parquet views TPC-H SF ${scaleFactor}`);
@@ -158,14 +158,14 @@ export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
 
     static async afterGroup(database: duckdb.DuckDBBindings): Promise<void> {
         const connection = database.connect();
-        connection.runQuery('DROP VIEW IF EXISTS lineitem');
-        connection.runQuery('DROP VIEW IF EXISTS customer');
-        connection.runQuery('DROP VIEW IF EXISTS orders');
-        connection.runQuery('DROP VIEW IF EXISTS region');
-        connection.runQuery('DROP VIEW IF EXISTS nation');
-        connection.runQuery('DROP VIEW IF EXISTS supplier');
-        connection.runQuery('DROP VIEW IF EXISTS part');
-        connection.runQuery('DROP VIEW IF EXISTS partsupp');
+        connection.query('DROP VIEW IF EXISTS lineitem');
+        connection.query('DROP VIEW IF EXISTS customer');
+        connection.query('DROP VIEW IF EXISTS orders');
+        connection.query('DROP VIEW IF EXISTS region');
+        connection.query('DROP VIEW IF EXISTS nation');
+        connection.query('DROP VIEW IF EXISTS supplier');
+        connection.query('DROP VIEW IF EXISTS part');
+        connection.query('DROP VIEW IF EXISTS partsupp');
         database.dropFiles();
         connection.close();
     }
@@ -211,7 +211,7 @@ export class DuckDBSyncIntegerSortBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(
+        const result = this.connection!.query<{ v0: arrow.Int32 }>(
             `SELECT * FROM ${this.getName()} ORDER BY (${this.orderBy.join(',')})`,
         );
         let n = 0;
@@ -225,11 +225,11 @@ export class DuckDBSyncIntegerSortBenchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
 }
@@ -282,7 +282,7 @@ export class DuckDBSyncIntegerTopKBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(
+        const result = this.connection!.query<{ v0: arrow.Int32 }>(
             `SELECT * FROM ${this.getName()} ORDER BY (${this.orderBy.join(',')}) LIMIT ${this.k}`,
         );
         let n = 0;
@@ -296,11 +296,11 @@ export class DuckDBSyncIntegerTopKBenchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
 }
@@ -340,9 +340,7 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(
-            `SELECT SUM(v1) FROM ${this.getName()} GROUP BY v0`,
-        );
+        const result = this.connection!.query<{ v0: arrow.Int32 }>(`SELECT SUM(v1) FROM ${this.getName()} GROUP BY v0`);
         let n = 0;
         for (const v of result.getChildAt(0)!) {
             noop(v);
@@ -355,11 +353,11 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
 }
@@ -398,7 +396,7 @@ export class DuckDBSyncCSVSumBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery(
+        const result = this.connection!.query(
             `SELECT SUM(v1) FROM read_csv('TEMP', delim = '|', header = False, columns={'v0': 'INTEGER', 'v1': 'INTEGER'}) GROUP BY v0`,
         );
         let n = 0;
@@ -457,7 +455,7 @@ export class DuckDBSyncRegexBenchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(
+        const result = this.connection!.query<{ v0: arrow.Int32 }>(
             `SELECT * FROM ${this.getName()} WHERE v0 LIKE '_#%'`,
         );
         let n = 0;
@@ -471,11 +469,11 @@ export class DuckDBSyncRegexBenchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}`);
         this.connection?.close();
     }
 }
@@ -524,7 +522,7 @@ export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`
+        const result = this.connection!.query<{ v0: arrow.Int32 }>(`
             SELECT *
             FROM ${this.getName()}_a a, ${this.getName()}_b b
             WHERE a.v0 = b.v1
@@ -542,13 +540,13 @@ export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_b`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_b`);
         this.connection?.close();
     }
 }
@@ -614,7 +612,7 @@ export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async run(_ctx: SystemBenchmarkContext): Promise<void> {
-        const result = this.connection!.runQuery<{ v0: arrow.Int32 }>(`
+        const result = this.connection!.query<{ v0: arrow.Int32 }>(`
             SELECT *
             FROM ${this.getName()}_a a, ${this.getName()}_b b, ${this.getName()}_c c
             WHERE a.v0 = b.v1
@@ -633,15 +631,15 @@ export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
     }
     async afterEach(_ctx: SystemBenchmarkContext): Promise<void> {}
     async afterAll(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_c`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_c`);
         this.connection?.close();
     }
     async onError(_ctx: SystemBenchmarkContext): Promise<void> {
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_a`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_b`);
-        this.connection?.runQuery(`DROP TABLE IF EXISTS ${this.getName()}_c`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_a`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_b`);
+        this.connection?.query(`DROP TABLE IF EXISTS ${this.getName()}_c`);
         this.connection?.close();
     }
 }

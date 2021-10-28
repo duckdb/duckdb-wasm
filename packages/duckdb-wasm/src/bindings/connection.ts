@@ -27,7 +27,7 @@ export class DuckDBConnection {
     }
 
     /** Run a query */
-    public runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): arrow.Table<T> {
+    public query<T extends { [key: string]: arrow.DataType } = any>(text: string): arrow.Table<T> {
         const buffer = this._bindings.runQuery(this._conn, text);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
@@ -36,9 +36,7 @@ export class DuckDBConnection {
     }
 
     /** Send a query */
-    public sendQuery<T extends { [key: string]: arrow.DataType } = any>(
-        text: string,
-    ): arrow.RecordBatchStreamReader<T> {
+    public send<T extends { [key: string]: arrow.DataType } = any>(text: string): arrow.RecordBatchStreamReader<T> {
         const header = this._bindings.sendQuery(this._conn, text);
         const iter = new ResultStreamIterator(this._bindings, this._conn, header);
         const reader = arrow.RecordBatchReader.from<T>(iter);
@@ -48,7 +46,7 @@ export class DuckDBConnection {
     }
 
     /** Create a prepared statement */
-    public prepareStatement<T extends { [key: string]: arrow.DataType } = any>(text: string): PreparedStatement {
+    public prepare<T extends { [key: string]: arrow.DataType } = any>(text: string): PreparedStatement {
         const stmt = this._bindings.createPrepared(this._conn, text);
         return new PreparedStatement<T>(this._bindings, this._conn, stmt);
     }
@@ -168,7 +166,7 @@ export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any
     }
 
     /** Run a prepared statement */
-    public run(params: any[]): arrow.Table<T> {
+    public query(params: any[]): arrow.Table<T> {
         const buffer = this.bindings.runPrepared(this.connectionId, this.statementId, params);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
