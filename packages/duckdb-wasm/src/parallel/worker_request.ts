@@ -87,12 +87,6 @@ export class WorkerTask<T, D, P> {
     }
 }
 
-export interface ZipExtractToFileArgs {
-    archiveFile: string;
-    outFile: string;
-    entryPath: string;
-}
-
 export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
