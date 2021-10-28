@@ -5,7 +5,6 @@
     "private": true,
     "dependencies": {
         "@duckdb/duckdb-wasm": "^0.1.4-dev1.0",
-        "@nano-sql/core": "^2.3.7",
         "@apache-arrow/esnext-esm": "^6.0.0",
         "arquero": "^4.3.0",
         "kleur": "^4.1.4",

@@ -54,7 +54,7 @@ fs.copyFile(
 
 const TARGET = ['esnext'];
 const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
-const EXTERNALS_CJS = ['crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const EXTERNALS_CJS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 
 console.log('[ ESBUILD ] duckdb-esm.js');
 esbuild.build({

@@ -170,7 +170,7 @@ export class DuckDBConnection {
             first = false;
             writer.write(batch);
         }
-        writer.close();
+        writer.finish();
         this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
     }
     /** Insert an arrow table from an ipc stream */

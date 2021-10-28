@@ -171,7 +171,7 @@ export class AsyncDuckDBConnection {
             first = false;
             writer.write(batch);
         }
-        writer.close();
+        writer.finish();
         await this._instance.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
     }
     /** Insert an arrow table from an ipc stream */

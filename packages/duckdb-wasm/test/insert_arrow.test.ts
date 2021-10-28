@@ -19,14 +19,48 @@ interface ArrowBatch {
     columns: arrow.Vector[];
 }
 
+export function generateXInt32(n: number, cols: number): number[][] {
+    const columns = [];
+    for (let j = 0; j < cols; ++j) {
+        const column = [];
+        for (let i = 0; i < n; ++i) {
+            column.push(i);
+        }
+        columns.push(column);
+    }
+    return columns;
+}
+
+export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arrow.RecordBatch[]] {
+    const columns = generateXInt32(n, cols);
+    const fields = [];
+    for (let j = 0; j < cols; ++j) {
+        fields.push(new arrow.Field(`v${j}`, new arrow.Int32()));
+    }
+    const schema = new arrow.Schema(fields);
+    const batches = [];
+    for (let i = 0; i < n; ) {
+        const rows = Math.min(1000, n - i);
+        batches.push(
+            new arrow.RecordBatch(
+                schema,
+                rows,
+                columns.map(c => arrow.Int32Vector.from(c.slice(i, i + n))),
+            ),
+        );
+        i += rows;
+    }
+    return [schema, batches];
+}
+
 const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
     {
         name: 'integers_1',
-        schema: new arrow.Schema([
-            new arrow.Field('a', new arrow.Int32()),
-            new arrow.Field('b', new arrow.Int32()),
-            new arrow.Field('c', new arrow.Int32()),
-        ]),
+        schema: arrow.Schema.new({
+            a: new arrow.Int32(),
+            b: new arrow.Int32(),
+            c: new arrow.Int32(),
+        }),
         batches: [
             {
                 numRows: 3,
@@ -50,11 +84,11 @@ const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
     },
     {
         name: 'combined_1',
-        schema: new arrow.Schema([
-            new arrow.Field('a', new arrow.Int32()),
-            new arrow.Field('b', new arrow.Int16()),
-            new arrow.Field('c', new arrow.Utf8()),
-        ]),
+        schema: arrow.Schema.new({
+            a: new arrow.Int32(),
+            b: new arrow.Int16(),
+            c: new arrow.Utf8(),
+        }),
         batches: [
             {
                 numRows: 3,
@@ -78,11 +112,11 @@ const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
     },
     {
         name: 'combined_2',
-        schema: new arrow.Schema([
-            new arrow.Field('a', new arrow.Int32()),
-            new arrow.Field('b', new arrow.Int16()),
-            new arrow.Field('c', new arrow.Utf8()),
-        ]),
+        schema: arrow.Schema.new({
+            a: new arrow.Int32(),
+            b: new arrow.Int16(),
+            c: new arrow.Utf8(),
+        }),
         batches: [
             {
                 numRows: 3,
@@ -159,6 +193,18 @@ export function testArrowInsert(db: () => duckdb.DuckDBBindings): void {
                 { name: 'b', values: [2, 5, 8] },
                 { name: 'c', values: ['3', '6', '9'] },
             ]);
+            conn.runQuery(`DROP TABLE IF EXISTS insert_from_vectors`);
+        });
+    });
+    describe('Arrow benchmark inserts', () => {
+        it('generated integer batches', () => {
+            conn.runQuery(`DROP TABLE IF EXISTS insert_generated_batches`);
+            const [schema, batches] = generateArrowXInt32(10000, 2);
+            conn.insertArrowBatches(schema, batches, {
+                schema: 'main',
+                name: 'insert_generated_batches',
+            });
+            conn.runQuery(`DROP TABLE IF EXISTS insert_generated_batches`);
         });
     });
 }
@@ -175,7 +221,7 @@ export function testArrowInsertAsync(db: () => duckdb.AsyncDuckDB): void {
         await db().flushFiles();
         await db().dropFiles();
     });
-    describe('Arrow async insert from iterable', () => {
+    describe('Arrow insert from iterable', () => {
         for (const test of ARROW_INSERT_TESTS) {
             it(test.name, async () => {
                 await conn.runQuery(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);

@@ -284,20 +284,6 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@nano-sql/core@^2.3.7":
-  version "2.3.7"
-  resolved "https://registry.yarnpkg.com/@nano-sql/core/-/core-2.3.7.tgz#df4ea7916272cab7c4a4bf4294197dd64637fe59"
-  integrity sha512-B9nniPPRhPf5Hf2cyvy72SNEg4iKQEW6pig9nwrM4DJlmOMZudifOMPBoJuK6JcTaLATIOGRPkclfosNUALnLQ==
-  dependencies:
-    fast-deep-equal "^2.0.1"
-    levenshtein-edit-distance "^2.0.4"
-    really-small-events "^1.1.0"
-    snap-db "^1.1.1"
-  optionalDependencies:
-    chalk "^2.4.2"
-    chokidar "^3.0.2"
-    command-line-args "^5.1.1"
-
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"
@@ -1264,7 +1250,7 @@ chalk@^4.0.0, chalk@^4.1.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"chokidar@>=3.0.0 <4.0.0", chokidar@^3.0.2, chokidar@^3.5.1, chokidar@^3.5.2:
+"chokidar@>=3.0.0 <4.0.0", chokidar@^3.5.1, chokidar@^3.5.2:
   version "3.5.2"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.5.2.tgz#dba3976fcadb016f66fd365021d91600d01c1e75"
   integrity sha512-ekGhOnNVPgT77r4K/U3GDhu+FQ2S8TnK/s2KbIGXi0SZWuwkZ2QNyfWdZW+TVfn84DpEP7rLeCt2UI6bJ8GwbQ==
@@ -1392,16 +1378,6 @@ command-line-args@5.1.3:
   version "5.1.3"
   resolved "https://registry.yarnpkg.com/command-line-args/-/command-line-args-5.1.3.tgz#1e57d2816f28804073bb5e75cd24e02e2aa321e7"
   integrity sha512-a5tF6mjqRSOBswBwdMkKY47JQ464Dkg9Pcwbxwo9wxRhKWZjtBktmBASllk3AMJ7qBuWgsAGtVa7b2/+EsymOQ==
-  dependencies:
-    array-back "^3.1.0"
-    find-replace "^3.0.0"
-    lodash.camelcase "^4.3.0"
-    typical "^4.0.0"
-
-command-line-args@^5.1.1:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/command-line-args/-/command-line-args-5.2.0.tgz#087b02748272169741f1fd7c785b295df079b9be"
-  integrity sha512-4zqtU1hYsSJzcJBOcNZIbW5Fbk9BkjCp1pZVhQKoRaWL5J7N4XphDLwo8aWwdQpTugxwu+jf9u2ZhkXiqp5Z6A==
   dependencies:
     array-back "^3.1.0"
     find-replace "^3.0.0"
@@ -2435,11 +2411,6 @@ faker@^5.5.3:
   version "5.5.3"
   resolved "https://registry.yarnpkg.com/faker/-/faker-5.5.3.tgz#c57974ee484431b25205c2c8dc09fda861e51e0e"
   integrity sha512-wLTv2a28wjUyWkbnX7u/ABZBkUkIF2fCd73V6P2oFqEGEktDfzWx4UxrSqtPRw0xPRAcjeAOIiJWqZm3pP4u3g==
-
-fast-deep-equal@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-2.0.1.tgz#7b05218ddf9667bf7f370bf7fdb2cb15fdd0aa49"
-  integrity sha1-ewUhjd+WZ79/Nwv3/bLLFf3Qqkk=
 
 fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"
@@ -3756,11 +3727,6 @@ less@^4.1.1:
     needle "^2.5.2"
     source-map "~0.6.0"
 
-levenshtein-edit-distance@^2.0.4:
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/levenshtein-edit-distance/-/levenshtein-edit-distance-2.0.5.tgz#a066eca8afb350e4d9054aed9ffeef66e78ffc83"
-  integrity sha512-Yuraz7QnMX/JENJU1HA6UtdsbhRzoSFnGpVGVryjQgHtl2s/YmVgmNYkVs5yzVZ9aAvQR9wPBUH3lG755ylxGA==
-
 levn@^0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/levn/-/levn-0.4.1.tgz#ae4562c007473b932a6200d403268dd2fffc6ade"
@@ -4967,11 +4933,6 @@ readdirp@~3.6.0:
   dependencies:
     picomatch "^2.2.1"
 
-really-small-events@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/really-small-events/-/really-small-events-1.1.0.tgz#ad35eb0afa956c76838c926c8f6734db8524e946"
-  integrity sha512-iyh4pULyDYBMecekEYcP3ToJD3ZUdIPfZV9nx1C1lJfMguElkDAZvEMJegy8uE7eIROCuLsqh5r44fVro9nKFg==
-
 rechoir@^0.7.0:
   version "0.7.1"
   resolved "https://registry.yarnpkg.com/rechoir/-/rechoir-0.7.1.tgz#9478a96a1ca135b5e88fc027f03ee92d6c645686"
@@ -5324,11 +5285,6 @@ slash@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/slash/-/slash-3.0.0.tgz#6539be870c165adbd5240220dbe361f1bc4d4634"
   integrity sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==
-
-snap-db@^1.1.1:
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/snap-db/-/snap-db-1.1.6.tgz#ee223c79dcfb4945af29b6ae32c9562988623d5d"
-  integrity sha512-KxsO5RnY70J48f6poy0qVm2WS8ZbqG0PUVP2fjd7dvlaCMZ/DxtDv5fhhIVwkP2lOmNQ9QsTFfDuCA7N+TF3qg==
 
 socket.io-adapter@~2.3.2:
   version "2.3.2"
