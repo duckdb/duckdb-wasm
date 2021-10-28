@@ -1,10 +1,10 @@
 import { DuckDBModule } from './duckdb_module';
-import { DuckDBBindings } from './bindings';
+import { DuckDBBindingsBase } from './bindings_base';
 import { DuckDBRuntime } from './runtime';
 import { Logger } from '../log';
 
 /** DuckDB bindings for the browser */
-export abstract class DuckDBBrowserBindings extends DuckDBBindings {
+export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
     /** The path of the wasm module */
     protected readonly mainModuleURL: string;
     /** The path of the pthread worker script */

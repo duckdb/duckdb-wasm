@@ -1,6 +1,7 @@
 import { DuckDBModule, PThread } from './duckdb_module';
 import { DuckDBConfig } from './config';
 import { Logger } from '../log';
+import { DuckDBBindings } from './bindings_interface';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } from './runtime';
@@ -26,7 +27,7 @@ export enum DuckDBFeature {
 }
 
 /** The proxy for either the browser- order node-based DuckDB API */
-export abstract class DuckDBBindings {
+export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** The logger */
     protected readonly _logger: Logger;
     /** Backend-dependent native-glue code for DuckDB */
@@ -173,13 +174,8 @@ export abstract class DuckDBBindings {
     }
 
     /** Prepare a statement and return its identifier */
-    public createPreparedStatement(conn: number, text: string): number {
-        const [s, d, n] = callSRet(
-            this.mod,
-            'duckdb_web_prepared_statement_create',
-            ['number', 'string'],
-            [conn, text],
-        );
+    public createPrepared(conn: number, text: string): number {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create', ['number', 'string'], [conn, text]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -187,14 +183,9 @@ export abstract class DuckDBBindings {
         return d;
     }
 
-    /** Close a prepared statement*/
-    public closePreparedStatement(conn: number, statement: number): void {
-        const [s, d, n] = callSRet(
-            this.mod,
-            'duckdb_web_prepared_statement_close',
-            ['number', 'number'],
-            [conn, statement],
-        );
+    /** Close a prepared statement */
+    public closePrepared(conn: number, statement: number): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_close', ['number', 'number'], [conn, statement]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -202,10 +193,10 @@ export abstract class DuckDBBindings {
     }
 
     /** Execute a prepared statement and return the full result */
-    public runPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array {
+    public runPrepared(conn: number, statement: number, params: any[]): Uint8Array {
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_prepared_statement_run',
+            'duckdb_web_prepared_run',
             ['number', 'number', 'string'],
             [conn, statement, JSON.stringify(params)],
         );
@@ -218,10 +209,10 @@ export abstract class DuckDBBindings {
     }
 
     /** Execute a prepared statement and stream the result */
-    public sendPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array {
+    public sendPrepared(conn: number, statement: number, params: any[]): Uint8Array {
         const [s, d, n] = callSRet(
             this.mod,
-            'duckdb_web_prepared_statement_send',
+            'duckdb_web_prepared_send',
             ['number', 'number', 'string'],
             [conn, statement, JSON.stringify(params)],
         );
@@ -303,8 +294,6 @@ export abstract class DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
     }
-    /** Finish insert */
-    public finishInsert(conn: number, inserter: number): void {}
 
     /** Register a file object URL */
     public registerFileURL(name: string, url?: string): void {

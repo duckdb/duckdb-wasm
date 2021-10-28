@@ -7,6 +7,7 @@ import {
     ConnectionID,
     WorkerTaskReturnType,
 } from './worker_request';
+import { AsyncDuckDBBindings } from './async_bindings_interface';
 import { Logger } from '../log';
 import { AsyncDuckDBConnection } from './async_connection';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from '../bindings/insert_options';
@@ -17,7 +18,7 @@ import { flattenArrowField } from '../flat_arrow';
 
 const TEXT_ENCODER = new TextEncoder();
 
-export class AsyncDuckDB {
+export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** The message handler */
     protected readonly _onMessageHandler: (event: MessageEvent) => void;
     /** The error handler */
@@ -137,6 +138,7 @@ export class AsyncDuckDB {
 
         // Otherwise differentiate between the tasks first
         switch (task.type) {
+            case WorkerRequestType.CLOSE_PREPARED:
             case WorkerRequestType.COLLECT_FILE_STATISTICS:
             case WorkerRequestType.COPY_FILE_TO_PATH:
             case WorkerRequestType.DISCONNECT:
@@ -199,12 +201,14 @@ export class AsyncDuckDB {
                     return;
                 }
                 break;
+            case WorkerRequestType.RUN_PREPARED:
             case WorkerRequestType.RUN_QUERY:
                 if (response.type == WorkerResponseType.QUERY_RESULT) {
                     task.promiseResolver(response.data);
                     return;
                 }
                 break;
+            case WorkerRequestType.SEND_PREPARED:
             case WorkerRequestType.SEND_QUERY:
                 if (response.type == WorkerResponseType.QUERY_START) {
                     task.promiseResolver(response.data);
@@ -213,6 +217,12 @@ export class AsyncDuckDB {
                 break;
             case WorkerRequestType.FETCH_QUERY_RESULTS:
                 if (response.type == WorkerResponseType.QUERY_RESULT_CHUNK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.CREATE_PREPARED:
+                if (response.type == WorkerResponseType.PREPARED_STATEMENT_ID) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -325,7 +335,7 @@ export class AsyncDuckDB {
         await this.postTask(task);
     }
 
-    /// Run a query
+    /** Run a query */
     public async runQuery(conn: ConnectionID, text: string): Promise<Uint8Array> {
         const task = new WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>(
             WorkerRequestType.RUN_QUERY,
@@ -351,6 +361,40 @@ export class AsyncDuckDB {
         );
         return await this.postTask(task);
     }
+
+    /** Prepare a statement and return its identifier */
+    public async createPrepared(conn: number, text: string): Promise<number> {
+        const task = new WorkerTask<WorkerRequestType.CREATE_PREPARED, [number, string], number>(
+            WorkerRequestType.CREATE_PREPARED,
+            [conn, text],
+        );
+        return await this.postTask(task);
+    }
+    /** Close a prepared statement */
+    public async closePrepared(conn: number, statement: number): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.CLOSE_PREPARED, [number, number], null>(
+            WorkerRequestType.CLOSE_PREPARED,
+            [conn, statement],
+        );
+        await this.postTask(task);
+    }
+    /** Execute a prepared statement and return the full result */
+    public async runPrepared(conn: number, statement: number, params: any[]): Promise<Uint8Array> {
+        const task = new WorkerTask<WorkerRequestType.RUN_PREPARED, [ConnectionID, number, any[]], Uint8Array>(
+            WorkerRequestType.RUN_PREPARED,
+            [conn, statement, params],
+        );
+        return await this.postTask(task);
+    }
+    /** Execute a prepared statement and stream the result */
+    public async sendPrepared(conn: number, statement: number, params: any[]): Promise<Uint8Array> {
+        const task = new WorkerTask<WorkerRequestType.SEND_PREPARED, [ConnectionID, number, any[]], Uint8Array>(
+            WorkerRequestType.SEND_PREPARED,
+            [conn, statement, params],
+        );
+        return await this.postTask(task);
+    }
+
     /** Register file text */
     public async registerFileText(name: string, text: string): Promise<void> {
         const buffer = TEXT_ENCODER.encode(text);

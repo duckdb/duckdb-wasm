@@ -1,63 +1,17 @@
 import * as arrow from 'apache-arrow';
 import * as utils from '../utils';
+import { DuckDBBindings } from './bindings_interface';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
-
-interface IDuckDBBindings {
-    disconnect(conn: number): void;
-    runQuery(conn: number, text: string): Uint8Array;
-    sendQuery(conn: number, text: string): Uint8Array;
-    createPreparedStatement(conn: number, text: string): number;
-    runPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array;
-    sendPreparedStatement(conn: number, statement: number, params: any[]): Uint8Array;
-    closePreparedStatement(conn: number, statement: number): void;
-    fetchQueryResults(conn: number): Uint8Array;
-    insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: ArrowInsertOptions): void;
-    insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): void;
-    insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): void;
-}
-
-/** A result stream iterator */
-class ResultStreamIterator implements Iterable<Uint8Array> {
-    /** First chunk? */
-    _first: boolean;
-    /** Reached end of stream? */
-    _depleted: boolean;
-
-    constructor(protected bindings: IDuckDBBindings, protected conn: number, protected header: Uint8Array) {
-        this._first = true;
-        this._depleted = false;
-    }
-
-    next(): IteratorResult<Uint8Array> {
-        if (this._first) {
-            this._first = false;
-            return { done: false, value: this.header };
-        }
-        if (this._depleted) {
-            return { done: true, value: null };
-        }
-        const bufferI8 = this.bindings.fetchQueryResults(this.conn);
-        this._depleted = bufferI8.length == 0;
-        return {
-            done: this._depleted,
-            value: bufferI8,
-        };
-    }
-
-    [Symbol.iterator]() {
-        return this;
-    }
-}
 
 /** A thin helper to bind the connection id and talk record batches */
 export class DuckDBConnection {
     /** The bindings */
-    protected _bindings: IDuckDBBindings;
+    protected _bindings: DuckDBBindings;
     /** The connection handle */
     protected _conn: number;
 
     /** Constructor */
-    constructor(bindings: IDuckDBBindings, conn: number) {
+    constructor(bindings: DuckDBBindings, conn: number) {
         this._bindings = bindings;
         this._conn = conn;
     }
@@ -68,7 +22,7 @@ export class DuckDBConnection {
     }
 
     /** Brave souls may use this function to consume the underlying connection id */
-    public useUnsafe<R>(callback: (bindings: IDuckDBBindings, conn: number) => R) {
+    public useUnsafe<R>(callback: (bindings: DuckDBBindings, conn: number) => R) {
         return callback(this._bindings, this._conn);
     }
 
@@ -94,38 +48,9 @@ export class DuckDBConnection {
     }
 
     /** Create a prepared statement */
-    public createPreparedStatement(text: string): number {
-        return this._bindings.createPreparedStatement(this._conn, text);
-    }
-
-    /** Close a prepared statement */
-    public closePreparedStatement(statement: number): void {
-        this._bindings.closePreparedStatement(this._conn, statement);
-    }
-
-    /** Run a prepared statement */
-    public runPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
-        statement: number,
-        params: any[],
-    ): arrow.Table<T> {
-        const buffer = this._bindings.runPreparedStatement(this._conn, statement, params);
-        const reader = arrow.RecordBatchReader.from<T>(buffer);
-        console.assert(reader.isSync());
-        console.assert(reader.isFile());
-        return arrow.Table.from(reader as arrow.RecordBatchFileReader);
-    }
-
-    /** Send a prepared statement */
-    public sendPreparedStatement<T extends { [key: string]: arrow.DataType } = any>(
-        statement: number,
-        params: any[],
-    ): arrow.RecordBatchStreamReader<T> {
-        const header = this._bindings.sendPreparedStatement(this._conn, statement, params);
-        const iter = new ResultStreamIterator(this._bindings, this._conn, header);
-        const reader = arrow.RecordBatchReader.from<T>(iter);
-        console.assert(reader.isSync());
-        console.assert(reader.isStream());
-        return reader as arrow.RecordBatchStreamReader;
+    public prepareStatement<T extends { [key: string]: arrow.DataType } = any>(text: string): PreparedStatement {
+        const stmt = this._bindings.createPrepared(this._conn, text);
+        return new PreparedStatement<T>(this._bindings, this._conn, stmt);
     }
 
     /** Insert arrow vectors */
@@ -185,5 +110,79 @@ export class DuckDBConnection {
     /** Insert json file from path */
     public insertJSONFromPath(path: string, options: JSONInsertOptions): void {
         this._bindings.insertJSONFromPath(this._conn, path, options);
+    }
+}
+
+/** A result stream iterator */
+export class ResultStreamIterator implements Iterable<Uint8Array> {
+    /** First chunk? */
+    _first: boolean;
+    /** Reached end of stream? */
+    _depleted: boolean;
+
+    constructor(protected bindings: DuckDBBindings, protected conn: number, protected header: Uint8Array) {
+        this._first = true;
+        this._depleted = false;
+    }
+
+    next(): IteratorResult<Uint8Array> {
+        if (this._first) {
+            this._first = false;
+            return { done: false, value: this.header };
+        }
+        if (this._depleted) {
+            return { done: true, value: null };
+        }
+        const bufferI8 = this.bindings.fetchQueryResults(this.conn);
+        this._depleted = bufferI8.length == 0;
+        return {
+            done: this._depleted,
+            value: bufferI8,
+        };
+    }
+
+    [Symbol.iterator]() {
+        return this;
+    }
+}
+
+/** A thin helper to bind the prepared statement id*/
+export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any> {
+    /** The bindings */
+    protected readonly bindings: DuckDBBindings;
+    /** The connection id */
+    protected readonly connectionId: number;
+    /** The statement id */
+    protected readonly statementId: number;
+
+    /** Constructor */
+    constructor(bindings: DuckDBBindings, connectionId: number, statementId: number) {
+        this.bindings = bindings;
+        this.connectionId = connectionId;
+        this.statementId = statementId;
+    }
+
+    /** Close a prepared statement */
+    public close() {
+        this.bindings.closePrepared(this.connectionId, this.statementId);
+    }
+
+    /** Run a prepared statement */
+    public run(params: any[]): arrow.Table<T> {
+        const buffer = this.bindings.runPrepared(this.connectionId, this.statementId, params);
+        const reader = arrow.RecordBatchReader.from<T>(buffer);
+        console.assert(reader.isSync());
+        console.assert(reader.isFile());
+        return arrow.Table.from(reader as arrow.RecordBatchFileReader);
+    }
+
+    /** Send a prepared statement */
+    public send(params: any[]): arrow.RecordBatchStreamReader<T> {
+        const header = this.bindings.sendPrepared(this.connectionId, this.statementId, params);
+        const iter = new ResultStreamIterator(this.bindings, this.connectionId, header);
+        const reader = arrow.RecordBatchReader.from<T>(iter);
+        console.assert(reader.isSync());
+        console.assert(reader.isStream());
+        return reader as arrow.RecordBatchStreamReader;
     }
 }

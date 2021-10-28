@@ -158,6 +158,37 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this._bindings.disconnect(request.data);
                     this.sendOK(request);
                     break;
+                case WorkerRequestType.CREATE_PREPARED: {
+                    const result = this._bindings.createPrepared(request.data[0], request.data[1]);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.PREPARED_STATEMENT_ID,
+                            data: result,
+                        },
+                        [],
+                    );
+                    break;
+                }
+                case WorkerRequestType.CLOSE_PREPARED: {
+                    this._bindings.closePrepared(request.data[0], request.data[1]);
+                    this.sendOK(request);
+                    break;
+                }
+                case WorkerRequestType.RUN_PREPARED: {
+                    const result = this._bindings.runPrepared(request.data[0], request.data[1], request.data[2]);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.QUERY_RESULT,
+                            data: result,
+                        },
+                        [result.buffer],
+                    );
+                    break;
+                }
                 case WorkerRequestType.RUN_QUERY: {
                     const result = this._bindings.runQuery(request.data[0], request.data[1]);
                     this.postMessage(
@@ -165,6 +196,19 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             messageId: this._nextMessageId++,
                             requestId: request.messageId,
                             type: WorkerResponseType.QUERY_RESULT,
+                            data: result,
+                        },
+                        [result.buffer],
+                    );
+                    break;
+                }
+                case WorkerRequestType.SEND_PREPARED: {
+                    const result = this._bindings.sendPrepared(request.data[0], request.data[1], request.data[2]);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.QUERY_START,
                             data: result,
                         },
                         [result.buffer],

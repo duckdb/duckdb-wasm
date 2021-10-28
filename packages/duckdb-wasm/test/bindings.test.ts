@@ -29,7 +29,6 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
 
         describe('Open', () => {
             // XXX apparently synchronous XHR on the main thread does not allow for arraybuffer response type?
-            //     WTF why?
             // it('Remote TPCH 0_01', async () => {
             //     await db().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
             //     db().open('tpch_0_01.db');
@@ -55,25 +54,25 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
 
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
-                const stmt = conn.createPreparedStatement(
+                const stmt = conn.prepareStatement(
                     'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
                 );
-                const result = conn.runPreparedStatement(stmt, [234]);
+                const result = stmt.run([234]);
                 expect(result.length).toBe(10001);
-                conn.closePreparedStatement(stmt);
+                stmt.close();
             });
 
             it('Streaming', async () => {
-                const stmt = conn.createPreparedStatement(
+                const stmt = conn.prepareStatement(
                     'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
                 );
-                const stream = conn.sendPreparedStatement(stmt, [234]);
+                const stream = stmt.send([234]);
                 let size = 0;
                 for (const batch of stream) {
                     size += batch.length;
                 }
                 expect(size).toBe(10001);
-                conn.closePreparedStatement(stmt);
+                conn.close();
             });
             it('Typecheck', async () => {
                 conn.runQuery(`CREATE TABLE typecheck (
@@ -88,22 +87,12 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     i VARCHAR(11) DEFAULT NULL
                 )`);
 
-                const stmt = conn.createPreparedStatement('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
+                const stmt = conn.prepareStatement('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
                 expect(() =>
-                    conn.runPreparedStatement(stmt, [
-                        true,
-                        100,
-                        10_000,
-                        1_000_000,
-                        5_000_000_000,
-                        0.5,
-                        Math.PI,
-                        'hello world',
-                        'hi',
-                    ]),
+                    stmt.run([true, 100, 10_000, 1_000_000, 5_000_000_000, 0.5, Math.PI, 'hello world', 'hi']),
                 ).not.toThrow();
                 expect(() =>
-                    conn.runPreparedStatement(stmt, [
+                    stmt.run([
                         'test', // varchar for bool
                         100,
                         10_000,
@@ -116,7 +105,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     ]),
                 ).toThrow();
                 expect(() =>
-                    conn.runPreparedStatement(stmt, [
+                    stmt.run([
                         true,
                         10_000, // smallint for tinyint
                         10_000,
@@ -129,7 +118,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     ]),
                 ).toThrow();
                 expect(() =>
-                    conn.runPreparedStatement(stmt, [
+                    stmt.run([
                         true,
                         100,
                         1_000_000, // int for smallint
@@ -142,7 +131,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                     ]),
                 ).toThrow();
                 expect(() =>
-                    conn.runPreparedStatement(stmt, [
+                    stmt.run([
                         true,
                         100,
                         10_000,
@@ -154,7 +143,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                         'hi',
                     ]),
                 ).toThrow();
-                conn.closePreparedStatement(stmt);
+                conn.close();
             });
         });
     });
@@ -209,6 +198,111 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 const table = await conn.runQuery('select 1::BIGINT');
                 expect(table.schema.fields.length).toEqual(1);
                 expect(table.schema.fields[0].typeId).toEqual(arrow.Type.Float);
+            });
+        });
+
+        describe('Prepared Statement', () => {
+            it('Materialized', async () => {
+                const conn = await adb().connect();
+                const stmt = await conn.prepareStatement(
+                    'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
+                );
+                const result = await stmt.run([234]);
+                expect(result.length).toBe(10001);
+                await stmt.close();
+            });
+
+            it('Streaming', async () => {
+                const conn = await adb().connect();
+                const stmt = await conn.prepareStatement(
+                    'SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);',
+                );
+                const stream = await stmt.send([234]);
+                let size = 0;
+                for await (const batch of stream) {
+                    size += batch.length;
+                }
+                expect(size).toBe(10001);
+                await conn.close();
+            });
+            it('Typecheck', async () => {
+                const conn = await adb().connect();
+                await conn.runQuery(`CREATE TABLE typecheck (
+                    a BOOLEAN DEFAULT NULL,
+                    b TINYINT DEFAULT NULL,
+                    c SMALLINT DEFAULT NULL,
+                    d INTEGER DEFAULT NULL,
+                    e BIGINT DEFAULT NULL,
+                    f FLOAT DEFAULT NULL,
+                    g DOUBLE DEFAULT NULL,
+                    h CHAR(11) DEFAULT NULL,
+                    i VARCHAR(11) DEFAULT NULL
+                )`);
+
+                const stmt = await conn.prepareStatement('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
+
+                const expectToThrow = async (fn: () => Promise<void>) => {
+                    let throwed = false;
+                    try {
+                        await fn();
+                    } catch (e) {
+                        throwed = true;
+                    }
+                    expect(throwed).toBe(true);
+                };
+                expectToThrow(async () => {
+                    await stmt.run([
+                        'test', // varchar for bool
+                        100,
+                        10_000,
+                        1_000_000,
+                        5_000_000_000,
+                        0.5,
+                        Math.PI,
+                        'hello world',
+                        'hi',
+                    ]);
+                });
+                expectToThrow(async () => {
+                    await stmt.run([
+                        true,
+                        10_000, // smallint for tinyint
+                        10_000,
+                        1_000_000,
+                        5_000_000_000,
+                        0.5,
+                        Math.PI,
+                        'hello world',
+                        'hi',
+                    ]);
+                });
+                expectToThrow(async () => {
+                    await stmt.run([
+                        true,
+                        100,
+                        1_000_000, // int for smallint
+                        1_000_000,
+                        5_000_000_000,
+                        0.5,
+                        Math.PI,
+                        'hello world',
+                        'hi',
+                    ]);
+                });
+                expectToThrow(async () => {
+                    await stmt.run([
+                        true,
+                        100,
+                        10_000,
+                        5_000_000_000, // bigint for int
+                        5_000_000_000,
+                        0.5,
+                        Math.PI,
+                        'hello world',
+                        'hi',
+                    ]);
+                });
+                await conn.close();
             });
         });
     });

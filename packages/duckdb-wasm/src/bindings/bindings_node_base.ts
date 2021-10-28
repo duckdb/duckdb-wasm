@@ -1,6 +1,6 @@
 import DuckDBWasm from './duckdb_wasm.js';
 import { DuckDBModule } from './duckdb_module';
-import { DuckDBBindings } from './bindings';
+import { DuckDBBindingsBase } from './bindings_base';
 import { DuckDBRuntime } from './runtime';
 import { Logger } from '../log';
 import fs from 'fs';
@@ -11,7 +11,7 @@ declare global {
 }
 
 /** DuckDB bindings for node.js */
-export class DuckDBNodeBindings extends DuckDBBindings {
+export class DuckDBNodeBindings extends DuckDBBindingsBase {
     /** The path of the wasm module */
     protected readonly mainModulePath: string;
     /** The path of the pthread worker script */

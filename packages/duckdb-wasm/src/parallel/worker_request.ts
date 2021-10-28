@@ -5,12 +5,15 @@ import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 
 export type ConnectionID = number;
+export type StatementID = number;
 
 export enum WorkerRequestType {
+    CLOSE_PREPARED = 'CLOSE_PREPARED',
     COLLECT_FILE_STATISTICS = 'COLLECT_FILE_STATISTICS',
     CONNECT = 'CONNECT',
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
+    CREATE_PREPARED = 'CREATE_PREPARED',
     DISCONNECT = 'DISCONNECT',
     DROP_FILE = 'DROP_FILE',
     DROP_FILES = 'DROP_FILES',
@@ -29,7 +32,9 @@ export enum WorkerRequestType {
     REGISTER_FILE_HANDLE = 'REGISTER_FILE_HANDLE',
     REGISTER_FILE_URL = 'REGISTER_FILE_URL',
     RESET = 'RESET',
+    RUN_PREPARED = 'RUN_PREPARED',
     RUN_QUERY = 'RUN_QUERY',
+    SEND_PREPARED = 'SEND_PREPARED',
     SEND_QUERY = 'SEND_QUERY',
     TOKENIZE = 'TOKENIZE',
 }
@@ -43,6 +48,7 @@ export enum WorkerResponseType {
     FILE_STATISTICS = 'FILE_STATISTICS',
     LOG = 'LOG',
     OK = 'OK',
+    PREPARED_STATEMENT_ID = 'PREPARED_STATEMENT_ID',
     QUERY_PLAN = 'QUERY_PLAN',
     QUERY_RESULT = 'QUERY_RESULT',
     QUERY_RESULT_CHUNK = 'QUERY_RESULT_CHUNK',
@@ -88,10 +94,12 @@ export class WorkerTask<T, D, P> {
 }
 
 export type WorkerRequestVariant =
+    | WorkerRequest<WorkerRequestType.CLOSE_PREPARED, [ConnectionID, StatementID]>
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
+    | WorkerRequest<WorkerRequestType.CREATE_PREPARED, [ConnectionID, string]>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
     | WorkerRequest<WorkerRequestType.DROP_FILE, string>
     | WorkerRequest<WorkerRequestType.DROP_FILES, null>
@@ -113,7 +121,9 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
     | WorkerRequest<WorkerRequestType.RESET, null>
+    | WorkerRequest<WorkerRequestType.RUN_PREPARED, [number, number, any[]]>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
+    | WorkerRequest<WorkerRequestType.SEND_PREPARED, [number, number, any[]]>
     | WorkerRequest<WorkerRequestType.SEND_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.TOKENIZE, string>;
 
@@ -126,6 +136,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.FILE_STATISTICS, FileStatistics>
     | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
     | WorkerResponse<WorkerResponseType.OK, null>
+    | WorkerResponse<WorkerResponseType.PREPARED_STATEMENT_ID, number>
     | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT_CHUNK, Uint8Array>
@@ -136,9 +147,11 @@ export type WorkerResponseVariant =
 
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>
+    | WorkerTask<WorkerRequestType.CLOSE_PREPARED, [number, number], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>
+    | WorkerTask<WorkerRequestType.CREATE_PREPARED, [number, string], number>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
     | WorkerTask<WorkerRequestType.DROP_FILE, string, boolean>
     | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
@@ -161,6 +174,8 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
     | WorkerTask<WorkerRequestType.RESET, null, null>
+    | WorkerTask<WorkerRequestType.RUN_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
+    | WorkerTask<WorkerRequestType.SEND_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>;

@@ -1,30 +1,136 @@
 import * as arrow from 'apache-arrow';
 import * as utils from '../utils';
-import { Logger, LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
+import { AsyncDuckDB } from './async_bindings';
+import { LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import { ArrowInsertOptions, CSVInsertOptions, JSONInsertOptions } from '../bindings/insert_options';
 
-/** An interface for the async DuckDB bindings */
-interface AsyncDuckDB {
-    logger: Logger;
+/** A thin helper to memoize the connection id */
+export class AsyncDuckDBConnection {
+    /** The async duckdb */
+    protected readonly _bindings: AsyncDuckDB;
+    /** The conn handle */
+    protected readonly _conn: number;
 
-    registerFileURL(name: string, url: string, size: number): Promise<void>;
-    registerFileBuffer(name: string, buffer: Uint8Array): Promise<void>;
-    registerFileHandle<HandleType>(name: string, handle: HandleType): Promise<void>;
-    copyFileToPath(name: string, out: string): Promise<void>;
-    copyFileToBuffer(name: string): Promise<Uint8Array>;
+    constructor(bindings: AsyncDuckDB, conn: number) {
+        this._bindings = bindings;
+        this._conn = conn;
+    }
 
-    disconnect(conn: number): Promise<void>;
-    runQuery(conn: number, text: string): Promise<Uint8Array>;
-    sendQuery(conn: number, text: string): Promise<Uint8Array>;
-    fetchQueryResults(conn: number): Promise<Uint8Array>;
+    /** Access the database bindings */
+    public get bindings(): AsyncDuckDB {
+        return this._bindings;
+    }
 
-    insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: CSVInsertOptions): Promise<void>;
-    insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): Promise<void>;
-    insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): Promise<void>;
+    /** Disconnect from the database */
+    public async close(): Promise<void> {
+        return this._bindings.disconnect(this._conn);
+    }
+
+    /** Brave souls may use this function to consume the underlying connection id */
+    public useUnsafe<R>(callback: (bindings: AsyncDuckDB, conn: number) => R) {
+        return callback(this._bindings, this._conn);
+    }
+
+    /** Run a query */
+    public async runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>> {
+        this._bindings.logger.log({
+            timestamp: new Date(),
+            level: LogLevel.INFO,
+            origin: LogOrigin.ASYNC_DUCKDB,
+            topic: LogTopic.QUERY,
+            event: LogEvent.RUN,
+            value: text,
+        });
+        const buffer = await this._bindings.runQuery(this._conn, text);
+        const reader = arrow.RecordBatchReader.from<T>(buffer);
+        console.assert(reader.isSync());
+        console.assert(reader.isFile());
+        return arrow.Table.from(reader as arrow.RecordBatchFileReader);
+    }
+
+    /** Send a query */
+    public async sendQuery<T extends { [key: string]: arrow.DataType } = any>(
+        text: string,
+    ): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
+        this._bindings.logger.log({
+            timestamp: new Date(),
+            level: LogLevel.INFO,
+            origin: LogOrigin.ASYNC_DUCKDB,
+            topic: LogTopic.QUERY,
+            event: LogEvent.RUN,
+            value: text,
+        });
+        const header = await this._bindings.sendQuery(this._conn, text);
+        const iter = new AsyncResultStreamIterator(this._bindings, this._conn, header);
+        const reader = await arrow.RecordBatchReader.from<T>(iter);
+        console.assert(reader.isAsync());
+        console.assert(reader.isStream());
+        return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
+    }
+
+    /** Create a prepared statement */
+    public async prepareStatement<T extends { [key: string]: arrow.DataType } = any>(
+        text: string,
+    ): Promise<AsyncPreparedStatement> {
+        const stmt = await this._bindings.createPrepared(this._conn, text);
+        return new AsyncPreparedStatement<T>(this._bindings, this._conn, stmt);
+    }
+
+    /** Insert arrow vectors */
+    public async insertArrowVectors<T extends { [key: string]: arrow.Vector } = any>(
+        children: T,
+        options: ArrowInsertOptions,
+    ): Promise<void> {
+        await this.insertArrowTable(arrow.Table.new(children), options);
+    }
+    /** Insert an arrow table */
+    public async insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): Promise<void> {
+        if (table.schema.fields.length == 0) {
+            console.warn(
+                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
+            );
+        }
+        await this.insertArrowBatches(table.schema, table.chunks, options);
+    }
+    /** Insert record batches */
+    public async insertArrowBatches(
+        schema: arrow.Schema,
+        batches: Iterable<arrow.RecordBatch>,
+        options: ArrowInsertOptions,
+    ): Promise<void> {
+        // Prepare the IPC stream writer
+        const buffer = new utils.IPCBuffer();
+        const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
+
+        // Write all batches to the ipc buffer
+        let first = true;
+        for (const batch of batches) {
+            if (!first) {
+                await this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
+            }
+            first = false;
+            writer.write(batch);
+        }
+        writer.finish();
+        await this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
+    }
+    /** Insert an arrow table from an ipc stream */
+    public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
+        await this._bindings.insertArrowFromIPCStream(this._conn, buffer, options);
+    }
+
+    /** Insert csv file from path */
+    public async insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void> {
+        await this._bindings.insertCSVFromPath(this._conn, text, options);
+    }
+    /** Insert json file from path */
+    public async insertJSONFromPath(text: string, options: JSONInsertOptions): Promise<void> {
+        await this._bindings.insertJSONFromPath(this._conn, text, options);
+    }
 }
 
 /** An async result stream iterator */
-class ResultStreamIterator implements AsyncIterable<Uint8Array> {
+export class AsyncResultStreamIterator implements AsyncIterable<Uint8Array> {
     /** First chunk? */
     protected _first: boolean;
     /** Reached end of stream? */
@@ -72,119 +178,43 @@ class ResultStreamIterator implements AsyncIterable<Uint8Array> {
     }
 }
 
-/** A thin helper to memoize the connection id */
-export class AsyncDuckDBConnection {
-    /** The async duckdb */
-    protected readonly _instance: AsyncDuckDB;
-    /** The conn handle */
-    protected readonly _conn: number;
+/** A thin helper to bind the prepared statement id */
+export class AsyncPreparedStatement<T extends { [key: string]: arrow.DataType } = any> {
+    /** The bindings */
+    protected readonly bindings: AsyncDuckDB;
+    /** The connection id */
+    protected readonly connectionId: number;
+    /** The statement id */
+    protected readonly statementId: number;
 
-    constructor(instance: AsyncDuckDB, conn: number) {
-        this._instance = instance;
-        this._conn = conn;
+    /** Constructor */
+    constructor(bindings: AsyncDuckDB, connectionId: number, statementId: number) {
+        this.bindings = bindings;
+        this.connectionId = connectionId;
+        this.statementId = statementId;
     }
 
-    /** Access the database instance */
-    public get instance(): AsyncDuckDB {
-        return this._instance;
+    /** Close a prepared statement */
+    public async close() {
+        await this.bindings.closePrepared(this.connectionId, this.statementId);
     }
 
-    /** Disconnect from the database */
-    public async close(): Promise<void> {
-        return this._instance.disconnect(this._conn);
-    }
-
-    /** Brave souls may use this function to consume the underlying connection id */
-    public useUnsafe<R>(callback: (bindings: AsyncDuckDB, conn: number) => R) {
-        return callback(this._instance, this._conn);
-    }
-
-    /** Run a query */
-    public async runQuery<T extends { [key: string]: arrow.DataType } = any>(text: string): Promise<arrow.Table<T>> {
-        this._instance.logger.log({
-            timestamp: new Date(),
-            level: LogLevel.INFO,
-            origin: LogOrigin.ASYNC_DUCKDB,
-            topic: LogTopic.QUERY,
-            event: LogEvent.RUN,
-            value: text,
-        });
-        const buffer = await this._instance.runQuery(this._conn, text);
+    /** Run a prepared statement */
+    public async run(params: any[]): Promise<arrow.Table<T>> {
+        const buffer = await this.bindings.runPrepared(this.connectionId, this.statementId, params);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
         console.assert(reader.isFile());
         return arrow.Table.from(reader as arrow.RecordBatchFileReader);
     }
 
-    /** Send a query */
-    public async sendQuery<T extends { [key: string]: arrow.DataType } = any>(
-        text: string,
-    ): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
-        this._instance.logger.log({
-            timestamp: new Date(),
-            level: LogLevel.INFO,
-            origin: LogOrigin.ASYNC_DUCKDB,
-            topic: LogTopic.QUERY,
-            event: LogEvent.RUN,
-            value: text,
-        });
-        const header = await this._instance.sendQuery(this._conn, text);
-        const iter = new ResultStreamIterator(this._instance, this._conn, header);
+    /** Send a prepared statement */
+    public async send(params: any[]): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
+        const header = await this.bindings.sendPrepared(this.connectionId, this.statementId, params);
+        const iter = new AsyncResultStreamIterator(this.bindings, this.connectionId, header);
         const reader = await arrow.RecordBatchReader.from<T>(iter);
         console.assert(reader.isAsync());
         console.assert(reader.isStream());
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
-    }
-
-    /** Insert arrow vectors */
-    public async insertArrowVectors<T extends { [key: string]: arrow.Vector } = any>(
-        children: T,
-        options: ArrowInsertOptions,
-    ): Promise<void> {
-        await this.insertArrowTable(arrow.Table.new(children), options);
-    }
-    /** Insert an arrow table */
-    public async insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): Promise<void> {
-        if (table.schema.fields.length == 0) {
-            console.warn(
-                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
-            );
-        }
-        await this.insertArrowBatches(table.schema, table.chunks, options);
-    }
-    /** Insert record batches */
-    public async insertArrowBatches(
-        schema: arrow.Schema,
-        batches: Iterable<arrow.RecordBatch>,
-        options: ArrowInsertOptions,
-    ): Promise<void> {
-        // Prepare the IPC stream writer
-        const buffer = new utils.IPCBuffer();
-        const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
-
-        // Write all batches to the ipc buffer
-        let first = true;
-        for (const batch of batches) {
-            if (!first) {
-                await this._instance.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
-            }
-            first = false;
-            writer.write(batch);
-        }
-        writer.finish();
-        await this._instance.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
-    }
-    /** Insert an arrow table from an ipc stream */
-    public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
-        await this._instance.insertArrowFromIPCStream(this._conn, buffer, options);
-    }
-
-    /** Insert csv file from path */
-    public async insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void> {
-        await this._instance.insertCSVFromPath(this._conn, text, options);
-    }
-    /** Insert json file from path */
-    public async insertJSONFromPath(text: string, options: JSONInsertOptions): Promise<void> {
-        await this._instance.insertJSONFromPath(this._conn, text, options);
     }
 }
