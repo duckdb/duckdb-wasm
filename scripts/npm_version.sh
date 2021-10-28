@@ -17,7 +17,6 @@ if [[ "${DEV}" = "0" ]] ; then
 		npm version ${VERSION}
 	done
 else 
-	export TAG='--tag next'	
 	for PKG in ${PROJECT_ROOT}/packages/* ; do
 		cd ${PKG}
 		npm version ${VERSION}

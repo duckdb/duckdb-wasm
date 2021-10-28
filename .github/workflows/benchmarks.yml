@@ -3,7 +3,7 @@ on:
     workflow_dispatch:
         inputs:
             pkg_version:
-                default: 'next'
+                default: 'latest'
                 description: 'The npm package version'
                 required: true
                 type: string
