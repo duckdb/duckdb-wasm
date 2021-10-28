@@ -17,6 +17,8 @@ cmake \
     -B ${DUCKDB_BUILD_DIR} \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TPCH_EXTENSION=1
 
