@@ -154,7 +154,7 @@ await conn.close();
 ## Prepared Statements
 
 ```ts
-// Prepare queries
+// Prepare query
 const stmt = await conn.prepare(`SELECT v + ? FROM generate_series(0, 10000) as t(v);`);
 // ... and run the query with materialized results
 await stmt.query(234);
