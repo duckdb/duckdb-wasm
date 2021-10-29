@@ -3,7 +3,7 @@ if(POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif(POLICY CMP0048)
 
-project(dashql VERSION 0.1)
+project(duckdb_wasm VERSION 0.1)
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
