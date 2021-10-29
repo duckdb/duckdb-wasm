@@ -160,7 +160,7 @@ export const FeatureTable: React.FC<TableProps> = (props: TableProps) => {
                 <div className={styles.table_title}>Features</div>
 
                 <div className={styles.table_anchor} />
-                <div className={styles.table_column_header}>DuckDB-wasm</div>
+                <div className={styles.table_column_header}>DuckDB-WASM</div>
                 <div className={styles.table_column_header}>sql.js</div>
                 <div className={styles.table_column_header}>Arquero</div>
                 <div className={styles.table_column_header}>Lovefield</div>
