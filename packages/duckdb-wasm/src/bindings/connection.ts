@@ -166,7 +166,7 @@ export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any
     }
 
     /** Run a prepared statement */
-    public query(params: any[]): arrow.Table<T> {
+    public query(...params: any[]): arrow.Table<T> {
         const buffer = this.bindings.runPrepared(this.connectionId, this.statementId, params);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
@@ -175,7 +175,7 @@ export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any
     }
 
     /** Send a prepared statement */
-    public send(params: any[]): arrow.RecordBatchStreamReader<T> {
+    public send(...params: any[]): arrow.RecordBatchStreamReader<T> {
         const header = this.bindings.sendPrepared(this.connectionId, this.statementId, params);
         const iter = new ResultStreamIterator(this.bindings, this.connectionId, header);
         const reader = arrow.RecordBatchReader.from<T>(iter);

@@ -129,6 +129,9 @@ await c.query(`
 // ..., or by executing raw insert statements
 await c.query(`INSERT INTO existing_table
     VALUES (1, "foo"), (2, "bar")`);
+
+// Close the connection to free memory
+await c.close();
 ```
 
 ## Query Execution
@@ -144,4 +147,23 @@ for await (const batch of await conn.send<{ v: arrow.Int }>(`
 `)) {
     // ...
 }
+// Close the connection to free memory
+await conn.close();
+```
+
+## Prepared Statements
+
+```ts
+// Prepare queries
+const stmt = await conn.prepare(`SELECT v + ? FROM generate_series(0, 10000) as t(v);`);
+// ... and run the query with materialized results
+await stmt.query(234);
+// ... or result chunks
+for await (const batch of await stmt.send(234)) {
+    // ...
+}
+// Close the statement to free memory
+await stmt.close();
+// Closing the connection will release statements as well
+await conn.close();
 ```

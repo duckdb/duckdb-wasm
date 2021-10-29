@@ -55,14 +55,14 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
                 const stmt = conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
-                const result = stmt.query([234]);
+                const result = stmt.query(234);
                 expect(result.length).toBe(10001);
                 stmt.close();
             });
 
             it('Streaming', async () => {
                 const stmt = conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
-                const stream = stmt.send([234]);
+                const stream = stmt.send(234);
                 let size = 0;
                 for (const batch of stream) {
                     size += batch.length;
@@ -85,10 +85,10 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
 
                 const stmt = conn.prepare('INSERT INTO typecheck VALUES(?,?,?,?,?,?,?,?,?)');
                 expect(() =>
-                    stmt.query([true, 100, 10_000, 1_000_000, 5_000_000_000, 0.5, Math.PI, 'hello world', 'hi']),
+                    stmt.query(true, 100, 10_000, 1_000_000, 5_000_000_000, 0.5, Math.PI, 'hello world', 'hi'),
                 ).not.toThrow();
                 expect(() =>
-                    stmt.query([
+                    stmt.query(
                         'test', // varchar for bool
                         100,
                         10_000,
@@ -98,10 +98,10 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]),
+                    ),
                 ).toThrow();
                 expect(() =>
-                    stmt.query([
+                    stmt.query(
                         true,
                         10_000, // smallint for tinyint
                         10_000,
@@ -111,10 +111,10 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]),
+                    ),
                 ).toThrow();
                 expect(() =>
-                    stmt.query([
+                    stmt.query(
                         true,
                         100,
                         1_000_000, // int for smallint
@@ -124,10 +124,10 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]),
+                    ),
                 ).toThrow();
                 expect(() =>
-                    stmt.query([
+                    stmt.query(
                         true,
                         100,
                         10_000,
@@ -137,7 +137,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]),
+                    ),
                 ).toThrow();
                 conn.close();
             });
@@ -200,8 +200,8 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
                 const conn = await adb().connect();
-                const stmt = await conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
-                const result = await stmt.run([234]);
+                const stmt = await conn.prepare('SELECT v + ? FROM generate_series(0, 10000) as t(v);');
+                const result = await stmt.query(234);
                 expect(result.length).toBe(10001);
                 await stmt.close();
             });
@@ -209,7 +209,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
             it('Streaming', async () => {
                 const conn = await adb().connect();
                 const stmt = await conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
-                const stream = await stmt.send([234]);
+                const stream = await stmt.send(234);
                 let size = 0;
                 for await (const batch of stream) {
                     size += batch.length;
@@ -243,7 +243,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     expect(throwed).toBe(true);
                 };
                 expectToThrow(async () => {
-                    await stmt.run([
+                    await stmt.query(
                         'test', // varchar for bool
                         100,
                         10_000,
@@ -253,10 +253,10 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]);
+                    );
                 });
                 expectToThrow(async () => {
-                    await stmt.run([
+                    await stmt.query(
                         true,
                         10_000, // smallint for tinyint
                         10_000,
@@ -266,10 +266,10 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]);
+                    );
                 });
                 expectToThrow(async () => {
-                    await stmt.run([
+                    await stmt.query(
                         true,
                         100,
                         1_000_000, // int for smallint
@@ -279,10 +279,10 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]);
+                    );
                 });
                 expectToThrow(async () => {
-                    await stmt.run([
+                    await stmt.query(
                         true,
                         100,
                         10_000,
@@ -292,7 +292,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                         Math.PI,
                         'hello world',
                         'hi',
-                    ]);
+                    );
                 });
                 await conn.close();
             });

@@ -200,7 +200,7 @@ export class AsyncPreparedStatement<T extends { [key: string]: arrow.DataType } 
     }
 
     /** Run a prepared statement */
-    public async run(params: any[]): Promise<arrow.Table<T>> {
+    public async query(...params: any[]): Promise<arrow.Table<T>> {
         const buffer = await this.bindings.runPrepared(this.connectionId, this.statementId, params);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
@@ -209,7 +209,7 @@ export class AsyncPreparedStatement<T extends { [key: string]: arrow.DataType } 
     }
 
     /** Send a prepared statement */
-    public async send(params: any[]): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
+    public async send(...params: any[]): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
         const header = await this.bindings.sendPrepared(this.connectionId, this.statementId, params);
         const iter = new AsyncResultStreamIterator(this.bindings, this.connectionId, header);
         const reader = await arrow.RecordBatchReader.from<T>(iter);
