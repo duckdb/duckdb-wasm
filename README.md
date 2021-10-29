@@ -13,7 +13,7 @@ _DuckDB-WASM is fast! If you're here for performance numbers, head over to our b
 **Repository Structure**
 | Subproject | Description | Language |
 | -- |:--|:--|
-| [lib](/lib) | WASM Library | C++ |
+| [duckdb_wasm](/lib) | WASM Library | C++ |
 | [@duckdb/duckdb-wasm](/packages/duckdb-wasm) | Typescript API | Typescript |
 | [@duckdb/duckdb-wasm-shell](/packages/duckdb-wasm-shell) | SQL Shell | Rust |
 | [@duckdb/benchmarks](/packages/benchmarks) | Benchmarks | Typescript |
