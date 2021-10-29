@@ -36,7 +36,7 @@ interface FeatureValue {
 const DUCKDB_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'C++ & TS' }],
     [FeatureID.LICENSE, { text: 'MPL-2.0' }],
-    [FeatureID.BUNDLE_SIZE, { text: '68 KB + 1.8 MB', restrictions: ['Streaming WASM compilation'] }],
+    [FeatureID.BUNDLE_SIZE, { text: '68 KB + 1.8 MB', restrictions: ['Streaming Wasm compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Vector at a time' }],
     [FeatureID.QUERY_INPUT, { text: 'SQL Text' }],
     [FeatureID.WORKER_OFFLOADING, { available: true }],
@@ -53,7 +53,7 @@ const DUCKDB_FEATURES = new Map<FeatureID, FeatureValue>([
 const SQLJS_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'C & JS' }],
     [FeatureID.LICENSE, { text: 'MIT' }],
-    [FeatureID.BUNDLE_SIZE, { text: '15 KB + 332 KB', restrictions: ['Streaming WASM compilation'] }],
+    [FeatureID.BUNDLE_SIZE, { text: '15 KB + 332 KB', restrictions: ['Streaming Wasm compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Tuple at a time' }],
     [FeatureID.QUERY_INPUT, { text: 'SQL Text' }],
     [FeatureID.WORKER_OFFLOADING, { available: true, restrictions: ['Manual message passing'] }],
@@ -160,7 +160,7 @@ export const FeatureTable: React.FC<TableProps> = (props: TableProps) => {
                 <div className={styles.table_title}>Features</div>
 
                 <div className={styles.table_anchor} />
-                <div className={styles.table_column_header}>DuckDB-WASM</div>
+                <div className={styles.table_column_header}>DuckDB-Wasm</div>
                 <div className={styles.table_column_header}>sql.js</div>
                 <div className={styles.table_column_header}>Arquero</div>
                 <div className={styles.table_column_header}>Lovefield</div>

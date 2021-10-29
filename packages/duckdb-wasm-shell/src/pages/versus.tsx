@@ -71,9 +71,9 @@ export const Versus: React.FC<Props> = (props: Props) => {
                 <div className={styles.root}>
                     <div className={styles.content}>
                         <PageSection>
-                            <h1>DuckDB-WASM versus X</h1>
+                            <h1>DuckDB-Wasm versus X</h1>
                             <p className={styles.tldr}>
-                                TL;DR: Consider <b>DuckDB-WASM</b> for efficient SQL queries, for file formats such as
+                                TL;DR: Consider <b>DuckDB-Wasm</b> for efficient SQL queries, for file formats such as
                                 JSON, CSV, Arrow, Parquet, for partial file reads (locally & remote), for shared SQL
                                 queries between client and server and for larger datasets. Consider an alternative for
                                 simple queries on &lt;= 10k tuples or if bundle size and cold startup time are more
@@ -135,22 +135,22 @@ export const Versus: React.FC<Props> = (props: Props) => {
                         <PageSection>
                             <h2 className={styles.header2}>General Features</h2>
                             <p className={styles.section_text}>
-                                DuckDB-WASM follows the philosophy of <i>bundling with batteries included</i> to
+                                DuckDB-Wasm follows the philosophy of <i>bundling with batteries included</i> to
                                 leverage the full potential of WebAssembly as an embedded database. DuckDB-wasm
                                 implements many features that are necessary for efficient ad-hoc analytics in the
                                 browser such as a full SQL frontend and automatic Web-Worker offloading. It also comes
                                 with a powerful virtual filesystem specifically tailored to the browser that allows for
                                 partially reading files either through HTTP range requests or the HTML 5 File APIs.
-                                Additionally, DuckDB-WASM supports a variety of file formats out-of-the-box such as CSV,
+                                Additionally, DuckDB-Wasm supports a variety of file formats out-of-the-box such as CSV,
                                 JSON, Arrow and Parquet.
                             </p>
                             <p className={styles.section_text}>
-                                The following table provides an overview of key features in DuckDB-WASM:
+                                The following table provides an overview of key features in DuckDB-Wasm:
                             </p>
                             <FeatureTable className={styles.feature_table} />
                             <p className={styles.section_text}>
                                 The broad function scope comes at the price of a larger bundle size. When using the
-                                synchronous version of DuckDB-WASM, the database requires approximately 68 KB of
+                                synchronous version of DuckDB-Wasm, the database requires approximately 68 KB of
                                 compressed Javascript and a 1.8 MB compressed WebAssembly Module. Modern browsers reduce
                                 the impact of the large module sizes by instantiating WebAssembly in a streaming
                                 fashion. Browsers start compiling WebAssembly modules while downloading them which can
@@ -158,8 +158,8 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 with cold caches.
                             </p>
                             <p className={styles.section_text}>
-                                DuckDB-WASM can therefore show its strengths in situations where this initial startup
-                                latency can be concealed. DuckDB-WASM might not <i>yet</i> be the right tool for you, if
+                                DuckDB-Wasm can therefore show its strengths in situations where this initial startup
+                                latency can be concealed. DuckDB-Wasm might not <i>yet</i> be the right tool for you, if
                                 you&apos;re aiming for a smallest-possible duration until your website is fully
                                 interactive. Reducing this latency is still subject of ongoing research, please share
                                 your thoughts with us
@@ -177,7 +177,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                         <PageSection>
                             <h2 className={styles.header2}>TPC-H Benchmarks</h2>
                             <p className={styles.section_text}>
-                                The biggest strength of DuckDB-WASM is its capability to run complex analytical queries
+                                The biggest strength of DuckDB-Wasm is its capability to run complex analytical queries
                                 in the web browser or in isolated environments such as WebAssembly CDN Workers. In the
                                 past, these workloads have usually been pushed to more powerful database servers since
                                 the language Javascript is not well equipped to evaluate complex queries efficiently.
@@ -244,10 +244,10 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 scaleFactor={0.01}
                             />
                             <p className={styles.section_text}>
-                                The benchmarks show that DuckDB-WASM outperforms the competition by a factor of 10 - 100
+                                The benchmarks show that DuckDB-Wasm outperforms the competition by a factor of 10 - 100
                                 on larger data sizes. They also show that this relative speedup shrinks on smaller scale
                                 factors. On scale factor 0.01 (10MB), all three alternatives are able to compete for a
-                                small subset of the queries. This is caused by the interface design of DuckDB-WASM that
+                                small subset of the queries. This is caused by the interface design of DuckDB-Wasm that
                                 always materializes input and output as Arrow IPC streams. If the query performs only
                                 very little work, the overhead through this serialization and copying can outweigh the
                                 increased processing efficiency.
@@ -264,7 +264,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                             </p>
                             <p className={styles.section_text}>
                                 The following table lists seven microbenchmarks that were scaled at least three times.
-                                We observe consistently accross all of them that DuckDB-WASM loses against libraries
+                                We observe consistently accross all of them that DuckDB-Wasm loses against libraries
                                 like Arquero if the data contains only 1000 rows. Tasks like adding up a single native
                                 integer array are simple enough that the overhead of the WebAssembly interaction will
                                 easily eat up any performance benefits. The situation becomes even worse in the regex
@@ -288,7 +288,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 These micro benchmarks show that there is also <i>no such thing as free lunch</i> in the
                                 browser. We are paying for the increased processing efficiency in WebAssembly with a
                                 sightly less efficient evaluation on very small input. Our recommendation is therefore
-                                to use DuckDB-WASM if you need SQL, the features or the raw speed on medium to large
+                                to use DuckDB-Wasm if you need SQL, the features or the raw speed on medium to large
                                 data sizes. Stick to existing frameworks if your dataset is very small or if your
                                 queries only contain simple scans and filters.
                             </p>
