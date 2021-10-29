@@ -130,7 +130,7 @@ await c.query(`
 await c.query(`INSERT INTO existing_table
     VALUES (1, "foo"), (2, "bar")`);
 
-// Close the connection to free memory
+// Close the connection to release memory
 await c.close();
 ```
 
@@ -147,7 +147,7 @@ for await (const batch of await conn.send<{ v: arrow.Int }>(`
 `)) {
     // ...
 }
-// Close the connection to free memory
+// Close the connection to release memory
 await conn.close();
 ```
 
@@ -162,7 +162,7 @@ await stmt.query(234);
 for await (const batch of await stmt.send(234)) {
     // ...
 }
-// Close the statement to free memory
+// Close the statement to release memory
 await stmt.close();
 // Closing the connection will release statements as well
 await conn.close();
