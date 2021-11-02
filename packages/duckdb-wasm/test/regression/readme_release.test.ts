@@ -1,4 +1,4 @@
-import * as duckdb from '../src/';
+import * as duckdb from '../../src/';
 import * as arrow from 'apache-arrow';
 
 export function testReadmeExamplesAsync(adb: () => duckdb.AsyncDuckDB): void {
