@@ -452,11 +452,9 @@ WebDB::WebDB(WebTag)
       connections_(),
       file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
     auto webfs = std::make_shared<io::WebFileSystem>(config_);
+    webfs->ConfigureFileStatistics(file_stats_);
     file_page_buffer_ = std::make_shared<io::FilePageBuffer>(std::move(webfs));
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
-    if (auto webfs = io::WebFileSystem::Get()) {
-        webfs->ConfigureFileStatistics(file_stats_);
-    }
     if (auto open_status = Open(":memory:"); !open_status.ok()) {
         throw std::runtime_error(open_status.message());
     }
@@ -470,9 +468,6 @@ WebDB::WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs)
       connections_(),
       file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
-    if (auto webfs = io::WebFileSystem::Get()) {
-        webfs->ConfigureFileStatistics(file_stats_);
-    }
     if (auto open_status = Open(":memory:"); !open_status.ok()) {
         throw std::runtime_error(open_status.message());
     }

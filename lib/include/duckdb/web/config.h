@@ -4,6 +4,8 @@
 #include <rapidjson/document.h>
 
 #include <cstdint>
+#include <string>
+#include <string_view>
 
 namespace duckdb {
 namespace web {
