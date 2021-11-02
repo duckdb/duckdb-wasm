@@ -84,7 +84,7 @@ await Promise.all(streamInserts);
 // (interchangeable: registerFile{Text,Buffer,URL,Handle})
 await db.registerFileText(`data.csv`, '1|foo\n2|bar\n');
 // ... with typed insert options
-await db.importCSVFromPath('data.csv', {
+await db.insertCSVFromPath('data.csv', {
     schema: 'main',
     name: 'foo',
     detect: false,
@@ -113,8 +113,8 @@ await db.registerFileText(
 }`,
 );
 // ... with typed insert options
-await db.importJSONFromPath('rows.json', { name: 'rows' });
-await db.importJSONFromPath('columns.json', { name: 'columns' });
+await db.insertJSONFromPath('rows.json', { name: 'rows' });
+await db.insertJSONFromPath('columns.json', { name: 'columns' });
 
 // ..., from Parquet files
 const pickedFile: File = letUserPickFile();
