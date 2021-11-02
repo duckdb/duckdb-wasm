@@ -1,5 +1,7 @@
 import * as duckdb from '../../src';
+import * as arrow from 'apache-arrow';
 
+// https://github.com/duckdb/duckdb-wasm/issues/332
 export function testGitHubIssue332(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
     beforeEach(async () => {
@@ -11,7 +13,7 @@ export function testGitHubIssue332(db: () => duckdb.AsyncDuckDB): void {
         await db().flushFiles();
         await db().dropFiles();
     });
-    describe('GitHub issue ', () => {
+    describe('GitHub issues', () => {
         it('332', async () => {
             await db().registerFileText(
                 'Products.csv',
@@ -64,7 +66,15 @@ Media,Theater,2020,Q1,20,7,1,2020-Q1,Sony,Format=XML; <Properties>…,1
 `,
             );
             await conn.query("CREATE TABLE products AS SELECT * FROM 'Products.csv'");
-            await conn.query('SELECT productgroup FROM products GROUP BY productgroup');
+            const all = await conn.query('SELECT * FROM products');
+            expect(all.schema.fields.length).toBe(11);
+            expect(all.schema.fields[0].name).toBe('ProductGroup');
+            const insensitive = await conn.query<{
+                ProductGroup: arrow.Utf8;
+            }>('SELECT productgroup FROM products GROUP BY productgroup');
+            expect(insensitive.schema.fields.length).toBe(1);
+            expect(insensitive.schema.fields[0].name).toBe('ProductGroup');
+            expect(insensitive.toArray().length).toEqual(2);
         });
     });
 }
