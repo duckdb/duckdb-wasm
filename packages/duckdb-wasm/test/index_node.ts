@@ -75,7 +75,9 @@ import { testArrowInsert, testArrowInsertAsync } from './insert_arrow.test';
 import { testJSONInsert, testJSONInsertAsync } from './insert_json.test';
 import { testCSVInsert, testCSVInsertAsync } from './insert_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
+import { testReadmeExamplesAsync } from './readme_examples.test';
 
+testReadmeExamplesAsync(() => adb!);
 testBindings(() => db!, dataDir);
 testAsyncBindings(() => adb!, dataDir);
 testBatchStream(() => db!);

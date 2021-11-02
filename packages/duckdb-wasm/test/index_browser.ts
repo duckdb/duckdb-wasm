@@ -101,10 +101,12 @@ import { testArrowInsert, testArrowInsertAsync } from './insert_arrow.test';
 import { testJSONInsert, testJSONInsertAsync } from './insert_json.test';
 import { testCSVInsert, testCSVInsertAsync } from './insert_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
+import { testReadmeExamplesAsync } from './readme_examples.test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
 
+testReadmeExamplesAsync(() => adb!);
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL);
 testBatchStream(() => db!);
