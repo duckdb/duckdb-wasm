@@ -113,8 +113,8 @@ await db.registerFileText(
 }`,
 );
 // ... with typed insert options
-await db.insertJSONFromPath('rows.json', { name: 'rows' });
-await db.insertJSONFromPath('columns.json', { name: 'columns' });
+await c.insertJSONFromPath('rows.json', { name: 'rows' });
+await c.insertJSONFromPath('columns.json', { name: 'columns' });
 
 // ..., from Parquet files
 const pickedFile: File = letUserPickFile();
