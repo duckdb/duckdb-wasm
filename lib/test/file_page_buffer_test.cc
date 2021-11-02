@@ -25,7 +25,7 @@ namespace fs = std::filesystem;
 namespace {
 
 struct TestableFilePageBuffer : public io::FilePageBuffer {
-    TestableFilePageBuffer(std::unique_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
+    TestableFilePageBuffer(std::unique_ptr<duckdb::FileSystem> filesystem = duckdb::FileSystem::CreateLocal(),
                            size_t page_capacity = 10, size_t page_size_bits = 14)
         : io::FilePageBuffer(std::move(filesystem), page_capacity, page_size_bits) {}
 
@@ -164,7 +164,7 @@ TEST(FilePageBufferTest, PersistentRestart) {
 
 // NOLINTNEXTLINE
 TEST(FilePageBufferTest, FIFOEviction) {
-    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
     auto file_path = CreateTestFile();
     std::ofstream(file_path).close();
     auto data_size = 10 * buffer->GetPageSize();
@@ -207,7 +207,7 @@ TEST(FilePageBufferTest, FIFOEviction) {
 
 // NOLINTNEXTLINE
 TEST(FilePageBufferTest, LRUEviction) {
-    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
     auto file_path = CreateTestFile();
     std::ofstream(file_path).close();
     auto data_size = 11 * buffer->GetPageSize();
@@ -284,7 +284,7 @@ TEST(FilePageBufferTest, LRUEviction) {
 
 // NOLINTNEXTLINE
 TEST(FilePageBufferTest, ParallelFix) {
-    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
     auto file_path = CreateTestFile();
     auto data_size = 10 * buffer->GetPageSize();
     std::ofstream(file_path).close();
@@ -318,7 +318,7 @@ TEST(FilePageBufferTest, ParallelFix) {
 
 // NOLINTNEXTLINE
 TEST(FilePageBufferTest, ParallelExclusiveAccess) {
-    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
     auto file_path = CreateTestFile();
     auto data_size = 10 * buffer->GetPageSize();
     std::ofstream(file_path).close();
@@ -376,7 +376,7 @@ TEST(FilePageBufferTest, ParallelScans) {
         CreateTestFile(),
     };
     {
-        auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+        auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
         for (auto& file_path : test_files) {
             // Open file
             std::ofstream(file_path).close();
@@ -401,7 +401,7 @@ TEST(FilePageBufferTest, ParallelScans) {
         // empty before running the actual test.
     }
 
-    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
     std::vector<std::thread> threads;
 
     for (size_t i = 0; i < ThreadCount; ++i) {
@@ -459,7 +459,7 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
         CreateTestFile(),
     };
     {
-        auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+        auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
         for (auto& file_path : test_files) {
             // Open file
             std::ofstream(file_path).close();
@@ -485,7 +485,7 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
         // empty before running the actual test.
     }
 
-    auto buffer = std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, 13);
+    auto buffer = std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, 13);
     std::vector<std::thread> threads;
 
     for (size_t i = 0; i < ThreadCount; ++i) {
@@ -568,7 +568,7 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
 
 TEST(FilePageBufferTest, BlockStatistics) {
     auto buffer =
-        std::make_shared<TestableFilePageBuffer>(io::CreateDefaultFileSystem(), 10, io::DEFAULT_FILE_PAGE_SHIFT);
+        std::make_shared<TestableFilePageBuffer>(duckdb::FileSystem::CreateLocal(), 10, io::DEFAULT_FILE_PAGE_SHIFT);
     auto file_path = CreateTestFile();
     auto data_size = 2 * buffer->GetPageSize();
     std::ofstream(file_path).close();

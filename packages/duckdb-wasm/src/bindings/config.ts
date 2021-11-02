@@ -13,4 +13,8 @@ export interface DuckDBConfig {
      * Note that this will only work with cross-origin isolated sites since it requires SharedArrayBuffers.
      */
     maximumThreads?: number;
+    /**
+     * Allow falling back to full HTTP reads if the server does not support range requests.
+     */
+    allowFullHTTPReads?: boolean;
 }

@@ -15,10 +15,11 @@
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/config.h"
+#include "duckdb/web/environment.h"
 #include "duckdb/web/io/buffered_filesystem.h"
-#include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/file_stats.h"
+#include "duckdb/web/io/web_filesystem.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
@@ -98,6 +99,8 @@ class WebDB {
     };
 
    protected:
+    /// The config
+    std::shared_ptr<WebDBConfig> config_;
     /// The buffer manager
     std::shared_ptr<io::FilePageBuffer> file_page_buffer_;
     /// The buffered filesystem
@@ -111,12 +114,12 @@ class WebDB {
     std::shared_ptr<io::FileStatisticsRegistry> file_stats_ = {};
     /// The pinned web files (if any)
     std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
-    /// The config
-    WebDBConfig config_;
 
    public:
     /// Constructor
-    WebDB(std::string_view path = "", std::unique_ptr<duckdb::FileSystem> fs = io::CreateDefaultFileSystem());
+    WebDB(WebTag);
+    /// Constructor
+    WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs = duckdb::FileSystem::CreateLocal());
     /// Destructor
     ~WebDB();
 
@@ -142,7 +145,7 @@ class WebDB {
     /// Reset the database
     arrow::Status Reset();
     /// Open a database
-    arrow::Status Open(std::string_view path);
+    arrow::Status Open(std::string_view args_json);
 
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
@@ -173,6 +176,8 @@ class WebDB {
 
     /// Get the static webdb instance
     static arrow::Result<std::reference_wrapper<WebDB>> Get();
+    /// Create the default webdb database
+    static std::unique_ptr<WebDB> Create();
 };
 
 }  // namespace web

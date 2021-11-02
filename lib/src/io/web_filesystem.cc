@@ -13,7 +13,6 @@
 #include "arrow/status.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/common/file_system.hpp"
-#include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/glob.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/debug.h"
@@ -286,7 +285,7 @@ std::string WebFileSystem::WebFile::GetInfoJSON() const {
 }
 
 /// Constructor
-WebFileSystem::WebFileSystem() {
+WebFileSystem::WebFileSystem(std::shared_ptr<WebDBConfig> config) : config_(config) {
     assert(WEBFS == nullptr && "Can only register a single WebFileSystem at a time");
     WEBFS = this;
 }

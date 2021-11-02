@@ -18,7 +18,7 @@ namespace fs = std::filesystem;
 namespace {
 
 TEST(ParquetLoadTest, LoadParquet) {
-    auto db = make_shared<WebDB>();
+    auto db = make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -41,7 +41,7 @@ INTEGER	VARCHAR	INTEGER
 }
 
 TEST(ParquetLoadTest, LoadParquetTwice) {
-    auto db = make_shared<WebDB>();
+    auto db = make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -80,7 +80,7 @@ INTEGER	VARCHAR	INTEGER
 }
 
 TEST(FileSystemBufferTest, FlushFrameMemoryBugRegression) {
-    auto db = make_shared<WebDB>();
+    auto db = make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
     std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
     for (const auto& f : files) {

@@ -12,6 +12,7 @@
 #include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/web/config.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/readahead_buffer.h"
 #include "duckdb/web/utils/parallel.h"
@@ -130,6 +131,8 @@ class WebFileSystem : public duckdb::FileSystem {
     };
 
    protected:
+    /// The config
+    std::shared_ptr<WebDBConfig> config_ = {};
     /// The filesystem mutex
     LightMutex fs_mutex_ = {};
     /// The files by id
@@ -152,7 +155,7 @@ class WebFileSystem : public duckdb::FileSystem {
 
    public:
     /// Constructor
-    WebFileSystem();
+    WebFileSystem(std::shared_ptr<WebDBConfig> config);
     /// Destructor
     virtual ~WebFileSystem();
     /// Delete copy constructor

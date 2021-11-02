@@ -86,7 +86,7 @@ TEST_P(ArrowInsertTestSuite, TestInsert) {
     auto& buffer = maybe_buffer.ValueUnsafe();
 
     // Stream the buffer to the WebDB
-    auto db = std::make_shared<WebDB>();
+    auto db = std::make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
     for (size_t ofs = 0; ofs < buffer->size();) {
         auto chunk_begin = buffer->data() + ofs;

@@ -51,7 +51,7 @@ TEST_P(CSVInsertTestSuite, TestImport) {
     auto memory_filesystem = std::make_unique<io::MemoryFileSystem>();
     ASSERT_TRUE(memory_filesystem->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
-    auto db = std::make_shared<WebDB>("", std::move(memory_filesystem));
+    auto db = std::make_shared<WebDB>(NATIVE, std::move(memory_filesystem));
     WebDB::Connection conn{*db};
     auto maybe_ok = conn.InsertCSVFromPath(path, test.options);
     ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
@@ -349,7 +349,7 @@ TEST(CSVExportTest, TestExport) {
     auto path = duckdb::web::test::SOURCE_DIR / ".." / "data" / "test.csv";
 
     // Import csv
-    auto db = std::make_shared<WebDB>();
+    auto db = std::make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
     auto maybe_ok = conn.InsertCSVFromPath(path.c_str(), R"JSON({
         "schema": "main",

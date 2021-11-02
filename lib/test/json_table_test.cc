@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "arrow/record_batch.h"
+#include "duckdb/web/environment.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_insert_options.h"
@@ -409,7 +410,7 @@ struct TableImportTestSuite : public testing::TestWithParam<TableImportTest> {};
 
 TEST_P(TableImportTestSuite, ImportFile) {
     auto& test = GetParam();
-    auto db = std::make_shared<WebDB>();
+    auto db = std::make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
 
     auto input = std::filesystem::path(test::SOURCE_DIR) / ".." / test.input_path;

@@ -195,31 +195,36 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         failWith(mod, `Missing data URL for file ${fileId}`);
                         return 0;
                     }
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', file.data_url!, false);
-                    xhr.responseType = 'arraybuffer';
-                    xhr.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
-                    xhr.send(null);
-                    if (
-                        xhr.status == 206 /* Partial content */ ||
-                        (xhr.status == 200 && bytes == xhr.response.byteLength && location == 0)
-                    ) {
-                        const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
-                        mod.HEAPU8.set(src, buf);
-                        return src.byteLength;
-                    } else if (xhr.status == 200) {
-                        failWith(
-                            mod,
-                            `Range request for ${file.data_url} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
-                        );
-                        return 0;
-                    } else {
-                        failWith(
-                            mod,
-                            `Range request for ${file.data_url} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
-                        );
-                        return 0;
+                    try {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', file.data_url!, false);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
+                        xhr.send(null);
+                        if (
+                            xhr.status == 206 /* Partial content */ ||
+                            (xhr.status == 200 && bytes == xhr.response.byteLength && location == 0)
+                        ) {
+                            const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
+                            mod.HEAPU8.set(src, buf);
+                            return src.byteLength;
+                        } else if (xhr.status == 200) {
+                            failWith(
+                                mod,
+                                `Range request for ${file.data_url} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
+                            );
+                            return 0;
+                        } else {
+                            failWith(
+                                mod,
+                                `Range request for ${file.data_url} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
+                            );
+                            return 0;
+                        }
+                    } catch (e) {
+                        failWith(mod, `Range request for ${file.data_url} failed with error: ${e}"`);
                     }
+                    return 0;
                 }
                 case DuckDBDataProtocol.NATIVE: {
                     const handle = BROWSER_RUNTIME._files?.get(file.file_name);
@@ -306,7 +311,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
+    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => true,
     createDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,

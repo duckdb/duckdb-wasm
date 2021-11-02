@@ -35,11 +35,13 @@
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/arrow_stream_buffer.h"
 #include "duckdb/web/arrow_type_mapping.h"
+#include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
+#include "duckdb/web/environment.h"
 #include "duckdb/web/ext/table_function_relation.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
-#include "duckdb/web/io/default_filesystem.h"
+#include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/json_analyzer.h"
@@ -55,9 +57,19 @@
 namespace duckdb {
 namespace web {
 
+/// Create the default webdb database
+std::unique_ptr<WebDB> WebDB::Create() {
+    if constexpr (ENVIRONMENT == Environment::WEB) {
+        return std::make_unique<WebDB>(WEB);
+    } else {
+        auto fs = duckdb::FileSystem::CreateLocal();
+        return std::make_unique<WebDB>(NATIVE, std::move(fs));
+    }
+}
+
 /// Get the static webdb instance
 arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
-    static std::unique_ptr<WebDB> db = std::make_unique<WebDB>();
+    static std::unique_ptr<WebDB> db = Create();
     return *db;
 }
 
@@ -80,8 +92,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
     // Patch the schema (if necessary)
     std::shared_ptr<arrow::Schema> patched_schema = schema;
-    if (!webdb_.config_.emit_bigint) {
-        patched_schema = patchSchema(schema, webdb_.config_);
+    if (!webdb_.config_->emit_bigint) {
+        patched_schema = patchSchema(schema, *webdb_.config_);
     }
 
     // Create the file writer
@@ -96,7 +108,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
         // Import the record batch
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
         // Patch the record batch
-        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, patched_schema, webdb_.config_));
+        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, patched_schema, *webdb_.config_));
         // Write the record batch
         ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
     }
@@ -117,8 +129,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Patch the schema (if necessary)
     current_schema_patched_ = current_schema_;
-    if (!webdb_.config_.emit_bigint) {
-        current_schema_patched_ = patchSchema(current_schema_, webdb_.config_);
+    if (!webdb_.config_->emit_bigint) {
+        current_schema_patched_ = patchSchema(current_schema_, *webdb_.config_);
     }
     // Serialize the schema
     return arrow::ipc::SerializeSchema(*current_schema_patched_);
@@ -171,7 +183,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         chunk->ToArrowArray(&array);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
         // Patch the record batch
-        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_));
+        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, *webdb_.config_));
         // Serialize the record batch
         auto options = arrow::ipc::IpcWriteOptions::Defaults();
         options.use_threads = false;
@@ -433,17 +445,35 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
 }
 
 /// Constructor
-WebDB::WebDB(std::string_view path, std::unique_ptr<duckdb::FileSystem> fs)
-    : file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
+WebDB::WebDB(WebTag)
+    : config_(std::make_shared<WebDBConfig>()),
+      file_page_buffer_(),
       database_(),
       connections_(),
-      file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
-      config_() {
+      file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
+    auto webfs = std::make_shared<io::WebFileSystem>(config_);
+    file_page_buffer_ = std::make_shared<io::FilePageBuffer>(std::move(webfs));
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
     if (auto webfs = io::WebFileSystem::Get()) {
         webfs->ConfigureFileStatistics(file_stats_);
     }
-    if (auto open_status = Open(path); !open_status.ok()) {
+    if (auto open_status = Open(":memory:"); !open_status.ok()) {
+        throw std::runtime_error(open_status.message());
+    }
+}
+
+/// Constructor
+WebDB::WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs)
+    : config_(std::make_shared<WebDBConfig>()),
+      file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
+      database_(),
+      connections_(),
+      file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
+    file_page_buffer_->ConfigureFileStatistics(file_stats_);
+    if (auto webfs = io::WebFileSystem::Get()) {
+        webfs->ConfigureFileStatistics(file_stats_);
+    }
+    if (auto open_status = Open(":memory:"); !open_status.ok()) {
         throw std::runtime_error(open_status.message());
     }
 }
@@ -479,7 +509,7 @@ std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 /// Get feature flags
 uint32_t WebDB::GetFeatureFlags() {
     auto flags = STATIC_WEBDB_FEATURES;
-    if (config_.emit_bigint) {
+    if (config_->emit_bigint) {
         flags |= 1 << WebDBFeature::EMIT_BIGINT;
     }
     return flags;
@@ -506,8 +536,8 @@ arrow::Status WebDB::Reset() { return Open(""); }
 
 /// Open a database
 arrow::Status WebDB::Open(std::string_view args_json) {
-    config_ = WebDBConfig::ReadFrom(args_json);
-    bool in_memory = config_.path == ":memory:" || config_.path == "";
+    *config_ = WebDBConfig::ReadFrom(args_json);
+    bool in_memory = config_->path == ":memory:" || config_->path == "";
     try {
         // Setup new database
         auto buffered_fs = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
@@ -515,10 +545,10 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(buffered_fs);
-        db_config.maximum_threads = config_.maximum_threads;
+        db_config.maximum_threads = config_->maximum_threads;
         db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
 
-        auto db = std::make_shared<duckdb::DuckDB>(config_.path, &db_config);
+        auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         db->LoadExtension<duckdb::ParquetExtension>();
 
         // Reset state that is specific to the old database
@@ -537,7 +567,6 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     }
     return arrow::Status::OK();
 }
-
 /// Register a file URL
 arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                      std::optional<uint64_t> file_size) {

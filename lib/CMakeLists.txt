@@ -178,7 +178,6 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
-  ${CMAKE_SOURCE_DIR}/src/io/default_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_page_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc
   ${CMAKE_SOURCE_DIR}/src/io/glob.cc

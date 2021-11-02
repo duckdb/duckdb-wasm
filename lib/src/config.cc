@@ -1,3 +1,5 @@
+#include "duckdb/web/config.h"
+
 #include "duckdb/web/arrow_casts.h"
 #include "duckdb/web/webdb.h"
 
@@ -42,7 +44,14 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
         max_threads = doc["maximumThreads"].GetInt();
     }
-    return {.path = path, .emit_bigint = bigint, .maximum_threads = max_threads};
+    bool allow_full_http_reads = false;
+    if (doc.HasMember("allowFullHTTPReads") && doc["allowFullHTTPReads"].IsBool()) {
+        allow_full_http_reads = doc["allowFullHTTPReads"].GetBool();
+    }
+    return {.path = path,
+            .emit_bigint = bigint,
+            .maximum_threads = max_threads,
+            .filesystem = FileSystemConfig{.allow_full_http_reads = allow_full_http_reads}};
 }
 
 }  // namespace web

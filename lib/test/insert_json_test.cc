@@ -36,7 +36,7 @@ TEST_P(JSONInsertTestSuite, TestImport) {
     auto memory_filesystem = std::make_unique<io::MemoryFileSystem>();
     ASSERT_TRUE(memory_filesystem->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
-    auto db = std::make_shared<WebDB>("", std::move(memory_filesystem));
+    auto db = std::make_shared<WebDB>(NATIVE, std::move(memory_filesystem));
     WebDB::Connection conn{*db};
     auto maybe_ok = conn.InsertJSONFromPath(path, test.options);
     ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();

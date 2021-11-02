@@ -14,7 +14,7 @@ TEST(ArrowCasts, PatchBigInt) {
     WebDBConfig config{
         .emit_bigint = false,
     };
-    auto db = std::make_shared<WebDB>();
+    auto db = std::make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
 
     auto result = conn.connection().Query("SELECT (v & 127)::BIGINT FROM generate_series(0, 10) as t(v);");

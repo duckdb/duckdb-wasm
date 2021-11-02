@@ -31,14 +31,23 @@ constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 #endif
 );
 
+struct FileSystemConfig {
+    /// Allow falling back to full HTTP reads if the server does not support range requests
+    bool allow_full_http_reads = false;
+};
+
 struct WebDBConfig {
     /// The database path
-    std::string path;
+    std::string path = "";
     /// Emit BigInt values?
     /// This depends on the browser supporting BigInt64Array.
-    bool emit_bigint;
+    bool emit_bigint = false;
     /// The thread count
-    uint32_t maximum_threads;
+    uint32_t maximum_threads = 1;
+    /// The filesystem
+    FileSystemConfig filesystem = {
+        .allow_full_http_reads = false,
+    };
 
     /// Read from a document
     static WebDBConfig ReadFrom(std::string_view args_json);

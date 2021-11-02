@@ -11,7 +11,8 @@ using namespace std;
 namespace {
 
 TEST(InputStreamBuffer, istreambuf_iterator) {
-    auto file_page_buffer = std::make_shared<io::FilePageBuffer>();
+    auto fs = duckdb::FileSystem::CreateLocal();
+    auto file_page_buffer = std::make_shared<io::FilePageBuffer>(std::move(fs));
     auto path = duckdb::web::test::SOURCE_DIR / ".." / "data" / "test.json";
     std::string expected;
     std::string have;

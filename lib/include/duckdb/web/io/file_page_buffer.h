@@ -19,7 +19,6 @@
 
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
-#include "duckdb/web/io/default_filesystem.h"
 #include "duckdb/web/io/file_page_defaults.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/parallel.h"
@@ -341,8 +340,7 @@ class FilePageBuffer {
    public:
     /// Constructor.
     /// Use 16KiB pages by default (1 << 14)
-    FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem = io::CreateDefaultFileSystem(),
-                   uint64_t page_capacity = DEFAULT_FILE_PAGE_CAPACITY,
+    FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, uint64_t page_capacity = DEFAULT_FILE_PAGE_CAPACITY,
                    uint64_t page_size_bits = DEFAULT_FILE_PAGE_SHIFT);
     /// Destructor
     ~FilePageBuffer();

@@ -9,6 +9,7 @@ export function testGitHubIssue332(db: () => duckdb.AsyncDuckDB): void {
         conn = await db().connect();
     });
     afterEach(async () => {
+        await conn.query('DROP TABLE IF EXISTS products');
         await conn.close();
         await db().flushFiles();
         await db().dropFiles();
