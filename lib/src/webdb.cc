@@ -538,9 +538,7 @@ arrow::Status WebDB::Reset() { return Open(); }
 /// Open a database
 arrow::Status WebDB::Open(std::string_view args_json) {
     assert(config_ != nullptr);
-    if (args_json != "") {
-        *config_ = WebDBConfig::ReadFrom(args_json);
-    }
+    *config_ = WebDBConfig::ReadFrom(args_json);
     bool in_memory = config_->path == ":memory:" || config_->path == "";
     try {
         // Setup new database
