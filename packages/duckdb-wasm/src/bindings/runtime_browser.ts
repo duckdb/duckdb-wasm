@@ -80,6 +80,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Try to fallback to full read?
                     if (file.allowFullHttpReads) {
+                        console.warn(`falling back to full HTTP read for: ${file.dataUrl}`);
+
                         // Send non-range request
                         const xhr = new XMLHttpRequest();
                         xhr.open('GET', file.dataUrl!, false);
