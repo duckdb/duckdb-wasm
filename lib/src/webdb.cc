@@ -66,10 +66,12 @@ std::unique_ptr<WebDB> WebDB::Create() {
         return std::make_unique<WebDB>(NATIVE, std::move(fs));
     }
 }
-
 /// Get the static webdb instance
 arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
-    static std::unique_ptr<WebDB> db = Create();
+    static std::unique_ptr<WebDB> db = nullptr;
+    if (db == nullptr) {
+        db = Create();
+    }
     return *db;
 }
 
@@ -447,15 +449,17 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
 /// Constructor
 WebDB::WebDB(WebTag)
     : config_(std::make_shared<WebDBConfig>()),
-      file_page_buffer_(),
-      database_(),
+      file_page_buffer_(nullptr),
+      buffered_filesystem_(nullptr),
+      database_(nullptr),
       connections_(),
-      file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
+      file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
+      pinned_web_files_() {
     auto webfs = std::make_shared<io::WebFileSystem>(config_);
     webfs->ConfigureFileStatistics(file_stats_);
     file_page_buffer_ = std::make_shared<io::FilePageBuffer>(std::move(webfs));
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
-    if (auto open_status = Open(":memory:"); !open_status.ok()) {
+    if (auto open_status = Open(); !open_status.ok()) {
         throw std::runtime_error(open_status.message());
     }
 }
@@ -464,11 +468,13 @@ WebDB::WebDB(WebTag)
 WebDB::WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs)
     : config_(std::make_shared<WebDBConfig>()),
       file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
-      database_(),
+      buffered_filesystem_(nullptr),
+      database_(nullptr),
       connections_(),
-      file_stats_(std::make_shared<io::FileStatisticsRegistry>()) {
+      file_stats_(std::make_shared<io::FileStatisticsRegistry>()),
+      pinned_web_files_() {
     file_page_buffer_->ConfigureFileStatistics(file_stats_);
-    if (auto open_status = Open(":memory:"); !open_status.ok()) {
+    if (auto open_status = Open(); !open_status.ok()) {
         throw std::runtime_error(open_status.message());
     }
 }
@@ -527,11 +533,14 @@ void WebDB::FlushFiles() { file_page_buffer_->FlushFiles(); }
 void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path); }
 
 /// Reset the database
-arrow::Status WebDB::Reset() { return Open(""); }
+arrow::Status WebDB::Reset() { return Open(); }
 
 /// Open a database
 arrow::Status WebDB::Open(std::string_view args_json) {
-    *config_ = WebDBConfig::ReadFrom(args_json);
+    assert(config_ != nullptr);
+    if (args_json != "") {
+        *config_ = WebDBConfig::ReadFrom(args_json);
+    }
     bool in_memory = config_->path == ":memory:" || config_->path == "";
     try {
         // Setup new database

@@ -357,7 +357,11 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     }
     /** Drop files */
     public dropFiles(): void {
-        this.mod.ccall('duckdb_web_fs_drop_files', null, [], []);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_files', [], []);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
     }
     /** Flush all files */
     public flushFiles(): void {

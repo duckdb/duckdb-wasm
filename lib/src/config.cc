@@ -31,6 +31,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
             .path = ":memory:",
             .emit_bigint = bigint,
             .maximum_threads = 1,
+            .filesystem = FileSystemConfig{.allow_full_http_reads = true},
         };
     }
     auto path = (!doc.HasMember("path") || !doc["path"].IsString()) ? ":memory:" : doc["path"].GetString();

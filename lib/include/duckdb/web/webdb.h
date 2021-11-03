@@ -145,7 +145,7 @@ class WebDB {
     /// Reset the database
     arrow::Status Reset();
     /// Open a database
-    arrow::Status Open(std::string_view args_json);
+    arrow::Status Open(std::string_view args_json = "");
 
     /// Register a file URL
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,

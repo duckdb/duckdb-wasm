@@ -311,7 +311,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => true,
+    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
     createDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,

@@ -285,7 +285,7 @@ std::string WebFileSystem::WebFile::GetInfoJSON() const {
 }
 
 /// Constructor
-WebFileSystem::WebFileSystem(std::shared_ptr<WebDBConfig> config) : config_(config) {
+WebFileSystem::WebFileSystem(std::shared_ptr<WebDBConfig> config) : config_(std::move(config)) {
     assert(WEBFS == nullptr && "Can only register a single WebFileSystem at a time");
     WEBFS = this;
 }

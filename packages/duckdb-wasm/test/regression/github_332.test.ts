@@ -9,7 +9,6 @@ export function testGitHubIssue332(db: () => duckdb.AsyncDuckDB): void {
         conn = await db().connect();
     });
     afterEach(async () => {
-        await conn.query('DROP TABLE IF EXISTS products');
         await conn.close();
         await db().flushFiles();
         await db().dropFiles();
@@ -76,6 +75,7 @@ Media,Theater,2020,Q1,20,7,1,2020-Q1,Sony,Format=XML; <Properties>…,1
             expect(insensitive.schema.fields.length).toBe(1);
             expect(insensitive.schema.fields[0].name).toBe('ProductGroup');
             expect(insensitive.toArray().length).toEqual(2);
+            await conn.query('DROP TABLE products');
         });
     });
 }

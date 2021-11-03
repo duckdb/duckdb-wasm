@@ -42,6 +42,11 @@ void WASMResponseBuffer::Store(WASMResponse& response, std::string_view value) {
 void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<std::shared_ptr<arrow::Buffer>> result) {
     if (!Store(response, result.status())) return;
     result_arrow_ = std::move(result.ValueUnsafe());
+    if (result_arrow_ == nullptr) {
+        response.dataOrValue = 0;
+        response.dataSize = 0;
+        return;
+    }
     response.dataOrValue = reinterpret_cast<uintptr_t>(result_arrow_->data());
     response.dataSize = result_arrow_->size();
 }
@@ -67,7 +72,7 @@ void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<size_t> res
 
 /// Get the instance
 WASMResponseBuffer& WASMResponseBuffer::Get() {
-    static WASMResponseBuffer buffer;
+    static WASMResponseBuffer buffer = {};
     return buffer;
 }
 
