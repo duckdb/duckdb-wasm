@@ -65,13 +65,21 @@ endif ()
 # Dedicated module?
 
 if(EMSCRIPTEN)
-  if(CMAKE_BUILD_TYPE MATCHES Release)
+  if(CMAKE_BUILD_TYPE STREQUAL "Release")
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --profiling")
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sASSERTIONS=1 -sSAFE_HEAP=1")
+  elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
+      --profiling \
+      -gsource-map \
+      --source-map-base=file://${CMAKE_BINARY_DIR}/")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} \
+      -sASSERTIONS=1 \
+      -sSAFE_HEAP=1 \
+      -gsource-map \
+      --source-map-base=file://${CMAKE_BINARY_DIR}/ \
+      -sSEPARATE_DWARF_URL=file://${CMAKE_BINARY_DIR}/duckdb.debug.wasm")
   endif()
 
   if(WITH_WASM_FAST_LINKING)
@@ -101,13 +109,13 @@ if(EMSCRIPTEN)
   if(WITH_WASM_THREADS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1 -DWEBDB_THREADS=1")
     set(DUCKDB_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
-    set(WASM_LINK_FLAGS "-sUSE_PTHREADS=1 -sPTHREAD_POOL_SIZE=4")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=1 -sPTHREAD_POOL_SIZE=4")
   else()
     set(CMAKE_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=0 -DDUCKDB_NO_THREADS=1")
     set(DUCKDB_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=0 -DDUCKDB_NO_THREADS=1")
-    set(WASM_LINK_FLAGS "-sUSE_PTHREADS=0")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=0")
     set(THREAD_LIBS)
   endif()
 else()
@@ -206,6 +214,7 @@ target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
 if(EMSCRIPTEN)
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
   target_link_libraries(duckdb_wasm duckdb_web ${THREAD_LIBS})
+  message(STATUS "WASM_LINK_FLAGS=${WASM_LINK_FLAGS}")
   set_target_properties(
     duckdb_wasm
     PROPERTIES

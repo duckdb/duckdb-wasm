@@ -27,6 +27,7 @@ EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_I
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
 GTEST_FILTER=*
+JS_FILTER=
 
 # ---------------------------------------------------------------------------
 # Formatting
@@ -190,7 +191,9 @@ wasm: wasm_caches
 .PHONY: wasm_debug
 wasm_debug: wasm_caches
 	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug default
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug next
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug next_coi
 
 # Build the wasm modules
 .PHONY: wasm_release
@@ -226,23 +229,18 @@ js_tests_browser: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:chrome
 
 # Run the duckdb javascript tests in browser
-.PHONY: js_tests_debug
-js_tests_debug: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:debug
+.PHONY: js_tests_browser_debug
+js_tests_browser_debug: js_debug
+	yarn workspace @duckdb/duckdb-wasm test:browser:debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: js_tests_node
 js_tests_node: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:node
+	yarn workspace @duckdb/duckdb-wasm test:node --filter=${JS_FILTER}
 
-.PHONY: js_tests_node
+.PHONY: js_tests_node_debug
 js_tests_node_debug: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:node:debug
-
-# Run the duckdb javascript tests on nodejs
-.PHONY: js_tests_node_filter
-js_tests_node_filter:
-	yarn workspace @duckdb/duckdb-wasm test:node:filter
+	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
 # Start the shell dev server
 .PHONY: shell_start
