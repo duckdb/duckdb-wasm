@@ -35,7 +35,7 @@ constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 
 struct FileSystemConfig {
     /// Allow falling back to full HTTP reads if the server does not support range requests
-    bool allow_full_http_reads = false;
+    bool allow_full_http_reads = true;
 };
 
 struct WebDBConfig {
@@ -48,7 +48,7 @@ struct WebDBConfig {
     uint32_t maximum_threads = 1;
     /// The filesystem
     FileSystemConfig filesystem = {
-        .allow_full_http_reads = false,
+        .allow_full_http_reads = true,
     };
 
     /// Read from a document

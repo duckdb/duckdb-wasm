@@ -45,7 +45,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
         max_threads = doc["maximumThreads"].GetInt();
     }
-    bool allow_full_http_reads = false;
+    bool allow_full_http_reads = true;
     if (doc.HasMember("allowFullHTTPReads") && doc["allowFullHTTPReads"].IsBool()) {
         allow_full_http_reads = doc["allowFullHTTPReads"].GetBool();
     }

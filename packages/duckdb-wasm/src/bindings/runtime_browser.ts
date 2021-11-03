@@ -54,39 +54,66 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         try {
             BROWSER_RUNTIME.fileInfoCache.delete(fileId);
             const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
-                // Find out whether the HTTP source supports range requests.
-                //
-                // XXX We might want to let the user explicitly opt into this fallback behavior here.
-                //     If the user expects range requests but gets full downloads, the slowdown might be horrendous.
+            switch (file?.dataProtocol) {
+                // HTTP File
                 case DuckDBDataProtocol.HTTP: {
-                    // Send a dummy range request querying the first byte of the file
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('HEAD', file.data_url!, false);
-                    xhr.setRequestHeader('Range', `bytes=0-`);
-                    xhr.send(null);
+                    // Supports ranges?
+                    let error: any | null = null;
+                    try {
+                        // Send a dummy range request querying the first byte of the file
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('HEAD', file.dataUrl!, false);
+                        xhr.setRequestHeader('Range', `bytes=0-`);
+                        xhr.send(null);
 
-                    // Supports range requests
-                    let supportsRanges = false;
-                    if (xhr.status == 206) {
-                        supportsRanges = true;
-                    } else if (xhr.status == 200) {
-                        const header = xhr.getResponseHeader('Accept-Ranges');
-                        supportsRanges = header === 'bytes';
+                        // Supports range requests
+                        const contentLength = xhr.getResponseHeader('Content-Length');
+                        if (xhr.status == 206 && contentLength !== null) {
+                            const result = mod._malloc(2 * 8);
+                            mod.HEAPF64[(result >> 3) + 0] = +contentLength;
+                            mod.HEAPF64[(result >> 3) + 1] = 0;
+                            return result;
+                        }
+                    } catch (e: any) {
+                        error = e;
                     }
-                    if (!supportsRanges) {
-                        failWith(mod, `File does not support range requests: ${file.file_name}`);
-                        return 0;
+
+                    // Try to fallback to full read?
+                    if (file.allowFullHttpReads) {
+                        // Send non-range request
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', file.dataUrl!, false);
+                        xhr.responseType = 'arraybuffer';
+                        xhr.send(null);
+
+                        // Return buffer
+                        if (xhr.status == 200) {
+                            const data = mod._malloc(xhr.response.byteLength);
+                            const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
+                            mod.HEAPU8.set(src, data);
+                            const result = mod._malloc(2 * 8);
+                            mod.HEAPF64[(result >> 3) + 0] = xhr.response.byteLength;
+                            mod.HEAPF64[(result >> 3) + 1] = data;
+                            return result;
+                        }
                     }
-                    break;
+
+                    // Raise error?
+                    if (error != null) {
+                        failWith(mod, `Reading file ${file.fileName} failed with error: ${error}`);
+                    }
+                    return 0;
                 }
+                // Native File
                 case DuckDBDataProtocol.NATIVE: {
-                    const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                    const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (!handle) {
-                        failWith(mod, `No handle available for file: ${file.file_name}`);
-                        return 0;
+                        failWith(mod, `No handle available for file: ${file.fileName}`);
                     }
-                    break;
+                    const result = mod._malloc(2 * 8);
+                    mod.HEAPF64[(result >> 3) + 0] = handle.size;
+                    mod.HEAPF64[(result >> 3) + 1] = 0;
+                    return result;
                 }
             }
         } catch (e: any) {
@@ -104,20 +131,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 // Send a dummy range request querying the first byte of the file
                 const xhr = new XMLHttpRequest();
                 xhr.open('HEAD', path!, false);
-                xhr.setRequestHeader('Range', `bytes=0-`);
                 xhr.send(null);
-                let supportsRanges = false;
-                if (xhr.status == 206) {
-                    supportsRanges = true;
-                } else if (xhr.status == 200) {
-                    const header = xhr.getResponseHeader('Accept-Ranges');
-                    supportsRanges = header === 'bytes';
-                } else {
+                if (xhr.status != 200 && xhr.status !== 206) {
                     failWith(mod, `HEAD request failed: ${path}`);
-                    return;
-                }
-                if (!supportsRanges) {
-                    failWith(mod, `File does not support range requests: ${path}`);
                     return;
                 }
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
@@ -164,7 +180,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME.fileInfoCache.delete(fileId);
-        switch (file?.data_protocol) {
+        switch (file?.dataProtocol) {
             case DuckDBDataProtocol.HTTP:
                 break;
             case DuckDBDataProtocol.NATIVE:
@@ -174,7 +190,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file?.data_protocol) {
+        switch (file?.dataProtocol) {
             case DuckDBDataProtocol.HTTP:
                 failWith(mod, `Cannot truncate a http file`);
                 return;
@@ -187,17 +203,17 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     readFile(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
         try {
             const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
                 // File reading from BLOB or HTTP MUST be done with range requests.
                 // We have to check in OPEN if such file supports range requests and upgrade to BUFFER if not.
                 case DuckDBDataProtocol.HTTP: {
-                    if (!file.data_url) {
+                    if (!file.dataUrl) {
                         failWith(mod, `Missing data URL for file ${fileId}`);
                         return 0;
                     }
                     try {
                         const xhr = new XMLHttpRequest();
-                        xhr.open('GET', file.data_url!, false);
+                        xhr.open('GET', file.dataUrl!, false);
                         xhr.responseType = 'arraybuffer';
                         xhr.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
                         xhr.send(null);
@@ -211,25 +227,25 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         } else if (xhr.status == 200) {
                             failWith(
                                 mod,
-                                `Range request for ${file.data_url} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
+                                `Range request for ${file.dataUrl} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
                             );
                             return 0;
                         } else {
                             failWith(
                                 mod,
-                                `Range request for ${file.data_url} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
+                                `Range request for ${file.dataUrl} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
                             );
                             return 0;
                         }
                     } catch (e) {
-                        failWith(mod, `Range request for ${file.data_url} failed with error: ${e}"`);
+                        failWith(mod, `Range request for ${file.dataUrl} failed with error: ${e}"`);
                     }
                     return 0;
                 }
                 case DuckDBDataProtocol.NATIVE: {
-                    const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                    const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (!handle) {
-                        failWith(mod, `No handle available for file: ${file.file_name}`);
+                        failWith(mod, `No handle available for file: ${file.fileName}`);
                         return 0;
                     }
                     const sliced = handle!.slice(location, location + bytes);
@@ -246,7 +262,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     writeFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file?.data_protocol) {
+        switch (file?.dataProtocol) {
             case DuckDBDataProtocol.HTTP:
                 failWith(mod, 'Cannot write to HTTP file');
                 return 0;
@@ -257,51 +273,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    getFileSize: (mod: DuckDBModule, fileId: number) => {
-        try {
-            const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    const handle = BROWSER_RUNTIME._files?.get(file.file_name);
-                    if (!handle) {
-                        failWith(mod, `No handle available for file: ${file.file_name}`);
-                        return 0;
-                    }
-                    return handle.size;
-                }
-
-                case DuckDBDataProtocol.HTTP: {
-                    if (!file.data_url) throw new Error(`Missing data URL for file ${fileId}`);
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('HEAD', file.data_url!, false);
-                    xhr.send(null);
-                    if (xhr.status == 200) {
-                        const header = xhr.getResponseHeader('Content-Length');
-                        if (header) {
-                            return parseInt(header);
-                        } else {
-                            throw Error(`HEAD ${file.data_url} does not contain the HTTP header: Content-Length`);
-                        }
-                    } else {
-                        throw Error(
-                            `HEAD ${file.data_url} returned non-success status: ${xhr.status} "${xhr.statusText}"`,
-                        );
-                    }
-                }
-            }
-            return 0;
-        } catch (e: any) {
-            failWith(mod, e.toString());
-            return 0;
-        }
-    },
     getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        switch (file?.data_protocol) {
+        switch (file?.dataProtocol) {
             case DuckDBDataProtocol.NATIVE: {
-                const handle = BROWSER_RUNTIME._files?.get(file.file_name);
+                const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                 if (!handle) {
-                    throw Error(`No handle available for file: ${file.file_name}`);
+                    throw Error(`No handle available for file: ${file.fileName}`);
                 }
                 return 0;
             }

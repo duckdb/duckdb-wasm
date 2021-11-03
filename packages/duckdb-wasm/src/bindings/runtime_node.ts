@@ -54,10 +54,11 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             NODE_RUNTIME.fileInfoCache.delete(fileId);
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
+                // Native file
                 case DuckDBDataProtocol.NATIVE: {
-                    file.data_native_fd = fs.openSync(
-                        file.data_url!,
+                    file.dataNativeFd = fs.openSync(
+                        file.dataUrl!,
                         fs.constants.O_CREAT | fs.constants.O_RDWR,
                         fs.constants.S_IRUSR | fs.constants.S_IWUSR,
                     );
@@ -65,13 +66,18 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                         mod,
                         'duckdb_web_fs_set_file_descriptor',
                         ['number', 'number'],
-                        [fileId, file.data_native_fd],
+                        [fileId, file.dataNativeFd],
                     );
                     if (s !== StatusCode.SUCCESS) {
                         failWith(mod, readString(mod, d, n));
                     }
-                    break;
+                    const fileSize = fs.fstatSync(file.dataNativeFd!).size;
+                    const result = mod._malloc(2 * 8);
+                    mod.HEAPF64[(result >> 3) + 0] = +fileSize;
+                    mod.HEAPF64[(result >> 3) + 1] = 0;
+                    return result;
                 }
+                // HTTP file
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, 'Not implemented');
             }
@@ -85,14 +91,14 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             NODE_RUNTIME.fileInfoCache.delete(fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.NATIVE: {
-                    if (!file.data_native_fd) {
+                    if (!file.dataNativeFd) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    fs.closeSync(file.data_native_fd);
-                    file.data_native_fd = null;
+                    fs.closeSync(file.dataNativeFd);
+                    file.dataNativeFd = null;
                     break;
                 }
                 case DuckDBDataProtocol.HTTP:
@@ -106,13 +112,13 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.NATIVE: {
-                    if (!file.data_native_fd) {
+                    if (!file.dataNativeFd) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    fs.truncateSync(file.data_url!, newSize);
+                    fs.truncateSync(file.dataUrl!, newSize);
                     break;
                 }
                 case DuckDBDataProtocol.HTTP:
@@ -126,13 +132,13 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     readFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.NATIVE: {
-                    if (!file.data_native_fd) {
+                    if (!file.dataNativeFd) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    return fs.readSync(file.data_native_fd!, mod.HEAPU8, buf, bytes, location);
+                    return fs.readSync(file.dataNativeFd!, mod.HEAPU8, buf, bytes, location);
                 }
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, `Not implemented`);
@@ -145,34 +151,15 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     writeFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.NATIVE: {
-                    if (!file.data_native_fd) {
+                    if (!file.dataNativeFd) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
                     const src = mod.HEAPU8.subarray(buf, buf + bytes);
-                    return fs.writeSync(file.data_native_fd!, src, 0, src.length, location);
+                    return fs.writeSync(file.dataNativeFd!, src, 0, src.length, location);
                 }
-            }
-        } catch (e: any) {
-            failWith(mod, e.toString());
-        }
-        return 0;
-    },
-    getFileSize: (mod: DuckDBModule, fileId: number): number => {
-        try {
-            const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    if (!file.data_native_fd) {
-                        failWith(mod, `File ${fileId} is missing a file descriptor`);
-                        return 0;
-                    }
-                    return fs.fstatSync(file.data_native_fd!).size;
-                }
-                case DuckDBDataProtocol.HTTP:
-                    failWith(mod, 'Not implemented');
             }
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -182,13 +169,13 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            switch (file?.data_protocol) {
+            switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.NATIVE: {
-                    if (!file.data_native_fd) {
+                    if (!file.dataNativeFd) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    return fs.fstatSync(file.data_native_fd!).mtime.getTime();
+                    return fs.fstatSync(file.dataNativeFd!).mtime.getTime();
                 }
                 case DuckDBDataProtocol.HTTP:
                     failWith(mod, 'Not implemented');

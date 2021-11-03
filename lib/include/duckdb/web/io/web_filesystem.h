@@ -60,6 +60,8 @@ class WebFileSystem : public duckdb::FileSystem {
         friend class WebFileSystem;
 
        protected:
+        /// The filesystem
+        WebFileSystem &filesystem_;
         /// The file identifier
         const uint32_t file_id_;
         /// The file path
@@ -85,11 +87,17 @@ class WebFileSystem : public duckdb::FileSystem {
 
        public:
         /// Constructor
-        WebFile(uint32_t file_id, std::string_view file_name, DataProtocol protocol)
-            : file_id_(file_id), file_name_(file_name), data_protocol_(protocol), handle_count_(0) {}
+        WebFile(WebFileSystem &filesystem, uint32_t file_id, std::string_view file_name, DataProtocol protocol)
+            : filesystem_(filesystem),
+              file_id_(file_id),
+              file_name_(file_name),
+              data_protocol_(protocol),
+              handle_count_(0) {}
 
         /// Get the file info as json
         std::string GetInfoJSON() const;
+        /// Get the file name
+        auto &GetFileSystem() const { return filesystem_; }
         /// Get the file name
         auto &GetFileName() const { return file_name_; }
         /// Get the data protocol
@@ -102,8 +110,6 @@ class WebFileSystem : public duckdb::FileSystem {
         friend class WebFileSystem;
 
        protected:
-        /// The filesystem
-        WebFileSystem &fs_;
         /// The file
         WebFile *file_;
         /// The readahead (if resolved)
@@ -116,8 +122,11 @@ class WebFileSystem : public duckdb::FileSystem {
 
        public:
         /// Constructor
-        WebFileHandle(WebFileSystem &file_system, std::string path, WebFile &file)
-            : duckdb::FileHandle(file_system, path), fs_(file_system), file_(&file), readahead_(nullptr), position_(0) {
+        WebFileHandle(WebFile &file)
+            : duckdb::FileHandle(file.GetFileSystem(), file.GetFileName()),
+              file_(&file),
+              readahead_(nullptr),
+              position_(0) {
             ++file_->handle_count_;
         }
         /// Delete copy constructor

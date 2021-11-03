@@ -41,11 +41,12 @@ export enum DuckDBDataProtocol {
 
 /** An info for a file registered with DuckDB */
 export interface DuckDBFileInfo {
-    file_id: number;
-    file_name: string;
-    data_protocol: DuckDBDataProtocol;
-    data_url: string | null;
-    data_native_fd: number | null;
+    fileId: number;
+    fileName: string;
+    dataProtocol: DuckDBDataProtocol;
+    dataUrl: string | null;
+    dataNativeFd: number | null;
+    allowFullHttpReads?: boolean;
 }
 
 /** Call a function with packed response buffer */
@@ -92,7 +93,6 @@ export interface DuckDBRuntime {
     syncFile(mod: DuckDBModule, fileId: number): void;
     closeFile(mod: DuckDBModule, fileId: number): void;
     getLastFileModificationTime(mod: DuckDBModule, fileId: number): number;
-    getFileSize(mod: DuckDBModule, fileId: number): number;
     truncateFile(mod: DuckDBModule, fileId: number, newSize: number): void;
     readFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
     writeFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
@@ -114,9 +114,6 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
     closeFile: (_mod: DuckDBModule, _fileId: number): void => {},
     getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {
-        return 0;
-    },
-    getFileSize: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
     },
     truncateFile: (_mod: DuckDBModule, _fileId: number, _newSize: number): void => {},
