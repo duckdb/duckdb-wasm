@@ -76,6 +76,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         }
                     } catch (e: any) {
                         error = e;
+                        console.warn(`HEAD request with range header failed: ${e}`);
                     }
 
                     // Try to fallback to full read?
