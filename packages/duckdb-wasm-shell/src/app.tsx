@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import { FileRegistryProvider, StaticOverlayProvider } from './model';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
-import { Route, Redirect, Switch, BrowserRouter } from 'react-router-dom';
+import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
 
@@ -60,11 +60,11 @@ ReactDOM.render(
     <FileRegistryProvider>
         <StaticOverlayProvider>
             <BrowserRouter>
-                <Switch>
-                    <Route exact path="/versus" component={Versus_} />
-                    <Route exact path="/" component={Shell_} />
-                    <Redirect to="/" />
-                </Switch>
+                <Routes>
+                    <Route path="/versus" element={<Versus_ />} />
+                    <Route path="/" element={<Shell_ />} />
+                    <Navigate to="/" />
+                </Routes>
             </BrowserRouter>
         </StaticOverlayProvider>
     </FileRegistryProvider>,
