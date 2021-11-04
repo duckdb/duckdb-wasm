@@ -46,8 +46,24 @@ check_format:
 
 .PHONY: data
 data:
+	${ROOT_DIR}/scripts/build_duckdb_shell.sh
 	${ROOT_DIR}/scripts/generate_uni.sh
-	${ROOT_DIR}/scripts/generate_tpch.sh 0.01
+	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.01
+	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.1
+	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.25
+	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.5
+	${ROOT_DIR}/scripts/generate_tpch_arrow.sh 0.01
+	${ROOT_DIR}/scripts/generate_tpch_arrow.sh 0.1
+	${ROOT_DIR}/scripts/generate_tpch_arrow.sh 0.25
+	${ROOT_DIR}/scripts/generate_tpch_arrow.sh 0.5
+	${ROOT_DIR}/scripts/generate_tpch_sqlite.sh 0.01
+	${ROOT_DIR}/scripts/generate_tpch_sqlite.sh 0.1
+	${ROOT_DIR}/scripts/generate_tpch_sqlite.sh 0.25
+	${ROOT_DIR}/scripts/generate_tpch_sqlite.sh 0.5
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.01
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.1
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.25
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.5
 
 # Compile the core in debug mode
 .PHONY: lib
