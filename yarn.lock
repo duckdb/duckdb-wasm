@@ -5936,10 +5936,10 @@ wbuf@^1.1.0, wbuf@^1.7.3:
   dependencies:
     minimalistic-assert "^1.0.0"
 
-web-worker@^1.0.0, web-worker@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/web-worker/-/web-worker-1.1.0.tgz#5cb84a7aab7c36da32965641cf6db6db8adfb794"
-  integrity sha512-BsAzCx5k71qqjPXD5+nBEiLaH/5glNV1OASF2kB+13qkajkScd70mo0E4U0GyhD9nUGgWmSq8dVUqlIOdfICUg==
+web-worker@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/web-worker/-/web-worker-1.2.0.tgz#5d85a04a7fbc1e7db58f66595d7a3ac7c9c180da"
+  integrity sha512-PgF341avzqyx60neE9DD+XS26MMNMoUQRz9NOZwW32nPQrF6p77f1htcnjBSEV8BGMKZ16choqUG4hyI0Hx7mA==
 
 webidl-conversions@^3.0.0:
   version "3.0.1"
