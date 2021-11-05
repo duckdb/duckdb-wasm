@@ -11,7 +11,7 @@
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
         "sql.js": "^1.6.2",
-        "web-worker": "^1.0.0"
+        "web-worker": "^1.2.0"
     },
     "devDependencies": {
         "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
