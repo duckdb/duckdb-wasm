@@ -6,9 +6,11 @@
 
 **DuckDB-Wasm**
 
-is an in-process analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Try it out at [shell.duckdb.org](https://shell.duckdb.org) and on [Observable](https://observablehq.com/@cmudig/duckdb) and read the [API documentation](https://shell.duckdb.org/docs/modules/index.html).
+DuckDB-Wasm is an in-process analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Read the [launch blog post](https://duckdb.org/2021/10/29/duckdb-wasm.html).
 
-_DuckDB-Wasm is fast! If you're here for performance numbers, head over to our benchmarks at [shell.duckdb.org/versus](https://shell.duckdb.org/versus)._
+Try it out at [shell.duckdb.org](https://shell.duckdb.org) and on [Observable](https://observablehq.com/@cmudig/duckdb) and read the [API documentation](https://shell.duckdb.org/docs/modules/index.html).
+
+_DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our benchmarks](https://shell.duckdb.org/versus)._
 
 ## Instantiation
 
