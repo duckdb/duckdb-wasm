@@ -63,7 +63,7 @@ ReactDOM.render(
                 <Routes>
                     <Route path="/versus" element={<Versus_ />} />
                     <Route path="/" element={<Shell_ />} />
-                    <Navigate to="/" />
+                    <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </BrowserRouter>
         </StaticOverlayProvider>
