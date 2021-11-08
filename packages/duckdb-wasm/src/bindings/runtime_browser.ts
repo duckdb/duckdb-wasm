@@ -292,10 +292,24 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    checkDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
-    createDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    removeDirectory: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    listDirectoryEntries: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => false,
+    checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+        console.log(`checkDirectory: ${path}`);
+        return false;
+    },
+    createDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+        console.log(`createDirectory: ${path}`);
+    },
+    removeDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+        console.log(`removeDirectory: ${path}`);
+    },
+    listDirectoryEntries: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+        console.log(`listDirectoryEntries: ${path}`);
+        return false;
+    },
     moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
 };

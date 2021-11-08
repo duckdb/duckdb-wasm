@@ -57,4 +57,13 @@ TEST(WebFileSystemTest, TestTPCHScans) {
     }
 }
 
+TEST(WebFileSystemTest, TestExport) {
+    auto db = std::make_shared<WebDB>(WEB);
+    WebDB::Connection conn{*db};
+    auto result = conn.RunQuery("CREATE TABLE foo AS (SELECT * FROM generate_series(1, 100) t(v))");
+    ASSERT_TRUE(result.ok()) << result.status().message();
+    result = conn.RunQuery("EXPORT DATABASE '/tmp/duckdbexport'");
+    ASSERT_TRUE(result.ok()) << result.status().message();
+}
+
 }  // namespace

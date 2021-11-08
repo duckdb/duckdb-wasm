@@ -98,6 +98,8 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// the file
     void Truncate(duckdb::FileHandle &handle, int64_t new_size) override;
 
+    /// Check if a directory exists
+    bool DirectoryExists(const string &directory) override { return filesystem_.DirectoryExists(directory); }
     /// Create a directory if it does not exist
     void CreateDirectory(const std::string &directory) override { return filesystem_.CreateDirectory(directory); }
     /// Recursively remove a directory and all files in it
