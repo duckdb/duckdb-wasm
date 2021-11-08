@@ -178,23 +178,23 @@ export function testFilesystem(
     });
 
     describe('Export', () => {
-        it('Generate Series', async () => {
+        it('Generate Series as CSV', async () => {
             await conn.query('CREATE TABLE foo AS SELECT * FROM generate_series(1, 5) t(v)');
-            await conn.query(`EXPORT DATABASE '/tmp/duckdbexporttest'`);
+            await conn.query(`EXPORT DATABASE '/tmp/duckdbexportcsv'`);
 
-            const results = await db().globFiles('/tmp/duckdbexporttest/*');
+            const results = await db().globFiles('/tmp/duckdbexportcsv/*');
             expect(results).not.toEqual([]);
             expect(results.length).toEqual(3);
             const filenames = results.map(file => file.fileName).sort();
             expect(filenames).toEqual([
-                '/tmp/duckdbexporttest/0_foo.csv',
-                '/tmp/duckdbexporttest/load.sql',
-                '/tmp/duckdbexporttest/schema.sql',
+                '/tmp/duckdbexportcsv/0_foo.csv',
+                '/tmp/duckdbexportcsv/load.sql',
+                '/tmp/duckdbexportcsv/schema.sql',
             ]);
 
-            const csv_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexporttest/0_foo.csv');
-            const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexporttest/load.sql');
-            const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexporttest/schema.sql');
+            const csv_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/0_foo.csv');
+            const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/load.sql');
+            const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/schema.sql');
             expect(load_script_utf8.length).not.toEqual(0);
             expect(schema_script_utf8.length).not.toEqual(0);
             expect(csv_buffer_utf8.length).not.toEqual(0);
@@ -203,10 +203,38 @@ export function testFilesystem(
             const schema_script = decoder.decode(schema_script_utf8);
             const csv_buffer = decoder.decode(csv_buffer_utf8);
             expect(load_script.trim()).toEqual(
-                `COPY foo FROM '/tmp/duckdbexporttest/0_foo.csv' (FORMAT 'csv', quote '"', delimiter ',', header 0);`,
+                `COPY foo FROM '/tmp/duckdbexportcsv/0_foo.csv' (FORMAT 'csv', quote '"', delimiter ',', header 0);`,
             );
             expect(schema_script.trim()).toEqual(`CREATE TABLE foo(v BIGINT);`);
             expect(csv_buffer.trim()).toEqual(`1\n2\n3\n4\n5`);
+        });
+
+        it('Generate Series as Parquet', async () => {
+            await conn.query('CREATE TABLE foo AS SELECT * FROM generate_series(1, 5) t(v)');
+            await conn.query(`EXPORT DATABASE '/tmp/duckdbexportparquet' (FORMAT PARQUET)`);
+
+            const results = await db().globFiles('/tmp/duckdbexportparquet/*');
+            expect(results).not.toEqual([]);
+            expect(results.length).toEqual(3);
+            const filenames = results.map(file => file.fileName).sort();
+            expect(filenames).toEqual([
+                '/tmp/duckdbexportparquet/0_foo.parquet',
+                '/tmp/duckdbexportparquet/load.sql',
+                '/tmp/duckdbexportparquet/schema.sql',
+            ]);
+
+            const parquet_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/0_foo.parquet');
+            const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/load.sql');
+            const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/schema.sql');
+            expect(load_script_utf8.length).not.toEqual(0);
+            expect(schema_script_utf8.length).not.toEqual(0);
+            expect(parquet_buffer_utf8.length).not.toEqual(0);
+
+            const content = await conn.query(
+                `SELECT v::integer FROM parquet_scan('/tmp/duckdbexportparquet/0_foo.parquet')`,
+            );
+            expect(content.length).toEqual(5);
+            expect(content.getColumnAt(0)?.toArray()).toEqual(new Int32Array([1, 2, 3, 4, 5]));
         });
     });
 }
