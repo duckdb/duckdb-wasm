@@ -152,6 +152,14 @@ class WebDB {
                                   std::optional<uint64_t> file_size);
     /// Register a file URL
     arrow::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
+    /// Glob all known file infos
+    arrow::Result<std::string> GlobFileInfos(std::string_view expression);
+    /// Get the file info as JSON
+    arrow::Result<std::string> GetFileInfo(uint32_t file_id);
+    /// Get the file info as JSON
+    arrow::Result<std::string> GetFileInfo(std::string_view file_name);
+    /// Set a file descriptor
+    arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t fd);
     /// Flush all file buffers
     void FlushFiles();
     /// Flush file by path
@@ -160,10 +168,6 @@ class WebDB {
     arrow::Status DropFiles();
     /// Drop a file
     arrow::Status DropFile(std::string_view file_name);
-    /// Set a file descriptor
-    arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t fd);
-    /// Set a file descriptor
-    arrow::Result<std::string> GetFileInfo(uint32_t file_id);
     /// Copy a file to a buffer
     arrow::Result<std::shared_ptr<arrow::Buffer>> CopyFileToBuffer(std::string_view path);
     /// Copy a file to a path

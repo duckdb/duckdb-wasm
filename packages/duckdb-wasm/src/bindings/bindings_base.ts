@@ -9,6 +9,7 @@ import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './inser
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
+import { WebFile } from './web_file';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -294,7 +295,20 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
     }
-
+    /** Glob file infos */
+    public globFiles(path: string): WebFile[] {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_glob_file_infos', ['string'], [path]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const infoStr = readString(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        const info = JSON.parse(infoStr) as WebFile[];
+        if (info == null) {
+            return [];
+        }
+        return info;
+    }
     /** Register a file object URL */
     public registerFileURL(name: string, url?: string): void {
         if (url === undefined) {

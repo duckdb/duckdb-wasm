@@ -1,6 +1,7 @@
 import { DuckDBConfig, DuckDBConnection, FileStatistics } from '.';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
+import { WebFile } from './web_file';
 
 export interface DuckDBBindings {
     open(config: DuckDBConfig): void;
@@ -29,6 +30,7 @@ export interface DuckDBBindings {
     registerFileText(name: string, text: string): void;
     registerFileBuffer(name: string, buffer: Uint8Array): void;
     registerFileHandle<HandleType>(name: string, handle: HandleType): void;
+    globFiles(path: string): WebFile[];
     dropFile(name: string): boolean;
     dropFiles(): void;
     flushFiles(): void;

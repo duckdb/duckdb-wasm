@@ -176,4 +176,37 @@ export function testFilesystem(
             expect(table.getColumnAt(0)?.get(0)).toBeGreaterThan(60_000);
         });
     });
+
+    describe('Export', () => {
+        it('Generate Series', async () => {
+            await conn.query('CREATE TABLE foo AS SELECT * FROM generate_series(1, 5) t(v)');
+            await conn.query(`EXPORT DATABASE '/tmp/duckdbexporttest'`);
+
+            const results = await db().globFiles('/tmp/duckdbexporttest/*');
+            expect(results).not.toEqual([]);
+            expect(results.length).toEqual(3);
+            const filenames = results.map(file => file.fileName).sort();
+            expect(filenames).toEqual([
+                '/tmp/duckdbexporttest/0_foo.csv',
+                '/tmp/duckdbexporttest/load.sql',
+                '/tmp/duckdbexporttest/schema.sql',
+            ]);
+
+            const csv_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexporttest/0_foo.csv');
+            const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexporttest/load.sql');
+            const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexporttest/schema.sql');
+            expect(load_script_utf8.length).not.toEqual(0);
+            expect(schema_script_utf8.length).not.toEqual(0);
+            expect(csv_buffer_utf8.length).not.toEqual(0);
+
+            const load_script = decoder.decode(load_script_utf8);
+            const schema_script = decoder.decode(schema_script_utf8);
+            const csv_buffer = decoder.decode(csv_buffer_utf8);
+            expect(load_script.trim()).toEqual(
+                `COPY foo FROM '/tmp/duckdbexporttest/0_foo.csv' (FORMAT 'csv', quote '"', delimiter ',', header 0);`,
+            );
+            expect(schema_script.trim()).toEqual(`CREATE TABLE foo(v BIGINT);`);
+            expect(csv_buffer.trim()).toEqual(`1\n2\n3\n4\n5`);
+        });
+    });
 }

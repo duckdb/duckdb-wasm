@@ -197,18 +197,6 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
             });
         });
 
-        describe('Export', () => {
-            it('Generate Series', async () => {
-                await adb().open({
-                    path: ':memory:',
-                    emitBigInt: true,
-                });
-                const conn = await adb().connect();
-                await conn.query('CREATE TABLE foo AS SELECT * FROM generate_series(1, 100) t(v)');
-                await conn.query(`EXPORT DATABASE '/tmp/duckdbexportjs'`);
-            });
-        });
-
         describe('Prepared Statement', () => {
             it('Materialized', async () => {
                 const conn = await adb().connect();

@@ -21,9 +21,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         try {
             const cached = BROWSER_RUNTIME.fileInfoCache.get(fileId);
             if (cached) return cached;
-            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info', ['number'], [fileId]);
+            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number'], [fileId]);
             if (s !== StatusCode.SUCCESS) {
-                throw new Error(readString(mod, d, n));
+                return null;
             }
             const infoStr = readString(mod, d, n);
             dropResponseBuffers(mod);
@@ -35,7 +35,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             BROWSER_RUNTIME.fileInfoCache.set(fileId, file);
             return file;
         } catch (e: any) {
-            failWith(mod, e.toString());
             return null;
         }
     },
@@ -103,23 +102,31 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Raise error?
                     if (error != null) {
-                        failWith(mod, `Reading file ${file.fileName} failed with error: ${error}`);
+                        throw new Error(`Reading file ${file.fileName} failed with error: ${error}`);
                     }
                     return 0;
                 }
                 // Native File
                 case DuckDBDataProtocol.NATIVE: {
                     const handle = BROWSER_RUNTIME._files?.get(file.fileName);
-                    if (!handle) {
-                        failWith(mod, `No handle available for file: ${file.fileName}`);
+                    if (handle) {
+                        const result = mod._malloc(2 * 8);
+                        mod.HEAPF64[(result >> 3) + 0] = handle.size;
+                        mod.HEAPF64[(result >> 3) + 1] = 0;
+                        return result;
                     }
+
+                    // Fall back to empty buffered file in the browser
+                    console.warn(`Buffering missing file: ${file.fileName}`);
                     const result = mod._malloc(2 * 8);
-                    mod.HEAPF64[(result >> 3) + 0] = handle.size;
-                    mod.HEAPF64[(result >> 3) + 1] = 0;
+                    const buffer = mod._malloc(1); // malloc(0) is allowed to return a nullptr
+                    mod.HEAPF64[(result >> 3) + 0] = 1;
+                    mod.HEAPF64[(result >> 3) + 1] = buffer;
                     return result;
                 }
             }
         } catch (e: any) {
+            console.error(e.toString());
             failWith(mod, e.toString());
         }
         return 0;
@@ -211,8 +218,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 // We have to check in OPEN if such file supports range requests and upgrade to BUFFER if not.
                 case DuckDBDataProtocol.HTTP: {
                     if (!file.dataUrl) {
-                        failWith(mod, `Missing data URL for file ${fileId}`);
-                        return 0;
+                        throw new Error(`Missing data URL for file ${fileId}`);
                     }
                     try {
                         const xhr = new XMLHttpRequest();
@@ -228,28 +234,22 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             mod.HEAPU8.set(src, buf);
                             return src.byteLength;
                         } else if (xhr.status == 200) {
-                            failWith(
-                                mod,
+                            throw new Error(
                                 `Range request for ${file.dataUrl} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
                             );
-                            return 0;
                         } else {
-                            failWith(
-                                mod,
+                            throw new Error(
                                 `Range request for ${file.dataUrl} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
                             );
-                            return 0;
                         }
                     } catch (e) {
-                        failWith(mod, `Range request for ${file.dataUrl} failed with error: ${e}"`);
+                        throw new Error(`Range request for ${file.dataUrl} failed with error: ${e}"`);
                     }
-                    return 0;
                 }
                 case DuckDBDataProtocol.NATIVE: {
                     const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (!handle) {
-                        failWith(mod, `No handle available for file: ${file.fileName}`);
-                        return 0;
+                        throw new Error(`No handle available for file: ${file.fileName}`);
                     }
                     const sliced = handle!.slice(location, location + bytes);
                     const data = new Uint8Array(new FileReaderSync().readAsArrayBuffer(sliced));

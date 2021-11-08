@@ -241,6 +241,20 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
+                case WorkerRequestType.GLOB_FILE_INFOS: {
+                    const infos = this._bindings.globFiles(request.data);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.FILE_INFOS,
+                            data: infos,
+                        },
+                        [],
+                    );
+                    break;
+                }
+
                 case WorkerRequestType.REGISTER_FILE_URL:
                     this._bindings.registerFileURL(request.data[0], request.data[1]);
                     this.sendOK(request);

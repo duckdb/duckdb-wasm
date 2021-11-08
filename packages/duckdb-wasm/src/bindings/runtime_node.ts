@@ -11,6 +11,7 @@ import {
 } from './runtime';
 import { StatusCode } from '../status';
 import { DuckDBModule } from './duckdb_module';
+import * as fg from 'fast-glob';
 
 export const NODE_RUNTIME: DuckDBRuntime & {
     fileInfoCache: Map<number, DuckDBFileInfo>;
@@ -23,7 +24,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const cached = NODE_RUNTIME.fileInfoCache.get(fileId);
             if (cached) return cached;
-            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info', ['number'], [fileId]);
+            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number'], [fileId]);
             if (s !== StatusCode.SUCCESS) {
                 failWith(mod, readString(mod, d, n));
                 return null;
@@ -217,7 +218,18 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         failWith(mod, 'Not Implemented');
         return false;
     },
-    glob: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    glob: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        try {
+            const path = readString(mod, pathPtr, pathLen);
+            const entries = fg.sync([path], { dot: true });
+            for (const entry of entries) {
+                mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [entry]);
+            }
+        } catch (e: any) {
+            failWith(mod, e.toString());
+            return 0;
+        }
+    },
     moveFile: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
         try {
             const from = decodeText(mod.HEAPU8.subarray(fromPtr, fromPtr + fromLen));

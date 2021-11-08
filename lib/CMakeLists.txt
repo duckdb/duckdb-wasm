@@ -244,8 +244,10 @@ if(EMSCRIPTEN)
           _duckdb_web_flush_files, \
           _duckdb_web_fs_drop_file, \
           _duckdb_web_fs_drop_files, \
-          _duckdb_web_fs_get_file_info, \
+          _duckdb_web_fs_get_file_info_by_id, \
+          _duckdb_web_fs_get_file_info_by_name, \
           _duckdb_web_fs_glob_add_path, \
+          _duckdb_web_fs_glob_file_infos, \
           _duckdb_web_fs_register_file_buffer, \
           _duckdb_web_fs_register_file_url, \
           _duckdb_web_fs_set_file_descriptor, \

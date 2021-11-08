@@ -31,6 +31,7 @@
         "karma-jasmine-html-reporter": "^1.7.0",
         "karma-sourcemap-loader": "^0.3.8",
         "karma-spec-reporter": "^0.0.32",
+        "fast-glob": "^3.2.7",
         "make-dir": "^3.1.0",
         "nyc": "^15.1.0",
         "prettier": "^2.4.1",
@@ -70,6 +71,7 @@
     "module": "./dist/duckdb-esm.js",
     "browser": {
         "./dist/duckdb-node-async.js": "./dist/duckdb-browser-async.js",
+        "fast-glob": false,
         "temp-write": false,
         "worker_threads": false,
         "perf_hooks": false,

@@ -94,8 +94,10 @@ class WebFileSystem : public duckdb::FileSystem {
               data_protocol_(protocol),
               handle_count_(0) {}
 
+        /// Close the file
+        void Close();
         /// Get the file info as json
-        std::string GetInfoJSON() const;
+        rapidjson::Value WriteInfo(rapidjson::Document &doc) const;
         /// Get the file name
         auto &GetFileSystem() const { return filesystem_; }
         /// Get the file name
@@ -111,7 +113,7 @@ class WebFileSystem : public duckdb::FileSystem {
 
        protected:
         /// The file
-        WebFile *file_;
+        std::shared_ptr<WebFile> file_;
         /// The readahead (if resolved)
         ReadAheadBuffer *readahead_;
         /// The position
@@ -122,9 +124,9 @@ class WebFileSystem : public duckdb::FileSystem {
 
        public:
         /// Constructor
-        WebFileHandle(WebFile &file)
-            : duckdb::FileHandle(file.GetFileSystem(), file.GetFileName()),
-              file_(&file),
+        WebFileHandle(std::shared_ptr<WebFile> file)
+            : duckdb::FileHandle(file->GetFileSystem(), file->GetFileName()),
+              file_(file),
               readahead_(nullptr),
               position_(0) {
             ++file_->handle_count_;
@@ -145,9 +147,9 @@ class WebFileSystem : public duckdb::FileSystem {
     /// The filesystem mutex
     LightMutex fs_mutex_ = {};
     /// The files by id
-    std::unordered_map<uint32_t, std::unique_ptr<WebFile>> files_by_id_ = {};
+    std::unordered_map<uint32_t, std::shared_ptr<WebFile>> files_by_id_ = {};
     /// The files by path
-    std::unordered_map<std::string_view, WebFile *> files_by_name_ = {};
+    std::unordered_map<std::string, std::shared_ptr<WebFile>> files_by_name_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
     /// The thread-local readahead buffers
@@ -176,16 +178,20 @@ class WebFileSystem : public duckdb::FileSystem {
     }
     /// Set a file descriptor
     arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor);
-    /// Get a file info as JSON string
-    arrow::Result<std::string> GetFileInfoJSON(uint32_t file_id);
+    /// Write the file info as JSON
+    rapidjson::Value WriteFileInfo(rapidjson::Document &doc, uint32_t file_id);
+    /// Write the file info as JSON
+    rapidjson::Value WriteFileInfo(rapidjson::Document &doc, std::string_view file_name);
     /// Register a file URL
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                                                   std::optional<uint64_t> file_size);
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);
-    /// Try to drop a file
+    /// Try to drop a specific file
     bool TryDropFile(std::string_view file_name);
+    /// Drop all files without references (including buffers)
+    void DropDanglingFiles();
     /// Configure file statistics
     void ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry);
     /// Collect file statistics

@@ -142,10 +142,14 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
     try {
         // Send the query
         auto result = connection_.SendQuery(std::string{text});
-        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
+        if (!result->success) {
+            return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
+        }
         return MaterializeQueryResult(std::move(result));
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
+    } catch (...) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, "unknown exception"};
     }
 }
 
@@ -157,6 +161,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendQuery(std::
         return StreamQueryResult(std::move(result));
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
+    } catch (...) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, "unknown exception"};
     }
 }
 
@@ -585,10 +591,6 @@ arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_vie
     if (!buffered_filesystem_->TryDropFile(file_name)) {
         return arrow::Status::Invalid("File is already registered and is still buffered");
     }
-    // Try to drop the file in the web file system
-    if (!web_fs->TryDropFile(file_name)) {
-        return arrow::Status::Invalid("File is already registered and is in use");
-    }
     // Register new file url in web filesystem.
     // Pin the file handle to keep the file alive.
     ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url, file_size));
@@ -611,10 +613,6 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
     if (!buffered_filesystem_->TryDropFile(file_name)) {
         return arrow::Status::Invalid("File is already registered and is still buffered");
     }
-    // Try to drop the file in the web file system
-    if (!web_fs->TryDropFile(file_name)) {
-        return arrow::Status::Invalid("File is already registered and is in use");
-    }
     // Register new file in web filesystem
     io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
     ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileBuffer(file_name, std::move(data)));
@@ -630,11 +628,19 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
 /// Drop all files
 arrow::Status WebDB::DropFiles() {
     pinned_web_files_.clear();
+    if (auto fs = io::WebFileSystem::Get()) {
+        fs->DropDanglingFiles();
+    }
     return arrow::Status::OK();
 }
 /// Drop a file
 arrow::Status WebDB::DropFile(std::string_view file_name) {
     pinned_web_files_.erase(file_name);
+    if (auto fs = io::WebFileSystem::Get()) {
+        if (!fs->TryDropFile(file_name)) {
+            return arrow::Status::Invalid("file is in use");
+        }
+    }
     return arrow::Status::OK();
 }
 /// Set a file descriptor
@@ -643,11 +649,53 @@ arrow::Status WebDB::SetFileDescriptor(uint32_t file_id, uint32_t fd) {
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
     return web_fs->SetFileDescriptor(file_id, fd);
 }
-/// Set a file descriptor
+/// Glob all known files
+arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+
+    auto files = web_fs->Glob(std::string{expression});
+    rapidjson::Document doc;
+    doc.SetArray();
+    auto& allocator = doc.GetAllocator();
+    for (auto& file : files) {
+        auto value = web_fs->WriteFileInfo(doc, file);
+        if (!value.IsNull()) doc.PushBack(value, allocator);
+    }
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+    doc.Accept(writer);
+    return strbuf.GetString();
+}
+/// Get the file info as JSON
 arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    return web_fs->GetFileInfoJSON(file_id);
+
+    // Write file info
+    rapidjson::Document doc;
+    auto value = web_fs->WriteFileInfo(doc, file_id);
+
+    // Write to string
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+    value.Accept(writer);
+    return strbuf.GetString();
+}
+/// Get the file info as JSON
+arrow::Result<std::string> WebDB::GetFileInfo(std::string_view file_name) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+
+    // Write file info
+    rapidjson::Document doc;
+    auto value = web_fs->WriteFileInfo(doc, file_name);
+
+    // Write to string
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+    value.Accept(writer);
+    return strbuf.GetString();
 }
 /// Enable file statistics
 arrow::Status WebDB::CollectFileStatistics(std::string_view path, bool enable) {

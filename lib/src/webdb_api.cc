@@ -91,10 +91,20 @@ void duckdb_web_fs_drop_files(WASMResponse* packed) {
     GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.DropFiles());
 }
+/// Glob file infos
+void duckdb_web_fs_glob_file_infos(WASMResponse* packed, const char* file_name) {
+    GET_WEBDB(*packed);
+    WASMResponseBuffer::Get().Store(*packed, webdb.GlobFileInfos(std::string_view{file_name}));
+}
 /// Lookup file info
-void duckdb_web_fs_get_file_info(WASMResponse* packed, size_t file_id) {
+void duckdb_web_fs_get_file_info_by_id(WASMResponse* packed, size_t file_id) {
     GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(file_id));
+}
+/// Lookup file info
+void duckdb_web_fs_get_file_info_by_name(WASMResponse* packed, const char* file_name) {
+    GET_WEBDB(*packed);
+    WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(std::string_view{file_name}));
 }
 /// Set a file descriptor of an existing file
 void duckdb_web_fs_set_file_descriptor(WASMResponse* packed, uint32_t file_id, uint32_t file_descriptor) {

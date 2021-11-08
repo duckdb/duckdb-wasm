@@ -26,7 +26,7 @@ EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_I
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
-GTEST_FILTER=*Export*
+GTEST_FILTER=*
 JS_FILTER=
 
 # ---------------------------------------------------------------------------
@@ -194,6 +194,12 @@ bench_system_tpch_large:
 wasm_caches:
 	mkdir -p ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 	chown -R $(id -u):$(id -g) ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
+
+# Build the wasm module with debug info
+.PHONY: wasm
+wasm_fast_next: wasm_caches
+	mkdir -p ${CACHE_DIRS}
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast next
 
 # Build the wasm module with debug info
 .PHONY: wasm

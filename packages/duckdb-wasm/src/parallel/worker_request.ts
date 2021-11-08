@@ -3,6 +3,7 @@ import { LogEntryVariant } from '../log';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
+import { WebFile } from '../bindings/web_file';
 
 export type ConnectionID = number;
 export type StatementID = number;
@@ -22,6 +23,7 @@ export enum WorkerRequestType {
     FLUSH_FILES = 'FLUSH_FILES',
     GET_FEATURE_FLAGS = 'GET_FEATURE_FLAGS',
     GET_VERSION = 'GET_VERSION',
+    GLOB_FILE_INFOS = 'GLOB_FILE_INFOS',
     INSERT_ARROW_FROM_IPC_STREAM = 'INSERT_ARROW_FROM_IPC_STREAM',
     INSERT_CSV_FROM_PATH = 'IMPORT_CSV_FROM_PATH',
     INSERT_JSON_FROM_PATH = 'IMPORT_JSON_FROM_PATH',
@@ -44,6 +46,7 @@ export enum WorkerResponseType {
     ERROR = 'ERROR',
     FEATURE_FLAGS = 'FEATURE_FLAGS',
     FILE_BUFFER = 'FILE_BUFFER',
+    FILE_INFOS = 'FILE_INFOS',
     FILE_SIZE = 'FILE_SIZE',
     FILE_STATISTICS = 'FILE_STATISTICS',
     LOG = 'LOG',
@@ -120,6 +123,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
+    | WorkerRequest<WorkerRequestType.GLOB_FILE_INFOS, string>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_PREPARED, [number, number, any[]]>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
@@ -132,6 +136,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.ERROR, any>
     | WorkerResponse<WorkerResponseType.FEATURE_FLAGS, number>
     | WorkerResponse<WorkerResponseType.FILE_BUFFER, Uint8Array>
+    | WorkerResponse<WorkerResponseType.FILE_INFOS, WebFile[]>
     | WorkerResponse<WorkerResponseType.FILE_SIZE, number>
     | WorkerResponse<WorkerResponseType.FILE_STATISTICS, FileStatistics>
     | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
@@ -173,6 +178,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
+    | WorkerTask<WorkerRequestType.GLOB_FILE_INFOS, string, WebFile[]>
     | WorkerTask<WorkerRequestType.RESET, null, null>
     | WorkerTask<WorkerRequestType.RUN_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>

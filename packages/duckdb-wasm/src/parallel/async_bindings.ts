@@ -15,6 +15,7 @@ import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { flattenArrowField } from '../flat_arrow';
+import { WebFile } from '../bindings/web_file';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -155,6 +156,12 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerRequestType.REGISTER_FILE_URL:
             case WorkerRequestType.RESET:
                 if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.GLOB_FILE_INFOS:
+                if (response.type == WorkerResponseType.FILE_INFOS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -394,7 +401,14 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         );
         return await this.postTask(task);
     }
-
+    /** Glob file infos */
+    public async globFiles(path: string): Promise<WebFile[]> {
+        const task = new WorkerTask<WorkerRequestType.GLOB_FILE_INFOS, string, WebFile[]>(
+            WorkerRequestType.GLOB_FILE_INFOS,
+            path,
+        );
+        return await this.postTask(task);
+    }
     /** Register file text */
     public async registerFileText(name: string, text: string): Promise<void> {
         const buffer = TEXT_ENCODER.encode(text);
