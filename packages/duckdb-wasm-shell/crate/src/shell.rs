@@ -1,16 +1,19 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
-use crate::duckdb::{AsyncDuckDB, AsyncDuckDBConnection, PACKAGE_NAME, PACKAGE_VERSION};
+use crate::duckdb::{
+    AsyncDuckDB, AsyncDuckDBConnection, DataProtocol, PACKAGE_NAME, PACKAGE_VERSION,
+};
 use crate::key_event::{Key, KeyEvent};
 use crate::platform;
 use crate::prompt_buffer::PromptBuffer;
 use crate::shell_options::ShellOptions;
 use crate::shell_runtime::{FileInfo, ShellRuntime};
-use crate::utils::{now, pretty_elapsed};
+use crate::utils::{now, pretty_bytes, pretty_elapsed};
 use crate::vt100;
 use crate::xterm::Terminal;
 use arrow::array::Array;
 use arrow::array::StringArray;
-use arrow::datatypes::DataType;
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::record_batch::RecordBatch;
 use chrono::Duration;
 use log::warn;
 use scopeguard::defer;
@@ -538,18 +541,82 @@ impl Shell {
                 return;
             }
             ".files" => {
-                Shell::with_mut(|s| match s.runtime {
-                    Some(ref rt) => {
-                        rt.read().unwrap().open_file_explorer();
-                        s.remember_command(text.clone());
-                    }
+                // Get database
+                let (maybe_db, terminal_width) = Shell::with_mut(|shell| {
+                    shell.remember_command(text.clone());
+                    (shell.db.clone(), shell.terminal_width)
+                });
+                let db = match maybe_db {
+                    Some(ref db) => db.write().unwrap(),
                     None => {
-                        s.writeln("Shell runtime not set");
-                        s.remember_command(text.clone());
+                        Shell::with_mut(|s| {
+                            s.writeln("Error: database not set");
+                        });
+                        return;
+                    }
+                };
+                let files = match db.glob_files("/*").await {
+                    Ok(files) => files,
+                    Err(e) => {
+                        Shell::with_mut(|s| {
+                            let e: String = e.to_string().into();
+                            s.writeln(&format!("Error: {}", &e));
+                        });
+                        return;
+                    }
+                };
+                let mut data_names = Vec::with_capacity(files.len());
+                let mut data_sizes = Vec::with_capacity(files.len());
+                let mut data_protocol = Vec::with_capacity(files.len());
+                let mut data_tracking = Vec::with_capacity(files.len());
+                for file in files {
+                    data_names.push(file.file_name);
+                    data_sizes.push(pretty_bytes(file.file_size.unwrap_or_default() as f64));
+                    data_protocol.push(format!(
+                        "{:?}",
+                        match file.data_protocol.unwrap_or_default() {
+                            1 => DataProtocol::Native,
+                            2 => DataProtocol::Http,
+                            _ => DataProtocol::Buffer,
+                        }
+                    ));
+                    data_tracking.push(format!("{}", file.collect_statistics.unwrap_or_default()));
+                }
+
+                let schema = Arc::new(Schema::new(vec![
+                    Field::new("File Name", DataType::Utf8, true),
+                    Field::new("File Size", DataType::Utf8, true),
+                    Field::new("Protocol", DataType::Utf8, true),
+                    Field::new("Statistics", DataType::Utf8, true),
+                ]));
+                let array_name = Arc::new(StringArray::from_iter_values(data_names.iter()));
+                let array_size = Arc::new(StringArray::from_iter_values(data_sizes.iter()));
+                let array_proto = Arc::new(StringArray::from_iter_values(data_protocol.iter()));
+                let array_stats = Arc::new(StringArray::from_iter_values(data_tracking.iter()));
+                let batch = RecordBatch::try_new(
+                    schema,
+                    vec![array_name, array_size, array_proto, array_stats],
+                )
+                .unwrap();
+
+                if batch.num_rows() == 0 {
+                    Shell::with_mut(|s| {
+                        s.writeln("No files registered\n");
+                        s.prompt();
+                    });
+                } else {
+                    let pretty_table = pretty_format_batches(
+                        &[batch],
+                        terminal_width as u16,
+                        UTF8_BORDERS_NO_HORIZONTAL,
+                    )
+                    .unwrap_or_default();
+                    Shell::with_mut(|s| {
+                        s.writeln(&pretty_table);
                         s.writeln("");
                         s.prompt();
-                    }
-                });
+                    });
+                }
                 return;
             }
             cmd => Shell::with(|s| s.writeln(&format!("Unknown command: {}", &cmd))),

@@ -152,6 +152,8 @@ class FileStatisticsRegistry {
     std::unordered_map<std::string, std::shared_ptr<FileStatisticsCollector>> collectors_ = {};
 
    public:
+    /// Tracks file statistics?
+    bool TracksFile(std::string_view file_name);
     /// Find a collector
     std::shared_ptr<FileStatisticsCollector> FindCollector(std::string_view file_name);
     /// Enable a collector (if exists)

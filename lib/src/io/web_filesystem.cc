@@ -296,6 +296,7 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
     if (data_protocol_ == DataProtocol::HTTP && filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
     }
+    value.AddMember("collectStatistics", filesystem_.file_statistics_->TracksFile(file_name_), doc.GetAllocator());
     return value;
 }
 
@@ -462,6 +463,7 @@ rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, std::str
                         rapidjson::Value{file_name.data(), static_cast<rapidjson::SizeType>(file_name.size())},
                         doc.GetAllocator());
         value.AddMember("dataProtocol", static_cast<double>(proto), doc.GetAllocator());
+        value.AddMember("collectStatistics", file_statistics_->TracksFile(file_name), doc.GetAllocator());
         return value;
     }
     auto &file = *iter->second;

@@ -11,5 +11,6 @@ export interface WebFile {
     fileSize?: number;
     dataUrl?: string;
     dataNativeFd?: number;
+    collectStatistics?: boolean;
     allowFullHttpReads?: boolean;
 }

@@ -65,6 +65,13 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> FileStatisticsCollector::ExportSta
     return buffer;
 }
 
+/// Tracks file statistics?
+bool FileStatisticsRegistry::TracksFile(std::string_view file_name) {
+    std::unique_lock<LightMutex> reg_guard{registry_mutex_};
+    auto iter = collectors_.find(std::string{file_name});
+    return iter != collectors_.end();
+}
+
 /// Find a collector
 std::shared_ptr<FileStatisticsCollector> FileStatisticsRegistry::FindCollector(std::string_view file_name) {
     std::unique_lock<LightMutex> reg_guard{registry_mutex_};

@@ -1,4 +1,5 @@
 use super::tokens::{JsScriptTokens, ScriptTokens};
+use super::web_file::WebFile;
 use super::{FileStatistics, JsFileStatistics};
 use crate::arrow_reader::ArrowStreamReader;
 use arrow::ipc::reader::FileReader;
@@ -47,6 +48,8 @@ extern "C" {
     ) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "exportFileStatistics")]
     async fn export_file_statistics(this: &JsAsyncDuckDB, file: &str) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "globFiles")]
+    async fn glob_files(this: &JsAsyncDuckDB, path: &str) -> Result<JsValue, JsValue>;
 }
 
 pub struct AsyncDuckDB {
@@ -72,7 +75,14 @@ impl AsyncDuckDB {
             .get_version()
             .await?
             .as_string()
-            .unwrap_or("?".to_string()))
+            .unwrap_or_else(|| "?".to_string()))
+    }
+
+    /// Glob files
+    pub async fn glob_files(&self, path: &str) -> Result<Vec<WebFile>, js_sys::Error> {
+        let files = self.bindings.glob_files(path).await?;
+        let files_vec: Vec<WebFile> = files.into_serde().unwrap();
+        Ok(files_vec)
     }
 
     /// Get the DuckDB feature flags
