@@ -237,4 +237,22 @@ export function testFilesystem(
             expect(content.getColumnAt(0)?.toArray()).toEqual(new Int32Array([1, 2, 3, 4, 5]));
         });
     });
+
+    describe('Copy', () => {
+        it('Generate Series as Parquet', async () => {
+            await conn.query(
+                `COPY (SELECT * FROM generate_series(1, 5) t(v)) TO '/tmp/duckdbcopytest.parquet' (FORMAT 'parquet')`,
+            );
+            const results = await db().globFiles('/tmp/duckdbcopytest*');
+            expect(results).not.toEqual([]);
+            expect(results.length).toEqual(1);
+            const filenames = results.map(file => file.fileName).sort();
+            expect(filenames).toEqual(['/tmp/duckdbcopytest.parquet']);
+            const parquet_buffer = await db().copyFileToBuffer('/tmp/duckdbcopytest.parquet');
+            expect(parquet_buffer.length).not.toEqual(0);
+            const content = await conn.query(`SELECT v::integer FROM parquet_scan('/tmp/duckdbcopytest.parquet')`);
+            expect(content.length).toEqual(5);
+            expect(content.getColumnAt(0)?.toArray()).toEqual(new Int32Array([1, 2, 3, 4, 5]));
+        });
+    });
 }
