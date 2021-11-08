@@ -223,12 +223,12 @@ export function testFilesystem(
                 '/tmp/duckdbexportparquet/schema.sql',
             ]);
 
-            const parquet_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/0_foo.parquet');
+            const parquet_buffer = await db().copyFileToBuffer('/tmp/duckdbexportparquet/0_foo.parquet');
             const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/load.sql');
             const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/schema.sql');
             expect(load_script_utf8.length).not.toEqual(0);
             expect(schema_script_utf8.length).not.toEqual(0);
-            expect(parquet_buffer_utf8.length).not.toEqual(0);
+            expect(parquet_buffer.length).not.toEqual(0);
 
             const content = await conn.query(
                 `SELECT v::integer FROM parquet_scan('/tmp/duckdbexportparquet/0_foo.parquet')`,
