@@ -71,7 +71,7 @@
         "webpack-bundle-analyzer": "^4.5.0",
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.4.0",
-        "webpackbar": "^5.0.0-3"
+        "webpackbar": "^5.0.2"
     },
     "optionalDependencies": {
         "fsevents": "*"
