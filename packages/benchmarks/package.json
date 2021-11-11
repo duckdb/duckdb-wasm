@@ -22,7 +22,7 @@
         "@typescript-eslint/parser": "^5.3.1",
         "assert": "^2.0.0",
         "eslint": "^8.2.0",
-        "eslint-plugin-react": "^7.26.1",
+        "eslint-plugin-react": "^7.27.0",
         "faker": "^5.5.3",
         "ts-loader": "^9.1.0"
     },
