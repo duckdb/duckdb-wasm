@@ -17,8 +17,8 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-constexpr size_t READAHEAD_ACCELERATION = 2;   // x = x + x / 2
-constexpr size_t READAHEAD_BASE = 1 << 10;     // 1 KB
+constexpr size_t READAHEAD_ACCELERATION = 8;   // x *= 8
+constexpr size_t READAHEAD_BASE = 1 << 14;     // 16 KB
 constexpr size_t READAHEAD_MAXIMUM = 1 << 24;  // 16 MB
 constexpr size_t READ_HEAD_COUNT = 10;         // (READ_HEAD_COUNT * READAHEAD_MAXIMUM) bytes
 
@@ -127,8 +127,7 @@ class ReadAheadBuffer {
             if (offset == end) {
                 // Update read head
                 iter->speed = std::max<size_t>(
-                    std::min<size_t>(iter->speed + iter->speed / READAHEAD_ACCELERATION, READAHEAD_MAXIMUM),
-                    READAHEAD_BASE);
+                    std::min<size_t>(iter->speed * READAHEAD_ACCELERATION, READAHEAD_MAXIMUM), READAHEAD_BASE);
                 allocate(*iter, iter->speed);
 
                 // Perform read
