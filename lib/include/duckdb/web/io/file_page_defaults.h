@@ -7,7 +7,7 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-constexpr size_t DEFAULT_FILE_PAGE_CAPACITY = 100;
+constexpr size_t DEFAULT_FILE_PAGE_CAPACITY = 10000;
 constexpr size_t DEFAULT_FILE_PAGE_SHIFT = 12;  // 4KB pages
 
 }  // namespace io

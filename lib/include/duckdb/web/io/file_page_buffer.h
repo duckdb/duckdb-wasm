@@ -267,7 +267,7 @@ class FilePageBuffer {
         /// Get the size
         auto GetSize() const { return file_->file_size; }
         /// Release the file ref
-        void Release();
+        bool Release(bool keep_dangling = true);
 
         /// Fix file exclusively
         BufferRef FixPage(uint64_t page_id, bool exclusive);
@@ -328,8 +328,6 @@ class FilePageBuffer {
 
     /// Flush a frame
     void FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
-    /// Releases a file
-    void ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
     /// Donate a buffer
     void DonateFrameBuffer(std::unique_ptr<char[]> buffer, DirectoryGuard& dir_guard) {
         if (buffer && ((free_buffers.size() + frames.size()) < page_capacity)) {
@@ -339,7 +337,6 @@ class FilePageBuffer {
 
    public:
     /// Constructor.
-    /// Use 16KiB pages by default (1 << 14)
     FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, uint64_t page_capacity = DEFAULT_FILE_PAGE_CAPACITY,
                    uint64_t page_size_bits = DEFAULT_FILE_PAGE_SHIFT);
     /// Destructor
@@ -367,6 +364,10 @@ class FilePageBuffer {
     void FlushFile(std::string_view path);
     /// Flush all outstanding frames to disk
     void FlushFiles();
+    /// Try to drop a specific file
+    bool TryDropFile(std::string_view file_name);
+    /// Drop dangling files
+    void DropDanglingFiles();
 
     /// Returns the page ids of all pages that are in the FIFO list in FIFO order.
     std::vector<uint64_t> GetFIFOList() const;

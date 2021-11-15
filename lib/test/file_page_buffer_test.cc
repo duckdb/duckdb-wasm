@@ -157,7 +157,13 @@ TEST(FilePageBufferTest, PersistentRestart) {
     }
     files.clear();
 
-    // Since there's no more ref, the buffer manager should evict all frames
+    // The second time, all files were opened read-only.
+    // Therefore closing the files kept their frames alive
+    ASSERT_EQ(buffer->GetFiles().size(), 3);
+    ASSERT_EQ(buffer->GetFrames().size(), 10);
+
+    // Drop them explicitly
+    buffer->DropDanglingFiles();
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
 }

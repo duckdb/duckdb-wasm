@@ -627,6 +627,7 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
 }
 /// Drop all files
 arrow::Status WebDB::DropFiles() {
+    file_page_buffer_->DropDanglingFiles();
     pinned_web_files_.clear();
     if (auto fs = io::WebFileSystem::Get()) {
         fs->DropDanglingFiles();
@@ -635,6 +636,7 @@ arrow::Status WebDB::DropFiles() {
 }
 /// Drop a file
 arrow::Status WebDB::DropFile(std::string_view file_name) {
+    file_page_buffer_->TryDropFile(file_name);
     pinned_web_files_.erase(file_name);
     if (auto fs = io::WebFileSystem::Get()) {
         if (!fs->TryDropFile(file_name)) {

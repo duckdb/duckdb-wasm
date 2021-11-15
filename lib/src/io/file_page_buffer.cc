@@ -115,10 +115,10 @@ void FilePageBuffer::FileRef::LoadFrame(FilePageBuffer::BufferFrame& frame, File
     frame.is_dirty = false;
 }
 
-void FilePageBuffer::FileRef::Release() {
+bool FilePageBuffer::FileRef::Release(bool keep_dangling) {
     DEBUG_TRACE();
     // Already released?
-    if (!file_) return;
+    if (!file_) return true;
     // Protect with directory latch
     auto dir_guard = buffer_.Lock();
     // Clear file pointer eventually
@@ -128,7 +128,14 @@ void FilePageBuffer::FileRef::Release() {
     assert(file_->GetReferenceCount() > 0 && "File must store own reference");
     if (file_->GetReferenceCount() > 1) {
         --file_->num_users;
-        return;
+        return false;
+    }
+
+    // ONLY allows for FILE_FLAGS_READ?
+    // Auto-cleanup buffer pages later.
+    if (keep_dangling && file_->file_flags == duckdb::FileFlags::FILE_FLAGS_READ) {
+        --file_->num_users;
+        return false;
     }
 
     // We have to release the file, acquire exclusive file lock
@@ -139,7 +146,7 @@ void FilePageBuffer::FileRef::Release() {
     // Someone opened the file in the meantime?
     if (file_->GetReferenceCount() > 1) {
         --file_->num_users;
-        return;
+        return false;
     }
     // Flush all file frames
     for (auto iter = file_->frames.begin(); iter != file_->frames.end();) {
@@ -169,7 +176,7 @@ void FilePageBuffer::FileRef::Release() {
 
     // Someone opened the file in the meantime?
     if (file_->GetReferenceCount() > 0) {
-        return;
+        return false;
     }
 
     // Erase file
@@ -179,6 +186,7 @@ void FilePageBuffer::FileRef::Release() {
     auto tmp = std::move(iter->second);
     buffer_.files.erase(iter);
     file_guard.unlock();
+    return true;
 }
 
 /// Flush file with guard
@@ -613,16 +621,15 @@ void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGua
     }
 }
 
-/// Append to the file
+/// Reopen a file
 void FilePageBuffer::FileRef::ReOpen(uint8_t flags, duckdb::FileLockType lock_type) {
     DEBUG_TRACE();
     auto file_guard = Lock(Exclusive);
-    // There is no way this can be opened with WRITE_LOCK now
-    assert(file_->file_lock != duckdb::FileLockType::WRITE_LOCK);
     // Open the file with the new flags first
     auto new_handle = buffer_.filesystem->OpenFile(file_->path, flags, lock_type);
     // Swap the file handles
     std::swap(new_handle, file_->handle);
+    file_->file_lock = lock_type;
 }
 
 /// Buffers a file at a path.
@@ -634,6 +641,37 @@ bool FilePageBuffer::BuffersFile(std::string_view path) {
     }
     assert(it->second->GetReferenceCount() > 0);
     return true;
+}
+
+/// Try to drop a file
+bool FilePageBuffer::TryDropFile(std::string_view path) {
+    DEBUG_TRACE();
+    // We need to find the file first
+    auto dir_guard = Lock();
+    auto it = files_by_name.find(path);
+    if (it == files_by_name.end()) return true;
+    if (it->second->num_users > 0) return false;
+    auto file_ref = std::make_shared<FileRef>(*this, *files.at(it->second->file_id).get());
+    dir_guard.unlock();
+
+    // Release the file ref without dangling flag
+    return file_ref->Release(false);
+}
+
+/// Drop all dangling files
+void FilePageBuffer::DropDanglingFiles() {
+    DEBUG_TRACE();
+    auto dir_guard = Lock();
+    std::vector<std::shared_ptr<FileRef>> refs;
+    for (auto& [file_id, file] : files) {
+        refs.push_back(std::make_shared<FileRef>(*this, *file));
+    }
+    dir_guard.unlock();
+
+    // Release all refs without dangling flag
+    for (auto& ref : refs) {
+        ref->Release(false);
+    }
 }
 
 /// Flush a file at a path.
@@ -699,42 +737,6 @@ void FilePageBuffer::FlushFrame(BufferFrame& frame, FileGuardRefVariant file_gua
     frame_guard.unlock();
     dir_guard.lock();
     --frame.num_users;
-}
-
-/// Release a file
-void FilePageBuffer::ReleaseFile(BufferedFile& file, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard) {
-    DEBUG_TRACE();
-    // Someone opened the file in the meantime?
-    if (file.GetReferenceCount() > 1) return;
-
-    // Flush all file frames
-    for (auto iter = file.frames.begin(); iter != file.frames.end(); ++iter) {
-        auto& frame = **iter;
-
-        // Flush frame
-        FlushFrame(frame, file_guard, dir_guard);
-
-        // The number of users MUST be 0.
-        // We hold an exclusive lock on the file and there is nobody referencing it.
-        // => There's no way someone can see the frame
-        assert(frame.GetUserCount() == 0);
-        if (frame.lru_position != lru.end()) {
-            lru.erase(frame.lru_position);
-        } else if (frame.fifo_position != fifo.end()) {
-            fifo.erase(frame.fifo_position);
-        }
-
-        // Erase frame
-        DonateFrameBuffer(std::move(frame.buffer), dir_guard);
-        frames.erase(frame.frame_id);
-    }
-    // Erase file
-    files_by_name.erase(file.path);
-    free_file_ids.push(file.file_id);
-    auto iter = files.find(file.file_id);
-    auto tmp = std::move(iter->second);
-    files.erase(iter);
-    std::visit([&](auto& l) { l.get().unlock(); }, file_guard);
 }
 
 /// Truncate a file
