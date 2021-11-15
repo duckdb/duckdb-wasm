@@ -612,6 +612,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
+                      rm -rf ./packages/duckdb-wasm/dist/
                       yarn workspace @duckdb/duckdb-wasm build:release
                       yarn workspace @duckdb/duckdb-wasm docs
 
@@ -619,6 +620,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
+                      rm -rf ./packages/duckdb-wasm-shell/build/
                       yarn workspace @duckdb/duckdb-wasm-shell build:release
 
             - name: Build @duckdb/benchmarks
