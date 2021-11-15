@@ -47,16 +47,17 @@ void BufferedFileSystem::RegisterFile(std::string_view file, FileConfig config) 
 bool BufferedFileSystem::TryDropFile(std::string_view file) {
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
     if (file_page_buffer_->BuffersFile(file)) {
-        return false;
+        return file_page_buffer_->TryDropFile(file);
     }
     file_configs_.erase({std::string{file}});
     return true;
 }
 
-/// Drop a file
+/// Drop all files
 void BufferedFileSystem::DropFiles() {
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
     file_configs_.clear();
+    file_page_buffer_->DropDanglingFiles();
 }
 
 /// Open a file
