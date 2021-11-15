@@ -233,6 +233,7 @@ export function testFilesystem(
             const content = await conn.query(
                 `SELECT v::integer FROM parquet_scan('/tmp/duckdbexportparquet/0_foo.parquet')`,
             );
+            expect(content.nullCount).toEqual(0);
             expect(content.length).toEqual(5);
             expect(content.getColumnAt(0)?.toArray()).toEqual(new Int32Array([1, 2, 3, 4, 5]));
         });

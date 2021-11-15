@@ -864,6 +864,8 @@ std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
     for (auto &path : state.glob_results) {
         results.push_back(std::move(path));
     }
+    std::sort(results.begin(), results.end());
+    results.erase(std::unique(results.begin(), results.end()), results.end());
     return std::move(results);
 }
 

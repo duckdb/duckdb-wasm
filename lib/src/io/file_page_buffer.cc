@@ -132,7 +132,7 @@ bool FilePageBuffer::FileRef::Release(bool keep_dangling) {
     }
 
     // ONLY allows for FILE_FLAGS_READ?
-    // Auto-cleanup buffer pages later.
+    // Leave buffered pages dangling and cleanup later.
     if (keep_dangling && file_->file_flags == duckdb::FileFlags::FILE_FLAGS_READ) {
         --file_->num_users;
         return false;
