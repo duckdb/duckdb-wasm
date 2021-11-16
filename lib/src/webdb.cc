@@ -581,15 +581,15 @@ arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_vie
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    // Already pinned by us?
-    // Unpin the file to re-register the new file.
-    if (auto iter = pinned_web_files_.find(file_name); iter != pinned_web_files_.end()) {
-        pinned_web_files_.erase(iter);
-    }
     // Try to drop the file in the buffered file system.
     // If that fails we have to give up since someone still holds an open file ref.
     if (!buffered_filesystem_->TryDropFile(file_name)) {
         return arrow::Status::Invalid("File is already registered and is still buffered");
+    }
+    // Already pinned by us?
+    // Unpin the file to re-register the new file.
+    if (auto iter = pinned_web_files_.find(file_name); iter != pinned_web_files_.end()) {
+        pinned_web_files_.erase(iter);
     }
     // Register new file url in web filesystem.
     // Pin the file handle to keep the file alive.
@@ -603,15 +603,15 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    // Already pinned by us?
-    // Unpin the file to re-register the new file.
-    if (auto iter = pinned_web_files_.find(file_name); iter != pinned_web_files_.end()) {
-        pinned_web_files_.erase(iter);
-    }
     // Try to drop the file in the buffered file system.
     // If that fails we have to give up since someone still holds an open file ref.
     if (!buffered_filesystem_->TryDropFile(file_name)) {
         return arrow::Status::Invalid("File is already registered and is still buffered");
+    }
+    // Already pinned by us?
+    // Unpin the file to re-register the new file.
+    if (auto iter = pinned_web_files_.find(file_name); iter != pinned_web_files_.end()) {
+        pinned_web_files_.erase(iter);
     }
     // Register new file in web filesystem
     io::WebFileSystem::DataBuffer data{std::move(buffer), buffer_length};
