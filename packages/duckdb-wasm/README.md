@@ -102,16 +102,16 @@ await db.insertCSVFromPath('data.csv', {
 await db.registerFileText(
     'rows.json',
     `[
-    { “col1”: 1, “col2”: “foo” },
-    { “col1”: 2, “col2”: “bar” },
+    { "col1": 1, "col2": "foo" },
+    { "col1": 2, "col2": "bar" },
 ]`,
 );
 // ... or column-major format
 await db.registerFileText(
     'columns.json',
     `{
-    “col1”: [1, 2],
-    “col2”: [“foo”, “bar”]
+    "col1": [1, 2],
+    "col2": ["foo", "bar"]
 }`,
 );
 // ... with typed insert options
