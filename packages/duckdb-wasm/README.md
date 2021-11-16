@@ -122,6 +122,8 @@ await c.insertJSONFromPath('columns.json', { name: 'columns' });
 const pickedFile: File = letUserPickFile();
 await db.registerFileHandle('local.parquet', pickedFile);
 await db.registerFileURL('remote.parquet', 'https://origin/remote.parquet');
+const res = await fetch('https://origin/remote.parquet');
+await db.registerFileBuffer('buffer.parquet', await res.arrayBuffer());
 
 // ..., by specifying URLs in the SQL text
 await c.query(`
