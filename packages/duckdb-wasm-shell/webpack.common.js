@@ -26,6 +26,12 @@ export function configure(params) {
         module: {
             rules: [
                 {
+                    test: /\.m?js/,
+                    resolve: {
+                        fullySpecified: false,
+                    },
+                },
+                {
                     test: /\.tsx?$/,
                     loader: 'ts-loader',
                     exclude: /node_modules/,
@@ -103,10 +109,12 @@ export function configure(params) {
                             loader: 'source-map-loader',
                             options: {
                                 filterSourceMappingUrl: (url, resourcePath) => {
+                                    if (/apache-arrow/.test(resourcePath)) {
+                                        return 'skip';
+                                    }
                                     if (/\.worker\.js$/i.test(resourcePath)) {
                                         return 'skip';
                                     }
-
                                     return true;
                                 },
                             },
