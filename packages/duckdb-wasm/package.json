@@ -8,7 +8,7 @@
         "url": "https://github.com/duckdb/duckdb-wasm.git"
     },
     "dependencies": {
-        "@apache-arrow/esnext-esm": "^6.0.0",
+        "apache-arrow": "^6.0.1",
         "wasm-feature-detect": "^1.2.11"
     },
     "devDependencies": {

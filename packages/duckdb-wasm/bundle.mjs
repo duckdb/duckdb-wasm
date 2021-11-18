@@ -5,6 +5,24 @@ import rimraf from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
 
+// Patch broken arrow package.json
+// XXX Remove this hack as soon as arrow fixes the exports
+function patch_arrow() {
+    const package_path = '../../node_modules/apache-arrow/package.json';
+    const package_raw = fs.readFileSync(package_path);
+    const package_json = JSON.parse(package_raw);
+    package_json.exports = {
+        node: {
+            import: './Arrow.node.mjs',
+            require: './Arrow.node.js',
+        },
+        import: './Arrow.dom.mjs',
+        default: './Arrow.dom.js',
+    };
+    fs.writeFileSync(package_path, JSON.stringify(package_json));
+}
+patch_arrow();
+
 let is_debug = false;
 let args = process.argv.slice(2);
 if (args.length == 0) {
@@ -13,9 +31,6 @@ if (args.length == 0) {
     if (args[0] == 'debug') is_debug = true;
 }
 console.log(`DEBUG=${is_debug}`);
-
-// Bundling node is a bit problematic right now.
-// The web worker ponyfill is commonjs (dynamic require) and prevents us from releasing an async node module.
 
 function printErr(err) {
     if (err) return console.log(err);
@@ -54,7 +69,8 @@ fs.copyFile(
 
 const TARGET = ['esnext'];
 const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
-const EXTERNALS_CJS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const EXTERNALS_IIFE = ['apache-arrow'];
+const EXTERNALS_CJS = EXTERNALS_ESM;
 
 console.log('[ ESBUILD ] duckdb-esm.js');
 esbuild.build({
@@ -85,6 +101,7 @@ esbuild.build({
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
     sourcemap: is_debug ? 'inline' : true,
+    external: EXTERNALS_IIFE,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-sync-next.js');
@@ -99,6 +116,7 @@ esbuild.build({
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
     sourcemap: is_debug ? 'inline' : true,
+    external: EXTERNALS_IIFE,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async.js');
@@ -112,6 +130,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'inline' : true,
+    external: EXTERNALS_IIFE,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-async.worker.js');
@@ -167,6 +186,9 @@ esbuild.build({
 
 // -------------------------------
 // NODE
+
+// Bundling node is a bit problematic right now.
+// The web worker ponyfill is commonjs (dynamic require) and prevents us from releasing an async node module.
 
 console.log('[ ESBUILD ] duckdb-node-sync.js');
 esbuild.build({

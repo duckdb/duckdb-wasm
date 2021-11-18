@@ -2,20 +2,6 @@
 # yarn lockfile v1
 
 
-"@apache-arrow/esnext-esm@^6.0.0":
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/@apache-arrow/esnext-esm/-/esnext-esm-6.0.0.tgz#9f8cb2decb2bf22ed5b668361493ddf6548457d0"
-  integrity sha512-ifAe4BXdhG6rP2aPFordrB9rsPQQabcx1L1k9Ja8IgJam4jv6g3/P/bv6zjklXwThxYVNJGwIMJS4rFsq49eoA==
-  dependencies:
-    "@types/flatbuffers" "^1.10.0"
-    "@types/node" "^16.4.0"
-    command-line-args "5.1.3"
-    command-line-usage "6.1.1"
-    flatbuffers "1.12.0"
-    json-bignum "^0.0.3"
-    pad-left "^2.1.0"
-    tslib "^2.3.0"
-
 "@babel/code-frame@^7.14.5":
   version "7.14.5"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.14.5.tgz#23b08d740e83f49c5e59945fbf1b43e80bbf4edb"
@@ -925,6 +911,20 @@ apache-arrow@^3.0.0:
     pad-left "^2.1.0"
     text-encoding-utf-8 "^1.0.2"
     tslib "^1.12.0"
+
+apache-arrow@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/apache-arrow/-/apache-arrow-6.0.1.tgz#bc5ec6748bf23c09fd74a332e7218915a2c42339"
+  integrity sha512-imVT/9c54Xa9BebBD4+KiaKQnWJZozX5FWijVFH3VpJREaU8dRbpGV+6le+0IRwSgLBCD0gihq+VbHG1w98pEg==
+  dependencies:
+    "@types/flatbuffers" "^1.10.0"
+    "@types/node" "^16.4.0"
+    command-line-args "5.1.3"
+    command-line-usage "6.1.1"
+    flatbuffers "1.12.0"
+    json-bignum "^0.0.3"
+    pad-left "^2.1.0"
+    tslib "^2.3.0"
 
 append-transform@^2.0.0:
   version "2.0.0"

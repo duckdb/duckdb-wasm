@@ -56,11 +56,11 @@ export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arr
 const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
     {
         name: 'integers_1',
-        schema: arrow.Schema.new({
-            a: new arrow.Int32(),
-            b: new arrow.Int32(),
-            c: new arrow.Int32(),
-        }),
+        schema: new arrow.Schema([
+            new arrow.Field('a', new arrow.Int32()),
+            new arrow.Field('b', new arrow.Int32()),
+            new arrow.Field('c', new arrow.Int32()),
+        ]),
         batches: [
             {
                 numRows: 3,
@@ -84,11 +84,11 @@ const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
     },
     {
         name: 'combined_1',
-        schema: arrow.Schema.new({
-            a: new arrow.Int32(),
-            b: new arrow.Int16(),
-            c: new arrow.Utf8(),
-        }),
+        schema: new arrow.Schema([
+            new arrow.Field('a', new arrow.Int32()),
+            new arrow.Field('b', new arrow.Int16()),
+            new arrow.Field('c', new arrow.Utf8()),
+        ]),
         batches: [
             {
                 numRows: 3,
@@ -112,11 +112,11 @@ const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
     },
     {
         name: 'combined_2',
-        schema: arrow.Schema.new({
-            a: new arrow.Int32(),
-            b: new arrow.Int16(),
-            c: new arrow.Utf8(),
-        }),
+        schema: new arrow.Schema([
+            new arrow.Field('a', new arrow.Int32()),
+            new arrow.Field('b', new arrow.Int16()),
+            new arrow.Field('c', new arrow.Utf8()),
+        ]),
         batches: [
             {
                 numRows: 3,
