@@ -63,41 +63,6 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
                 },
             }),
         );
-        container = {
-            value: null,
-        };
-        benches.push(
-            new Benchmark(`scan_double_rows_iterator_bind_${tupleCount}`, {
-                before: async () => {
-                    const conn = db().connect();
-                    container.value = conn.query<{ foo: arrow.Float64 }>(`
-                    SELECT v::DOUBLE AS foo FROM generate_series(1, ${tupleCount}) as t(v);
-                `);
-                    conn.close();
-                },
-                fn: async () => {
-                    let sum = 0;
-                    let count = 0;
-                    let action: (index: number) => void;
-                    container.value!.scan(
-                        index => {
-                            action(index);
-                        },
-                        batch => {
-                            action = (index: number) => {
-                                sum += batch.getChildAt(0)!.get(index);
-                                ++count;
-                            };
-                        },
-                    );
-                    if (count != tupleCount || sum != (tupleCount * (tupleCount + 1)) / 2) {
-                        console.log(
-                            `3 WRONG RESULT ${count} ${tupleCount} ${sum} ${(tupleCount * (tupleCount + 1)) / 2}`,
-                        );
-                    }
-                },
-            }),
-        );
     }
     return benches;
 }
