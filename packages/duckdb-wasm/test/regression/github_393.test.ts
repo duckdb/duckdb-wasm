@@ -1,7 +1,7 @@
 import * as duckdb from '../../src';
 import * as arrow from 'apache-arrow';
 
-// https://github.com/duckdb/duckdb-wasm/issues/332
+// https://github.com/duckdb/duckdb-wasm/issues/393
 export function testGitHubIssue393(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
     beforeEach(async () => {
@@ -14,7 +14,7 @@ export function testGitHubIssue393(db: () => duckdb.AsyncDuckDB): void {
         await db().dropFiles();
     });
     describe('GitHub issues', () => {
-        it('332', async () => {
+        it('393', async () => {
             await db().registerFileText(
                 'test_date.csv',
                 `iso_str,time_in_ms
