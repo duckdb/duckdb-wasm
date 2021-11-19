@@ -69,7 +69,7 @@ fs.copyFile(
 
 const TARGET = ['esnext'];
 const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
-const EXTERNALS_IIFE = ['apache-arrow'];
+const EXTERNALS_IIFE = [];
 const EXTERNALS_CJS = EXTERNALS_ESM;
 
 console.log('[ ESBUILD ] duckdb-esm.js');
