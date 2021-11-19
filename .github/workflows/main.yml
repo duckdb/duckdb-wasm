@@ -653,6 +653,13 @@ jobs:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
+            - name: Build examples
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build
+                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
+
             - name: Publish @duckdb/duckdb-wasm
               if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
               run: |
