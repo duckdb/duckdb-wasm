@@ -16,7 +16,7 @@ _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our 
 
 ```ts
 // Import the ESM bundle (supports tree-shaking)
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm.js';
+import * as duckdb from '@duckdb/duckdb-wasm';
 
 // Either bundle them manually, for example as Webpack assets
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
@@ -25,20 +25,20 @@ import duckdb_wasm_next_coi from '@duckdb/duckdb-wasm/dist/duckdb-next-coi.wasm'
 const WEBPACK_BUNDLES: duckdb.DuckDBBundles = {
     asyncDefault: {
         mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser.worker.js', import.meta.url).toString(),
     },
     asyncNext: {
         mainModule: duckdb_wasm_next,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-async-next.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-next.worker.js', import.meta.url).toString(),
     },
     asyncNextCOI: {
         mainModule: duckdb_wasm_next_coi,
         mainWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-next-coi.worker.js',
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-next-coi.worker.js',
             import.meta.url,
         ).toString(),
         pthreadWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-async-next-coi.pthread.worker.js',
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-next-coi.pthread.worker.js',
             import.meta.url,
         ).toString(),
     },
