@@ -1,5 +1,5 @@
-import * as duckdb_sync from '../src/targets/duckdb-node-sync';
-import * as duckdb_async from '../src/targets/duckdb-node-async';
+import * as duckdb_blocking from '../src/targets/duckdb-node-blocking';
+import * as duckdb from '../src/targets/duckdb';
 import path from 'path';
 import Worker from 'web-worker';
 import fs from 'fs';
@@ -34,32 +34,32 @@ const resolveData = async (url: string) => {
 };
 
 // Test environment
-let db: duckdb_sync.DuckDB | null = null;
-let adb: duckdb_async.AsyncDuckDB | null = null;
+let db: duckdb_blocking.DuckDB | null = null;
+let adb: duckdb.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
     // Configure the worker
-    const DUCKDB_CONFIG = await duckdb_async.selectBundle({
+    const DUCKDB_CONFIG = await duckdb.selectBundle({
         asyncDefault: {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
-            mainWorker: path.resolve(__dirname, './duckdb-node-async.worker.js'),
+            mainWorker: path.resolve(__dirname, './duckdb-node.worker.cjs'),
         },
         asyncNext: {
             mainModule: path.resolve(__dirname, './duckdb-next.wasm'),
-            mainWorker: path.resolve(__dirname, './duckdb-node-async-next.worker.js'),
+            mainWorker: path.resolve(__dirname, './duckdb-node-next.worker.cjs'),
         },
     });
 
-    const logger = new duckdb_sync.VoidLogger();
-    db = await new duckdb_sync.DuckDB(
+    const logger = new duckdb_blocking.VoidLogger();
+    db = await new duckdb_blocking.DuckDB(
         logger,
-        duckdb_sync.NODE_RUNTIME,
-        path.resolve(__dirname, './duckdb.wasm'),
+        duckdb_blocking.NODE_RUNTIME,
+        path.resolve(__dirname, './duckdb-next.wasm'),
     ).instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
-    adb = new duckdb_async.AsyncDuckDB(logger, worker);
+    adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
 });
 

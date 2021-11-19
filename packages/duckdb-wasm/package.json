@@ -20,6 +20,7 @@
         "eslint": "^8.2.0",
         "eslint-plugin-jasmine": "^4.1.2",
         "eslint-plugin-react": "^7.27.0",
+        "fast-glob": "^3.2.7",
         "jasmine": "^3.10.0",
         "jasmine-core": "^3.10.1",
         "jasmine-spec-reporter": "^7.0.0",
@@ -31,7 +32,6 @@
         "karma-jasmine-html-reporter": "^1.7.0",
         "karma-sourcemap-loader": "^0.3.8",
         "karma-spec-reporter": "^0.0.32",
-        "fast-glob": "^3.2.7",
         "make-dir": "^3.1.0",
         "nyc": "^15.1.0",
         "prettier": "^2.4.1",
@@ -49,9 +49,9 @@
         "build:release": "node bundle.mjs release && tsc --emitDeclarationOnly",
         "docs": "typedoc",
         "report": "node ./coverage.mjs",
-        "test:node": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
-        "test:node:debug": "node --inspect-brk --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
-        "test:node:coverage": "nyc -r json --report-dir ./coverage/node node --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.js",
+        "test:node": "node --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",
+        "test:node:debug": "node --inspect-brk --enable-source-maps --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",
+        "test:node:coverage": "nyc -r json --report-dir ./coverage/node node --experimental-wasm-eh ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",
         "test:firefox": "karma start ./karma/tests-firefox.cjs",
         "test:chrome": "karma start ./karma/tests-chrome.cjs",
         "test:chrome:eh": "karma start ./karma/tests-chrome-eh.cjs",
@@ -66,19 +66,61 @@
         "dist",
         "!dist/types/test"
     ],
-    "main": "./dist/duckdb-node-async.js",
-    "types": "./dist/duckdb-node-async.d.ts",
-    "module": "./dist/duckdb-esm.js",
     "browser": {
-        "./dist/duckdb-node-async.js": "./dist/duckdb-browser-async.js",
-        "fast-glob": false,
-        "temp-write": false,
-        "worker_threads": false,
-        "perf_hooks": false,
         "fs": false,
-        "os": false,
         "path": false,
-        "buffer": false,
-        "crypto": false
+        "perf_hooks": false,
+        "os": false,
+        "worker_threads": false
+    },
+    "types": "./dist/duckdb.d.ts",
+    "module": "./dist/duckdb.mjs",
+    "exports": {
+        ".": {
+            "types": "./dist/duckdb.d.ts",
+            "import": "./dist/duckdb.mjs",
+            "module": "./dist/duckdb.mjs",
+            "browser": {
+                "types": "./dist/duckdb-browser.d.ts",
+                "script": "./dist/duckdb-browser.js",
+                "default": "./dist/duckdb-browser.js"
+            },
+            "node": {
+                "types": "./dist/duckdb-node.d.ts",
+                "require": "./dist/duckdb-node.cjs",
+                "default": "./dist/duckdb-node.cjs"
+            }
+        },
+        "./next": {
+            "browser": {
+                "types": "./dist/duckdb-browser-next.d.ts",
+                "script": "./dist/duckdb-browser-next.js",
+                "default": "./dist/duckdb-browser-next.js"
+            },
+            "node": {
+                "types": "./dist/duckdb-node-next.d.ts",
+                "require": "./dist/duckdb-node-next.cjs",
+                "default": "./dist/duckdb-node-next.cjs"
+            }
+        },
+        "./next-coi": {
+            "browser": {
+                "types": "./dist/duckdb-browser-next-coi.d.ts",
+                "script": "./dist/duckdb-browser-next-coi.js",
+                "default": "./dist/duckdb-browser-next-coi.js"
+            }
+        },
+        "./blocking": {
+            "browser": {
+                "types": "./dist/duckdb-browser-blocking.d.ts",
+                "script": "./dist/duckdb-browser-blocking.js",
+                "default": "./dist/duckdb-browser-blocking.js"
+            },
+            "node": {
+                "types": "./dist/duckdb-node-blocking.d.ts",
+                "require": "./dist/duckdb-node-blocking.cjs",
+                "default": "./dist/duckdb-node-blocking.cjs"
+            }
+        }
     }
 }

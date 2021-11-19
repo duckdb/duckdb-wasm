@@ -1,30 +1,29 @@
-import * as duckdb_sync from '../src/targets/duckdb-browser-sync';
-import * as duckdb_async from '../src/targets/duckdb-browser-async';
+import * as duckdb_blocking from '../src/targets/duckdb-browser-blocking';
+import * as duckdb from '../src/targets/duckdb';
 import * as check from 'wasm-feature-detect';
-import { DuckDBBundle, getPlatformFeatures } from '../src/targets/duckdb-browser-async';
 
 // Configure the worker
-const DUCKDB_BUNDLES: duckdb_async.DuckDBBundles = {
+const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     asyncDefault: {
         mainModule: '/static/duckdb.wasm',
-        mainWorker: '/static/duckdb-browser-async.worker.js',
+        mainWorker: '/static/duckdb-browser.worker.js',
     },
     asyncNext: {
         mainModule: '/static/duckdb-next.wasm',
-        mainWorker: '/static/duckdb-browser-async-next.worker.js',
+        mainWorker: '/static/duckdb-browser-next.worker.js',
     },
     asyncNextCOI: {
         mainModule: '/static/duckdb-next-coi.wasm',
-        mainWorker: '/static/duckdb-browser-async-next-coi.worker.js',
-        pthreadWorker: '/static/duckdb-browser-async-next-coi.pthread.worker.js',
+        mainWorker: '/static/duckdb-browser-next-coi.worker.js',
+        pthreadWorker: '/static/duckdb-browser-next-coi.pthread.worker.js',
     },
 };
-let DUCKDB_BUNDLE: DuckDBBundle | null = null;
+let DUCKDB_BUNDLE: duckdb.DuckDBBundle | null = null;
 
 describe('wasm check', () => {
     it('worker and wasm urls', async () => {
         if (
-            (await getPlatformFeatures()).crossOriginIsolated &&
+            (await duckdb.getPlatformFeatures()).crossOriginIsolated &&
             (await check.exceptions()) &&
             (await check.threads())
         ) {
@@ -74,18 +73,18 @@ const resolveData = async (url: string) => {
 };
 
 // Test environment
-let db: duckdb_sync.DuckDB | null = null;
-let adb: duckdb_async.AsyncDuckDB | null = null;
+let db: duckdb_blocking.DuckDB | null = null;
+let adb: duckdb.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
-    DUCKDB_BUNDLE = await duckdb_async.selectBundle(DUCKDB_BUNDLES);
-    const logger = new duckdb_sync.VoidLogger();
-    db = new duckdb_sync.DuckDB(logger, duckdb_sync.BROWSER_RUNTIME, '/static/duckdb.wasm');
+    DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
+    const logger = new duckdb_blocking.VoidLogger();
+    db = new duckdb_blocking.DuckDB(logger, duckdb_blocking.BROWSER_RUNTIME, '/static/duckdb-next.wasm');
     await db.instantiate();
 
     worker = new Worker(DUCKDB_BUNDLE!.mainWorker!);
-    adb = new duckdb_async.AsyncDuckDB(logger, worker);
+    adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_BUNDLE!.mainModule, DUCKDB_BUNDLE!.pthreadWorker);
 });
 

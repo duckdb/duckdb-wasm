@@ -8,7 +8,7 @@ import {
     readString,
     DuckDBDataProtocol,
 } from './runtime';
-import { DuckDBModule } from '../targets/duckdb-browser-sync-next';
+import { DuckDBModule } from './duckdb_module';
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     fileInfoCache: Map<number, DuckDBFileInfo>;

@@ -1,9 +1,9 @@
-import * as async from './targets/duckdb-esm';
-import * as sync_browser from './targets/duckdb-browser-sync';
-import * as sync_node from './targets/duckdb-node-sync';
+import * as duckdb from './targets/duckdb';
+import * as blocking_browser from './targets/duckdb-browser-blocking';
+import * as blocking_node from './targets/duckdb-node-blocking';
 
 exports = {
-    async,
-    sync_browser,
-    sync_node,
+    duckdb,
+    blocking_browser,
+    blocking_node,
 };
