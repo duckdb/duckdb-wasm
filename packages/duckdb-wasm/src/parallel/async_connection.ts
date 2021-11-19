@@ -93,18 +93,14 @@ export class AsyncDuckDBConnection {
     }
     /** Insert record batches */
     public async insertArrowBatches(
-        schema: arrow.Schema,
+        _schema: arrow.Schema,
         batches: Iterable<arrow.RecordBatch>,
         options: ArrowInsertOptions,
     ): Promise<void> {
-        const buffer = new arrow.AsyncByteQueue<Uint8Array>();
-        const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
-        for (const batch of batches) {
-            writer.write(batch);
-        }
-        writer.finish();
         // TODO(ankoh): we would prefer to stream here but arrow doesn't let us without many promises
-        const materialized = buffer.toUint8Array(true);
+        const writer = new arrow.RecordBatchStreamWriter().writeAll(batches);
+        writer.finish();
+        const materialized = writer.toUint8Array(true);
         await this._bindings.insertArrowFromIPCStream(this._conn, materialized, options);
     }
     /** Insert an arrow table from an ipc stream */
