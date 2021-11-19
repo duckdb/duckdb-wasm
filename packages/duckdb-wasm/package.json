@@ -67,6 +67,8 @@
         "!dist/types/test"
     ],
     "main:": "./dist/duckdb-node.cjs",
+    "jsdelivr:": "./dist/duckdb-browser.js",
+    "unpkg:": "./dist/duckdb-browser.js",
     "module": "./dist/duckdb.mjs",
     "types": "./dist/duckdb.d.ts",
     "browser": {
