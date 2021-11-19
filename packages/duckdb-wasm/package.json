@@ -9,10 +9,12 @@
     },
     "dependencies": {
         "apache-arrow": "^6.0.1",
-        "wasm-feature-detect": "^1.2.11"
+        "wasm-feature-detect": "^1.2.11",
+        "fast-glob": "^3.2.7",
+        "web-worker": "^1.2.0",
+        "@types/emscripten": "^1.39.4"
     },
     "devDependencies": {
-        "@types/emscripten": "^1.39.4",
         "@types/jasmine": "^3.10.2",
         "@typescript-eslint/eslint-plugin": "^5.4.0",
         "@typescript-eslint/parser": "^5.4.0",
@@ -20,7 +22,6 @@
         "eslint": "^8.2.0",
         "eslint-plugin-jasmine": "^4.1.2",
         "eslint-plugin-react": "^7.27.0",
-        "fast-glob": "^3.2.7",
         "jasmine": "^3.10.0",
         "jasmine-core": "^3.10.1",
         "jasmine-spec-reporter": "^7.0.0",
@@ -38,8 +39,7 @@
         "puppeteer": "^11.0.0",
         "rimraf": "^3.0.2",
         "typedoc": "^0.22.9",
-        "typescript": "^4.5.2",
-        "web-worker": "^1.2.0"
+        "typescript": "^4.5.2"
     },
     "optionalDependencies": {
         "fsevents": "*"
