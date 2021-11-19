@@ -179,14 +179,9 @@ bench_system_join_3:
 	yarn workspace @duckdb/benchmarks bench:system:join:3
 
 .PHONY: bench_system_tpch
-bench_system_tpch:
+bench_system_tpch_duckdb:
 	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:tpch 0.1
-
-.PHONY: bench_system_tpch
-bench_system_tpch_large:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:tpch:large 10
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
 
 
 # Make sure we can access the wasm caches

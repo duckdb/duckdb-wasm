@@ -1,10 +1,10 @@
+import * as duckdb_blocking from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import * as duckdb from '@duckdb/duckdb-wasm/next-noworker';
 import Benchmark from 'buffalo-bench/lib';
 
 const noop = () => {};
 
-export function benchmarkIterator(db: () => duckdb.DuckDBBindings): Benchmark[] {
+export function benchmarkIterator(db: () => duckdb_blocking.DuckDBBindings): Benchmark[] {
     const tupleCount = 1000000;
     const benches = [];
     for (const [type, query] of [

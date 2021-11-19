@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import { FileRegistryProvider, StaticOverlayProvider } from './model';
 import { Shell } from './pages/shell';
 
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm.js';
+import * as duckdb from '@duckdb/duckdb-wasm';
 
 export interface EmbeddableShellProps {
     resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;

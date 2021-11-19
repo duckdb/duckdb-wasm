@@ -1,5 +1,5 @@
+import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import * as arrow from 'apache-arrow';
-import * as duckdb from '@duckdb/duckdb-wasm/next-noworker';
 import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import {

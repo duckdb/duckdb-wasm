@@ -1,5 +1,5 @@
 import React from 'react';
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-esm.js';
+import * as duckdb from '@duckdb/duckdb-wasm';
 import styles from './docs.module.css';
 
 export const Docs = (): React.ReactElement => (
