@@ -80,7 +80,7 @@ let worker: Worker | null = null;
 beforeAll(async () => {
     DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
     const logger = new duckdb_blocking.VoidLogger();
-    db = new duckdb_blocking.DuckDB(logger, duckdb_blocking.BROWSER_RUNTIME, '/static/duckdb-next.wasm');
+    db = new duckdb_blocking.DuckDB(logger, duckdb_blocking.BROWSER_RUNTIME, '/static/duckdb.wasm');
     await db.instantiate();
 
     worker = new Worker(DUCKDB_BUNDLE!.mainWorker!);

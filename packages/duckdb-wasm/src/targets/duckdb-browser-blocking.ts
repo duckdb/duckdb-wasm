@@ -2,6 +2,6 @@ export * as arrow from 'apache-arrow';
 export * from '../log';
 export * from '../status';
 export * from '../bindings';
-export * from '../bindings/bindings_browser_next';
+export * from '../bindings/bindings_browser';
 export { DEFAULT_RUNTIME } from '../bindings/runtime';
 export { BROWSER_RUNTIME } from '../bindings/runtime_browser';
