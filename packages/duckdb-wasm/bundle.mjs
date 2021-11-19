@@ -65,26 +65,10 @@ fs.copyFile(
 //    printErr,
 //);
 
-// -------------------------------
-// ESM
-
 const TARGET = ['esnext'];
 const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 const EXTERNALS_IIFE = [];
 const EXTERNALS_CJS = EXTERNALS_ESM;
-
-console.log('[ ESBUILD ] duckdb.mjs');
-esbuild.build({
-    entryPoints: ['./src/targets/duckdb.ts'],
-    outfile: 'dist/duckdb.mjs',
-    platform: 'neutral',
-    format: 'esm',
-    target: TARGET,
-    bundle: true,
-    minify: true,
-    sourcemap: true,
-    external: EXTERNALS_ESM,
-});
 
 // -------------------------------
 // Browser
