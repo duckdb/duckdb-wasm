@@ -1,5 +1,4 @@
 import * as arrow from 'apache-arrow';
-import * as utils from '../utils';
 import { AsyncDuckDB } from './async_bindings';
 import { LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
 import { ArrowInsertOptions, CSVInsertOptions, JSONInsertOptions } from '../bindings/insert_options';
@@ -98,21 +97,15 @@ export class AsyncDuckDBConnection {
         batches: Iterable<arrow.RecordBatch>,
         options: ArrowInsertOptions,
     ): Promise<void> {
-        // Prepare the IPC stream writer
-        const buffer = new utils.IPCBuffer();
+        const buffer = new arrow.AsyncByteQueue<Uint8Array>();
         const writer = new arrow.RecordBatchStreamWriter().reset(buffer, schema);
-
-        // Write all batches to the ipc buffer
-        let first = true;
         for (const batch of batches) {
-            if (!first) {
-                await this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
-            }
-            first = false;
             writer.write(batch);
         }
         writer.finish();
-        await this._bindings.insertArrowFromIPCStream(this._conn, buffer.flush(), options);
+        // TODO(ankoh): we would prefer to stream here but arrow doesn't let us without many promises
+        const materialized = buffer.toUint8Array(true);
+        await this._bindings.insertArrowFromIPCStream(this._conn, materialized, options);
     }
     /** Insert an arrow table from an ipc stream */
     public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {

@@ -495,6 +495,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         buffer: Uint8Array,
         options?: ArrowInsertOptions,
     ): Promise<void> {
+        if (buffer.length == 0) return;
         // Pass to the worker
         const task = new WorkerTask<
             WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,

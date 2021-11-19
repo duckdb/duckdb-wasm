@@ -227,6 +227,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Insert record batches from an arrow ipc stream */
     public insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: ArrowInsertOptions): void {
+        if (buffer.length == 0) return;
         // Store buffer
         const bufferPtr = this.mod._malloc(buffer.length);
         const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + buffer.length);
