@@ -1,30 +1,34 @@
 // Copyright (c) 2020 The DashQL Authors
 
-import path from 'path';
 import fs from 'fs';
 
-const pkgNames = ['duckdb-wasm', 'duckdb-wasm-shell', 'benchmarks'];
-const pkgs = new Map();
+const pkgPaths = [
+    './packages/duckdb-wasm/package.json',
+    './packages/duckdb-wasm-shell/package.json',
+    './packages/benchmarks/package.json',
+    './examples/esbuild-browser/package.json',
+    './examples/esbuild-node/package.json',
+];
+const pkgs = [];
 
 // Read all packages
-for (const name of pkgNames) {
-    const p = path.join('packages', name, 'package.json');
-    const j = JSON.parse(fs.readFileSync(p));
+for (const pkgPath of pkgPaths) {
+    const j = JSON.parse(fs.readFileSync(pkgPath));
     console.log(`${j.name}:${j.version}`);
-    pkgs.set(j.name, {
-        name,
-        path: p,
-        config: j,
+    pkgs.push({
+        path: pkgPath,
+        name: j.name,
         version: j.version,
+        config: j,
     });
 }
 
 // Do a naive n*n sync
-for (const [name, pkg] of pkgs) {
-    for (const [otherName, otherPkg] of pkgs) {
-        if (name == otherName) continue;
-        if (pkg.config.dependencies && pkg.config.dependencies[otherName] !== undefined) {
-            pkg.config.dependencies[otherName] = `^${otherPkg.config.version}`;
+for (const pkg of pkgs) {
+    for (const otherPkg of pkgs) {
+        if (pkg.name == otherPkg.name) continue;
+        if (pkg.config.dependencies && pkg.config.dependencies[otherPkg.name] !== undefined) {
+            pkg.config.dependencies[otherPkg.name] = `^${otherPkg.config.version}`;
         }
     }
     fs.writeFileSync(pkg.path, JSON.stringify(pkg.config, null, 4) + '\n');
