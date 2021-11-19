@@ -27,16 +27,16 @@ export function getJsDelivrBundles(): DuckDBBundles {
     return {
         asyncDefault: {
             mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
-            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async.worker.js`),
+            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser.worker.js`),
         },
         asyncNext: {
             mainModule: `${jsdelivr_dist_url}duckdb-next.wasm`,
-            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async-next.worker.js`),
+            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next.worker.js`),
         },
         asyncNextCOI: {
             mainModule: `${jsdelivr_dist_url}duckdb-next-coi.wasm`,
-            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async-next-coi.worker.js`),
-            pthreadWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-async-next-coi.pthread.worker.js`),
+            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next-coi.worker.js`),
+            pthreadWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next-coi.pthread.worker.js`),
         },
     };
 }
