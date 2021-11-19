@@ -66,15 +66,17 @@
         "dist",
         "!dist/types/test"
     ],
+    "main:": "./dist/duckdb-node.cjs",
+    "module": "./dist/duckdb.mjs",
+    "types": "./dist/duckdb.d.ts",
     "browser": {
+        "./dist/duckdb-node.cjs": "./dist/duckdb-browser.js",
         "fs": false,
         "path": false,
         "perf_hooks": false,
         "os": false,
         "worker_threads": false
     },
-    "types": "./dist/duckdb.d.ts",
-    "module": "./dist/duckdb.mjs",
     "exports": {
         "./dist/duckdb.wasm": "./dist/duckdb.wasm",
         "./dist/duckdb-next.wasm": "./dist/duckdb-next.wasm",
