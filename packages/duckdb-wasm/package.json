@@ -67,12 +67,14 @@
         "!dist/types/test"
     ],
     "main:": "./dist/duckdb-node.cjs",
+    "module": "./dist/duckdb-node.mjs",
+    "types": "./dist/duckdb-node.d.ts",
     "jsdelivr:": "./dist/duckdb-browser.js",
     "unpkg:": "./dist/duckdb-browser.js",
-    "module": "./dist/duckdb.mjs",
-    "types": "./dist/duckdb.d.ts",
     "browser": {
         "./dist/duckdb-node.cjs": "./dist/duckdb-browser.js",
+        "./dist/duckdb-node.mjs": "./dist/duckdb-browser.mjs",
+        "./dist/duckdb-node.d.ts": "./dist/duckdb-browser.d.ts",
         "fs": false,
         "path": false,
         "perf_hooks": false,
@@ -128,16 +130,15 @@
             }
         },
         ".": {
-            "types": "./dist/duckdb.d.ts",
-            "import": "./dist/duckdb.mjs",
-            "module": "./dist/duckdb.mjs",
             "browser": {
                 "types": "./dist/duckdb-browser.d.ts",
+                "import": "./dist/duckdb-browser.mjs",
                 "script": "./dist/duckdb-browser.js",
                 "default": "./dist/duckdb-browser.js"
             },
             "node": {
                 "types": "./dist/duckdb-node.d.ts",
+                "import": "./dist/duckdb-node.mjs",
                 "require": "./dist/duckdb-node.cjs",
                 "default": "./dist/duckdb-node.cjs"
             }

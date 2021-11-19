@@ -103,6 +103,20 @@ esbuild.build({
     external: EXTERNALS_IIFE,
 });
 
+console.log('[ ESBUILD ] duckdb-browser.mjs');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb.ts'],
+    outfile: 'dist/duckdb-browser.mjs',
+    platform: 'browser',
+    format: 'esm',
+    globalName: 'duckdb',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_ESM,
+});
+
 console.log('[ ESBUILD ] duckdb-browser.worker.js');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-browser.worker.ts'],
@@ -171,6 +185,20 @@ esbuild.build({
 
 // -------------------------------
 // NODE
+
+console.log('[ ESBUILD ] duckdb-node.mjs');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb.ts'],
+    outfile: 'dist/duckdb-node.mjs',
+    platform: 'node',
+    format: 'esm',
+    globalName: 'duckdb',
+    target: TARGET,
+    bundle: true,
+    minify: true,
+    sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_ESM,
+});
 
 console.log('[ ESBUILD ] duckdb-node.cjs');
 esbuild.build({
@@ -255,9 +283,6 @@ esbuild.build({
 
 // -------------------------------
 // Write declaration files
-
-// ESM declarations
-fs.writeFile(path.join(dist, 'duckdb.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
 
 // Browser declarations
 fs.writeFile(path.join(dist, 'duckdb-browser.d.ts'), "export * from './types/src/targets/duckdb';", printErr);

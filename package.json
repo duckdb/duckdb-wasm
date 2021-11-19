@@ -5,7 +5,8 @@
     },
     "private": true,
     "workspaces": [
-        "packages/*"
+        "packages/*",
+        "examples/*"
     ],
     "scripts": {
         "lint:fix": "yarn workspace @duckdb/duckdb-wasm lint --fix && yarn workspace @duckdb/benchmarks lint --fix && yarn workspace @duckdb/duckdb-wasm-shell lint --fix",
