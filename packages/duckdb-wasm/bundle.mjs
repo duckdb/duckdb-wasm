@@ -65,7 +65,7 @@ fs.copyFile(
 //    printErr,
 //);
 
-const TARGET_LIB = ['es2018'];
+const TARGET_LIB = ['es2015'];
 const TARGET_TEST = ['es2020'];
 const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 const EXTERNALS_IIFE = [];
@@ -83,7 +83,9 @@ esbuild.build({
     globalName: 'duckdb',
     target: TARGET_LIB,
     bundle: true,
-    minify: true,
+    minifySyntax: true,
+    minifyIdentifiers: false,
+    minifyWhitespace: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_IIFE,
 });
