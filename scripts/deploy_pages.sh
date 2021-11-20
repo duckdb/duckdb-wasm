@@ -20,7 +20,6 @@ git reset --hard origin/gh-pages
 
 if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
     echo "[ RUN ] Install @duckdb/duckdb-wasm-shell to ${PAGES_DIR}/"
-
     find ${PAGES_DIR} \
         -mindepth 1 \
         -maxdepth 1 \
@@ -28,25 +27,28 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
         -not -name data \
         -not -name misc \
         -exec rm -rf '{}' \;
-
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release/* ${PAGES_DIR}
+
+    echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
+    rm -rf ${PAGES_DIR}/docs
+    cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
+
+    echo "[ RUN ] Install misc to ${TARGET_DIR}/misc"
+    rm -rf ${PAGES_DIR}/misc
+    mkdir -p ${PAGES_DIR}/misc
+    cp -r ${PROJECT_ROOT}/misc/*.svg ${PAGES_DIR}/misc/
+    cp -r ${PROJECT_ROOT}/misc/*.png ${PAGES_DIR}/misc/
 else
     TARGET_DIR="${PAGES_DIR}/branches/${CURRENT_BRANCH}"
     echo "[ RUN ] Install @duckdb/duckdb-wasm-shell to ${TARGET_DIR}/"
-
     rm -rf ${TARGET_DIR}
     mkdir -p ${PAGES_DIR}/branches
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release ${TARGET_DIR}
+
+    echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
+    rm -rf ${TARGET_DIR}/docs
+    cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${TARGET_DIR}/docs
 fi
-
-echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
-cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
-
-echo "[ RUN ] Install misc to ${TARGET_DIR}/misc"
-rm -rf ${PAGES_DIR}/misc
-mkdir -p ${PAGES_DIR}/misc
-cp -r ${PROJECT_ROOT}/misc/*.svg ${PAGES_DIR}/misc/
-cp -r ${PROJECT_ROOT}/misc/*.png ${PAGES_DIR}/misc/
 
 git add -A .
 git commit --amend -m "Deploy shell.duckdb.org"
