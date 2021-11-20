@@ -25,9 +25,8 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
         -mindepth 1 \
         -maxdepth 1 \
         -type d \
-        -not -name branches \
         -not -name data \
-        -exec echo rm -rf '{}' \;
+        -exec rm -rf '{}' \;
 
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release/* ${PAGES_DIR}
 else
@@ -39,6 +38,9 @@ else
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release ${TARGET_DIR}
 fi
 
+echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
+cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
+
 git add -A .
-git commit --amend -m "Deploy web shell"
+git commit --amend -m "Deploy shell.duckdb.org"
 git push origin HEAD:gh-pages --force
