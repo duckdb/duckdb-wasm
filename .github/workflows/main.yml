@@ -410,8 +410,8 @@ jobs:
               with:
                   name: wasm-default
                   path: |
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm.wasm
+                      ./packages/duckdb-wasm/src/bindings/duckdb.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb.wasm
                   retention-days: 1
 
     wasm_next:
@@ -462,8 +462,8 @@ jobs:
               with:
                   name: wasm-next
                   path: |
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next.wasm
+                      ./packages/duckdb-wasm/src/bindings/duckdb-next.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-next.wasm
                   retention-days: 1
 
     wasm_next_coi:
@@ -514,9 +514,9 @@ jobs:
               with:
                   name: wasm-next-coi
                   path: |
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.pthread.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb_wasm_next_coi.wasm
+                      ./packages/duckdb-wasm/src/bindings/duckdb-next-coi.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-next-coi.pthread.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-next-coi.wasm
                   retention-days: 1
 
     js_libs:
