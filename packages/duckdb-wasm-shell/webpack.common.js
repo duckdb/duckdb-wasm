@@ -102,26 +102,6 @@ export function configure(params) {
                     },
                 },
                 {
-                    test: /\.m?js$/,
-                    enforce: 'pre',
-                    use: [
-                        {
-                            loader: 'source-map-loader',
-                            options: {
-                                filterSourceMappingUrl: (url, resourcePath) => {
-                                    if (/apache-arrow/.test(resourcePath)) {
-                                        return 'skip';
-                                    }
-                                    if (/\.worker\.js$/i.test(resourcePath)) {
-                                        return 'skip';
-                                    }
-                                    return true;
-                                },
-                            },
-                        },
-                    ],
-                },
-                {
                     test: /site\.webmanifest$/i,
                     type: 'asset/resource',
                     generator: {

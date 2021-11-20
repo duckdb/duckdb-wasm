@@ -62,26 +62,12 @@ fs.copyFile(
 
 const TARGET_LIB = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
 const TARGET_TEST = ['es2020'];
-const EXTERNALS_CJS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
-const EXTERNALS_IIFE = [];
-const EXTERNALS_ESM = [];
+const EXTERNALS_NODE = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const EXTERNALS_BROWSER = [];
+const EXTERNALS_WEBWORKER = [];
 
 // -------------------------------
 // Browser
-
-console.log('[ ESBUILD ] duckdb-browser.js');
-esbuild.build({
-    entryPoints: ['./src/targets/duckdb.ts'],
-    outfile: 'dist/duckdb-browser.js',
-    platform: 'browser',
-    format: 'iife',
-    globalName: 'duckdb',
-    target: TARGET_LIB,
-    bundle: true,
-    minify: true,
-    sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_IIFE,
-});
 
 console.log('[ ESBUILD ] duckdb-browser.mjs');
 esbuild.build({
@@ -94,7 +80,22 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_ESM,
+    external: EXTERNALS_BROWSER,
+});
+
+console.log('[ ESBUILD ] duckdb-browser-blocking.mjs');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-browser-blocking.ts'],
+    outfile: 'dist/duckdb-browser-blocking.mjs',
+    platform: 'browser',
+    format: 'esm',
+    globalName: 'duckdb',
+    target: TARGET_LIB,
+    bundle: true,
+    minify: true,
+    define: { 'process.env.NODE_ENV': '"production"' },
+    sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_BROWSER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser.worker.js');
@@ -108,6 +109,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_WEBWORKER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-next.worker.js');
@@ -121,6 +123,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_WEBWORKER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-next-coi.worker.js');
@@ -134,6 +137,7 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_WEBWORKER,
 });
 
 console.log('[ ESBUILD ] duckdb-browser-next-coi.pthread.worker.js');
@@ -146,39 +150,11 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
-});
-
-console.log('[ ESBUILD ] duckdb-browser-blocking.js');
-esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-blocking.ts'],
-    outfile: 'dist/duckdb-browser-blocking.js',
-    platform: 'browser',
-    format: 'iife',
-    globalName: 'duckdb',
-    target: TARGET_LIB,
-    bundle: true,
-    minify: false,
-    define: { 'process.env.NODE_ENV': '"production"' },
-    sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_IIFE,
+    external: EXTERNALS_WEBWORKER,
 });
 
 // -------------------------------
 // NODE
-
-console.log('[ ESBUILD ] duckdb-node.mjs');
-esbuild.build({
-    entryPoints: ['./src/targets/duckdb.ts'],
-    outfile: 'dist/duckdb-node.mjs',
-    platform: 'node',
-    format: 'esm',
-    globalName: 'duckdb',
-    target: TARGET_LIB,
-    bundle: true,
-    minify: true,
-    sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_ESM,
-});
 
 console.log('[ ESBUILD ] duckdb-node.cjs');
 esbuild.build({
@@ -186,37 +162,12 @@ esbuild.build({
     outfile: 'dist/duckdb-node.cjs',
     platform: 'node',
     format: 'cjs',
+    globalName: 'duckdb',
     target: TARGET_LIB,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_CJS,
-});
-
-console.log('[ ESBUILD ] duckdb-node.worker.cjs');
-esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node.worker.ts'],
-    outfile: 'dist/duckdb-node.worker.cjs',
-    platform: 'node',
-    format: 'cjs',
-    target: TARGET_LIB,
-    bundle: true,
-    minify: true,
-    sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_CJS,
-});
-
-console.log('[ ESBUILD ] duckdb-node-next.worker.cjs');
-esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node-next.worker.ts'],
-    outfile: 'dist/duckdb-node-next.worker.cjs',
-    platform: 'node',
-    format: 'cjs',
-    target: TARGET_LIB,
-    bundle: true,
-    minify: true,
-    sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_CJS,
+    external: EXTERNALS_NODE,
 });
 
 console.log('[ ESBUILD ] duckdb-node-blocking.cjs');
@@ -229,7 +180,33 @@ esbuild.build({
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
-    external: EXTERNALS_CJS,
+    external: EXTERNALS_NODE,
+});
+
+console.log('[ ESBUILD ] duckdb-node.worker.cjs');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-node.worker.ts'],
+    outfile: 'dist/duckdb-node.worker.cjs',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET_LIB,
+    bundle: true,
+    minify: true,
+    sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_NODE,
+});
+
+console.log('[ ESBUILD ] duckdb-node-next.worker.cjs');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-node-next.worker.ts'],
+    outfile: 'dist/duckdb-node-next.worker.cjs',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET_LIB,
+    bundle: true,
+    minify: true,
+    sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_NODE,
 });
 
 // -------------------------------
@@ -258,7 +235,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
-    external: [...EXTERNALS_CJS, 'web-worker'],
+    external: [...EXTERNALS_NODE, 'web-worker'],
 });
 
 // -------------------------------
