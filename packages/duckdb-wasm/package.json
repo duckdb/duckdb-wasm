@@ -106,8 +106,8 @@
         "./dist/duckdb-browser.worker.js": "./dist/duckdb-browser.worker.js",
         "./dist/duckdb-node": "./dist/duckdb-node.cjs",
         "./dist/duckdb-node-blocking": "./dist/duckdb-node-blocking.cjs",
-        "./dist/duckdb-node-next.worker.js": "./dist/duckdb-node-next.worker.js",
-        "./dist/duckdb-node.worker.js": "./dist/duckdb-node.worker.js",
+        "./dist/duckdb-node-next.worker.cjs": "./dist/duckdb-node-next.worker.cjs",
+        "./dist/duckdb-node.worker.cjs": "./dist/duckdb-node.worker.cjs",
         "./blocking": {
             "browser": {
                 "types": "./dist/duckdb-browser-blocking.d.ts",
