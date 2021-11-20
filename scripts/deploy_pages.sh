@@ -42,7 +42,7 @@ fi
 echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
 cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
 
-echo "[ RUN ] Install misc ${TARGET_DIR}/misc"
+echo "[ RUN ] Install misc to ${TARGET_DIR}/misc"
 rm -rf ${PAGES_DIR}/misc
 mkdir -p ${PAGES_DIR}/misc
 cp -r ${PROJECT_ROOT}/misc/*.svg ${PAGES_DIR}/misc/
