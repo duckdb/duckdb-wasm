@@ -17,7 +17,7 @@ namespace duckdb {
 namespace web {
 namespace io {
 
-constexpr size_t READAHEAD_ACCELERATION = 8;   // x *= 8
+constexpr size_t READAHEAD_ACCELERATION = 4;   // x *= 4
 constexpr size_t READAHEAD_BASE = 1 << 14;     // 16 KB
 constexpr size_t READAHEAD_MAXIMUM = 1 << 24;  // 16 MB
 constexpr size_t READ_HEAD_COUNT = 10;         // (READ_HEAD_COUNT * READAHEAD_MAXIMUM) bytes
