@@ -98,7 +98,7 @@ export class AsyncDuckDBConnection {
         options: ArrowInsertOptions,
     ): Promise<void> {
         // TODO(ankoh): we would prefer to stream here but arrow doesn't let us without many promises
-        const writer = new arrow.RecordBatchStreamWriter().writeAll(batches);
+        const writer = arrow.RecordBatchStreamWriter.writeAll(batches);
         writer.finish();
         const materialized = writer.toUint8Array(true);
         await this._bindings.insertArrowFromIPCStream(this._conn, materialized, options);
