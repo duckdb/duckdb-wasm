@@ -1,5 +1,5 @@
-import * as pthread_api from '../bindings/duckdb_wasm_next_coi.pthread';
-import DuckDB from '../bindings/duckdb_wasm_next_coi';
+import * as pthread_api from '../bindings/duckdb-next-coi.pthread';
+import DuckDB from '../bindings/duckdb-next-coi';
 import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
 
 // Register the global DuckDB runtime

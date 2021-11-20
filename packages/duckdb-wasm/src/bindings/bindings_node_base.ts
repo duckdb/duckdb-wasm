@@ -1,4 +1,4 @@
-import DuckDBWasm from './duckdb_wasm.js';
+import DuckDBWasm from './duckdb.js';
 import { DuckDBModule } from './duckdb_module';
 import { DuckDBBindingsBase } from './bindings_base';
 import { DuckDBRuntime } from './runtime';

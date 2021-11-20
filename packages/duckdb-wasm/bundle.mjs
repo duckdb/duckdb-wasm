@@ -52,20 +52,15 @@ rimraf.sync(`${dist}/*.js.map`);
 // Copy WASM files
 
 const src = path.resolve(__dirname, 'src');
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm.wasm'), path.resolve(dist, 'duckdb.wasm'), printErr);
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb_wasm_next.wasm'), path.resolve(dist, 'duckdb-next.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb.wasm'), path.resolve(dist, 'duckdb.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb-next.wasm'), path.resolve(dist, 'duckdb-next.wasm'), printErr);
 fs.copyFile(
-    path.resolve(src, 'bindings', 'duckdb_wasm_next_coi.wasm'),
+    path.resolve(src, 'bindings', 'duckdb-next-coi.wasm'),
     path.resolve(dist, 'duckdb-next-coi.wasm'),
     printErr,
 );
-//fs.copyFile(
-//    path.resolve(src, 'bindings', 'duckdb_wasm_next_coi.pthread.js'),
-//    path.resolve(dist, 'duckdb-browser-next-coi.pthread.worker.js'),
-//    printErr,
-//);
 
-const TARGET_LIB = ['es2015'];
+const TARGET_LIB = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
 const TARGET_TEST = ['es2020'];
 const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 const EXTERNALS_IIFE = [];
@@ -83,9 +78,7 @@ esbuild.build({
     globalName: 'duckdb',
     target: TARGET_LIB,
     bundle: true,
-    minifySyntax: true,
-    minifyIdentifiers: false,
-    minifyWhitespace: true,
+    minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_IIFE,
 });
@@ -164,7 +157,7 @@ esbuild.build({
     globalName: 'duckdb',
     target: TARGET_LIB,
     bundle: true,
-    minify: true,
+    minify: false,
     define: { 'process.env.NODE_ENV': '"production"' },
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_IIFE,

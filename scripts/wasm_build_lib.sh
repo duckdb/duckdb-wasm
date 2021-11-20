@@ -28,11 +28,11 @@ case $FEATURES in
   "default") ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS}" ;;
   "next")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DWITH_WASM_SIMD=1"
-    SUFFIX="_next"
+    SUFFIX="-next"
     ;;
   "next_coi")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DWITH_WASM_THREADS=1 -DWITH_WASM_SIMD=1 -DWITH_WASM_BULK_MEMORY=1"
-    SUFFIX="_next_coi"
+    SUFFIX="-next-coi"
     ;;
    *) ;;
 esac
@@ -57,13 +57,20 @@ emmake make \
     -j${CORES} \
     duckdb_wasm
 
-cp ${BUILD_DIR}/duckdb_wasm.wasm ${DUCKDB_LIB_DIR}/duckdb_wasm${SUFFIX}.wasm
-cp ${BUILD_DIR}/duckdb_wasm.js ${DUCKDB_LIB_DIR}/duckdb_wasm${SUFFIX}.js
+cp ${BUILD_DIR}/duckdb_wasm.wasm ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.wasm
+sed \
+  -e "s/duckdb_wasm\.wasm/.\/duckdb-wasm${SUFFIX}.wasm/" \
+  ${BUILD_DIR}/duckdb_wasm.js > ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.js
+
 if [ -f ${BUILD_DIR}/duckdb_wasm.worker.js ]; then
-  cp ${BUILD_DIR}/duckdb_wasm.worker.js ${DUCKDB_LIB_DIR}/duckdb_wasm${SUFFIX}.pthread.js
+  sed \
+    -e "s/duckdb_wasm\.wasm/.\/duckdb${SUFFIX}.wasm/" \
+    -e "s/duckdb_wasm\.js/.\/duckdb${SUFFIX}.js/" \
+    ${BUILD_DIR}/duckdb_wasm.worker.js > ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.pthread.js
 
   # Expose the module.
   # This will allow us to reuse the generated pthread handler and only overwrite the loading.
   # More info: duckdb-browser-async-next-coi.pthread.worker.ts
-  printf "\nexport const onmessage = self.onmessage;\nexport function getModule() { return Module; }\nexport function setModule(m) { Module = m; }\n" >> ${DUCKDB_LIB_DIR}/duckdb_wasm${SUFFIX}.pthread.js
+  printf "\nexport const onmessage = self.onmessage;\nexport function getModule() { return Module; }\nexport function setModule(m) { Module = m; }\n" \
+    >> ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.pthread.js
 fi
