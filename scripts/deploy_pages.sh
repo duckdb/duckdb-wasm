@@ -26,6 +26,7 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
         -maxdepth 1 \
         -type d \
         -not -name data \
+        -not -name misc \
         -exec rm -rf '{}' \;
 
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-shell/build/release/* ${PAGES_DIR}
@@ -40,6 +41,12 @@ fi
 
 echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
 cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
+
+echo "[ RUN ] Install misc ${TARGET_DIR}/misc"
+rm -rf ${PAGES_DIR}/misc
+mkdir -p ${PAGES_DIR}/misc
+cp -r ${PROJECT_ROOT}/misc/*.svg ${PAGES_DIR}/misc/
+cp -r ${PROJECT_ROOT}/misc/*.png ${PAGES_DIR}/misc/
 
 git add -A .
 git commit --amend -m "Deploy shell.duckdb.org"
