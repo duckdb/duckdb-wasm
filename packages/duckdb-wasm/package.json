@@ -87,7 +87,7 @@
     "jsdelivr": "dist/duckdb-browser.mjs",
     "unpkg": "dist/duckdb-browser.mjs",
     "browser": {
-        "dist/duckdb-node.mjs": "dist/duckdb-browser.mjs",
+        "dist/duckdb-node.cjs": "dist/duckdb-browser.mjs",
         "dist/duckdb-node.d.ts": "dist/duckdb-browser.d.ts",
         "fs": false,
         "path": false,
