@@ -62,9 +62,9 @@ fs.copyFile(
 
 const TARGET_LIB = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
 const TARGET_TEST = ['es2020'];
-const EXTERNALS_ESM = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const EXTERNALS_CJS = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
 const EXTERNALS_IIFE = [];
-const EXTERNALS_CJS = EXTERNALS_ESM;
+const EXTERNALS_ESM = [];
 
 // -------------------------------
 // Browser
