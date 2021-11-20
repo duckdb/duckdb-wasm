@@ -309,6 +309,13 @@ eslint:
 yarn_install:
 	yarn
 
+.PHONY: examples
+examples:
+	yarn workspace @duckdb/duckdb-wasm-examples-vanilla-node test
+	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node test
+	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
+	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build
+
 # ---------------------------------------------------------------------------
 # Environment
 

@@ -1,18 +1,13 @@
 {
     "private": true,
-    "name": "@duckdb/duckdb-wasm-examples-esbuild-node",
+    "name": "@duckdb/duckdb-wasm-examples-vanilla-node",
     "version": "0.0.1",
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
         "@duckdb/duckdb-wasm": "^0.1.13-dev15.0"
     },
-    "devDependencies": {
-        "esbuild": "^0.13.14",
-        "typescript": "^4.5.2"
-    },
     "scripts": {
-        "build": "node ./bundle.mjs && tsc --noEmit",
         "test": "node ./index.cjs"
     }
 }
