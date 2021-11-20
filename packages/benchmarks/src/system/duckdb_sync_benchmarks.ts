@@ -204,7 +204,7 @@ export class DuckDBSyncIntegerSortBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
         this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schema, batches, {
+        this.connection.insertArrowTable(new arrow.Table(schema, batches), {
             schema: 'main',
             name: this.getName(),
         });
@@ -275,7 +275,7 @@ export class DuckDBSyncIntegerTopKBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
         this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schema, batches, {
+        this.connection.insertArrowTable(new arrow.Table(schema, batches), {
             schema: 'main',
             name: this.getName(),
         });
@@ -333,7 +333,7 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const [schema, batches] = generateArrowGroupedInt32(this.tuples, this.groupSize);
         this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schema, batches, {
+        this.connection.insertArrowTable(new arrow.Table(schema, batches), {
             schema: 'main',
             name: this.getName(),
         });
@@ -448,7 +448,7 @@ export class DuckDBSyncRegexBenchmark implements SystemBenchmark {
         faker.seed(ctx.seed);
         const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
         this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schema, batches, {
+        this.connection.insertArrowTable(new arrow.Table(schema, batches), {
             schema: 'main',
             name: this.getName(),
         });
@@ -511,11 +511,11 @@ export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schemaA, batchesA, {
+        this.connection.insertArrowTable(new arrow.Table(schemaA, batchesA), {
             schema: 'main',
             name: `${this.getName()}_a`,
         });
-        this.connection.insertArrowBatches(schemaB, batchesB, {
+        this.connection.insertArrowTable(new arrow.Table(schemaB, batchesB), {
             schema: 'main',
             name: `${this.getName()}_b`,
         });
@@ -597,15 +597,15 @@ export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         const [schemaC, batchesC] = generateArrow2Int32(this.tuplesC, this.stepBC);
         this.connection = this.database.connect();
-        this.connection.insertArrowBatches(schemaA, batchesA, {
+        this.connection.insertArrowTable(new arrow.Table(schemaA, batchesA), {
             schema: 'main',
             name: `${this.getName()}_a`,
         });
-        this.connection.insertArrowBatches(schemaB, batchesB, {
+        this.connection.insertArrowTable(new arrow.Table(schemaB, batchesB), {
             schema: 'main',
             name: `${this.getName()}_b`,
         });
-        this.connection.insertArrowBatches(schemaC, batchesC, {
+        this.connection.insertArrowTable(new arrow.Table(schemaC, batchesC), {
             schema: 'main',
             name: `${this.getName()}_c`,
         });

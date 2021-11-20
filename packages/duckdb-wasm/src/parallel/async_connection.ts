@@ -75,39 +75,15 @@ export class AsyncDuckDBConnection {
         return new AsyncPreparedStatement<T>(this._bindings, this._conn, stmt);
     }
 
-    /** Insert arrow vectors */
-    public async insertArrowVectors<T extends { [key: string]: arrow.Vector } = any>(
-        children: T,
-        options: ArrowInsertOptions,
-    ): Promise<void> {
-        await this.insertArrowTable(arrow.Table.new(children), options);
-    }
     /** Insert an arrow table */
     public async insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): Promise<void> {
-        if (table.schema.fields.length == 0) {
-            console.warn(
-                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
-            );
-        }
-        await this.insertArrowBatches(table.schema, table.chunks, options);
-    }
-    /** Insert record batches */
-    public async insertArrowBatches(
-        _schema: arrow.Schema,
-        batches: Iterable<arrow.RecordBatch>,
-        options: ArrowInsertOptions,
-    ): Promise<void> {
-        // TODO(ankoh): we would prefer to stream here but arrow doesn't let us without many promises
-        const writer = arrow.RecordBatchStreamWriter.writeAll(batches);
-        writer.finish();
-        const materialized = writer.toUint8Array(true);
-        await this._bindings.insertArrowFromIPCStream(this._conn, materialized, options);
+        const buffer = table.serialize('binary', true);
+        await this.insertArrowFromIPCStream(buffer, options);
     }
     /** Insert an arrow table from an ipc stream */
     public async insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): Promise<void> {
         await this._bindings.insertArrowFromIPCStream(this._conn, buffer, options);
     }
-
     /** Insert csv file from path */
     public async insertCSVFromPath(text: string, options: CSVInsertOptions): Promise<void> {
         await this._bindings.insertCSVFromPath(this._conn, text, options);

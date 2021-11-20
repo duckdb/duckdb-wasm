@@ -60,16 +60,6 @@ await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 ```ts
 // Data can be inserted from an existing arrow.Table
 await c.insertArrowTable(existingTable, { name: 'arrow_table' });
-// ..., from Arrow vectors
-await c.insertArrowVectors(
-    {
-        col1: arrow.Int32Vector.from([1, 2]),
-        col2: arrow.Utf8Vector.from(['foo', 'bar']),
-    },
-    {
-        name: 'arrow_vectors',
-    },
-);
 // ..., from a raw Arrow IPC stream
 const c = await db.connect();
 const streamResponse = await fetch(`someapi`);

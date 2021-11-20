@@ -50,39 +50,10 @@ export class DuckDBConnection {
         return new PreparedStatement<T>(this._bindings, this._conn, stmt);
     }
 
-    /** Insert arrow vectors */
-    public insertArrowVectors<T extends { [key: string]: arrow.Vector } = any>(
-        children: T,
-        options: ArrowInsertOptions,
-    ): void {
-        this.insertArrowTable(arrow.Table.new(children), options);
-    }
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
-        if (table.schema.fields.length == 0) {
-            console.warn(
-                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
-            );
-        }
-        this.insertArrowBatches(table.schema, table.chunks, options);
-    }
-    /** Insert record batches */
-    public insertArrowBatches(
-        schema: arrow.Schema,
-        batches: Iterable<arrow.RecordBatch>,
-        options: ArrowInsertOptions,
-    ): void {
-        // Warn the user about an empty schema.
-        if (schema.fields.length == 0) {
-            console.warn(
-                'The schema is empty! If you used arrow.Table.from, consider constructing schema and batches manually',
-            );
-        }
-        // TODO(ankoh): we would prefer to stream here but arrow doesn't let us without many promises
-        const writer = arrow.RecordBatchStreamWriter.writeAll(batches);
-        writer.finish();
-        const materialized = writer.toUint8Array(true);
-        this._bindings.insertArrowFromIPCStream(this._conn, materialized, options);
+        const buffer = table.serialize('binary', true);
+        this.insertArrowFromIPCStream(buffer, options);
     }
     /** Insert an arrow table from an ipc stream */
     public insertArrowFromIPCStream(buffer: Uint8Array, options: ArrowInsertOptions): void {
