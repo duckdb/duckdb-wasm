@@ -8,8 +8,8 @@ const pkgPaths = [
     './packages/benchmarks/package.json',
     './examples/esbuild-browser/package.json',
     './examples/esbuild-node/package.json',
-    './examples/vanilla-node/package.json',
-    './examples/vanilla-browser/package.json',
+    './examples/bare-node/package.json',
+    './examples/bare-browser/package.json',
 ];
 const pkgs = [];
 

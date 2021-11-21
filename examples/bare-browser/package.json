@@ -1,6 +1,6 @@
 {
     "private": true,
-    "name": "@duckdb/duckdb-wasm-examples-vanilla-browser",
+    "name": "@duckdb/duckdb-wasm-examples-bare-browser",
     "version": "0.0.1",
     "main": "index.js",
     "license": "MIT",
