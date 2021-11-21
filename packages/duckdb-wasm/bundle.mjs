@@ -39,7 +39,7 @@ const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
 const TARGET_BROWSER_TEST = ['es2020'];
 const TARGET_NODE = ['node14.6'];
 const EXTERNALS_NODE = ['apache-arrow'];
-const EXTERNALS_BROWSER = [];
+const EXTERNALS_BROWSER = []; // TODO(ankoh): readd apache-arrow when their exports are fixed
 const EXTERNALS_WEBWORKER = [];
 
 // Read CLI flags
