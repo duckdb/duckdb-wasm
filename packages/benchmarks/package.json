@@ -1,10 +1,10 @@
 {
     "name": "@duckdb/benchmarks",
-    "version": "0.1.13",
+    "version": "1.11.0",
     "license": "MPL-2.0",
     "private": true,
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^0.1.13",
+        "@duckdb/duckdb-wasm": "^1.11.0",
         "apache-arrow": "^6.0.1",
         "arquero": "^4.3.0",
         "kleur": "^4.1.4",
