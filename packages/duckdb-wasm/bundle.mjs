@@ -60,9 +60,10 @@ fs.copyFile(
     printErr,
 );
 
-const TARGET_LIB = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
-const TARGET_TEST = ['es2020'];
-const EXTERNALS_NODE = ['apache-arrow', 'crypto', 'os', 'fs', 'path', 'fast-glob', 'wasm-feature-detect'];
+const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
+const TARGET_BROWSER_TEST = ['es2020'];
+const TARGET_NODE = ['node14.6'];
+const EXTERNALS_NODE = ['apache-arrow'];
 const EXTERNALS_BROWSER = [];
 const EXTERNALS_WEBWORKER = [];
 
@@ -76,7 +77,7 @@ esbuild.build({
     platform: 'browser',
     format: 'esm',
     globalName: 'duckdb',
-    target: TARGET_LIB,
+    target: TARGET_BROWSER,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -90,7 +91,7 @@ esbuild.build({
     platform: 'browser',
     format: 'esm',
     globalName: 'duckdb',
-    target: TARGET_LIB,
+    target: TARGET_BROWSER,
     bundle: true,
     minify: true,
     define: { 'process.env.NODE_ENV': '"production"' },
@@ -105,7 +106,7 @@ esbuild.build({
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
-    target: TARGET_LIB,
+    target: TARGET_BROWSER,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -119,7 +120,7 @@ esbuild.build({
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
-    target: TARGET_LIB,
+    target: TARGET_BROWSER,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -133,7 +134,7 @@ esbuild.build({
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
-    target: TARGET_LIB,
+    target: TARGET_BROWSER,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -146,7 +147,7 @@ esbuild.build({
     outfile: 'dist/duckdb-browser-next-coi.pthread.worker.js',
     platform: 'browser',
     format: 'iife',
-    target: TARGET_LIB,
+    target: TARGET_BROWSER,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -163,7 +164,7 @@ esbuild.build({
     platform: 'node',
     format: 'cjs',
     globalName: 'duckdb',
-    target: TARGET_LIB,
+    target: TARGET_NODE,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -176,20 +177,20 @@ esbuild.build({
     outfile: 'dist/duckdb-node-blocking.cjs',
     platform: 'node',
     format: 'cjs',
-    target: TARGET_LIB,
+    target: TARGET_NODE,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_NODE,
 });
 
-console.log('[ ESBUILD ] duckdb-node.worker.cjs');
+console.log('[ ESBUILD ] duckdb-node.worker.mjs');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-node.worker.ts'],
     outfile: 'dist/duckdb-node.worker.cjs',
     platform: 'node',
     format: 'cjs',
-    target: TARGET_LIB,
+    target: TARGET_NODE,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -202,7 +203,7 @@ esbuild.build({
     outfile: 'dist/duckdb-node-next.worker.cjs',
     platform: 'node',
     format: 'cjs',
-    target: TARGET_LIB,
+    target: TARGET_NODE,
     bundle: true,
     minify: true,
     sourcemap: is_debug ? 'both' : true,
@@ -219,7 +220,7 @@ esbuild.build({
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
-    target: TARGET_TEST,
+    target: TARGET_BROWSER_TEST,
     bundle: true,
     sourcemap: is_debug ? 'both' : true,
 });
@@ -230,9 +231,9 @@ esbuild.build({
     outfile: 'dist/tests-node.cjs',
     platform: 'node',
     format: 'cjs',
-    target: TARGET_TEST,
+    target: TARGET_NODE,
     bundle: true,
-    minify: true,
+    minify: false,
     sourcemap: is_debug ? 'both' : true,
     // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
     external: [...EXTERNALS_NODE, 'web-worker'],

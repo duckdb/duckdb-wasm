@@ -81,13 +81,11 @@
         "dist",
         "!dist/types/test"
     ],
-    "main:": "dist/duckdb-node.cjs",
-    "types": "dist/duckdb-node.d.ts",
+    "main:": "dist/duckdb-browser.mjs",
+    "types": "dist/duckdb-browser.d.ts",
     "jsdelivr": "dist/duckdb-browser.mjs",
     "unpkg": "dist/duckdb-browser.mjs",
     "browser": {
-        "dist/duckdb-node.cjs": "dist/duckdb-browser.mjs",
-        "dist/duckdb-node.d.ts": "dist/duckdb-browser.d.ts",
         "fs": false,
         "path": false,
         "perf_hooks": false,
