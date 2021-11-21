@@ -1,0 +1,17 @@
+{
+    "private": true,
+    "name": "@duckdb/duckdb-wasm-examples-vanilla-browser",
+    "version": "0.0.1",
+    "main": "index.js",
+    "license": "MIT",
+    "dependencies": {
+        "@duckdb/duckdb-wasm": "^0.1.13"
+    },
+    "devDependencies": {
+        "http-server": "^14.0.0"
+    },
+    "scripts": {
+        "build": "node ./bundle.mjs",
+        "server": "http-server"
+    }
+}

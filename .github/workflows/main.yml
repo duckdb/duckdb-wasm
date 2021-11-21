@@ -658,6 +658,7 @@ jobs:
               with:
                   script: |-
                       yarn workspace @duckdb/duckdb-wasm-examples-vanilla-node test
+                      yarn workspace @duckdb/duckdb-wasm-examples-vanilla-browser build
                       yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
                       yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node test
                       yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build

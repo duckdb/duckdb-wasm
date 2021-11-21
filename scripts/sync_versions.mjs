@@ -9,6 +9,7 @@ const pkgPaths = [
     './examples/esbuild-browser/package.json',
     './examples/esbuild-node/package.json',
     './examples/vanilla-node/package.json',
+    './examples/vanilla-browser/package.json',
 ];
 const pkgs = [];
 
