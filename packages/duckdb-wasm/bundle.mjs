@@ -5,6 +5,44 @@ import rimraf from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
 
+// -------------------------------
+// Current bundling strategy
+//
+// We actually aim to be an ESM-only package but thats not possible for several reasons today.
+//
+// A) Karma does not support esm tests which has the following consequences:
+// A.1) tests-browser.js needs to be an iife
+// A.2) The worker scripts need to stay a iife since Karma can't import them otherwise (import.meta.url)
+// B) Users that bundle our main modules might not want to also bundle our workers themselves, therefore:
+// B.1) The workers remain self-contained iife and don't need to be bundled.
+// B.2) That also allows us to host the iife workers on jsdelivr/unpkg.
+// C) On node, we dynamically require "stream" (via apache-arrow) so node bundles have to stay commonjs for now.
+//
+// Bundles:
+//   duckdb-browser.mjs                           - ESM Default Browser Bundle
+//   duckdb-browser-blocking.mjs                  - ESM Blocking Browser Bundle (synchronous API, unstable)
+//   duckdb-browser.worker.js                     - IIFE Web Worker for Wasm MVP
+//   duckdb-browser-next.worker.js                - IIFE Web Worker with Wasm EH
+//   duckdb-browser-next-coi.worker.js            - IIFE Web Worker with Wasm EH + COI
+//   duckdb-browser-next-coi.pthread.worker.js    - IIFE PThread Worker with Wasm EH + COI
+//   duckdb-node.cjs                              - CommonJS Default Node Bundle
+//   duckdb-node-blocking.cjs                     - CommonJS Blocking Node Bundle (synchronous API, unstable)
+//   duckdb-node.worker.cjs                       - CommonJS Worker for Wasm MVP
+//   duckdb-node-next.worker.cjs                  - CommonJS Worker with Wasm EH
+//   tests-browser.js                             - IIFE Jasmine Karma tests
+//   tests-node.cjs                               - CommonJS Jasmine Node tests
+//
+// The lack of alternatives for Karma won't allow us to bundle workers and tests as ESM.
+// We should upgrade all CommonJS bundles to ESM as soon as the dynamic requires are resolved.
+
+const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
+const TARGET_BROWSER_TEST = ['es2020'];
+const TARGET_NODE = ['node14.6'];
+const EXTERNALS_NODE = ['apache-arrow'];
+const EXTERNALS_BROWSER = [];
+const EXTERNALS_WEBWORKER = [];
+
+// Read CLI flags
 let is_debug = false;
 let args = process.argv.slice(2);
 if (args.length == 0) {
@@ -13,12 +51,10 @@ if (args.length == 0) {
     if (args[0] == 'debug') is_debug = true;
 }
 console.log(`DEBUG=${is_debug}`);
-
 function printErr(err) {
     if (err) return console.log(err);
 }
 
-// -------------------------------
 // Patch broken arrow package.json
 // XXX Remove this hack as soon as arrow fixes the exports
 function patch_arrow() {
@@ -38,7 +74,7 @@ function patch_arrow() {
 patch_arrow();
 
 // -------------------------------
-// Clear directory
+// Cleanup output directory
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(__dirname, 'dist');
@@ -47,6 +83,10 @@ rimraf.sync(`${dist}/*.wasm`);
 rimraf.sync(`${dist}/*.d.ts`);
 rimraf.sync(`${dist}/*.js`);
 rimraf.sync(`${dist}/*.js.map`);
+rimraf.sync(`${dist}/*.mjs`);
+rimraf.sync(`${dist}/*.mjs.map`);
+rimraf.sync(`${dist}/*.cjs`);
+rimraf.sync(`${dist}/*.cjs.map`);
 
 // -------------------------------
 // Copy WASM files
@@ -60,15 +100,8 @@ fs.copyFile(
     printErr,
 );
 
-const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
-const TARGET_BROWSER_TEST = ['es2020'];
-const TARGET_NODE = ['node14.6'];
-const EXTERNALS_NODE = ['apache-arrow'];
-const EXTERNALS_BROWSER = [];
-const EXTERNALS_WEBWORKER = [];
-
 // -------------------------------
-// Browser
+// Browser bundles
 
 console.log('[ ESBUILD ] duckdb-browser.mjs');
 esbuild.build({
@@ -155,7 +188,7 @@ esbuild.build({
 });
 
 // -------------------------------
-// NODE
+// Node bundles
 
 console.log('[ ESBUILD ] duckdb-node.cjs');
 esbuild.build({
@@ -211,7 +244,7 @@ esbuild.build({
 });
 
 // -------------------------------
-// Tests
+// Test bundles
 
 console.log('[ ESBUILD ] tests-browser.js');
 esbuild.build({
