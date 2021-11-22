@@ -14,5 +14,8 @@
         "benchmarks:build:browser": "yarn workspace @duckdb/benchmarks build:browser",
         "benchmarks:build:node": "yarn workspace @duckdb/benchmarks build:node",
         "benchmarks:build": "yarn workspace @duckdb/benchmarks build"
+    },
+    "devDependencies": {
+        "badge-maker": "^3.3.1"
     }
 }

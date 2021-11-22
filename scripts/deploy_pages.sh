@@ -38,6 +38,9 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
     mkdir -p ${PAGES_DIR}/misc
     cp -r ${PROJECT_ROOT}/misc/*.svg ${PAGES_DIR}/misc/
     cp -r ${PROJECT_ROOT}/misc/*.png ${PAGES_DIR}/misc/
+
+    echo "[ RUN ] Install DuckDB version badge to ${TARGET_DIR}/misc"
+    ${PROJECT_ROOT}/scripts/build_duckdb_badge.sh > ${PAGES_DIR}/misc/duckdb_version_badge.svg
 else
     TARGET_DIR="${PAGES_DIR}/branches/${CURRENT_BRANCH}"
     echo "[ RUN ] Install @duckdb/duckdb-wasm-shell to ${TARGET_DIR}/"
