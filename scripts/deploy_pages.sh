@@ -53,6 +53,8 @@ else
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${TARGET_DIR}/docs
 fi
 
+git config user.name 'github-actions[bot]'
+git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 git add -A .
 git commit --amend -m "Deploy shell.duckdb.org"
 git push origin HEAD:gh-pages --force
