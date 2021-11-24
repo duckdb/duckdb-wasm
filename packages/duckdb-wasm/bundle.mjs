@@ -111,9 +111,10 @@ esbuild.build({
     format: 'cjs',
     target: TARGET_BROWSER,
     bundle: true,
-    minify: true,
+    minify: false,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_BROWSER,
+    define: { 'process.release.name': '"browser"' },
 });
 
 console.log('[ ESBUILD ] duckdb-browser.mjs');
@@ -128,6 +129,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_BROWSER,
+    define: { 'process.release.name': '"browser"' },
 });
 
 console.log('[ ESBUILD ] duckdb-browser-blocking.mjs');
@@ -140,9 +142,12 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    define: { 'process.env.NODE_ENV': '"production"' },
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_BROWSER,
+    define: {
+        'process.release.name': '"browser"',
+        'process.env.NODE_ENV': '"production"',
+    },
 });
 
 console.log('[ ESBUILD ] duckdb-browser.worker.js');
@@ -157,6 +162,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_WEBWORKER,
+    define: { 'process.release.name': '"browser"' },
 });
 
 console.log('[ ESBUILD ] duckdb-browser-next.worker.js');
@@ -171,6 +177,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_WEBWORKER,
+    define: { 'process.release.name': '"browser"' },
 });
 
 console.log('[ ESBUILD ] duckdb-browser-next-coi.worker.js');
@@ -185,6 +192,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_WEBWORKER,
+    define: { 'process.release.name': '"browser"' },
 });
 
 console.log('[ ESBUILD ] duckdb-browser-next-coi.pthread.worker.js');
@@ -198,6 +206,7 @@ esbuild.build({
     minify: true,
     sourcemap: is_debug ? 'both' : true,
     external: EXTERNALS_WEBWORKER,
+    define: { 'process.release.name': '"browser"' },
 });
 
 // -------------------------------
