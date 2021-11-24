@@ -103,13 +103,12 @@ fs.copyFile(
 // -------------------------------
 // Browser bundles
 
-console.log('[ ESBUILD ] duckdb-browser.js');
+console.log('[ ESBUILD ] duckdb-browser.cjs');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb.ts'],
-    outfile: 'dist/duckdb-browser.js',
+    outfile: 'dist/duckdb-browser.cjs',
     platform: 'browser',
-    format: 'iife',
-    globalName: 'duckdb',
+    format: 'cjs',
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
