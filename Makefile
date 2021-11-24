@@ -356,5 +356,3 @@ docker_ci_image:
 bootstrap:
 	git submodule update --init --recursive
 	make docker_ci_image yarn_install
-	make wasm
-	make duckdb
