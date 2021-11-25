@@ -2,15 +2,15 @@ import * as check from 'wasm-feature-detect';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './version';
 
 export interface DuckDBBundles {
-    asyncDefault: {
+    mvp: {
         mainModule: string;
         mainWorker: string;
     };
-    asyncNext?: {
+    next?: {
         mainModule: string;
         mainWorker: string;
     };
-    asyncNextCOI?: {
+    nextCOI?: {
         mainModule: string;
         mainWorker: string;
         pthreadWorker: string;
@@ -25,19 +25,15 @@ function getWorkerURL(url: string) {
 export function getJsDelivrBundles(): DuckDBBundles {
     const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
-        asyncDefault: {
+        mvp: {
             mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
             mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser.worker.js`),
         },
-        asyncNext: {
+        next: {
             mainModule: `${jsdelivr_dist_url}duckdb-next.wasm`,
             mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next.worker.js`),
         },
-        asyncNextCOI: {
-            mainModule: `${jsdelivr_dist_url}duckdb-next-coi.wasm`,
-            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next-coi.worker.js`),
-            pthreadWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next-coi.pthread.worker.js`),
-        },
+        // Next COI is still experimental, let the user opt in explicitly
     };
 }
 
@@ -100,24 +96,24 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions && platform.wasmSIMD) {
-        if (platform.wasmThreads && platform.crossOriginIsolated && bundles.asyncNextCOI) {
+        if (platform.wasmThreads && platform.crossOriginIsolated && bundles.nextCOI) {
             return {
-                mainModule: bundles.asyncNextCOI.mainModule,
-                mainWorker: bundles.asyncNextCOI.mainWorker,
-                pthreadWorker: bundles.asyncNextCOI.pthreadWorker,
+                mainModule: bundles.nextCOI.mainModule,
+                mainWorker: bundles.nextCOI.mainWorker,
+                pthreadWorker: bundles.nextCOI.pthreadWorker,
             };
         }
-        if (bundles.asyncNext) {
+        if (bundles.next) {
             return {
-                mainModule: bundles.asyncNext.mainModule,
-                mainWorker: bundles.asyncNext.mainWorker,
+                mainModule: bundles.next.mainModule,
+                mainWorker: bundles.next.mainWorker,
                 pthreadWorker: null,
             };
         }
     }
     return {
-        mainModule: bundles.asyncDefault.mainModule,
-        mainWorker: bundles.asyncDefault.mainWorker,
+        mainModule: bundles.mvp.mainModule,
+        mainWorker: bundles.mvp.mainWorker,
         pthreadWorker: null,
     };
 }

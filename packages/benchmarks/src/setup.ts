@@ -8,11 +8,11 @@ import fsSync from 'fs';
 import Worker from 'web-worker';
 
 const DUCKDB_BUNDLES = {
-    asyncDefault: {
+    mvp: {
         mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
         mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node.worker.cjs'),
     },
-    asyncNext: {
+    next: {
         mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-next.wasm'),
         mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-next.worker.cjs'),
     },

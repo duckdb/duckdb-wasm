@@ -4,11 +4,11 @@ import * as arrow from 'apache-arrow';
 (async () => {
     try {
         const DUCKDB_CONFIG = await duckdb.selectBundle({
-            asyncDefault: {
+            mvp: {
                 mainModule: './duckdb.wasm',
                 mainWorker: './duckdb-browser.worker.js',
             },
-            asyncNext: {
+            next: {
                 mainModule: './duckdb-next.wasm',
                 mainWorker: './duckdb-browser-next.worker.js',
             },

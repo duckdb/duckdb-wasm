@@ -41,11 +41,11 @@ let worker: Worker | null = null;
 beforeAll(async () => {
     // Configure the worker
     const DUCKDB_BUNDLES = {
-        asyncDefault: {
+        mvp: {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node.worker.cjs'),
         },
-        asyncNext: {
+        next: {
             mainModule: path.resolve(__dirname, './duckdb-next.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node-next.worker.cjs'),
         },

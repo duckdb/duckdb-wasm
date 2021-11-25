@@ -18,9 +18,9 @@ export async function createDuckDB(
 ): Promise<DuckDBBindings> {
     const platform = await getPlatformFeatures();
     if (platform.wasmExceptions && platform.wasmSIMD) {
-        if (bundles.asyncNext) {
-            return new DuckDBNext(logger, runtime, bundles.asyncNext!.mainModule);
+        if (bundles.next) {
+            return new DuckDBNext(logger, runtime, bundles.next!.mainModule);
         }
     }
-    return new DuckDBMVP(logger, runtime, bundles.asyncDefault.mainModule);
+    return new DuckDBMVP(logger, runtime, bundles.mvp.mainModule);
 }

@@ -7,11 +7,11 @@ import Worker from 'web-worker';
     try {
         const DUCKDB_DIST = path.resolve(__dirname, '../../node_modules/@duckdb/duckdb-wasm/dist/');
         const DUCKDB_CONFIG = await duckdb.selectBundle({
-            asyncDefault: {
+            mvp: {
                 mainModule: path.resolve(DUCKDB_DIST, './duckdb.wasm'),
                 mainWorker: path.resolve(DUCKDB_DIST, './duckdb-node.worker.cjs'),
             },
-            asyncNext: {
+            next: {
                 mainModule: path.resolve(DUCKDB_DIST, './duckdb-next.wasm'),
                 mainWorker: path.resolve(DUCKDB_DIST, './duckdb-node-next.worker.cjs'),
             },

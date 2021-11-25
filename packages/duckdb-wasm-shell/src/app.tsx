@@ -19,20 +19,17 @@ import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-next.wasm';
 import duckdb_wasm_next_coi from '@duckdb/duckdb-wasm/dist/duckdb-next-coi.wasm';
 
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
-    asyncDefault: {
+    mvp: {
         mainModule: duckdb_wasm,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser.worker.js', import.meta.url).toString(),
     },
-    asyncNext: {
+    next: {
         mainModule: duckdb_wasm_next,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-next.worker.js', import.meta.url).toString(),
     },
-    asyncNextCOI: {
+    nextCOI: {
         mainModule: duckdb_wasm_next_coi,
-        mainWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-next-coi.worker.js',
-            import.meta.url,
-        ).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-next-coi.worker.js', import.meta.url).toString(),
         pthreadWorker: new URL(
             '@duckdb/duckdb-wasm/dist/duckdb-browser-next-coi.pthread.worker.js',
             import.meta.url,
