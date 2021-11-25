@@ -1,6 +1,6 @@
 import Worker from 'web-worker';
 
-export async function fetchWorker(url: string) {
+export async function createWorker(url: string) {
     const workerScript = await fetch(url, {
         mode: 'cors',
     });

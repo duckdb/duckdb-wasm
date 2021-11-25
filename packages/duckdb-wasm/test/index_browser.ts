@@ -83,7 +83,7 @@ beforeAll(async () => {
     await db.instantiate();
 
     DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
-    worker = await duckdb.fetchWorker(DUCKDB_BUNDLE!.mainWorker!);
+    worker = await duckdb.createWorker(DUCKDB_BUNDLE!.mainWorker!);
     adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_BUNDLE!.mainModule, DUCKDB_BUNDLE!.pthreadWorker);
 });
