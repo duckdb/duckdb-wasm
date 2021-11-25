@@ -132,13 +132,29 @@ esbuild.build({
     define: { 'process.release.name': '"browser"' },
 });
 
+console.log('[ ESBUILD ] duckdb-browser-blocking.cjs');
+esbuild.build({
+    entryPoints: ['./src/targets/duckdb-browser-blocking.ts'],
+    outfile: 'dist/duckdb-browser-blocking.cjs',
+    platform: 'browser',
+    format: 'cjs',
+    target: TARGET_BROWSER,
+    bundle: true,
+    minify: false,
+    sourcemap: is_debug ? 'both' : true,
+    external: EXTERNALS_BROWSER,
+    define: {
+        'process.release.name': '"browser"',
+        'process.env.NODE_ENV': '"production"',
+    },
+});
+
 console.log('[ ESBUILD ] duckdb-browser-blocking.mjs');
 esbuild.build({
     entryPoints: ['./src/targets/duckdb-browser-blocking.ts'],
     outfile: 'dist/duckdb-browser-blocking.mjs',
     platform: 'browser',
     format: 'esm',
-    globalName: 'duckdb',
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,

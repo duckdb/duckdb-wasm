@@ -73,16 +73,16 @@ const resolveData = async (url: string) => {
 };
 
 // Test environment
-let db: duckdb_blocking.DuckDB | null = null;
+let db: duckdb_blocking.DuckDBBindings | null = null;
 let adb: duckdb.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
-    DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
     const logger = new duckdb_blocking.VoidLogger();
-    db = new duckdb_blocking.DuckDB(logger, duckdb_blocking.BROWSER_RUNTIME, '/static/duckdb.wasm');
+    db = await duckdb_blocking.createDuckDB(DUCKDB_BUNDLES, logger, duckdb_blocking.BROWSER_RUNTIME);
     await db.instantiate();
 
+    DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
     worker = new Worker(DUCKDB_BUNDLE!.mainWorker!);
     adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_BUNDLE!.mainModule, DUCKDB_BUNDLE!.pthreadWorker);

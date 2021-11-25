@@ -34,13 +34,13 @@ const resolveData = async (url: string) => {
 };
 
 // Test environment
-let db: duckdb_blocking.DuckDB | null = null;
+let db: duckdb_blocking.DuckDBBindings | null = null;
 let adb: duckdb.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 
 beforeAll(async () => {
     // Configure the worker
-    const DUCKDB_CONFIG = await duckdb.selectBundle({
+    const DUCKDB_BUNDLES = {
         asyncDefault: {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node.worker.cjs'),
@@ -49,14 +49,12 @@ beforeAll(async () => {
             mainModule: path.resolve(__dirname, './duckdb-next.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node-next.worker.cjs'),
         },
-    });
+    };
+    const DUCKDB_CONFIG = await duckdb.selectBundle(DUCKDB_BUNDLES);
 
     const logger = new duckdb_blocking.VoidLogger();
-    db = await new duckdb_blocking.DuckDB(
-        logger,
-        duckdb_blocking.NODE_RUNTIME,
-        path.resolve(__dirname, './duckdb-next.wasm'),
-    ).instantiate();
+    db = await duckdb_blocking.createDuckDB(DUCKDB_BUNDLES, logger, duckdb_blocking.NODE_RUNTIME);
+    await db.instantiate();
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb.AsyncDuckDB(logger, worker);

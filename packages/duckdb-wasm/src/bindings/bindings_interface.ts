@@ -6,6 +6,7 @@ import { WebFile } from './web_file';
 export interface DuckDBBindings {
     open(config: DuckDBConfig): void;
     reset(): void;
+    instantiate(): Promise<this>;
 
     getVersion(): string;
     getFeatureFlags(): number;
