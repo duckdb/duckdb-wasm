@@ -1,9 +1,9 @@
-<img src="https://shell.duckdb.org/misc/duckdb_wasm.svg" height="64">
+<img src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_wasm.svg" height="64">
 
 [![Main](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml)
 [![Benchmarks](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml)
 [![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@duckdb/duckdb-wasm/v/latest)
-[![duckdb](https://shell.duckdb.org/misc/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
+[![duckdb](https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
 
 **DuckDB-Wasm**
 
