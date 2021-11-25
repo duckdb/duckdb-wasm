@@ -5,17 +5,17 @@ import * as check from 'wasm-feature-detect';
 // Configure the worker
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
-        mainModule: '/static/duckdb.wasm',
-        mainWorker: '/static/duckdb-browser.worker.js',
+        mainModule: new URL('/static/duckdb.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser.worker.js', window.location.href).href,
     },
     next: {
-        mainModule: '/static/duckdb-next.wasm',
-        mainWorker: '/static/duckdb-browser-next.worker.js',
+        mainModule: new URL('/static/duckdb-next.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-next.worker.js', window.location.href).href,
     },
     nextCOI: {
-        mainModule: '/static/duckdb-next-coi.wasm',
-        mainWorker: '/static/duckdb-browser-next-coi.worker.js',
-        pthreadWorker: '/static/duckdb-browser-next-coi.pthread.worker.js',
+        mainModule: new URL('/static/duckdb-next-coi.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-next-coi.worker.js', window.location.href).href,
+        pthreadWorker: new URL('/static/duckdb-browser-next-coi.pthread.worker.js', window.location.href).href,
     },
 };
 let DUCKDB_BUNDLE: duckdb.DuckDBBundle | null = null;
@@ -83,7 +83,7 @@ beforeAll(async () => {
     await db.instantiate();
 
     DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
-    worker = new Worker(DUCKDB_BUNDLE!.mainWorker!);
+    worker = await duckdb.fetchWorker(DUCKDB_BUNDLE!.mainWorker!);
     adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_BUNDLE!.mainModule, DUCKDB_BUNDLE!.pthreadWorker);
 });

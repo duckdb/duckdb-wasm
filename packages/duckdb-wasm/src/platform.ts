@@ -17,21 +17,16 @@ export interface DuckDBBundles {
     };
 }
 
-function getWorkerURL(url: string) {
-    const content = `importScripts("${url}");`;
-    return URL.createObjectURL(new Blob([content], { type: 'text/javascript' }));
-}
-
 export function getJsDelivrBundles(): DuckDBBundles {
     const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
         mvp: {
             mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
-            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser.worker.js`),
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser.worker.js`,
         },
         next: {
             mainModule: `${jsdelivr_dist_url}duckdb-next.wasm`,
-            mainWorker: getWorkerURL(`${jsdelivr_dist_url}duckdb-browser-next.worker.js`),
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-next.worker.js`,
         },
         // Next COI is still experimental, let the user opt in explicitly
     };

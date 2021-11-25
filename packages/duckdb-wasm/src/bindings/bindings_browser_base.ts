@@ -39,11 +39,18 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
     ): Emscripten.WebAssemblyExports {
         globalThis.DUCKDB_RUNTIME = this._runtime;
         if (WebAssembly.instantiateStreaming) {
-            WebAssembly.instantiateStreaming(fetch(this.mainModuleURL), imports).then(output => {
+            WebAssembly.instantiateStreaming(
+                fetch(this.mainModuleURL, {
+                    mode: 'cors',
+                }),
+                imports,
+            ).then(output => {
                 success(output.instance, output.module);
             });
         } else {
-            fetch(this.mainModuleURL)
+            fetch(this.mainModuleURL, {
+                mode: 'cors',
+            })
                 .then(resp => resp.arrayBuffer())
                 .then(bytes =>
                     WebAssembly.instantiate(bytes, imports).then(output => {

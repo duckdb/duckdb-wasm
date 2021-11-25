@@ -3,3 +3,4 @@ export * from '../status';
 export * from '../parallel';
 export * from '../platform';
 export * from '../version';
+export * from '../worker';
