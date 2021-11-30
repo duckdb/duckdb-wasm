@@ -20,14 +20,26 @@ export function testGitHubIssue393(db: () => duckdb.AsyncDuckDB): void {
             await db().open({
                 path: ':memory:',
                 query: {
+                    castTimestampToDate64: false,
+                },
+            });
+            conn = await db().connect();
+            const resultWithoutCast = await conn.query<{
+                ts: arrow.TimestampMillisecond;
+            }>(`SELECT TIMESTAMP '1992-03-22 01:02:03' as ts`);
+            expect(resultWithoutCast.toArray()[0].ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)).getTime());
+
+            await db().open({
+                path: ':memory:',
+                query: {
                     castTimestampToDate64: true,
                 },
             });
             conn = await db().connect();
-            const date = await conn.query<{
+            const resultWithCast = await conn.query<{
                 ts: arrow.DateMillisecond;
             }>(`SELECT TIMESTAMP '1992-03-22 01:02:03' as ts`);
-            expect(date.toArray()[0].ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)));
+            expect(resultWithCast.toArray()[0].ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)));
         });
     });
 }

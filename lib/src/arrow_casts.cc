@@ -1,6 +1,11 @@
 #include "duckdb/web/arrow_casts.h"
 
+#include <arrow/buffer.h>
+#include <arrow/result.h>
 #include <arrow/type_fwd.h>
+
+#include <chrono>
+#include <iomanip>
 
 #include "duckdb/web/config.h"
 #include "duckdb/web/webdb.h"
@@ -47,6 +52,12 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
 
     // Build a double array
     auto buildDoubleArray = [](auto& array) -> arrow::Result<std::shared_ptr<arrow::Array>> {
+        // ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::AllocateBuffer(array.length() *
+        // sizeof(arrow::DoubleType::c_type))); auto writer =
+        // reinterpret_cast<arrow::DoubleType::c_type*>(buffer->mutable_data()); auto values = array.values()->data();
+        // for (auto i = 0; i < array.length(); ++i) {
+        //     values[i]
+        // }
         arrow::DoubleBuilder builder;
         ARROW_RETURN_NOT_OK(builder.Resize(array.length()));
         for (auto iter = array.begin(); iter != array.end(); ++iter) {
@@ -82,10 +93,36 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
             }
             case arrow::Type::TIMESTAMP: {
                 if (config.cast_timestamp_to_date64.value_or(false)) {
-                    auto arrayTS = std::dynamic_pointer_cast<arrow::TimestampArray>(out);
-                    out = std::make_shared<arrow::Date64Array>(arrayTS->length(), arrayTS->values(),
-                                                               arrayTS->null_bitmap(), arrayTS->null_count(),
-                                                               arrayTS->offset());
+                    static_assert(std::is_same<arrow::TimestampType::c_type, int64_t>::value);
+                    static_assert(std::is_same<arrow::Date64Type::c_type, int64_t>::value);
+                    auto array = std::dynamic_pointer_cast<arrow::TimestampArray>(out);
+                    auto type = reinterpret_cast<const arrow::TimestampType*>(array->type().get());
+                    auto in = reinterpret_cast<const arrow::TimestampType::c_type*>(array->values()->data());
+                    ARROW_ASSIGN_OR_RAISE(auto buffer,
+                                          arrow::AllocateBuffer(array->length() * sizeof(arrow::Date64Type::c_type)));
+                    auto writer = reinterpret_cast<arrow::Date64Type::c_type*>(buffer->mutable_data());
+                    switch (type->unit()) {
+                        case arrow::TimeUnit::SECOND:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i] * 1000;
+                            }
+                            break;
+                        case arrow::TimeUnit::MILLI:
+                            break;
+                        case arrow::TimeUnit::MICRO:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i] / 1000;
+                            }
+                            break;
+                        case arrow::TimeUnit::NANO:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i] / (1000 * 1000);
+                            }
+                            break;
+                    }
+                    out = std::make_shared<arrow::Date64Array>(
+                        array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()), array->null_bitmap(),
+                        array->null_count(), array->offset());
                 }
                 break;
             }
