@@ -41,7 +41,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         .query =
             QueryConfig{
                 .cast_bigint_to_double = std::nullopt,
-                .cast_timestamp_to_date64 = std::nullopt,
+                .cast_timestamp_to_date = std::nullopt,
             },
         .filesystem = FileSystemConfig{.allow_full_http_reads = std::nullopt},
     };
@@ -59,8 +59,8 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
             if (q.HasMember("castBigIntToDouble") && q["castBigIntToDouble"].IsBool()) {
                 config.query.cast_bigint_to_double = q["castBigIntToDouble"].GetBool();
             }
-            if (q.HasMember("castTimestampToDate64") && q["castTimestampToDate64"].IsBool()) {
-                config.query.cast_timestamp_to_date64 = q["castTimestampToDate64"].GetBool();
+            if (q.HasMember("castTimestampToDate") && q["castTimestampToDate"].IsBool()) {
+                config.query.cast_timestamp_to_date = q["castTimestampToDate"].GetBool();
             }
         }
         if (doc.HasMember("filesystem") && doc["filesystem"].IsObject()) {

@@ -20,7 +20,7 @@ export function testGitHubIssue393(db: () => duckdb.AsyncDuckDB): void {
             await db().open({
                 path: ':memory:',
                 query: {
-                    castTimestampToDate64: false,
+                    castTimestampToDate: false,
                 },
             });
             conn = await db().connect();
@@ -32,7 +32,7 @@ export function testGitHubIssue393(db: () => duckdb.AsyncDuckDB): void {
             await db().open({
                 path: ':memory:',
                 query: {
-                    castTimestampToDate64: true,
+                    castTimestampToDate: true,
                 },
             });
             conn = await db().connect();

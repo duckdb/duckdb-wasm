@@ -25,8 +25,7 @@ std::shared_ptr<arrow::Schema> patchSchema(const std::shared_ptr<arrow::Schema>&
     auto casted_type = castScalarTypes(umbrella_type, [config](const std::shared_ptr<arrow::DataType>& type) {
         switch (type->id()) {
             case arrow::Type::TIMESTAMP:
-                // XXX units
-                return config.cast_timestamp_to_date64.value_or(false) ? arrow::date64() : type;
+                return config.cast_timestamp_to_date.value_or(false) ? arrow::date64() : type;
             case arrow::Type::INT64:
             case arrow::Type::UINT64:
                 return config.cast_bigint_to_double.value_or(false) ? arrow::float64() : type;
@@ -88,7 +87,7 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
                 break;
             }
             case arrow::Type::TIMESTAMP: {
-                if (config.cast_timestamp_to_date64.value_or(false)) {
+                if (config.cast_timestamp_to_date.value_or(false)) {
                     static_assert(std::is_same<arrow::TimestampType::c_type, int64_t>::value);
                     static_assert(std::is_same<arrow::Date64Type::c_type, int64_t>::value);
                     auto array = std::dynamic_pointer_cast<arrow::TimestampArray>(out);
@@ -104,6 +103,9 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
                             }
                             break;
                         case arrow::TimeUnit::MILLI:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i];
+                            }
                             break;
                         case arrow::TimeUnit::MICRO:
                             for (auto i = 0; i < array->length(); ++i) {

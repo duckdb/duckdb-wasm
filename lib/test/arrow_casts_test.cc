@@ -56,7 +56,7 @@ TEST(ArrowCasts, PatchBigInt) {
 
 TEST(ArrowCasts, PatchTimestamp) {
     WebDBConfig config;
-    config.query.cast_timestamp_to_date64 = true;
+    config.query.cast_timestamp_to_date = true;
     auto db = std::make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
 
