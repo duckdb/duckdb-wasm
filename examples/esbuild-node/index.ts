@@ -2,10 +2,13 @@ import * as duckdb from '@duckdb/duckdb-wasm';
 import * as arrow from 'apache-arrow';
 import path from 'path';
 import Worker from 'web-worker';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
 
 (async () => {
     try {
-        const DUCKDB_DIST = path.resolve(__dirname, '../../node_modules/@duckdb/duckdb-wasm/dist/');
         const DUCKDB_CONFIG = await duckdb.selectBundle({
             mvp: {
                 mainModule: path.resolve(DUCKDB_DIST, './duckdb.wasm'),

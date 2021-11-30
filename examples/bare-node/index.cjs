@@ -1,10 +1,10 @@
 const duckdb = require('@duckdb/duckdb-wasm');
 const path = require('path');
 const Worker = require('web-worker');
+const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
 
 (async () => {
     try {
-        const DUCKDB_DIST = path.resolve(__dirname, '../../node_modules/@duckdb/duckdb-wasm/dist/');
         const DUCKDB_CONFIG = await duckdb.selectBundle({
             mvp: {
                 mainModule: path.resolve(DUCKDB_DIST, './duckdb.wasm'),
