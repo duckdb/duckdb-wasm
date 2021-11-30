@@ -177,7 +177,9 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
             it('Count(*) Default', async () => {
                 await adb().open({
                     path: ':memory:',
-                    emitBigInt: true,
+                    query: {
+                        castBigIntToDouble: false,
+                    },
                 });
                 const conn = await adb().connect();
                 const table = await conn.query('select 1::BIGINT');
@@ -188,7 +190,9 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
             it('Count(*) No BigInt', async () => {
                 await adb().open({
                     path: ':memory:',
-                    emitBigInt: false,
+                    query: {
+                        castBigIntToDouble: true,
+                    },
                 });
                 const conn = await adb().connect();
                 const table = await conn.query('select 1::BIGINT');

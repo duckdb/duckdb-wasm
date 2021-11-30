@@ -3,6 +3,7 @@
 
 #include "arrow/buffer.h"
 #include "arrow/status.h"
+#include "duckdb/web/config.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "duckdb/web/webdb.h"
 
@@ -143,10 +144,7 @@ void duckdb_web_get_version(WASMResponse* packed) {
     WASMResponseBuffer::Get().Store(*packed, webdb.GetVersion());
 }
 /// Get the duckdb feature flags
-uint32_t duckdb_web_get_feature_flags() {
-    GET_WEBDB_OR_RETURN(0);
-    return webdb.GetFeatureFlags();
-}
+uint32_t duckdb_web_get_feature_flags() { return ResolveFeatureFlags(); }
 /// Tokenize a query
 void duckdb_web_tokenize(WASMResponse* packed, const char* query) {
     GET_WEBDB(*packed);

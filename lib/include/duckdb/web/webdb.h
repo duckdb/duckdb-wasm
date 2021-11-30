@@ -132,8 +132,6 @@ class WebDB {
 
     /// Get the version
     std::string_view GetVersion();
-    /// Get the feature flags
-    uint32_t GetFeatureFlags();
 
     /// Tokenize a script and return tokens as json
     std::string Tokenize(std::string_view text);

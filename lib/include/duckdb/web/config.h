@@ -4,6 +4,7 @@
 #include <rapidjson/document.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -15,7 +16,7 @@ enum WebDBFeature : uint32_t {
     THREADS = 1,
     SIMD = 2,
     BULK_MEMORY = 3,
-    EMIT_BIGINT = 4,
+    BIGINT64ARRAY = 4,
 };
 
 constexpr uint32_t STATIC_WEBDB_FEATURES = (0
@@ -33,22 +34,41 @@ constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 #endif
 );
 
+/// Resolve feature flags
+uint32_t ResolveFeatureFlags();
+
+struct QueryConfig {
+    /// Cast BigInts to Doubles
+    std::optional<bool> cast_bigint_to_double = std::nullopt;
+    /// Cast Timestamp[ms] to Date64
+    std::optional<bool> cast_timestamp_to_date64 = std::nullopt;
+
+    /// Has any cast?
+    bool hasAnyCast() const {
+        return cast_bigint_to_double.value_or(false) || cast_timestamp_to_date64.value_or(false);
+    }
+    /// Read from a document
+    static QueryConfig ReadFrom(std::string_view args_json);
+};
+
 struct FileSystemConfig {
     /// Allow falling back to full HTTP reads if the server does not support range requests
-    bool allow_full_http_reads = true;
+    std::optional<bool> allow_full_http_reads = std::nullopt;
 };
 
 struct WebDBConfig {
     /// The database path
     std::string path = "";
-    /// Emit BigInt values?
-    /// This depends on the browser supporting BigInt64Array.
-    bool emit_bigint = false;
     /// The thread count
     uint32_t maximum_threads = 1;
+    /// The query config
+    QueryConfig query = {
+        .cast_bigint_to_double = std::nullopt,
+        .cast_timestamp_to_date64 = std::nullopt,
+    };
     /// The filesystem
     FileSystemConfig filesystem = {
-        .allow_full_http_reads = true,
+        .allow_full_http_reads = std::nullopt,
     };
 
     /// Read from a document

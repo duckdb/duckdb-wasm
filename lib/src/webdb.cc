@@ -93,11 +93,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
 
     // Patch the schema (if necessary)
-    std::shared_ptr<arrow::Schema> patched_schema = schema;
-    if (!webdb_.config_->emit_bigint) {
-        patched_schema = patchSchema(schema, *webdb_.config_);
-    }
-
+    std::shared_ptr<arrow::Schema> patched_schema = patchSchema(schema, webdb_.config_->query);
     // Create the file writer
     ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
     ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, patched_schema));
@@ -110,7 +106,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
         // Import the record batch
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
         // Patch the record batch
-        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, patched_schema, *webdb_.config_));
+        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, patched_schema, webdb_.config_->query));
         // Write the record batch
         ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
     }
@@ -128,12 +124,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
     ArrowSchema raw_schema;
     current_query_result_->ToArrowSchema(&raw_schema);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
+    current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
 
-    // Patch the schema (if necessary)
-    current_schema_patched_ = current_schema_;
-    if (!webdb_.config_->emit_bigint) {
-        current_schema_patched_ = patchSchema(current_schema_, *webdb_.config_);
-    }
     // Serialize the schema
     return arrow::ipc::SerializeSchema(*current_schema_patched_);
 }
@@ -191,7 +183,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         chunk->ToArrowArray(&array);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
         // Patch the record batch
-        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, *webdb_.config_));
+        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_->query));
         // Serialize the record batch
         auto options = arrow::ipc::IpcWriteOptions::Defaults();
         options.use_threads = false;
@@ -513,14 +505,6 @@ std::string WebDB::Tokenize(std::string_view text) {
 
 /// Get the version
 std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
-/// Get feature flags
-uint32_t WebDB::GetFeatureFlags() {
-    auto flags = STATIC_WEBDB_FEATURES;
-    if (config_->emit_bigint) {
-        flags |= 1 << WebDBFeature::EMIT_BIGINT;
-    }
-    return flags;
-}
 
 /// Create a session
 WebDB::Connection* WebDB::Connect() {

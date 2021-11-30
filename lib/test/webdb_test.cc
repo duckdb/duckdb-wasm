@@ -6,6 +6,7 @@
 #include "duckdb/common/types/date.hpp"
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
+#include "duckdb/web/config.h"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/test/config.h"
@@ -33,7 +34,7 @@ std::filesystem::path CreateTestDB() {
 
 TEST(WebDB, NativeFeatures) {
     auto db = make_shared<WebDB>(NATIVE);
-    auto features = db->GetFeatureFlags();
+    auto features = ResolveFeatureFlags();
     ASSERT_TRUE((features & (~(1 << WebDBFeature::FAST_EXCEPTIONS))) > 0);
     ASSERT_TRUE((features & (~(1 << WebDBFeature::THREADS))) > 0);
 }

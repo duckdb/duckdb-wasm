@@ -104,11 +104,11 @@ std::shared_ptr<arrow::Array> castScalarArray(const std::shared_ptr<arrow::Array
 }
 
 /// Helper to cast scalar types in arrow schema and return the same schema if nothing changes
-std::shared_ptr<arrow::Schema> patchSchema(const std::shared_ptr<arrow::Schema>& schema, const WebDBConfig& config);
+std::shared_ptr<arrow::Schema> patchSchema(const std::shared_ptr<arrow::Schema>& schema, const QueryConfig& config);
 /// Helper to cast a record batch
 arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::shared_ptr<arrow::RecordBatch>& batch,
                                                                     const std::shared_ptr<arrow::Schema>& schema,
-                                                                    const WebDBConfig& config);
+                                                                    const QueryConfig& config);
 
 }  // namespace web
 }  // namespace duckdb
