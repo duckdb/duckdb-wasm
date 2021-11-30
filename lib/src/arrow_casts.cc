@@ -50,28 +50,6 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
     // Schema the same?
     if (batch->schema() == schema) return batch;
 
-    // Build a double array
-    auto buildDoubleArray = [](auto& array) -> arrow::Result<std::shared_ptr<arrow::Array>> {
-        // ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::AllocateBuffer(array.length() *
-        // sizeof(arrow::DoubleType::c_type))); auto writer =
-        // reinterpret_cast<arrow::DoubleType::c_type*>(buffer->mutable_data()); auto values = array.values()->data();
-        // for (auto i = 0; i < array.length(); ++i) {
-        //     values[i]
-        // }
-        arrow::DoubleBuilder builder;
-        ARROW_RETURN_NOT_OK(builder.Resize(array.length()));
-        for (auto iter = array.begin(); iter != array.end(); ++iter) {
-            if (!(*iter).has_value()) {
-                builder.UnsafeAppendNull();
-            } else {
-                builder.UnsafeAppend((*iter).value());
-            }
-        }
-        std::shared_ptr<arrow::Array> out;
-        ARROW_RETURN_NOT_OK(builder.Finish(&out));
-        return out;
-    };
-
     // Patch all columns
     std::vector<std::shared_ptr<arrow::Array>> arrays;
     for (auto& column : batch->columns()) {
@@ -79,15 +57,33 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
         switch (out->type_id()) {
             case arrow::Type::INT64: {
                 if (config.cast_bigint_to_double.value_or(false)) {
-                    auto arrayI64 = std::dynamic_pointer_cast<arrow::Int64Array>(out);
-                    ARROW_ASSIGN_OR_RAISE(out, buildDoubleArray(*arrayI64));
+                    auto array = std::dynamic_pointer_cast<arrow::Int64Array>(out);
+                    auto in = reinterpret_cast<const arrow::Int64Type::c_type*>(array->values()->data());
+                    ARROW_ASSIGN_OR_RAISE(auto buffer,
+                                          arrow::AllocateBuffer(array->length() * sizeof(arrow::DoubleType::c_type)));
+                    auto writer = reinterpret_cast<arrow::DoubleType::c_type*>(buffer->mutable_data());
+                    for (auto i = 0; i < array->length(); ++i) {
+                        writer[i] = in[i];
+                    }
+                    out = std::make_shared<arrow::DoubleArray>(
+                        array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()), array->null_bitmap(),
+                        array->null_count(), array->offset());
                 }
                 break;
             }
             case arrow::Type::UINT64: {
                 if (config.cast_bigint_to_double.value_or(false)) {
-                    auto arrayU64 = std::dynamic_pointer_cast<arrow::UInt64Array>(out);
-                    ARROW_ASSIGN_OR_RAISE(out, buildDoubleArray(*arrayU64));
+                    auto array = std::dynamic_pointer_cast<arrow::UInt64Array>(out);
+                    auto in = reinterpret_cast<const arrow::UInt64Type::c_type*>(array->values()->data());
+                    ARROW_ASSIGN_OR_RAISE(auto buffer,
+                                          arrow::AllocateBuffer(array->length() * sizeof(arrow::DoubleType::c_type)));
+                    auto writer = reinterpret_cast<arrow::DoubleType::c_type*>(buffer->mutable_data());
+                    for (auto i = 0; i < array->length(); ++i) {
+                        writer[i] = in[i];
+                    }
+                    out = std::make_shared<arrow::DoubleArray>(
+                        array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()), array->null_bitmap(),
+                        array->null_count(), array->offset());
                 }
                 break;
             }
