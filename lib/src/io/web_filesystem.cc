@@ -293,7 +293,7 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
         rapidjson::Value data_fd{rapidjson::kNullType};
         value.AddMember("dataNativeFd", data_fd, allocator);
     }
-    if (data_protocol_ == DataProtocol::HTTP && filesystem_.config_->filesystem.allow_full_http_reads.value_or(false)) {
+    if (data_protocol_ == DataProtocol::HTTP && filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
     }
     return value;
