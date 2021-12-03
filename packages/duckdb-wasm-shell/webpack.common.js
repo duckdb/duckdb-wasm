@@ -63,56 +63,56 @@ export function configure(params) {
                     test: /.*duckdb(|-next|-next-coi)\.wasm$/,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/wasm/[name].[contenthash].[ext]',
+                        filename: 'static/wasm/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /\.(sql)$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/scripts/[name].[contenthash].[ext]',
+                        filename: 'static/scripts/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /\.(json)$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/json/[name].[contenthash].[ext]',
+                        filename: 'static/json/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /\.(csv|tbl)$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/csv/[name].[contenthash].[ext]',
+                        filename: 'static/csv/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /\.(parquet)$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/parquet/[name].[contenthash].[ext]',
+                        filename: 'static/parquet/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /\.(png|jpe?g|gif|svg|ico)$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/img/[name].[contenthash].[ext]',
+                        filename: 'static/img/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /site\.webmanifest$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/[name].[contenthash].[ext]',
+                        filename: 'static/[name].[contenthash][ext]',
                     },
                 },
                 {
                     test: /browserconfig\.xml$/i,
                     type: 'asset/resource',
                     generator: {
-                        filename: 'static/[name].[contenthash].[ext]',
+                        filename: 'static/[name].[contenthash][ext]',
                     },
                 },
             ],
