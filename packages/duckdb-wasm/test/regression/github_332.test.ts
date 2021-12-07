@@ -2,7 +2,7 @@ import * as duckdb from '../../src';
 import * as arrow from 'apache-arrow';
 
 // https://github.com/duckdb/duckdb-wasm/issues/332
-export function testGitHubIssue332(db: () => duckdb.AsyncDuckDB): void {
+export function test332(db: () => duckdb.AsyncDuckDB): void {
     let conn: duckdb.AsyncDuckDBConnection;
     beforeEach(async () => {
         await db().flushFiles();

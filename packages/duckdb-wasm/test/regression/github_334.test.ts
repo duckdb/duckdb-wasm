@@ -2,7 +2,7 @@ import * as duckdb from '../../src';
 import * as arrow from 'apache-arrow';
 
 // https://github.com/duckdb/duckdb-wasm/issues/334
-export function testGitHubIssue334(adb: () => duckdb.AsyncDuckDB): void {
+export function test334(adb: () => duckdb.AsyncDuckDB): void {
     describe('GitHub issues', () => {
         describe('334', () => {
             it('CSV insert', async () => {
