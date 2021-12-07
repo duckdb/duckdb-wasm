@@ -112,7 +112,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: false,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
     define: { 'process.release.name': '"browser"' },
 });
@@ -127,7 +127,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
     define: { 'process.release.name': '"browser"' },
 });
@@ -141,7 +141,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: false,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
     define: {
         'process.release.name': '"browser"',
@@ -158,7 +158,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
     define: {
         'process.release.name': '"browser"',
@@ -176,7 +176,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_WEBWORKER,
     define: { 'process.release.name': '"browser"' },
 });
@@ -191,7 +191,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_WEBWORKER,
     define: { 'process.release.name': '"browser"' },
 });
@@ -206,7 +206,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_WEBWORKER,
     define: { 'process.release.name': '"browser"' },
 });
@@ -220,7 +220,7 @@ esbuild.build({
     target: TARGET_BROWSER,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_WEBWORKER,
     define: { 'process.release.name': '"browser"' },
 });
@@ -238,7 +238,7 @@ esbuild.build({
     target: TARGET_NODE,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_NODE,
 });
 
@@ -251,7 +251,7 @@ esbuild.build({
     target: TARGET_NODE,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_NODE,
 });
 
@@ -264,7 +264,7 @@ esbuild.build({
     target: TARGET_NODE,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_NODE,
 });
 
@@ -277,7 +277,7 @@ esbuild.build({
     target: TARGET_NODE,
     bundle: true,
     minify: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_NODE,
 });
 
@@ -293,7 +293,7 @@ esbuild.build({
     globalName: 'duckdb',
     target: TARGET_BROWSER_TEST,
     bundle: true,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
 });
 
 console.log('[ ESBUILD ] tests-node.cjs');
@@ -305,7 +305,7 @@ esbuild.build({
     target: TARGET_NODE,
     bundle: true,
     minify: false,
-    sourcemap: is_debug ? 'both' : true,
+    sourcemap: is_debug ? 'inline' : true,
     // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
     external: [...EXTERNALS_NODE, 'web-worker'],
 });
