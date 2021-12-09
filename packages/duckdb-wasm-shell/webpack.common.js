@@ -118,6 +118,7 @@ export function configure(params) {
             ],
         },
         optimization: {
+            usedExports: 'global',
             chunkIds: 'deterministic',
             moduleIds: 'deterministic',
             splitChunks: {

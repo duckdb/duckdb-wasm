@@ -86,6 +86,7 @@
     "types": "dist/duckdb-browser.d.ts",
     "jsdelivr": "dist/duckdb-browser.cjs",
     "unpkg": "dist/duckdb-browser.mjs",
+    "sideEffects": false,
     "browser": {
         "fs": false,
         "path": false,
