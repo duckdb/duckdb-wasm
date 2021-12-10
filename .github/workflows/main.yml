@@ -228,7 +228,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      (cd ./submodules/duckdb && git fetch --tags)
+                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -322,7 +322,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      (cd ./submodules/duckdb && git fetch --tags)
+                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -395,7 +395,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      (cd ./submodules/duckdb && git fetch --tags)
+                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -447,7 +447,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      (cd ./submodules/duckdb && git fetch --tags)
+                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -499,7 +499,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      (cd ./submodules/duckdb && git fetch --tags)
+                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -606,7 +606,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
                       ./scripts/npm_version.sh
-                      (cd ./submodules/duckdb && git fetch --tags)
+                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.5
