@@ -216,6 +216,14 @@ void BufferedFileSystem::RemoveFile(const std::string &filename) {
     return filesystem_.RemoveFile(filename);
 }
 
+/// Register subsystem
+void BufferedFileSystem::RegisterSubSystem(unique_ptr<FileSystem> sub_fs) { (void)sub_fs; }
+/// Register subsystem
+void BufferedFileSystem::RegisterSubSystem(FileCompressionType compression_type, unique_ptr<FileSystem> sub_fs) {
+    (void)compression_type;
+    (void)sub_fs;
+}
+
 /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
 void BufferedFileSystem::Seek(duckdb::FileHandle &handle, idx_t location) {
     // Direct I/O?

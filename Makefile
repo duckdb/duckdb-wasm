@@ -65,6 +65,14 @@ data:
 	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.25
 	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.5
 
+.PHONY: data
+data_duckdb:
+	${ROOT_DIR}/scripts/build_duckdb_shell.sh
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.01
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.1
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.25
+	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.5
+
 # Compile the core in debug mode
 .PHONY: lib
 lib:

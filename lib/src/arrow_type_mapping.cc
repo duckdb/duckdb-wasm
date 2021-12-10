@@ -15,53 +15,53 @@ arrow::Result<duckdb::LogicalType> mapArrowType(const arrow::DataType& type) {
     switch (type.id()) {
         case arrow::Type::type::MAX_ID:
         case arrow::Type::type::NA:
-            return duckdb::LogicalType::INVALID;
+            return duckdb::LogicalTypeId::INVALID;
         case arrow::Type::type::BOOL:
-            return duckdb::LogicalType::BOOLEAN;
+            return duckdb::LogicalTypeId::BOOLEAN;
         case arrow::Type::type::UINT8:
-            return duckdb::LogicalType::UTINYINT;
+            return duckdb::LogicalTypeId::UTINYINT;
         case arrow::Type::type::INT8:
-            return duckdb::LogicalType::TINYINT;
+            return duckdb::LogicalTypeId::TINYINT;
         case arrow::Type::type::UINT16:
-            return duckdb::LogicalType::USMALLINT;
+            return duckdb::LogicalTypeId::USMALLINT;
         case arrow::Type::type::INT16:
-            return duckdb::LogicalType::SMALLINT;
+            return duckdb::LogicalTypeId::SMALLINT;
         case arrow::Type::type::UINT32:
-            return duckdb::LogicalType::UINTEGER;
+            return duckdb::LogicalTypeId::UINTEGER;
         case arrow::Type::type::INT32:
-            return duckdb::LogicalType::INTEGER;
+            return duckdb::LogicalTypeId::INTEGER;
         case arrow::Type::type::UINT64:
-            return duckdb::LogicalType::UBIGINT;
+            return duckdb::LogicalTypeId::UBIGINT;
         case arrow::Type::type::INT64:
-            return duckdb::LogicalType::BIGINT;
+            return duckdb::LogicalTypeId::BIGINT;
         case arrow::Type::type::HALF_FLOAT:
-            return duckdb::LogicalType::FLOAT;
+            return duckdb::LogicalTypeId::FLOAT;
         case arrow::Type::type::FLOAT:
-            return duckdb::LogicalType::FLOAT;
+            return duckdb::LogicalTypeId::FLOAT;
         case arrow::Type::type::DOUBLE:
-            return duckdb::LogicalType::DOUBLE;
+            return duckdb::LogicalTypeId::DOUBLE;
         case arrow::Type::type::STRING:
-            return duckdb::LogicalType::VARCHAR;
+            return duckdb::LogicalTypeId::VARCHAR;
         case arrow::Type::type::BINARY:
-            return duckdb::LogicalType::BLOB;
+            return duckdb::LogicalTypeId::BLOB;
         case arrow::Type::type::FIXED_SIZE_BINARY:
-            return duckdb::LogicalType::BLOB;
+            return duckdb::LogicalTypeId::BLOB;
         case arrow::Type::type::DATE32:
-            return duckdb::LogicalType::DATE;
+            return duckdb::LogicalTypeId::DATE;
         case arrow::Type::type::DATE64:
-            return duckdb::LogicalType::DATE;
+            return duckdb::LogicalTypeId::DATE;
         case arrow::Type::type::TIMESTAMP:
-            return duckdb::LogicalType::TIMESTAMP;
+            return duckdb::LogicalTypeId::TIMESTAMP;
         case arrow::Type::type::TIME32:
-            return duckdb::LogicalType::TIMESTAMP;
+            return duckdb::LogicalTypeId::TIMESTAMP;
         case arrow::Type::type::TIME64:
-            return duckdb::LogicalType::TIMESTAMP;
+            return duckdb::LogicalTypeId::TIMESTAMP;
         case arrow::Type::type::INTERVAL_MONTHS:
-            return duckdb::LogicalType::INTERVAL;
+            return duckdb::LogicalTypeId::INTERVAL;
         case arrow::Type::type::INTERVAL_DAY_TIME:
-            return duckdb::LogicalType::INTERVAL;
+            return duckdb::LogicalTypeId::INTERVAL;
         case arrow::Type::type::INTERVAL_MONTH_DAY_NANO:
-            return duckdb::LogicalType::INTERVAL;
+            return duckdb::LogicalTypeId::INTERVAL;
         case arrow::Type::type::DECIMAL128: {
             auto& decimal = *dynamic_cast<const arrow::Decimal128Type*>(&type);
             return duckdb::LogicalType::DECIMAL(decimal.precision(), decimal.scale());
@@ -104,11 +104,11 @@ arrow::Result<duckdb::LogicalType> mapArrowType(const arrow::DataType& type) {
             return duckdb::LogicalType::LIST(inner);
         }
         case arrow::Type::type::DURATION:
-            return duckdb::LogicalType::TIME;
+            return duckdb::LogicalTypeId::TIME;
         case arrow::Type::type::LARGE_STRING:
-            return duckdb::LogicalType::VARCHAR;
+            return duckdb::LogicalTypeId::VARCHAR;
         case arrow::Type::type::LARGE_BINARY:
-            return duckdb::LogicalType::BLOB;
+            return duckdb::LogicalTypeId::BLOB;
         case arrow::Type::type::LARGE_LIST: {
             ARROW_ASSIGN_OR_RAISE(auto inner,
                                   mapArrowType(*dynamic_cast<const arrow::LargeListType*>(&type)->value_type()));
@@ -119,7 +119,7 @@ arrow::Result<duckdb::LogicalType> mapArrowType(const arrow::DataType& type) {
         case arrow::Type::type::DENSE_UNION:
             return arrow::Status::NotImplemented("DuckDB type mapping for: ", type.ToString());
     }
-    return duckdb::LogicalType::INVALID;
+    return duckdb::LogicalTypeId::INVALID;
 }
 
 }  // namespace web

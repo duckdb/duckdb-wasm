@@ -34,7 +34,8 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libminiz.a
     <INSTALL_DIR>/lib/libpg_query.a
     <INSTALL_DIR>/lib/libutf8proc.a
-    <BINARY_DIR>/extension/parquet/libparquet_extension.a)
+    <INSTALL_DIR>/lib/libfastpforlib.a
+    <INSTALL_DIR>/lib/libparquet_extension.a)
 
 ExternalProject_Get_Property(duckdb_ep install_dir)
 ExternalProject_Get_Property(duckdb_ep binary_dir)
@@ -52,14 +53,14 @@ set_property(TARGET duckdb PROPERTY IMPORTED_LOCATION ${DUCKDB_LIBRARY_PATH})
 
 target_link_libraries(
   duckdb
-  INTERFACE ${binary_dir}/extension/parquet/libparquet_extension.a
-  INTERFACE ${install_dir}/lib/libduckdb_re2.a
+  INTERFACE ${install_dir}/lib/libparquet_extension.a
   INTERFACE ${install_dir}/lib/libduckdb_re2.a
   INTERFACE ${install_dir}/lib/libfmt.a
   INTERFACE ${install_dir}/lib/libhyperloglog.a
   INTERFACE ${install_dir}/lib/libminiz.a
   INTERFACE ${install_dir}/lib/libpg_query.a
   INTERFACE ${install_dir}/lib/libutf8proc.a
+  INTERFACE ${install_dir}/lib/libfastpforlib.a
   INTERFACE dl)
 
 target_include_directories(

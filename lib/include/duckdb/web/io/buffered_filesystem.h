@@ -119,6 +119,11 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// Runs a glob on the file system, returning a list of matching files
     std::vector<std::string> Glob(const std::string &path) override { return filesystem_.Glob(path); }
 
+    /// Register subsystem
+    void RegisterSubSystem(unique_ptr<FileSystem> sub_fs) override;
+    /// Register subsystem
+    void RegisterSubSystem(FileCompressionType compression_type, unique_ptr<FileSystem> sub_fs) override;
+
     /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
     void Seek(duckdb::FileHandle &handle, idx_t location) override;
     /// Reset a file to the beginning (equivalent to Seek(handle, 0) for simple files)
