@@ -173,6 +173,16 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         dropResponseBuffers(this.mod);
         return res;
     }
+    /** Get table names */
+    public getTableNames(conn: number, text: string): string[] {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_get_tablenames', ['number', 'string'], [conn, text]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        const res = readString(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return JSON.parse(res) as string[];
+    }
 
     /** Prepare a statement and return its identifier */
     public createPrepared(conn: number, text: string): number {

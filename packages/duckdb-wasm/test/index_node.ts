@@ -73,8 +73,11 @@ import { testArrowInsert, testArrowInsertAsync } from './insert_arrow.test';
 import { testJSONInsert, testJSONInsertAsync } from './insert_json.test';
 import { testCSVInsert, testCSVInsertAsync } from './insert_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
+import { testTableNames, testTableNamesAsync } from './tablenames.test';
 import { testRegressionAsync } from './regression';
 
+testTableNames(() => db!);
+testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
 testBindings(() => db!, dataDir);
 testAsyncBindings(() => adb!, dataDir);

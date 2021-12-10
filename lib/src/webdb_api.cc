@@ -193,6 +193,12 @@ void duckdb_web_query_fetch_results(WASMResponse* packed, ConnectionHdl connHdl)
     auto r = c->FetchQueryResults();
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
+/// Get table names
+void duckdb_web_get_tablenames(WASMResponse* packed, ConnectionHdl connHdl, const char* query) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->GetTableNames(query);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
 /// Insert arrow from an ipc stream
 void duckdb_web_insert_arrow_from_ipc_stream(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
                                              size_t buffer_length, const char* options) {

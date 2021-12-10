@@ -44,6 +44,11 @@ export class DuckDBConnection {
         return reader;
     }
 
+    /** Get table names */
+    public getTableNames(query: string): string[] {
+        return this._bindings.getTableNames(this._conn, query);
+    }
+
     /** Create a prepared statement */
     public prepare<T extends { [key: string]: arrow.DataType } = any>(text: string): PreparedStatement {
         const stmt = this._bindings.createPrepared(this._conn, text);

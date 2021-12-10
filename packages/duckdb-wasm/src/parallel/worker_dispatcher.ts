@@ -241,6 +241,19 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
+                case WorkerRequestType.GET_TABLE_NAMES: {
+                    const result = this._bindings.getTableNames(request.data[0], request.data[1]);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.TABLE_NAMES,
+                            data: result,
+                        },
+                        [],
+                    );
+                    break;
+                }
                 case WorkerRequestType.GLOB_FILE_INFOS: {
                     const infos = this._bindings.globFiles(request.data);
                     this.postMessage(

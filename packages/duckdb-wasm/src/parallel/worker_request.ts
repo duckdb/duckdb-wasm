@@ -22,6 +22,7 @@ export enum WorkerRequestType {
     FETCH_QUERY_RESULTS = 'FETCH_QUERY_RESULTS',
     FLUSH_FILES = 'FLUSH_FILES',
     GET_FEATURE_FLAGS = 'GET_FEATURE_FLAGS',
+    GET_TABLE_NAMES = 'GET_TABLE_NAMES',
     GET_VERSION = 'GET_VERSION',
     GLOB_FILE_INFOS = 'GLOB_FILE_INFOS',
     INSERT_ARROW_FROM_IPC_STREAM = 'INSERT_ARROW_FROM_IPC_STREAM',
@@ -59,6 +60,7 @@ export enum WorkerResponseType {
     REGISTERED_FILE = 'REGISTERED_FILE',
     SCRIPT_TOKENS = 'SCRIPT_TOKENS',
     SUCCESS = 'SUCCESS',
+    TABLE_NAMES = 'TABLE_NAMES',
     VERSION_STRING = 'VERSION_STRING',
 }
 
@@ -110,6 +112,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
+    | WorkerRequest<WorkerRequestType.GET_TABLE_NAMES, [number, string]>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<
           WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
@@ -148,6 +151,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.QUERY_START, Uint8Array>
     | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
     | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
+    | WorkerResponse<WorkerResponseType.TABLE_NAMES, string[]>
     | WorkerResponse<WorkerResponseType.VERSION_STRING, string>;
 
 export type WorkerTaskVariant =
@@ -164,6 +168,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
+    | WorkerTask<WorkerRequestType.GET_TABLE_NAMES, [number, string], string[]>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<
           WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,

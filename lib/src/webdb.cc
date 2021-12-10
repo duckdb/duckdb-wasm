@@ -192,6 +192,26 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }
 }
+/// Fetch table names
+arrow::Result<std::string> WebDB::Connection::GetTableNames(std::string_view text) {
+    try {
+        rapidjson::Document doc;
+        auto table_name_set = connection_.GetTableNames(std::string{text});
+        std::vector<std::string> table_names{table_name_set.begin(), table_name_set.end()};
+        std::sort(table_names.begin(), table_names.end());
+        auto& array = doc.SetArray();
+        auto& alloc = doc.GetAllocator();
+        for (auto& name : table_names) {
+            array.PushBack(rapidjson::StringRef(name.data(), name.length()), alloc);
+        }
+        rapidjson::StringBuffer strbuf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+        doc.Accept(writer);
+        return strbuf.GetString();
+    } catch (std::exception& e) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
+    }
+}
 
 arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_view text) {
     try {

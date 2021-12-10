@@ -178,6 +178,12 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
                     return;
                 }
                 break;
+            case WorkerRequestType.GET_TABLE_NAMES:
+                if (response.type == WorkerResponseType.TABLE_NAMES) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
             case WorkerRequestType.TOKENIZE:
                 if (response.type == WorkerResponseType.SCRIPT_TOKENS) {
                     task.promiseResolver(response.data);
@@ -365,6 +371,15 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         const task = new WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>(
             WorkerRequestType.FETCH_QUERY_RESULTS,
             conn,
+        );
+        return await this.postTask(task);
+    }
+
+    /** Get table names */
+    public async getTableNames(conn: number, text: string): Promise<string[]> {
+        const task = new WorkerTask<WorkerRequestType.GET_TABLE_NAMES, [number, string], string[]>(
+            WorkerRequestType.GET_TABLE_NAMES,
+            [conn, text],
         );
         return await this.postTask(task);
     }

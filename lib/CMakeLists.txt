@@ -252,6 +252,7 @@ if(EMSCRIPTEN)
           _duckdb_web_fs_register_file_url, \
           _duckdb_web_fs_set_file_descriptor, \
           _duckdb_web_get_feature_flags, \
+          _duckdb_web_get_tablenames, \
           _duckdb_web_get_version, \
           _duckdb_web_insert_arrow_from_ipc_stream, \
           _duckdb_web_insert_csv_from_path, \
@@ -291,6 +292,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/parquet_test.cc
       ${CMAKE_SOURCE_DIR}/test/readahead_buffer_test.cc
+      ${CMAKE_SOURCE_DIR}/test/tablenames_test.cc
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
       ${CMAKE_SOURCE_DIR}/test/tester.cc)

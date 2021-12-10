@@ -78,6 +78,8 @@ class WebDB {
         arrow::Result<std::shared_ptr<arrow::Buffer>> SendQuery(std::string_view text);
         /// Fetch query results and return an arrow buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> FetchQueryResults();
+        /// Get table names
+        arrow::Result<std::string> GetTableNames(std::string_view text);
 
         /// Prepare a statement and return its identifier
         arrow::Result<size_t> CreatePreparedStatement(std::string_view text);

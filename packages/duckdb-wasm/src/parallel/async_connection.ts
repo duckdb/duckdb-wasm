@@ -67,6 +67,11 @@ export class AsyncDuckDBConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
+    /** Get table names */
+    public async getTableNames(query: string): Promise<string[]> {
+        return await this._bindings.getTableNames(this._conn, query);
+    }
+
     /** Create a prepared statement */
     public async prepare<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
