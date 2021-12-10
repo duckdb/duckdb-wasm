@@ -66,7 +66,7 @@ export function testTableNames(db: () => duckdb.DuckDBBindings): void {
         for (const test of TABLENAME_TESTS) {
             it(test.name, () => {
                 const tables = conn.getTableNames(test.input);
-                expect(tables).toEqual(tables);
+                expect(tables).toEqual(test.tables);
             });
         }
     });
@@ -84,7 +84,7 @@ export function testTableNamesAsync(db: () => duckdb.AsyncDuckDB): void {
         for (const test of TABLENAME_TESTS) {
             it(test.name, async () => {
                 const tables = await conn.getTableNames(test.input);
-                expect(tables).toEqual(tables);
+                expect(tables).toEqual(test.tables);
             });
         }
     });
