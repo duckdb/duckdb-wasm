@@ -8,7 +8,7 @@
         "@duckdb/duckdb-wasm": "^1.11.0"
     },
     "devDependencies": {
-        "esbuild": "^0.14.3",
+        "esbuild": "^0.14.5",
         "typescript": "^4.5.4"
     },
     "scripts": {
