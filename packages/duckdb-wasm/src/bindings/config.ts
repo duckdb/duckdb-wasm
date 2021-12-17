@@ -7,6 +7,11 @@ export interface DuckDBQueryConfig {
      * Cast Timestamp to Date64?
      */
     castTimestampToDate?: boolean;
+    /**
+     * Cast Timestamp to Date64?
+     * Note that this is currently enabled by default
+     */
+    castDurationToTime64?: boolean;
 }
 
 export interface DuckDBFilesystemConfig {

@@ -29,6 +29,8 @@ std::shared_ptr<arrow::Schema> patchSchema(const std::shared_ptr<arrow::Schema>&
             case arrow::Type::INT64:
             case arrow::Type::UINT64:
                 return config.cast_bigint_to_double.value_or(false) ? arrow::float64() : type;
+            case arrow::Type::DURATION:
+                return config.cast_duration_to_time64.value_or(false) ? arrow::time64(arrow::TimeUnit::MICRO) : type;
             default:
                 return type;
         }
@@ -121,6 +123,48 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
                     out = std::make_shared<arrow::Date64Array>(
                         array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()), array->null_bitmap(),
                         array->null_count(), array->offset());
+                }
+                break;
+            }
+            case arrow::Type::DURATION: {
+                if (config.cast_duration_to_time64.value_or(false)) {
+                    static_assert(std::is_same<arrow::DurationType::c_type, int64_t>::value);
+                    static_assert(std::is_same<arrow::Time64Type::c_type, int64_t>::value);
+                    auto array = std::dynamic_pointer_cast<arrow::DurationArray>(out);
+                    auto type = reinterpret_cast<const arrow::DurationType*>(array->type().get());
+                    auto in = reinterpret_cast<const arrow::Time64Type::c_type*>(array->values()->data());
+                    ARROW_ASSIGN_OR_RAISE(auto buffer,
+                                          arrow::AllocateBuffer(array->length() * sizeof(arrow::Time64Type::c_type)));
+                    auto writer = reinterpret_cast<arrow::Time64Type::c_type*>(buffer->mutable_data());
+
+                    auto cast_to_type = type->unit() == arrow::TimeUnit::NANO ? arrow::time64(arrow::TimeUnit::NANO)
+                                                                              : arrow::time64(arrow::TimeUnit::MICRO);
+                    switch (type->unit()) {
+                        case arrow::TimeUnit::SECOND:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i] * 1000 * 1000;  // Converted to Micro
+                            }
+                            break;
+                        case arrow::TimeUnit::MILLI:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i] * 1000;  // Converted to Micro
+                            }
+                            break;
+                        case arrow::TimeUnit::MICRO:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i];
+                            }
+                            break;
+                        case arrow::TimeUnit::NANO:
+                            for (auto i = 0; i < array->length(); ++i) {
+                                writer[i] = in[i];
+                            }
+                            break;
+                    }
+
+                    out = std::make_shared<arrow::Time64Array>(
+                        cast_to_type, array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()),
+                        array->null_bitmap(), array->null_count(), array->offset());
                 }
                 break;
             }
