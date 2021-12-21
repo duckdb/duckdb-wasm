@@ -1,17 +1,22 @@
 import * as duckdb from "../src/";
 import {Column, Vector} from "apache-arrow";
 
-type answer_map_entry_t = Array<any>;
+// The max interval in microsec from DuckDB is 83 years 3 months 999 days 00:16:39.999999, with months as 30 days.
+// Note that due to Arrow JS not supporting the duration type, the castDurationToInterval option is used for intervals.
+// This has a side-effect that while the value is in microseconds, it only has millisecond accuracy. This is
+// because DuckDB emits intervals in milliseconds and the Arrow Time64 type does not support milliseconds as unit.
+const MAX_INTERVAL_US = (((( 83 * (12*30) + 3 * 30 + 999) * 24) * 60 + 16) * 60 + 39) * 1000000 + 999000;
 
+// JS Date at +/-8640000000000000ms
+const MINIMUM_DATE_STR = '-271821-04-20';
+const MINIMUM_DATE = new Date(Date.UTC(-271821, 3, 20));
+const MAXIMUM_DATE_STR = '275760-09-13';
+const MAXIMUM_DATE = new Date(Date.UTC(275760, 8, 13));
+
+// All columns contain 3 values: [min_value, max_value, null]
 type AnswerObjectType = {
-    [key: string]: answer_map_entry_t;
+    [key: string]: Array<any>;
 };
-
-// JS has a range of +- 8640000000000000 ms
-const minimum_date_string = '-271821-04-20';
-const minimum_date = new Date(Date.UTC(-271821, 3, 20));
-const maximum_date_string = '275760-09-13';
-const maximum_date = new Date(Date.UTC(275760, 8, 13));
 
 interface AllTypesTest {
     name: string,
@@ -24,7 +29,7 @@ interface AllTypesTest {
 // Note that timestamp_[m/n]s, timestamp_tz and date_tz types are working, but do do not support full range and are only
 // partially supported by DuckDB and therefore omitted for now.
 const NOT_IMPLEMENTED_TYPES = ['timestamp_s', 'timestamp_ms', 'timestamp_ns', 'date_tz', 'timestamp_tz', 'hugeint', 'dec_4_1', 'dec_9_4',
-    'dec_18_3', 'dec38_10', 'blob', 'uuid', 'interval'];
+    'dec_18_3', 'dec38_10', 'blob', 'uuid'];
 
 // These type are supported, but not the full range returned from the test_all_types() table function, here we define
 // the limits we do expect to be supported.
@@ -32,16 +37,16 @@ const PARTIALLY_IMPLEMENTED_TYPES = ['ubigint', 'bigint', 'date', 'timestamp'];
 const PARTIALLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     ubigint: [0, Number.MAX_SAFE_INTEGER, null],
     bigint: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, null],
-    date: [minimum_date.valueOf(), maximum_date.valueOf(), null],
-    timestamp: [minimum_date.valueOf(), maximum_date.valueOf(), null],
+    date: [MINIMUM_DATE.valueOf(), MAXIMUM_DATE.valueOf(), null],
+    timestamp: [MINIMUM_DATE.valueOf(), MAXIMUM_DATE.valueOf(), null],
 }
 
 // Subqueries that return the limits of the subset of the full range that is implemented
 const PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS = [
     `(SELECT array_extract([0::UINT64,${Number.MAX_SAFE_INTEGER}::UINT64,null::UINT64],i)) as ubigint`,
     `(SELECT array_extract([${Number.MIN_SAFE_INTEGER}::INT64,${Number.MAX_SAFE_INTEGER}::INT64,null],i)) as bigint`,
-    `(SELECT array_extract(['${minimum_date_string}'::Date,'${maximum_date_string}'::Date,null],i)) as date`,
-    `(SELECT array_extract(['${minimum_date_string}'::Timestamp,'${maximum_date_string}'::Timestamp,null],i)) as timestamp`,
+    `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Date,'${MAXIMUM_DATE_STR}'::Date,null],i)) as date`,
+    `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Timestamp,'${MAXIMUM_DATE_STR}'::Timestamp,null],i)) as timestamp`,
 ];
 
 // Types that are fully supported.
@@ -58,6 +63,7 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     // whereas the Date object is in milliseconds.
     time: [0, (new Date('1970-01-01T23:59:59.999+00:00')).valueOf() * 1000 + 999, null],
     time_tz: [0, new Date('1970-01-01T23:59:59.999+00:00').valueOf() * 1000 + 999, null],
+    interval: [0, MAX_INTERVAL_US,null],
 
     float: [-3.4028234663852886e+38, 3.4028234663852886e+38, null],
     double: [-1.7976931348623157e+308, 1.7976931348623157e+308, null],
@@ -82,44 +88,33 @@ REPLACE_COLUMNS.map((x) => {
     FULLY_IMPLEMENTED_ANSWER_MAP['not_implemented'] = ['not_implemented', 'not_implemented', 'not_implemented']
 })
 
-// Recursively unpack v
 const UNPACK = function (v: any) : any {
-    // console.info('------ new');
-    // console.info(v);
     if (v === null) return null;
+
     if (v instanceof Vector) {
-        // console.info('Vector');
         const ret = Array.from(v.toArray());
         for (let i = 0; i < ret.length; i++) {
             if (!v.isValid(i)) {
                 ret[i] = null;
             }
         }
-        // console.info(ret);
         return UNPACK(ret);
     } else if (v instanceof Array) {
-        // console.info('Arr');
         const ret : any = [];
         for (let i = 0; i < v.length; i++) {
             ret[i] = UNPACK(v[i]);
         }
-        // console.info(ret);
         return ret;
     }  else if (v instanceof Object) {
-        // console.info('Obj');
-        // console.info(JSON.stringify(v.toJSON()));
         return JSON.stringify(v.toJSON());
     }
+
     return v;
 }
 
 const GET_VALUE = function (x: any): any {
-    if (x === null) {
-        return null;
-    } else if (typeof x?.valueOf === 'function') {
+    if (typeof x?.valueOf === 'function') {
         return x.valueOf();
-    } else if (typeof x?.toArray === 'function') {
-        return x.toArray();
     } else {
         return x;
     }
@@ -127,25 +122,19 @@ const GET_VALUE = function (x: any): any {
 
 const ALL_TYPES_TEST: AllTypesTest[] = [
     {
-        name: 'Fully implemented',
+        name: 'fully supported types',
         query: `SELECT * REPLACE(${REPLACE_COLUMNS.map(x => `'not_implemented' as ${x}`).join(', ')})
                 FROM test_all_types();`,
         answerMap: FULLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length - 1
     },
     {
-        name: 'Partially implemented',
+        name: 'partially supported types',
         query: `SELECT ${PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS.join(', ')}
                 FROM range(0, 3) tbl(i)`,
         answerMap: PARTIALLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: PARTIALLY_IMPLEMENTED_TYPES.length
     },
-    // {
-    //     name: 'type',
-    //     query: `SELECT type from test_all_types()`,
-    //     answerMap: {type: [null,null,null]},
-    //     answerCount: 1
-    // }
 ];
 
 export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
@@ -175,7 +164,7 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
 
                     expect(UNPACK(GET_VALUE(col.get(0)))).toEqual(test.answerMap[col.name][0]); // Min
                     expect(UNPACK(GET_VALUE(col.get(1)))).toEqual(test.answerMap[col.name][1]); // Max
-                    expect(GET_VALUE(col.get(2))).toEqual(test.answerMap[col.name][2]); // Null
+                    expect(col.get(2)).toEqual(test.answerMap[col.name][2]); // Null
                 }
             });
         }
@@ -209,7 +198,7 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
 
                     expect(UNPACK(GET_VALUE(col.get(0)))).toEqual(test.answerMap[col.name][0]); // Min
                     expect(UNPACK(GET_VALUE(col.get(1)))).toEqual(test.answerMap[col.name][1]); // Max
-                    expect(GET_VALUE(col.get(2))).toEqual(test.answerMap[col.name][2]); // Null
+                    expect(col.get(2)).toEqual(test.answerMap[col.name][2]); // Null
                 }
             });
         }
