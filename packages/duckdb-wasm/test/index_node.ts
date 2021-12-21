@@ -65,6 +65,7 @@ afterAll(async () => {
     if (worker) worker.terminate();
 });
 
+import { testAllTypes, testAllTypesAsync } from './all_types.test';
 import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testFilesystem } from './filesystem.test';
@@ -79,6 +80,8 @@ import { testRegressionAsync } from './regression';
 testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
+testAllTypes(() => db!);
+testAllTypesAsync(() => adb!);
 testBindings(() => db!, dataDir);
 testAsyncBindings(() => adb!, dataDir);
 testBatchStream(() => db!);

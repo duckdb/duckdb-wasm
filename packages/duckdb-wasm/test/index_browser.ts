@@ -92,6 +92,7 @@ afterAll(async () => {
     if (worker) worker.terminate();
 });
 
+import { testAllTypes, testAllTypesAsync } from './all_types.test';
 import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
@@ -109,6 +110,8 @@ const dataURL = `${baseURL}/data`;
 testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
+testAllTypes(() => db!);
+testAllTypesAsync(() => adb!);
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL);
 testBatchStream(() => db!);
