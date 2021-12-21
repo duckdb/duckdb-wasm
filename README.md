@@ -6,13 +6,13 @@
 [![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@duckdb/duckdb-wasm/v/latest)
 [![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@duckdb/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@duckdb/duckdb-wasm)
 
-[![discord](https://shields.io/discord/909674491309850675)](https://discord.gg/tcvwpjfnZx)
-
 **DuckDB-Wasm**
 
 DuckDB-Wasm is an in-process analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Read the [launch blog post](https://duckdb.org/2021/10/29/duckdb-wasm.html).
 
-Try it out at [shell.duckdb.org](https://shell.duckdb.org) and on [Observable](https://observablehq.com/@cmudig/duckdb) and read the [API documentation](https://shell.duckdb.org/docs/modules/index.html).
+Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https://observablehq.com/@cmudig/duckdb), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html) and chat with us on [Discord](https://discord.gg/tcvwpjfnZx).
+
+[![discord](https://shields.io/discord/909674491309850675)](https://discord.gg/tcvwpjfnZx)
 
 _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our benchmarks](https://shell.duckdb.org/versus)._
 
