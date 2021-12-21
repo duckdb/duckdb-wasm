@@ -25,13 +25,14 @@ interface AllTypesTest {
     answerCount: number
 }
 
-// These type currently do not work in DuckDB-WASM
-// Note that timestamp_[m/n]s, timestamp_tz and date_tz types are working, but do do not support full range and are only
-// partially supported by DuckDB and therefore omitted for now.
+// These types currently do not work in DuckDB-WASM
+// timestamp_xx and date_tz types will soon be fully supported by duckdb and should be added then.
+// hugeint, dec_18_3, dec38_10 and uuid require JS BigInts for full support, which is currently not supported by ArrowJS
+// dec_4_1 and dec_9_4 suffer from https://github.com/duckdb/duckdb-wasm/issues/477
 const NOT_IMPLEMENTED_TYPES = ['timestamp_s', 'timestamp_ms', 'timestamp_ns', 'date_tz', 'timestamp_tz', 'hugeint', 'dec_4_1', 'dec_9_4',
-    'dec_18_3', 'dec38_10', 'blob', 'uuid'];
+    'dec_18_3', 'dec38_10', 'uuid'];
 
-// These type are supported, but not the full range returned from the test_all_types() table function, here we define
+// These types are supported, but not the full range returned from the test_all_types() table function, here we define
 // the limits we do expect to be supported.
 const PARTIALLY_IMPLEMENTED_TYPES = ['ubigint', 'bigint', 'date', 'timestamp'];
 const PARTIALLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
@@ -80,7 +81,9 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     struct_of_arrays: ['{"a":null,"b":null}','{"a":[42,999,null,null,-42],"b":["🦆🦆🦆🦆🦆🦆","goose",null,""]}', null],
     array_of_structs: [[], ['{"a":null,"b":null}', '{"a":42,"b":"🦆🦆🦆🦆🦆🦆"}',null], null],
 
-    map: ['{}', '{"key1":"🦆🦆🦆🦆🦆🦆","key2":"goose"}', null]
+    map: ['{}', '{"key1":"🦆🦆🦆🦆🦆🦆","key2":"goose"}', null],
+    blob: [Uint8Array.from([116,104,105,115,105,115,97,108,111,110,103,98,108,111,98,0,119,105,116,104,110,117,
+        108,108,98,121,116,101,115]),Uint8Array.from([92,120,48,48,92,120,48,48,92,120,48,48,97]),null]
 };
 
 const REPLACE_COLUMNS = PARTIALLY_IMPLEMENTED_TYPES.concat(NOT_IMPLEMENTED_TYPES);
@@ -105,7 +108,9 @@ const UNPACK = function (v: any) : any {
             ret[i] = UNPACK(v[i]);
         }
         return ret;
-    }  else if (v instanceof Object) {
+    } else if (v instanceof Uint8Array) {
+        return v;
+    } else if (v instanceof Object) {
         return JSON.stringify(v.toJSON());
     }
 
