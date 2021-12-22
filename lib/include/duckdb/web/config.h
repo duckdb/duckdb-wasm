@@ -44,11 +44,13 @@ struct QueryConfig {
     std::optional<bool> cast_timestamp_to_date = std::nullopt;
     /// Cast Duration to Time64
     std::optional<bool> cast_duration_to_time64 = std::nullopt;
+    /// Cast Decimal to Double
+    std::optional<bool> cast_decimal_to_double = std::nullopt;
 
     /// Has any cast?
     bool hasAnyCast() const {
         return cast_bigint_to_double.value_or(false) || cast_timestamp_to_date.value_or(false) ||
-               cast_duration_to_time64.value_or(false);
+               cast_duration_to_time64.value_or(false) || cast_decimal_to_double.value_or(false);
     }
     /// Read from a document
     static QueryConfig ReadFrom(std::string_view args_json);
@@ -69,6 +71,7 @@ struct WebDBConfig {
         .cast_bigint_to_double = std::nullopt,
         .cast_timestamp_to_date = std::nullopt,
         .cast_duration_to_time64 = std::nullopt,
+        .cast_decimal_to_double = std::nullopt,
     };
     /// The filesystem
     FileSystemConfig filesystem = {

@@ -43,6 +43,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                 .cast_bigint_to_double = std::nullopt,
                 .cast_timestamp_to_date = std::nullopt,
                 .cast_duration_to_time64 = true,
+                .cast_decimal_to_double = std::nullopt,
             },
         .filesystem = FileSystemConfig{.allow_full_http_reads = std::nullopt},
     };
@@ -65,6 +66,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
             }
             if (q.HasMember("castDurationToTime64") && q["castDurationToTime64"].IsBool()) {
                 config.query.cast_duration_to_time64 = q["castDurationToTime64"].GetBool();
+            }
+            if (q.HasMember("castDecimalToDouble") && q["castDecimalToDouble"].IsBool()) {
+                config.query.cast_decimal_to_double = q["castDecimalToDouble"].GetBool();
             }
         }
         if (doc.HasMember("filesystem") && doc["filesystem"].IsObject()) {

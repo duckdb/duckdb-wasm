@@ -12,6 +12,11 @@ export interface DuckDBQueryConfig {
      * Note that this is currently enabled by default
      */
     castDurationToTime64?: boolean;
+    /**
+     * Cast Decimal to Double?
+     * Note that casting decimals to floating point respresentation will have impre
+     */
+    castDecimalToDouble?: boolean;
 }
 
 export interface DuckDBFilesystemConfig {
