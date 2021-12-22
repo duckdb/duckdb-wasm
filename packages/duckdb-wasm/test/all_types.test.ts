@@ -1,5 +1,6 @@
 import * as duckdb from '../src/';
-import { Column, Vector } from 'apache-arrow';
+import {Column, Vector} from 'apache-arrow';
+import {DuckDBQueryConfig} from "../src/";
 
 // The max interval in microsec from DuckDB is 83 years 3 months 999 days 00:16:39.999999, with months as 30 days.
 // Note that due to Arrow JS not supporting the duration type, the castDurationToInterval option is used for intervals.
@@ -23,12 +24,12 @@ interface AllTypesTest {
     query: string;
     answerMap: AnswerObjectType;
     answerCount: number;
+    queryConfig: DuckDBQueryConfig | null
 }
 
 // These types currently do not work in DuckDB-WASM
 // timestamp_xx and date_tz types will soon be fully supported by duckdb and should be added then.
 // hugeint, dec_18_3, dec38_10 and uuid require JS BigInts for full support, which is currently not supported by ArrowJS
-// dec_4_1 and dec_9_4 suffer from https://github.com/duckdb/duckdb-wasm/issues/477
 const NOT_IMPLEMENTED_TYPES = [
     'timestamp_s',
     'timestamp_ms',
@@ -36,8 +37,6 @@ const NOT_IMPLEMENTED_TYPES = [
     'date_tz',
     'timestamp_tz',
     'hugeint',
-    'dec_4_1',
-    'dec_9_4',
     'dec_18_3',
     'dec38_10',
     'uuid',
@@ -60,6 +59,9 @@ const PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS = [
     `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Date,'${MAXIMUM_DATE_STR}'::Date,null],i)) as date`,
     `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Timestamp,'${MAXIMUM_DATE_STR}'::Timestamp,null],i)) as timestamp`,
 ];
+
+// These types do not work with default configuration, but have
+const TYPES_REQUIRING_CUSTOM_CONFIG = [ 'dec_4_1', 'dec_9_4'];
 
 // Types that are fully supported.
 const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
@@ -107,10 +109,10 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     ],
 };
 
-const REPLACE_COLUMNS = PARTIALLY_IMPLEMENTED_TYPES.concat(NOT_IMPLEMENTED_TYPES);
-REPLACE_COLUMNS.map(x => {
-    FULLY_IMPLEMENTED_ANSWER_MAP['not_implemented'] = ['not_implemented', 'not_implemented', 'not_implemented'];
-});
+FULLY_IMPLEMENTED_ANSWER_MAP['not_implemented'] = ['not_implemented', 'not_implemented', 'not_implemented'];
+
+// Replacements for the values we knowingly don't support from the test_all_types query
+const REPLACE_COLUMNS = PARTIALLY_IMPLEMENTED_TYPES.concat(NOT_IMPLEMENTED_TYPES).concat(TYPES_REQUIRING_CUSTOM_CONFIG);
 
 function unpack(v: any): any {
     if (v === null) return null;
@@ -153,6 +155,7 @@ const ALL_TYPES_TEST: AllTypesTest[] = [
                 FROM test_all_types();`,
         answerMap: FULLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length - 1,
+        queryConfig: null
     },
     {
         name: 'partially supported types',
@@ -160,6 +163,19 @@ const ALL_TYPES_TEST: AllTypesTest[] = [
                 FROM range(0, 3) tbl(i)`,
         answerMap: PARTIALLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: PARTIALLY_IMPLEMENTED_TYPES.length,
+        queryConfig: null
+    },
+    {
+        name: 'types with custom config',
+        query: `SELECT ${TYPES_REQUIRING_CUSTOM_CONFIG.join(',')} FROM test_all_types()`,
+        answerMap: {
+            dec_4_1: [ -999.9000000000001, 999.9000000000001, null],
+            dec_9_4: [ -99999.99990000001, 99999.99990000001, null]
+        },
+        answerCount: TYPES_REQUIRING_CUSTOM_CONFIG.length,
+        queryConfig: {
+            castDecimalToDouble: true
+        }
     },
 ];
 
@@ -181,7 +197,11 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
     describe('Test All Types', () => {
         for (const test of ALL_TYPES_TEST) {
             it(test.name, () => {
+                if (test.queryConfig)
+                    db().open({query: test.queryConfig});
+
                 conn = db().connect();
+
                 const results = conn.query(test.query);
                 expect(results.numCols).toEqual(test.answerCount);
 
@@ -215,6 +235,9 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('Test All Types Async', () => {
         for (const test of ALL_TYPES_TEST) {
             it(test.name, async () => {
+                if (test.queryConfig)
+                    db().open({query: test.queryConfig});
+
                 conn = await db().connect();
                 const results = await conn.query(test.query);
                 expect(results.numCols).toEqual(test.answerCount);
