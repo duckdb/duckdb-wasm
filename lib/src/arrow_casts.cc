@@ -4,6 +4,9 @@
 #include <arrow/result.h>
 #include <arrow/type_fwd.h>
 
+#include <arrow/util/decimal.h>
+#include <arrow/array/array_decimal.h>
+
 #include <chrono>
 #include <iomanip>
 
@@ -31,6 +34,8 @@ std::shared_ptr<arrow::Schema> patchSchema(const std::shared_ptr<arrow::Schema>&
                 return config.cast_bigint_to_double.value_or(false) ? arrow::float64() : type;
             case arrow::Type::DURATION:
                 return config.cast_duration_to_time64.value_or(false) ? arrow::time64(arrow::TimeUnit::MICRO) : type;
+            case arrow::Type::DECIMAL:
+                return config.cast_decimal_to_double.value_or(false) ? arrow::float64() : type;
             default:
                 return type;
         }
@@ -164,6 +169,28 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
 
                     out = std::make_shared<arrow::Time64Array>(
                         cast_to_type, array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()),
+                        array->null_bitmap(), array->null_count(), array->offset());
+                }
+                break;
+            }
+            case arrow::Type::DECIMAL128: {
+                if (config.cast_decimal_to_double.value_or(false)) {
+                    auto type = reinterpret_cast<const arrow::Decimal128Type*>(out->type().get());
+                    auto scale = type->scale();
+                    auto array = std::dynamic_pointer_cast<arrow::Decimal128Array>(out);
+
+                    ARROW_ASSIGN_OR_RAISE(auto buffer,
+                                          arrow::AllocateBuffer(array->length() * sizeof(arrow::DoubleType::c_type)));
+
+                    auto writer = reinterpret_cast<arrow::DoubleType::c_type*>(buffer->mutable_data());
+
+                    for (auto i = 0; i < array->length(); ++i) {
+                        const arrow::Decimal128 out_value(array->GetValue(i));
+                        writer[i] = out_value.ToDouble(scale);
+                    }
+
+                    out = std::make_shared<arrow::DoubleArray>(
+                        array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()),
                         array->null_bitmap(), array->null_count(), array->offset());
                 }
                 break;
