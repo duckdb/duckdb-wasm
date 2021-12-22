@@ -1,11 +1,10 @@
 #include "duckdb/web/arrow_casts.h"
 
+#include <arrow/array/array_decimal.h>
 #include <arrow/buffer.h>
 #include <arrow/result.h>
 #include <arrow/type_fwd.h>
-
 #include <arrow/util/decimal.h>
-#include <arrow/array/array_decimal.h>
 
 #include <chrono>
 #include <iomanip>
@@ -190,8 +189,8 @@ arrow::Result<std::shared_ptr<arrow::RecordBatch>> patchRecordBatch(const std::s
                     }
 
                     out = std::make_shared<arrow::DoubleArray>(
-                        array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()),
-                        array->null_bitmap(), array->null_count(), array->offset());
+                        array->length(), std::shared_ptr<arrow::Buffer>(buffer.release()), array->null_bitmap(),
+                        array->null_count(), array->offset());
                 }
                 break;
             }
