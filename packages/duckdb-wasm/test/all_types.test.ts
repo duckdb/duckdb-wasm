@@ -1,6 +1,6 @@
 import * as duckdb from '../src/';
-import {Column, Vector} from 'apache-arrow';
-import {DuckDBQueryConfig} from "../src/";
+import { Column, Vector } from 'apache-arrow';
+import { DuckDBQueryConfig } from '../src/';
 
 // The max interval in microsec from DuckDB is 83 years 3 months 999 days 00:16:39.999999, with months as 30 days.
 // Note that due to Arrow JS not supporting the duration type, the castDurationToInterval option is used for intervals.
@@ -24,7 +24,7 @@ interface AllTypesTest {
     query: string;
     answerMap: AnswerObjectType;
     answerCount: number;
-    queryConfig: DuckDBQueryConfig | null
+    queryConfig: DuckDBQueryConfig | null;
 }
 
 // These types currently do not work in DuckDB-WASM
@@ -40,6 +40,7 @@ const NOT_IMPLEMENTED_TYPES = [
     'dec_18_3',
     'dec38_10',
     'uuid',
+    'map',
 ];
 
 // These types are supported, but not the full range returned from the test_all_types() table function, here we define
@@ -61,7 +62,7 @@ const PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS = [
 ];
 
 // These types do not work with default configuration, but have
-const TYPES_REQUIRING_CUSTOM_CONFIG = [ 'dec_4_1', 'dec_9_4'];
+const TYPES_REQUIRING_CUSTOM_CONFIG = ['dec_4_1', 'dec_9_4'];
 
 // Types that are fully supported.
 const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
@@ -156,7 +157,7 @@ const ALL_TYPES_TEST: AllTypesTest[] = [
                 FROM test_all_types();`,
         answerMap: FULLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length - 1,
-        queryConfig: null
+        queryConfig: null,
     },
     {
         name: 'partially supported types',
@@ -164,19 +165,19 @@ const ALL_TYPES_TEST: AllTypesTest[] = [
                 FROM range(0, 3) tbl(i)`,
         answerMap: PARTIALLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: PARTIALLY_IMPLEMENTED_TYPES.length,
-        queryConfig: null
+        queryConfig: null,
     },
     {
         name: 'types with custom config',
         query: `SELECT ${TYPES_REQUIRING_CUSTOM_CONFIG.join(',')} FROM test_all_types()`,
         answerMap: {
-            dec_4_1: [ -999.9000000000001, 999.9000000000001, null],
-            dec_9_4: [ -99999.99990000001, 99999.99990000001, null]
+            dec_4_1: [-999.9000000000001, 999.9000000000001, null],
+            dec_9_4: [-99999.99990000001, 99999.99990000001, null],
         },
         answerCount: TYPES_REQUIRING_CUSTOM_CONFIG.length,
         queryConfig: {
-            castDecimalToDouble: true
-        }
+            castDecimalToDouble: true,
+        },
     },
 ];
 
@@ -198,8 +199,7 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
     describe('Test All Types', () => {
         for (const test of ALL_TYPES_TEST) {
             it(test.name, () => {
-                if (test.queryConfig)
-                    db().open({query: test.queryConfig});
+                if (test.queryConfig) db().open({ query: test.queryConfig });
 
                 conn = db().connect();
 
@@ -236,8 +236,7 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('Test All Types Async', () => {
         for (const test of ALL_TYPES_TEST) {
             it(test.name, async () => {
-                if (test.queryConfig)
-                    db().open({query: test.queryConfig});
+                if (test.queryConfig) db().open({ query: test.queryConfig });
 
                 conn = await db().connect();
                 const results = await conn.query(test.query);
