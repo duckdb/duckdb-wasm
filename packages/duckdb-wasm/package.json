@@ -30,7 +30,7 @@
         "@types/emscripten": "^1.39.6"
     },
     "devDependencies": {
-        "@types/jasmine": "^3.10.2",
+        "@types/jasmine": "^3.10.3",
         "@typescript-eslint/eslint-plugin": "^5.8.1",
         "@typescript-eslint/parser": "^5.8.1",
         "esbuild": "^0.14.10",
