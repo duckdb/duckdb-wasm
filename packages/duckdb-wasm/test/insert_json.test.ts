@@ -2,9 +2,9 @@ import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
 import { Column, compareTable } from './table_test';
 
-function itBrowser(expectation: string, assertion?: jasmine.ImplementationCallback, timeout?: number): void {
+function describeBrowser(description: string, specDefinitions: () => void): void {
     if (typeof window !== 'undefined') {
-        it(expectation, assertion, timeout);
+        describe(description, specDefinitions);
     }
 }
 
@@ -134,9 +134,9 @@ export function testJSONInsertAsync(db: () => duckdb.AsyncDuckDB): void {
         }
     });
 
-    describe('JSON Insert Blob Async', () => {
+    describeBrowser('JSON Insert Blob Async', () => {
         for (const test of JSON_INSERT_TESTS) {
-            itBrowser(test.name, async () => {
+            it(test.name, async () => {
                 await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 const blob = new Blob([buffer]);

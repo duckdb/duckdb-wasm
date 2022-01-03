@@ -27,13 +27,13 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             });
         });
 
-        describe('Open', () => {
-            // XXX apparently synchronous XHR on the main thread does not allow for arraybuffer response type?
-            // it('Remote TPCH 0_01', async () => {
-            //     await db().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
-            //     db().open('tpch_0_01.db');
-            // });
-        });
+        //describe('Open', () => {
+        // XXX apparently synchronous XHR on the main thread does not allow for arraybuffer response type?
+        // it('Remote TPCH 0_01', async () => {
+        //     await db().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
+        //     db().open('tpch_0_01.db');
+        // });
+        //});
 
         describe('Reset', () => {
             it('table must disappear', async () => {
