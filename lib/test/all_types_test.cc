@@ -14,9 +14,9 @@
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
 #include "duckdb/web/environment.h"
+#include "duckdb/web/json_parser.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
-#include "duckdb/web/json_parser.h"
 
 using namespace duckdb::web;
 using namespace std;
@@ -92,13 +92,16 @@ shared_ptr<arrow::Array> GetExpectedIntArray() {
 
 shared_ptr<arrow::Array> GetExpectedStringArray() {
     auto type = arrow::list(arrow::field("l", make_shared<arrow::StringType>()));
-    return duckdb::web::json::ArrayFromJSON(type, "[[], [\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"], null]").ValueOrDie();
+    return duckdb::web::json::ArrayFromJSON(type, "[[], [\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"], null]")
+        .ValueOrDie();
 }
 
 shared_ptr<arrow::Array> GetExpectedNestedIntArray() {
     auto nested_array_type = arrow::list(arrow::field("l", arrow::int32()));
     auto array_type = arrow::list(arrow::field("l", nested_array_type));
-    return duckdb::web::json::ArrayFromJSON(array_type, "[[], [[], [42, 999, null, null, -42], null, [], [42, 999, null, null, -42]], null]").ValueOrDie();
+    return duckdb::web::json::ArrayFromJSON(
+               array_type, "[[], [[], [42, 999, null, null, -42], null, [], [42, 999, null, null, -42]], null]")
+        .ValueOrDie();
 }
 
 shared_ptr<arrow::Array> GetExpectedStructArray() {
@@ -106,7 +109,9 @@ shared_ptr<arrow::Array> GetExpectedStructArray() {
     auto value_b_field = arrow::field("b", make_shared<arrow::StringType>());
     vector<shared_ptr<arrow::Field>> fields = {value_a_field, value_b_field};
     auto type = arrow::struct_(fields);
-    return duckdb::web::json::ArrayFromJSON(type, "[{\"a\":null,\"b\":null}, {\"a\":42,\"b\":\"🦆🦆🦆🦆🦆🦆\"}, null]").ValueOrDie();
+    return duckdb::web::json::ArrayFromJSON(
+               type, "[{\"a\":null,\"b\":null}, {\"a\":42,\"b\":\"🦆🦆🦆🦆🦆🦆\"}, null]")
+        .ValueOrDie();
 };
 
 shared_ptr<arrow::Array> GetExpectedStructOfArrayArray() {
@@ -114,7 +119,10 @@ shared_ptr<arrow::Array> GetExpectedStructOfArrayArray() {
     auto value_b_type = arrow::list(arrow::field("l", make_shared<arrow::StringType>()));
     vector<shared_ptr<arrow::Field>> fields = {arrow::field("a", value_a_type), arrow::field("b", value_b_type)};
     auto type = arrow::struct_(fields);
-    return duckdb::web::json::ArrayFromJSON(type, "[{\"a\": null, \"b\": null}, {\"a\": [42, 999, null, null, -42], \"b\": [\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"]}, null]").ValueOrDie();
+    return duckdb::web::json::ArrayFromJSON(type,
+                                            "[{\"a\": null, \"b\": null}, {\"a\": [42, 999, null, null, -42], \"b\": "
+                                            "[\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"]}, null]")
+        .ValueOrDie();
 }
 
 shared_ptr<arrow::Array> GetExpectedArrayOfStructsArray() {
@@ -122,7 +130,10 @@ shared_ptr<arrow::Array> GetExpectedArrayOfStructsArray() {
                                                arrow::field("b", make_shared<arrow::StringType>())};
     auto type = arrow::struct_(fields);
     auto array_type = arrow::list(arrow::field("l", type));
-    return duckdb::web::json::ArrayFromJSON(array_type, "[[], [{\"a\": null, \"b\": null}, {\"a\": 42, \"b\": \"🦆🦆🦆🦆🦆🦆\"}, null], null]").ValueOrDie();
+    return duckdb::web::json::ArrayFromJSON(
+               array_type,
+               "[[], [{\"a\": null, \"b\": null}, {\"a\": 42, \"b\": \"🦆🦆🦆🦆🦆🦆\"}, null], null]")
+        .ValueOrDie();
 }
 
 shared_ptr<arrow::Array> GetExpectedMapArray() {
@@ -143,46 +154,49 @@ shared_ptr<arrow::Array> GetExpectedMapArray() {
     return map_array_builder->Finish().ValueOrDie();
 }
 
-vector<string> SUPPORTED_TYPES = {
-    "bool",
-    "tinyint",
-    "smallint",
-    "int",
-    "bigint",
-    "utinyint",
-    "usmallint",
-    "uint",
-    "ubigint",
-    "hugeint",
-    "time",
-    "time_tz",
-    "date",
-    "float",
-    "double",
-    "varchar",
-    "small_enum",
-    "medium_enum",
-    "large_enum",
-    "int_array",
-    "varchar_array",
-    "nested_int_array",
-    "struct",
-    "struct_of_arrays",
-    "array_of_structs",
-    "map",
-    "dec_4_1",
-    "dec_9_4",
-    "dec_18_3",
-    "dec38_10",
-    "blob"
-};
+vector<string> SUPPORTED_TYPES = {"bool",
+                                  "tinyint",
+                                  "smallint",
+                                  "int",
+                                  "bigint",
+                                  "utinyint",
+                                  "usmallint",
+                                  "uint",
+                                  "ubigint",
+                                  "hugeint",
+                                  "time",
+                                  "time_tz",
+                                  "date",
+                                  "float",
+                                  "double",
+                                  "varchar",
+                                  "small_enum",
+                                  "medium_enum",
+                                  "large_enum",
+                                  "int_array",
+                                  "varchar_array",
+                                  "nested_int_array",
+                                  "struct",
+                                  "struct_of_arrays",
+                                  "array_of_structs",
+                                  "map",
+                                  "dec_4_1",
+                                  "dec_9_4",
+                                  "dec_18_3",
+                                  "dec38_10",
+                                  "blob"};
 
 vector<string> UNSUPPORTED_TYPES = {
     // Does not work full range as it overflows during multiplication
-    "timestamp", "interval",
+    "timestamp",
+    "interval",
 
     // Awaiting Timezone implementation in duckdb to allow patching range: is only partially supported
-    "timestamp_s", "timestamp_ms", "timestamp_ns", "date_tz", "timestamp_tz",
+    "timestamp_s",
+    "timestamp_ms",
+    "timestamp_ns",
+    "date_tz",
+    "timestamp_tz",
 
     // Currently does not work
     "uuid",
@@ -248,10 +262,11 @@ TEST(AllTypesTest, FullRangeTypes) {
     AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time_tz", 0, 86399999999, batch,
                                                         arrow::time64(arrow::TimeUnit::MICRO));
     AssertSimpleTypeCorrect<arrow::Date32Type, int32_t>("date", numeric_limits<int32_t>::min(),
-                                                          numeric_limits<int32_t>::max(), batch);
+                                                        numeric_limits<int32_t>::max(), batch);
 
     AssertSimpleTypeCorrect<arrow::StringType>("varchar", "🦆🦆🦆🦆🦆🦆", "goose", batch);
-    AssertSimpleTypeCorrect<arrow::BinaryType>("blob", "thisisalongblob\x00withnullbytes"s, "\x5Cx00\x5Cx00\x5Cx00a"s, batch);
+    AssertSimpleTypeCorrect<arrow::BinaryType>("blob", "thisisalongblob\x00withnullbytes"s, "\x5Cx00\x5Cx00\x5Cx00a"s,
+                                               batch);
 
     // Decimal types
     AssertParamTypeCorrect<arrow::Decimal128Type>("dec_4_1", arrow::Decimal128("-999.9"), arrow::Decimal128("999.9"),
@@ -265,9 +280,9 @@ TEST(AllTypesTest, FullRangeTypes) {
         "dec38_10", arrow::Decimal128("-9999999999999999999999999999.9999999999"),
         arrow::Decimal128("9999999999999999999999999999.9999999999"), batch, arrow::decimal128(38, 10));
     // HugeInt from DuckDB is also emitted as a decimal
-    AssertParamTypeCorrect<arrow::Decimal128Type>("hugeint", arrow::Decimal128("-170141183460469231731687303715884105727"),
-                                                  arrow::Decimal128("170141183460469231731687303715884105727"), batch,
-                                                  arrow::decimal128(38, 0));
+    AssertParamTypeCorrect<arrow::Decimal128Type>(
+        "hugeint", arrow::Decimal128("-170141183460469231731687303715884105727"),
+        arrow::Decimal128("170141183460469231731687303715884105727"), batch, arrow::decimal128(38, 0));
 
     // Enum types
     vector<string> dictionary_small = {"DUCK_DUCK_ENUM", "GOOSE"};
