@@ -278,6 +278,7 @@ endif()
 
 if(NOT EMSCRIPTEN)
   set(TEST_CC
+      ${CMAKE_SOURCE_DIR}/test/all_types_test.cc
       ${CMAKE_SOURCE_DIR}/test/arrow_casts_test.cc
       ${CMAKE_SOURCE_DIR}/test/bugs_test.cc
       ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
