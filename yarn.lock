@@ -3677,10 +3677,10 @@ jasmine-spec-reporter@^7.0.0:
   dependencies:
     colors "1.4.0"
 
-jasmine@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-4.0.0.tgz#7e924f75dbda7a8b96d3920d57249eb65c5fdc75"
-  integrity sha512-7htNYss1Bd6Dc3bPMWCFH17kaQyfau7cSOALco6RympKLLBFINW6Io4xNJqNGgU2ZYlqNmiXS1W+mjFTqa09xQ==
+jasmine@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-4.0.1.tgz#5e9074bcd40c41af62c20d28b90bf80bdd9aa5ed"
+  integrity sha512-NAf9b80ie0pAXLW2l+Fxc8s0Q6SjVgi81jOyHJRQuZ+fPjbVAnXNfN2nIwf5yoRjoSTROyRiETjr9Cr+nNBTVw==
   dependencies:
     glob "^7.1.6"
     jasmine-core "^4.0.0"
