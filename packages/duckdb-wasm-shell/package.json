@@ -30,7 +30,7 @@
         "react-dom": "^17.0.2",
         "react-dropzone": "^11.4.2",
         "react-popper-tooltip": "^4.3.1",
-        "react-resize-detector": "^6.7.7",
+        "react-resize-detector": "^7.0.0",
         "react-router-dom": "^6.2.1",
         "xterm": "^4.16.0",
         "xterm-addon-fit": "^0.5.0",
