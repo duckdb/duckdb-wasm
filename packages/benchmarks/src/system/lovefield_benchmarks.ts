@@ -1,5 +1,4 @@
 import * as lf from 'lovefield-ts/dist/es6/lf.js';
-import * as faker from 'faker';
 import * as arrow from 'apache-arrow';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import { generate2Int32, generateGroupedInt32, generateInt32, generateUtf8, generateXInt32 } from './data_generator';
@@ -975,8 +974,6 @@ export class LovefieldRegexScanBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-
         // Create table
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
         const tableBuilder = this.builder!.createTable(this.getName());
@@ -1047,7 +1044,6 @@ export class LovefieldIntegerSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
         const tableBuilder = this.builder!.createTable(this.getName());
         tableBuilder.addColumn('v0', lf.Type.INTEGER);
@@ -1122,8 +1118,6 @@ export class LovefieldIntegerSortBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
         const tableBuilder = this.builder!.createTable(this.getName());
         const columns = generateXInt32(this.tuples, this.columnCount);
@@ -1205,8 +1199,6 @@ export class LovefieldIntegerTopKBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-
         this.builder = lf.schema.create(`${this.getName()}_schema`, 1);
         const tableBuilder = this.builder!.createTable(this.getName());
         const columns = generateXInt32(this.tuples, this.columnCount);
@@ -1285,7 +1277,6 @@ export class LovefieldIntegerJoin2Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const valuesA = generateInt32(this.tuplesA);
         const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
 
@@ -1381,7 +1372,6 @@ export class LovefieldIntegerJoin3Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const valuesA = generateInt32(this.tuplesA);
         const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
         const [valuesC0, valuesC1] = generate2Int32(this.tuplesC, this.stepBC);

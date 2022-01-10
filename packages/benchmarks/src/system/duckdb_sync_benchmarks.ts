@@ -1,6 +1,5 @@
 import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import * as arrow from 'apache-arrow';
-import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import {
     generateArrowInt32,
@@ -201,7 +200,6 @@ export class DuckDBSyncIntegerSortBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
         this.connection = this.database.connect();
         this.connection.insertArrowTable(new arrow.Table(schema, batches), {
@@ -272,7 +270,6 @@ export class DuckDBSyncIntegerTopKBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
         this.connection = this.database.connect();
         this.connection.insertArrowTable(new arrow.Table(schema, batches), {
@@ -330,7 +327,6 @@ export class DuckDBSyncIntegerSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowGroupedInt32(this.tuples, this.groupSize);
         this.connection = this.database.connect();
         this.connection.insertArrowTable(new arrow.Table(schema, batches), {
@@ -387,7 +383,6 @@ export class DuckDBSyncCSVSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const csv = generateCSVGroupedInt32(this.tuples, this.groupSize);
         const encoder = new TextEncoder();
         const buffer = encoder.encode(csv);
@@ -445,7 +440,6 @@ export class DuckDBSyncRegexBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
         this.connection = this.database.connect();
         this.connection.insertArrowTable(new arrow.Table(schema, batches), {
@@ -507,7 +501,6 @@ export class DuckDBSyncIntegerJoin2Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         this.connection = this.database.connect();
@@ -592,7 +585,6 @@ export class DuckDBSyncIntegerJoin3Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         const [schemaC, batchesC] = generateArrow2Int32(this.tuplesC, this.stepBC);
