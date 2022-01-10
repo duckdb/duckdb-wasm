@@ -1,9 +1,10 @@
-import * as faker from 'faker';
-
 export function shuffle<T>(array: T[]): T[] {
-    for (let i = 0; i < array.length; ++i) {
-        const j = Math.floor(faker.datatype.number(i));
-        [array[i], array[j]] = [array[j], array[i]];
+    let currentIndex = array.length,
+        randomIndex;
+    while (currentIndex != 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
     }
     return array;
 }

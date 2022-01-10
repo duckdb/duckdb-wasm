@@ -1,5 +1,4 @@
 import * as arrow from 'apache-arrow';
-import * as faker from 'faker';
 import * as sqljs from 'sql.js';
 import { sqlCreate, sqlInsert } from './simple_sql';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
@@ -96,7 +95,6 @@ export class SqljsRegexBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const values = generateUtf8(this.tuples, this.chars);
         this.database = new this.initDB.Database();
         const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Utf8())]);
@@ -151,7 +149,6 @@ export class SqljsIntegerSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [values0, values1] = generateGroupedInt32(this.tuples, this.groupSize);
         this.database = new this.initDB.Database();
         const schema = new arrow.Schema([
@@ -215,7 +212,6 @@ export class SqljsIntegerSortBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const columns = generateXInt32(this.tuples, this.columnCount);
         this.database = new this.initDB.Database();
         const fields = columns.map((_c, i) => new arrow.Field(`v${i}`, new arrow.Int32()));
@@ -277,7 +273,6 @@ export class SqljsIntegerTopKBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const columns = generateXInt32(this.tuples, this.columnCount);
         this.database = new this.initDB.Database();
         const fields = columns.map((_c, i) => new arrow.Field(`v${i}`, new arrow.Int32()));
@@ -338,7 +333,6 @@ export class SqljsIntegerJoin2Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const valuesA = generateInt32(this.tuplesA);
         const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
         this.database = new this.initDB.Database();
@@ -423,8 +417,6 @@ export class SqljsIntegerJoin3Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
-        faker.seed(ctx.seed);
         const valuesA = generateInt32(this.tuplesA);
         const [valuesB0, valuesB1] = generate2Int32(this.tuplesB, this.stepAB);
         const [valuesC0, valuesC1] = generate2Int32(this.tuplesC, this.stepBC);

@@ -1,6 +1,5 @@
 import * as arrow from 'apache-arrow';
 import * as aq from 'arquero';
-import * as faker from 'faker';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import {
     generateArrow2Int32,
@@ -712,7 +711,6 @@ export class ArqueroIntegerSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowGroupedInt32(this.tuples, this.groupSize);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
@@ -768,7 +766,6 @@ export class ArqueroIntegerSortBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
@@ -822,7 +819,6 @@ export class ArqueroIntegerTopKBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
@@ -870,7 +866,6 @@ export class ArqueroCSVSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         this.csvBuffer = generateCSVGroupedInt32(this.tuples, this.groupSize);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -921,7 +916,6 @@ export class ArqueroJSONSumBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         this.jsonBuffer = generateJSONGroupedInt32(this.tuples, this.groupSize);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -971,7 +965,6 @@ export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         const tableA = new arrow.Table(schemaA, batchesA);
@@ -1038,7 +1031,6 @@ export class ArqueroIntegerJoin3Benchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         const [schemaC, batchesC] = generateArrow2Int32(this.tuplesC, this.stepBC);
@@ -1103,7 +1095,6 @@ export class ArqueroRegexBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        faker.seed(ctx.seed);
         const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
         const table = new arrow.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
