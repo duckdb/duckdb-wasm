@@ -8,9 +8,9 @@ import * as arrow from 'apache-arrow';
                 mainModule: './duckdb.wasm',
                 mainWorker: './duckdb-browser.worker.js',
             },
-            next: {
-                mainModule: './duckdb-next.wasm',
-                mainWorker: './duckdb-browser-next.worker.js',
+            eh: {
+                mainModule: './duckdb-eh.wasm',
+                mainWorker: './duckdb-browser-eh.worker.js',
             },
         });
 

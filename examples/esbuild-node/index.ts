@@ -14,9 +14,9 @@ const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
                 mainModule: path.resolve(DUCKDB_DIST, './duckdb.wasm'),
                 mainWorker: path.resolve(DUCKDB_DIST, './duckdb-node.worker.cjs'),
             },
-            next: {
-                mainModule: path.resolve(DUCKDB_DIST, './duckdb-next.wasm'),
-                mainWorker: path.resolve(DUCKDB_DIST, './duckdb-node-next.worker.cjs'),
+            eh: {
+                mainModule: path.resolve(DUCKDB_DIST, './duckdb-eh.wasm'),
+                mainWorker: path.resolve(DUCKDB_DIST, './duckdb-node-eh.worker.cjs'),
             },
         });
 

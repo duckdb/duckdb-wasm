@@ -200,33 +200,33 @@ wasm_caches:
 
 # Build the wasm module with debug info
 .PHONY: wasm
-wasm_fast_next: wasm_caches
+wasm_fast_eh: wasm_caches
 	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast next
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast eh
 
 # Build the wasm module with debug info
 .PHONY: wasm
 wasm: wasm_caches
 	mkdir -p ${CACHE_DIRS}
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast default
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast next
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast next_coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast coi
 
 # Build the wasm modules with all debug info
 .PHONY: wasm_debug
 wasm_debug: wasm_caches
 	mkdir -p ${CACHE_DIRS}
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug default
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug next
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug next_coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
 
 # Build the wasm modules
 .PHONY: wasm_release
 wasm_release: wasm_caches
 	mkdir -p ${CACHE_DIRS}
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release default
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release next
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release next_coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release coi
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug

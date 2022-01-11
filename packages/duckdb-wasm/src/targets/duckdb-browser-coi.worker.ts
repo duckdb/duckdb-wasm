@@ -1,5 +1,5 @@
 import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel';
-import { DuckDB } from '../bindings/bindings_browser_next_coi';
+import { DuckDB } from '../bindings/bindings_browser_coi';
 import { DuckDBBindings } from '../bindings';
 import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
 

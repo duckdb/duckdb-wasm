@@ -8,14 +8,14 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
         mainModule: new URL('/static/duckdb.wasm', window.location.href).href,
         mainWorker: new URL('/static/duckdb-browser.worker.js', window.location.href).href,
     },
-    next: {
-        mainModule: new URL('/static/duckdb-next.wasm', window.location.href).href,
-        mainWorker: new URL('/static/duckdb-browser-next.worker.js', window.location.href).href,
+    eh: {
+        mainModule: new URL('/static/duckdb-eh.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-eh.worker.js', window.location.href).href,
     },
-    nextCOI: {
-        mainModule: new URL('/static/duckdb-next-coi.wasm', window.location.href).href,
-        mainWorker: new URL('/static/duckdb-browser-next-coi.worker.js', window.location.href).href,
-        pthreadWorker: new URL('/static/duckdb-browser-next-coi.pthread.worker.js', window.location.href).href,
+    coi: {
+        mainModule: new URL('/static/duckdb-coi.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-coi.worker.js', window.location.href).href,
+        pthreadWorker: new URL('/static/duckdb-browser-coi.pthread.worker.js', window.location.href).href,
     },
 };
 let DUCKDB_BUNDLE: duckdb.DuckDBBundle | null = null;
@@ -27,13 +27,13 @@ describe('wasm check', () => {
             (await check.exceptions()) &&
             (await check.threads())
         ) {
-            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.nextCOI!.mainModule);
-            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.nextCOI!.mainWorker);
-            expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(DUCKDB_BUNDLES.nextCOI!.pthreadWorker);
+            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.coi!.mainModule);
+            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.coi!.mainWorker);
+            expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(DUCKDB_BUNDLES.coi!.pthreadWorker);
         }
         if ((await check.exceptions()) && !(await check.threads())) {
-            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.next!.mainModule);
-            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.next!.mainWorker);
+            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.eh!.mainModule);
+            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.eh!.mainWorker);
             expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(null);
         }
         if (!(await check.exceptions())) {

@@ -1,19 +1,19 @@
-import DuckDBWasm from './duckdb-next.js';
-import { DuckDBBrowserBindings } from './bindings_browser_base';
+import DuckDBWasm from './duckdb-eh.js';
 import { DuckDBModule } from './duckdb_module';
+import { DuckDBNodeBindings } from './bindings_node_base.js';
 import { DuckDBRuntime } from './runtime';
 import { Logger } from '../log';
 
-/** DuckDB bindings for the browser */
-export class DuckDB extends DuckDBBrowserBindings {
+/** DuckDB bindings for node.js */
+export class DuckDB extends DuckDBNodeBindings {
     /** Constructor */
     public constructor(
         logger: Logger,
         runtime: DuckDBRuntime,
-        mainModuleURL: string,
-        pthreadWorkerURL: string | null = null,
+        mainModulePath: string,
+        pthreadWorkerPath: string | null = null,
     ) {
-        super(logger, runtime, mainModuleURL, pthreadWorkerURL);
+        super(logger, runtime, mainModulePath, pthreadWorkerPath);
     }
 
     /** Instantiate the bindings */

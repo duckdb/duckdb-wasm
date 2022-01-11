@@ -6,11 +6,11 @@ export interface DuckDBBundles {
         mainModule: string;
         mainWorker: string;
     };
-    next?: {
+    eh?: {
         mainModule: string;
         mainWorker: string;
     };
-    nextCOI?: {
+    coi?: {
         mainModule: string;
         mainWorker: string;
         pthreadWorker: string;
@@ -24,11 +24,11 @@ export function getJsDelivrBundles(): DuckDBBundles {
             mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
             mainWorker: `${jsdelivr_dist_url}duckdb-browser.worker.js`,
         },
-        next: {
-            mainModule: `${jsdelivr_dist_url}duckdb-next.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser-next.worker.js`,
+        eh: {
+            mainModule: `${jsdelivr_dist_url}duckdb-eh.wasm`,
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-eh.worker.js`,
         },
-        // Next COI is still experimental, let the user opt in explicitly
+        // COI is still experimental, let the user opt in explicitly
     };
 }
 
@@ -53,7 +53,7 @@ let wasmThreads: boolean | null = null;
 let wasmSIMD: boolean | null = null;
 let wasmBulkMemory: boolean | null = null;
 
-// eslint-disable-next-line @typescript-eslint/no-namespace
+// eslint-disable-eh-line @typescript-eslint/no-namespace
 declare namespace globalThis {
     let crossOriginIsolated: boolean;
 }
@@ -90,18 +90,18 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 
 export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
     const platform = await getPlatformFeatures();
-    if (platform.wasmExceptions && platform.wasmSIMD) {
-        if (platform.wasmThreads && platform.crossOriginIsolated && bundles.nextCOI) {
+    if (platform.wasmExceptions) {
+        if (platform.wasmSIMD && platform.wasmThreads && platform.crossOriginIsolated && bundles.coi) {
             return {
-                mainModule: bundles.nextCOI.mainModule,
-                mainWorker: bundles.nextCOI.mainWorker,
-                pthreadWorker: bundles.nextCOI.pthreadWorker,
+                mainModule: bundles.coi.mainModule,
+                mainWorker: bundles.coi.mainWorker,
+                pthreadWorker: bundles.coi.pthreadWorker,
             };
         }
-        if (bundles.next) {
+        if (bundles.eh) {
             return {
-                mainModule: bundles.next.mainModule,
-                mainWorker: bundles.next.mainWorker,
+                mainModule: bundles.eh.mainModule,
+                mainWorker: bundles.eh.mainWorker,
                 pthreadWorker: null,
             };
         }

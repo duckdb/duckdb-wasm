@@ -21,15 +21,15 @@ import * as duckdb from '@duckdb/duckdb-wasm';
 
 // Either bundle them manually, for example as Webpack assets
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
-import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-next.wasm';
+import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser.worker.js', import.meta.url).toString(),
     },
-    next: {
+    eh: {
         mainModule: duckdb_wasm_next,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-next.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
     },
 };
 // ..., or load the bundles from jsdelivr

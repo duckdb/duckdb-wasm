@@ -22,13 +22,13 @@ import { fileURLToPath } from 'url';
 //   duckdb-browser.mjs                           - ESM Default Browser Bundle
 //   duckdb-browser-blocking.mjs                  - ESM Blocking Browser Bundle (synchronous API, unstable)
 //   duckdb-browser.worker.js                     - IIFE Web Worker for Wasm MVP
-//   duckdb-browser-next.worker.js                - IIFE Web Worker with Wasm EH
-//   duckdb-browser-next-coi.worker.js            - IIFE Web Worker with Wasm EH + COI
-//   duckdb-browser-next-coi.pthread.worker.js    - IIFE PThread Worker with Wasm EH + COI
+//   duckdb-browser-eh.worker.js                - IIFE Web Worker with Wasm EH
+//   duckdb-browser-coi.worker.js            - IIFE Web Worker with Wasm EH + COI
+//   duckdb-browser-coi.pthread.worker.js    - IIFE PThread Worker with Wasm EH + COI
 //   duckdb-node.cjs                              - CommonJS Default Node Bundle
 //   duckdb-node-blocking.cjs                     - CommonJS Blocking Node Bundle (synchronous API, unstable)
 //   duckdb-node.worker.cjs                       - CommonJS Worker for Wasm MVP
-//   duckdb-node-next.worker.cjs                  - CommonJS Worker with Wasm EH
+//   duckdb-node-eh.worker.cjs                  - CommonJS Worker with Wasm EH
 //   tests-browser.js                             - IIFE Jasmine Karma tests
 //   tests-node.cjs                               - CommonJS Jasmine Node tests
 //
@@ -93,12 +93,8 @@ rimraf.sync(`${dist}/*.cjs.map`);
 
 const src = path.resolve(__dirname, 'src');
 fs.copyFile(path.resolve(src, 'bindings', 'duckdb.wasm'), path.resolve(dist, 'duckdb.wasm'), printErr);
-fs.copyFile(path.resolve(src, 'bindings', 'duckdb-next.wasm'), path.resolve(dist, 'duckdb-next.wasm'), printErr);
-fs.copyFile(
-    path.resolve(src, 'bindings', 'duckdb-next-coi.wasm'),
-    path.resolve(dist, 'duckdb-next-coi.wasm'),
-    printErr,
-);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb-eh.wasm'), path.resolve(dist, 'duckdb-eh.wasm'), printErr);
+fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist, 'duckdb-coi.wasm'), printErr);
 
 // -------------------------------
 // Browser bundles
@@ -181,10 +177,10 @@ esbuild.build({
     define: { 'process.release.name': '"browser"' },
 });
 
-console.log('[ ESBUILD ] duckdb-browser-next.worker.js');
+console.log('[ ESBUILD ] duckdb-browser-eh.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-next.worker.ts'],
-    outfile: 'dist/duckdb-browser-next.worker.js',
+    entryPoints: ['./src/targets/duckdb-browser-eh.worker.ts'],
+    outfile: 'dist/duckdb-browser-eh.worker.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -196,10 +192,10 @@ esbuild.build({
     define: { 'process.release.name': '"browser"' },
 });
 
-console.log('[ ESBUILD ] duckdb-browser-next-coi.worker.js');
+console.log('[ ESBUILD ] duckdb-browser-coi.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-next-coi.worker.ts'],
-    outfile: 'dist/duckdb-browser-next-coi.worker.js',
+    entryPoints: ['./src/targets/duckdb-browser-coi.worker.ts'],
+    outfile: 'dist/duckdb-browser-coi.worker.js',
     platform: 'browser',
     format: 'iife',
     globalName: 'duckdb',
@@ -211,10 +207,10 @@ esbuild.build({
     define: { 'process.release.name': '"browser"' },
 });
 
-console.log('[ ESBUILD ] duckdb-browser-next-coi.pthread.worker.js');
+console.log('[ ESBUILD ] duckdb-browser-coi.pthread.worker.js');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-browser-next-coi.pthread.worker.ts'],
-    outfile: 'dist/duckdb-browser-next-coi.pthread.worker.js',
+    entryPoints: ['./src/targets/duckdb-browser-coi.pthread.worker.ts'],
+    outfile: 'dist/duckdb-browser-coi.pthread.worker.js',
     platform: 'browser',
     format: 'iife',
     target: TARGET_BROWSER,
@@ -268,10 +264,10 @@ esbuild.build({
     external: EXTERNALS_NODE,
 });
 
-console.log('[ ESBUILD ] duckdb-node-next.worker.cjs');
+console.log('[ ESBUILD ] duckdb-node-eh.worker.cjs');
 esbuild.build({
-    entryPoints: ['./src/targets/duckdb-node-next.worker.ts'],
-    outfile: 'dist/duckdb-node-next.worker.cjs',
+    entryPoints: ['./src/targets/duckdb-node-eh.worker.ts'],
+    outfile: 'dist/duckdb-node-eh.worker.cjs',
     platform: 'node',
     format: 'cjs',
     target: TARGET_NODE,
@@ -315,8 +311,8 @@ esbuild.build({
 
 // Browser declarations
 fs.writeFile(path.join(dist, 'duckdb-browser.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
-fs.writeFile(path.join(dist, 'duckdb-browser-next.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
-fs.writeFile(path.join(dist, 'duckdb-browser-next-coi.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
+fs.writeFile(path.join(dist, 'duckdb-browser-eh.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
+fs.writeFile(path.join(dist, 'duckdb-browser-coi.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
 fs.writeFile(
     path.join(dist, 'duckdb-browser-blocking.d.ts'),
     "export * from './types/src/targets/duckdb-browser-blocking';",
@@ -325,8 +321,8 @@ fs.writeFile(
 
 // Node declarations
 fs.writeFile(path.join(dist, 'duckdb-node.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
-fs.writeFile(path.join(dist, 'duckdb-node-next.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
-fs.writeFile(path.join(dist, 'duckdb-node-next-coi.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
+fs.writeFile(path.join(dist, 'duckdb-node-eh.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
+fs.writeFile(path.join(dist, 'duckdb-node-coi.d.ts'), "export * from './types/src/targets/duckdb';", printErr);
 fs.writeFile(
     path.join(dist, 'duckdb-node-blocking.d.ts'),
     "export * from './types/src/targets/duckdb-node-blocking';",

@@ -45,9 +45,9 @@ beforeAll(async () => {
             mainModule: path.resolve(__dirname, './duckdb.wasm'),
             mainWorker: path.resolve(__dirname, './duckdb-node.worker.cjs'),
         },
-        next: {
-            mainModule: path.resolve(__dirname, './duckdb-next.wasm'),
-            mainWorker: path.resolve(__dirname, './duckdb-node-next.worker.cjs'),
+        eh: {
+            mainModule: path.resolve(__dirname, './duckdb-eh.wasm'),
+            mainWorker: path.resolve(__dirname, './duckdb-node-eh.worker.cjs'),
         },
     };
     const DUCKDB_CONFIG = await duckdb.selectBundle(DUCKDB_BUNDLES);

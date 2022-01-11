@@ -26,13 +26,13 @@ case $MODE in
 esac
 case $FEATURES in
   "default") ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS}" ;;
-  "next")
+  "eh")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1"
-    SUFFIX="-next"
+    SUFFIX="-eh"
     ;;
-  "next_coi")
+  "coi")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DWITH_WASM_THREADS=1 -DWITH_WASM_SIMD=1 -DWITH_WASM_BULK_MEMORY=1"
-    SUFFIX="-next-coi"
+    SUFFIX="-coi"
     ;;
    *) ;;
 esac
@@ -70,7 +70,7 @@ if [ -f ${BUILD_DIR}/duckdb_wasm.worker.js ]; then
 
   # Expose the module.
   # This will allow us to reuse the generated pthread handler and only overwrite the loading.
-  # More info: duckdb-browser-async-next-coi.pthread.worker.ts
+  # More info: duckdb-browser-async-coi.pthread.worker.ts
   printf "\nexport const onmessage = self.onmessage;\nexport function getModule() { return Module; }\nexport function setModule(m) { Module = m; }\n" \
     >> ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.pthread.js
 fi

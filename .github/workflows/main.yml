@@ -414,8 +414,8 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb.wasm
                   retention-days: 1
 
-    wasm_next:
-        name: WASM / Next
+    wasm_eh:
+        name: WASM / EH
         runs-on: ubuntu-latest
         needs:
             - native_debug
@@ -436,10 +436,10 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm6-next-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-wasm6-eh-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm6-next-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm6-next-
+                      ${{ runner.os }}-wasm6-eh-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm6-eh-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -454,20 +454,20 @@ jobs:
               with:
                   script: |-
                       ccache -z
-                      ./scripts/wasm_build_lib.sh release next
+                      ./scripts/wasm_build_lib.sh release eh
                       ccache -s
 
             - name: Upload artifact
               uses: actions/upload-artifact@v2
               with:
-                  name: wasm-next
+                  name: wasm-eh
                   path: |
-                      ./packages/duckdb-wasm/src/bindings/duckdb-next.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb-next.wasm
+                      ./packages/duckdb-wasm/src/bindings/duckdb-eh.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-eh.wasm
                   retention-days: 1
 
-    wasm_next_coi:
-        name: WASM / Next COI
+    wasm_coi:
+        name: WASM / COI
         runs-on: ubuntu-latest
         needs:
             - native_debug
@@ -488,10 +488,10 @@ jobs:
                   path: |
                       ./.emscripten_cache
                       ./.ccache
-                  key: ${{ runner.os }}-wasm6-next-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
+                  key: ${{ runner.os }}-wasm6-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
                   restore-keys: |
-                      ${{ runner.os }}-wasm6-next-coi-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm6-next-coi-
+                      ${{ runner.os }}-wasm6-coi-${{ hashFiles('git_submodule_status.txt') }}
+                      ${{ runner.os }}-wasm6-coi-
 
             - name: Prepare repository
               uses: duckdb/duckdb-wasm-ci-env@v0.5
@@ -506,17 +506,17 @@ jobs:
               with:
                   script: |-
                       ccache -z
-                      ./scripts/wasm_build_lib.sh release next_coi
+                      ./scripts/wasm_build_lib.sh release coi
                       ccache -s
 
             - name: Upload artifact
               uses: actions/upload-artifact@v2
               with:
-                  name: wasm-next-coi
+                  name: wasm-coi
                   path: |
-                      ./packages/duckdb-wasm/src/bindings/duckdb-next-coi.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb-next-coi.pthread.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb-next-coi.wasm
+                      ./packages/duckdb-wasm/src/bindings/duckdb-coi.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-coi.pthread.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-coi.wasm
                   retention-days: 1
 
     js_libs:
@@ -524,8 +524,8 @@ jobs:
         runs-on: ubuntu-latest
         needs:
             - wasm_default
-            - wasm_next
-            - wasm_next_coi
+            - wasm_eh
+            - wasm_coi
             - dataprep
             - tpchgen
             - duckdb_shell
@@ -586,12 +586,12 @@ jobs:
 
             - uses: actions/download-artifact@v2
               with:
-                  name: wasm-next
+                  name: wasm-eh
                   path: ./packages/duckdb-wasm/src/bindings/
 
             - uses: actions/download-artifact@v2
               with:
-                  name: wasm-next-coi
+                  name: wasm-coi
                   path: ./packages/duckdb-wasm/src/bindings/
 
             - name: Prepare repository
