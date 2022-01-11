@@ -668,7 +668,7 @@ jobs:
               run: |
                   NPM_PUBLISH_TOKEN=${{ secrets.NPM_PUBLISH_TOKEN }} ./scripts/npm_version.sh publish || true
 
-            - name: Deploy GitHub Pages
+            - name: Deploy GitHub Page
               if: github.ref == 'refs/heads/master'
               run: |
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
