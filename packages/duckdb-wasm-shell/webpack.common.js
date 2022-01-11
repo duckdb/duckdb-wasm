@@ -60,7 +60,7 @@ export function configure(params) {
                     type: 'webassembly/async',
                 },
                 {
-                    test: /.*duckdb(|-next|-next-coi)\.wasm$/,
+                    test: /.*duckdb(|-eh|-coi)\.wasm$/,
                     type: 'asset/resource',
                     generator: {
                         filename: 'static/wasm/[name].[contenthash][ext]',
