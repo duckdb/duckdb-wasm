@@ -15,8 +15,8 @@ import 'react-popper-tooltip/dist/styles.css';
 
 import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
-import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
-import duckdb_wasm_next_coi from '@duckdb/duckdb-wasm/dist/duckdb-coi.wasm';
+import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
+import duckdb_wasm_coi from '@duckdb/duckdb-wasm/dist/duckdb-coi.wasm';
 
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -24,11 +24,11 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser.worker.js', import.meta.url).toString(),
     },
     eh: {
-        mainModule: duckdb_wasm_next,
+        mainModule: duckdb_wasm_eh,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
     },
     coi: {
-        mainModule: duckdb_wasm_next_coi,
+        mainModule: duckdb_wasm_coi,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-coi.worker.js', import.meta.url).toString(),
         pthreadWorker: new URL(
             '@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js',
@@ -52,11 +52,18 @@ const Shell_ = withNavBar(
 
 const Versus_ = withNavBar(() => <Versus />);
 
+const paths = /(.*)(\/versus|\/docs\/.*|\/)$/;
+const pathMatches = (window?.location?.pathname || '').match(paths);
+let basename = '/';
+if (pathMatches != null && pathMatches.length >= 2) {
+    basename = pathMatches[1];
+}
+
 const element = document.getElementById('root');
 ReactDOM.render(
     <FileRegistryProvider>
         <StaticOverlayProvider>
-            <BrowserRouter>
+            <BrowserRouter basename={basename}>
                 <Routes>
                     <Route path="/versus" element={<Versus_ />} />
                     <Route path="/" element={<Shell_ />} />

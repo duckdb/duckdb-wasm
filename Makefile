@@ -287,15 +287,10 @@ shell:
 shell_tests:
 	yarn workspace @duckdb/duckdb-wasm-shell build:tests
 
-# Build pages
-.PHONY: pages
-pages:
-	${ROOT_DIR}/scripts/build_pages.sh
-
 # Run a local pages server for tests
 .PHONY: pages_server
-pages_server:
-	python3 -m http.server 9003 --bind 127.0.0.1 --directory .pages
+shell_server:
+	python3 -m http.server 9003 --bind 127.0.0.1 --directory ./packages/duckdb-wasm-shell/build/release/
 
 # C++ formatting
 .PHONY: clang_format
