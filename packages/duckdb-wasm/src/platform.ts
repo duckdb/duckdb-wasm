@@ -53,7 +53,7 @@ let wasmThreads: boolean | null = null;
 let wasmSIMD: boolean | null = null;
 let wasmBulkMemory: boolean | null = null;
 
-// eslint-disable-eh-line @typescript-eslint/no-namespace
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare namespace globalThis {
     let crossOriginIsolated: boolean;
 }
