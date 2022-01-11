@@ -30,6 +30,7 @@ class WebFileSystem : public duckdb::FileSystem {
         BUFFER = 0,
         NATIVE = 1,
         HTTP = 3,
+        S3 = 4
     };
 
     /// A simple buffer.
@@ -156,6 +157,8 @@ class WebFileSystem : public duckdb::FileSystem {
     std::unordered_map<uint32_t, std::unique_ptr<ReadAheadBuffer>> readahead_buffers_ = {};
     /// The file statistics
     std::shared_ptr<io::FileStatisticsRegistry> file_statistics_;
+    /// Cache epoch for synchronization of the FileInfoCache in JS
+    std::atomic<uint32_t> cache_epoch_ = 1;
 
     /// Allocate a file id.
     /// XXX This could of course overflow....
@@ -172,16 +175,21 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Delete copy constructor
     WebFileSystem(const WebFileSystem &other) = delete;
 
+    /// Get the config
+    auto Config() const { return config_; }
+
     /// Get a file info as JSON string
     inline WebFile *GetFile(uint32_t file_id) const {
         return files_by_id_.count(file_id) ? files_by_id_.at(file_id).get() : nullptr;
     }
     /// Set a file descriptor
     arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor);
+    /// Write the global file info as a JSON
+    rapidjson::Value WriteGlobalFileInfo(rapidjson::Document &doc, uint32_t cache_epoch);
     /// Write the file info as JSON
-    rapidjson::Value WriteFileInfo(rapidjson::Document &doc, uint32_t file_id);
+    rapidjson::Value WriteFileInfo(rapidjson::Document &doc, uint32_t file_id, uint32_t cache_epoch);
     /// Write the file info as JSON
-    rapidjson::Value WriteFileInfo(rapidjson::Document &doc, std::string_view file_name);
+    rapidjson::Value WriteFileInfo(rapidjson::Document &doc, std::string_view file_name, uint32_t cache_epoch);
     /// Register a file URL
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                                                   std::optional<uint64_t> file_size);
@@ -196,6 +204,9 @@ class WebFileSystem : public duckdb::FileSystem {
     void ConfigureFileStatistics(std::shared_ptr<FileStatisticsRegistry> registry);
     /// Collect file statistics
     void CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector);
+
+    // Increment the Cache epoch, this allows detecting stale fileInfoCaches from JS
+    void IncrementCacheEpoch();
 
    public:
     /// Open a file

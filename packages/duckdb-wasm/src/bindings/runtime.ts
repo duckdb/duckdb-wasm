@@ -38,16 +38,35 @@ export enum DuckDBDataProtocol {
     BUFFER = 0,
     NATIVE = 1,
     HTTP = 3,
+    S3 = 4,
+}
+
+/** Configuration for the AWS S3 Filesystem */
+export interface S3Config {
+    region?: string;
+    endpoint?: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    sessionToken?: string;
 }
 
 /** An info for a file registered with DuckDB */
 export interface DuckDBFileInfo {
+    cacheEpoch: number;
     fileId: number;
     fileName: string;
     dataProtocol: DuckDBDataProtocol;
     dataUrl: string | null;
     dataNativeFd: number | null;
     allowFullHttpReads?: boolean;
+    s3Config?: S3Config;
+}
+
+/** Global info for all files registered with DuckDB */
+export interface DuckDBGlobalFileInfo {
+    cacheEpoch: number;
+    allowFullHttpReads?: boolean;
+    s3Config?: S3Config;
 }
 
 /** Call a function with packed response buffer */

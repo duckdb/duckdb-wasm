@@ -574,6 +574,49 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
     return arrow::Status::OK();
 }
 
+// Register custom extension options in DuckDB for options that are handled in DuckDB-WASM instead of DuckDB
+void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) {
+    // Fetch the config to enable the custom SET parameters
+    auto &config = duckdb::DBConfig::GetConfig(*database_->instance);
+
+    auto callback_s3_region = [](ClientContext &context, SetScope scope, Value &parameter) {
+        auto webfs = io::WebFileSystem::Get();
+        webfs->Config()->filesystem.s3_region = parameter.str_value;
+        webfs->IncrementCacheEpoch();
+    };
+    auto callback_s3_access_key_id = [](ClientContext &context, SetScope scope, Value &parameter) {
+        auto webfs = io::WebFileSystem::Get();
+        webfs->Config()->filesystem.s3_access_key_id = parameter.str_value;
+        webfs->IncrementCacheEpoch();
+    };
+    auto callback_s3_secret_access_key = [](ClientContext &context, SetScope scope, Value &parameter) {
+        auto webfs = io::WebFileSystem::Get();
+        webfs->Config()->filesystem.s3_secret_access_key = parameter.str_value;
+        webfs->IncrementCacheEpoch();
+    };
+    auto callback_s3_session_token = [](ClientContext &context, SetScope scope, Value &parameter) {
+        auto webfs = io::WebFileSystem::Get();
+        webfs->Config()->filesystem.s3_session_token = parameter.str_value;
+        webfs->IncrementCacheEpoch();
+    };
+    auto callback_s3_endpoint = [](ClientContext &context, SetScope scope, Value &parameter) {
+        auto webfs = io::WebFileSystem::Get();
+        webfs->Config()->filesystem.s3_endpoint = parameter.str_value;
+        webfs->IncrementCacheEpoch();
+    };
+
+    config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, callback_s3_region);
+    config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, callback_s3_access_key_id);
+    config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR, callback_s3_secret_access_key);
+    config.AddExtensionOption("s3_session_token", "S3 Session Token", LogicalType::VARCHAR, callback_s3_session_token);
+    config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR, callback_s3_endpoint);
+
+    auto webfs = io::WebFileSystem::Get();
+    if (webfs) {
+        webfs->IncrementCacheEpoch();
+    }
+}
+
 /// Constructor
 WebDB::WebDB(WebTag)
     : config_(std::make_shared<WebDBConfig>()),
@@ -669,7 +712,6 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         db_config.file_system = std::move(buffered_fs);
         db_config.maximum_threads = config_->maximum_threads;
         db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
-
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         db->LoadExtension<duckdb::ParquetExtension>();
 
@@ -682,6 +724,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         buffered_filesystem_ = buffered_fs_ptr;
         database_ = std::move(db);
 
+        RegisterCustomExtensionOptions(db);
     } catch (std::exception& ex) {
         return arrow::Status::Invalid("Opening the database failed with error: ", ex.what());
     } catch (...) {
@@ -775,7 +818,8 @@ arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
     doc.SetArray();
     auto& allocator = doc.GetAllocator();
     for (auto& file : files) {
-        auto value = web_fs->WriteFileInfo(doc, file);
+        // TODO validate if passing 0 as epoch here is correct
+        auto value = web_fs->WriteFileInfo(doc, file, 0);
         if (!value.IsNull()) doc.PushBack(value, allocator);
     }
     rapidjson::StringBuffer strbuf;
@@ -783,14 +827,37 @@ arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
     doc.Accept(writer);
     return strbuf.GetString();
 }
-/// Get the file info as JSON
-arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
+
+/// Get the global file info as JSON
+arrow::Result<std::string> WebDB::GetGlobalFileInfo(uint32_t cache_epoch) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
 
     // Write file info
     rapidjson::Document doc;
-    auto value = web_fs->WriteFileInfo(doc, file_id);
+    auto value = web_fs->WriteGlobalFileInfo(doc, cache_epoch);
+    if (value.IsNull()) {
+        return "";
+    }
+
+    // Write to string
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer{strbuf};
+    value.Accept(writer);
+    return strbuf.GetString();
+}
+
+/// Get the file info as JSON
+arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id, uint32_t cache_epoch) {
+    auto web_fs = io::WebFileSystem::Get();
+    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
+
+    // Write file info
+    rapidjson::Document doc;
+    auto value = web_fs->WriteFileInfo(doc, file_id, cache_epoch);
+    if (value.IsNull()) {
+        return "";
+    }
 
     // Write to string
     rapidjson::StringBuffer strbuf;
@@ -799,13 +866,16 @@ arrow::Result<std::string> WebDB::GetFileInfo(uint32_t file_id) {
     return strbuf.GetString();
 }
 /// Get the file info as JSON
-arrow::Result<std::string> WebDB::GetFileInfo(std::string_view file_name) {
+arrow::Result<std::string> WebDB::GetFileInfo(std::string_view file_name, uint32_t cache_epoch) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
 
     // Write file info
     rapidjson::Document doc;
-    auto value = web_fs->WriteFileInfo(doc, file_name);
+    auto value = web_fs->WriteFileInfo(doc, file_name, cache_epoch);
+    if (value.IsNull()) {
+        return "";
+    }
 
     // Write to string
     rapidjson::StringBuffer strbuf;
