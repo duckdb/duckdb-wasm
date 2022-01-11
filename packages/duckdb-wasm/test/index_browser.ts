@@ -93,6 +93,7 @@ afterAll(async () => {
 });
 
 import { testAllTypes, testAllTypesAsync } from './all_types.test';
+import { testHTTPFS } from './httpfs_test';
 import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
@@ -113,6 +114,7 @@ testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
 testAllTypes(() => db!);
+testHTTPFS(() => adb!, () => db!);
 testAllTypesAsync(() => adb!);
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL);

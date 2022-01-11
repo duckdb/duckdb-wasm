@@ -125,6 +125,9 @@ class WebDB {
     /// The pinned web files (if any)
     std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
 
+    // Register custom extension options in DuckDB for options that are handled in DuckDB-WASM instead of DuckDB
+    void RegisterCustomExtensionOptions(std::shared_ptr<duckdb::DuckDB> database);
+
    public:
     /// Constructor
     WebDB(WebTag);
@@ -162,10 +165,12 @@ class WebDB {
     arrow::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
     /// Glob all known file infos
     arrow::Result<std::string> GlobFileInfos(std::string_view expression);
+    /// Get the global filesystem info
+    arrow::Result<std::string> GetGlobalFileInfo(uint32_t cache_epoch);
     /// Get the file info as JSON
-    arrow::Result<std::string> GetFileInfo(uint32_t file_id);
+    arrow::Result<std::string> GetFileInfo(uint32_t file_id, uint32_t cache_epoch);
     /// Get the file info as JSON
-    arrow::Result<std::string> GetFileInfo(std::string_view file_name);
+    arrow::Result<std::string> GetFileInfo(std::string_view file_name, uint32_t cache_epoch);
     /// Set a file descriptor
     arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t fd);
     /// Flush all file buffers

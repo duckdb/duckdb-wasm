@@ -27,10 +27,13 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const cached = NODE_RUNTIME._fileInfoCache.get(fileId);
             if (cached) return cached;
-            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number'], [fileId]);
+            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number', 'number'], [fileId, cached?.cacheEpoch || 0]);
             if (s !== StatusCode.SUCCESS) {
                 failWith(mod, readString(mod, d, n));
                 return null;
+            } else if (n === 0) {
+                // Epoch is up to date with WASM
+                return cached!;
             }
             const infoStr = readString(mod, d, n);
             dropResponseBuffers(mod);
@@ -83,6 +86,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 }
                 // HTTP file
                 case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
                     failWith(mod, 'Not implemented');
             }
         } catch (e: any) {
@@ -106,6 +110,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     break;
                 }
                 case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
                     failWith(mod, `Not implemented`);
             }
         } catch (e: any) {
@@ -126,6 +131,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     break;
                 }
                 case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
                     failWith(mod, `Not implemented`);
             }
         } catch (e: any) {
@@ -145,6 +151,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     return fs.readSync(file.dataNativeFd!, mod.HEAPU8, buf, bytes, location);
                 }
                 case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
                     failWith(mod, `Not implemented`);
             }
         } catch (e: any) {
@@ -182,6 +189,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     return fs.fstatSync(file.dataNativeFd!).mtime.getTime();
                 }
                 case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
                     failWith(mod, 'Not implemented');
             }
         } catch (e: any) {

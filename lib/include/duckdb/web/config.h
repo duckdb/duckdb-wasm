@@ -59,6 +59,13 @@ struct QueryConfig {
 struct FileSystemConfig {
     /// Allow falling back to full HTTP reads if the server does not support range requests
     std::optional<bool> allow_full_http_reads = std::nullopt;
+
+    /// Configuration for making authenticated S3 requests
+    std::string s3_region = "";
+    std::string s3_endpoint = "";
+    std::string s3_access_key_id = "";
+    std::string s3_secret_access_key = "";
+    std::string s3_session_token = "";
 };
 
 struct WebDBConfig {
@@ -76,6 +83,11 @@ struct WebDBConfig {
     /// The filesystem
     FileSystemConfig filesystem = {
         .allow_full_http_reads = std::nullopt,
+        .s3_region = "",
+        .s3_endpoint = "",
+        .s3_access_key_id = "",
+        .s3_secret_access_key = "",
+        .s3_session_token = "",
     };
 
     /// Read from a document

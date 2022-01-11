@@ -72,6 +72,11 @@ void duckdb_web_open(WASMResponse* packed, const char* args) {
     GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.Open(args));
 }
+/// Lookup global file info
+void duckdb_web_get_global_file_info(WASMResponse* packed, size_t cache_epoch) {
+    GET_WEBDB(*packed);
+    WASMResponseBuffer::Get().Store(*packed, webdb.GetGlobalFileInfo(cache_epoch));
+}
 /// Collect file statistics
 void duckdb_web_collect_file_stats(WASMResponse* packed, const char* file_name, bool enable) {
     GET_WEBDB(*packed);
@@ -98,14 +103,14 @@ void duckdb_web_fs_glob_file_infos(WASMResponse* packed, const char* file_name) 
     WASMResponseBuffer::Get().Store(*packed, webdb.GlobFileInfos(std::string_view{file_name}));
 }
 /// Lookup file info
-void duckdb_web_fs_get_file_info_by_id(WASMResponse* packed, size_t file_id) {
+void duckdb_web_fs_get_file_info_by_id(WASMResponse* packed, size_t file_id, size_t cache_epoch) {
     GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(file_id));
+    WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(file_id, cache_epoch));
 }
 /// Lookup file info
-void duckdb_web_fs_get_file_info_by_name(WASMResponse* packed, const char* file_name) {
+void duckdb_web_fs_get_file_info_by_name(WASMResponse* packed, const char* file_name, size_t cache_epoch) {
     GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(std::string_view{file_name}));
+    WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(std::string_view{file_name}, cache_epoch));
 }
 /// Set a file descriptor of an existing file
 void duckdb_web_fs_set_file_descriptor(WASMResponse* packed, uint32_t file_id, uint32_t file_descriptor) {

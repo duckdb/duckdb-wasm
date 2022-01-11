@@ -245,6 +245,7 @@ if(EMSCRIPTEN)
           _duckdb_web_flush_files, \
           _duckdb_web_fs_drop_file, \
           _duckdb_web_fs_drop_files, \
+          _duckdb_web_get_global_file_info, \
           _duckdb_web_fs_get_file_info_by_id, \
           _duckdb_web_fs_get_file_info_by_name, \
           _duckdb_web_fs_glob_add_path, \
