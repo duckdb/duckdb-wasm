@@ -182,7 +182,7 @@ vector<string> SUPPORTED_TYPES = {"bool",
                                   "map",
                                   "dec_4_1",
                                   "dec_9_4",
-                                  "dec_18_3",
+                                  "dec_18_6",
                                   "dec38_10",
                                   "blob"};
 
@@ -195,7 +195,6 @@ vector<string> UNSUPPORTED_TYPES = {
     "timestamp_s",
     "timestamp_ms",
     "timestamp_ns",
-    "date_tz",
     "timestamp_tz",
 
     // Currently does not work
@@ -214,7 +213,7 @@ TEST(AllTypesTest, FullRangeTypes) {
     replace_str += ")";
 
     auto maybe_result = conn.RunQuery("SELECT * " + replace_str + " from test_all_types();");
-    ASSERT_TRUE(maybe_result.ok());
+    ASSERT_TRUE(maybe_result.ok()) << maybe_result.status().message();
     auto buffer = maybe_result.ValueOrDie();
 
     // Get Recordbatch reader
@@ -233,7 +232,7 @@ TEST(AllTypesTest, FullRangeTypes) {
     auto maybe_batch = reader->ReadRecordBatch(0);
     ASSERT_TRUE(maybe_batch.ok());
     auto batch = maybe_batch.ValueOrDie();
-    ASSERT_EQ(batch->num_columns(), SUPPORTED_TYPES.size() + UNSUPPORTED_TYPES.size());
+    ASSERT_EQ(batch->num_columns(), SUPPORTED_TYPES.size() + UNSUPPORTED_TYPES.size()) << schema->ToString();
 
     // Primitive types
     AssertPrimitiveCorrect<arrow::BooleanType, bool>("bool", batch);
@@ -273,9 +272,9 @@ TEST(AllTypesTest, FullRangeTypes) {
                                                   batch, arrow::decimal128(4, 1));
     AssertParamTypeCorrect<arrow::Decimal128Type>("dec_9_4", arrow::Decimal128("-99999.9999"),
                                                   arrow::Decimal128("99999.9999"), batch, arrow::decimal128(9, 4));
-    AssertParamTypeCorrect<arrow::Decimal128Type>("dec_18_3", arrow::Decimal128("-999999999999.999999"),
+    AssertParamTypeCorrect<arrow::Decimal128Type>("dec_18_6", arrow::Decimal128("-999999999999.999999"),
                                                   arrow::Decimal128("999999999999.999999"), batch,
-                                                  arrow::decimal128(18, 6));  // TODO fix in DuckDB repo
+                                                  arrow::decimal128(18, 6));
     AssertParamTypeCorrect<arrow::Decimal128Type>(
         "dec38_10", arrow::Decimal128("-9999999999999999999999999999.9999999999"),
         arrow::Decimal128("9999999999999999999999999999.9999999999"), batch, arrow::decimal128(38, 10));

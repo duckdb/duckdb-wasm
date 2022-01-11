@@ -81,7 +81,7 @@ Result<std::shared_ptr<DataType>> ReadMapType(const rapidjson::Value::ConstObjec
         return Status::Invalid("Map must have exactly one child");
     }
     ARROW_ASSIGN_OR_RAISE(const bool keys_sorted, GetBoolField(obj, "keysSorted", false));
-    return MapType::Make(children_fields[0], keys_sorted);
+    return arrow::MapType::Make(children_fields[0], keys_sorted);
 }
 
 Result<std::shared_ptr<DataType>> ReadFixedSizeBinaryType(const rapidjson::Value::ConstObject& obj) {

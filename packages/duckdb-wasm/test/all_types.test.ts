@@ -22,6 +22,7 @@ type AnswerObjectType = {
 interface AllTypesTest {
     name: string;
     query: string;
+    skip: string[];
     answerMap: AnswerObjectType;
     answerCount: number;
     queryConfig: DuckDBQueryConfig | null;
@@ -34,10 +35,9 @@ const NOT_IMPLEMENTED_TYPES = [
     'timestamp_s',
     'timestamp_ms',
     'timestamp_ns',
-    'date_tz',
     'timestamp_tz',
     'hugeint',
-    'dec_18_3',
+    'dec_18_6',
     'dec38_10',
     'uuid',
     'map',
@@ -111,8 +111,6 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     ],
 };
 
-FULLY_IMPLEMENTED_ANSWER_MAP['not_implemented'] = ['not_implemented', 'not_implemented', 'not_implemented'];
-
 // Replacements for the values we knowingly don't support from the test_all_types query
 const REPLACE_COLUMNS = PARTIALLY_IMPLEMENTED_TYPES.concat(NOT_IMPLEMENTED_TYPES).concat(TYPES_REQUIRING_CUSTOM_CONFIG);
 
@@ -153,16 +151,17 @@ function getValue(x: any): any {
 const ALL_TYPES_TEST: AllTypesTest[] = [
     {
         name: 'fully supported types',
-        query: `SELECT * REPLACE(${REPLACE_COLUMNS.map(x => `'not_implemented' as ${x}`).join(', ')})
-                FROM test_all_types();`,
+        query: `SELECT * FROM test_all_types();`,
+        skip: REPLACE_COLUMNS,
         answerMap: FULLY_IMPLEMENTED_ANSWER_MAP,
-        answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length - 1,
+        answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length,
         queryConfig: null,
     },
     {
         name: 'partially supported types',
         query: `SELECT ${PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS.join(', ')}
                 FROM range(0, 3) tbl(i)`,
+        skip: [],
         answerMap: PARTIALLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: PARTIALLY_IMPLEMENTED_TYPES.length,
         queryConfig: null,
@@ -170,6 +169,7 @@ const ALL_TYPES_TEST: AllTypesTest[] = [
     {
         name: 'types with custom config',
         query: `SELECT ${TYPES_REQUIRING_CUSTOM_CONFIG.join(',')} FROM test_all_types()`,
+        skip: [],
         answerMap: {
             dec_4_1: [-999.9000000000001, 999.9000000000001, null],
             dec_9_4: [-99999.99990000001, 99999.99990000001, null],
@@ -206,8 +206,13 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
                 const results = conn.query(test.query);
                 expect(results.numCols).toEqual(test.answerCount);
 
+                const skip = new Map();
+                for (const s of test.skip) {
+                    skip.set(s, true);
+                }
                 for (let i = 0; i < results.numCols; i++) {
                     const col = results.getColumnAt(i) as Column;
+                    if (skip.get(col.name)) continue;
 
                     expect(unpack(getValue(col.get(0)))).toEqual(test.answerMap[col.name][0]); // Min
                     expect(unpack(getValue(col.get(1)))).toEqual(test.answerMap[col.name][1]); // Max
@@ -242,9 +247,15 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
                 const results = await conn.query(test.query);
                 expect(results.numCols).toEqual(test.answerCount);
 
+                const skip = new Map();
+                for (const s of test.skip) {
+                    skip.set(s, true);
+                }
                 for (let i = 0; i < results.numCols; i++) {
                     const col = results.getColumnAt(i) as Column;
+                    if (skip.get(col.name)) continue;
 
+                    expect(Object.keys(test.answerMap)).toContain(col.name);
                     expect(unpack(getValue(col.get(0)))).toEqual(test.answerMap[col.name][0]); // Min
                     expect(unpack(getValue(col.get(1)))).toEqual(test.answerMap[col.name][1]); // Max
                     expect(col.get(2)).toEqual(test.answerMap[col.name][2]); // Null
