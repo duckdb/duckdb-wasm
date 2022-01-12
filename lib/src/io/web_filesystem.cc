@@ -283,7 +283,9 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
     value.AddMember("fileName",
                     rapidjson::Value{file_name_.c_str(), static_cast<rapidjson::SizeType>(file_name_.size())},
                     allocator);
-    value.AddMember("fileSize", static_cast<double>(file_size_), allocator);
+    if (file_size_.has_value()) {
+        value.AddMember("fileSize", static_cast<double>(file_size_.value()), allocator);
+    }
     value.AddMember("dataProtocol", static_cast<double>(data_protocol_), allocator);
     if (data_url_) {
         data_url = rapidjson::Value{data_url_->c_str(), static_cast<rapidjson::SizeType>(data_url_->size())};
@@ -340,7 +342,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto file_id = AllocateFileID();
     auto file = std::make_shared<WebFile>(*this, file_id, file_name, proto);
     file->data_url_ = file_url;
-    file->file_size_ = file_size.value_or(0);
+    file->file_size_ = file_size;
 
     // Register the file
     files_by_id_.insert({file_id, file});
@@ -494,7 +496,7 @@ void WebFileSystem::CollectFileStatistics(std::string_view path, std::shared_ptr
     // Set file stats
     std::unique_lock<SharedMutex> file_guard{files_iter->second->file_mutex_};
     file_hdl.file_->file_stats_ = collector;
-    file_hdl.file_->file_stats_->Resize(file_hdl.file_->file_size_);
+    file_hdl.file_->file_stats_->Resize(file_hdl.file_->file_size_.value_or(0));
 }
 
 /// Open a file
@@ -557,7 +559,8 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 if (buffer_ptr) {
                     auto owned_buffer = std::unique_ptr<char[]>(buffer_ptr);
                     file->data_protocol_ = DataProtocol::BUFFER;
-                    file->data_buffer_ = DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_)};
+                    file->data_buffer_ =
+                        DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
                     // XXX Note that data_url is still set
                 }
 
@@ -586,7 +589,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
     // Statistics tracking?
     if (file_statistics_) {
         if (auto stats = file_statistics_->FindCollector(file->file_name_); !!stats) {
-            stats->Resize(file->file_size_);
+            stats->Resize(file->file_size_.value_or(0));
             file->file_stats_ = stats;
         }
     }
@@ -639,8 +642,8 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
                 auto reader = [&](auto *out, size_t n, duckdb::idx_t ofs) {
                     return duckdb_web_fs_file_read(file.file_id_, out, n, ofs);
                 };
-                auto n = ra->Read(file.file_id_, file.file_size_, buffer, nr_bytes, file_hdl.position_, reader,
-                                  file.file_stats_.get());
+                auto n = ra->Read(file.file_id_, file.file_size_.value_or(0), buffer, nr_bytes, file_hdl.position_,
+                                  reader, file.file_stats_.get());
                 file_hdl.position_ += n;
                 return n;
             } else {
@@ -692,7 +695,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             // Upgrade to exclusive lock.
             if (end > file.data_buffer_->Size()) {
                 file_guard.unlock();
-                Truncate(handle, std::max<size_t>(end, file.file_size_));
+                Truncate(handle, std::max<size_t>(end, file.file_size_.value_or(0)));
                 file_guard.lock();
             }
 
@@ -703,7 +706,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
 
             // Register write
             if (file.file_stats_) {
-                file.file_stats_->Resize(file.file_size_);
+                file.file_stats_->Resize(file.file_size_.value_or(0));
                 file.file_stats_->RegisterFileWrite(pos, end);
             }
             break;
@@ -719,11 +722,11 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
                 std::unique_lock<SharedMutex> appender_guard{file.file_mutex_};
                 n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
                 assert(n == nr_bytes);
-                file.file_size_ = std::max<size_t>(file_hdl.position_ + n, file.file_size_);
+                file.file_size_ = std::max<size_t>(file_hdl.position_ + n, file.file_size_.value_or(0));
 
                 // Register write
                 if (file.file_stats_) {
-                    file.file_stats_->Resize(file.file_size_);
+                    file.file_stats_->Resize(file.file_size_.value_or(0));
                     file.file_stats_->RegisterFileWrite(file_hdl.position_, n);
                 }
 
@@ -757,7 +760,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
 int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
-    return file_hdl.file_->file_size_;
+    return file_hdl.file_->file_size_.value_or(0);
 }
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
 time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
@@ -802,7 +805,7 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
     }
     // Resize the statistics buffer
     if (file.file_stats_) {
-        file.file_stats_->Resize(file.file_size_);
+        file.file_stats_->Resize(file.file_size_.value_or(0));
     }
     // Update the file size
     file.file_size_ = new_size;

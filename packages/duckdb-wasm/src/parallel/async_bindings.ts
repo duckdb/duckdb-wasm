@@ -143,6 +143,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerRequestType.COLLECT_FILE_STATISTICS:
             case WorkerRequestType.COPY_FILE_TO_PATH:
             case WorkerRequestType.DISCONNECT:
+            case WorkerRequestType.DROP_FILE:
             case WorkerRequestType.DROP_FILES:
             case WorkerRequestType.FLUSH_FILES:
             case WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM:
@@ -186,12 +187,6 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
                 break;
             case WorkerRequestType.TOKENIZE:
                 if (response.type == WorkerResponseType.SCRIPT_TOKENS) {
-                    task.promiseResolver(response.data);
-                    return;
-                }
-                break;
-            case WorkerRequestType.DROP_FILE:
-                if (response.type == WorkerResponseType.SUCCESS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -273,8 +268,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         await this.postTask(task);
     }
     /** Try to drop a file */
-    public async dropFile(name: string): Promise<boolean> {
-        const task = new WorkerTask<WorkerRequestType.DROP_FILE, string, boolean>(WorkerRequestType.DROP_FILE, name);
+    public async dropFile(name: string): Promise<null> {
+        const task = new WorkerTask<WorkerRequestType.DROP_FILE, string, null>(WorkerRequestType.DROP_FILE, name);
         return await this.postTask(task);
     }
     /** Try to drop files */

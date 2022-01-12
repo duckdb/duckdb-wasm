@@ -22,6 +22,10 @@ extern "C" {
     async fn get_version(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "getFeatureFlags")]
     async fn get_feature_flags(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "dropFile")]
+    async fn drop_file(this: &JsAsyncDuckDB, name: &str) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "dropFiles")]
+    async fn drop_files(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "connectInternal")]
     async fn connect(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "disconnect")]
@@ -76,6 +80,18 @@ impl AsyncDuckDB {
             .await?
             .as_string()
             .unwrap_or_else(|| "?".to_string()))
+    }
+
+    /// Drop a file
+    pub async fn drop_file(&self, name: &str) -> Result<(), js_sys::Error> {
+        self.bindings.drop_file(name).await?;
+        Ok(())
+    }
+
+    /// Drop files
+    pub async fn drop_files(&self) -> Result<(), js_sys::Error> {
+        self.bindings.drop_files().await?;
+        Ok(())
     }
 
     /// Glob files

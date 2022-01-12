@@ -24,14 +24,18 @@ extern "C" {
     #[wasm_bindgen(js_name = "ShellRuntime")]
     pub type ShellRuntime;
 
-    #[wasm_bindgen(method, js_name = "openFileExplorer")]
-    pub fn open_file_explorer(this: &ShellRuntime);
-    #[wasm_bindgen(method, js_name = "updateFileInfo")]
-    pub fn update_file_info(this: &ShellRuntime, info_json: &str);
+    #[wasm_bindgen(method, catch, js_name = "pickFiles")]
+    pub async fn pick_files(this: &ShellRuntime) -> Result<JsValue, js_sys::Error>;
     #[wasm_bindgen(method, catch, js_name = "readClipboardText")]
-    pub async fn read_clipboard_text(this: &ShellRuntime) -> Result<JsValue, JsValue>;
+    pub async fn read_clipboard_text(this: &ShellRuntime) -> Result<JsValue, js_sys::Error>;
     #[wasm_bindgen(method, catch, js_name = "writeClipboardText")]
-    pub async fn write_clipboard_text(this: &ShellRuntime, value: &str) -> Result<(), JsValue>;
+    pub async fn write_clipboard_text(
+        this: &ShellRuntime,
+        value: &str,
+    ) -> Result<(), js_sys::Error>;
     #[wasm_bindgen(method, catch, js_name = "pushInputToHistory")]
-    pub async fn push_input_to_history(this: &ShellRuntime, value: &str) -> Result<(), JsValue>;
+    pub async fn push_input_to_history(
+        this: &ShellRuntime,
+        value: &str,
+    ) -> Result<(), js_sys::Error>;
 }

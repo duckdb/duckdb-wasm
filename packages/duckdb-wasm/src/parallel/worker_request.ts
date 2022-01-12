@@ -162,7 +162,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_PATH, [string, string], null>
     | WorkerTask<WorkerRequestType.CREATE_PREPARED, [number, string], number>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
-    | WorkerTask<WorkerRequestType.DROP_FILE, string, boolean>
+    | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
     | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
     | WorkerTask<WorkerRequestType.EXPORT_FILE_STATISTICS, string, FileStatistics>
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>

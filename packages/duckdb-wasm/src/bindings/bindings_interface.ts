@@ -33,7 +33,7 @@ export interface DuckDBBindings {
     registerFileBuffer(name: string, buffer: Uint8Array): void;
     registerFileHandle<HandleType>(name: string, handle: HandleType): void;
     globFiles(path: string): WebFile[];
-    dropFile(name: string): boolean;
+    dropFile(name: string): void;
     dropFiles(): void;
     flushFiles(): void;
     copyFileToPath(name: string, path: string): void;

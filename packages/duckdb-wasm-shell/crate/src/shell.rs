@@ -127,12 +127,6 @@ impl Shell {
         };
         // Run the user modifcations
         callback(file);
-        // Update the file info in the runtime
-        if let Some(rt) = &self.runtime {
-            if let Ok(file_json) = serde_json::ser::to_string(&file) {
-                rt.read().unwrap().update_file_info(&file_json);
-            }
-        }
     }
 
     /// Attach to a terminal
@@ -426,9 +420,55 @@ impl Shell {
         };
         let subcmd = &args[..args.find(' ').unwrap_or_else(|| args.len())];
         match subcmd {
-            "add" => {}
+            "add" => {
+                let rt_ptr = Shell::with_mut(|s| s.runtime.clone()).unwrap();
+                match rt_ptr.clone().read().unwrap().pick_files().await {
+                    Ok(js_count) => {
+                        let count = js_count.as_f64().unwrap_or_default() as u32;
+                        Shell::with_mut(|s| {
+                            s.writeln(&format!("Added {} files", &count));
+                        });
+                    }
+                    Err(e) => {
+                        Shell::with_mut(|s| {
+                            let e: String = e.to_string().into();
+                            s.writeln(&format!("Error: {}", &e));
+                        });
+                    }
+                }
+            }
+            "drop" => {
+                let filename = args[subcmd.len()..].trim();
+                if !filename.is_empty() {
+                    match db.drop_file(filename).await {
+                        Ok(_) => {
+                            Shell::with_mut(|s| {
+                                s.writeln(&format!("Dropped file: {}", &filename));
+                            });
+                        }
+                        _ => {
+                            Shell::with_mut(|s| {
+                                s.writeln(&format!("Failed to drop file: {}", &filename));
+                            });
+                        }
+                    }
+                } else {
+                    match db.drop_files().await {
+                        Ok(()) => {
+                            Shell::with_mut(|s| {
+                                s.writeln("Dropped all files");
+                            });
+                        }
+                        _ => {
+                            Shell::with_mut(|s| {
+                                s.writeln("Failed to drop all files");
+                            });
+                        }
+                    }
+                }
+            }
             _ => {
-                let files = match db.glob_files("/*").await {
+                let files = match db.glob_files("*").await {
                     Ok(files) => files,
                     Err(e) => {
                         Shell::with_mut(|s| {
@@ -444,7 +484,10 @@ impl Shell {
                 let mut data_tracking = Vec::with_capacity(files.len());
                 for file in files {
                     data_names.push(file.file_name);
-                    data_sizes.push(pretty_bytes(file.file_size.unwrap_or_default() as f64));
+                    data_sizes.push(match file.file_size {
+                        Some(size) => pretty_bytes(size as f64),
+                        None => "unknown".to_string(),
+                    });
                     data_protocol.push(format!(
                         "{:?}",
                         match file.data_protocol.unwrap_or_default() {
@@ -578,7 +621,10 @@ impl Shell {
                         "{bold}Commands:{normal}\r\n",
                         ".clear                 Clear the shell.\r\n",
                         ".features              Shell features.\r\n",
-                        ".files                 Open file picker.\r\n",
+                        ".files list            List all files.\r\n",
+                        ".files add             Add files.\r\n",
+                        ".files drop $FILE      Drop a single file.\r\n",
+                        ".files drop            Drop all files.\r\n",
                         ".fstats collect $FILE  Collect file statistics.\r\n",
                         ".fstats disable $FILE  Disable file statistics.\r\n",
                         ".fstats paging $FILE   Show file paging.\r\n",

@@ -1,12 +1,10 @@
-import * as model from '../model';
 import * as shell from '../../crate/pkg';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import React from 'react';
-import { FileExplorer } from '../components/file_explorer';
-import { Overlay } from '../components/overlay';
 import { useResizeDetector } from 'react-resize-detector';
 import { HistoryStore } from '../utils/history_store';
 import { isSafari } from '../utils/platform';
+import { pickFiles } from '../utils/files';
 
 import styles from './shell.module.css';
 
@@ -31,17 +29,10 @@ const hasWebGL = (): boolean => {
 };
 
 class ShellRuntime {
-    constructor(
-        protected _history: HistoryStore,
-        protected _openFileExplorer: () => void,
-        protected _updateFile: (file: model.FileInfoUpdate) => void,
-    ) {}
+    constructor(protected _history: HistoryStore, protected _pickFiles: () => Promise<number>) {}
 
-    public openFileExplorer(this: ShellRuntime): void {
-        this._openFileExplorer();
-    }
-    public updateFileInfo(this: ShellRuntime, info: string) {
-        this._updateFile(JSON.parse(info) as model.FileInfoUpdate);
+    public async pickFiles(this: ShellRuntime): Promise<number> {
+        return await this._pickFiles();
     }
     public async readClipboardText(this: ShellRuntime): Promise<string> {
         return await navigator.clipboard.readText();
@@ -65,47 +56,15 @@ const ShellResizer = () => {
 export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
     const termContainer = React.useRef<HTMLDivElement | null>(null);
     const history = React.useRef<HistoryStore>(new HistoryStore());
-    const overlay = model.useStaticOverlay();
-    const overlayDispatch = model.useStaticOverlaySetter();
-    const fileRegistryDispatch = model.useFileRegistryDispatch();
     const database = React.useRef<duckdb.AsyncDuckDB | null>(null);
 
     const runtime = React.useRef<ShellRuntime>(
-        new ShellRuntime(
-            history.current,
-            () =>
-                overlayDispatch({
-                    type: model.SHOW_OVERLAY,
-                    data: model.StaticOverlay.FILE_EXPLORER,
-                }),
-            (file: model.FileInfoUpdate) =>
-                fileRegistryDispatch({
-                    type: model.UPDATE_FILE_INFO,
-                    data: file,
-                }),
-        ),
+        new ShellRuntime(history.current, async (): Promise<number> => {
+            if (!database.current) return 0;
+            const db = database.current;
+            return await pickFiles(db);
+        }),
     );
-
-    const addLocalFiles = async (files: FileList) => {
-        if (!database.current) return;
-        const db = database.current;
-        const fileInfos: Array<model.FileInfo> = [];
-        for (let i = 0; i < files.length; ++i) {
-            const file = files.item(i)!;
-            await db.dropFile(file.name);
-            await db.registerFileHandle(file.name, file);
-            fileInfos.push({
-                name: file.name,
-                url: file.name,
-                size: file.size,
-                fileStatsEnabled: false,
-            });
-        }
-        fileRegistryDispatch({
-            type: model.REGISTER_FILES,
-            data: fileInfos,
-        });
-    };
 
     React.useEffect(() => {
         console.assert(termContainer.current != null);
@@ -144,11 +103,6 @@ export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
         <div className={styles.root} style={style}>
             <ShellResizer />
             <div ref={termContainer} className={styles.term_container}></div>
-            {overlay === model.StaticOverlay.FILE_EXPLORER && (
-                <Overlay>
-                    <FileExplorer addLocalFiles={addLocalFiles} />
-                </Overlay>
-            )}
         </div>
     );
 };

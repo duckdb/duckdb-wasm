@@ -325,7 +325,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (url === undefined) {
             url = name;
         }
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_fs_register_file_url',
+            ['string', 'string', 'number'],
+            [name, url, -1],
+        );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -354,7 +359,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     }
     /** Register a file object URL */
     public registerFileHandle<HandleType>(name: string, handle: HandleType): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, name]);
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_fs_register_file_url',
+            ['string', 'string', 'number'],
+            [name, name, -1],
+        );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -377,8 +387,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
     }
     /** Drop file */
-    public dropFile(name: string): boolean {
-        return this.mod.ccall('duckdb_web_fs_drop_file', 'boolean', ['string'], [name]);
+    public dropFile(name: string): void {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_file', ['string'], [name]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
     }
     /** Drop files */
     public dropFiles(): void {
