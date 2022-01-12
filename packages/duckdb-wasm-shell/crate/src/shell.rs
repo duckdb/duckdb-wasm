@@ -409,6 +409,88 @@ impl Shell {
         });
     }
 
+    pub async fn files_command(args: String) {
+        // Get database
+        let (maybe_db, terminal_width) = Shell::with_mut(|shell| {
+            shell.remember_command(args.clone());
+            (shell.db.clone(), shell.terminal_width)
+        });
+        let db = match maybe_db {
+            Some(ref db) => db.write().unwrap(),
+            None => {
+                Shell::with_mut(|s| {
+                    s.writeln("Error: database not set");
+                });
+                return;
+            }
+        };
+        let subcmd = &args[..args.find(' ').unwrap_or_else(|| args.len())];
+        match subcmd {
+            "add" => {}
+            _ => {
+                let files = match db.glob_files("/*").await {
+                    Ok(files) => files,
+                    Err(e) => {
+                        Shell::with_mut(|s| {
+                            let e: String = e.to_string().into();
+                            s.writeln(&format!("Error: {}", &e));
+                        });
+                        return;
+                    }
+                };
+                let mut data_names = Vec::with_capacity(files.len());
+                let mut data_sizes = Vec::with_capacity(files.len());
+                let mut data_protocol = Vec::with_capacity(files.len());
+                let mut data_tracking = Vec::with_capacity(files.len());
+                for file in files {
+                    data_names.push(file.file_name);
+                    data_sizes.push(pretty_bytes(file.file_size.unwrap_or_default() as f64));
+                    data_protocol.push(format!(
+                        "{:?}",
+                        match file.data_protocol.unwrap_or_default() {
+                            1 => DataProtocol::Native,
+                            2 => DataProtocol::Http,
+                            _ => DataProtocol::Buffer,
+                        }
+                    ));
+                    data_tracking.push(format!("{}", file.collect_statistics.unwrap_or_default()));
+                }
+
+                let schema = Arc::new(Schema::new(vec![
+                    Field::new("File Name", DataType::Utf8, true),
+                    Field::new("File Size", DataType::Utf8, true),
+                    Field::new("Protocol", DataType::Utf8, true),
+                    Field::new("Statistics", DataType::Utf8, true),
+                ]));
+                let array_name = Arc::new(StringArray::from_iter_values(data_names.iter()));
+                let array_size = Arc::new(StringArray::from_iter_values(data_sizes.iter()));
+                let array_proto = Arc::new(StringArray::from_iter_values(data_protocol.iter()));
+                let array_stats = Arc::new(StringArray::from_iter_values(data_tracking.iter()));
+                let batch = RecordBatch::try_new(
+                    schema,
+                    vec![array_name, array_size, array_proto, array_stats],
+                )
+                .unwrap();
+
+                if batch.num_rows() == 0 {
+                    Shell::with_mut(|s| {
+                        s.writeln("No files registered");
+                    });
+                } else {
+                    let pretty_table = pretty_format_batches(
+                        &[batch],
+                        terminal_width as u16,
+                        UTF8_BORDERS_NO_HORIZONTAL,
+                    )
+                    .unwrap_or_default();
+                    Shell::with_mut(|s| {
+                        s.writeln(&pretty_table);
+                    });
+                }
+            }
+        }
+    }
+
     pub async fn fstats_command(args: String) {
         let db_ptr = Shell::with(|s| s.db.clone());
         let db = match db_ptr {
@@ -541,83 +623,7 @@ impl Shell {
                 return;
             }
             ".files" => {
-                // Get database
-                let (maybe_db, terminal_width) = Shell::with_mut(|shell| {
-                    shell.remember_command(text.clone());
-                    (shell.db.clone(), shell.terminal_width)
-                });
-                let db = match maybe_db {
-                    Some(ref db) => db.write().unwrap(),
-                    None => {
-                        Shell::with_mut(|s| {
-                            s.writeln("Error: database not set");
-                        });
-                        return;
-                    }
-                };
-                let files = match db.glob_files("/*").await {
-                    Ok(files) => files,
-                    Err(e) => {
-                        Shell::with_mut(|s| {
-                            let e: String = e.to_string().into();
-                            s.writeln(&format!("Error: {}", &e));
-                        });
-                        return;
-                    }
-                };
-                let mut data_names = Vec::with_capacity(files.len());
-                let mut data_sizes = Vec::with_capacity(files.len());
-                let mut data_protocol = Vec::with_capacity(files.len());
-                let mut data_tracking = Vec::with_capacity(files.len());
-                for file in files {
-                    data_names.push(file.file_name);
-                    data_sizes.push(pretty_bytes(file.file_size.unwrap_or_default() as f64));
-                    data_protocol.push(format!(
-                        "{:?}",
-                        match file.data_protocol.unwrap_or_default() {
-                            1 => DataProtocol::Native,
-                            2 => DataProtocol::Http,
-                            _ => DataProtocol::Buffer,
-                        }
-                    ));
-                    data_tracking.push(format!("{}", file.collect_statistics.unwrap_or_default()));
-                }
-
-                let schema = Arc::new(Schema::new(vec![
-                    Field::new("File Name", DataType::Utf8, true),
-                    Field::new("File Size", DataType::Utf8, true),
-                    Field::new("Protocol", DataType::Utf8, true),
-                    Field::new("Statistics", DataType::Utf8, true),
-                ]));
-                let array_name = Arc::new(StringArray::from_iter_values(data_names.iter()));
-                let array_size = Arc::new(StringArray::from_iter_values(data_sizes.iter()));
-                let array_proto = Arc::new(StringArray::from_iter_values(data_protocol.iter()));
-                let array_stats = Arc::new(StringArray::from_iter_values(data_tracking.iter()));
-                let batch = RecordBatch::try_new(
-                    schema,
-                    vec![array_name, array_size, array_proto, array_stats],
-                )
-                .unwrap();
-
-                if batch.num_rows() == 0 {
-                    Shell::with_mut(|s| {
-                        s.writeln("No files registered\n");
-                        s.prompt();
-                    });
-                } else {
-                    let pretty_table = pretty_format_batches(
-                        &[batch],
-                        terminal_width as u16,
-                        UTF8_BORDERS_NO_HORIZONTAL,
-                    )
-                    .unwrap_or_default();
-                    Shell::with_mut(|s| {
-                        s.writeln(&pretty_table);
-                        s.writeln("");
-                        s.prompt();
-                    });
-                }
-                return;
+                Shell::files_command(args.to_string()).await;
             }
             cmd => Shell::with(|s| s.writeln(&format!("Unknown command: {}", &cmd))),
         }
