@@ -1,0 +1,4 @@
+*.cjs
+*.js
+*.mjs
+/*.json

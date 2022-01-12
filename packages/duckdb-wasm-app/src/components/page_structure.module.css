@@ -1,0 +1,19 @@
+.section_container {
+    width: 100%;
+    padding: 16px 8px 8px 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media only screen and (min-width: 600px) {
+    .section {
+        width: 90%;
+        max-width: 800px;
+    }
+}
+@media only screen and (max-width: 600px) {
+    .section {
+        width: 100%;
+    }
+}

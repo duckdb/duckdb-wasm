@@ -71,7 +71,7 @@ esbuild.build({
     globalName: 'duckdb',
     target: TARGET_BROWSER,
     bundle: true,
-    minify: true,
+    minify: false,
     sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
 });
@@ -84,7 +84,7 @@ esbuild.build({
     format: 'cjs',
     target: TARGET_BROWSER,
     bundle: true,
-    minify: true,
+    minify: false,
     sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
 });
@@ -97,7 +97,7 @@ esbuild.build({
     format: 'iife',
     target: TARGET_BROWSER,
     bundle: true,
-    minify: true,
+    minify: false,
     sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
 });

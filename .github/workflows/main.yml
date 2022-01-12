@@ -618,8 +618,15 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.5
               with:
                   script: |-
-                      rm -rf ./packages/duckdb-wasm-shell/build/
+                      rm -rf ./packages/duckdb-wasm-shell/dist/
                       yarn workspace @duckdb/duckdb-wasm-shell build:release
+
+            - name: Build @duckdb/duckdb-wasm-app
+              uses: duckdb/duckdb-wasm-ci-env@v0.5
+              with:
+                  script: |-
+                      rm -rf ./packages/duckdb-wasm-app/build/
+                      yarn workspace @duckdb/duckdb-wasm-app build:release
 
             - name: Build @duckdb/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.5

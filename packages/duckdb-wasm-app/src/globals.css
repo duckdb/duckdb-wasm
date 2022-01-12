@@ -1,0 +1,31 @@
+:root {
+    --nav_bar_bg: rgb(30, 30, 30);
+    --nav_bar_button_height: 48px;
+    --nav_bar_button_margin: 4px 8px;
+    --nav_bar_width: 64px;
+    --nav_logo_height: 56px;
+    --nav_tab_bg: transparent;
+    --nav_tab_bg_active: rgb(20, 20, 20);
+    --nav_tab_fg: rgb(255, 255, 255);
+    --nav_tab_fg_active: rgb(255, 255, 255);
+
+    font-family: 'Nunito';
+}
+
+.btn-primary {
+    background-color: hsl(56deg 100% 35%) !important;
+    border-color: hsl(56deg 100% 35%) !important;
+}
+
+.btn:focus,
+.btn:active {
+    outline: hsl(56deg 100% 30%) !important;
+    box-shadow: 0 0 0 3px hsl(56deg 90% 30%) !important;
+}
+
+.nav-link {
+    color: hsl(56deg 100% 35%) !important;
+}
+.nav-link.active {
+    color: black !important;
+}

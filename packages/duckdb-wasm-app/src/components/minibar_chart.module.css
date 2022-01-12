@@ -1,0 +1,19 @@
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: hsla(56, 100%, 30%, 0.4);
+    overflow: hidden;
+}
+
+.bar_fill {
+    height: 100%;
+    background: hsl(56, 100%, 30%);
+    border-radius: 3px;
+}

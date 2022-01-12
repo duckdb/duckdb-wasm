@@ -267,30 +267,29 @@ js_tests_node: js_debug
 js_tests_node_debug: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
-# Start the shell dev server
-.PHONY: shell_start
-shell_start:
-	yarn workspace @duckdb/duckdb-wasm-shell start
-
-# Start the shell dev server with cross origin resource policies
-.PHONY: shell_start_corp
-shell_start_corp:
-	yarn workspace @duckdb/duckdb-wasm-shell start:corp
-
-# Build the shell
 .PHONY: shell
 shell:
+	yarn workspace @duckdb/duckdb-wasm-shell build:debug
+
+.PHONY: shell_release
+shell_release:
 	yarn workspace @duckdb/duckdb-wasm-shell build:release
 
-# Build the shell tests
-.PHONY: shell_tests
-shell_tests:
-	yarn workspace @duckdb/duckdb-wasm-shell build:tests
+.PHONY: app_start
+app_start:
+	yarn workspace @duckdb/duckdb-wasm-app start
 
-# Run a local pages server for tests
-.PHONY: pages_server
-shell_server:
-	python3 -m http.server 9003 --bind 127.0.0.1 --directory ./packages/duckdb-wasm-shell/build/release/
+.PHONY: app_start_corp
+app_start_corp:
+	yarn workspace @duckdb/duckdb-wasm-app start:corp
+
+.PHONY: app
+app:
+	yarn workspace @duckdb/duckdb-wasm-app build:release
+
+.PHONY: app_server
+app_server:
+	python3 -m http.server 9003 --bind 127.0.0.1 --directory ./packages/duckdb-wasm-app/build/release/
 
 # C++ formatting
 .PHONY: clang_format
