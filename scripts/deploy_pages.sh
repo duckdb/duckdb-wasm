@@ -56,5 +56,5 @@ fi
 git config user.name 'github-actions[bot]'
 git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 git add -A .
-git commit --amend --reset-author -m "Deploy GitHub Page"
+git commit --amend --reset-author -m "Deploy GitHub Pages"
 git push origin HEAD:gh-pages --force
