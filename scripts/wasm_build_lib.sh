@@ -59,13 +59,13 @@ emmake make \
 
 cp ${BUILD_DIR}/duckdb_wasm.wasm ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.wasm
 sed \
-  -e "s/duckdb_wasm\.wasm/.\/duckdb-wasm${SUFFIX}.wasm/" \
+  -e "s/duckdb_wasm\.wasm/.\/duckdb${SUFFIX}.wasm/g" \
   ${BUILD_DIR}/duckdb_wasm.js > ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.js
 
 if [ -f ${BUILD_DIR}/duckdb_wasm.worker.js ]; then
   sed \
-    -e "s/duckdb_wasm\.wasm/.\/duckdb${SUFFIX}.wasm/" \
-    -e "s/duckdb_wasm\.js/.\/duckdb${SUFFIX}.js/" \
+    -e "s/duckdb_wasm\.wasm/.\/duckdb${SUFFIX}.wasm/g" \
+    -e "s/duckdb_wasm\.js/.\/duckdb${SUFFIX}.js/g" \
     ${BUILD_DIR}/duckdb_wasm.worker.js > ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.pthread.js
 
   # Expose the module.
