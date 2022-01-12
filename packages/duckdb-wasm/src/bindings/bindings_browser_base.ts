@@ -38,19 +38,22 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ): Emscripten.WebAssemblyExports {
         globalThis.DUCKDB_RUNTIME = this._runtime;
+        // We rely on the following here:
+        //
+        // ...when a Request object is created using the Request.Request constructor,
+        // the value of the mode property for that Request is set to cors.
+        // [ref: MDN]
+        //
+        // Cloudflare throws when mode: 'cors' is set
+        //
         if (WebAssembly.instantiateStreaming) {
-            WebAssembly.instantiateStreaming(
-                fetch(this.mainModuleURL, {
-                    mode: 'cors',
-                }),
-                imports,
-            ).then(output => {
+            const request = new Request(this.mainModuleURL);
+            WebAssembly.instantiateStreaming(fetch(request), imports).then(output => {
                 success(output.instance, output.module);
             });
         } else {
-            fetch(this.mainModuleURL, {
-                mode: 'cors',
-            })
+            const request = new Request(this.mainModuleURL);
+            fetch(request)
                 .then(resp => resp.arrayBuffer())
                 .then(bytes =>
                     WebAssembly.instantiate(bytes, imports).then(output => {
