@@ -1,6 +1,5 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { FileRegistryProvider, StaticOverlayProvider } from './model';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
@@ -61,16 +60,12 @@ if (pathMatches != null && pathMatches.length >= 2) {
 
 const element = document.getElementById('root');
 ReactDOM.render(
-    <FileRegistryProvider>
-        <StaticOverlayProvider>
-            <BrowserRouter basename={basename}>
-                <Routes>
-                    <Route path="/versus" element={<Versus_ />} />
-                    <Route path="/" element={<Shell_ />} />
-                    <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
-            </BrowserRouter>
-        </StaticOverlayProvider>
-    </FileRegistryProvider>,
+    <BrowserRouter basename={basename}>
+        <Routes>
+            <Route path="/versus" element={<Versus_ />} />
+            <Route path="/" element={<Shell_ />} />
+            <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+    </BrowserRouter>,
     element,
 );

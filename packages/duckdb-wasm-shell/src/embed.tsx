@@ -1,6 +1,5 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { FileRegistryProvider, StaticOverlayProvider } from './model';
 import { Shell } from './pages/shell';
 
 import * as duckdb from '@duckdb/duckdb-wasm';
@@ -13,16 +12,12 @@ export interface EmbeddableShellProps {
 }
 
 export const EmbeddableShell: React.FC<EmbeddableShellProps> = (props: EmbeddableShellProps) => (
-    <FileRegistryProvider>
-        <StaticOverlayProvider>
-            <Shell
-                resolveDatabase={props.resolveDatabase}
-                padding={props.padding}
-                backgroundColor={props.backgroundColor}
-                borderRadius={props.borderRadius}
-            />
-        </StaticOverlayProvider>
-    </FileRegistryProvider>
+    <Shell
+        resolveDatabase={props.resolveDatabase}
+        padding={props.padding}
+        backgroundColor={props.backgroundColor}
+        borderRadius={props.borderRadius}
+    />
 );
 
 export function embed(target: HTMLElement, props: EmbeddableShellProps): void {
