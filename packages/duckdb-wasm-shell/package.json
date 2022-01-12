@@ -4,77 +4,69 @@
     "description": "",
     "author": "Andre Kohn <kohn.a@outlook.com>",
     "license": "MPL-2.0",
-    "private": true,
-    "scripts": {
-        "start": "webpack serve --config webpack.app.debug.js",
-        "start:corp": "webpack serve --config webpack.app.debug.corp.js",
-        "build:debug": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.app.debug.js",
-        "build:release": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.app.release.js",
-        "build:tests": "NODE_OPTIONS='--max-old-space-size=4096' webpack --config webpack.tests.js",
-        "analyze:debug": "webpack --config webpack.app.debug.js --analyze",
-        "analyze:release": "webpack --config webpack.app.release.js --analyze",
-        "lint": "eslint src"
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/duckdb/duckdb-wasm.git"
     },
-    "engines": {
-        "node": ">=14.13"
-    },
+    "keywords": [
+        "sql",
+        "duckdb",
+        "relational",
+        "database",
+        "data",
+        "query",
+        "wasm",
+        "analytics",
+        "olap",
+        "arrow",
+        "parquet",
+        "json",
+        "csv"
+    ],
     "dependencies": {
         "@duckdb/duckdb-wasm": "^1.11.0",
-        "apache-arrow": "^6.0.1",
-        "bootstrap": "^5.1.3",
-        "classnames": "^2.3.1",
-        "framer-motion": "^5.5.7",
-        "immutable": "^4.0.0",
-        "react": "^17.0.2",
-        "react-bootstrap": "^2.1.0",
-        "react-dom": "^17.0.2",
-        "react-dropzone": "^11.5.1",
-        "react-popper-tooltip": "^4.3.1",
-        "react-resize-detector": "^7.0.0",
-        "react-router-dom": "^6.2.1",
         "xterm": "^4.16.0",
         "xterm-addon-fit": "^0.5.0",
-        "xterm-addon-ligatures": "^0.5.1",
-        "xterm-addon-unicode11": "^0.3.0",
         "xterm-addon-web-links": "^0.5.0",
         "xterm-addon-webgl": "^0.11.4"
     },
     "devDependencies": {
-        "@types/node": "^17.0.8",
-        "@types/react-dom": "^17.0.11",
-        "@types/react-router-dom": "^5.3.2",
-        "@types/react-virtualized": "^9.21.16",
-        "@wasm-tool/wasm-pack-plugin": "^1.6.0",
-        "copy-webpack-plugin": "^10.2.0",
-        "css-loader": "^6.5.1",
-        "esbuild-css-modules-plugin": "^2.0.9",
+        "esbuild": "^0.14.11",
         "eslint": "^8.6.0",
         "eslint-plugin-jasmine": "^4.1.3",
         "eslint-plugin-react": "^7.28.0",
-        "file-loader": "^6.2.0",
-        "html-webpack-plugin": "^5.5.0",
+        "jasmine": "^4.0.2",
         "jasmine-core": "^4.0.0",
         "jasmine-spec-reporter": "^7.0.0",
-        "karma": "^6.3.10",
-        "karma-chrome-launcher": "^3.1.0",
-        "karma-firefox-launcher": "^2.1.2",
-        "karma-jasmine": "^4.0.1",
-        "karma-spec-reporter": "^0.0.33",
-        "karma-webpack": "^5.0.0",
-        "mini-css-extract-plugin": "^2.4.6",
-        "source-map-loader": "^3.0.1",
-        "style-loader": "^3.3.1",
-        "ts-loader": "^9.2.2",
-        "typescript": "^4.5.4",
-        "typescript-plugin-css-modules": "^3.3.0",
-        "webpack": "^5.65.0",
-        "webpack-bundle-analyzer": "^4.5.0",
-        "webpack-cli": "^4.9.1",
-        "webpack-dev-server": "^4.7.3",
-        "webpackbar": "^5.0.2"
+        "make-dir": "^3.1.0",
+        "prettier": "^2.5.1",
+        "rimraf": "^3.0.2"
     },
-    "optionalDependencies": {
-        "fsevents": "*"
+    "scripts": {
+        "build:debug": "node bundle.mjs debug && tsc --emitDeclarationOnly",
+        "build:release": "node bundle.mjs release && tsc --emitDeclarationOnly",
+        "lint": "eslint src"
     },
-    "type": "module"
+    "files": [
+        "dist",
+        "!dist/types/test"
+    ],
+    "main": "dist/shell.cjs",
+    "module": "dist/shell.mjs",
+    "types": "dist/shell.d.ts",
+    "jsdelivr": "dist/shell.cjs",
+    "unpkg": "dist/shell.mjs",
+    "sideEffects": false,
+    "exports": {
+        "./dist/shell_bg.wasm": "./dist/shell_bg.wasm",
+        "./dist/shell.js": "./dist/shell_bg.js",
+        "./dist/shell.cjs": "./dist/shell_bg.cjs",
+        "./dist/shell.mjs": "./dist/shell_bg.mjs",
+        "./dist/shell": "./dist/shell_bg.mjs",
+        ".": {
+            "types": "./dist/shell.d.ts",
+            "import": "./dist/shell.mjs",
+            "require": "./dist/shell.cjs"
+        }
+    }
 }

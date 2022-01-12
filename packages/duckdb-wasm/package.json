@@ -56,9 +56,6 @@
         "typedoc": "^0.22.10",
         "typescript": "^4.5.4"
     },
-    "optionalDependencies": {
-        "fsevents": "*"
-    },
     "scripts": {
         "build:debug": "node bundle.mjs debug && tsc --emitDeclarationOnly",
         "build:release": "node bundle.mjs release && tsc --emitDeclarationOnly",

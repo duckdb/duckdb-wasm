@@ -22,13 +22,13 @@ import { fileURLToPath } from 'url';
 //   duckdb-browser.mjs                           - ESM Default Browser Bundle
 //   duckdb-browser-blocking.mjs                  - ESM Blocking Browser Bundle (synchronous API, unstable)
 //   duckdb-browser.worker.js                     - IIFE Web Worker for Wasm MVP
-//   duckdb-browser-eh.worker.js                - IIFE Web Worker with Wasm EH
-//   duckdb-browser-coi.worker.js            - IIFE Web Worker with Wasm EH + COI
-//   duckdb-browser-coi.pthread.worker.js    - IIFE PThread Worker with Wasm EH + COI
+//   duckdb-browser-eh.worker.js                  - IIFE Web Worker with Wasm EH
+//   duckdb-browser-coi.worker.js                 - IIFE Web Worker with Wasm EH + COI
+//   duckdb-browser-coi.pthread.worker.js         - IIFE PThread Worker with Wasm EH + COI
 //   duckdb-node.cjs                              - CommonJS Default Node Bundle
 //   duckdb-node-blocking.cjs                     - CommonJS Blocking Node Bundle (synchronous API, unstable)
 //   duckdb-node.worker.cjs                       - CommonJS Worker for Wasm MVP
-//   duckdb-node-eh.worker.cjs                  - CommonJS Worker with Wasm EH
+//   duckdb-node-eh.worker.cjs                    - CommonJS Worker with Wasm EH
 //   tests-browser.js                             - IIFE Jasmine Karma tests
 //   tests-node.cjs                               - CommonJS Jasmine Node tests
 //
