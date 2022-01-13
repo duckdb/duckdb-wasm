@@ -405,10 +405,8 @@ impl Shell {
 
     pub async fn files_command(args: String) {
         // Get database
-        let (maybe_db, terminal_width) = Shell::with_mut(|shell| {
-            shell.remember_command(args.clone());
-            (shell.db.clone(), shell.terminal_width)
-        });
+        let (maybe_db, terminal_width) =
+            Shell::with_mut(|shell| (shell.db.clone(), shell.terminal_width));
         let db = match maybe_db {
             Some(ref db) => db.write().unwrap(),
             None => {
@@ -432,7 +430,40 @@ impl Shell {
                     Err(e) => {
                         Shell::with_mut(|s| {
                             let e: String = e.to_string().into();
-                            s.writeln(&format!("Error: {}", &e));
+                            s.writeln(&e);
+                        });
+                    }
+                }
+            }
+            "download" => {
+                let filename = args[subcmd.len()..].trim();
+                let buffer = match db.copy_file_to_buffer(filename).await {
+                    Ok(u8array) => u8array,
+                    Err(e) => {
+                        Shell::with_mut(|s| {
+                            let e: String = e.to_string().into();
+                            s.writeln(&e);
+                        });
+                        return;
+                    }
+                };
+                let rt_ptr = Shell::with_mut(|s| s.runtime.clone()).unwrap();
+                match rt_ptr
+                    .clone()
+                    .read()
+                    .unwrap()
+                    .download_file(filename, buffer)
+                    .await
+                {
+                    Ok(_) => {
+                        Shell::with_mut(|s| {
+                            s.writeln(&format!("Downloaded file: {}", &filename));
+                        });
+                    }
+                    Err(e) => {
+                        Shell::with_mut(|s| {
+                            let e: String = e.to_string().into();
+                            s.writeln(&e);
                         });
                     }
                 }
@@ -473,7 +504,7 @@ impl Shell {
                     Err(e) => {
                         Shell::with_mut(|s| {
                             let e: String = e.to_string().into();
-                            s.writeln(&format!("Error: {}", &e));
+                            s.writeln(&e);
                         });
                         return;
                     }
@@ -623,8 +654,9 @@ impl Shell {
                         ".features              Shell features.\r\n",
                         ".files list            List all files.\r\n",
                         ".files add             Add files.\r\n",
-                        ".files drop $FILE      Drop a single file.\r\n",
+                        ".files download $FILE  Download a file.\r\n",
                         ".files drop            Drop all files.\r\n",
+                        ".files drop $FILE      Drop a single file.\r\n",
                         ".fstats collect $FILE  Collect file statistics.\r\n",
                         ".fstats disable $FILE  Disable file statistics.\r\n",
                         ".fstats paging $FILE   Show file paging.\r\n",
@@ -718,7 +750,7 @@ impl Shell {
                 let mut msg: String = e.message().into();
                 msg = msg.replace("\n", "\r\n");
                 Shell::with_mut(|s| {
-                    s.writeln(&format!("Error: {}", &msg));
+                    s.writeln(&msg);
                 });
                 return;
             }

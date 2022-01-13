@@ -37,6 +37,13 @@ class ShellRuntime {
         }
         return await pickFiles(this.database!);
     }
+    public async downloadFile(this: ShellRuntime, name: string, buffer: Uint8Array): Promise<void> {
+        const blob = new Blob([buffer]);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+    }
     public async readClipboardText(this: ShellRuntime): Promise<string> {
         return await navigator.clipboard.readText();
     }

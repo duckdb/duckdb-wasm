@@ -26,6 +26,12 @@ extern "C" {
 
     #[wasm_bindgen(method, catch, js_name = "pickFiles")]
     pub async fn pick_files(this: &ShellRuntime) -> Result<JsValue, js_sys::Error>;
+    #[wasm_bindgen(method, catch, js_name = "downloadFile")]
+    pub async fn download_file(
+        this: &ShellRuntime,
+        name: &str,
+        buffer: js_sys::Uint8Array,
+    ) -> Result<JsValue, js_sys::Error>;
     #[wasm_bindgen(method, catch, js_name = "readClipboardText")]
     pub async fn read_clipboard_text(this: &ShellRuntime) -> Result<JsValue, js_sys::Error>;
     #[wasm_bindgen(method, catch, js_name = "writeClipboardText")]

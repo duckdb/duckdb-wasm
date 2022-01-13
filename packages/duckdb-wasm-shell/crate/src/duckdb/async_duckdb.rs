@@ -52,6 +52,8 @@ extern "C" {
     ) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "exportFileStatistics")]
     async fn export_file_statistics(this: &JsAsyncDuckDB, file: &str) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(catch, method, js_name = "copyFileToBuffer")]
+    async fn copy_file_to_buffer(this: &JsAsyncDuckDB, file: &str) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "globFiles")]
     async fn glob_files(this: &JsAsyncDuckDB, path: &str) -> Result<JsValue, JsValue>;
 }
@@ -144,6 +146,15 @@ impl AsyncDuckDB {
     ) -> Result<FileStatistics, js_sys::Error> {
         let js_stats: JsFileStatistics = self.bindings.export_file_statistics(file).await?.into();
         Ok(FileStatistics::read(&js_stats))
+    }
+
+    /// Copy the file to a buffer
+    pub async fn copy_file_to_buffer(
+        &self,
+        name: &str,
+    ) -> Result<js_sys::Uint8Array, js_sys::Error> {
+        let buffer: js_sys::Uint8Array = self.bindings.copy_file_to_buffer(name).await?.into();
+        Ok(buffer)
     }
 }
 
