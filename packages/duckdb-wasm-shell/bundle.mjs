@@ -105,4 +105,4 @@ esbuild.build({
 // -------------------------------
 // Write declaration files
 
-fs.writeFile(path.join(dist, 'shell.d.ts'), "export * from './types/shell';", printErr);
+fs.writeFile(path.join(dist, 'shell.d.ts'), "export * from './types/src/index';", printErr);
