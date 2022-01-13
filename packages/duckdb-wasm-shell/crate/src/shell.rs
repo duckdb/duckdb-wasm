@@ -457,7 +457,7 @@ impl Shell {
                 {
                     Ok(_) => {
                         Shell::with_mut(|s| {
-                            s.writeln(&format!("Downloaded file: {}", &filename));
+                            s.writeln(&format!("Copied file: {}", &filename));
                         });
                     }
                     Err(e) => {
