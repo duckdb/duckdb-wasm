@@ -64,7 +64,7 @@ fs.copyFile(path.resolve(crate_pkg, 'shell_bg.wasm'), path.resolve(dist, 'shell_
 
 console.log('[ ESBUILD ] shell.mjs');
 esbuild.build({
-    entryPoints: ['./src/shell.ts'],
+    entryPoints: ['./src/index.ts'],
     outfile: 'dist/shell.mjs',
     platform: 'browser',
     format: 'esm',
@@ -78,7 +78,7 @@ esbuild.build({
 
 console.log('[ ESBUILD ] shell.cjs');
 esbuild.build({
-    entryPoints: ['./src/shell.ts'],
+    entryPoints: ['./src/index.ts'],
     outfile: 'dist/shell.cjs',
     platform: 'browser',
     format: 'cjs',
@@ -91,7 +91,7 @@ esbuild.build({
 
 console.log('[ ESBUILD ] shell.js');
 esbuild.build({
-    entryPoints: ['./src/shell.ts'],
+    entryPoints: ['./src/index.ts'],
     outfile: 'dist/shell.js',
     platform: 'browser',
     format: 'iife',
