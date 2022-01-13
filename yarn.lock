@@ -2745,10 +2745,10 @@ forwarded@0.2.0:
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.2.0.tgz#2269936428aad4c15c7ebe9779a84bf0b2a81811"
   integrity sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==
 
-framer-motion@^5.5.7:
-  version "5.5.7"
-  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-5.5.7.tgz#f4566134b454947efc9aa18f47dd7360e72d9338"
-  integrity sha512-/n4A8iIgMjOSQB8uqD8TEF4p/arveuzHOQfhFUGzqwhReCS9v4Y6zDFDaowMKf2EZc+Mb9IOIlglIxOwtgE3hA==
+framer-motion@^5.6.0:
+  version "5.6.0"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-5.6.0.tgz#8203b5bc4e172265d43dfe67c3c41346c67a3940"
+  integrity sha512-Y4FtwUU+LUWLKSzoT6Sq538qluvhpe6izdQK8/xZeVjQZ/ORKGfZzyhzcUxNfscqnfEa3dUOA47s+dwrSipdGA==
   dependencies:
     framesync "6.0.1"
     hey-listen "^1.0.8"
