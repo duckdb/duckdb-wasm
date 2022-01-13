@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
-import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
+import { Route, Routes, Navigate, BrowserRouter, useSearchParams } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
 import { withBanner } from './components/banner';
 
@@ -45,9 +45,20 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     return database;
 }
 
-const Shell_ = withNavBar(
-    withBanner(() => <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />),
-);
+interface ReactiveShellProps {}
+
+export const ReactiveShell: React.FC<ReactiveShellProps> = (props: ReactiveShellProps) => {
+    let [searchParams] = useSearchParams();
+    if ((searchParams.get('fullscreen') || '') === 'true') {
+        return <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />;
+    } else {
+        return withNavBar(
+            withBanner(() => (
+                <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />
+            )),
+        )(props);
+    }
+};
 
 const Versus_ = withNavBar(() => <Versus />);
 
@@ -63,7 +74,7 @@ ReactDOM.render(
     <BrowserRouter basename={basename}>
         <Routes>
             <Route path="/versus" element={<Versus_ />} />
-            <Route path="/" element={<Shell_ />} />
+            <Route path="/" element={<ReactiveShell />} />
             <Route path="*" element={<Navigate to="/" />} />
         </Routes>
     </BrowserRouter>,
