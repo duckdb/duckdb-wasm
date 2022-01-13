@@ -1,7 +1,7 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as shell from '../crate/pkg';
 import { HistoryStore } from './utils/history_store';
-import { isSafari } from './utils/platform';
+import { isSafari } from './platform';
 import { pickFiles } from './utils/files';
 
 const hasWebGL = (): boolean => {

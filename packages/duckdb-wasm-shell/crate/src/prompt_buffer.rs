@@ -67,13 +67,6 @@ impl PromptBuffer {
         self.move_cursor_to(pos + s.len());
     }
 
-    /// Prepend a line
-    pub fn prepend_line(&mut self, s: &str) {
-        self.erase_prompt();
-        write!(self.output_buffer, "{}{endl}", s, endl = vt100::CRLF,).unwrap();
-        self.reflow(|_| {});
-    }
-
     /// Reset the prompt
     pub fn start_new(&mut self) {
         self.output_buffer.clear();
