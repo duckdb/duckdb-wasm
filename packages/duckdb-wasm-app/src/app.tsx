@@ -4,7 +4,6 @@ import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Routes, Navigate, BrowserRouter, useSearchParams } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
-import { withBanner } from './components/banner';
 
 import '../static/fonts/fonts.module.css';
 import './globals.css';
@@ -45,18 +44,15 @@ async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
     return database;
 }
 
-interface ReactiveShellProps {}
-
+type ReactiveShellProps = Record<string, string>;
 export const ReactiveShell: React.FC<ReactiveShellProps> = (props: ReactiveShellProps) => {
-    let [searchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     if ((searchParams.get('fullscreen') || '') === 'true') {
         return <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />;
     } else {
-        return withNavBar(
-            withBanner(() => (
-                <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />
-            )),
-        )(props);
+        return withNavBar(() => (
+            <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />
+        ))(props);
     }
 };
 
