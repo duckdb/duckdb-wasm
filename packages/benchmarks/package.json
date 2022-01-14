@@ -6,7 +6,7 @@
     "dependencies": {
         "@duckdb/duckdb-wasm": "^1.11.0",
         "apache-arrow": "^6.0.1",
-        "arquero": "^4.3.0",
+        "arquero": "^4.8.8",
         "kleur": "^4.1.4",
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
