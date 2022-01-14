@@ -216,6 +216,9 @@ TEST(AllTypesTest, FullRangeTypes) {
     ASSERT_TRUE(maybe_result.ok()) << maybe_result.status().message();
     auto buffer = maybe_result.ValueOrDie();
 
+    // Get rid of database
+    db.reset();
+
     // Get Recordbatch reader
     arrow::io::BufferReader stream(buffer);
     auto reader_result = arrow::ipc::RecordBatchFileReader::Open(&stream);
