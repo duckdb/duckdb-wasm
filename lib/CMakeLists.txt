@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS -std=c++17)
 
 if(NOT EMSCRIPTEN)
   set(CMAKE_CXX_FLAGS_DEBUG
-      "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
+      "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")
 endif()
 
 # ---------------------------------------------------------------------------
