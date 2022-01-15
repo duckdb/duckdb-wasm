@@ -1,4 +1,5 @@
 import { DuckDBModule } from './duckdb_module';
+import * as udf from './udf_runtime';
 
 /** Wrapper for TextDecoder to support shared array buffers */
 function TextDecoderWrapper(): (input?: BufferSource) => string {
@@ -105,6 +106,9 @@ export interface DuckDBRuntime {
     moveFile(mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number): void;
     checkFile(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
     removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
+
+    // Call a scalar UDF function
+    callScalarUDF(mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void;
 }
 
 export const DEFAULT_RUNTIME: DuckDBRuntime = {
@@ -137,4 +141,7 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
         return false;
     },
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
+    callScalarUDF: (mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void => {
+        udf.callScalarUDF(DEFAULT_RUNTIME, mod, connId, funcId, bufferPtr, bufferSize);
+    },
 };

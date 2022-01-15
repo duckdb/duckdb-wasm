@@ -1,7 +1,5 @@
 #include "duckdb/web/webdb.h"
 
-#include <arrow/ipc/type_fwd.h>
-
 #include <cstddef>
 #include <cstdio>
 #include <functional>
@@ -19,6 +17,7 @@
 #include "arrow/c/bridge.h"
 #include "arrow/io/memory.h"
 #include "arrow/ipc/options.h"
+#include "arrow/ipc/type_fwd.h"
 #include "arrow/ipc/writer.h"
 #include "arrow/record_batch.h"
 #include "arrow/result.h"
@@ -47,6 +46,8 @@
 #include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_table.h"
+#include "duckdb/web/udf.h"
+#include "duckdb/web/utils/wasm_response.h"
 #include "parquet-extension.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
@@ -288,6 +289,82 @@ arrow::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
     return arrow::Status::OK();
 }
 
+arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json) {
+    // Read the function definiton
+    rapidjson::Document def_doc;
+    def_doc.Parse(def_json.begin(), def_json.size());
+    UDFFunctionDefinition def;
+    ARROW_RETURN_NOT_OK(def.ReadFrom(def_doc));
+
+    // Map types
+    ARROW_ASSIGN_OR_RAISE(auto ret_type, mapArrowTypeToDuckDB(*def.return_type));
+    std::vector<LogicalType> arg_types;
+    std::vector<std::shared_ptr<arrow::Field>> ipc_fields;
+
+    // Get schema
+    arg_types.reserve(def.argument_types.size());
+    ipc_fields.reserve(def.argument_types.size());
+    for (size_t i = 0; i < def.argument_types.size(); ++i) {
+        ARROW_ASSIGN_OR_RAISE(auto duckdb_type, mapArrowTypeToDuckDB(*def.argument_types[i]));
+        arg_types.push_back(duckdb_type);
+        ipc_fields.push_back(arrow::field(std::to_string(i), def.argument_types[0]));
+    }
+
+    // Create captured UDF lambda
+    auto udf_id = next_udf_id_++;
+    // Create schema for ipc batches
+    auto ipc_schema = arrow::schema(std::move(ipc_fields));
+
+    // UDF lambda
+    auto udf = [&, udf_id, ipc_schema = move(ipc_schema)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
+        auto status = CallScalarUDFFunction(udf_id, ipc_schema, chunk, state, vec);
+        if (!status.ok()) {
+            throw std::runtime_error(status.message());
+        }
+    };
+
+    // Register the vectorized function
+    connection_.CreateVectorizedFunction(def.name, arg_types, ret_type, udf);
+    return arrow::Status::OK();
+}
+
+#ifndef EMSCRIPTEN
+void duckdb_web_udf_scalar_call(WASMResponse*, void*, size_t, const void*, size_t) {}
+#else
+extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, void* connection_id, size_t function_id,
+                                           const void* buffer, size_t buffer_size);
+#endif
+
+arrow::Status WebDB::Connection::CallScalarUDFFunction(size_t function_id, std::shared_ptr<arrow::Schema> ipc_schema,
+                                                       DataChunk& chunk, ExpressionState& state, Vector& vec) {
+    ArrowArray array;
+    chunk.ToArrowArray(&array);
+
+    // Import the record batch
+    ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, ipc_schema));
+
+    // Serialize the record batch
+    auto options = arrow::ipc::IpcWriteOptions::Defaults();
+    options.use_threads = false;
+    ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::ipc::SerializeRecordBatch(*batch, options));
+
+    // Call scalar udf function
+    WASMResponse response;
+    duckdb_web_udf_scalar_call(&response, this, function_id, buffer->data(), buffer->size());
+
+    // UDF call failed?
+    if (response.statusCode != 0) {
+        uintptr_t err_ptr = response.dataOrValue;
+        std::unique_ptr<char[]> err_buf{reinterpret_cast<char*>(err_ptr)};
+        std::string err{err_buf.get(), static_cast<size_t>(response.dataSize)};
+        return arrow::Status::ExecutionError(err);
+    }
+
+    // XXX Unpack result buffer
+
+    return arrow::Status::OK();
+}
+
 /// Insert a record batch
 arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uint8_t> stream,
                                                           std::string_view options_json) {
@@ -391,7 +468,7 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
             child_list_t<Value> columns;
             columns.reserve(options.columns.value().size());
             for (auto& col : options.columns.value()) {
-                ARROW_ASSIGN_OR_RAISE(auto type, mapArrowType(*col->type()));
+                ARROW_ASSIGN_OR_RAISE(auto type, mapArrowTypeToDuckDB(*col->type()));
                 columns.push_back(make_pair(col->name(), Value(type.ToString())));
             }
             named_params.insert({"columns", Value::STRUCT(move(columns))});

@@ -14,6 +14,8 @@ namespace duckdb {
 namespace web {
 namespace json {
 
+/// Read a type
+arrow::Result<std::shared_ptr<arrow::DataType>> ReadType(const rapidjson::Value::ConstObject& obj);
 /// Read field from a json object
 arrow::Result<std::shared_ptr<arrow::Field>> ReadField(const rapidjson::Value& obj);
 /// Read fields from a json array

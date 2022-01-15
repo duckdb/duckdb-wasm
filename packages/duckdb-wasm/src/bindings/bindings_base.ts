@@ -10,6 +10,7 @@ import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
 import { WebFile } from './web_file';
+import { UDFFunctionDefinition } from './udf_definition';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -182,6 +183,20 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const res = readString(this.mod, d, n);
         dropResponseBuffers(this.mod);
         return JSON.parse(res) as string[];
+    }
+
+    /** Create a scalar function */
+    public createScalarFunction(conn: number, decl: UDFFunctionDefinition): void {
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_udf_scalar_create',
+            ['number', 'string'],
+            [conn, JSON.stringify(decl)],
+        );
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        dropResponseBuffers(this.mod);
     }
 
     /** Prepare a statement and return its identifier */

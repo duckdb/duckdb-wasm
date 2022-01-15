@@ -9,17 +9,19 @@ import {
     DuckDBDataProtocol,
 } from './runtime';
 import { DuckDBModule } from './duckdb_module';
+import * as udf from './udf_runtime';
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
-    fileInfoCache: Map<number, DuckDBFileInfo>;
+    _fileInfoCache: Map<number, DuckDBFileInfo>;
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
 } = {
-    fileInfoCache: new Map<number, DuckDBFileInfo>(),
+    _files: new Map<string, any>(),
+    _fileInfoCache: new Map<number, DuckDBFileInfo>(),
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
-            const cached = BROWSER_RUNTIME.fileInfoCache.get(fileId);
+            const cached = BROWSER_RUNTIME._fileInfoCache.get(fileId);
             if (cached) return cached;
             const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number'], [fileId]);
             if (s !== StatusCode.SUCCESS) {
@@ -32,7 +34,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 return null;
             }
             const file = { ...info, blob: null } as DuckDBFileInfo;
-            BROWSER_RUNTIME.fileInfoCache.set(fileId, file);
+            BROWSER_RUNTIME._fileInfoCache.set(fileId, file);
             return file;
         } catch (e: any) {
             return null;
@@ -51,7 +53,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
     openFile: (mod: DuckDBModule, fileId: number): number => {
         try {
-            BROWSER_RUNTIME.fileInfoCache.delete(fileId);
+            BROWSER_RUNTIME._fileInfoCache.delete(fileId);
             const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
                 // HTTP File
@@ -189,7 +191,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
-        BROWSER_RUNTIME.fileInfoCache.delete(fileId);
+        BROWSER_RUNTIME._fileInfoCache.delete(fileId);
         switch (file?.dataProtocol) {
             case DuckDBDataProtocol.HTTP:
                 break;
@@ -312,6 +314,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    callScalarUDF: (mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void => {
+        udf.callScalarUDF(BROWSER_RUNTIME, mod, connId, funcId, bufferPtr, bufferSize);
+    },
 };
 
 export default BROWSER_RUNTIME;

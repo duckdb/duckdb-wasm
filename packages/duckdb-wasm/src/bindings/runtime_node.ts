@@ -12,17 +12,19 @@ import {
 import { StatusCode } from '../status';
 import { DuckDBModule } from './duckdb_module';
 import * as fg from 'fast-glob';
+import * as udf from './udf_runtime';
 
 export const NODE_RUNTIME: DuckDBRuntime & {
-    fileInfoCache: Map<number, DuckDBFileInfo>;
+    _fileInfoCache: Map<number, DuckDBFileInfo>;
 
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
 } = {
-    fileInfoCache: new Map<number, DuckDBFileInfo>(),
+    _files: new Map<string, any>(),
+    _fileInfoCache: new Map<number, DuckDBFileInfo>(),
 
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
-            const cached = NODE_RUNTIME.fileInfoCache.get(fileId);
+            const cached = NODE_RUNTIME._fileInfoCache.get(fileId);
             if (cached) return cached;
             const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number'], [fileId]);
             if (s !== StatusCode.SUCCESS) {
@@ -33,7 +35,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             dropResponseBuffers(mod);
             const info = JSON.parse(infoStr) as DuckDBFileInfo;
             if (info == null) return null;
-            NODE_RUNTIME.fileInfoCache.set(fileId, info);
+            NODE_RUNTIME._fileInfoCache.set(fileId, info);
             return info as DuckDBFileInfo;
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -53,7 +55,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
 
     openFile(mod: DuckDBModule, fileId: number): number {
         try {
-            NODE_RUNTIME.fileInfoCache.delete(fileId);
+            NODE_RUNTIME._fileInfoCache.delete(fileId);
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
                 // Native file
@@ -91,7 +93,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     closeFile: (mod: DuckDBModule, fileId: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
-            NODE_RUNTIME.fileInfoCache.delete(fileId);
+            NODE_RUNTIME._fileInfoCache.delete(fileId);
             switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.NATIVE: {
                     if (!file.dataNativeFd) {
@@ -257,6 +259,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             failWith(mod, e.toString());
             return 0;
         }
+    },
+    callScalarUDF: (mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void => {
+        udf.callScalarUDF(NODE_RUNTIME, mod, connId, funcId, bufferPtr, bufferSize);
     },
 };
 

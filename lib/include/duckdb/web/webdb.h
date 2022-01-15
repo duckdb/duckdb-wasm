@@ -20,6 +20,7 @@
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/udf.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
@@ -43,6 +44,7 @@ class WebDB {
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
         /// The current patched arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_patched_ = nullptr;
+
         /// The currently active prepared statements
         std::unordered_map<size_t, std::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
         /// The next prepared statement id
@@ -52,6 +54,11 @@ class WebDB {
         /// The current arrow ipc input stream
         std::unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
 
+        /// The UDF functions
+        std::unordered_map<size_t, std::unique_ptr<UDFFunctionDefinition>> udf_functions_;
+        /// The next UDF id
+        size_t next_udf_id_ = 0;
+
         // Fully materialize a given result set and return it as an Arrow Buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(
             std::unique_ptr<duckdb::QueryResult> result);
@@ -60,6 +67,9 @@ class WebDB {
         // Execute a prepared statement by setting up all arguments and returning the query result
         arrow::Result<std::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
                                                                                      std::string_view args_json);
+        // Call scalar UDF function
+        arrow::Status CallScalarUDFFunction(size_t function_id, std::shared_ptr<arrow::Schema> ipc_schema,
+                                            DataChunk& chunk, ExpressionState& state, Vector& vec);
 
        public:
         /// Constructor
@@ -91,6 +101,9 @@ class WebDB {
                                                                             std::string_view args_json);
         /// Close a prepared statement by its identifier
         arrow::Status ClosePreparedStatement(size_t statement_id);
+
+        /// Create a scalar function
+        arrow::Status CreateScalarFunction(std::string_view args_json);
 
         /// Insert an arrow record batch from an IPC stream
         arrow::Status InsertArrowFromIPCStream(nonstd::span<const uint8_t> stream, std::string_view options);

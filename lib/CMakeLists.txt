@@ -197,6 +197,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/json_parser.cc
   ${CMAKE_SOURCE_DIR}/src/json_table.cc
   ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
+  ${CMAKE_SOURCE_DIR}/src/udf.cc
   ${CMAKE_SOURCE_DIR}/src/utils/parking_lot.cc
   ${CMAKE_SOURCE_DIR}/src/utils/shared_mutex.cc
   ${CMAKE_SOURCE_DIR}/src/utils/thread.cc
