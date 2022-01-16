@@ -299,13 +299,9 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
     auto def = std::make_shared<UDFFunctionDeclaration>();
     ARROW_RETURN_NOT_OK(def->ReadFrom(def_doc));
 
-    // Map types
+    // Read return type
     auto name = def->name;
     ARROW_ASSIGN_OR_RAISE(auto ret_type, mapArrowTypeToDuckDB(*def->return_type));
-    std::vector<LogicalType> arg_types;
-    for (size_t i = 0; i < def->argument_count; ++i) {
-        arg_types.push_back(LogicalType::ANY);
-    }
 
     // UDF lambda
     auto udf = [&, udf = move(def)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
@@ -316,7 +312,7 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
     };
 
     // Register the vectorized function
-    connection_.CreateVectorizedFunction(name, arg_types, ret_type, udf);
+    connection_.CreateVectorizedFunction(name, vector<LogicalType>{}, ret_type, udf, LogicalType::ANY);
     return arrow::Status::OK();
 }
 
