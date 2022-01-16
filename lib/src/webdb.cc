@@ -346,6 +346,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::ipc::SerializeRecordBatch(*batch, options));
 
     // Call scalar udf function
+    // XXX: throwing udf might leak data here, either catch in js wrapper or here
     WASMResponse response;
     duckdb_web_udf_scalar_call(&response, function.function_id, buffer->data(), buffer->size());
 
@@ -363,15 +364,15 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     arrow::io::BufferReader res_buffer{res_buf_view};
     ARROW_ASSIGN_OR_RAISE(auto res_reader, arrow::ipc::RecordBatchFileReader::Open(&res_buffer));
 
-    // Get batch
+    // Read record batch
     if (res_reader->num_record_batches() != 1 || res_reader->schema()->fields().size() != 1) {
         return arrow::Status::ExecutionError("malformed UDF result");
     }
     ARROW_ASSIGN_OR_RAISE(auto res_batch, res_reader->ReadRecordBatch(0));
     auto res_column = res_batch->column(0);
 
-    // XXX Map Arrow to DuckDB Vector
-
+    // Convert the Arrow array to the DuckDB vector
+    ARROW_RETURN_NOT_OK(convertArrowArrayToDuckDBVector(*res_column, vec));
     return arrow::Status::OK();
 }
 

@@ -1,10 +1,12 @@
 #include "duckdb/web/arrow_type_mapping.h"
 
+#include "arrow/array/array_primitive.h"
 #include "arrow/result.h"
 #include "arrow/status.h"
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/common/types.hpp"
+#include "duckdb/common/types/vector.hpp"
 #include "duckdb/web/webdb.h"
 
 namespace duckdb {
@@ -157,6 +159,67 @@ arrow::Result<std::shared_ptr<arrow::DataType>> mapDuckDBTypeToArrow(const duckd
         default:
             return arrow::null();
     }
+}
+
+/// Convert an arrow array to a DuckDB vector
+arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Vector& out) {
+    auto in_type = in.type();
+    switch (in_type->id()) {
+        // Arrow bitpacks booleans
+        case arrow::Type::type::BOOL: {
+            auto& a = *dynamic_cast<const arrow::BooleanArray*>(&in);
+        }
+
+        // Store plain data pointer
+        case arrow::Type::type::UINT8:
+        case arrow::Type::type::INT8:
+        case arrow::Type::type::UINT16:
+        case arrow::Type::type::INT16:
+        case arrow::Type::type::UINT32:
+        case arrow::Type::type::INT32:
+        case arrow::Type::type::UINT64:
+        case arrow::Type::type::INT64:
+        case arrow::Type::type::HALF_FLOAT:
+        case arrow::Type::type::FLOAT:
+        case arrow::Type::type::DOUBLE:
+        case arrow::Type::type::TIMESTAMP:
+        case arrow::Type::type::TIME32:
+        case arrow::Type::type::TIME64:
+            duckdb::FlatVector::SetData(out, nullptr);
+            break;
+
+        // Manually convert string_t
+        case arrow::Type::type::STRING:
+            break;
+
+        // Unsupported for UDF MVP
+        case arrow::Type::type::DATE32:
+        case arrow::Type::type::DATE64:
+        case arrow::Type::type::BINARY:
+        case arrow::Type::type::FIXED_SIZE_BINARY:
+        case arrow::Type::type::INTERVAL_MONTHS:
+        case arrow::Type::type::INTERVAL_DAY_TIME:
+        case arrow::Type::type::DECIMAL128:
+        case arrow::Type::type::DECIMAL256:
+        case arrow::Type::type::LIST:
+        case arrow::Type::type::STRUCT:
+        case arrow::Type::type::SPARSE_UNION:
+        case arrow::Type::type::DENSE_UNION:
+        case arrow::Type::type::DICTIONARY:
+        case arrow::Type::type::MAP:
+        case arrow::Type::type::FIXED_SIZE_LIST:
+        case arrow::Type::type::DURATION:
+        case arrow::Type::type::LARGE_STRING:
+        case arrow::Type::type::LARGE_BINARY:
+        case arrow::Type::type::LARGE_LIST:
+        case arrow::Type::type::INTERVAL_MONTH_DAY_NANO:
+
+        case arrow::Type::type::NA:
+
+        default:
+            break;
+    }
+    return arrow::Status::OK();
 }
 
 }  // namespace web
