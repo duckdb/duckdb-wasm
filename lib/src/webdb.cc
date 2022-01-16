@@ -1,10 +1,7 @@
 #include "duckdb/web/webdb.h"
 
-#include <arrow/ipc/reader.h>
-
 #include <cstddef>
 #include <cstdio>
-#include <duckdb/common/types.hpp>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -20,6 +17,7 @@
 #include "arrow/c/bridge.h"
 #include "arrow/io/memory.h"
 #include "arrow/ipc/options.h"
+#include "arrow/ipc/reader.h"
 #include "arrow/ipc/type_fwd.h"
 #include "arrow/ipc/writer.h"
 #include "arrow/record_batch.h"
@@ -29,7 +27,9 @@
 #include "duckdb.hpp"
 #include "duckdb/common/arrow.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
+#include "duckdb/common/types/vector_buffer.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
@@ -323,6 +323,19 @@ extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t functi
                                            size_t buffer_size);
 #endif
 
+namespace {
+
+class SharedVectorBuffer : public VectorBuffer {
+   protected:
+    std::unique_ptr<char[]> data;
+
+   public:
+    explicit SharedVectorBuffer(std::unique_ptr<char[]> data)
+        : VectorBuffer(VectorBufferType::STANDARD_BUFFER), data(std::move(data)) {}
+};
+
+}  // namespace
+
 arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk,
                                                        ExpressionState& state, Vector& vec) {
     // Get arrow CDataInterface
@@ -359,8 +372,12 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     }
 
     // Unpack result buffer
-    auto res_buf = reinterpret_cast<const char*>(static_cast<uintptr_t>(response.dataOrValue));
+    auto res_buf = reinterpret_cast<char*>(static_cast<uintptr_t>(response.dataOrValue));
     auto res_buf_view = arrow::util::string_view{res_buf, static_cast<size_t>(response.dataSize)};
+    auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
+    vec.SetAuxiliary(shared_buffer);
+
+    // Read the result
     arrow::io::BufferReader res_buffer{res_buf_view};
     ARROW_ASSIGN_OR_RAISE(auto res_reader, arrow::ipc::RecordBatchFileReader::Open(&res_buffer));
 

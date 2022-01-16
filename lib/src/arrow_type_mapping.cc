@@ -1,5 +1,6 @@
 #include "duckdb/web/arrow_type_mapping.h"
 
+#include "arrow/array/array_binary.h"
 #include "arrow/array/array_primitive.h"
 #include "arrow/result.h"
 #include "arrow/status.h"
@@ -165,9 +166,20 @@ arrow::Result<std::shared_ptr<arrow::DataType>> mapDuckDBTypeToArrow(const duckd
 arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Vector& out) {
     auto in_type = in.type();
     switch (in_type->id()) {
+        // Map null
+        case arrow::Type::type::NA:
+            out.Reference(Value());
+            break;
+
         // Arrow bitpacks booleans
         case arrow::Type::type::BOOL: {
             auto& a = *dynamic_cast<const arrow::BooleanArray*>(&in);
+            if (out.GetType().id() == LogicalTypeId::BOOLEAN) {
+                return arrow::Status::ExecutionError("invalid boolean array");
+            }
+            for (size_t i = 0; i < a.length(); ++i) {
+                out.GetData()[i] = a.Value(i);
+            }
         }
 
         // Store plain data pointer
@@ -184,13 +196,22 @@ arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Ve
         case arrow::Type::type::DOUBLE:
         case arrow::Type::type::TIMESTAMP:
         case arrow::Type::type::TIME32:
-        case arrow::Type::type::TIME64:
-            duckdb::FlatVector::SetData(out, nullptr);
+        case arrow::Type::type::TIME64: {
+            auto* data = reinterpret_cast<uint8_t*>(in.data()->buffers[0]->address());
+            duckdb::FlatVector::SetData(out, data);
             break;
+        }
 
         // Manually convert string_t
-        case arrow::Type::type::STRING:
+        case arrow::Type::type::STRING: {
+            auto& a = *dynamic_cast<const arrow::StringArray*>(&in);
+            auto strings = FlatVector::GetData<string_t>(out);
+            for (size_t i = 0; i < a.length(); ++i) {
+                auto s = a.GetView(i);
+                strings[i] = string_t(s.data(), s.length());
+            }
             break;
+        }
 
         // Unsupported for UDF MVP
         case arrow::Type::type::DATE32:
@@ -213,8 +234,7 @@ arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Ve
         case arrow::Type::type::LARGE_BINARY:
         case arrow::Type::type::LARGE_LIST:
         case arrow::Type::type::INTERVAL_MONTH_DAY_NANO:
-
-        case arrow::Type::type::NA:
+            break;
 
         default:
             break;
