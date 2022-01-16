@@ -362,20 +362,19 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     }
 
     // Unpack result buffer
-    auto res_buf = reinterpret_cast<const uint8_t*>(static_cast<uintptr_t>(response.dataOrValue));
-    auto res_size = response.dataSize;
-    auto ipc_decoder = std::make_unique<BufferingArrowIPCStreamDecoder>();
-    ARROW_RETURN_NOT_OK(ipc_decoder->Consume(res_buf, res_size));
+    auto res_buf = reinterpret_cast<const char*>(static_cast<uintptr_t>(response.dataOrValue));
+    auto res_buf_view = arrow::util::string_view{res_buf, static_cast<size_t>(response.dataSize)};
+    arrow::io::BufferReader res_buffer{res_buf_view};
+    ARROW_ASSIGN_OR_RAISE(auto res_reader, arrow::ipc::RecordBatchFileReader::Open(&res_buffer));
 
     // Get batch
-    auto batches = arrow_ipc_stream_->buffer()->batches();
-    if (!arrow_ipc_stream_->buffer()->is_eos() && batches.size() > 0 && batches[0]->columns().size()) {
-        return arrow::Status::ExecutionError("invalid UDF result");
+    if (res_reader->num_record_batches() != 1 || res_reader->schema()->fields().size() != 1) {
+        return arrow::Status::ExecutionError("malformed UDF result");
     }
-    auto column = batches[0]->column(0);
+    ARROW_ASSIGN_OR_RAISE(auto res_batch, res_reader->ReadRecordBatch(0));
+    auto res_column = res_batch->column(0);
 
-    // XXX Arrow to DuckDB Vector
-    (void)column;
+    // XXX Map Arrow to DuckDB Vector
 
     return arrow::Status::OK();
 }
