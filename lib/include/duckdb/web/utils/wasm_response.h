@@ -10,11 +10,11 @@ namespace web {
 
 struct WASMResponse {
     /// The status code
-    double statusCode;
+    double statusCode = 1;
     /// The data ptr of value (if any)
-    double dataOrValue;
+    double dataOrValue = 0;
     /// The data size
-    double dataSize;
+    double dataSize = 0;
 } __attribute((packed));
 
 class WASMResponseBuffer {

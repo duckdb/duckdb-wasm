@@ -18,6 +18,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 } = {
     _files: new Map<string, any>(),
     _fileInfoCache: new Map<number, DuckDBFileInfo>(),
+    _udfFunctions: new Map(),
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
@@ -314,8 +315,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    callScalarUDF: (mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void => {
-        udf.callScalarUDF(BROWSER_RUNTIME, mod, connId, funcId, bufferPtr, bufferSize);
+    callScalarUDF: (mod: DuckDBModule, funcId: number, bufferPtr: number, bufferSize: number): void => {
+        udf.callScalarUDF(BROWSER_RUNTIME, mod, funcId, bufferPtr, bufferSize);
     },
 };
 

@@ -12,15 +12,15 @@
 namespace duckdb {
 namespace web {
 
-struct UDFFunctionDefinition {
+struct UDFFunctionDeclaration {
     /// The name
     std::string name = "";
+    /// The function id
+    size_t function_id = 0;
+    /// The argument count
+    size_t argument_count = 0;
     /// The return type
     std::shared_ptr<arrow::DataType> return_type = {};
-    /// The arguments
-    std::vector<std::shared_ptr<arrow::DataType>> argument_types = {};
-    /// The code
-    std::string code = "";
 
     /// Read from a document
     arrow::Status ReadFrom(const rapidjson::Document& doc);

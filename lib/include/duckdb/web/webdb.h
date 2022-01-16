@@ -54,11 +54,6 @@ class WebDB {
         /// The current arrow ipc input stream
         std::unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
 
-        /// The UDF functions
-        std::unordered_map<size_t, std::unique_ptr<UDFFunctionDefinition>> udf_functions_;
-        /// The next UDF id
-        size_t next_udf_id_ = 0;
-
         // Fully materialize a given result set and return it as an Arrow Buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(
             std::unique_ptr<duckdb::QueryResult> result);
@@ -68,8 +63,8 @@ class WebDB {
         arrow::Result<std::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
                                                                                      std::string_view args_json);
         // Call scalar UDF function
-        arrow::Status CallScalarUDFFunction(size_t function_id, std::shared_ptr<arrow::Schema> ipc_schema,
-                                            DataChunk& chunk, ExpressionState& state, Vector& vec);
+        arrow::Status CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk, ExpressionState& state,
+                                            Vector& vec);
 
        public:
         /// Constructor

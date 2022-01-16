@@ -22,21 +22,21 @@ namespace web {
 namespace {
 
 enum FieldTag {
+    FUNCTION_ID,
     NAME,
     RETURN_TYPE,
-    ARGUMENT_TYPES,
-    CODE,
+    ARGUMENT_COUNT,
 };
 
 static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{{"name", FieldTag::NAME},
-                                                                 {"argumentTypes", FieldTag::ARGUMENT_TYPES},
+                                                                 {"argumentCount", FieldTag::ARGUMENT_COUNT},
                                                                  {"returnType", FieldTag::RETURN_TYPE},
-                                                                 {"code", FieldTag::CODE}};
+                                                                 {"functionId", FieldTag::FUNCTION_ID}};
 
 }  // namespace
 
 /// Read from document
-arrow::Status UDFFunctionDefinition::ReadFrom(const rapidjson::Document& doc) {
+arrow::Status UDFFunctionDeclaration::ReadFrom(const rapidjson::Document& doc) {
     if (!doc.IsObject()) return arrow::Status::OK();
     for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
         std::string_view name{iter->name.GetString(), iter->name.GetStringLength()};
@@ -50,11 +50,6 @@ arrow::Status UDFFunctionDefinition::ReadFrom(const rapidjson::Document& doc) {
                 name = {iter->value.GetString(), iter->value.GetStringLength()};
                 break;
 
-            case FieldTag::CODE:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
-                code = {iter->value.GetString(), iter->value.GetStringLength()};
-                break;
-
             case FieldTag::RETURN_TYPE: {
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kObjectType, name));
                 const auto& type_obj = iter->value.GetObject();
@@ -62,15 +57,14 @@ arrow::Status UDFFunctionDefinition::ReadFrom(const rapidjson::Document& doc) {
                 break;
             }
 
-            case FieldTag::ARGUMENT_TYPES:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kArrayType, name));
-                const auto& args = iter->value.GetArray();
-                for (auto arg_iter = args.begin(); arg_iter != args.end(); ++arg_iter) {
-                    ARROW_RETURN_NOT_OK(RequireFieldType(*arg_iter, rapidjson::Type::kObjectType, name));
-                    const auto& arg_obj = arg_iter->GetObject();
-                    ARROW_ASSIGN_OR_RAISE(auto arg_type, json::ReadType(arg_obj));
-                    argument_types.push_back(arg_type);
-                }
+            case FieldTag::FUNCTION_ID:
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kNumberType, name));
+                function_id = iter->value.GetInt();
+                break;
+
+            case FieldTag::ARGUMENT_COUNT:
+                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kNumberType, name));
+                argument_count = iter->value.GetInt();
                 break;
         }
     }

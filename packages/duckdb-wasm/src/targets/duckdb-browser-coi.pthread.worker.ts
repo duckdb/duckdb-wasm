@@ -29,6 +29,16 @@ globalThis.onmessage = (e: any) => {
     } else if (e.data.cmd === 'dropFileHandle') {
         globalThis.DUCKDB_RUNTIME._files = globalThis.DUCKDB_RUNTIME._files || new Map();
         globalThis.DUCKDB_RUNTIME._files.delete(e.data.fileName);
+    } else if (e.data.cmd === 'registerUDFFunction') {
+        globalThis.DUCKDB_RUNTIME._udfFunctions = globalThis.DUCKDB_RUNTIME._files || new Map();
+        globalThis.DUCKDB_RUNTIME._udfFunctions.set(e.data.udf.name, e.data.udf);
+    } else if (e.data.cmd === 'dropUDFFunctions') {
+        globalThis.DUCKDB_RUNTIME._udfFunctions = globalThis.DUCKDB_RUNTIME._files || new Map();
+        for (const key of globalThis.DUCKDB_RUNTIME._udfFunctions.keys()) {
+            if (globalThis.DUCKDB_RUNTIME._udfFunctions.get(key).connection_id == e.data.connectionId) {
+                globalThis.DUCKDB_RUNTIME._udfFunctions.delete(key);
+            }
+        }
     } else {
         pthread_api.onmessage(e);
     }

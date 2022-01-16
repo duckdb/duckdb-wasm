@@ -21,6 +21,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
 } = {
     _files: new Map<string, any>(),
     _fileInfoCache: new Map<number, DuckDBFileInfo>(),
+    _udfFunctions: new Map(),
 
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
@@ -260,8 +261,8 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             return 0;
         }
     },
-    callScalarUDF: (mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void => {
-        udf.callScalarUDF(NODE_RUNTIME, mod, connId, funcId, bufferPtr, bufferSize);
+    callScalarUDF: (mod: DuckDBModule, funcId: number, bufferPtr: number, bufferSize: number): void => {
+        udf.callScalarUDF(NODE_RUNTIME, mod, funcId, bufferPtr, bufferSize);
     },
 };
 

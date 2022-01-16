@@ -10,7 +10,7 @@ import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
 import { flattenArrowField } from '../flat_arrow';
 import { WebFile } from './web_file';
-import { UDFFunctionDefinition } from './udf_definition';
+import { UDFFunctionDeclaration } from './udf_function';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -40,10 +40,13 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     protected _initPromise: Promise<void> | null = null;
     /** The resolver for the open promise (called by onRuntimeInitialized) */
     protected _initPromiseResolver: () => void = () => {};
+    /** The next UDF id */
+    protected _nextUDFId: number;
 
     constructor(logger: Logger, runtime: DuckDBRuntime) {
         this._logger = logger;
         this._runtime = runtime;
+        this._nextUDFId = 1;
     }
 
     /** Get the logger */
@@ -142,6 +145,14 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** Disconnect from database */
     public disconnect(conn: number): void {
         this.mod.ccall('duckdb_web_disconnect', null, ['number'], [conn]);
+        if (this.pthread) {
+            for (const worker of [...this.pthread.runningWorkers, ...this.pthread.unusedWorkers]) {
+                worker.postMessage({
+                    cmd: 'dropUDFFunctions',
+                    connectionId: conn,
+                });
+            }
+        }
     }
 
     /** Send a query and return the full result */
@@ -186,7 +197,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     }
 
     /** Create a scalar function */
-    public createScalarFunction(conn: number, decl: UDFFunctionDefinition): void {
+    public createScalarFunction(conn: number, decl: UDFFunctionDeclaration): void {
+        decl.functionId = this._nextUDFId;
+        this._nextUDFId += 1;
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_udf_scalar_create',
@@ -197,6 +210,18 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             throw new Error(readString(this.mod, d, n));
         }
         dropResponseBuffers(this.mod);
+        globalThis.DUCKDB_RUNTIME._udfFunctions = (globalThis.DUCKDB_RUNTIME._udfFunctions || new Map()).set(
+            decl.functionId,
+            decl,
+        );
+        if (this.pthread) {
+            for (const worker of [...this.pthread.runningWorkers, ...this.pthread.unusedWorkers]) {
+                worker.postMessage({
+                    cmd: 'registerUDFFunction',
+                    udf: decl,
+                });
+            }
+        }
     }
 
     /** Prepare a statement and return its identifier */

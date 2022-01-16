@@ -1,7 +1,10 @@
 #include "duckdb/web/webdb.h"
 
+#include <arrow/ipc/reader.h>
+
 #include <cstddef>
 #include <cstdio>
+#include <duckdb/common/types.hpp>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -293,52 +296,50 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
     // Read the function definiton
     rapidjson::Document def_doc;
     def_doc.Parse(def_json.begin(), def_json.size());
-    UDFFunctionDefinition def;
-    ARROW_RETURN_NOT_OK(def.ReadFrom(def_doc));
+    auto def = std::make_shared<UDFFunctionDeclaration>();
+    ARROW_RETURN_NOT_OK(def->ReadFrom(def_doc));
 
     // Map types
-    ARROW_ASSIGN_OR_RAISE(auto ret_type, mapArrowTypeToDuckDB(*def.return_type));
+    auto name = def->name;
+    ARROW_ASSIGN_OR_RAISE(auto ret_type, mapArrowTypeToDuckDB(*def->return_type));
     std::vector<LogicalType> arg_types;
-    std::vector<std::shared_ptr<arrow::Field>> ipc_fields;
-
-    // Get schema
-    arg_types.reserve(def.argument_types.size());
-    ipc_fields.reserve(def.argument_types.size());
-    for (size_t i = 0; i < def.argument_types.size(); ++i) {
-        ARROW_ASSIGN_OR_RAISE(auto duckdb_type, mapArrowTypeToDuckDB(*def.argument_types[i]));
-        arg_types.push_back(duckdb_type);
-        ipc_fields.push_back(arrow::field(std::to_string(i), def.argument_types[0]));
+    for (size_t i = 0; i < def->argument_count; ++i) {
+        arg_types.push_back(LogicalType::ANY);
     }
 
-    // Create captured UDF lambda
-    auto udf_id = next_udf_id_++;
-    // Create schema for ipc batches
-    auto ipc_schema = arrow::schema(std::move(ipc_fields));
-
     // UDF lambda
-    auto udf = [&, udf_id, ipc_schema = move(ipc_schema)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
-        auto status = CallScalarUDFFunction(udf_id, ipc_schema, chunk, state, vec);
+    auto udf = [&, udf = move(def)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
+        auto status = CallScalarUDFFunction(*udf, chunk, state, vec);
         if (!status.ok()) {
             throw std::runtime_error(status.message());
         }
     };
 
     // Register the vectorized function
-    connection_.CreateVectorizedFunction(def.name, arg_types, ret_type, udf);
+    connection_.CreateVectorizedFunction(name, arg_types, ret_type, udf);
     return arrow::Status::OK();
 }
 
 #ifndef EMSCRIPTEN
-void duckdb_web_udf_scalar_call(WASMResponse*, void*, size_t, const void*, size_t) {}
+void duckdb_web_udf_scalar_call(WASMResponse*, size_t, const void*, size_t) {}
 #else
-extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, void* connection_id, size_t function_id,
-                                           const void* buffer, size_t buffer_size);
+extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t function_id, const void* buffer,
+                                           size_t buffer_size);
 #endif
 
-arrow::Status WebDB::Connection::CallScalarUDFFunction(size_t function_id, std::shared_ptr<arrow::Schema> ipc_schema,
-                                                       DataChunk& chunk, ExpressionState& state, Vector& vec) {
+arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk,
+                                                       ExpressionState& state, Vector& vec) {
+    // Get arrow CDataInterface
     ArrowArray array;
     chunk.ToArrowArray(&array);
+
+    // Derive schema (XXX: can we cache this?)
+    std::vector<std::shared_ptr<arrow::Field>> ipc_schema_fields;
+    for (size_t i = 0; i < chunk.data.size(); ++i) {
+        ARROW_ASSIGN_OR_RAISE(auto mapped, mapDuckDBTypeToArrow(chunk.data[i].GetType()));
+        ipc_schema_fields.push_back(arrow::field(std::to_string(i), mapped, true /* XXX: nullable? */));
+    }
+    auto ipc_schema = arrow::schema(ipc_schema_fields);
 
     // Import the record batch
     ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, ipc_schema));
@@ -350,7 +351,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(size_t function_id, std::
 
     // Call scalar udf function
     WASMResponse response;
-    duckdb_web_udf_scalar_call(&response, this, function_id, buffer->data(), buffer->size());
+    duckdb_web_udf_scalar_call(&response, function.function_id, buffer->data(), buffer->size());
 
     // UDF call failed?
     if (response.statusCode != 0) {
@@ -360,7 +361,21 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(size_t function_id, std::
         return arrow::Status::ExecutionError(err);
     }
 
-    // XXX Unpack result buffer
+    // Unpack result buffer
+    auto res_buf = reinterpret_cast<const uint8_t*>(static_cast<uintptr_t>(response.dataOrValue));
+    auto res_size = response.dataSize;
+    auto ipc_decoder = std::make_unique<BufferingArrowIPCStreamDecoder>();
+    ARROW_RETURN_NOT_OK(ipc_decoder->Consume(res_buf, res_size));
+
+    // Get batch
+    auto batches = arrow_ipc_stream_->buffer()->batches();
+    if (!arrow_ipc_stream_->buffer()->is_eos() && batches.size() > 0 && batches[0]->columns().size()) {
+        return arrow::Status::ExecutionError("invalid UDF result");
+    }
+    auto column = batches[0]->column(0);
+
+    // XXX Arrow to DuckDB Vector
+    (void)column;
 
     return arrow::Status::OK();
 }

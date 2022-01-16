@@ -1,5 +1,6 @@
 import { DuckDBModule } from './duckdb_module';
-import * as udf from './udf_runtime';
+import { UDFFunction } from './udf_function';
+import * as udf_rt from './udf_runtime';
 
 /** Wrapper for TextDecoder to support shared array buffers */
 function TextDecoderWrapper(): (input?: BufferSource) => string {
@@ -84,6 +85,7 @@ export function dropResponseBuffers(mod: DuckDBModule): void {
 /** The duckdb runtime */
 export interface DuckDBRuntime {
     _files?: Map<string, any>;
+    _udfFunctions: Map<number, UDFFunction>;
 
     // Test a platform feature
     testPlatformFeature(mod: DuckDBModule, feature: number): boolean;
@@ -112,6 +114,8 @@ export interface DuckDBRuntime {
 }
 
 export const DEFAULT_RUNTIME: DuckDBRuntime = {
+    _udfFunctions: new Map(),
+
     testPlatformFeature: (_mod: DuckDBModule, _feature: number): boolean => false,
     openFile: (_mod: DuckDBModule, _fileId: number): void => {},
     syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
@@ -141,7 +145,7 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
         return false;
     },
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number): void => {},
-    callScalarUDF: (mod: DuckDBModule, connId: number, funcId: number, bufferPtr: number, bufferSize: number): void => {
-        udf.callScalarUDF(DEFAULT_RUNTIME, mod, connId, funcId, bufferPtr, bufferSize);
+    callScalarUDF: (mod: DuckDBModule, funcId: number, bufferPtr: number, bufferSize: number): void => {
+        udf_rt.callScalarUDF(DEFAULT_RUNTIME, mod, funcId, bufferPtr, bufferSize);
     },
 };

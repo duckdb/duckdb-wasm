@@ -183,13 +183,8 @@ Result<std::shared_ptr<DataType>> ReadUnionType(const rapidjson::Value::ConstObj
 }  // namespace
 
 /// Read a type
-arrow::Result<std::shared_ptr<arrow::DataType>> ReadType(const rapidjson::Value& type) {
-    if (!type.IsObject()) {
-        return Status::Invalid("Field was not a JSON object");
-    }
-    const auto& type_obj = type.GetObject();
-
-    ARROW_ASSIGN_OR_RAISE(const auto obj, GetStringField(type_obj, "type", ""));
+arrow::Result<std::shared_ptr<arrow::DataType>> ReadType(const rapidjson::Value::ConstObject& type) {
+    ARROW_ASSIGN_OR_RAISE(const auto obj, GetStringField(type, "type", ""));
 
     using TypeResolver =
         std::function<arrow::Result<std::shared_ptr<arrow::DataType>>(const rapidjson::Value::ConstObject&)>;
@@ -260,7 +255,7 @@ arrow::Result<std::shared_ptr<arrow::DataType>> ReadType(const rapidjson::Value&
     std::transform(objLower.begin(), objLower.end(), objLower.begin(), [](unsigned char c) { return std::tolower(c); });
     auto iter = ARROW_TYPE_MAPPING.find(objLower);
     if (iter == ARROW_TYPE_MAPPING.end()) return Status::Invalid("Unrecognized type name: ", obj);
-    ARROW_ASSIGN_OR_RAISE(const auto mapped, iter->second(type_obj));
+    ARROW_ASSIGN_OR_RAISE(const auto mapped, iter->second(type));
     return mapped;
 }
 
@@ -272,7 +267,7 @@ arrow::Result<std::shared_ptr<Field>> ReadField(const rapidjson::Value& field) {
     const auto& field_obj = field.GetObject();
     ARROW_ASSIGN_OR_RAISE(auto name, GetStringField(field_obj, "name", ""));
     ARROW_ASSIGN_OR_RAISE(auto nullable, GetBoolField(field_obj, "nullable", true));
-    ARROW_ASSIGN_OR_RAISE(auto type, ReadType(field));
+    ARROW_ASSIGN_OR_RAISE(auto type, ReadType(field_obj));
 
     if (name == "") return Status::Invalid("invalid field name");
     return arrow::field(std::string{name}, type, nullable);
