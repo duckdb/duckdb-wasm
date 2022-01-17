@@ -158,7 +158,8 @@ arrow::Result<std::shared_ptr<arrow::DataType>> mapDuckDBTypeToArrow(const duckd
             return arrow::date64();
         // XXX
         default:
-            return arrow::null();
+            return arrow::Status::ExecutionError(std::string("type mapping not implemented for duckdb type: ") +
+                                                 type.ToString());
     }
 }
 
@@ -234,10 +235,9 @@ arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Ve
         case arrow::Type::type::LARGE_BINARY:
         case arrow::Type::type::LARGE_LIST:
         case arrow::Type::type::INTERVAL_MONTH_DAY_NANO:
-            break;
-
         default:
-            break;
+            return arrow::Status::ExecutionError(std::string("array conversion not implemented for arrow type: ") +
+                                                 in.type()->ToString());
     }
     return arrow::Status::OK();
 }
