@@ -25,13 +25,10 @@ enum FieldTag {
     FUNCTION_ID,
     NAME,
     RETURN_TYPE,
-    ARGUMENT_COUNT,
 };
 
-static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{{"name", FieldTag::NAME},
-                                                                 {"argumentCount", FieldTag::ARGUMENT_COUNT},
-                                                                 {"returnType", FieldTag::RETURN_TYPE},
-                                                                 {"functionId", FieldTag::FUNCTION_ID}};
+static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{
+    {"name", FieldTag::NAME}, {"returnType", FieldTag::RETURN_TYPE}, {"functionId", FieldTag::FUNCTION_ID}};
 
 }  // namespace
 
@@ -39,9 +36,9 @@ static std::unordered_map<std::string_view, FieldTag> FIELD_TAGS{{"name", FieldT
 arrow::Status UDFFunctionDeclaration::ReadFrom(const rapidjson::Document& doc) {
     if (!doc.IsObject()) return arrow::Status::OK();
     for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
-        std::string_view name{iter->name.GetString(), iter->name.GetStringLength()};
+        std::string_view field{iter->name.GetString(), iter->name.GetStringLength()};
 
-        auto tag_iter = FIELD_TAGS.find(name);
+        auto tag_iter = FIELD_TAGS.find(field);
         if (tag_iter == FIELD_TAGS.end()) continue;
 
         switch (tag_iter->second) {
@@ -60,11 +57,6 @@ arrow::Status UDFFunctionDeclaration::ReadFrom(const rapidjson::Document& doc) {
             case FieldTag::FUNCTION_ID:
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kNumberType, name));
                 function_id = iter->value.GetInt();
-                break;
-
-            case FieldTag::ARGUMENT_COUNT:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kNumberType, name));
-                argument_count = iter->value.GetInt();
                 break;
         }
     }

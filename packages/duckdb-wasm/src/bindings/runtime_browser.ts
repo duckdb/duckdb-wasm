@@ -315,8 +315,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
-    callScalarUDF: (mod: DuckDBModule, funcId: number, bufferPtr: number, bufferSize: number): void => {
-        udf.callScalarUDF(BROWSER_RUNTIME, mod, funcId, bufferPtr, bufferSize);
+    callScalarUDF: (
+        mod: DuckDBModule,
+        response: number,
+        funcId: number,
+        bufferPtr: number,
+        bufferSize: number,
+    ): void => {
+        udf.callScalarUDF(BROWSER_RUNTIME, mod, response, funcId, bufferPtr, bufferSize);
     },
 };
 

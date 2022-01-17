@@ -55,6 +55,11 @@ export class DuckDBConnection {
         return new PreparedStatement<T>(this._bindings, this._conn, stmt);
     }
 
+    /** Create a scalar function */
+    public createScalarFunction(name: string, returns: arrow.DataType, func: (...args: any[]) => void): void {
+        this._bindings.createScalarFunction(this._conn, name, returns, func);
+    }
+
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
         const buffer = table.serialize('binary', true);

@@ -267,7 +267,8 @@ if(EMSCRIPTEN)
           _duckdb_web_query_run, \
           _duckdb_web_query_send, \
           _duckdb_web_reset, \
-          _duckdb_web_tokenize \
+          _duckdb_web_tokenize, \
+          _duckdb_web_udf_scalar_create \
       ]' \
       -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]' \
       --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")

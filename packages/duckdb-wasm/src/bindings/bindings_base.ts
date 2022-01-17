@@ -8,9 +8,10 @@ import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } 
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
-import { flattenArrowField } from '../flat_arrow';
+import { flattenArrowField, flattenArrowType } from '../flat_arrow';
 import { WebFile } from './web_file';
-import { UDFFunctionDeclaration } from './udf_function';
+import { UDFFunction, UDFFunctionDeclaration } from './udf_function';
+import * as arrow from 'apache-arrow';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -197,8 +198,23 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     }
 
     /** Create a scalar function */
-    public createScalarFunction(conn: number, decl: UDFFunctionDeclaration): void {
-        decl.functionId = this._nextUDFId;
+    public createScalarFunction(
+        conn: number,
+        name: string,
+        returns: arrow.DataType,
+        func: (...args: any[]) => void,
+    ): void {
+        const decl: UDFFunctionDeclaration = {
+            functionId: this._nextUDFId,
+            name: name,
+            returnType: flattenArrowType(returns),
+        };
+        const def: UDFFunction = {
+            functionId: decl.functionId,
+            connectionId: conn,
+            name: name,
+            func,
+        };
         this._nextUDFId += 1;
         const [s, d, n] = callSRet(
             this.mod,
@@ -211,14 +227,14 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
         globalThis.DUCKDB_RUNTIME._udfFunctions = (globalThis.DUCKDB_RUNTIME._udfFunctions || new Map()).set(
-            decl.functionId,
-            decl,
+            def.functionId,
+            def,
         );
         if (this.pthread) {
             for (const worker of [...this.pthread.runningWorkers, ...this.pthread.unusedWorkers]) {
                 worker.postMessage({
                     cmd: 'registerUDFFunction',
-                    udf: decl,
+                    udf: def,
                 });
             }
         }

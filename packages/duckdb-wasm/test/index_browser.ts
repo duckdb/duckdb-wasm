@@ -103,10 +103,12 @@ import { testCSVInsert, testCSVInsertAsync } from './insert_csv.test';
 import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { testTableNames, testTableNamesAsync } from './tablenames.test';
 import { testRegressionAsync } from './regression';
+import { testUDF } from './udf.test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
 
+testUDF(() => db!);
 testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);

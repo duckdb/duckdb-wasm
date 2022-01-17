@@ -1,14 +1,14 @@
-import * as arrow from 'apache-arrow';
+import { FlatArrowType } from '../flat_arrow';
 
 export interface UDFFunctionDeclaration {
-    functionId?: number;
+    functionId: number;
     name: string;
-    returnType: arrow.DataType;
-    argumentCount: arrow.DataType[];
+    returnType: FlatArrowType;
 }
 
 export interface UDFFunction {
-    connection_id: number;
+    functionId: number;
+    connectionId: number;
     name: string;
     func: (...args: any[]) => any;
 }

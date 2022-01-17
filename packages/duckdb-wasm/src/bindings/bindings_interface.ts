@@ -2,6 +2,7 @@ import { DuckDBConfig, DuckDBConnection, FileStatistics } from '.';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { WebFile } from './web_file';
+import * as arrow from 'apache-arrow';
 
 export interface DuckDBBindings {
     open(config: DuckDBConfig): void;
@@ -23,6 +24,8 @@ export interface DuckDBBindings {
     closePrepared(conn: number, statement: number): void;
     runPrepared(conn: number, statement: number, params: any[]): Uint8Array;
     sendPrepared(conn: number, statement: number, params: any[]): Uint8Array;
+
+    createScalarFunction(conn: number, name: string, returns: arrow.DataType, func: (...args: any[]) => void): void;
 
     insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: ArrowInsertOptions): void;
     insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): void;
