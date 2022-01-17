@@ -31,6 +31,16 @@ export function callScalarUDF(
             return;
         }
 
+        // Read record batch
+        const buffer = mod.HEAPU8.subarray(bufferPtr, bufferPtr + bufferSize);
+        const reader = arrow.RecordBatchFileReader.from(buffer);
+        reader.open();
+        const next = reader.next();
+        if (next.done) {
+            return;
+        }
+        const batch = next.value;
+
         // Create result builder
         let builder;
         switch (udf.returnType.typeId) {
@@ -42,16 +52,6 @@ export function callScalarUDF(
                 storeError(mod, response, 'unsupported result type: ' + udf.returnType.toString());
                 return;
         }
-
-        // Read record batch
-        const buffer = mod.HEAPU8.subarray(bufferPtr, bufferPtr + bufferSize);
-        const reader = arrow.RecordBatchFileReader.from(buffer);
-        reader.open();
-        const next = reader.next();
-        if (next.done) {
-            return;
-        }
-        const batch = next.value;
 
         // Collect the columns
         const columns: arrow.Vector[] = [];
