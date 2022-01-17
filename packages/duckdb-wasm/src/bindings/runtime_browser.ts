@@ -24,11 +24,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _files: new Map<string, any>(),
     _fileInfoCache: new Map<number, DuckDBFileInfo>(),
     _udfFunctions: new Map(),
+    _globalFileInfo: null,
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
             const cached = BROWSER_RUNTIME._fileInfoCache.get(fileId);
-            if (cached) return cached;
             const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number', 'number'], [fileId, cached?.cacheEpoch || 0]);
             if (s !== StatusCode.SUCCESS) {
                 return null;
@@ -52,7 +52,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
     getGlobalFileInfo(mod: DuckDBModule): DuckDBGlobalFileInfo | null {
         try {
-            const [s, d, n] = callSRet(mod, 'duckdb_web_get_global_file_info', ['number'], [BROWSER_RUNTIME.globalFileInfo?.cacheEpoch || 0]);
+            const [s, d, n] = callSRet(mod, 'duckdb_web_get_global_file_info', ['number'], [BROWSER_RUNTIME._globalFileInfo?.cacheEpoch || 0]);
             if (s !== StatusCode.SUCCESS) {
                 return null;
             } else if (n === 0) {

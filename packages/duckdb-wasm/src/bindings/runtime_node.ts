@@ -26,7 +26,6 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
             const cached = NODE_RUNTIME._fileInfoCache.get(fileId);
-            if (cached) return cached;
             const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number', 'number'], [fileId, cached?.cacheEpoch || 0]);
             if (s !== StatusCode.SUCCESS) {
                 failWith(mod, readString(mod, d, n));

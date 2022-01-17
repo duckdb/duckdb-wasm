@@ -59,12 +59,7 @@ const uri_encode = function(input : string, encode_slash = false) {
     return result;
 }
 
-export function createS3Headers(config : S3Config | undefined, url : string, method : string) : Map<string, string> {
-    const params = getS3Params(config, url, method);
-    return createS3HeadersInternal(params);
-}
-
-export function createS3HeadersInternal(params: S3Params) : Map<string, string> {
+const createS3Headers = function (params: S3Params) : Map<string, string> {
     // this is the sha256 of the empty string, its useful since we have no payload for GET requests
     const empty_payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
@@ -100,12 +95,19 @@ export function createS3HeadersInternal(params: S3Params) : Map<string, string> 
     // ts-ignore's because library can accept array buffer as key, but TS arg is incorrect
     const sign_key = "AWS4" + params.secret_access_key;
     const k_date = sha256.hmac.arrayBuffer(sign_key, params.date_now);
+
+    // Note, js-sha256 has a bug in the TS interface that only supports strings as keys, while we need a bytearray
+    // as key. PR is open but unmerged: https://github.com/emn178/js-sha256/pull/25
+    // eslint-disable-next-line
     // @ts-ignore
     const k_region = sha256.hmac.arrayBuffer(k_date, params.region);
+    // eslint-disable-next-line
     // @ts-ignore
     const k_service = sha256.hmac.arrayBuffer(k_region, params.service,);
+    // eslint-disable-next-line
     // @ts-ignore
     const signing_key = sha256.hmac.arrayBuffer(k_service, "aws4_request");
+    // eslint-disable-next-line
     // @ts-ignore
     const signature = sha256.hmac(signing_key, string_to_sign);
 
@@ -116,9 +118,14 @@ export function createS3HeadersInternal(params: S3Params) : Map<string, string> 
     return res;
 }
 
+const createS3HeadersFromS3Config = function (config : S3Config | undefined, url : string, method : string) : Map<string, string> {
+    const params = getS3Params(config, url, method);
+    return createS3Headers(params);
+}
+
 export function addS3Headers(xhr: XMLHttpRequest, config : S3Config | undefined, url : string, method: string) {
     if (config?.accessKeyId || config?.sessionToken) {
-        const headers = createS3Headers(config, url, method);
+        const headers = createS3HeadersFromS3Config(config, url, method);
         headers.forEach((value: string, header: string) => {
             xhr.setRequestHeader(header, value);
         });
@@ -126,7 +133,6 @@ export function addS3Headers(xhr: XMLHttpRequest, config : S3Config | undefined,
 }
 
 export function parseS3Url (url: string) : {bucket : string, path : string} {
-    // some URI parsing woo
     if (url.indexOf("s3://") != 0) {
         throw new Error("URL needs to start with s3://");
     }
@@ -171,7 +177,7 @@ export function verifyS3Helper() {
         datetime_now: "20150915T124500Z",
     };
 
-    const test_header = createS3HeadersInternal(testParams1);
+    const test_header = createS3Headers(testParams1);
     if (test_header.get("Authorization") != "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20150915/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=182072eb53d85c36b2d791a1fa46a12d23454ec1e921b02075c23aee40166d5a") {
         throw new Error("Auth header incorrect");
     }
@@ -191,7 +197,7 @@ export function verifyS3Helper() {
         date_now: "20210904",
         datetime_now: "20210904T121746Z",
     };
-    const test_header2 = createS3HeadersInternal(testParams2);
+    const test_header2 = createS3Headers(testParams2);
 
     if (test_header2.get("Authorization") !=
         "AWS4-HMAC-SHA256 Credential=ASIAYSPIOYDTHTBIITVC/20210904/eu-west-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date;x-amz-security-token, Signature=4d9d6b59d7836b6485f6ad822de97be40287da30347d83042ea7fbed530dc4c0") {

@@ -19,6 +19,7 @@
 #include "duckdb/web/utils/scope_guard.h"
 #include "duckdb/web/utils/thread.h"
 #include "duckdb/web/utils/wasm_response.h"
+#include "rapidjson/allocators.h"
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -299,46 +300,14 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
         rapidjson::Value data_fd{rapidjson::kNullType};
         value.AddMember("dataNativeFd", data_fd, allocator);
     }
-    if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3) && filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
+    if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3) &&
+        filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
     }
     value.AddMember("collectStatistics", filesystem_.file_statistics_->TracksFile(file_name_), doc.GetAllocator());
 
     if (data_protocol_ == DataProtocol::S3) {
-        rapidjson::Value s3Config;
-        s3Config.SetObject();
-
-        rapidjson::Value s3_region{rapidjson::kNullType};
-        s3_region =
-            rapidjson::Value{filesystem_.config_->filesystem.s3_region.c_str(),
-                             static_cast<rapidjson::SizeType>(filesystem_.config_->filesystem.s3_region.size())};
-        s3Config.AddMember("region", s3_region, allocator);
-
-        rapidjson::Value s3_endpoint{rapidjson::kNullType};
-        s3_endpoint =
-            rapidjson::Value{filesystem_.config_->filesystem.s3_endpoint.c_str(),
-                             static_cast<rapidjson::SizeType>(filesystem_.config_->filesystem.s3_endpoint.size())};
-        s3Config.AddMember("endpoint", s3_endpoint, allocator);
-
-        rapidjson::Value s3_access_key_id{rapidjson::kNullType};
-        s3_access_key_id =
-            rapidjson::Value{filesystem_.config_->filesystem.s3_access_key_id.c_str(),
-                             static_cast<rapidjson::SizeType>(filesystem_.config_->filesystem.s3_access_key_id.size())};
-        s3Config.AddMember("accessKeyId", s3_access_key_id, allocator);
-
-        rapidjson::Value s3_secret_access_key{rapidjson::kNullType};
-        s3_secret_access_key = rapidjson::Value{
-            filesystem_.config_->filesystem.s3_secret_access_key.c_str(),
-            static_cast<rapidjson::SizeType>(filesystem_.config_->filesystem.s3_secret_access_key.size())};
-        s3Config.AddMember("secretAccessKey", s3_secret_access_key, allocator);
-
-        rapidjson::Value s3_session_token{rapidjson::kNullType};
-        s3_session_token =
-            rapidjson::Value{filesystem_.config_->filesystem.s3_session_token.c_str(),
-                             static_cast<rapidjson::SizeType>(filesystem_.config_->filesystem.s3_session_token.size())};
-        s3Config.AddMember("sessionToken", s3_session_token, allocator);
-
-        value.AddMember("s3Config", s3Config, allocator);
+        value.AddMember("s3Config", writeS3Config(filesystem_.config_, allocator), allocator);
     }
 
     return value;
@@ -484,7 +453,7 @@ arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_d
 /// Write the global filesystem info
 rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, uint32_t cache_epoch) {
     DEBUG_TRACE();
-    if (cache_epoch == cache_epoch_.load()){
+    if (cache_epoch == cache_epoch_.load()) {
         rapidjson::Value value;
         value.SetNull();
         return value;
@@ -501,31 +470,7 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
         value.AddMember("allowFullHttpReads", true, allocator);
     }
 
-    // TODO DEDUPLICATE
-    rapidjson::Value s3Config;
-    s3Config.SetObject();
-
-    rapidjson::Value s3_region{rapidjson::kNullType};
-    s3_region = rapidjson::Value{config_->filesystem.s3_region.c_str(), static_cast<rapidjson::SizeType>(config_->filesystem.s3_region.size())};
-    s3Config.AddMember("region", s3_region, allocator);
-
-    rapidjson::Value s3_endpoint{rapidjson::kNullType};
-    s3_endpoint = rapidjson::Value{config_->filesystem.s3_endpoint.c_str(), static_cast<rapidjson::SizeType>(config_->filesystem.s3_endpoint.size())};
-    s3Config.AddMember("endpoint", s3_endpoint, allocator);
-
-    rapidjson::Value s3_access_key_id{rapidjson::kNullType};
-    s3_access_key_id = rapidjson::Value{config_->filesystem.s3_access_key_id.c_str(), static_cast<rapidjson::SizeType>(config_->filesystem.s3_access_key_id.size())};
-    s3Config.AddMember("accessKeyId", s3_access_key_id, allocator);
-
-    rapidjson::Value s3_secret_access_key{rapidjson::kNullType};
-    s3_secret_access_key = rapidjson::Value{config_->filesystem.s3_secret_access_key.c_str(), static_cast<rapidjson::SizeType>(config_->filesystem.s3_secret_access_key.size())};
-    s3Config.AddMember("secretAccessKey", s3_secret_access_key, allocator);
-
-    rapidjson::Value s3_session_token{rapidjson::kNullType};
-    s3_session_token = rapidjson::Value{config_->filesystem.s3_session_token.c_str(), static_cast<rapidjson::SizeType>(config_->filesystem.s3_session_token.size())};
-    s3Config.AddMember("sessionToken", s3_session_token, allocator);
-
-    value.AddMember("s3Config", s3Config, allocator);
+    value.AddMember("s3Config", writeS3Config(config_, allocator), allocator);
 
     return value;
 }
@@ -533,7 +478,7 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
 /// Write the file info as JSON
 rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, uint32_t file_id, uint32_t cache_epoch) {
     DEBUG_TRACE();
-    if (cache_epoch == cache_epoch_.load()){
+    if (cache_epoch == cache_epoch_.load()) {
         rapidjson::Value value;
         value.SetNull();
         return value;
@@ -550,9 +495,10 @@ rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, uint32_t
 }
 
 /// Write the file info as JSON
-rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, std::string_view file_name, uint32_t cache_epoch) {
+rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, std::string_view file_name,
+                                              uint32_t cache_epoch) {
     DEBUG_TRACE();
-    if (cache_epoch == cache_epoch_.load()){
+    if (cache_epoch == cache_epoch_.load()) {
         rapidjson::Value value;
         value.SetNull();
         return value;
@@ -606,7 +552,7 @@ void WebFileSystem::CollectFileStatistics(std::string_view path, std::shared_ptr
 void WebFileSystem::IncrementCacheEpoch() {
     DEBUG_TRACE();
     auto curr_epoch = cache_epoch_.load(std::memory_order_relaxed);
-    while(true) {
+    while (true) {
         auto next = (curr_epoch == std::numeric_limits<uint32_t>::max()) ? 1 : curr_epoch + 1;
         if (cache_epoch_.compare_exchange_strong(curr_epoch, next)) {
             break;
@@ -1011,6 +957,40 @@ bool WebFileSystem::OnDiskFile(FileHandle &handle) { return true; }
 /// Return the name of the filesytem. Used for forming diagnosis messages.
 std::string WebFileSystem::GetName() const { return "WebFileSystem"; }
 
+/// Write the s3 config to a rapidjson value.
+rapidjson::Value WebFileSystem::writeS3Config(std::shared_ptr<WebDBConfig> config,
+                                              rapidjson::Document::AllocatorType allocator) {
+    rapidjson::Value s3Config;
+    s3Config.SetObject();
+
+    rapidjson::Value s3_region{rapidjson::kNullType};
+    s3_region = rapidjson::Value{config->filesystem.s3_region.c_str(),
+                                 static_cast<rapidjson::SizeType>(config->filesystem.s3_region.size())};
+    s3Config.AddMember("region", s3_region, allocator);
+
+    rapidjson::Value s3_endpoint{rapidjson::kNullType};
+    s3_endpoint = rapidjson::Value{config->filesystem.s3_endpoint.c_str(),
+                                   static_cast<rapidjson::SizeType>(config->filesystem.s3_endpoint.size())};
+    s3Config.AddMember("endpoint", s3_endpoint, allocator);
+
+    rapidjson::Value s3_access_key_id{rapidjson::kNullType};
+    s3_access_key_id = rapidjson::Value{config->filesystem.s3_access_key_id.c_str(),
+                                        static_cast<rapidjson::SizeType>(config->filesystem.s3_access_key_id.size())};
+    s3Config.AddMember("accessKeyId", s3_access_key_id, allocator);
+
+    rapidjson::Value s3_secret_access_key{rapidjson::kNullType};
+    s3_secret_access_key =
+        rapidjson::Value{config->filesystem.s3_secret_access_key.c_str(),
+                         static_cast<rapidjson::SizeType>(config->filesystem.s3_secret_access_key.size())};
+    s3Config.AddMember("secretAccessKey", s3_secret_access_key, allocator);
+
+    rapidjson::Value s3_session_token{rapidjson::kNullType};
+    s3_session_token = rapidjson::Value{config->filesystem.s3_session_token.c_str(),
+                                        static_cast<rapidjson::SizeType>(config->filesystem.s3_session_token.size())};
+    s3Config.AddMember("sessionToken", s3_session_token, allocator);
+
+    return s3Config;
+}
 }  // namespace io
 }  // namespace web
 }  // namespace duckdb

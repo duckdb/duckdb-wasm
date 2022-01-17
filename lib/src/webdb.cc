@@ -577,39 +577,41 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
 // Register custom extension options in DuckDB for options that are handled in DuckDB-WASM instead of DuckDB
 void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) {
     // Fetch the config to enable the custom SET parameters
-    auto &config = duckdb::DBConfig::GetConfig(*database_->instance);
+    auto& config = duckdb::DBConfig::GetConfig(*database_->instance);
 
-    auto callback_s3_region = [](ClientContext &context, SetScope scope, Value &parameter) {
+    auto callback_s3_region = [](ClientContext& context, SetScope scope, Value& parameter) {
         auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_region = parameter.str_value;
+        webfs->Config()->filesystem.s3_region = StringValue::Get(parameter);
         webfs->IncrementCacheEpoch();
     };
-    auto callback_s3_access_key_id = [](ClientContext &context, SetScope scope, Value &parameter) {
+    auto callback_s3_access_key_id = [](ClientContext& context, SetScope scope, Value& parameter) {
         auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_access_key_id = parameter.str_value;
+        webfs->Config()->filesystem.s3_access_key_id = StringValue::Get(parameter);
         webfs->IncrementCacheEpoch();
     };
-    auto callback_s3_secret_access_key = [](ClientContext &context, SetScope scope, Value &parameter) {
+    auto callback_s3_secret_access_key = [](ClientContext& context, SetScope scope, Value& parameter) {
         auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_secret_access_key = parameter.str_value;
+        webfs->Config()->filesystem.s3_secret_access_key = StringValue::Get(parameter);
         webfs->IncrementCacheEpoch();
     };
-    auto callback_s3_session_token = [](ClientContext &context, SetScope scope, Value &parameter) {
+    auto callback_s3_session_token = [](ClientContext& context, SetScope scope, Value& parameter) {
         auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_session_token = parameter.str_value;
+        webfs->Config()->filesystem.s3_session_token = StringValue::Get(parameter);
         webfs->IncrementCacheEpoch();
     };
-    auto callback_s3_endpoint = [](ClientContext &context, SetScope scope, Value &parameter) {
+    auto callback_s3_endpoint = [](ClientContext& context, SetScope scope, Value& parameter) {
         auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_endpoint = parameter.str_value;
+        webfs->Config()->filesystem.s3_endpoint = StringValue::Get(parameter);
         webfs->IncrementCacheEpoch();
     };
 
     config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, callback_s3_region);
     config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, callback_s3_access_key_id);
-    config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR, callback_s3_secret_access_key);
+    config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR,
+                              callback_s3_secret_access_key);
     config.AddExtensionOption("s3_session_token", "S3 Session Token", LogicalType::VARCHAR, callback_s3_session_token);
-    config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR, callback_s3_endpoint);
+    config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR,
+                              callback_s3_endpoint);
 
     auto webfs = io::WebFileSystem::Get();
     if (webfs) {
@@ -812,14 +814,14 @@ arrow::Status WebDB::SetFileDescriptor(uint32_t file_id, uint32_t fd) {
 arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-
     auto files = web_fs->Glob(std::string{expression});
+    auto current_epoch = web_fs->CacheEpoch();
+
     rapidjson::Document doc;
     doc.SetArray();
     auto& allocator = doc.GetAllocator();
     for (auto& file : files) {
-        // TODO validate if passing 0 as epoch here is correct
-        auto value = web_fs->WriteFileInfo(doc, file, 0);
+        auto value = web_fs->WriteFileInfo(doc, file, current_epoch - 1);
         if (!value.IsNull()) doc.PushBack(value, allocator);
     }
     rapidjson::StringBuffer strbuf;
