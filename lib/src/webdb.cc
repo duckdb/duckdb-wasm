@@ -380,15 +380,18 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     vec.SetAuxiliary(shared_buffer);
 
     // Read the result
+    auto options = arrow::ipc::IpcReadOptions::Defaults();
+    options.use_threads = false;
     arrow::io::BufferReader res_buffer{res_buf_view};
-    ARROW_ASSIGN_OR_RAISE(auto res_reader, arrow::ipc::RecordBatchFileReader::Open(&res_buffer));
+    ARROW_ASSIGN_OR_RAISE(auto res_reader, arrow::ipc::RecordBatchStreamReader::Open(&res_buffer, options));
+    auto res_batch = res_reader->Next();
+    auto res_schema = res_reader->schema();
 
     // Read record batch
-    if (res_reader->num_record_batches() != 1 || res_reader->schema()->fields().size() != 1) {
+    if (!res_batch.ok() || res_schema->fields().size() != 1) {
         return arrow::Status::ExecutionError("malformed UDF result");
     }
-    ARROW_ASSIGN_OR_RAISE(auto res_batch, res_reader->ReadRecordBatch(0));
-    auto res_column = res_batch->column(0);
+    auto res_column = res_batch.ValueUnsafe()->column(0);
 
     // Convert the Arrow array to the DuckDB vector
     ARROW_RETURN_NOT_OK(convertArrowArrayToDuckDBVector(*res_column, vec));

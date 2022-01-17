@@ -213,6 +213,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             functionId: decl.functionId,
             connectionId: conn,
             name: name,
+            returnType: returns,
             func,
         };
         this._nextUDFId += 1;

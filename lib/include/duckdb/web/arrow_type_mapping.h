@@ -15,7 +15,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
 /// Map duckdb type to arrow
 arrow::Result<std::shared_ptr<arrow::DataType>> mapDuckDBTypeToArrow(const duckdb::LogicalType& type);
 /// Convert an arrow array to a DuckDB vector
-arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Vector& out);
+arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& out);
 
 }  // namespace web
 }  // namespace duckdb

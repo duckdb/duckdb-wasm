@@ -164,7 +164,7 @@ arrow::Result<std::shared_ptr<arrow::DataType>> mapDuckDBTypeToArrow(const duckd
 }
 
 /// Convert an arrow array to a DuckDB vector
-arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Vector& out) {
+arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& out) {
     auto in_type = in.type();
     switch (in_type->id()) {
         // Map null
@@ -184,12 +184,12 @@ arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Ve
         }
 
         // Store plain data pointer
+        case arrow::Type::type::INT32:
         case arrow::Type::type::UINT8:
         case arrow::Type::type::INT8:
         case arrow::Type::type::UINT16:
         case arrow::Type::type::INT16:
         case arrow::Type::type::UINT32:
-        case arrow::Type::type::INT32:
         case arrow::Type::type::UINT64:
         case arrow::Type::type::INT64:
         case arrow::Type::type::HALF_FLOAT:
@@ -198,7 +198,7 @@ arrow::Status convertArrowArrayToDuckDBVector(const arrow::Array& in, duckdb::Ve
         case arrow::Type::type::TIMESTAMP:
         case arrow::Type::type::TIME32:
         case arrow::Type::type::TIME64: {
-            auto* data = reinterpret_cast<uint8_t*>(in.data()->buffers[0]->address());
+            auto* data = reinterpret_cast<uint8_t*>(in.data()->buffers[1]->address());
             duckdb::FlatVector::SetData(out, data);
             break;
         }
