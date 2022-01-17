@@ -1,6 +1,7 @@
 #include "duckdb/web/webdb.h"
+
 #include <filesystem>
-#include "duckdb/common/types/timestamp.hpp"
+
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "gtest/gtest.h"
