@@ -350,13 +350,15 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     }
     auto ipc_schema = arrow::schema(ipc_schema_fields);
 
-    // Import the record batch
+    // Write the Arrow IPC file
+    // XXX: Conceptually, this could be an arrow ipc stream per query if we do the bookkeeping right?
+    //      Then we don't need to serialize the dummy schema all the time...
     ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, ipc_schema));
-
-    // Serialize the record batch
-    auto options = arrow::ipc::IpcWriteOptions::Defaults();
-    options.use_threads = false;
-    ARROW_ASSIGN_OR_RAISE(auto buffer, arrow::ipc::SerializeRecordBatch(*batch, options));
+    ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
+    ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, ipc_schema));
+    ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
+    ARROW_RETURN_NOT_OK(writer->Close());
+    ARROW_ASSIGN_OR_RAISE(auto buffer, out->Finish());
 
     // Call scalar udf function
     // XXX: throwing udf might leak data here, either catch in js wrapper or here
