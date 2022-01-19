@@ -38,7 +38,7 @@
     "devDependencies": {
         "@types/node": "^17.0.9",
         "@types/react-dom": "^17.0.11",
-        "@types/react-router-dom": "^5.3.2",
+        "@types/react-router-dom": "^5.3.3",
         "@types/react-virtualized": "^9.21.16",
         "copy-webpack-plugin": "^10.2.0",
         "css-loader": "^6.5.1",
