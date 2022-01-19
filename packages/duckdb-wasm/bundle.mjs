@@ -107,7 +107,7 @@ esbuild.build({
     format: 'cjs',
     target: TARGET_BROWSER,
     bundle: true,
-    minify: false,
+    minify: true,
     sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
     define: { 'process.release.name': '"browser"' },
@@ -136,7 +136,7 @@ esbuild.build({
     format: 'cjs',
     target: TARGET_BROWSER,
     bundle: true,
-    minify: false,
+    minify: true,
     sourcemap: is_debug ? 'inline' : true,
     external: EXTERNALS_BROWSER,
     define: {
