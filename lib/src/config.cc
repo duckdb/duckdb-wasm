@@ -35,29 +35,26 @@ uint32_t ResolveFeatureFlags() {
 
 /// Read the webdb config
 WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
-    auto config = WebDBConfig{
-        .path = ":memory:",
-        .maximum_threads = 1,
-        .query =
-            QueryConfig{
-                .cast_bigint_to_double = std::nullopt,
-                .cast_timestamp_to_date = std::nullopt,
-                .cast_duration_to_time64 = true,
-                .cast_decimal_to_double = std::nullopt,
-            },
-        .filesystem =
-            FileSystemConfig{
-                .allow_full_http_reads = std::nullopt,
-            },
-        .duckdb_config_options =
-            DuckDBConfigOptions{
-                .s3_region = "",
-                .s3_endpoint = "",
-                .s3_access_key_id = "",
-                .s3_secret_access_key = "",
-                .s3_session_token = "",
-            }
-    };
+    auto config = WebDBConfig{.path = ":memory:",
+                              .maximum_threads = 1,
+                              .query =
+                                  QueryConfig{
+                                      .cast_bigint_to_double = std::nullopt,
+                                      .cast_timestamp_to_date = std::nullopt,
+                                      .cast_duration_to_time64 = true,
+                                      .cast_decimal_to_double = std::nullopt,
+                                  },
+                              .filesystem =
+                                  FileSystemConfig{
+                                      .allow_full_http_reads = std::nullopt,
+                                  },
+                              .duckdb_config_options = DuckDBConfigOptions{
+                                  .s3_region = "",
+                                  .s3_endpoint = "",
+                                  .s3_access_key_id = "",
+                                  .s3_secret_access_key = "",
+                                  .s3_session_token = "",
+                              }};
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(args_json.begin(), args_json.size());
     if (ok) {
