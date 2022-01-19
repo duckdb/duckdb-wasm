@@ -1,17 +1,16 @@
-#include <duckdb/common/enums/expression_type.hpp>
-#include <duckdb/common/enums/tableref_type.hpp>
-#include <duckdb/common/types.hpp>
-#include <duckdb/common/types/string_type.hpp>
-#include <duckdb/function/table_function.hpp>
-#include <duckdb/parser/expression/constant_expression.hpp>
-#include <duckdb/parser/expression/function_expression.hpp>
-#include <duckdb/parser/tableref/table_function_ref.hpp>
-
+#include "duckdb/common/enums/expression_type.hpp"
 #include "duckdb/common/enums/statement_type.hpp"
+#include "duckdb/common/enums/tableref_type.hpp"
+#include "duckdb/common/types.hpp"
+#include "duckdb/common/types/string_type.hpp"
+#include "duckdb/function/table_function.hpp"
+#include "duckdb/parser/expression/constant_expression.hpp"
+#include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/parser/query_node.hpp"
 #include "duckdb/parser/query_node/select_node.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
+#include "duckdb/parser/tableref/table_function_ref.hpp"
 #include "duckdb/web/arrow_casts.h"
 #include "gtest/gtest.h"
 
