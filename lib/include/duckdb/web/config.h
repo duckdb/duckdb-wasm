@@ -56,16 +56,18 @@ struct QueryConfig {
     static QueryConfig ReadFrom(std::string_view args_json);
 };
 
+/// ConfigurationOptions fetched from DuckDB
+struct DuckDBConfigOptions {
+    std::string s3_region;
+    std::string s3_endpoint;
+    std::string s3_access_key_id;
+    std::string s3_secret_access_key;
+    std::string s3_session_token;
+};
+
 struct FileSystemConfig {
     /// Allow falling back to full HTTP reads if the server does not support range requests
     std::optional<bool> allow_full_http_reads = std::nullopt;
-
-    /// Configuration for making authenticated S3 requests
-    std::string s3_region = "";
-    std::string s3_endpoint = "";
-    std::string s3_access_key_id = "";
-    std::string s3_secret_access_key = "";
-    std::string s3_session_token = "";
 };
 
 struct WebDBConfig {
@@ -82,7 +84,11 @@ struct WebDBConfig {
     };
     /// The filesystem
     FileSystemConfig filesystem = {
-        .allow_full_http_reads = std::nullopt,
+        .allow_full_http_reads = std::nullopt
+    };
+
+    /// These options are fetched from DuckDB
+    DuckDBConfigOptions duckdb_config_options = {
         .s3_region = "",
         .s3_endpoint = "",
         .s3_access_key_id = "",
