@@ -50,6 +50,7 @@
 #include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_table.h"
 #include "duckdb/web/udf.h"
+#include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "parquet-extension.hpp"
 #include "rapidjson/document.h"
@@ -576,45 +577,49 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
 
 // Register custom extension options in DuckDB for options that are handled in DuckDB-WASM instead of DuckDB
 void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) {
+    DEBUG_TRACE();
     // Fetch the config to enable the custom SET parameters
     auto& config = duckdb::DBConfig::GetConfig(*database_->instance);
-
-    auto callback_s3_region = [](ClientContext& context, SetScope scope, Value& parameter) {
-        auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_region = StringValue::Get(parameter);
-        webfs->IncrementCacheEpoch();
-    };
-    auto callback_s3_access_key_id = [](ClientContext& context, SetScope scope, Value& parameter) {
-        auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_access_key_id = StringValue::Get(parameter);
-        webfs->IncrementCacheEpoch();
-    };
-    auto callback_s3_secret_access_key = [](ClientContext& context, SetScope scope, Value& parameter) {
-        auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_secret_access_key = StringValue::Get(parameter);
-        webfs->IncrementCacheEpoch();
-    };
-    auto callback_s3_session_token = [](ClientContext& context, SetScope scope, Value& parameter) {
-        auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_session_token = StringValue::Get(parameter);
-        webfs->IncrementCacheEpoch();
-    };
-    auto callback_s3_endpoint = [](ClientContext& context, SetScope scope, Value& parameter) {
-        auto webfs = io::WebFileSystem::Get();
-        webfs->Config()->filesystem.s3_endpoint = StringValue::Get(parameter);
-        webfs->IncrementCacheEpoch();
-    };
-
-    config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, callback_s3_region);
-    config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, callback_s3_access_key_id);
-    config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR,
-                              callback_s3_secret_access_key);
-    config.AddExtensionOption("s3_session_token", "S3 Session Token", LogicalType::VARCHAR, callback_s3_session_token);
-    config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR,
-                              callback_s3_endpoint);
-
     auto webfs = io::WebFileSystem::Get();
+
+    // Register S3 Config parameters
     if (webfs) {
+        auto callback_s3_region = [](ClientContext& context, SetScope scope, Value& parameter) {
+            auto webfs = io::WebFileSystem::Get();
+            webfs->Config()->duckdb_config_options.s3_region = StringValue::Get(parameter);
+            webfs->IncrementCacheEpoch();
+        };
+        auto callback_s3_access_key_id = [](ClientContext& context, SetScope scope, Value& parameter) {
+            auto webfs = io::WebFileSystem::Get();
+            webfs->Config()->duckdb_config_options.s3_access_key_id = StringValue::Get(parameter);
+            webfs->IncrementCacheEpoch();
+        };
+        auto callback_s3_secret_access_key = [](ClientContext& context, SetScope scope, Value& parameter) {
+            auto webfs = io::WebFileSystem::Get();
+            webfs->Config()->duckdb_config_options.s3_secret_access_key = StringValue::Get(parameter);
+            webfs->IncrementCacheEpoch();
+        };
+        auto callback_s3_session_token = [](ClientContext& context, SetScope scope, Value& parameter) {
+            auto webfs = io::WebFileSystem::Get();
+            webfs->Config()->duckdb_config_options.s3_session_token = StringValue::Get(parameter);
+            webfs->IncrementCacheEpoch();
+        };
+        auto callback_s3_endpoint = [](ClientContext& context, SetScope scope, Value& parameter) {
+            auto webfs = io::WebFileSystem::Get();
+            webfs->Config()->duckdb_config_options.s3_endpoint = StringValue::Get(parameter);
+            webfs->IncrementCacheEpoch();
+        };
+
+        config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, callback_s3_region);
+        config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR,
+                                  callback_s3_access_key_id);
+        config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR,
+                                  callback_s3_secret_access_key);
+        config.AddExtensionOption("s3_session_token", "S3 Session Token", LogicalType::VARCHAR,
+                                  callback_s3_session_token);
+        config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR,
+                                  callback_s3_endpoint);
+
         webfs->IncrementCacheEpoch();
     }
 }
@@ -698,10 +703,14 @@ void WebDB::FlushFiles() { file_page_buffer_->FlushFiles(); }
 void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path); }
 
 /// Reset the database
-arrow::Status WebDB::Reset() { return Open(); }
+arrow::Status WebDB::Reset() {
+    DEBUG_TRACE();
+    return Open();
+}
 
 /// Open a database
 arrow::Status WebDB::Open(std::string_view args_json) {
+    DEBUG_TRACE();
     assert(config_ != nullptr);
     *config_ = WebDBConfig::ReadFrom(args_json);
     bool in_memory = config_->path == ":memory:" || config_->path == "";

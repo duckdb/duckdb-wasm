@@ -296,9 +296,8 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
         data_url = rapidjson::Value{data_url_->c_str(), static_cast<rapidjson::SizeType>(data_url_->size())};
         value.AddMember("dataUrl", data_url, allocator);
     }
-    if (data_fd_) {
-        rapidjson::Value data_fd{rapidjson::kNullType};
-        value.AddMember("dataNativeFd", data_fd, allocator);
+    if (data_fd_.has_value()) {
+        value.AddMember("dataNativeFd", rapidjson::Value{data_fd_.value()}, allocator);
     }
     if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3) &&
         filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
@@ -964,29 +963,29 @@ rapidjson::Value WebFileSystem::writeS3Config(std::shared_ptr<WebDBConfig> confi
     s3Config.SetObject();
 
     rapidjson::Value s3_region{rapidjson::kNullType};
-    s3_region = rapidjson::Value{config->filesystem.s3_region.c_str(),
-                                 static_cast<rapidjson::SizeType>(config->filesystem.s3_region.size())};
+    s3_region = rapidjson::Value{config->duckdb_config_options.s3_region.c_str(),
+                                 static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_region.size())};
     s3Config.AddMember("region", s3_region, allocator);
 
     rapidjson::Value s3_endpoint{rapidjson::kNullType};
-    s3_endpoint = rapidjson::Value{config->filesystem.s3_endpoint.c_str(),
-                                   static_cast<rapidjson::SizeType>(config->filesystem.s3_endpoint.size())};
+    s3_endpoint = rapidjson::Value{config->duckdb_config_options.s3_endpoint.c_str(),
+                                   static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_endpoint.size())};
     s3Config.AddMember("endpoint", s3_endpoint, allocator);
 
     rapidjson::Value s3_access_key_id{rapidjson::kNullType};
-    s3_access_key_id = rapidjson::Value{config->filesystem.s3_access_key_id.c_str(),
-                                        static_cast<rapidjson::SizeType>(config->filesystem.s3_access_key_id.size())};
+    s3_access_key_id = rapidjson::Value{config->duckdb_config_options.s3_access_key_id.c_str(),
+                                        static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_access_key_id.size())};
     s3Config.AddMember("accessKeyId", s3_access_key_id, allocator);
 
     rapidjson::Value s3_secret_access_key{rapidjson::kNullType};
     s3_secret_access_key =
-        rapidjson::Value{config->filesystem.s3_secret_access_key.c_str(),
-                         static_cast<rapidjson::SizeType>(config->filesystem.s3_secret_access_key.size())};
+        rapidjson::Value{config->duckdb_config_options.s3_secret_access_key.c_str(),
+                         static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_secret_access_key.size())};
     s3Config.AddMember("secretAccessKey", s3_secret_access_key, allocator);
 
     rapidjson::Value s3_session_token{rapidjson::kNullType};
-    s3_session_token = rapidjson::Value{config->filesystem.s3_session_token.c_str(),
-                                        static_cast<rapidjson::SizeType>(config->filesystem.s3_session_token.size())};
+    s3_session_token = rapidjson::Value{config->duckdb_config_options.s3_session_token.c_str(),
+                                        static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_session_token.size())};
     s3Config.AddMember("sessionToken", s3_session_token, allocator);
 
     return s3Config;

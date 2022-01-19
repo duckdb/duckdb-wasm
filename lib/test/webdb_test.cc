@@ -79,11 +79,11 @@ TEST(WebDB, S3ConfigParameters) {
     auto web_fs = io::WebFileSystem::Get();
     auto web_fs_config = web_fs->Config();
 
-    ASSERT_STREQ(web_fs_config->filesystem.s3_region.c_str(), "");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_endpoint.c_str(), "");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_access_key_id.c_str(), "");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_secret_access_key.c_str(), "");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_session_token.c_str(), "");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_region.c_str(), "");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_endpoint.c_str(), "");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_access_key_id.c_str(), "");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_secret_access_key.c_str(), "");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_session_token.c_str(), "");
 
     conn.connection().Query("SET s3_region='my-favorite-s3-region'");
     conn.connection().Query("SET s3_endpoint='amazon'");
@@ -91,11 +91,11 @@ TEST(WebDB, S3ConfigParameters) {
     conn.connection().Query("SET s3_secret_access_key='very-secret-key'");
     conn.connection().Query("SET s3_session_token='some-session-token'");
 
-    ASSERT_STREQ(web_fs_config->filesystem.s3_region.c_str(), "my-favorite-s3-region");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_endpoint.c_str(), "amazon");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_access_key_id.c_str(), "my-little-access-key-id");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_secret_access_key.c_str(), "very-secret-key");
-    ASSERT_STREQ(web_fs_config->filesystem.s3_session_token.c_str(), "some-session-token");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_region.c_str(), "my-favorite-s3-region");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_endpoint.c_str(), "amazon");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_access_key_id.c_str(), "my-little-access-key-id");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_secret_access_key.c_str(), "very-secret-key");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_session_token.c_str(), "some-session-token");
 }
 
 TEST(WebDB, ExtensionOptions) {
@@ -123,7 +123,7 @@ TEST(WebDB, ExtensionOptions) {
     conn.connection().Query("SET s3_region='my-favorite-s3-region'");
 
     // web_fs_config should be updated
-    ASSERT_STREQ(web_fs_config->filesystem.s3_region.c_str(), "my-favorite-s3-region");
+    ASSERT_STREQ(web_fs_config->duckdb_config_options.s3_region.c_str(), "my-favorite-s3-region");
 
     // GetFileInfo with old epoch should now return updated config with
     json_str = db->GetFileInfo("https://some.bucket.s3.amazonaws.com", current_epoch).ValueOrDie();
