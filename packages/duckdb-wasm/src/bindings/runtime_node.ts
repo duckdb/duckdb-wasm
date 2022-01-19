@@ -7,7 +7,7 @@ import {
     failWith,
     readString,
     decodeText,
-    DuckDBDataProtocol,
+    DuckDBDataProtocol, FileFlags,
 } from './runtime';
 import { StatusCode } from '../status';
 import { DuckDBModule } from './duckdb_module';
@@ -56,7 +56,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
     },
 
-    openFile(mod: DuckDBModule, fileId: number): number {
+    openFile(mod: DuckDBModule, fileId: number, flags: FileFlags): number {
         try {
             NODE_RUNTIME._fileInfoCache.delete(fileId);
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);

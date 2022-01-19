@@ -163,6 +163,27 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
             expect(globalFileInfoUpdated?.s3Config?.region).toEqual("");
         });
 
+        // NOTE: this test now works
+        // TODO: next up:
+        // - Parquet files
+        // - Can I trigger weird file flags?
+        // - Large file
+        // it('can write to s3 file with correct auth credentials', async () => {
+        //     await adb().reset();
+        //     conn_async = await adb().connect();
+        //
+        //     await conn_async.query("SET s3_region='nope';");
+        //     await conn_async.query("SET s3_access_key_id='nope';");
+        //     await conn_async.query("SET s3_secret_access_key='nope';");
+        //
+        //     await conn_async.query("CREATE TABLE test AS SELECT * FROM \"s3://test-bucket-ceiveran/test.csv\";");
+        //     await conn_async.query("COPY (SELECT * FROM test) TO 's3://test-bucket-ceiveran/test_written.csv' (FORMAT 'csv');");
+        //
+        //     // File should be written now!
+        //     const result = await conn_async.query("SELECT * FROM \"s3://test-bucket-ceiveran/test_written.csv\";");
+        //     expect(result.getColumnAt(2)?.get(2)).toEqual(9);
+        // });
+
         // TODO: find a way to run these tests in CI
         // it('can fetch s3 file with correct auth credentials', async () => {
         //     conn_async = await adb().connect();

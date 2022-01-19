@@ -2,16 +2,17 @@ import { StatusCode } from '../status';
 import { addS3Headers, getHTTPUrl} from '../utils'
 
 import {
-    DuckDBRuntime,
-    DuckDBFileInfo,
     callSRet,
-    failWith,
     dropResponseBuffers,
-    readString,
     DuckDBDataProtocol,
-    DuckDBGlobalFileInfo
+    DuckDBFileInfo,
+    DuckDBGlobalFileInfo,
+    DuckDBRuntime,
+    failWith,
+    FileFlags,
+    readString
 } from './runtime';
-import { DuckDBModule } from './duckdb_module';
+import {DuckDBModule} from './duckdb_module';
 import * as udf from './udf_runtime';
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
@@ -83,10 +84,43 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
     },
 
-    openFile: (mod: DuckDBModule, fileId: number): number => {
+    // TODO add: forceFullHTTP: boolean
+    // TODO open specifically for writing?
+    //   - if 403 we can't write
+    //   - if 404 we can create
+    //   - if 2xx we overwrite
+    openFile: (mod: DuckDBModule, fileId: number, flags: FileFlags): number => {
         try {
             BROWSER_RUNTIME._fileInfoCache.delete(fileId);
             const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
+            console.log("open with flag (" + flags + "): " + JSON.stringify(file));
+
+            if (flags & FileFlags.FILE_FLAGS_READ && flags & FileFlags.FILE_FLAGS_WRITE) {
+                const err = "Opening a file for both reading and writing not implemented";
+                console.log(err);
+                failWith(mod, err);
+                return 0;
+            } else if (!(flags & FileFlags.FILE_FLAGS_READ) && !(flags & FileFlags.FILE_FLAGS_WRITE)) {
+                const err = "File opened without read or write";
+                console.log(err);
+                failWith(mod, err);
+                return 0;
+            } else if (flags & FileFlags.FILE_FLAGS_WRITE) {
+                // TODO check if file exists and check the exists and overwrite flags?
+                // Follow regular buffer creation from reading but with empty buffer
+                // TODO clean up
+                // TODO 0 may not work: below 1 is used for now similarly to below
+                // TODO what if truncate is not set and empty file is written?
+                const data = mod._malloc(1);
+                const src = new Uint8Array();
+                mod.HEAPU8.set(src, data);
+                const result = mod._malloc(2 * 8);
+                mod.HEAPF64[(result >> 3) + 0] = 1;
+                mod.HEAPF64[(result >> 3) + 1] = data;
+                return result;
+            }
+
+            // Proceed as normal for reading
             switch (file?.dataProtocol) {
                 // HTTP File
                 case DuckDBDataProtocol.HTTP:
@@ -334,13 +368,20 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     writeFile: (mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
+        console.log("trying write: " + JSON.stringify(file));
         switch (file?.dataProtocol) {
             case DuckDBDataProtocol.HTTP:
                 failWith(mod, 'Cannot write to HTTP file');
                 return 0;
-            case DuckDBDataProtocol.S3:
-                failWith(mod, 'Writing to S3 is not implemented yet');
-                return 0;
+            case DuckDBDataProtocol.S3: {
+                const buffer = mod.HEAPU8.subarray(buf, buf + bytes);
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', getHTTPUrl(file?.s3Config, file.dataUrl!), false);
+                // TODO do we really need the content-type?
+                addS3Headers(xhr, file?.s3Config, file.dataUrl!, 'PUT', 'text/data;charset=utf-8', buffer);
+                xhr.send(buffer);
+                return bytes;
+            }
             case DuckDBDataProtocol.NATIVE:
                 failWith(mod, 'writefile not implemented');
                 return 0;

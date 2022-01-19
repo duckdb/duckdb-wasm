@@ -102,7 +102,7 @@ struct OpenedFile {
 #else
 #define RT_FN(FUNC, IMPL) FUNC IMPL;
 #endif
-RT_FN(void *duckdb_web_fs_file_open(size_t file_id), {
+RT_FN(void *duckdb_web_fs_file_open(size_t file_id, uint8_t flags), {
     auto &file = GetOrOpen(file_id);
     auto result = std::make_unique<OpenedFile>();
     result->file_size = file.GetFileSize();
@@ -211,47 +211,6 @@ ReadAheadBuffer *WebFileSystem::WebFileHandle::ResolveReadAheadBuffer(std::share
     return readahead_;
 }
 
-/// Close a file handle
-void WebFileSystem::WebFileHandle::Close() {
-    DEBUG_TRACE();
-    // Find file
-    if (!file_) return;
-    auto &file = *file_;
-    auto &fs = file.GetFileSystem();
-    file_ = nullptr;
-
-    // Try to lock the file uniquely
-    std::unique_lock<SharedMutex> file_guard{file.file_mutex_, std::defer_lock};
-    auto have_file_lock = file_guard.try_lock();
-    // Additionally acquire the filesystem lock
-    std::unique_lock<LightMutex> fs_guard{fs.fs_mutex_};
-    // More than one handle left?
-    if (--file.handle_count_ > 0) {
-        return;
-    }
-    // Failed to lock exclusively?
-    if (!have_file_lock) return;
-    // Is buffered file?
-    if (file.data_protocol_ == DataProtocol::BUFFER) return;
-
-    // Close the file in the runtime
-    fs_guard.unlock();
-    duckdb_web_fs_file_close(file.file_id_);
-    fs_guard.lock();
-
-    // Erase the file from the file system
-    auto file_id = file.file_id_;
-    auto file_proto = file.data_protocol_;
-    fs.files_by_name_.erase(file.file_name_);
-    auto iter = fs.files_by_id_.find(file.file_id_);
-    auto tmp = std::move(iter->second);
-    fs.files_by_id_.erase(iter);
-
-    // Release lock guards
-    fs_guard.unlock();
-    file_guard.unlock();
-}
-
 static inline bool hasPrefix(std::string_view text, std::string_view prefix) {
     return text.compare(0, prefix.size(), prefix) == 0;
 }
@@ -273,6 +232,64 @@ static inline WebFileSystem::DataProtocol inferDataProtocol(std::string_view url
     return proto;
 }
 
+/// Close a file handle
+void WebFileSystem::WebFileHandle::Close() {
+    DEBUG_TRACE();
+    // Find file
+    if (!file_) return;
+    auto &file = *file_;
+    auto &fs = file.GetFileSystem();
+    file_ = nullptr;
+
+    // Try to lock the file uniquely
+    std::unique_lock<SharedMutex> file_guard{file.file_mutex_, std::defer_lock};
+    auto have_file_lock = file_guard.try_lock();
+    // Additionally acquire the filesystem lock
+    std::unique_lock<LightMutex> fs_guard{fs.fs_mutex_};
+    // More than one handle left?
+    if (--file.handle_count_ > 0) {
+        return;
+    }
+    // Failed to lock exclusively?
+    if (!have_file_lock) return;
+    // Is buffered file?
+    if (file.data_protocol_ == DataProtocol::BUFFER) {
+        if (file.config_at_open_.has_value()) {
+            // This buffer is a cached HTTP/S3 file for writing, we write the buffer now
+
+            // TODO store the original data protocol? maybe use that as marker for buffered http/s3 fileproto?
+            file.data_protocol_ = inferDataProtocol(file.data_url_.value());
+            fs.IncrementCacheEpoch();
+
+            size_t n = duckdb_web_fs_file_write(file.file_id_, file.data_buffer_->Get().data(), file.data_buffer_->Size(), 0);
+
+            if (n != file.file_size_.value()) {
+                std::string msg = std::string{"Failed to write file: "} + file.file_name_;
+                throw std::runtime_error(msg);
+            }
+        } else {
+            // Regular buffer, nothing to do
+            return;
+        }
+    }
+
+    // Close the file in the runtime
+    fs_guard.unlock();
+    duckdb_web_fs_file_close(file.file_id_);
+    fs_guard.lock();
+
+    // Erase the file from the file system
+    auto file_id = file.file_id_;
+    auto file_proto = file.data_protocol_;
+    fs.files_by_name_.erase(file.file_name_);
+    auto iter = fs.files_by_id_.find(file.file_id_);
+    auto tmp = std::move(iter->second);
+    fs.files_by_id_.erase(iter);
+
+    // Release lock guards
+    fs_guard.unlock();
+    file_guard.unlock();
+}
 /// Get the info
 rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) const {
     DEBUG_TRACE();
@@ -606,23 +623,38 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         case DataProtocol::S3:
             try {
                 // Open the file
-                auto *opened = duckdb_web_fs_file_open(file->file_id_);
+                auto *opened = duckdb_web_fs_file_open(file->file_id_, flags);
                 if (opened == nullptr) {
                     std::string msg = std::string{"Failed to open file: "} + file->file_name_;
                     throw std::runtime_error(msg);
                 }
                 auto owned = std::unique_ptr<OpenedFile>(static_cast<OpenedFile *>(opened));
                 file->file_size_ = owned->file_size;
+                auto *buffer_ptr = reinterpret_cast<char *>(static_cast<uintptr_t>(owned->file_buffer));
 
                 // Was the file fully copied into wasm memory?
-                // This can happen if the data source does not support HTTP range requests.
-                auto *buffer_ptr = reinterpret_cast<char *>(static_cast<uintptr_t>(owned->file_buffer));
+                // This can happen for two reasons:
+                // - if the data source does not support HTTP range requests and allowFullHTTPRequests is true.
+                // - The file was opened for writing and a buffer file is created to buffer the written data, which will
+                //   be sent on close.
+                // TODO: we need to assert that we cover all cases and fail nicely when we don't.
                 if (buffer_ptr) {
                     auto owned_buffer = std::unique_ptr<char[]>(buffer_ptr);
-                    file->data_protocol_ = DataProtocol::BUFFER;
-                    file->data_buffer_ =
-                        DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
-                    // XXX Note that data_url is still set
+                    if ((flags & duckdb::FileFlags::FILE_FLAGS_WRITE) != 0) {
+                        // Handle opening for writing
+                        file->data_protocol_ = DataProtocol::BUFFER;
+                        file->data_buffer_ =
+                            DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
+                        // Copy current config, this will be used to write on close.
+                        file->config_at_open_ = config_->duckdb_config_options;
+                        // For now a DataProtocol::BUFFER with a config_at_open is a buffered S3 or HTTP file for writing
+                    } else {
+                        // File was fully downloaded with a regular http request instead of a range request
+                        file->data_protocol_ = DataProtocol::BUFFER;
+                        file->data_buffer_ =
+                            DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
+                        // XXX Note that data_url is still set
+                    }
                 }
 
                 // Truncate file?
