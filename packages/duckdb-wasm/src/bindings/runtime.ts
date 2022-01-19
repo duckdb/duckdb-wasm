@@ -41,6 +41,22 @@ export enum DuckDBDataProtocol {
     S3 = 4,
 }
 
+/** File flags for opening files*/
+export enum FileFlags {
+    //! Open file with read access
+    FILE_FLAGS_READ = 1 << 0,
+    //! Open file with write access
+    FILE_FLAGS_WRITE = 1 << 1,
+    //! Use direct IO when reading/writing to the file
+    FILE_FLAGS_DIRECT_IO = 1 << 2,
+    //! Create file if not exists, can only be used together with WRITE
+    FILE_FLAGS_FILE_CREATE = 1 << 3,
+    //! Always create a new file. If a file exists, the file is truncated. Cannot be used together with CREATE.
+    FILE_FLAGS_FILE_CREATE_NEW = 1 << 4,
+    //! Open file in append mode
+    FILE_FLAGS_APPEND = 1 << 5,
+}
+
 /** Configuration for the AWS S3 Filesystem */
 export interface S3Config {
     region?: string;
@@ -110,7 +126,7 @@ export interface DuckDBRuntime {
     testPlatformFeature(mod: DuckDBModule, feature: number): boolean;
 
     // File APIs with dedicated file identifier
-    openFile(mod: DuckDBModule, fileId: number): void;
+    openFile(mod: DuckDBModule, fileId: number, flags: FileFlags): void;
     syncFile(mod: DuckDBModule, fileId: number): void;
     closeFile(mod: DuckDBModule, fileId: number): void;
     getLastFileModificationTime(mod: DuckDBModule, fileId: number): number;
@@ -136,7 +152,7 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     _udfFunctions: new Map(),
 
     testPlatformFeature: (_mod: DuckDBModule, _feature: number): boolean => false,
-    openFile: (_mod: DuckDBModule, _fileId: number): void => {},
+    openFile: (_mod: DuckDBModule, _fileId: number, flags: FileFlags): void => {},
     syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
     closeFile: (_mod: DuckDBModule, _fileId: number): void => {},
     getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {

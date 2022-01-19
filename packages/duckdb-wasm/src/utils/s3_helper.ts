@@ -15,6 +15,11 @@ export interface S3Params {
     datetimeNow: string
 }
 
+interface S3PayloadParams {
+    contentHash: string | null,
+    contentType: string | null
+}
+
 const getS3Params = function(config : S3Config | undefined, url: string, method : string) : S3Params {
     const parsedS3Url = parseS3Url(url);
     return {
@@ -59,14 +64,9 @@ export function uriEncode(input : string, encode_slash = false) {
     return result;
 }
 
-const createS3HeadersFromS3Config = function (config : S3Config | undefined, url : string, method : string) : Map<string, string> {
-    const params = getS3Params(config, url, method);
-    return createS3Headers(params);
-}
-
-export function createS3Headers(params: S3Params) : Map<string, string> {
+export function createS3Headers(params: S3Params, payloadParams : S3PayloadParams | null = null) : Map<string, string> {
     // this is the sha256 of the empty string, its useful since we have no payload for GET requests
-    const payloadHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    const payloadHash = (payloadParams?.contentHash) ?? "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
     const res = new Map<string, string>();
     // res.set("host", params.host)
@@ -78,12 +78,20 @@ export function createS3Headers(params: S3Params) : Map<string, string> {
     }
 
     // construct string to sign
-    let signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+    let signedHeaders = "";
+    if (payloadParams?.contentType) {
+        signedHeaders += "content-type;";
+    }
+    signedHeaders += "host;x-amz-content-sha256;x-amz-date";
     if (params.sessionToken) {
         signedHeaders += ";x-amz-security-token";
     }
 
-    let canonicalRequest = params.method + "\n" + uriEncode(params.url) + "\n" + params.query + "\nhost:" + params.host +
+    let canonicalRequest = params.method + "\n" + uriEncode(params.url) + "\n" + params.query;
+    if (payloadParams?.contentType) {
+        canonicalRequest += "\ncontent-type:" + payloadParams?.contentType;
+    }
+    canonicalRequest += "\nhost:" + params.host +
         "\nx-amz-content-sha256:" + payloadHash + "\nx-amz-date:" + params.datetimeNow;
     if (params.sessionToken && params.sessionToken.length > 0) {
         canonicalRequest += "\nx-amz-security-token:" + params.sessionToken;
@@ -121,12 +129,25 @@ export function createS3Headers(params: S3Params) : Map<string, string> {
     return res;
 }
 
-export function addS3Headers(xhr: XMLHttpRequest, config : S3Config | undefined, url : string, method: string) {
+const createS3HeadersFromS3Config = function (config : S3Config | undefined, url : string, method : string, contentType: string | null = null, payload : Uint8Array | null = null) : Map<string, string> {
+    const params = getS3Params(config, url, method);
+    const payloadParams = {
+        contentType: contentType,
+        contentHash: payload ? sha256.hex(payload!) : null
+    } as S3PayloadParams;
+    return createS3Headers(params, payloadParams);
+}
+
+export function addS3Headers(xhr: XMLHttpRequest, config : S3Config | undefined, url : string, method: string, contentType: string | null = null, payload : Uint8Array | null = null) {
     if (config?.accessKeyId || config?.sessionToken) {
-        const headers = createS3HeadersFromS3Config(config, url, method);
+        const headers = createS3HeadersFromS3Config(config, url, method, contentType, payload);
         headers.forEach((value: string, header: string) => {
             xhr.setRequestHeader(header, value);
         });
+
+        if (contentType) {
+            xhr.setRequestHeader("content-type", contentType);
+        }
     }
 }
 

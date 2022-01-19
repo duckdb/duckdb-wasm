@@ -78,6 +78,12 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The data URL (if any)
         std::optional<std::string> data_url_ = std::nullopt;
 
+        // The S3 config at the time of opening. This is only set for HTTP/S3 files that have been transformed to
+        // a Buffer type for writing.
+        std::optional<DuckDBConfigOptions> config_at_open_ = std::nullopt;
+
+        // TODO: mark in a clearer way when its a buffered http/s3 file for writing
+
         /// The file stats
         std::shared_ptr<io::FileStatisticsCollector> file_stats_ = nullptr;
 
