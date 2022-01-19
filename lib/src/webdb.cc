@@ -579,7 +579,7 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
 void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) {
     DEBUG_TRACE();
     // Fetch the config to enable the custom SET parameters
-    auto& config = duckdb::DBConfig::GetConfig(*database_->instance);
+    auto& config = duckdb::DBConfig::GetConfig(*database->instance);
     auto webfs = io::WebFileSystem::Get();
 
     // Register S3 Config parameters
@@ -725,6 +725,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         db->LoadExtension<duckdb::ParquetExtension>();
+        RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
         connections_.clear();
@@ -734,8 +735,6 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         // Store  new database
         buffered_filesystem_ = buffered_fs_ptr;
         database_ = std::move(db);
-
-        RegisterCustomExtensionOptions(db);
     } catch (std::exception& ex) {
         return arrow::Status::Invalid("Opening the database failed with error: ", ex.what());
     } catch (...) {
@@ -824,7 +823,7 @@ arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
     auto files = web_fs->Glob(std::string{expression});
-    auto current_epoch = web_fs->CacheEpoch();
+    auto current_epoch = web_fs->LoadCacheEpoch();
 
     rapidjson::Document doc;
     doc.SetArray();

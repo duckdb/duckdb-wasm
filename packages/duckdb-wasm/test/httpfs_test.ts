@@ -32,15 +32,17 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
         });
 
         it('can query s3 urls without authentication', async () => {
+            await adb().reset();
             conn_async = await adb().connect();
 
-            // Kinda hacky way to test s3 code by settings the config such that it translates to a raw github url
+            // Test s3 code by settings the config such that it translates to a raw.githubusercontent url
             await conn_async.query("SET s3_endpoint='githubusercontent.com';");
 
             // Url should translate to https://raw.githubusercontent.com/duckdb/duckdb-wasm/master/data/test.csv
-            // Note that this will use the fallback instead of the range due to github not supporting range header on CORS
-            const results_with_auth_2 = await conn_async.query("select * from \"s3://raw/duckdb/duckdb-wasm/master/data/test.csv\";");
-            expect(results_with_auth_2.getColumnAt(2)?.get(2)).toEqual(9);
+            // Note that this will use the fallback full http request instead of the range request due to github not
+            // supporting range header on CORS
+            const result = await conn_async.query("select * from \"s3://raw/duckdb/duckdb-wasm/master/data/test.csv\";");
+            expect(result.getColumnAt(2)?.get(2)).toEqual(9);
         });
 
         it('s3 config is correctly updated after SET commands', () => {
@@ -77,7 +79,7 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
 
         it('resetting the database clears any state on opened files', async () => {
             // Set up a Runtime for testing and get the module of the current bindings
-            sdb().open({});
+            sdb().reset();
             conn_sync = sdb().connect();
             let module : DuckDBModule | null = null;
             conn_sync.useUnsafe((bindings: DuckDBBindings, con_number: number) => {
@@ -102,8 +104,8 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
             expect(globalFileInfoUpdated?.s3Config?.region).toEqual("");
         });
 
+        // TODO: find a way to run these tests in CI
         // it('can fetch s3 file with correct auth credentials', async () => {
-        //     await adb().open({});
         //     conn_async = await adb().connect();
         //
         //     await conn_async.query("SET s3_region='nope';");
@@ -128,14 +130,9 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
         // });
         //
         // // 0_lineitem.parquet should be sufficiently big to ensure the 2nd query will request an uncached part of 0_lineitem.parquet
-        // it('File caches are properly invalidated', async () => {
+        // it('properly invalidates caches on settings update.', async () => {
         //     await adb().reset();
         //     conn_async = await adb().connect();
-        //
-        //     // Set existent config, ie. no auth
-        //     await conn_async.query("SET s3_region='';");
-        //     await conn_async.query("SET s3_access_key_id='';");
-        //     await conn_async.query("SET s3_secret_access_key='';");
         //
         //     // Query first part of file, this should only partially read the file, right?
         //     const results_with_auth = await conn_async.query("select l_partkey from \"s3://test-bucket-ceiveran/0_lineitem.parquet\" limit 1;");

@@ -283,7 +283,7 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
     rapidjson::Value data_url{rapidjson::kNullType};
 
     // Add the JSON document members
-    value.AddMember("cacheEpoch", rapidjson::Value{filesystem_.cache_epoch_.load()}, allocator);
+    value.AddMember("cacheEpoch", rapidjson::Value{filesystem_.LoadCacheEpoch()}, allocator);
     value.AddMember("fileId", rapidjson::Value{file_id_}, allocator);
     value.AddMember("fileName",
                     rapidjson::Value{file_name_.c_str(), static_cast<rapidjson::SizeType>(file_name_.size())},
@@ -452,7 +452,7 @@ arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_d
 /// Write the global filesystem info
 rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, uint32_t cache_epoch) {
     DEBUG_TRACE();
-    if (cache_epoch == cache_epoch_.load()) {
+    if (cache_epoch == LoadCacheEpoch()) {
         rapidjson::Value value;
         value.SetNull();
         return value;
@@ -463,7 +463,7 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
     auto &allocator = doc.GetAllocator();
 
     // Add the JSON document members
-    value.AddMember("cacheEpoch", rapidjson::Value{cache_epoch_.load()}, allocator);
+    value.AddMember("cacheEpoch", rapidjson::Value{LoadCacheEpoch()}, allocator);
 
     if (config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
@@ -477,7 +477,7 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
 /// Write the file info as JSON
 rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, uint32_t file_id, uint32_t cache_epoch) {
     DEBUG_TRACE();
-    if (cache_epoch == cache_epoch_.load()) {
+    if (cache_epoch == LoadCacheEpoch()) {
         rapidjson::Value value;
         value.SetNull();
         return value;
@@ -497,7 +497,7 @@ rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, uint32_t
 rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, std::string_view file_name,
                                               uint32_t cache_epoch) {
     DEBUG_TRACE();
-    if (cache_epoch == cache_epoch_.load()) {
+    if (cache_epoch == LoadCacheEpoch()) {
         rapidjson::Value value;
         value.SetNull();
         return value;
@@ -508,7 +508,7 @@ rapidjson::Value WebFileSystem::WriteFileInfo(rapidjson::Document &doc, std::str
         auto proto = inferDataProtocol(file_name);
         rapidjson::Value value;
         value.SetObject();
-        value.AddMember("cacheEpoch", rapidjson::Value{cache_epoch_.load()}, doc.GetAllocator());
+        value.AddMember("cacheEpoch", rapidjson::Value{LoadCacheEpoch()}, doc.GetAllocator());
         value.AddMember("fileName",
                         rapidjson::Value{file_name.data(), static_cast<rapidjson::SizeType>(file_name.size())},
                         doc.GetAllocator());
@@ -973,8 +973,9 @@ rapidjson::Value WebFileSystem::writeS3Config(std::shared_ptr<WebDBConfig> confi
     s3Config.AddMember("endpoint", s3_endpoint, allocator);
 
     rapidjson::Value s3_access_key_id{rapidjson::kNullType};
-    s3_access_key_id = rapidjson::Value{config->duckdb_config_options.s3_access_key_id.c_str(),
-                                        static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_access_key_id.size())};
+    s3_access_key_id =
+        rapidjson::Value{config->duckdb_config_options.s3_access_key_id.c_str(),
+                         static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_access_key_id.size())};
     s3Config.AddMember("accessKeyId", s3_access_key_id, allocator);
 
     rapidjson::Value s3_secret_access_key{rapidjson::kNullType};
@@ -984,8 +985,9 @@ rapidjson::Value WebFileSystem::writeS3Config(std::shared_ptr<WebDBConfig> confi
     s3Config.AddMember("secretAccessKey", s3_secret_access_key, allocator);
 
     rapidjson::Value s3_session_token{rapidjson::kNullType};
-    s3_session_token = rapidjson::Value{config->duckdb_config_options.s3_session_token.c_str(),
-                                        static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_session_token.size())};
+    s3_session_token =
+        rapidjson::Value{config->duckdb_config_options.s3_session_token.c_str(),
+                         static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_session_token.size())};
     s3Config.AddMember("sessionToken", s3_session_token, allocator);
 
     return s3Config;

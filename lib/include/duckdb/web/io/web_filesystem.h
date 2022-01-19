@@ -172,8 +172,8 @@ class WebFileSystem : public duckdb::FileSystem {
 
     /// Get the config
     auto Config() const { return config_; }
-    /// Get the current cache epoch
-    auto CacheEpoch() const { return cache_epoch_.load(); }
+    /// Load the current cache epoch
+    auto LoadCacheEpoch() const { return cache_epoch_.load(std::memory_order_relaxed); }
     /// Get a file info as JSON string
     inline WebFile *GetFile(uint32_t file_id) const {
         return files_by_id_.count(file_id) ? files_by_id_.at(file_id).get() : nullptr;
