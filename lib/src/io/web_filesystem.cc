@@ -254,24 +254,22 @@ void WebFileSystem::WebFileHandle::Close() {
     if (!have_file_lock) return;
     // Is buffered file?
     if (file.data_protocol_ == DataProtocol::BUFFER) {
-        if (file.config_at_open_.has_value()) {
-            // This buffer is a cached HTTP/S3 file for writing, we write the buffer now
-
-            // TODO store the original data protocol? maybe use that as marker for buffered http/s3 fileproto?
+        if (file.buffered_http_file_) {
             file.data_protocol_ = inferDataProtocol(file.data_url_.value());
             fs.IncrementCacheEpoch();
 
-            size_t n = duckdb_web_fs_file_write(file.file_id_, file.data_buffer_->Get().data(), file.data_buffer_->Size(), 0);
+            size_t n =
+                duckdb_web_fs_file_write(file.file_id_, file.data_buffer_->Get().data(), file.data_buffer_->Size(), 0);
 
             if (n != file.file_size_.value()) {
                 std::string msg = std::string{"Failed to write file: "} + file.file_name_;
                 throw std::runtime_error(msg);
             }
-        } else {
-            // Regular buffer, nothing to do
-            return;
         }
+        return;
     }
+
+    // TODO maybe this code also applies to me?
 
     // Close the file in the runtime
     fs_guard.unlock();
@@ -323,7 +321,15 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
     value.AddMember("collectStatistics", filesystem_.file_statistics_->TracksFile(file_name_), doc.GetAllocator());
 
     if (data_protocol_ == DataProtocol::S3) {
-        value.AddMember("s3Config", writeS3Config(filesystem_.config_, allocator), allocator);
+        if (buffered_http_file_) {
+            value.AddMember(
+                "s3Config",
+                writeS3Config(const_cast<DuckDBConfigOptions &>(buffered_http_config_options_.value()), allocator),
+                allocator);
+        } else {
+            value.AddMember("s3Config", writeS3Config(filesystem_.config_->duckdb_config_options, allocator),
+                            allocator);
+        }
     }
 
     return value;
@@ -486,7 +492,7 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
         value.AddMember("allowFullHttpReads", true, allocator);
     }
 
-    value.AddMember("s3Config", writeS3Config(config_, allocator), allocator);
+    value.AddMember("s3Config", writeS3Config(config_->duckdb_config_options, allocator), allocator);
 
     return value;
 }
@@ -632,29 +638,21 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 file->file_size_ = owned->file_size;
                 auto *buffer_ptr = reinterpret_cast<char *>(static_cast<uintptr_t>(owned->file_buffer));
 
-                // Was the file fully copied into wasm memory?
-                // This can happen for two reasons:
-                // - if the data source does not support HTTP range requests and allowFullHTTPRequests is true.
-                // - The file was opened for writing and a buffer file is created to buffer the written data, which will
-                //   be sent on close.
-                // TODO: we need to assert that we cover all cases and fail nicely when we don't.
+                // A buffer was returned, this can happen for 3 reasons:
+                //  1: The data source does not support HTTP range requests and allowFullHTTPRequests is true.
+                //  2: The file has the HTTP or S3 protocol and was openened with the write flag.
+                //  3: The file is a native file that was not found, in this case a fallback occurs to an empty buffer
                 if (buffer_ptr) {
-                    auto owned_buffer = std::unique_ptr<char[]>(buffer_ptr);
-                    if ((flags & duckdb::FileFlags::FILE_FLAGS_WRITE) != 0) {
-                        // Handle opening for writing
-                        file->data_protocol_ = DataProtocol::BUFFER;
-                        file->data_buffer_ =
-                            DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
-                        // Copy current config, this will be used to write on close.
-                        file->config_at_open_ = config_->duckdb_config_options;
-                        // For now a DataProtocol::BUFFER with a config_at_open is a buffered S3 or HTTP file for writing
-                    } else {
-                        // File was fully downloaded with a regular http request instead of a range request
-                        file->data_protocol_ = DataProtocol::BUFFER;
-                        file->data_buffer_ =
-                            DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
-                        // XXX Note that data_url is still set
+                    if ((file->data_protocol_ == DataProtocol::S3 || file->data_protocol_ == DataProtocol::HTTP) &&
+                        (flags & duckdb::FileFlags::FILE_FLAGS_WRITE)) {
+                        file->buffered_http_file_ = true;
+                        file->buffered_http_config_options_ = config_->duckdb_config_options;
                     }
+                    auto owned_buffer = std::unique_ptr<char[]>(buffer_ptr);
+                    file->data_protocol_ = DataProtocol::BUFFER;
+                    file->data_buffer_ =
+                        DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};
+                    // XXX Note that data_url is still set.
                 }
 
                 // Truncate file?
@@ -989,37 +987,35 @@ bool WebFileSystem::OnDiskFile(FileHandle &handle) { return true; }
 std::string WebFileSystem::GetName() const { return "WebFileSystem"; }
 
 /// Write the s3 config to a rapidjson value.
-rapidjson::Value WebFileSystem::writeS3Config(std::shared_ptr<WebDBConfig> config,
+rapidjson::Value WebFileSystem::writeS3Config(DuckDBConfigOptions &extension_options,
                                               rapidjson::Document::AllocatorType allocator) {
     rapidjson::Value s3Config;
     s3Config.SetObject();
 
     rapidjson::Value s3_region{rapidjson::kNullType};
-    s3_region = rapidjson::Value{config->duckdb_config_options.s3_region.c_str(),
-                                 static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_region.size())};
+    s3_region = rapidjson::Value{extension_options.s3_region.c_str(),
+                                 static_cast<rapidjson::SizeType>(extension_options.s3_region.size())};
     s3Config.AddMember("region", s3_region, allocator);
 
     rapidjson::Value s3_endpoint{rapidjson::kNullType};
-    s3_endpoint = rapidjson::Value{config->duckdb_config_options.s3_endpoint.c_str(),
-                                   static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_endpoint.size())};
+    s3_endpoint = rapidjson::Value{extension_options.s3_endpoint.c_str(),
+                                   static_cast<rapidjson::SizeType>(extension_options.s3_endpoint.size())};
     s3Config.AddMember("endpoint", s3_endpoint, allocator);
 
     rapidjson::Value s3_access_key_id{rapidjson::kNullType};
-    s3_access_key_id =
-        rapidjson::Value{config->duckdb_config_options.s3_access_key_id.c_str(),
-                         static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_access_key_id.size())};
+    s3_access_key_id = rapidjson::Value{extension_options.s3_access_key_id.c_str(),
+                                        static_cast<rapidjson::SizeType>(extension_options.s3_access_key_id.size())};
     s3Config.AddMember("accessKeyId", s3_access_key_id, allocator);
 
     rapidjson::Value s3_secret_access_key{rapidjson::kNullType};
     s3_secret_access_key =
-        rapidjson::Value{config->duckdb_config_options.s3_secret_access_key.c_str(),
-                         static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_secret_access_key.size())};
+        rapidjson::Value{extension_options.s3_secret_access_key.c_str(),
+                         static_cast<rapidjson::SizeType>(extension_options.s3_secret_access_key.size())};
     s3Config.AddMember("secretAccessKey", s3_secret_access_key, allocator);
 
     rapidjson::Value s3_session_token{rapidjson::kNullType};
-    s3_session_token =
-        rapidjson::Value{config->duckdb_config_options.s3_session_token.c_str(),
-                         static_cast<rapidjson::SizeType>(config->duckdb_config_options.s3_session_token.size())};
+    s3_session_token = rapidjson::Value{extension_options.s3_session_token.c_str(),
+                                        static_cast<rapidjson::SizeType>(extension_options.s3_session_token.size())};
     s3Config.AddMember("sessionToken", s3_session_token, allocator);
 
     return s3Config;

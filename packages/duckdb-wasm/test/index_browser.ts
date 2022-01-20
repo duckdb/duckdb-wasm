@@ -67,6 +67,8 @@ const resolveData = async (url: string) => {
             return await resolveBuffer('/uni/hoeren.parquet');
         case '/uni/vorlesungen.parquet':
             return await resolveBuffer('/uni/vorlesungen.parquet');
+        case '/tpch/0_1/parquet/lineitem.parquet':
+            return await resolveBuffer('/tpch/0_1/parquet/lineitem.parquet');
         default:
             return null;
     }
@@ -114,7 +116,7 @@ testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
 testAllTypes(() => db!);
-testHTTPFS(() => adb!, () => db!);
+testHTTPFS(() => adb!, () => db!, resolveData, dataURL);
 testAllTypesAsync(() => adb!);
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL);

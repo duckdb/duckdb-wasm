@@ -1,6 +1,6 @@
 import * as duckdb from '../src/';
 import {S3Params, createS3Headers, uriEncode} from '../src/utils'
-import {DuckDBBindings, DuckDBBindingsBase, DuckDBModule} from "../src/";
+import {AsyncDuckDBConnection, DuckDBBindings, DuckDBBindingsBase, DuckDBModule} from "../src/";
 import BROWSER_RUNTIME from "../src/bindings/runtime_browser";
 
 // this computes the signature from https://czak.pl/2015/09/15/s3-rest-api-with-curl.html
@@ -62,7 +62,36 @@ const verifyS3Helper = function () {
     }
 }
 
-export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.DuckDBBindings): void {
+enum AWSConfigType {
+    EMPTY,
+    VALID,
+    INVALID
+}
+
+const setAwsConfig = async function (conn : AsyncDuckDBConnection, type : AWSConfigType = AWSConfigType.VALID) {
+    switch(type) {
+        case AWSConfigType.EMPTY:
+            await conn.query("SET s3_region='';");
+            await conn.query("SET s3_access_key_id='';");
+            await conn.query("SET s3_secret_access_key='';");
+            await conn.query("SET s3_session_token='';");
+            break;
+        case AWSConfigType.VALID:
+            await conn.query("SET s3_region='nope';");
+            await conn.query("SET s3_access_key_id='nope';");
+            await conn.query("SET s3_secret_access_key='nope';");
+            await conn.query("SET s3_session_token='';");
+            break;
+        case AWSConfigType.INVALID:
+            await conn.query("SET s3_region='a-very-remote-and-non-existent-s3-region';");
+            await conn.query("SET s3_access_key_id='THISACCESSKEYIDISNOTVALID';");
+            await conn.query("SET s3_secret_access_key='THISSECRETACCESSKEYISNOTVALID';");
+            await conn.query("SET s3_session_token='INVALIDSESSIONTOKEN';");
+            break;
+    }
+}
+
+export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.DuckDBBindings, resolveData: (url: string) => Promise<Uint8Array | null>,  baseDir: string): void {
     let conn_async: duckdb.AsyncDuckDBConnection | null;
     let conn_sync: duckdb.DuckDBConnection | null;
 
@@ -80,7 +109,7 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
 
     });
     describe('HTTPFS', () => {
-        it('s3 helper passes self-validation', () => {
+        it('s3 helper passes validation', () => {
             expect(() => verifyS3Helper()).not.toThrow();
         });
 
@@ -91,8 +120,8 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
         });
 
         it('can query s3 urls without authentication', async () => {
-            await adb().reset();
             conn_async = await adb().connect();
+            setAwsConfig(conn_async, AWSConfigType.EMPTY);
 
             // Test s3 code by settings the config such that it translates to a raw.githubusercontent url
             await conn_async.query("SET s3_endpoint='githubusercontent.com';");
@@ -104,7 +133,7 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
             expect(result.getColumnAt(2)?.get(2)).toEqual(9);
         });
 
-        it('s3 config is correctly updated after SET commands', () => {
+        it('s3 config is set correctly', () => {
             // Set up a Runtime for testing and get the module of the current bindings
             sdb().reset();
             conn_sync = sdb().connect();
@@ -118,13 +147,16 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
             const cacheEpoch = globalFileInfo!.cacheEpoch;
             expect(globalFileInfo?.s3Config).toBeDefined();
             expect(globalFileInfo?.s3Config?.region).toEqual("");
+            expect(globalFileInfo?.s3Config?.accessKeyId).toEqual("");
+            expect(globalFileInfo?.s3Config?.secretAccessKey).toEqual("");
+            expect(globalFileInfo?.s3Config?.sessionToken).toEqual("");
+            expect(globalFileInfo?.s3Config?.endpoint).toEqual("");
 
             conn_sync.query("SET s3_region='a-very-remote-and-non-existent-s3-region';");
             conn_sync.query("SET s3_access_key_id='THISACCESSKEYIDISNOTVALID';");
             conn_sync.query("SET s3_secret_access_key='THISSECRETACCESSKEYISNOTVALID';");
             conn_sync.query("SET s3_session_token='ANICESESSIONTOKEN';");
             conn_sync.query("SET s3_endpoint='localhost:1337';");
-
 
             const globalFileInfoUpdated = BROWSER_RUNTIME.getGlobalFileInfo(module!);
             expect(globalFileInfoUpdated?.s3Config).toBeDefined();
@@ -136,7 +168,7 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
             expect(globalFileInfoUpdated?.cacheEpoch).toEqual(cacheEpoch+5);
         });
 
-        it('resetting the database clears any state on opened files', async () => {
+        it('resetting the database clears the config state', async () => {
             // Set up a Runtime for testing and get the module of the current bindings
             sdb().reset();
             conn_sync = sdb().connect();
@@ -163,50 +195,13 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
             expect(globalFileInfoUpdated?.s3Config?.region).toEqual("");
         });
 
-        // NOTE: this test now works
-        // TODO: next up:
-        // - Parquet files
-        // - Can I trigger weird file flags?
-        // - Large file
-        // it('can write to s3 file with correct auth credentials', async () => {
-        //     await adb().reset();
-        //     conn_async = await adb().connect();
-        //
-        //     await conn_async.query("SET s3_region='nope';");
-        //     await conn_async.query("SET s3_access_key_id='nope';");
-        //     await conn_async.query("SET s3_secret_access_key='nope';");
-        //
-        //     await conn_async.query("CREATE TABLE test AS SELECT * FROM \"s3://test-bucket-ceiveran/test.csv\";");
-        //     await conn_async.query("COPY (SELECT * FROM test) TO 's3://test-bucket-ceiveran/test_written.csv' (FORMAT 'csv');");
-        //
-        //     // File should be written now!
-        //     const result = await conn_async.query("SELECT * FROM \"s3://test-bucket-ceiveran/test_written.csv\";");
-        //     expect(result.getColumnAt(2)?.get(2)).toEqual(9);
-        // });
-
         // TODO: find a way to run these tests in CI
         // it('can fetch s3 file with correct auth credentials', async () => {
         //     conn_async = await adb().connect();
-        //
-        //     await conn_async.query("SET s3_region='nope';");
-        //     await conn_async.query("SET s3_access_key_id='nope';");
-        //     await conn_async.query("SET s3_secret_access_key='nope';");
+        //     await setAwsConfig(conn_async, AWSConfigType.VALID);
         //
         //     const results_with_auth = await conn_async.query("select * from \"s3://test-bucket-ceiveran/test.csv\";");
         //     expect(results_with_auth.getColumnAt(2)?.get(2)).toEqual(9);
-        // });
-        //
-        // it('fails to fetch s3 file with incorrect credentials', async () => {
-        //     conn_async = await adb().connect();
-        //
-        //     await conn_async.query("SET s3_region='a-very-remote-and-non-existent-s3-region';");
-        //     await conn_async.query("SET s3_access_key_id='THISACCESSKEYIDISNOTVALID';");
-        //     await conn_async.query("SET s3_secret_access_key='THISSECRETACCESSKEYISNOTVALID';");
-        //
-        //     await expectAsync(conn_async!.query("select * from \"s3://test-bucket-ceiveran/test.csv\";"))
-        //         .toBeRejected();
-        //
-        //     expect(1).toEqual(1);
         // });
         //
         // // 0_lineitem.parquet should be sufficiently big to ensure the 2nd query will request an uncached part of 0_lineitem.parquet
@@ -218,14 +213,83 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
         //     const results_with_auth = await conn_async.query("select l_partkey from \"s3://test-bucket-ceiveran/0_lineitem.parquet\" limit 1;");
         //     expect(results_with_auth.getColumnAt(0)?.get(0)).toEqual(15519);
         //
-        //     // Set config to an invalid config
-        //     await conn_async.query("SET s3_region='non-existent';");
-        //     await conn_async.query("SET s3_access_key_id='non-existent';");
-        //     await conn_async.query("SET s3_secret_access_key='non-existent';");
+        //     await setAwsConfig(conn_async, AWSConfigType.INVALID);
         //
         //     // query touching the whole table should now fail
         //     await expectAsync(conn_async!.query("select avg(l_partkey) from \"s3://test-bucket-ceiveran/0_lineitem.parquet\";"))
         //         .toBeRejected();
+        // });
+        // it('can write small csv file to s3', async () => {
+        //     conn_async = await adb().connect();
+        //     await setAwsConfig(conn_async);
+        //
+        //     // write the file for the first time
+        //     await conn_async.query("COPY (SELECT * FROM range(1000,1010) tbl(i)) TO 's3://test-bucket-ceiveran/test_written.csv' (FORMAT 'csv');");
+        //
+        //     // confirm file matches
+        //     const result = await conn_async.query("SELECT * FROM \"s3://test-bucket-ceiveran/test_written.csv\";");
+        //     expect(result.getColumnAt(0)?.get(6)).toEqual(1006);
+        //
+        //     await adb().flushFiles();
+        //     await adb().dropFiles();
+        //
+        //     // write the file for the second time
+        //     await conn_async.query("COPY (SELECT * FROM range(2000,2010) tbl(i)) TO 's3://test-bucket-ceiveran/test_written.csv' (FORMAT 'csv');");
+        //
+        //     // file should be rewritten to new value now
+        //     const result2 = await conn_async.query("SELECT * FROM \"s3://test-bucket-ceiveran/test_written.csv\";");
+        //     expect(result2.getColumnAt(0)?.get(6)).toEqual(2006);
+        // });
+        // it('write after read throws incorrect flag error without dropping files', async () => {
+        //     conn_async = await adb().connect();
+        //     await setAwsConfig(conn_async);
+        //
+        //     // write the file for the first time
+        //     await conn_async.query("COPY (SELECT * FROM range(1000,1010) tbl(i)) TO 's3://test-bucket-ceiveran/test_written.csv' (FORMAT 'csv');");
+        //
+        //     // confirm file matches
+        //     const result = await conn_async.query("SELECT * FROM \"s3://test-bucket-ceiveran/test_written.csv\";");
+        //     expect(result.getColumnAt(0)?.get(6)).toEqual(1006);
+        //
+        //     // write the file for the second time should fail: the read flag will not be set on this file
+        //     await expectAsync(conn_async!.query("COPY (SELECT * FROM range(2000,2010) tbl(i)) TO 's3://test-bucket-ceiveran/test_written.csv' (FORMAT 'csv');"))
+        //         .toBeRejectedWithError("File is not opened in write mode");
+        // });
+        // it('can write small parquet file to S3', async () => {
+        //     conn_async = await adb().connect();
+        //     const students = await resolveData('/uni/studenten.parquet');
+        //     expect(students).not.toBeNull();
+        //     await adb().registerFileBuffer('studenten.parquet', students!);
+        //
+        //     // Create table from local parquet file
+        //     await conn_async.send(`CREATE TABLE studenten AS (SELECT * FROM parquet_scan('studenten.parquet'));`);
+        //
+        //     // Export to S3
+        //     await setAwsConfig(conn_async);
+        //     await conn_async.query("COPY studenten TO 's3://test-bucket-ceiveran/studenten.parquet' (FORMAT 'parquet');");
+        //
+        //     const result_s3 = await conn_async.query("SELECT * FROM \"s3://test-bucket-ceiveran/studenten.parquet\";");
+        //     const result_local = await conn_async.query("SELECT * FROM studenten;");
+        //     expect(result_s3.getColumnAt(0)?.toArray()).toEqual(result_local.getColumnAt(0)?.toArray());
+        // });
+        //
+        // it('can write medium sized(34MB) parquet file to S3', async () => {
+        //     conn_async = await adb().connect();
+        //     const lineitem = await resolveData('/tpch/0_1/parquet/lineitem.parquet');
+        //     expect(lineitem).not.toBeNull();
+        //     await adb().registerFileBuffer('lineitem.parquet', lineitem!);
+        //
+        //     // Create table from local parquet file
+        //     await conn_async.send(`CREATE TABLE lineitem AS (SELECT * FROM parquet_scan('lineitem.parquet'));`);
+        //
+        //     // Export to S3
+        //     await setAwsConfig(conn_async);
+        //     await conn_async.query("COPY lineitem TO 's3://test-bucket-ceiveran/lineitem.parquet' (FORMAT 'parquet');");
+        //
+        //     // Compare results
+        //     const result_s3 = await conn_async.query("SELECT avg(l_extendedprice) FROM \"s3://test-bucket-ceiveran/lineitem.parquet\";");
+        //     const result_local = await conn_async.query("SELECT avg(l_extendedprice) FROM lineitem;");
+        //     expect(result_s3.getColumnAt(0)?.get(0)).toEqual(result_local.getColumnAt(0)?.get(0));
         // });
     });
 }
