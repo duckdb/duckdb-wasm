@@ -78,9 +78,11 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The data URL (if any)
         std::optional<std::string> data_url_ = std::nullopt;
 
-        // The S3 config at the time of opening. This is only set for HTTP/S3 files that have been transformed to
-        // a Buffer type for writing.
-        std::optional<DuckDBConfigOptions> config_at_open_ = std::nullopt;
+        /// Buffered http file for writing: file is a buffered HTTP/S3 and should be written to data_url_ on closing
+        bool buffered_http_file_ = false;
+        /// The extensionOptions at time of opening the http file as buffer
+        std::optional<DuckDBConfigOptions> buffered_http_config_options_ = std::nullopt;
+
 
         // TODO: mark in a clearer way when its a buffered http/s3 file for writing
 
@@ -280,7 +282,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Return the name of the filesytem. Used for forming diagnosis messages.
     std::string GetName() const override;
     /// Write the s3 config to a rapidJSON value
-    static rapidjson::Value writeS3Config(std::shared_ptr<WebDBConfig> config,
+    static rapidjson::Value writeS3Config(DuckDBConfigOptions& extension_options,
                                           rapidjson::Document::AllocatorType allocator);
 };
 

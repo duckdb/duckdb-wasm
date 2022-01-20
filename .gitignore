@@ -25,3 +25,5 @@ compile_commands.json
 .vscode
 !.vscode/settings.json
 data/tpch/**/*.parquet
+.idea
+lib/.idea
