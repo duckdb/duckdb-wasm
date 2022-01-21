@@ -15,7 +15,7 @@ export interface S3Params {
     datetimeNow: string
 }
 
-interface S3PayloadParams {
+export interface S3PayloadParams {
     contentHash: string | null,
     contentType: string | null
 }
@@ -175,7 +175,16 @@ export function parseS3Url (url: string) : {bucket : string, path : string} {
 
 export function getHTTPUrl(config : S3Config | undefined, url : string) : string {
     const parsedUrl = parseS3Url(url);
-    const host = parsedUrl.bucket + "." + (config?.endpoint ? config?.endpoint : "s3.amazonaws.com");
-    const httpHost = "https://" + host;
+    let httpHost;
+
+    if (config?.endpoint?.startsWith("http")) {
+        // Endpoint is a full url, we append the bucket
+        httpHost = `${config?.endpoint}/${parsedUrl.bucket}`;
+    } else if (config?.endpoint) {
+        // Endpoint is not a full url and the https://{bucket}.{domain} format will be used
+        httpHost = `https://${parsedUrl.bucket}.${config?.endpoint}`;
+    } else {
+        httpHost = `https://${parsedUrl.bucket}.s3.amazonaws.com`;
+    }
     return httpHost + parsedUrl.path;
 }

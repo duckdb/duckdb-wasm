@@ -15,8 +15,13 @@ module.exports = function (config) {
             'karma-spec-reporter',
             'karma-coverage',
             'karma-jasmine-html-reporter',
+            require('./s3rver/s3rver')
         ],
-        frameworks: ['jasmine'],
+        frameworks: ['jasmine', 's3rver'],
+        s3rver: {
+            port: 4923,
+            silent: true
+        },
         files: [
             { pattern: 'packages/duckdb-wasm/dist/tests-browser.js' },
             { pattern: 'packages/duckdb-wasm/dist/*.wasm', included: false, watched: false, served: true },
