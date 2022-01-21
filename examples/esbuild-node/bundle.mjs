@@ -2,9 +2,9 @@ import esbuild from 'esbuild';
 
 esbuild.build({
     entryPoints: ['./index.ts'],
-    outfile: 'index.cjs',
+    outfile: 'index.mjs',
     platform: 'node',
-    format: 'cjs',
+    format: 'esm',
     target: 'esnext',
     bundle: false,
     minify: false,
