@@ -373,8 +373,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 const buffer = mod.HEAPU8.subarray(buf, buf + bytes);
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', getHTTPUrl(file?.s3Config, file.dataUrl!), false);
-                // TODO do we really need the content-type?
-                addS3Headers(xhr, file?.s3Config, file.dataUrl!, 'PUT', 'text/data;charset=utf-8', buffer);
+                addS3Headers(xhr, file?.s3Config, file.dataUrl!, 'PUT', '', buffer);
                 xhr.send(buffer);
                 return bytes;
             }

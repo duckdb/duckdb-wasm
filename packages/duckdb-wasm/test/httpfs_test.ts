@@ -46,11 +46,12 @@ export function testHTTPFS(adb: () => duckdb.AsyncDuckDB, sdb: () => duckdb.Duck
     let test_data_small: Uint8Array | null;
     let test_data_large: Uint8Array | null;
 
-    // PUTS an S3 file to the S3 test server
+    // PUTs an S3 file to the S3 test server
     const putTestFileToS3 = async function (fileName : string, format: string, test_data : Uint8Array | null) {
-        const bucket_name = BUCKET_NAME;
         await adb().registerFileBuffer('test_file.parquet', test_data!);
-        const conn_async = await adb().connect();
+        if (!conn_async) {
+            conn_async = await adb().connect();
+        }
         await setAwsConfig(conn_async, AWSConfigType.VALID);
 
         await conn_async.send(`CREATE TABLE test_table AS (SELECT * FROM parquet_scan('test_file.parquet'));`);

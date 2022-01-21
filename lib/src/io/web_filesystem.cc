@@ -265,12 +265,10 @@ void WebFileSystem::WebFileHandle::Close() {
                 std::string msg = std::string{"Failed to write file: "} + file.file_name_;
                 throw std::runtime_error(msg);
             }
+        } else {
+            return;
         }
-        return;
     }
-
-    // TODO maybe this code also applies to me?
-
     // Close the file in the runtime
     fs_guard.unlock();
     duckdb_web_fs_file_close(file.file_id_);
