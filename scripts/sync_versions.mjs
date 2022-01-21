@@ -3,8 +3,9 @@
 import fs from 'fs';
 
 const pkgPaths = [
-    './packages/duckdb-wasm/package.json',
+    './packages/duckdb-wasm-app/package.json',
     './packages/duckdb-wasm-shell/package.json',
+    './packages/duckdb-wasm/package.json',
     './packages/benchmarks/package.json',
     './examples/esbuild-browser/package.json',
     './examples/esbuild-node/package.json',
