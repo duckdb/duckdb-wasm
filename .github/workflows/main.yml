@@ -518,7 +518,7 @@ jobs:
                   retention-days: 1
 
     js_libs:
-        name: Js Libraries
+        name: Js / Libraries
         runs-on: ubuntu-latest
         needs:
             - wasm_mvp
