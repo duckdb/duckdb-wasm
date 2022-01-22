@@ -12,6 +12,7 @@ export enum LogTopic {
     DISCONNECT = 2,
     OPEN = 3,
     QUERY = 4,
+    INSTANTIATE = 5,
 }
 
 export enum LogEvent {
@@ -41,6 +42,7 @@ export type LogEntry<O, T, E, V> = {
 };
 
 export type LogEntryVariant =
+    | LogEntry<LogOrigin.BINDINGS, LogTopic.INSTANTIATE, LogEvent.ERROR, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.START, void>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.OK, void>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.ERROR, void>
@@ -109,6 +111,8 @@ export function getLogTopicLabel(topic: LogTopic): string {
             return 'CONNECT';
         case LogTopic.DISCONNECT:
             return 'DISCONNECT';
+        case LogTopic.INSTANTIATE:
+            return 'INSTANTIATE';
         case LogTopic.OPEN:
             return 'OPEN';
         case LogTopic.QUERY:

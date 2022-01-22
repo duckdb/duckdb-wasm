@@ -5,8 +5,8 @@ import * as arrow from 'apache-arrow';
     try {
         const DUCKDB_CONFIG = await duckdb.selectBundle({
             mvp: {
-                mainModule: './duckdb.wasm',
-                mainWorker: './duckdb-browser.worker.js',
+                mainModule: './duckdb-mvp.wasm',
+                mainWorker: './duckdb-browser-mvp.worker.js',
             },
             eh: {
                 mainModule: './duckdb-eh.wasm',

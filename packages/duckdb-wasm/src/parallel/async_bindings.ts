@@ -14,6 +14,7 @@ import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from '../bind
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
+import { InstantiationProgress } from '../bindings/progress';
 import { flattenArrowField } from '../flat_arrow';
 import { WebFile } from '../bindings/web_file';
 
@@ -26,6 +27,9 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     protected readonly _onErrorHandler: (event: ErrorEvent) => void;
     /** The close handler */
     protected readonly _onCloseHandler: () => void;
+
+    /** Instantiate the module */
+    protected onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
 
     /** The logger */
     protected readonly _logger: Logger;
@@ -100,21 +104,34 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         }
         const mid = this._nextMessageId++;
         this._pendingRequests.set(mid, task);
-        this._worker.postMessage({
-            messageId: mid,
-            type: task.type,
-            data: task.data,
-        });
+        this._worker.postMessage(
+            {
+                messageId: mid,
+                type: task.type,
+                data: task.data,
+            },
+            transfer,
+        );
         return (await task.promise) as WorkerTaskReturnType<W>;
     }
 
     /** Received a message */
     protected onMessage(event: MessageEvent): void {
+        // Unassociated responses?
         const response = event.data as WorkerResponseVariant;
-
-        // Short-circuit unassociated log entries
-        if (response.type == WorkerResponseType.LOG) {
-            this._logger.log(response.data);
+        switch (response.type) {
+            // Request failed?
+            case WorkerResponseType.LOG: {
+                this._logger.log(response.data);
+                return;
+            }
+            // Call progress callback
+            case WorkerResponseType.INSTANTIATE_PROGRESS: {
+                for (const p of this.onInstantiationProgress) {
+                    p(response.data);
+                }
+                return;
+            }
         }
 
         // Get associated task
@@ -132,7 +149,6 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             const e = new Error(response.data.message);
             e.name = response.data.name;
             e.stack = response.data.stack;
-
             task.promiseRejecter(e);
             return;
         }
@@ -284,11 +300,17 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** Open the database */
-    public async instantiate(mainModuleURL: string, pthreadWorkerURL: string | null = null): Promise<null> {
+    public async instantiate(
+        mainModuleURL: string,
+        pthreadWorkerURL: string | null = null,
+        progress: (progress: InstantiationProgress) => void = _p => {},
+    ): Promise<null> {
+        this.onInstantiationProgress.push(progress);
         const task = new WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>(
             WorkerRequestType.INSTANTIATE,
             [mainModuleURL, pthreadWorkerURL],
         );
+        this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != progress);
         return await this.postTask(task);
     }
 

@@ -222,7 +222,7 @@
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.5.tgz#9283c9ce5b289a3c4f61c12757469e59377f81f3"
   integrity sha512-6nFkfkmSeV/rqSaS4oWHgmpnYw194f6hmWF5is6b0J1naJZoiD0NTc9AiUwPHvWsowkjuHErCZT1wa0jg+BLIA==
 
-"@duckdb/duckdb-wasm@file:packages/duckdb-wasm":
+"@duckdb/duckdb-wasm@link:packages/duckdb-wasm":
   version "1.11.0"
   dependencies:
     "@types/emscripten" "^1.39.6"

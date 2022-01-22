@@ -21,8 +21,8 @@ export function getJsDelivrBundles(): DuckDBBundles {
     const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
         mvp: {
-            mainModule: `${jsdelivr_dist_url}duckdb.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser.worker.js`,
+            mainModule: `${jsdelivr_dist_url}duckdb-mvp.wasm`,
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-mvp.worker.js`,
         },
         eh: {
             mainModule: `${jsdelivr_dist_url}duckdb-eh.wasm`,

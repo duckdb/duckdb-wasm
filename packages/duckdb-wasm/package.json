@@ -94,7 +94,7 @@
         "worker_threads": false
     },
     "exports": {
-        "./dist/duckdb.wasm": "./dist/duckdb.wasm",
+        "./dist/duckdb-mvp.wasm": "./dist/duckdb-mvp.wasm",
         "./dist/duckdb-eh.wasm": "./dist/duckdb-eh.wasm",
         "./dist/duckdb-coi.wasm": "./dist/duckdb-coi.wasm",
         "./dist/duckdb-browser": "./dist/duckdb-browser.mjs",
@@ -106,13 +106,13 @@
         "./dist/duckdb-browser-coi.pthread.worker.js": "./dist/duckdb-browser-coi.pthread.worker.js",
         "./dist/duckdb-browser-coi.worker.js": "./dist/duckdb-browser-coi.worker.js",
         "./dist/duckdb-browser-eh.worker.js": "./dist/duckdb-browser-eh.worker.js",
-        "./dist/duckdb-browser.worker.js": "./dist/duckdb-browser.worker.js",
+        "./dist/duckdb-browser-mvp.worker.js": "./dist/duckdb-browser-mvp.worker.js",
         "./dist/duckdb-node": "./dist/duckdb-node.cjs",
         "./dist/duckdb-node.cjs": "./dist/duckdb-node.cjs",
         "./dist/duckdb-node-blocking": "./dist/duckdb-node-blocking.cjs",
         "./dist/duckdb-node-blocking.cjs": "./dist/duckdb-node-blocking.cjs",
         "./dist/duckdb-node-eh.worker.cjs": "./dist/duckdb-node-eh.worker.cjs",
-        "./dist/duckdb-node.worker.cjs": "./dist/duckdb-node.worker.cjs",
+        "./dist/duckdb-node-mvp.worker.cjs": "./dist/duckdb-node-mvp.worker.cjs",
         "./blocking": {
             "browser": {
                 "types": "./dist/duckdb-browser-blocking.d.ts",

@@ -54,7 +54,7 @@ beforeAll(async () => {
 
     const logger = new duckdb_blocking.VoidLogger();
     db = await duckdb_blocking.createDuckDB(DUCKDB_BUNDLES, logger, duckdb_blocking.NODE_RUNTIME);
-    await db.instantiate();
+    await db.instantiate(_ => {});
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb.AsyncDuckDB(logger, worker);

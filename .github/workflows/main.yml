@@ -360,8 +360,8 @@ jobs:
                           -ignore-filename-regex submodules \
                           > ./reports/coverage_lib.txt
 
-    wasm_default:
-        name: WASM / Default
+    wasm_mvp:
+        name: WASM / MVP
         runs-on: ubuntu-latest
         needs:
             - native_debug
@@ -400,13 +400,13 @@ jobs:
               with:
                   script: |-
                       ccache -z
-                      ./scripts/wasm_build_lib.sh release default
+                      ./scripts/wasm_build_lib.sh release mvp
                       ccache -s
 
             - name: Upload artifact
               uses: actions/upload-artifact@v2
               with:
-                  name: wasm-default
+                  name: wasm-mvp
                   path: |
                       ./packages/duckdb-wasm/src/bindings/duckdb.js
                       ./packages/duckdb-wasm/src/bindings/duckdb.wasm
@@ -521,7 +521,7 @@ jobs:
         name: Javascript Library
         runs-on: ubuntu-latest
         needs:
-            - wasm_default
+            - wasm_mvp
             - wasm_eh
             - wasm_coi
             - dataprep
@@ -579,7 +579,7 @@ jobs:
 
             - uses: actions/download-artifact@v2
               with:
-                  name: wasm-default
+                  name: wasm-mvp
                   path: ./packages/duckdb-wasm/src/bindings/
 
             - uses: actions/download-artifact@v2

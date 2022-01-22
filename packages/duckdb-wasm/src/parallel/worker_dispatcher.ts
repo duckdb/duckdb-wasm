@@ -1,6 +1,7 @@
 import { DuckDBBindings } from '../bindings';
 import { WorkerResponseVariant, WorkerRequestVariant, WorkerRequestType, WorkerResponseType } from './worker_request';
 import { Logger, LogEntryVariant } from '../log';
+import { InstantiationProgress } from '../bindings/progress';
 
 export abstract class AsyncDuckDBDispatcher implements Logger {
     /** The bindings */
@@ -9,7 +10,11 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
     protected _nextMessageId = 0;
 
     /** Instantiate the wasm module */
-    protected abstract instantiate(mainModule: string, pthreadWorker: string | null): Promise<DuckDBBindings>;
+    protected abstract instantiate(
+        mainModule: string,
+        pthreadWorker: string | null,
+        progress: (p: InstantiationProgress) => void,
+    ): Promise<DuckDBBindings>;
     /** Post a response to the main thread */
     protected abstract postMessage(response: WorkerResponseVariant, transfer: ArrayBuffer[]): void;
 
@@ -72,7 +77,17 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.failWith(request, new Error('duckdb already initialized'));
                 }
                 try {
-                    this._bindings = await this.instantiate(request.data[0], request.data[1]);
+                    this._bindings = await this.instantiate(request.data[0], request.data[1], p => {
+                        this.postMessage(
+                            {
+                                messageId: this._nextMessageId++,
+                                requestId: request.messageId,
+                                type: WorkerResponseType.INSTANTIATE_PROGRESS,
+                                data: p,
+                            },
+                            [],
+                        );
+                    });
                     this.sendOK(request);
                 } catch (e: any) {
                     this._bindings = null;

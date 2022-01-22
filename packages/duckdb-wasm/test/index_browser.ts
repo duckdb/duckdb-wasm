@@ -82,7 +82,7 @@ let worker: Worker | null = null;
 beforeAll(async () => {
     const logger = new duckdb_blocking.VoidLogger();
     db = await duckdb_blocking.createDuckDB(DUCKDB_BUNDLES, logger, duckdb_blocking.BROWSER_RUNTIME);
-    await db.instantiate();
+    await db.instantiate(_ => {});
 
     DUCKDB_BUNDLE = await duckdb.selectBundle(DUCKDB_BUNDLES);
     worker = await duckdb.createWorker(DUCKDB_BUNDLE!.mainWorker!);
@@ -95,7 +95,7 @@ afterAll(async () => {
 });
 
 import { testAllTypes, testAllTypesAsync } from './all_types.test';
-import { testHTTPFS } from './httpfs_test';
+import { testHTTPFS, testHTTPFSAsync } from './httpfs_test';
 import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
@@ -111,12 +111,13 @@ import { testUDF } from './udf.test';
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
 
+testHTTPFS(() => db!);
+testHTTPFSAsync(() => adb!, resolveData, dataURL);
 testUDF(() => db!);
 testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
 testAllTypes(() => db!);
-testHTTPFS(() => adb!, () => db!, resolveData, dataURL);
 testAllTypesAsync(() => adb!);
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL);

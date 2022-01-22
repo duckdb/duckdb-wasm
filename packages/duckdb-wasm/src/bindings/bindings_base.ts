@@ -1,6 +1,7 @@
 import { DuckDBModule, PThread } from './duckdb_module';
 import { DuckDBConfig } from './config';
 import { Logger } from '../log';
+import { InstantiationProgress } from './progress';
 import { DuckDBBindings } from './bindings_interface';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
@@ -65,33 +66,36 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Instantiate the module */
     protected abstract instantiateImpl(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule>;
+    /** Instantiate the module */
+    protected onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
     /** Instantiate the database */
-    public async instantiate(): Promise<this> {
+    public async instantiate(onProgress: (progress: InstantiationProgress) => void = _ => {}): Promise<this> {
         // Already opened?
         if (this._instance != null) {
             return this;
         }
         // Open in progress?
         if (this._initPromise != null) {
+            this.onInstantiationProgress.push(onProgress);
             await this._initPromise;
         }
-
         // Create a promise that we can await
         this._initPromise = new Promise(resolve => {
             this._initPromiseResolver = resolve;
         });
-
+        // Register progress handler
+        this.onInstantiationProgress = [onProgress];
         // Initialize duckdb
         this._instance = await this.instantiateImpl({
             print: console.log.bind(console),
             printErr: console.log.bind(console),
             onRuntimeInitialized: this._initPromiseResolver,
         });
-
         // Wait for onRuntimeInitialized
         await this._initPromise;
         this._initPromise = null;
-
+        // Remove own progress callback
+        this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != onProgress);
         return this;
     }
     /** Open a database at a path */

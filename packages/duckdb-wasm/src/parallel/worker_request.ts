@@ -4,6 +4,7 @@ import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { WebFile } from '../bindings/web_file';
+import { InstantiationProgress } from '../bindings/progress';
 
 export type ConnectionID = number;
 export type StatementID = number;
@@ -50,6 +51,7 @@ export enum WorkerResponseType {
     FILE_INFOS = 'FILE_INFOS',
     FILE_SIZE = 'FILE_SIZE',
     FILE_STATISTICS = 'FILE_STATISTICS',
+    INSTANTIATE_PROGRESS = 'INSTANTIATE_PROGRESS',
     LOG = 'LOG',
     OK = 'OK',
     PREPARED_STATEMENT_ID = 'PREPARED_STATEMENT_ID',
@@ -142,6 +144,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.FILE_INFOS, WebFile[]>
     | WorkerResponse<WorkerResponseType.FILE_SIZE, number>
     | WorkerResponse<WorkerResponseType.FILE_STATISTICS, FileStatistics>
+    | WorkerResponse<WorkerResponseType.INSTANTIATE_PROGRESS, InstantiationProgress>
     | WorkerResponse<WorkerResponseType.LOG, LogEntryVariant>
     | WorkerResponse<WorkerResponseType.OK, null>
     | WorkerResponse<WorkerResponseType.PREPARED_STATEMENT_ID, number>

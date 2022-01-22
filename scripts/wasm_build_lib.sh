@@ -7,7 +7,7 @@ trap exit SIGINT
 PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 
 MODE=${1:-Fast}
-FEATURES=${2:-default}
+FEATURES=${2:-mvp}
 echo "MODE=${MODE}"
 
 CPP_BUILD_DIR="${PROJECT_ROOT}/lib/build/wasm/${MODE}"
@@ -25,7 +25,10 @@ case $MODE in
    *) ;;
 esac
 case $FEATURES in
-  "default") ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS}" ;;
+  "mvp")
+    ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS}"
+    SUFFIX="-mvp"
+    ;;
   "eh")
     ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1"
     SUFFIX="-eh"

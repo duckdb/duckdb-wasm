@@ -10,7 +10,7 @@ function printErr(err) {
 }
 
 fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser.mjs'), './duckdb-browser.mjs', printErr);
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb.wasm'), './duckdb.wasm', printErr);
+fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-mvp.wasm'), './duckdb-mvp.wasm', printErr);
 fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-eh.wasm'), './duckdb-eh.wasm', printErr);
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser.worker.js'), './duckdb-browser.worker.js', printErr);
+fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-mvp.worker.js'), './duckdb-browser-mvp.worker.js', printErr);
 fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-eh.worker.js'), './duckdb-browser-eh.worker.js', printErr);

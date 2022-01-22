@@ -208,7 +208,7 @@ wasm_fast_eh: wasm_caches
 .PHONY: wasm
 wasm: wasm_caches
 	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast default
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast coi
 
@@ -216,7 +216,7 @@ wasm: wasm_caches
 .PHONY: wasm_debug
 wasm_debug: wasm_caches
 	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug default
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
 
@@ -313,6 +313,7 @@ yarn_install:
 
 .PHONY: examples
 examples:
+	yarn install
 	yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
 	yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
 	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build

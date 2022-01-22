@@ -8,7 +8,7 @@ export { BROWSER_RUNTIME } from '../bindings/runtime_browser';
 import { Logger } from '../log';
 import { DuckDBRuntime, DuckDBBindings } from '../bindings';
 import { DuckDBBundles, getPlatformFeatures } from '../platform';
-import { DuckDB as DuckDBMVP } from '../bindings/bindings_browser';
+import { DuckDB as DuckDBMVP } from '../bindings/bindings_browser_mvp';
 import { DuckDB as DuckDBNext } from '../bindings/bindings_browser_eh';
 
 export async function createDuckDB(

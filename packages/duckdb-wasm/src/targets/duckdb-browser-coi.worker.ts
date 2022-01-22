@@ -2,6 +2,7 @@ import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } fr
 import { DuckDB } from '../bindings/bindings_browser_coi';
 import { DuckDBBindings } from '../bindings';
 import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
+import { InstantiationProgress } from '../bindings/progress';
 
 /** The duckdb worker API for web workers */
 class WebWorker extends AsyncDuckDBDispatcher {
@@ -11,9 +12,13 @@ class WebWorker extends AsyncDuckDBDispatcher {
     }
 
     /** Instantiate the wasm module */
-    protected async instantiate(mainModuleURL: string, pthreadWorkerURL: string | null): Promise<DuckDBBindings> {
+    protected async instantiate(
+        mainModuleURL: string,
+        pthreadWorkerURL: string | null,
+        progress: (p: InstantiationProgress) => void,
+    ): Promise<DuckDBBindings> {
         const bindings = new DuckDB(this, BROWSER_RUNTIME, mainModuleURL, pthreadWorkerURL);
-        return await bindings.instantiate();
+        return await bindings.instantiate(progress);
     }
 }
 
