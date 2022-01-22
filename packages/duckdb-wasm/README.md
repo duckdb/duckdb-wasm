@@ -20,12 +20,12 @@ _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our 
 import * as duckdb from '@duckdb/duckdb-wasm';
 
 // Either bundle them manually, for example as Webpack assets
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
 import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
     },
     eh: {
         mainModule: duckdb_wasm_next,
