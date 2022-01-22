@@ -5,8 +5,8 @@ import * as check from 'wasm-feature-detect';
 // Configure the worker
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
-        mainModule: new URL('/static/duckdb.wasm', window.location.href).href,
-        mainWorker: new URL('/static/duckdb-browser.worker.js', window.location.href).href,
+        mainModule: new URL('/static/duckdb-mvp.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-mvp.worker.js', window.location.href).href,
     },
     eh: {
         mainModule: new URL('/static/duckdb-eh.wasm', window.location.href).href,

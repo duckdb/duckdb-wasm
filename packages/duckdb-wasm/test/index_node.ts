@@ -42,8 +42,8 @@ beforeAll(async () => {
     // Configure the worker
     const DUCKDB_BUNDLES = {
         mvp: {
-            mainModule: path.resolve(__dirname, './duckdb.wasm'),
-            mainWorker: path.resolve(__dirname, './duckdb-node.worker.cjs'),
+            mainModule: path.resolve(__dirname, './duckdb-mvp.wasm'),
+            mainWorker: path.resolve(__dirname, './duckdb-node-mvp.worker.cjs'),
         },
         eh: {
             mainModule: path.resolve(__dirname, './duckdb-eh.wasm'),
