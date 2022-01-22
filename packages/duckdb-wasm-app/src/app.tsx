@@ -12,14 +12,14 @@ import 'xterm/css/xterm.css';
 import 'react-popper-tooltip/dist/styles.css';
 
 import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb.wasm';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
 import duckdb_wasm_coi from '@duckdb/duckdb-wasm/dist/duckdb-coi.wasm';
 
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
     },
     eh: {
         mainModule: duckdb_wasm_eh,
