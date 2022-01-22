@@ -95,9 +95,10 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                                     event: LogEvent.ERROR,
                                     value: 'Failed to instantiate WASM: ' + error,
                                 });
+                                throw new Error(error);
                             }),
                     )
-                    .catch(error =>
+                    .catch(error => {
                         this.logger.log({
                             timestamp: new Date(),
                             level: LogLevel.ERROR,
@@ -105,8 +106,9 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                             topic: LogTopic.INSTANTIATE,
                             event: LogEvent.ERROR,
                             value: 'Failed to load WASM: ' + error,
-                        }),
-                    );
+                        });
+                        throw new Error(error);
+                    });
             }
         } else {
             // Otherwise we fall back to XHRs
@@ -119,7 +121,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             };
             xhr.open('GET', url);
             xhr.responseType = 'arraybuffer';
-            xhr.onerror = error =>
+            xhr.onerror = error => {
                 this.logger.log({
                     timestamp: new Date(),
                     level: LogLevel.ERROR,
@@ -128,6 +130,8 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                     event: LogEvent.ERROR,
                     value: 'Failed to load WASM: ' + error,
                 });
+                throw new Error(error.toString());
+            };
             xhr.onprogress = e => {
                 progress.bytesTotal = e.total;
                 progress.bytesLoaded = e.loaded;
@@ -135,21 +139,24 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                     p(progress);
                 }
             };
+            xhr.onload = () => {
+                WebAssembly.instantiate(xhr.response, imports)
+                    .then(output => {
+                        success(output.instance, output.module);
+                    })
+                    .catch(error => {
+                        this.logger.log({
+                            timestamp: new Date(),
+                            level: LogLevel.ERROR,
+                            origin: LogOrigin.BINDINGS,
+                            topic: LogTopic.INSTANTIATE,
+                            event: LogEvent.ERROR,
+                            value: 'Failed to instantiate WASM: ' + error,
+                        });
+                        throw new Error(error);
+                    });
+            };
             xhr.send();
-            WebAssembly.instantiate(xhr.response, imports)
-                .then(output => {
-                    success(output.instance, output.module);
-                })
-                .catch(error =>
-                    this.logger.log({
-                        timestamp: new Date(),
-                        level: LogLevel.ERROR,
-                        origin: LogOrigin.BINDINGS,
-                        topic: LogTopic.INSTANTIATE,
-                        event: LogEvent.ERROR,
-                        value: 'Failed to instantiate WASM: ' + error,
-                    }),
-                );
         }
         return [];
     }
