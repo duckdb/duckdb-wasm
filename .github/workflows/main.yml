@@ -408,8 +408,8 @@ jobs:
               with:
                   name: wasm-mvp
                   path: |
-                      ./packages/duckdb-wasm/src/bindings/duckdb.js
-                      ./packages/duckdb-wasm/src/bindings/duckdb.wasm
+                      ./packages/duckdb-wasm/src/bindings/duckdb-mvp.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-mvp.wasm
                   retention-days: 1
 
     wasm_eh:
