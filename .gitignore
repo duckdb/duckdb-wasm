@@ -1,3 +1,4 @@
+*.tgz
 /.deploy
 /perf.data*
 /.cache
