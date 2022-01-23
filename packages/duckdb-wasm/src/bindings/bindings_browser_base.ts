@@ -46,7 +46,11 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         };
 
         // Does the browser support transform streams?
-        if (typeof TransformStream === 'function' && ReadableStream.prototype.pipeThrough) {
+        if (
+            typeof TransformStream === 'function' &&
+            ReadableStream.prototype.pipeThrough &&
+            WebAssembly.instantiateStreaming
+        ) {
             // We rely on the following here:
             //
             // ...when a Request object is created using the Request.Request constructor,
@@ -59,26 +63,8 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 // Try to determine file size
                 const request = new Request(this.mainModuleURL);
                 const response = await fetch(request);
-
-                // Try to get content length either through header or separate HEAD request
                 const contentLengthHdr = response.headers.get('Content-Length');
-                let contentLength: number | null;
-                if (contentLengthHdr) {
-                    contentLength = parseInt(contentLengthHdr, 10) || 0;
-                } else {
-                    contentLength = await new Promise((resolve, _reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('HEAD', this.mainModuleURL, true);
-                        xhr.onreadystatechange = () => {
-                            if (xhr.readyState == xhr.DONE) {
-                                const l = xhr.getResponseHeader('Content-Length');
-                                return l ? resolve(parseInt(l)) : resolve(null);
-                            }
-                        };
-                        xhr.onerror = _e => resolve(null);
-                        xhr.send();
-                    });
-                }
+                const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
 
                 // Transform the stream
                 const progress: InstantiationProgress = {
@@ -106,46 +92,12 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
 
                 return new Response(response.body?.pipeThrough(ts), response);
             };
-            const response = fetchWithProgress();
 
-            // Browser supports streaming instantiation?
-            if (WebAssembly.instantiateStreaming) {
-                WebAssembly.instantiateStreaming(response, imports).then(output => {
-                    success(output.instance, output.module);
-                });
-            } else {
-                // Otherwise download as array buffer
-                response
-                    .then(resp => resp.arrayBuffer())
-                    .then(bytes =>
-                        WebAssembly.instantiate(bytes, imports)
-                            .then(output => {
-                                success(output.instance, output.module);
-                            })
-                            .catch(error => {
-                                this.logger.log({
-                                    timestamp: new Date(),
-                                    level: LogLevel.ERROR,
-                                    origin: LogOrigin.BINDINGS,
-                                    topic: LogTopic.INSTANTIATE,
-                                    event: LogEvent.ERROR,
-                                    value: 'Failed to instantiate WASM: ' + error,
-                                });
-                                throw new Error(error);
-                            }),
-                    )
-                    .catch(error => {
-                        this.logger.log({
-                            timestamp: new Date(),
-                            level: LogLevel.ERROR,
-                            origin: LogOrigin.BINDINGS,
-                            topic: LogTopic.INSTANTIATE,
-                            event: LogEvent.ERROR,
-                            value: 'Failed to load WASM: ' + error,
-                        });
-                        throw new Error(error);
-                    });
-            }
+            // Instantiate streaming
+            const response = fetchWithProgress();
+            WebAssembly.instantiateStreaming(response, imports).then(output => {
+                success(output.instance, output.module);
+            });
         } else {
             // Otherwise we fall back to XHRs
             const xhr = new XMLHttpRequest();
