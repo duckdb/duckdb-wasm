@@ -41,9 +41,6 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
     ): Emscripten.WebAssemblyExports {
         globalThis.DUCKDB_RUNTIME = this._runtime;
         const handlers = this.onInstantiationProgress;
-        const state = {
-            lastEvent: new Date(),
-        };
 
         // Does the browser support transform streams?
         if (
@@ -67,18 +64,20 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
 
                 // Transform the stream
+                const start = new Date();
                 const progress: InstantiationProgress = {
-                    startedAt: new Date(),
+                    startedAt: start,
+                    updatedAt: start,
                     bytesTotal: contentLength || 0,
                     bytesLoaded: 0,
                 };
-                const ts = new TransformStream({
-                    transform(chunk, ctrl) {
+                const tracker = {
+                    transform(chunk: any, ctrl: TransformStreamDefaultController) {
                         progress.bytesLoaded += chunk.byteLength;
                         // Emit events every 100 ms
                         const now = new Date();
-                        if (now.getTime() - state.lastEvent.getTime() < 100) {
-                            state.lastEvent = now;
+                        if (now.getTime() - progress.updatedAt.getTime() < 20) {
+                            progress.updatedAt = now;
                             ctrl.enqueue(chunk);
                             return;
                         }
@@ -88,11 +87,11 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                         }
                         ctrl.enqueue(chunk);
                     },
-                });
+                };
+                const ts = new TransformStream(tracker);
 
                 return new Response(response.body?.pipeThrough(ts), response);
             };
-
             // Instantiate streaming
             const response = fetchWithProgress();
             WebAssembly.instantiateStreaming(response, imports).then(output => {
@@ -102,8 +101,10 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             // Otherwise we fall back to XHRs
             const xhr = new XMLHttpRequest();
             const url = this.mainModuleURL;
+            const start = new Date();
             const progress: InstantiationProgress = {
-                startedAt: new Date(),
+                startedAt: start,
+                updatedAt: start,
                 bytesTotal: 0,
                 bytesLoaded: 0,
             };
@@ -123,6 +124,11 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             xhr.onprogress = e => {
                 progress.bytesTotal = e.total;
                 progress.bytesLoaded = e.loaded;
+                const now = new Date();
+                if (now.getTime() - progress.updatedAt.getTime() < 20) {
+                    progress.updatedAt = now;
+                    return;
+                }
                 for (const p of handlers) {
                     p(progress);
                 }

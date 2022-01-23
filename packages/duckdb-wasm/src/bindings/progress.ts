@@ -1,6 +1,7 @@
 /** An instantiation progress */
 export interface InstantiationProgress {
     startedAt: Date;
+    updatedAt: Date;
     bytesTotal: number;
     bytesLoaded: number;
 }
