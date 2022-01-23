@@ -90,9 +90,9 @@ export async function embed(props: ShellProps) {
         if (progress.bytesTotal > 0) {
             const blocks = Math.floor((progress.bytesLoaded / progress.bytesTotal) * 10.0);
             const bar = `${'#'.repeat(blocks)}${'-'.repeat(10 - blocks)}`;
-            shell.write(`${TERM_CLEAR}[ RUN ] Loading ${bar}`);
+            shell.write(`${TERM_CLEAR}${TERM_BOLD}[ RUN ]${TERM_NORMAL} Loading ${bar}`);
         } else {
-            shell.write(`${TERM_CLEAR}[ RUN ] Loading ${formatBytes(progress.bytesLoaded)}`);
+            shell.write(`${TERM_CLEAR}${TERM_BOLD}[ RUN ]${TERM_NORMAL} Loading ${formatBytes(progress.bytesLoaded)}`);
         }
     };
 
