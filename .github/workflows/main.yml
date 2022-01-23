@@ -400,7 +400,7 @@ jobs:
               with:
                   script: |-
                       ccache -z
-                      ./scripts/wasm_build_lib.sh release mvp
+                      ./scripts/wasm_build_lib.sh relperf mvp
                       ccache -s
 
             - name: Upload artifact
@@ -452,7 +452,7 @@ jobs:
               with:
                   script: |-
                       ccache -z
-                      ./scripts/wasm_build_lib.sh release eh
+                      ./scripts/wasm_build_lib.sh relperf eh
                       ccache -s
 
             - name: Upload artifact
@@ -504,7 +504,7 @@ jobs:
               with:
                   script: |-
                       ccache -z
-                      ./scripts/wasm_build_lib.sh release coi
+                      ./scripts/wasm_build_lib.sh relperf coi
                       ccache -s
 
             - name: Upload artifact

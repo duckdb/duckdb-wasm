@@ -192,27 +192,18 @@ bench_system_tpch_duckdb:
 	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
 
 
-# Make sure we can access the wasm caches
 .PHONY: wasm_caches
 wasm_caches:
 	mkdir -p ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 	chown -R $(id -u):$(id -g) ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 
-# Build the wasm module with debug info
-.PHONY: wasm
-wasm_fast_eh: wasm_caches
-	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast eh
-
-# Build the wasm module with debug info
 .PHONY: wasm
 wasm: wasm_caches
 	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast mvp
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh fast coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev mvp
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev coi
 
-# Build the wasm modules with all debug info
 .PHONY: wasm_debug
 wasm_debug: wasm_caches
 	mkdir -p ${CACHE_DIRS}
@@ -220,13 +211,19 @@ wasm_debug: wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
 
-# Build the wasm modules
-.PHONY: wasm_release
-wasm_release: wasm_caches
+.PHONY: wasm_relperf
+wasm_relperf: wasm_caches
 	mkdir -p ${CACHE_DIRS}
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release default
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh release coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf mvp
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf coi
+
+.PHONY: wasm_relsize
+wasm_relsize: wasm_caches
+	mkdir -p ${CACHE_DIRS}
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize mvp
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize coi
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug

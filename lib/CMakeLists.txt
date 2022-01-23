@@ -65,10 +65,24 @@ endif ()
 # Dedicated module?
 
 if(EMSCRIPTEN)
+  # Release build
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    # ... with min size
+    if(WASM_MIN_SIZE)
+      set(CMAKE_CXX_FLAGS_RELEASE "-Oz")
+      set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Oz")
+    else()
+      # ... with max performance
+      set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+      set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
+    endif()
+  # Release build with debug symbols
+  elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    # ... with fast linking
+    if(WASM_FAST_LINKING)
+      set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
+    endif()
+  # Debug build
   elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
       --profiling \
@@ -79,15 +93,11 @@ if(EMSCRIPTEN)
       -sSAFE_HEAP=1 \
       -gsource-map \
       --source-map-base=file://${CMAKE_BINARY_DIR}/ \
-      -sSEPARATE_DWARF_URL=file://${CMAKE_BINARY_DIR}/duckdb.debug.wasm")
-  endif()
-
-  if(WITH_WASM_FAST_LINKING)
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
-  else()
-    # set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Os")
-    # set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3 -flto")
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
+      -sSEPARATE_DWARF_URL=file://${CMAKE_BINARY_DIR}/duckdb.wasm")
+    # ... with fast linking
+    if(WASM_FAST_LINKING)
+      set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
+    endif()
   endif()
 
   if(WITH_WASM_EXCEPTIONS)
