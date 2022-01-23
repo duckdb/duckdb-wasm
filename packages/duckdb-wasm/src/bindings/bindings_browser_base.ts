@@ -52,13 +52,33 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             //
             // Cloudflare throws when mode: 'cors' is set
             //
-            const request = new Request(this.mainModuleURL);
             const fetchWithProgress = async () => {
+                // Try to determine file size
+                const request = new Request(this.mainModuleURL);
                 const response = await fetch(request);
-                const contentLength = response.headers.get('Content-Length');
+                const contentLengthHdr = response.headers.get('Content-Length');
+                let contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || null : null;
+
+                // Get content length
+                if (contentLength == null) {
+                    contentLength = await new Promise((resolve, _reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('HEAD', this.mainModuleURL, true);
+                        xhr.onreadystatechange = () => {
+                            if (xhr.readyState == xhr.DONE) {
+                                const l = xhr.getResponseHeader('Content-Length');
+                                return l ? resolve(parseInt(l)) : resolve(null);
+                            }
+                        };
+                        xhr.onerror = _e => resolve(null);
+                        xhr.send();
+                    });
+                }
+
+                // Transform the stream
                 const progress: InstantiationProgress = {
                     startedAt: new Date(),
-                    bytesTotal: contentLength != null ? parseInt(contentLength, 10) : 0,
+                    bytesTotal: contentLength || 0,
                     bytesLoaded: 0,
                 };
                 const ts = new TransformStream({

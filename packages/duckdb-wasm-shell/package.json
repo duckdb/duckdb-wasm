@@ -44,6 +44,7 @@
         "wasm-pack": "^0.10.2"
     },
     "scripts": {
+        "postinstall": "node ../../node_modules/wasm-pack/install.js",
         "build:debug": "node bundle.mjs debug && tsc --emitDeclarationOnly",
         "build:release": "node bundle.mjs release && tsc --emitDeclarationOnly",
         "lint": "eslint src"

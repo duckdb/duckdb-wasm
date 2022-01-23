@@ -3,6 +3,7 @@ import * as shell from '../crate/pkg';
 import { HistoryStore } from './utils/history_store';
 import { isSafari } from './platform';
 import { pickFiles } from './utils/files';
+import { InstantiationProgress } from '@duckdb/duckdb-wasm/dist/types/src/bindings';
 
 const hasWebGL = (): boolean => {
     if (isSafari) {
@@ -58,7 +59,14 @@ class ShellRuntime {
 interface ShellProps {
     wasmSource: RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
     container: HTMLDivElement;
-    resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
+    resolveDatabase: (p: duckdb.InstantiationProgressHandler) => Promise<duckdb.AsyncDuckDB>;
+}
+
+function formatBytes(value: number): string {
+    const [multiple, k, suffix] = [1000, 'k', 'B'];
+    const exp = (Math.log(value) / Math.log(multiple)) | 0;
+    const size = Number((value / Math.pow(multiple, exp)).toFixed(2));
+    return `${size} ${exp ? `${k}MGTPEZY`[exp - 1] + suffix : `byte${size !== 1 ? 's' : ''}`}`;
 }
 
 export async function embed(props: ShellProps) {
@@ -73,17 +81,32 @@ export async function embed(props: ShellProps) {
     });
     props.container.onresize = runtime.resizeHandler;
 
-    // Attach to the database
-    const step = async (label: string, work: () => Promise<void>) => {
-        const TERM_BOLD = '\x1b[1m';
-        const TERM_NORMAL = '\x1b[m';
-        shell.writeln(`${TERM_BOLD}[ RUN   ]${TERM_NORMAL} ${label}`);
-        await work();
-        shell.writeln(`${TERM_BOLD}[ OK    ]${TERM_NORMAL} ${label}`);
+    const TERM_BOLD = '\x1b[1m';
+    const TERM_NORMAL = '\x1b[m';
+    const TERM_CLEAR = '\x1b[2K\r';
+
+    // Progress handler
+    const progressHandler = (progress: InstantiationProgress) => {
+        if (progress.bytesTotal > 0) {
+            const blocks = Math.floor((progress.bytesLoaded / progress.bytesTotal) * 10.0);
+            const bar = `${'#'.repeat(blocks)}${'-'.repeat(10 - blocks)}`;
+            shell.write(`${TERM_CLEAR}[ RUN ] Loading ${bar}`);
+        } else {
+            shell.write(`${TERM_CLEAR}[ RUN ] Loading ${formatBytes(progress.bytesLoaded)}`);
+        }
     };
-    await step('Resolving DuckDB', async () => {
-        runtime.database = await props.resolveDatabase();
-    });
+
+    // Attach to the database
+    shell.writeln(`${TERM_BOLD}[ RUN ]${TERM_NORMAL} Instantiating DuckDB`);
+    runtime.database = await props.resolveDatabase(progressHandler);
+    shell.writeln(`${TERM_CLEAR}${TERM_BOLD}[ OK  ]${TERM_NORMAL} Instantiating DuckDB`);
+
+    // Additional steps
+    const step = async (label: string, work: () => Promise<void>) => {
+        shell.writeln(`${TERM_BOLD}[ RUN ]${TERM_NORMAL} ${label}`);
+        await work();
+        shell.writeln(`${TERM_BOLD}[ OK  ]${TERM_NORMAL} ${label}`);
+    };
     await step('Loading Shell History', async () => {
         await runtime.history.open();
         const [hist, histCursor] = await runtime.history.load();

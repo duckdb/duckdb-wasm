@@ -4,3 +4,6 @@ export interface InstantiationProgress {
     bytesTotal: number;
     bytesLoaded: number;
 }
+
+/** An instantiation progress handler */
+export type InstantiationProgressHandler = (p: InstantiationProgress) => void;

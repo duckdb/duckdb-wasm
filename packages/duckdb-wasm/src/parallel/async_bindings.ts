@@ -29,7 +29,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     protected readonly _onCloseHandler: () => void;
 
     /** Instantiate the module */
-    protected onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
+    protected _onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
 
     /** The logger */
     protected readonly _logger: Logger;
@@ -127,7 +127,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             }
             // Call progress callback
             case WorkerResponseType.INSTANTIATE_PROGRESS: {
-                for (const p of this.onInstantiationProgress) {
+                for (const p of this._onInstantiationProgress) {
                     p(response.data);
                 }
                 return;
@@ -165,13 +165,19 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM:
             case WorkerRequestType.INSERT_CSV_FROM_PATH:
             case WorkerRequestType.INSERT_JSON_FROM_PATH:
-            case WorkerRequestType.INSTANTIATE:
             case WorkerRequestType.OPEN:
             case WorkerRequestType.PING:
             case WorkerRequestType.REGISTER_FILE_BUFFER:
             case WorkerRequestType.REGISTER_FILE_HANDLE:
             case WorkerRequestType.REGISTER_FILE_URL:
             case WorkerRequestType.RESET:
+                if (response.type == WorkerResponseType.OK) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.INSTANTIATE:
+                this._onInstantiationProgress = [];
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
@@ -305,12 +311,11 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         pthreadWorkerURL: string | null = null,
         progress: (progress: InstantiationProgress) => void = _p => {},
     ): Promise<null> {
-        this.onInstantiationProgress.push(progress);
+        this._onInstantiationProgress.push(progress);
         const task = new WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>(
             WorkerRequestType.INSTANTIATE,
             [mainModuleURL, pthreadWorkerURL],
         );
-        this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != progress);
         return await this.postTask(task);
     }
 

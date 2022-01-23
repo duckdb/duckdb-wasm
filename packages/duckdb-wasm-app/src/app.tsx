@@ -35,12 +35,12 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     },
 };
 
-async function resolveDatabase(): Promise<duckdb.AsyncDuckDB> {
+async function resolveDatabase(p: duckdb.InstantiationProgressHandler): Promise<duckdb.AsyncDuckDB> {
     const bundle = await duckdb.selectBundle(DUCKDB_BUNDLES);
     const worker = new Worker(bundle.mainWorker!);
     const logger = new duckdb.ConsoleLogger();
     const database = new duckdb.AsyncDuckDB(logger, worker);
-    await database.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    await database.instantiate(bundle.mainModule, bundle.pthreadWorker, p);
     return database;
 }
 

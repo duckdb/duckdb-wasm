@@ -4,3 +4,5 @@ export * from '../parallel';
 export * from '../platform';
 export * from '../version';
 export * from '../worker';
+
+export { InstantiationProgress, InstantiationProgressHandler } from '../bindings';

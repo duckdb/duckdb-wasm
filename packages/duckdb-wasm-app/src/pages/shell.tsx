@@ -10,8 +10,7 @@ interface ShellProps {
     backgroundColor?: string;
     padding?: number[];
     borderRadius?: number[];
-
-    resolveDatabase: () => Promise<duckdb.AsyncDuckDB>;
+    resolveDatabase: (p: duckdb.InstantiationProgressHandler) => Promise<duckdb.AsyncDuckDB>;
 }
 
 export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
@@ -22,7 +21,7 @@ export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
         shell.embed({
             wasmSource: shell_wasm,
             container: termContainer.current!,
-            resolveDatabase: () => props.resolveDatabase(),
+            resolveDatabase: (p: duckdb.InstantiationProgressHandler) => props.resolveDatabase(p),
         });
     }, []);
 
