@@ -60,7 +60,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 // Try to determine file size
                 const request = new Request(this.mainModuleURL);
                 const response = await fetch(request);
-                const contentLengthHdr = response.headers.get('Content-Length');
+                const contentLengthHdr = response.headers.get('content-length');
                 const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
 
                 // Transform the stream
