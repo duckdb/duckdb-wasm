@@ -74,14 +74,12 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 const tracker = {
                     transform(chunk: any, ctrl: TransformStreamDefaultController) {
                         progress.bytesLoaded += chunk.byteLength;
-                        // Emit events every 100 ms
                         const now = new Date();
                         if (now.getTime() - progress.updatedAt.getTime() < 20) {
                             progress.updatedAt = now;
                             ctrl.enqueue(chunk);
                             return;
                         }
-                        // Call all progress handlers
                         for (const p of handlers) {
                             p(progress);
                         }
