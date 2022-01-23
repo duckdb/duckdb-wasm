@@ -405,6 +405,7 @@ impl PromptBuffer {
         };
         // Iterate over tokens
         let mut chars_iter = self.text_buffer.chars().enumerate();
+        let mut next: Option<(usize, char)> = None;
         for t in 0..tokens.offsets.len() {
             let token_ofs = tokens.offsets[t];
             let token_type = tokens.types[t];
@@ -414,7 +415,17 @@ impl PromptBuffer {
                 self.text_buffer.len_chars() as u32
             };
             let mut in_quotes: char = '\0';
-            for (i, c) in &mut chars_iter {
+            loop {
+                let (i, c) = match next {
+                    Some(n) => {
+                        next = None;
+                        n
+                    }
+                    None => match chars_iter.next() {
+                        Some(n) => n,
+                        None => break,
+                    },
+                };
                 if (i as u32) == token_ofs {
                     match token_type {
                         TokenType::Keyword => {
@@ -485,12 +496,13 @@ impl PromptBuffer {
                         }
                     }
                 }
-                emit(c, &mut self.output_buffer);
 
-                // Next is new token?
-                if (i as u32) > token_ofs && ((i + 1) as u32 >= next_ofs) {
-                    self.output_buffer.push_str(vt100::MODES_OFF);
+                // Preserve for next token?
+                if i as u32 >= next_ofs {
+                    next = Some((i, c));
                     break;
+                } else {
+                    emit(c, &mut self.output_buffer);
                 }
             }
             self.output_buffer.push_str(vt100::MODES_OFF);
