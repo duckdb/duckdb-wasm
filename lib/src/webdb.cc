@@ -344,7 +344,6 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     auto data_size = chunk.size();
 
     // Call scalar udf function
-    // XXX: throwing udf might leak data here, either catch in js wrapper or here
     WASMResponse response;
     duckdb_web_udf_scalar_call(&response, function.function_id, data_ptr, data_size * 4);
 
