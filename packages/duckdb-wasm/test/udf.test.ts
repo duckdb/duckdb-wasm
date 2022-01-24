@@ -15,13 +15,15 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
 
     describe('UDF', () => {
         it('simple', async () => {
-            conn.createScalarFunction('jsudf', new Int32(), (a, b) => a + b);
-            const result = conn.query('select jsudf(v::INTEGER, 2) AS x from generate_series(1, 10) t(v)');
+            conn.createScalarFunction('jsudf', new Int32(), a => a);
+            const result = conn.query(
+                'SELECT max(jsudf(v::INTEGER))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
 
-            expect(result.length).toEqual(10);
+            expect(result.length).toEqual(1);
             expect(result.numCols).toEqual(1);
-            expect(result.getColumnAt(0)?.length).toEqual(10);
-            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]));
+            expect(result.getColumnAt(0)?.length).toEqual(1);
+            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([10000]));
         });
     });
 }

@@ -29,6 +29,7 @@
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
+#include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/types/vector_buffer.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
@@ -338,33 +339,14 @@ class SharedVectorBuffer : public VectorBuffer {
 }  // namespace
 
 arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk,
-                                                       ExpressionState& state, Vector& vec) {
-    // Get arrow CDataInterface
-    ArrowArray array;
-    chunk.ToArrowArray(&array);
-
-    // Derive schema (XXX: can we cache this?)
-    std::vector<std::shared_ptr<arrow::Field>> ipc_schema_fields;
-    for (size_t i = 0; i < chunk.data.size(); ++i) {
-        ARROW_ASSIGN_OR_RAISE(auto mapped, mapDuckDBTypeToArrow(chunk.data[i].GetType()));
-        ipc_schema_fields.push_back(arrow::field(std::to_string(i), mapped, true /* XXX: nullable? */));
-    }
-    auto ipc_schema = arrow::schema(ipc_schema_fields);
-
-    // Write the Arrow IPC file
-    // XXX: Conceptually, this could be an arrow ipc stream per query if we do the bookkeeping right?
-    //      Then we don't need to serialize the dummy schema all the time...
-    ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, ipc_schema));
-    ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
-    ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, ipc_schema));
-    ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
-    ARROW_RETURN_NOT_OK(writer->Close());
-    ARROW_ASSIGN_OR_RAISE(auto buffer, out->Finish());
+                                                       ExpressionState& state, Vector& out) {
+    auto data_ptr = chunk.data[0].GetData();
+    auto data_size = chunk.size();
 
     // Call scalar udf function
     // XXX: throwing udf might leak data here, either catch in js wrapper or here
     WASMResponse response;
-    duckdb_web_udf_scalar_call(&response, function.function_id, buffer->data(), buffer->size());
+    duckdb_web_udf_scalar_call(&response, function.function_id, data_ptr, data_size * 4);
 
     // UDF call failed?
     if (response.statusCode != 0) {
@@ -378,24 +360,11 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     auto res_buf = reinterpret_cast<char*>(static_cast<uintptr_t>(response.dataOrValue));
     auto res_buf_view = arrow::util::string_view{res_buf, static_cast<size_t>(response.dataSize)};
     auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
-    vec.SetAuxiliary(shared_buffer);
+    out.SetAuxiliary(shared_buffer);
 
-    // Read the result
-    auto options = arrow::ipc::IpcReadOptions::Defaults();
-    options.use_threads = false;
-    arrow::io::BufferReader res_buffer{res_buf_view};
-    ARROW_ASSIGN_OR_RAISE(auto res_reader, arrow::ipc::RecordBatchStreamReader::Open(&res_buffer, options));
-    auto res_batch = res_reader->Next();
-    auto res_schema = res_reader->schema();
+    auto* data = reinterpret_cast<uint8_t*>(res_buf);
+    duckdb::FlatVector::SetData(out, data);
 
-    // Read record batch
-    if (!res_batch.ok() || res_schema->fields().size() != 1) {
-        return arrow::Status::ExecutionError("malformed UDF result");
-    }
-    auto res_column = res_batch.ValueUnsafe()->column(0);
-
-    // Convert the Arrow array to the DuckDB vector
-    ARROW_RETURN_NOT_OK(convertArrowArrayToDuckDBVector(*res_column, vec));
     return arrow::Status::OK();
 }
 

@@ -87,7 +87,6 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                     },
                 };
                 const ts = new TransformStream(tracker);
-
                 return new Response(response.body?.pipeThrough(ts), response);
             };
             // Instantiate streaming
