@@ -33,7 +33,7 @@
     "devDependencies": {
         "@types/jasmine": "^3.10.3",
         "@typescript-eslint/eslint-plugin": "^5.10.1",
-        "@typescript-eslint/parser": "^5.10.0",
+        "@typescript-eslint/parser": "^5.10.1",
         "esbuild": "^0.14.13",
         "eslint": "^8.7.0",
         "eslint-plugin-jasmine": "^4.1.3",
