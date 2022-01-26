@@ -4,7 +4,7 @@ import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Routes, Navigate, BrowserRouter, useSearchParams } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
-import { DuckDBPlatform, DuckDBProvider } from './database';
+import { DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
 
 import '../static/fonts/fonts.module.css';
 import './globals.css';

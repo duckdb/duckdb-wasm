@@ -1,6 +1,6 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as shell from '@duckdb/duckdb-wasm-shell';
-import * as database from '../database';
+import * as database from '@duckdb/react-duckdb';
 import React from 'react';
 
 import styles from './shell.module.css';

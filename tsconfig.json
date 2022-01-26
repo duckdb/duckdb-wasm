@@ -10,6 +10,7 @@
         "downlevelIteration": true,
         "resolveJsonModule": true,
         "skipLibCheck": true,
+        "jsx": "react",
 
         "types": ["emscripten", "node", "jasmine"],
         "lib": ["es6", "webworker", "dom"]
