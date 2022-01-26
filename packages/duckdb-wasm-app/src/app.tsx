@@ -4,6 +4,7 @@ import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Routes, Navigate, BrowserRouter, useSearchParams } from 'react-router-dom';
 import { withNavBar } from './components/navbar';
+import { DuckDBPlatform, DuckDBProvider } from './platform';
 
 import '../static/fonts/fonts.module.css';
 import './globals.css';
@@ -34,25 +35,16 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
         ).toString(),
     },
 };
-
-async function resolveDatabase(p: duckdb.InstantiationProgressHandler): Promise<duckdb.AsyncDuckDB> {
-    const bundle = await duckdb.selectBundle(DUCKDB_BUNDLES);
-    const worker = new Worker(bundle.mainWorker!);
-    const logger = new duckdb.ConsoleLogger();
-    const database = new duckdb.AsyncDuckDB(logger, worker);
-    await database.instantiate(bundle.mainModule, bundle.pthreadWorker, p);
-    return database;
-}
+const logger = new duckdb.ConsoleLogger();
 
 type ReactiveShellProps = Record<string, string>;
 export const ReactiveShell: React.FC<ReactiveShellProps> = (props: ReactiveShellProps) => {
     const [searchParams] = useSearchParams();
+    const shell = () => <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />;
     if ((searchParams.get('fullscreen') || '') === 'true') {
-        return <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />;
+        return shell();
     } else {
-        return withNavBar(() => (
-            <Shell resolveDatabase={resolveDatabase} padding={[16, 0, 0, 20]} backgroundColor="#333" />
-        ))(props);
+        return withNavBar(() => shell())(props);
     }
 };
 
@@ -67,12 +59,17 @@ if (pathMatches != null && pathMatches.length >= 2) {
 
 const element = document.getElementById('root');
 ReactDOM.render(
-    <BrowserRouter basename={basename}>
-        <Routes>
-            <Route path="/versus" element={<Versus_ />} />
-            <Route path="/" element={<ReactiveShell />} />
-            <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-    </BrowserRouter>,
+    <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
+        <DuckDBProvider>
+            <BrowserRouter basename={basename}>
+                <Routes>
+                    <Route index element={<ReactiveShell />} />
+                    <Route path="/versus" element={<Versus_ />} />
+                    <Route path="/table" element={<ReactiveShell />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+            </BrowserRouter>
+        </DuckDBProvider>
+    </DuckDBPlatform>,
     element,
 );

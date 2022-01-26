@@ -1,5 +1,6 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as shell from '@duckdb/duckdb-wasm-shell';
+import * as platform from '../platform';
 import React from 'react';
 
 import styles from './shell.module.css';
@@ -10,20 +11,60 @@ interface ShellProps {
     backgroundColor?: string;
     padding?: number[];
     borderRadius?: number[];
-    resolveDatabase: (p: duckdb.InstantiationProgressHandler) => Promise<duckdb.AsyncDuckDB>;
 }
 
 export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
     const termContainer = React.useRef<HTMLDivElement | null>(null);
+    const db = platform.useDuckDB();
+    const dbStatus = platform.useDuckDBStatus();
+    const dbLauncher = platform.useDuckDBLauncher();
+    const shellDBResolver = React.useRef<[(db: duckdb.AsyncDuckDB) => void, (err: any) => void] | null>(null);
+    const shellStatusUpdater = React.useRef<duckdb.InstantiationProgressHandler | null>(null);
 
+    // Launch DuckDB
+    React.useEffect(() => {
+        dbLauncher();
+    });
+
+    // Embed the shell into the term container
     React.useEffect(() => {
         console.assert(termContainer.current != null);
         shell.embed({
             shellModule: shell_wasm,
             container: termContainer.current!,
-            resolveDatabase: (p: duckdb.InstantiationProgressHandler) => props.resolveDatabase(p),
+            resolveDatabase: (p: duckdb.InstantiationProgressHandler) => {
+                if (db != null) {
+                    return Promise.resolve(db);
+                }
+                shellStatusUpdater.current = p;
+                const result = new Promise<duckdb.AsyncDuckDB>((resolve, reject) => {
+                    shellDBResolver.current = [resolve, reject];
+                });
+                return result;
+            },
         });
     }, []);
+
+    // Propagate the react state updates to the wasm progress handler
+    React.useEffect(() => {
+        if (db) {
+            if (shellDBResolver.current != null) {
+                const resolve = shellDBResolver.current[0];
+                shellDBResolver.current = null;
+                resolve(db);
+            }
+        } else if (dbStatus && dbStatus.instantiationError) {
+            if (shellDBResolver.current != null) {
+                const reject = shellDBResolver.current[1];
+                shellDBResolver.current = null;
+                reject(db);
+            }
+        } else if (dbStatus && dbStatus.instantiationProgress) {
+            if (shellStatusUpdater.current) {
+                shellStatusUpdater.current(dbStatus.instantiationProgress);
+            }
+        }
+    }, [dbStatus, db]);
 
     const style: React.CSSProperties = {
         padding: props.padding ? `${props.padding.map(p => `${p}px`).join(' ')}` : '0px',
