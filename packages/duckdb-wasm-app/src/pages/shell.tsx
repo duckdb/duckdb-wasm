@@ -1,6 +1,6 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as shell from '@duckdb/duckdb-wasm-shell';
-import * as platform from '../platform';
+import * as database from '../database';
 import React from 'react';
 
 import styles from './shell.module.css';
@@ -15,9 +15,9 @@ interface ShellProps {
 
 export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
     const termContainer = React.useRef<HTMLDivElement | null>(null);
-    const db = platform.useDuckDB();
-    const dbStatus = platform.useDuckDBStatus();
-    const dbLauncher = platform.useDuckDBLauncher();
+    const db = database.useDuckDB();
+    const dbStatus = database.useDuckDBStatus();
+    const dbLauncher = database.useDuckDBLauncher();
     const shellDBResolver = React.useRef<[(db: duckdb.AsyncDuckDB) => void, (err: any) => void] | null>(null);
     const shellStatusUpdater = React.useRef<duckdb.InstantiationProgressHandler | null>(null);
 
