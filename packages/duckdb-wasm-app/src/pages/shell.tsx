@@ -19,7 +19,7 @@ export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
     React.useEffect(() => {
         console.assert(termContainer.current != null);
         shell.embed({
-            wasmSource: shell_wasm,
+            shellModule: shell_wasm,
             container: termContainer.current!,
             resolveDatabase: (p: duckdb.InstantiationProgressHandler) => props.resolveDatabase(p),
         });

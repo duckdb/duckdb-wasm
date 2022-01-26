@@ -57,7 +57,7 @@ class ShellRuntime {
 }
 
 interface ShellProps {
-    wasmSource: RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
+    shellModule: RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
     container: HTMLDivElement;
     resolveDatabase: (p: duckdb.InstantiationProgressHandler) => Promise<duckdb.AsyncDuckDB>;
 }
@@ -71,7 +71,7 @@ function formatBytes(value: number): string {
 
 export async function embed(props: ShellProps) {
     // Initialize the shell
-    await shell.default(props.wasmSource);
+    await shell.default(props.shellModule);
 
     // Embed into container
     const runtime = new ShellRuntime(props.container);
