@@ -350,10 +350,10 @@
   dependencies:
     dequal "^2.0.2"
 
-"@restart/ui@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@restart/ui/-/ui-0.2.5.tgz#e94204cbc88a9d13d1d20ce9cdf4713998b7c0fa"
-  integrity sha512-3dP8pMFickPpvAG5MVQW53HnJl0c17h7MwvI4nNy9QF66sHSYVchudlqlI8eOSaqnmc5YVjGura63vMb9LTNbQ==
+"@restart/ui@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@restart/ui/-/ui-1.0.1.tgz#379f8340ab14adc18522731a1be6e32eaa10ef92"
+  integrity sha512-hLAqltcAjQYtjGuHBHKyPpR3ScTxzdkSYNvniwBfN7rUDbYiHu/UZiI1hvV2idJeUvktRnz29l7W9BnNLHrG6Q==
   dependencies:
     "@babel/runtime" "^7.13.16"
     "@popperjs/core" "^2.10.1"
@@ -508,10 +508,10 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-1.3.2.tgz#93e25bf9ee75fe0fd80b594bc4feb0e862111b5a"
   integrity sha512-YATxVxgRqNH6nHEIsvg6k2Boc1JHI9ZbH5iWFFv/MTkchz3b1ieGDa5T0a9RznNdI0KhVbdbWSN+KWWrQZRxTw==
 
-"@types/node@*", "@types/node@>=10.0.0", "@types/node@^17.0.13":
-  version "17.0.13"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.13.tgz#5ed7ed7c662948335fcad6c412bb42d99ea754e3"
-  integrity sha512-Y86MAxASe25hNzlDbsviXl8jQHb0RDvKt4c40ZJQ1Don0AAL0STLZSs4N+6gLEO55pedy7r2cLwS+ZDxPm/2Bw==
+"@types/node@*", "@types/node@>=10.0.0", "@types/node@^17.0.14":
+  version "17.0.14"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.14.tgz#33b9b94f789a8fedd30a68efdbca4dbb06b61f20"
+  integrity sha512-SbjLmERksKOGzWzPNuW7fJM7fk3YXVTFiZWB/Hs99gwhk+/dnrQRPBQjPW9aO+fi1tAffi9PrwFvsmOKmDTyng==
 
 "@types/node@^12.0.4":
   version "12.20.27"
@@ -1757,10 +1757,10 @@ copy-anything@^2.0.1:
   dependencies:
     is-what "^3.12.0"
 
-copy-webpack-plugin@^10.2.3:
-  version "10.2.3"
-  resolved "https://registry.yarnpkg.com/copy-webpack-plugin/-/copy-webpack-plugin-10.2.3.tgz#16fa11ce3bb34f9fd4e4f22a252a5ed88c57c730"
-  integrity sha512-DKg4/ijemcJmpo2vBQiwiL2u+t2XN6YYlr2v2Ejqltnn2vbPfXLAz/v0Rv8uB4UmlbB7NH4cGhLxCmtaVppvEQ==
+copy-webpack-plugin@^10.2.4:
+  version "10.2.4"
+  resolved "https://registry.yarnpkg.com/copy-webpack-plugin/-/copy-webpack-plugin-10.2.4.tgz#6c854be3fdaae22025da34b9112ccf81c63308fe"
+  integrity sha512-xFVltahqlsRcyyJqQbDY6EYTtyQZF9rf+JPjwHObLdPFMEISqkFkr7mFoVOC6BfYS/dNThyoQKvziugm+OnwBg==
   dependencies:
     fast-glob "^3.2.7"
     glob-parent "^6.0.1"
@@ -5047,14 +5047,14 @@ raw-body@2.4.0:
     iconv-lite "0.4.24"
     unpipe "1.0.0"
 
-react-bootstrap@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-2.1.1.tgz#a2f162fdda5275e89712ce4ca525ace661a48131"
-  integrity sha512-Igagk6LziNW/HgBlMVx+QiwPVt/oqrZ7tiBKgv31VYc/56kJEU0Y+BCJS6hrQP6QmmIpdVtX8TRaanv9xsmW5A==
+react-bootstrap@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-2.1.2.tgz#a81161821c351d5e0eaed5bb85d50659736f2aa4"
+  integrity sha512-E7PR13cVsEW70gw08BWplENwn6PHTshskOsQygZqyc65jQlsnr9MsmuW/lgzAN2OiMBnc0KaNpuZ/FohL7dchw==
   dependencies:
     "@babel/runtime" "^7.14.0"
     "@restart/hooks" "^0.4.5"
-    "@restart/ui" "^0.2.5"
+    "@restart/ui" "^1.0.1"
     "@types/invariant" "^2.2.33"
     "@types/prop-types" "^15.7.3"
     "@types/react" ">=16.14.8"
