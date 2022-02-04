@@ -1,5 +1,5 @@
 import * as duckdb from '../src/';
-import { S3Params, S3PayloadParams, createS3Headers, uriEncode, getHTTPUrl } from '../src/utils';
+import { getS3Params, S3Params, S3PayloadParams, createS3Headers, uriEncode, getHTTPUrl } from '../src/utils';
 import { AsyncDuckDBConnection, DuckDBBindings, DuckDBBindingsBase, DuckDBModule } from '../src/';
 import BROWSER_RUNTIME from '../src/bindings/runtime_browser';
 
@@ -8,6 +8,7 @@ const BUCKET_NAME = 'test-bucket';
 const ACCESS_KEY_ID = 'S3RVER';
 const ACCESS_KEY_SECRET = 'S3RVER';
 const S3_ENDPOINT = 'http://localhost:4923';
+const S3_REGION = 'eu-west-1';
 
 enum AWSConfigType {
     EMPTY,
@@ -24,7 +25,7 @@ const setAwsConfig = async function (conn: AsyncDuckDBConnection, type: AWSConfi
             await conn.query(`SET s3_endpoint='${S3_ENDPOINT}';`);
             break;
         case AWSConfigType.VALID:
-            await conn.query("SET s3_region='eu-west-1';");
+            await conn.query(`SET s3_region='${S3_REGION}';`);
             await conn.query(`SET s3_access_key_id='${ACCESS_KEY_ID}';`);
             await conn.query(`SET s3_secret_access_key='${ACCESS_KEY_SECRET}';`);
             await conn.query("SET s3_session_token='';");
@@ -72,29 +73,45 @@ export function testHTTPFS(sdb: () => duckdb.DuckDBBindings): void {
             expect(globalFileInfo?.s3Config?.sessionToken).toEqual('');
             expect(globalFileInfo?.s3Config?.endpoint).toEqual('');
 
+            // Confirm settings are correctly set
             conn!.query("SET s3_region='a-very-remote-and-non-existent-s3-region';");
             conn!.query("SET s3_access_key_id='THISACCESSKEYIDISNOTVALID';");
             conn!.query("SET s3_secret_access_key='THISSECRETACCESSKEYISNOTVALID';");
             conn!.query("SET s3_session_token='ANICESESSIONTOKEN';");
-            conn!.query("SET s3_endpoint='localhost:1337';");
+            conn!.query("SET s3_endpoint='s3.some.sort.of.cloud';");
             const globalFileInfoUpdated = BROWSER_RUNTIME.getGlobalFileInfo(module!);
             expect(globalFileInfoUpdated?.s3Config).toBeDefined();
-            expect(globalFileInfoUpdated?.s3Config?.region).toEqual('a-very-remote-and-non-existent-s3-region');
-            expect(globalFileInfoUpdated?.s3Config?.accessKeyId).toEqual('THISACCESSKEYIDISNOTVALID');
-            expect(globalFileInfoUpdated?.s3Config?.secretAccessKey).toEqual('THISSECRETACCESSKEYISNOTVALID');
-            expect(globalFileInfoUpdated?.s3Config?.sessionToken).toEqual('ANICESESSIONTOKEN');
-            expect(globalFileInfoUpdated?.s3Config?.endpoint).toEqual('localhost:1337');
             expect(globalFileInfoUpdated?.cacheEpoch).toEqual(cacheEpoch + 5);
+            const params = getS3Params(globalFileInfoUpdated?.s3Config, 's3://test-bucket/testfile.txt', 'GET');
+            expect(params.url).toEqual("/testfile.txt");
+            expect(params.query).toEqual("");
+            expect(params.host).toEqual("test-bucket.s3.some.sort.of.cloud");
+            expect(params.region).toEqual("a-very-remote-and-non-existent-s3-region");
+            expect(params.service).toEqual("s3");
+            expect(params.method).toEqual("GET");
+            expect(params.accessKeyId).toEqual("THISACCESSKEYIDISNOTVALID");
+            expect(params.secretAccessKey).toEqual("THISSECRETACCESSKEYISNOTVALID");
+            expect(params.sessionToken).toEqual("ANICESESSIONTOKEN");
+
+            // Cover full http endpoint config
+            conn!.query("SET s3_endpoint='http://localhost:1337';");
+            const globalFileInfoFullHttpEndpoint = BROWSER_RUNTIME.getGlobalFileInfo(module!);
+            const paramsFullHttpEndpoint = getS3Params(globalFileInfoFullHttpEndpoint?.s3Config, 's3://test-bucket/testfile.txt', 'GET');
+            expect(paramsFullHttpEndpoint.host).toEqual("localhost:1337");
 
             // Reset should clear config
             await reset();
-            const globalFileInfoAfterReset = BROWSER_RUNTIME.getGlobalFileInfo(module!);
-            expect(globalFileInfoAfterReset?.s3Config).toBeDefined();
-            expect(globalFileInfoAfterReset?.s3Config?.region).toEqual('');
-            expect(globalFileInfoAfterReset?.s3Config?.accessKeyId).toEqual('');
-            expect(globalFileInfoAfterReset?.s3Config?.secretAccessKey).toEqual('');
-            expect(globalFileInfoAfterReset?.s3Config?.sessionToken).toEqual('');
-            expect(globalFileInfoAfterReset?.s3Config?.endpoint).toEqual('');
+            const globalFileInfoCleared = BROWSER_RUNTIME.getGlobalFileInfo(module!);
+            const paramsCleared = getS3Params(globalFileInfoCleared?.s3Config, 's3://test-bucket/testfile.txt', 'GET');
+            expect(paramsCleared.url).toEqual("/testfile.txt");
+            expect(paramsCleared.query).toEqual("");
+            expect(paramsCleared.host).toEqual("test-bucket.s3.amazonaws.com");
+            expect(paramsCleared.region).toEqual("");
+            expect(paramsCleared.service).toEqual("s3");
+            expect(paramsCleared.method).toEqual("GET");
+            expect(paramsCleared.accessKeyId).toEqual("");
+            expect(paramsCleared.secretAccessKey).toEqual("");
+            expect(paramsCleared.sessionToken).toEqual("");
         });
 
         it('url parsing is correct', () => {
