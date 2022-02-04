@@ -25,7 +25,7 @@ const getS3Params = function(config : S3Config | undefined, url: string, method 
     return {
         url: parsedS3Url.path,
         query: "",
-        host: `${parsedS3Url.bucket}.s3.amazonaws.com`,
+        host: `${parsedS3Url.bucket}.${(config?.endpoint) ?? "s3.amazonaws.com"}`, 
         region: (config?.region) ?? "",
         service: "s3",
         method: method,
