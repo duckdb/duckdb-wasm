@@ -20,12 +20,27 @@ export interface S3PayloadParams {
     contentType: string | null
 }
 
-const getS3Params = function(config : S3Config | undefined, url: string, method : string) : S3Params {
+const getHTTPHost = function (config : S3Config | undefined, url : string, bucket : string) : string {
+    if (config?.endpoint?.startsWith("http")) {
+        // Endpoint is a full url, we append the bucket
+        const httpHost = `${config?.endpoint}`;
+        const offset = httpHost.indexOf("://")+3;
+        return httpHost.substring(offset);
+    } else if (config?.endpoint) {
+        // Endpoint is not a full url and the https://{bucket}.{domain} format will be used
+        return `${bucket}.${config?.endpoint}`;
+    } else {
+        // Default aws s3 url
+        return `${bucket}.s3.amazonaws.com`;
+    }
+}
+
+export function getS3Params (config : S3Config | undefined, url: string, method : string) : S3Params {
     const parsedS3Url = parseS3Url(url);
     return {
         url: parsedS3Url.path,
         query: "",
-        host: `${parsedS3Url.bucket}.s3.amazonaws.com`,
+        host: getHTTPHost(config, url, parsedS3Url.bucket),
         region: (config?.region) ?? "",
         service: "s3",
         method: method,
@@ -35,7 +50,7 @@ const getS3Params = function(config : S3Config | undefined, url: string, method 
         dateNow: new Date().toISOString().replace(/-/g,'').split('T')[0],
         datetimeNow: new Date().toISOString().replace(/-/g,'').replace(/:/g,'').split('.')[0]+ 'Z',
     };
-};
+}
 
 export function uriEncode(input : string, encode_slash = false) {
     // https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
@@ -175,16 +190,10 @@ export function parseS3Url (url: string) : {bucket : string, path : string} {
 
 export function getHTTPUrl(config : S3Config | undefined, url : string) : string {
     const parsedUrl = parseS3Url(url);
-    let httpHost;
-
     if (config?.endpoint?.startsWith("http")) {
         // Endpoint is a full url, we append the bucket
-        httpHost = `${config?.endpoint}/${parsedUrl.bucket}`;
-    } else if (config?.endpoint) {
-        // Endpoint is not a full url and the https://{bucket}.{domain} format will be used
-        httpHost = `https://${parsedUrl.bucket}.${config?.endpoint}`;
+        return `${config?.endpoint}/${parsedUrl.bucket}` + parsedUrl.path;
     } else {
-        httpHost = `https://${parsedUrl.bucket}.s3.amazonaws.com`;
+        return 'https://' + getHTTPHost(config, url, parsedUrl.bucket) + parsedUrl.path;
     }
-    return httpHost + parsedUrl.path;
 }
