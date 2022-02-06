@@ -141,47 +141,47 @@ jobs:
               run: |
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
-            - name: Build @duckdb/benchmarks
+            - name: Build @kimmolinna/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks build
+                      yarn workspace @kimmolinna/benchmarks build
 
             - name: Benchmark sorting integers
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:sort:int
+                      yarn workspace @kimmolinna/benchmarks bench:system:sort:int
 
             - name: Benchmark joining two relations
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:join:2
+                      yarn workspace @kimmolinna/benchmarks bench:system:join:2
 
             - name: Benchmark joining three relations
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:join:3
+                      yarn workspace @kimmolinna/benchmarks bench:system:join:3
 
             - name: Benchmark regex filter
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:regex
+                      yarn workspace @kimmolinna/benchmarks bench:system:regex
 
             - name: Benchmark summing up integers
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:sum:int
+                      yarn workspace @kimmolinna/benchmarks bench:system:sum:int
 
             - name: Benchmark summing up integers in a csv file
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:sum:csv
+                      yarn workspace @kimmolinna/benchmarks bench:system:sum:csv
 
             - name: Upload reports
               uses: actions/upload-artifact@v2
@@ -250,35 +250,35 @@ jobs:
               run: |
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
-            - name: Build @duckdb/benchmarks
+            - name: Build @kimmolinna/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks build
+                      yarn workspace @kimmolinna/benchmarks build
 
             - name: Benchmark DuckDB
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.01
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:duckdb 0.01
 
             - name: Benchmark SQL.js
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.01
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:sqljs 0.01
 
             - name: Benchmark Arquero
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:arquero 0.01
 
             - name: Benchmark Lovefield
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:lovefield 0.01
 
             - name: Upload reports
               uses: actions/upload-artifact@v2
@@ -345,35 +345,35 @@ jobs:
               run: |
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
-            - name: Build @duckdb/benchmarks
+            - name: Build @kimmolinna/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks build
+                      yarn workspace @kimmolinna/benchmarks build
 
             - name: Benchmark DuckDB
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:duckdb 0.1
 
             - name: Benchmark SQL.js
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.1
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:sqljs 0.1
 
             - name: Benchmark Arquero
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:arquero 0.1
 
             - name: Benchmark Lovefield
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:lovefield 0.1
 
             - name: Upload reports
               uses: actions/upload-artifact@v2
@@ -440,35 +440,35 @@ jobs:
               run: |
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
-            - name: Build @duckdb/benchmarks
+            - name: Build @kimmolinna/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks build
+                      yarn workspace @kimmolinna/benchmarks build
 
             - name: Benchmark DuckDB
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:duckdb 0.25
 
             - name: Benchmark SQL.js
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.25
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:sqljs 0.25
 
             - name: Benchmark Arquero
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.25
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:arquero 0.25
 
             - name: Benchmark Lovefield
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:lovefield 0.25
 
             - name: Upload reports
               uses: actions/upload-artifact@v2
@@ -535,35 +535,35 @@ jobs:
               run: |
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
-            - name: Build @duckdb/benchmarks
+            - name: Build @kimmolinna/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks build
+                      yarn workspace @kimmolinna/benchmarks build
 
             - name: Benchmark DuckDB
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:duckdb 0.5
 
             - name: Benchmark SQL.js
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.5
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:sqljs 0.5
 
             - name: Benchmark Arquero
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:arquero 0.5
 
             - name: Benchmark Lovefield
               uses: duckdb/duckdb-wasm-ci-env@v0.6
               with:
                   script: |-
-                      yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
+                      yarn workspace @kimmolinna/benchmarks bench:system:tpch:lovefield 0.5
 
             - name: Upload reports
               uses: actions/upload-artifact@v2

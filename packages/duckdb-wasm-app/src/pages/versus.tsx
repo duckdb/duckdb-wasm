@@ -84,10 +84,10 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 <a
                                     className={styles.link}
                                     target="_blank"
-                                    href="https://www.npmjs.com/package/@duckdb/duckdb-wasm"
+                                    href="https://www.npmjs.com/package/@kimmolinna/duckdb-wasm"
                                     rel="noreferrer"
                                 >
-                                    @duckdb/duckdb-wasm
+                                    @kimmolinna/duckdb-wasm
                                 </a>
                                 . It compares the library with the projects
                                 <a

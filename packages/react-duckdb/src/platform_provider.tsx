@@ -1,5 +1,5 @@
 import React from 'react';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
 
 type PlatformProps = {
     children: React.ReactElement | React.ReactElement[];

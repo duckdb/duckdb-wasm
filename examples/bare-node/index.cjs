@@ -1,7 +1,7 @@
-const duckdb = require('@duckdb/duckdb-wasm');
+const duckdb = require('@kimmolinna/duckdb-wasm');
 const path = require('path');
 const Worker = require('web-worker');
-const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
+const DUCKDB_DIST = path.dirname(require.resolve('@kimmolinna/duckdb-wasm'));
 
 (async () => {
     try {

@@ -1,12 +1,12 @@
 {
-    "name": "@duckdb/duckdb-wasm-shell",
+    "name": "@kimmolinna/duckdb-wasm-shell",
     "version": "1.11.0",
     "description": "",
-    "author": "Andre Kohn <kohn.a@outlook.com>",
+    "author": "Kimmo Linna <kimmo.linna@gmail.com>",
     "license": "MPL-2.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/duckdb/duckdb-wasm.git"
+        "url": "https://github.com/kimmolinna/duckdb-wasm.git"
     },
     "keywords": [
         "sql",
@@ -24,7 +24,7 @@
         "csv"
     ],
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^1.11.0",
+        "@kimmolinna/duckdb-wasm": "^1.11.0",
         "xterm": "^4.17.0",
         "xterm-addon-fit": "^0.5.0",
         "xterm-addon-web-links": "^0.5.1",

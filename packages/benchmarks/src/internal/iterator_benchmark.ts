@@ -1,5 +1,5 @@
-import * as duckdb_blocking from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb_blocking from '@kimmolinna/duckdb-wasm/dist/duckdb-node-blocking';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
 import Benchmark from 'buffalo-bench/lib';
 
 const noop = () => {};

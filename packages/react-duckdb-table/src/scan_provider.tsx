@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as arrow from 'apache-arrow';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
 
 type RequestScanFn = (request: ScanRequest) => void;
 

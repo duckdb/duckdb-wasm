@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 
 type ConnectionID = u32;
 
-#[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
+#[wasm_bindgen(module = "@kimmolinna/duckdb-wasm")]
 extern "C" {
     #[wasm_bindgen(js_name = "AsyncDuckDB")]
     pub type JsAsyncDuckDB;

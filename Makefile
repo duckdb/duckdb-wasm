@@ -8,10 +8,12 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 UID=${shell id -u}
 GID=${shell id -g}
 
+NPM="@kimmolinna"
 LIB_SOURCE_DIR="${ROOT_DIR}/lib"
 LIB_DEBUG_DIR="${ROOT_DIR}/lib/build/Debug"
 LIB_RELEASE_DIR="${ROOT_DIR}/lib/build/Release"
 LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/lib/build/RelWithDebInfo"
+
 LIB_XRAY_DIR="${ROOT_DIR}/lib/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
@@ -153,43 +155,43 @@ lib_debug: lib
 
 .PHONY: bench_node_internal
 bench_internal:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:internal
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:internal
 
 .PHONY: bench_system_sort_int
 bench_system_sort_int:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:sort:int
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:sort:int
 
 .PHONY: bench_system_sum_csv
 bench_system_sum_csv:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:sum:csv
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:sum:csv
 
 .PHONY: bench_system_sum_int
 bench_system_sum_int:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:sum:int
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:sum:int
 
 .PHONY: bench_system_regex
 bench_system_regex:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:regex
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:regex
 
 .PHONY: bench_system_join_2
 bench_system_join_2:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:join:2
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:join:2
 
 .PHONY: bench_system_join_3
 bench_system_join_3:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:join:3
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:join:3
 
 .PHONY: bench_system_tpch
 bench_system_tpch_duckdb:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
+	yarn workspace ${NPM}/benchmarks build
+	yarn workspace ${NPM}/benchmarks bench:system:tpch:duckdb 0.1
 
 
 .PHONY: wasm_caches
@@ -228,61 +230,61 @@ wasm_relsize: wasm_caches
 # Build the duckdb library in debug mode
 .PHONY: js_debug
 js_debug:
-	yarn workspace @duckdb/duckdb-wasm build:debug
+	yarn workspace ${NPM}/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
 .PHONY: js_release
 js_release:
-	yarn workspace @duckdb/duckdb-wasm build:release
+	yarn workspace ${NPM}/duckdb-wasm build:release
 
 # Build the duckdb docs
 .PHONY: docs
 docs:
-	yarn workspace @duckdb/duckdb-wasm docs
+	yarn workspace ${NPM}/duckdb-wasm docs
 
 # Run the duckdb javascript tests
 .PHONY: js_tests
 js_tests: js_debug
-	yarn workspace @duckdb/duckdb-wasm test
+	yarn workspace ${NPM}/duckdb-wasm test
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser
 js_tests_browser: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:chrome
+	yarn workspace ${NPM}/duckdb-wasm test:chrome
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser_debug
 js_tests_browser_debug: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:browser:debug
+	yarn workspace ${NPM}/duckdb-wasm test:browser:debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: js_tests_node
 js_tests_node: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:node --filter=${JS_FILTER}
+	yarn workspace ${NPM}/duckdb-wasm test:node --filter=${JS_FILTER}
 
 .PHONY: js_tests_node_debug
 js_tests_node_debug: js_debug
-	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
+	yarn workspace ${NPM}/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
 .PHONY: shell
 shell:
-	yarn workspace @duckdb/duckdb-wasm-shell build:debug
+	yarn workspace ${NPM}/duckdb-wasm-shell build:debug
 
 .PHONY: shell_release
 shell_release:
-	yarn workspace @duckdb/duckdb-wasm-shell build:release
+	yarn workspace ${NPM}/duckdb-wasm-shell build:release
 
 .PHONY: app_start
 app_start:
-	yarn workspace @duckdb/duckdb-wasm-app start
+	yarn workspace ${NPM}/duckdb-wasm-app start
 
 .PHONY: app_start_corp
 app_start_corp:
-	yarn workspace @duckdb/duckdb-wasm-app start:corp
+	yarn workspace ${NPM}/duckdb-wasm-app start:corp
 
 .PHONY: app
 app:
-	yarn workspace @duckdb/duckdb-wasm-app build:release
+	yarn workspace ${NPM}/duckdb-wasm-app build:release
 
 .PHONY: app_server
 app_server:
@@ -299,9 +301,9 @@ clang_format:
 # JS formatting
 .PHONY: eslint
 eslint:
-	yarn workspace @duckdb/duckdb-wasm run lint
-	yarn workspace @duckdb/duckdb-wasm-shell run lint
-	yarn workspace @duckdb/benchmarks run lint
+	yarn workspace ${NPM}/duckdb-wasm run lint
+	yarn workspace ${NPM}/duckdb-wasm-shell run lint
+	yarn workspace ${NPM}/benchmarks run lint
 
 # Install all yarn packages
 .PHONY: yarn_install
@@ -311,11 +313,11 @@ yarn_install:
 .PHONY: examples
 examples:
 	yarn install
-	yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
-	yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
-	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
-	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node test
-	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build
+	yarn workspace ${NPM}/duckdb-wasm-examples-bare-node test
+	yarn workspace ${NPM}/duckdb-wasm-examples-bare-browser build
+	yarn workspace ${NPM}/duckdb-wasm-examples-esbuild-node build
+	yarn workspace ${NPM}/duckdb-wasm-examples-esbuild-node test
+	yarn workspace ${NPM}/duckdb-wasm-examples-esbuild-browser build
 
 # ---------------------------------------------------------------------------
 # Environment

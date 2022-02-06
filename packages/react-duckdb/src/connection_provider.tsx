@@ -1,5 +1,5 @@
 import React from 'react';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
 import { useDuckDB } from './database_provider';
 
 export const createDuckDBConnectionContext = () => React.createContext<duckdb.AsyncDuckDBConnection | null>(null);

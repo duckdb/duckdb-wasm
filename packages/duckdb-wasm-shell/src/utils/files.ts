@@ -1,4 +1,4 @@
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
 
 export function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
     return new Promise<number>((resolve, _reject) => {

@@ -1,7 +1,7 @@
 {
     "repository": {
         "type": "git",
-        "url": "https://github.com/duckdb/duckdb-wasm.git"
+        "url": "https://github.com/kimmolinna/duckdb-wasm.git"
     },
     "private": true,
     "workspaces": [
@@ -9,11 +9,11 @@
         "examples/*"
     ],
     "scripts": {
-        "lint:fix": "yarn workspace @duckdb/duckdb-wasm lint --fix && yarn workspace @duckdb/benchmarks lint --fix && yarn workspace @duckdb/duckdb-wasm-shell lint --fix",
-        "docs": "yarn workspace @duckdb/duckdb-wasm docs",
-        "benchmarks:build:browser": "yarn workspace @duckdb/benchmarks build:browser",
-        "benchmarks:build:node": "yarn workspace @duckdb/benchmarks build:node",
-        "benchmarks:build": "yarn workspace @duckdb/benchmarks build"
+        "lint:fix": "yarn workspace @kimmolinna/duckdb-wasm lint --fix && yarn workspace @kimmolinna/benchmarks lint --fix && yarn workspace @kimmolinna/duckdb-wasm-shell lint --fix",
+        "docs": "yarn workspace @kimmolinna/duckdb-wasm docs",
+        "benchmarks:build:browser": "yarn workspace @kimmolinna/benchmarks build:browser",
+        "benchmarks:build:node": "yarn workspace @kimmolinna/benchmarks build:node",
+        "benchmarks:build": "yarn workspace @kimmolinna/benchmarks build"
     },
     "devDependencies": {
         "badge-maker": "^3.3.1"

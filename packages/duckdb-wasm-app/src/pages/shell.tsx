@@ -1,11 +1,11 @@
-import * as duckdb from '@duckdb/duckdb-wasm';
-import * as shell from '@duckdb/duckdb-wasm-shell';
-import * as database from '@duckdb/react-duckdb';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
+import * as shell from '@kimmolinna/duckdb-wasm-shell';
+import * as database from '@kimmolinna/react-duckdb';
 import React from 'react';
 
 import styles from './shell.module.css';
 
-import shell_wasm from '@duckdb/duckdb-wasm-shell/dist/shell_bg.wasm';
+import shell_wasm from '@kimmolinna/duckdb-wasm-shell/dist/shell_bg.wasm';
 
 interface ShellProps {
     backgroundColor?: string;

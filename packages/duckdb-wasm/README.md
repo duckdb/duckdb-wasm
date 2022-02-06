@@ -1,10 +1,10 @@
-<img src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_wasm.svg" height="64">
+<img src="https://cdn.jsdelivr.net/npm/@kimmolinna/duckdb-wasm@latest/dist/img/duckdb_wasm.svg" height="64">
 
-[![Main](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml)
-[![Benchmarks](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml)
-[![duckdb](https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
-[![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@duckdb/duckdb-wasm/v/latest)
-[![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@duckdb/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@duckdb/duckdb-wasm)
+[![Main](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/main.yml)
+[![Benchmarks](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/benchmarks.yml)
+[![duckdb](https://cdn.jsdelivr.net/npm/@kimmolinna/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
+[![npm](https://img.shields.io/npm/v/@kimmolinna/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@kimmolinna/duckdb-wasm/v/latest)
+[![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@kimmolinna/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@kimmolinna/duckdb-wasm)
 
 **DuckDB-Wasm**
 
@@ -17,19 +17,19 @@ _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our 
 ## Instantiation
 
 ```ts
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@kimmolinna/duckdb-wasm';
 
 // Either bundle them manually, for example as Webpack assets
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
-import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
+import duckdb_wasm from '@kimmolinna/duckdb-wasm/dist/duckdb-mvp.wasm';
+import duckdb_wasm_next from '@kimmolinna/duckdb-wasm/dist/duckdb-eh.wasm';
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@kimmolinna/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
     },
     eh: {
         mainModule: duckdb_wasm_next,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@kimmolinna/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
     },
 };
 // ..., or load the bundles from jsdelivr

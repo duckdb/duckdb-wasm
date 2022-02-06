@@ -1,10 +1,10 @@
-<img src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_wasm.svg" height="64">
+<img src="https://cdn.jsdelivr.net/npm/@kimmolinna/duckdb-wasm@latest/dist/img/duckdb_wasm.svg" height="64">
 
-[![Main](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml)
-[![Benchmarks](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml)
-[![duckdb](https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
-[![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@duckdb/duckdb-wasm/v/latest)
-[![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@duckdb/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@duckdb/duckdb-wasm)
+[![Main](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/main.yml)
+[![Benchmarks](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/kimmolinna/duckdb-wasm/actions/workflows/benchmarks.yml)
+[![duckdb](https://cdn.jsdelivr.net/npm/@kimmolinna/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
+[![npm](https://img.shields.io/npm/v/@kimmolinna/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@kimmolinna/duckdb-wasm/v/latest)
+[![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@kimmolinna/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@kimmolinna/duckdb-wasm)
 
 **DuckDB-Wasm**
 
@@ -18,10 +18,10 @@ _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our 
 
 **Repository Structure**
 
-| Subproject                                               | Description    | Language   |
-| -------------------------------------------------------- | :------------- | :--------- |
-| [duckdb_wasm](/lib)                                      | Wasm Library   | C++        |
-| [@duckdb/duckdb-wasm](/packages/duckdb-wasm)             | Typescript API | Typescript |
-| [@duckdb/duckdb-wasm-shell](/packages/duckdb-wasm-shell) | SQL Shell      | Rust       |
-| [@duckdb/duckdb-wasm-app](/packages/duckdb-wasm-app)     | GitHub Page    | Typescript |
-| [@duckdb/benchmarks](/packages/benchmarks)               | Benchmarks     | Typescript |
+| Subproject                                                   | Description    | Language   |
+| ------------------------------------------------------------ | :------------- | :--------- |
+| [duckdb_wasm](/lib)                                          | Wasm Library   | C++        |
+| [@kimmolinna/duckdb-wasm](/packages/duckdb-wasm)             | Typescript API | Typescript |
+| [@kimmolinna/duckdb-wasm-shell](/packages/duckdb-wasm-shell) | SQL Shell      | Rust       |
+| [@kimmolinna/duckdb-wasm-app](/packages/duckdb-wasm-app)     | GitHub Page    | Typescript |
+| [@kimmolinna/benchmarks](/packages/benchmarks)               | Benchmarks     | Typescript |
