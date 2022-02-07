@@ -1,6 +1,6 @@
 {
     "name": "@kimmolinna/duckdb-wasm-app",
-    "version": "1.11.0",
+    "version": "1.11.1",
     "description": "",
     "author": "Kimmo Linna <kimmo.linna@gmail.com>",
     "license": "MPL-2.0",

@@ -223,7 +223,7 @@
   integrity sha512-6nFkfkmSeV/rqSaS4oWHgmpnYw194f6hmWF5is6b0J1naJZoiD0NTc9AiUwPHvWsowkjuHErCZT1wa0jg+BLIA==
 
 "@kimmolinna/duckdb-wasm@link:packages/duckdb-wasm":
-  version "1.11.0"
+  version "1.11.1"
   dependencies:
     "@types/emscripten" "^1.39.6"
     apache-arrow "^6.0.1"

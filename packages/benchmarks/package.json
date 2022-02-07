@@ -1,6 +1,6 @@
 {
     "name": "@kimmolinna/benchmarks",
-    "version": "1.11.0",
+    "version": "1.11.1",
     "license": "MPL-2.0",
     "private": true,
     "dependencies": {
