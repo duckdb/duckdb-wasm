@@ -272,10 +272,12 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         mod: DuckDBModule,
         response: number,
         funcId: number,
-        bufferPtr: number,
-        bufferSize: number,
+        descPtr: number,
+        descSize: number,
+        ptrsPtr: number,
+        ptrsSize: number,
     ): void => {
-        udf.callScalarUDF(NODE_RUNTIME, mod, response, funcId, bufferPtr, bufferSize);
+        udf.callScalarUDF(NODE_RUNTIME, mod, response, funcId, descPtr, descSize, ptrsPtr, ptrsSize);
     },
 };
 
