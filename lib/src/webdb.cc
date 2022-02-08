@@ -319,10 +319,9 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
 }
 
 #ifndef EMSCRIPTEN
-void duckdb_web_udf_scalar_call(WASMResponse*, size_t, const void*, size_t) {}
+void duckdb_web_udf_scalar_call(WASMResponse*, size_t, const void*, size_t, const void*, size_t) {}
 #else
-extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t function_id, const void* buffer,
-                                           size_t buffer_size);
+extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t function_id, const void* desc_buf, size_t desc_size, const void* ptrs_buf, size_t ptrs_size);
 #endif
 
 namespace {
@@ -342,11 +341,48 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
                                                        ExpressionState& state, Vector& out) {
     auto data_ptr = chunk.data[0].GetData();
     auto data_size = chunk.size();
+    vector<string> type_desc;
+    auto data_ptrs_len = chunk.ColumnCount();
+    vector<uint64_t> data_ptrs;
+    // TODO lets try doing this in the bind phase so its faster
+    // TODO String support
+    // TODO complex type support
+    // TODO support function returning NULLs
+    vector<unique_ptr<data_t[]>> additional_buffers;
 
+    for (idx_t col_idx = 0; col_idx < chunk.ColumnCount(); col_idx++) {
+        auto& vec = chunk.data[col_idx];
+        // make sure we only have flat vectors hereafter (for now)
+        vec.Normalify(chunk.size());
+
+        auto& validity = FlatVector::Validity(vec);
+        if (validity.AllValid()) {
+            // TODO special handling, not have a validity buffer at all
+        }
+        auto validity_arr = unique_ptr<data_t []>(new data_t[chunk.size()]);
+        for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
+            validity_arr[row_idx] = validity.RowIsValid(row_idx);
+        }
+        additional_buffers.push_back(move(validity_arr));
+        data_ptrs.push_back((uint64_t)additional_buffers.back().get());
+
+        auto& vec_type = vec.GetType();
+        switch(vec_type.id()) {
+            case LogicalTypeId::INTEGER:
+            case LogicalTypeId::DOUBLE:
+                data_ptrs.push_back((uint64_t) vec.GetData());
+                // I shall go to hell for constructing JSON like that but well
+                type_desc.push_back(StringUtil::Format("{\"logical_type\": \"%s\", \"physical_type\": \"%s\", \"validity_buffer\": %d, \"data_buffer\": %d}", vec_type.ToString(), TypeIdToString(vec_type.InternalType()), data_ptrs.size()-2, data_ptrs.size()-1));
+                break;
+            default:
+                return arrow::Status::ExecutionError("Unsupported UDF argument type " + vec.GetType().ToString());
+        }
+    }
+
+    auto joined = StringUtil::Format("{\"rows\": %d, \"args\": [%s], \"ret\": {\"logical_type\": \"%s\", \"physical_type\": \"%s\"}}", chunk.size(), StringUtil::Join(type_desc, ","), out.GetType().ToString(), TypeIdToString(out.GetType().InternalType())) ;
     // Call scalar udf function
     WASMResponse response;
-    duckdb_web_udf_scalar_call(&response, function.function_id, data_ptr, data_size * 4);
-
+    duckdb_web_udf_scalar_call(&response, function.function_id, joined.c_str(), joined.size(), data_ptrs.data(), data_ptrs.size() * sizeof(uint64_t));
     // UDF call failed?
     if (response.statusCode != 0) {
         uintptr_t err_ptr = response.dataOrValue;
