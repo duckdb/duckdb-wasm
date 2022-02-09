@@ -1,5 +1,5 @@
 import * as duckdb from '../src/';
-import {Float64, Int32} from 'apache-arrow';
+import {Float64, Int32, Utf8} from 'apache-arrow';
 
 export function testUDF(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
@@ -122,6 +122,33 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
             expect(result.numCols).toEqual(1);
             expect(result.getColumnAt(0)?.length).toEqual(1);
             expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([42]));
+        });
+
+
+        it('stringreturn', async () => {
+            conn.createScalarFunction('jsudf9', new Utf8(), (a) => 'Hello ' + a);
+
+            const result = conn.query(
+                'SELECT max(LENGTH(jsudf9(v::INTEGER)))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.length).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getColumnAt(0)?.length).toEqual(1);
+            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([11]));
+        });
+
+        it('nullstringreturn', async () => {
+            conn.createScalarFunction('jsudf10', new Utf8(), (a) => a % 2 == 0 ? 'Hello' : undefined);
+
+            const result = conn.query(
+                'SELECT COUNT(jsudf10(v::INTEGER))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.length).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getColumnAt(0)?.length).toEqual(1);
+            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([5000]));
         });
 
     });
