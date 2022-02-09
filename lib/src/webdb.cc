@@ -337,6 +337,17 @@ class SharedVectorBuffer : public VectorBuffer {
 
 }  // namespace
 
+typedef vector<unique_ptr<data_t[]>> additional_buffers_t;
+
+static data_ptr_t create_additional_buffer(vector<uint64_t>& data_ptrs, additional_buffers_t& additional_buffers, idx_t size, int64_t& buffer_idx) {
+    additional_buffers.emplace_back(unique_ptr<data_t []>(new data_t[size]));
+    auto res_ptr = additional_buffers.back().get();
+    data_ptrs.push_back((uint64_t)res_ptr);
+    buffer_idx = data_ptrs.size() - 1;
+    return res_ptr;
+}
+
+// this talks to udf_runtime.ts, changes need to be mirrored there
 arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk,
                                                        ExpressionState& state, Vector& out) {
     auto data_ptr = chunk.data[0].GetData();
@@ -344,43 +355,62 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     vector<string> type_desc;
     auto data_ptrs_len = chunk.ColumnCount();
     vector<uint64_t> data_ptrs;
-    // TODO lets try doing this in the bind phase so its faster
-    // TODO String support
-    // TODO complex type support
     // TODO support function returning NULLs
-    vector<unique_ptr<data_t[]>> additional_buffers;
+    // TODO support function returning strings
+    // TODO complex type support
+
+    // TODO create the descriptor in the bind phase for performance
+    // TODO special handling if all arguments are non-NULL for performance
+    additional_buffers_t additional_buffers;
 
     for (idx_t col_idx = 0; col_idx < chunk.ColumnCount(); col_idx++) {
         auto& vec = chunk.data[col_idx];
         // make sure we only have flat vectors hereafter (for now)
         vec.Normalify(chunk.size());
 
-        auto& validity = FlatVector::Validity(vec);
-        if (validity.AllValid()) {
-            // TODO special handling, not have a validity buffer at all
-        }
-        auto validity_arr = unique_ptr<data_t []>(new data_t[chunk.size()]);
-        for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-            validity_arr[row_idx] = validity.RowIsValid(row_idx);
-        }
-        additional_buffers.push_back(move(validity_arr));
-        data_ptrs.push_back((uint64_t)additional_buffers.back().get());
+        int64_t validity_idx = -1;
+        int64_t data_idx = -1;
+        int64_t length_idx = -1;
 
+        auto& validity = FlatVector::Validity(vec);
+        // create bool array to hold NULL flags ("validity"), passed to js as an additional array
+        auto validity_ptr = create_additional_buffer(data_ptrs, additional_buffers, chunk.size(), validity_idx);
+        for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
+            validity_ptr[row_idx] = validity.RowIsValid(row_idx);
+        }
+
+        // create js-compatible buffers for supported types. Very simple for primitive types, bit more involved for strings etc.
         auto& vec_type = vec.GetType();
         switch(vec_type.id()) {
             case LogicalTypeId::INTEGER:
             case LogicalTypeId::DOUBLE:
                 data_ptrs.push_back((uint64_t) vec.GetData());
-                // I shall go to hell for constructing JSON like that but well
-                type_desc.push_back(StringUtil::Format("{\"logical_type\": \"%s\", \"physical_type\": \"%s\", \"validity_buffer\": %d, \"data_buffer\": %d}", vec_type.ToString(), TypeIdToString(vec_type.InternalType()), data_ptrs.size()-2, data_ptrs.size()-1));
+                data_idx = data_ptrs.size()-1;
                 break;
+            case LogicalTypeId::BLOB:
+            case LogicalTypeId::VARCHAR: {
+                auto data_ptr = (uint64_t*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(uint64_t), data_idx);
+                auto len_ptr = (idx_t*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(idx_t), length_idx);
+
+                auto string_ptr = FlatVector::GetData<string_t>(vec);
+                for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
+                    data_ptr[row_idx] = (uint64_t)string_ptr[row_idx].GetDataUnsafe();
+                    len_ptr[row_idx] = string_ptr[row_idx].GetSize();
+                }
+                break;
+            }
+
             default:
                 return arrow::Status::ExecutionError("Unsupported UDF argument type " + vec.GetType().ToString());
         }
+        type_desc.push_back(StringUtil::Format("{\"logical_type\": \"%s\", \"physical_type\": \"%s\", \"validity_buffer\": %d, \"data_buffer\": %d, \"length_buffer\": %d}", vec_type.ToString(), TypeIdToString(vec_type.InternalType()), validity_idx, data_idx, length_idx));
     }
 
+    // create a json description of the schema to pass
     auto joined = StringUtil::Format("{\"rows\": %d, \"args\": [%s], \"ret\": {\"logical_type\": \"%s\", \"physical_type\": \"%s\"}}", chunk.size(), StringUtil::Join(type_desc, ","), out.GetType().ToString(), TypeIdToString(out.GetType().InternalType())) ;
-    // Call scalar udf function
+
+
+    // actually call the UDF
     WASMResponse response;
     duckdb_web_udf_scalar_call(&response, function.function_id, joined.c_str(), joined.size(), data_ptrs.data(), data_ptrs.size() * sizeof(uint64_t));
     // UDF call failed?
@@ -391,15 +421,21 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
         return arrow::Status::ExecutionError(err);
     }
 
-    // Unpack result buffer
-    auto res_buf = reinterpret_cast<char*>(static_cast<uintptr_t>(response.dataOrValue));
-    auto res_buf_view = arrow::util::string_view{res_buf, static_cast<size_t>(response.dataSize)};
+    // Unpack result buffer, first entry is data, second is validity, third is length (strings/lists)
+    auto res_arr = (data_ptr_t*) (uintptr_t) response.dataOrValue;
+    // we want to keep using this buffer
+    // TODO what do we do for strings when the auxiliary is already used?
+    auto res_buf = (char*) res_arr[0];
     auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
     out.SetAuxiliary(shared_buffer);
+    duckdb::FlatVector::SetData(out, (data_ptr_t) res_buf);
 
-    auto* data = reinterpret_cast<uint8_t*>(res_buf);
-    duckdb::FlatVector::SetData(out, data);
-
+    auto validity_arr = (uint8_t*) res_arr[2]; // TODO WTF why is this 2 and not 1?
+    for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
+        FlatVector::SetNull(out, row_idx, !validity_arr[row_idx]);
+    }
+    free(validity_arr);
+    free(res_arr);
     return arrow::Status::OK();
 }
 

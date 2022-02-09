@@ -14,6 +14,7 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
     });
 
     describe('UDF', () => {
+
         it('simple', async () => {
             conn.createScalarFunction('jsudf', new Int32(), a => a);
 
@@ -75,5 +76,53 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
             expect(result.getColumnAt(0)?.length).toEqual(1);
             expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([-100]));
         });
+
+        it('stringparam', async () => {
+            function jsudf6(s : string) {
+                return s.length;
+            }
+            conn.createScalarFunction('jsudf6', new Int32(), jsudf6);
+            const result = conn.query(
+                'SELECT max(jsudf6(\'str_\' || v))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.length).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getColumnAt(0)?.length).toEqual(1);
+            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([9]));
+        });
+
+        it('stringparamnulls', async () => {
+            function jsudf7(s : string) {
+                if (s == undefined) {
+                    return 0;
+                } else {
+                    return s.length;
+                }
+            }
+            conn.createScalarFunction('jsudf7', new Int32(), jsudf7);
+            const result = conn.query(
+                'SELECT max(jsudf7((case when v % 2 = 0 then \'str_\' || v else null end)::VARCHAR))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.length).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getColumnAt(0)?.length).toEqual(1);
+            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([9]));
+        });
+
+        it('nullintreturn', async () => {
+            conn.createScalarFunction('jsudf8', new Int32(), (a) => undefined);
+
+            const result = conn.query(
+                'SELECT max(COALESCE(jsudf8(v::INTEGER), 42))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.length).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getColumnAt(0)?.length).toEqual(1);
+            expect(result.getColumnAt(0)?.toArray()).toEqual(new Int32Array([42]));
+        });
+
     });
 }
