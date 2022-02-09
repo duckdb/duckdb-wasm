@@ -58,10 +58,10 @@ function ptr_to_arr(mod: DuckDBModule, ptr: number, ptype: string, n:number) {
             return new Float64Array(in_buf.buffer, in_buf.byteOffset, n);
         }
         case 'VARCHAR': {
-            return new BigUint64Array(in_buf.buffer, in_buf.byteOffset, n);
+            return new Float64Array(in_buf.buffer, in_buf.byteOffset, n);
         }
         default:
-            return new Uint8Array();
+            return new Array<string>(0); // cough
     }
 }
 
@@ -132,7 +132,7 @@ export function callScalarUDF(
         // TODO we probably do not want to recreate those every time
          const out_data_len = desc.rows * type_size(desc.ret.physical_type);
         const out_data_ptr = mod._malloc(out_data_len);
-        const out_data = ptr_to_arr(mod, out_data_ptr, desc.ret.physical_type, desc.rows);
+        var out_data = ptr_to_arr(mod, out_data_ptr, desc.ret.physical_type, desc.rows);
 
         const out_validity_ptr = mod._malloc(desc.rows);
         const out_validity = ptr_to_arr(mod, out_validity_ptr, 'UINT8', desc.rows);
@@ -142,7 +142,12 @@ export function callScalarUDF(
             storeError(mod, response, "Can't create physical arrays for result");
             return;
         }
-        // TODO can we do something with .apply() here?
+
+        var out_data_org = out_data;
+        if (desc.ret.physical_type == 'VARCHAR') {
+            out_data = new Array<string>(desc.rows);
+        }
+            // TODO can we do something with .apply() here?
         switch (desc.args.length) {
             case 0:
                 for (let i = 0; i < desc.rows; ++i) {
@@ -170,17 +175,51 @@ export function callScalarUDF(
                 return;
         }
 
-        const out_len = 6*8; // need to store three pointers, data, validity and length
+        // return value encoding. Most fun for strings so far.
+        var out_len_ptr = 0;
+        if (desc.ret.physical_type == 'VARCHAR') {
+            var enc = new TextEncoder();
+            const utf_arrs = new Array<Uint8Array>(0); // cough
+            var total_len = 0;
+            out_len_ptr = mod._malloc(desc.rows * type_size('DOUBLE'));
+            const out_len = ptr_to_arr(mod, out_len_ptr, 'DOUBLE', desc.rows);
+
+            // TODO we need two loops to figure out the total length but maybe we can avoid the double allocation
+            for (let row_idx = 0; row_idx < desc.rows; ++row_idx) {
+                // @ts-ignore TODO how do we cast this?
+                utf_arrs[row_idx] = enc.encode(out_data[row_idx]);
+                total_len += utf_arrs[row_idx].length;
+                out_len[row_idx] = utf_arrs[row_idx].length;
+            }
+
+            // we malloc a buffer for the strings to live in for now
+            const out_string_ptr = mod._malloc(total_len);
+            const out_string_buf = mod.HEAPU8.subarray(out_string_ptr, out_string_ptr + total_len);
+            // now copy all the strings to the new buffer back to back and fill the out_data and out_length arrays
+            var out_offset = 0;
+            out_data = out_data_org;
+
+            for (let row_idx = 0; row_idx < desc.rows; ++row_idx) {
+                out_data[row_idx] = out_string_ptr + out_offset;
+                for (let char_idx = 0; char_idx < utf_arrs[row_idx].length; char_idx++) {
+                    out_string_buf[out_offset + char_idx] = utf_arrs[row_idx][char_idx];
+                }
+                out_offset += utf_arrs[row_idx].length;
+            }
+        }
+
+        const out_len = 3*8; // need to store three pointers, data, validity and length
         // TODO maybe we can re-use this buffer, too
         const out_ptr = mod._malloc(out_len);
-        const out_arr = ptr_to_arr(mod, out_ptr, 'UINT64', 6);
-        // TODO this is a bit strange still, does not align quite right on the other side but works (TM)
-        out_arr[0] = BigInt(out_data_ptr);
-        out_arr[1] = BigInt(out_validity_ptr);
+        const out_arr = ptr_to_arr(mod, out_ptr, 'DOUBLE', 3);
+
+        out_arr[0] = out_data_ptr;
+        out_arr[1] = out_validity_ptr;
+        out_arr[2] = out_len_ptr;
 
         mod.HEAPF64[(response >> 3) + 0] = 0; // status
         mod.HEAPF64[(response >> 3) + 1] = out_ptr;
-        mod.HEAPF64[(response >> 3) + 2] = out_len;
+        mod.HEAPF64[(response >> 3) + 2] = 0;
     } catch (e: any) {
         storeError(mod, response, e.toString());
     }

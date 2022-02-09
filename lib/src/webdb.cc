@@ -389,12 +389,12 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
                 break;
             case LogicalTypeId::BLOB:
             case LogicalTypeId::VARCHAR: {
-                auto data_ptr = (uint64_t*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(uint64_t), data_idx);
+                auto data_ptr = (double*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), data_idx);
                 auto len_ptr = (idx_t*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(idx_t), length_idx);
 
                 auto string_ptr = FlatVector::GetData<string_t>(vec);
                 for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-                    data_ptr[row_idx] = (uint64_t)string_ptr[row_idx].GetDataUnsafe();
+                    data_ptr[row_idx] = (double) (ptrdiff_t) string_ptr[row_idx].GetDataUnsafe();
                     len_ptr[row_idx] = string_ptr[row_idx].GetSize();
                 }
                 break;
@@ -421,19 +421,36 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
         return arrow::Status::ExecutionError(err);
     }
 
+    // wild casting games commence
     // Unpack result buffer, first entry is data, second is validity, third is length (strings/lists)
-    auto res_arr = (data_ptr_t*) (uintptr_t) response.dataOrValue;
-    // we want to keep using this buffer
-    // TODO what do we do for strings when the auxiliary is already used?
-    auto res_buf = (char*) res_arr[0];
-    auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
-    out.SetAuxiliary(shared_buffer);
-    duckdb::FlatVector::SetData(out, (data_ptr_t) res_buf);
-
-    auto validity_arr = (uint8_t*) res_arr[2]; // TODO WTF why is this 2 and not 1?
+    auto res_arr = (double*) (uintptr_t) response.dataOrValue;
+    auto validity_arr = (uint8_t*) (uintptr_t) res_arr[1]; // TODO WTF why is this 2 and not 1?
     for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
         FlatVector::SetNull(out, row_idx, !validity_arr[row_idx]);
     }
+
+
+    // special handling for strings, we need to interpret the funky pointers and the lengths
+    // basically inverse of what happens above for strings
+    if (out.GetType().id() == LogicalTypeId::VARCHAR) {
+        auto string_ptr_buf = (double*) (uintptr_t) res_arr[0];
+        auto out_string_ptr = FlatVector::GetData<string_t>(out);
+        auto len_buf = (double*) (uintptr_t)res_arr[2];
+        for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
+            if (!validity_arr[row_idx]) { // don't go chasing waternulls
+                continue;
+            }
+            auto string_ptr = (const char*) (uintptr_t) string_ptr_buf[row_idx];
+            out_string_ptr[row_idx] = StringVector::AddString(out, string_ptr, len_buf[row_idx]);
+        }
+
+    } else {
+        auto res_buf = (char*) (uintptr_t) res_arr[0];
+        auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
+        out.SetAuxiliary(shared_buffer);
+        duckdb::FlatVector::SetData(out, (data_ptr_t) res_buf);
+    }
+
     free(validity_arr);
     free(res_arr);
     return arrow::Status::OK();
