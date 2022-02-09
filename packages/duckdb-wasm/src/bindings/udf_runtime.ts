@@ -97,7 +97,7 @@ export function callScalarUDF(
         // create argument arrays
         for (const idx in desc.args) {
             const arg = desc.args[idx];
-            var arg_arr = ptr_to_arr(mod, Number(ptrs[arg.data_buffer]), arg.physical_type, desc.rows);
+            const arg_arr = ptr_to_arr(mod, Number(ptrs[arg.data_buffer]), arg.physical_type, desc.rows);
             const validity = ptr_to_arr(mod, Number(ptrs[arg.validity_buffer]), 'UINT8', desc.rows);
 
             if (arg_arr.length == 0 || validity.length == 0) {
