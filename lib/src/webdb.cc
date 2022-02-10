@@ -321,7 +321,8 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
 #ifndef EMSCRIPTEN
 void duckdb_web_udf_scalar_call(WASMResponse*, size_t, const void*, size_t, const void*, size_t) {}
 #else
-extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t function_id, const void* desc_buf, size_t desc_size, const void* ptrs_buf, size_t ptrs_size);
+extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t function_id, const void* desc_buf,
+                                           size_t desc_size, const void* ptrs_buf, size_t ptrs_size);
 #endif
 
 namespace {
@@ -339,8 +340,9 @@ class SharedVectorBuffer : public VectorBuffer {
 
 typedef vector<unique_ptr<data_t[]>> additional_buffers_t;
 
-static data_ptr_t create_additional_buffer(vector<double>& data_ptrs, additional_buffers_t& additional_buffers, idx_t size, int64_t& buffer_idx) {
-    additional_buffers.emplace_back(unique_ptr<data_t []>(new data_t[size]));
+static data_ptr_t create_additional_buffer(vector<double>& data_ptrs, additional_buffers_t& additional_buffers,
+                                           idx_t size, int64_t& buffer_idx) {
+    additional_buffers.emplace_back(unique_ptr<data_t[]>(new data_t[size]));
     auto res_ptr = additional_buffers.back().get();
     data_ptrs.push_back((double)(uintptr_t)res_ptr);
     buffer_idx = data_ptrs.size() - 1;
@@ -379,23 +381,26 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
             validity_ptr[row_idx] = validity.RowIsValid(row_idx);
         }
 
-        // create js-compatible buffers for supported types. Very simple for primitive types, bit more involved for strings etc.
+        // create js-compatible buffers for supported types. Very simple for primitive types, bit more involved for
+        // strings etc.
         auto& vec_type = vec.GetType();
-        switch(vec_type.id()) {
+        switch (vec_type.id()) {
             case LogicalTypeId::INTEGER:
             case LogicalTypeId::DOUBLE:
-                data_ptrs.push_back((double)(uintptr_t) vec.GetData());
-                data_idx = data_ptrs.size()-1;
+                data_ptrs.push_back((double)(uintptr_t)vec.GetData());
+                data_idx = data_ptrs.size() - 1;
                 break;
             case LogicalTypeId::BLOB:
             case LogicalTypeId::VARCHAR: {
-                auto data_ptr = (double*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), data_idx);
-                auto len_ptr = (double*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), length_idx);
+                auto data_ptr = (double*)create_additional_buffer(data_ptrs, additional_buffers,
+                                                                  chunk.size() * sizeof(double), data_idx);
+                auto len_ptr = (double*)create_additional_buffer(data_ptrs, additional_buffers,
+                                                                 chunk.size() * sizeof(double), length_idx);
 
                 auto string_ptr = FlatVector::GetData<string_t>(vec);
                 for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-                    data_ptr[row_idx] = (double) (ptrdiff_t) string_ptr[row_idx].GetDataUnsafe();
-                    len_ptr[row_idx] = (double) string_ptr[row_idx].GetSize();
+                    data_ptr[row_idx] = (double)(ptrdiff_t)string_ptr[row_idx].GetDataUnsafe();
+                    len_ptr[row_idx] = (double)string_ptr[row_idx].GetSize();
                 }
                 break;
             }
@@ -403,16 +408,21 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
             default:
                 return arrow::Status::ExecutionError("Unsupported UDF argument type " + vec.GetType().ToString());
         }
-        type_desc.push_back(StringUtil::Format("{\"logical_type\": \"%s\", \"physical_type\": \"%s\", \"validity_buffer\": %d, \"data_buffer\": %d, \"length_buffer\": %d}", vec_type.ToString(), TypeIdToString(vec_type.InternalType()), validity_idx, data_idx, length_idx));
+        type_desc.push_back(StringUtil::Format(
+            "{\"logical_type\": \"%s\", \"physical_type\": \"%s\", \"validity_buffer\": %d, \"data_buffer\": %d, "
+            "\"length_buffer\": %d}",
+            vec_type.ToString(), TypeIdToString(vec_type.InternalType()), validity_idx, data_idx, length_idx));
     }
 
     // create a json description of the schema to pass
-    auto joined = StringUtil::Format("{\"rows\": %d, \"args\": [%s], \"ret\": {\"logical_type\": \"%s\", \"physical_type\": \"%s\"}}", chunk.size(), StringUtil::Join(type_desc, ","), out.GetType().ToString(), TypeIdToString(out.GetType().InternalType())) ;
-
+    auto joined = StringUtil::Format(
+        "{\"rows\": %d, \"args\": [%s], \"ret\": {\"logical_type\": \"%s\", \"physical_type\": \"%s\"}}", chunk.size(),
+        StringUtil::Join(type_desc, ","), out.GetType().ToString(), TypeIdToString(out.GetType().InternalType()));
 
     // actually call the UDF
     WASMResponse response;
-    duckdb_web_udf_scalar_call(&response, function.function_id, joined.c_str(), joined.size(), data_ptrs.data(), data_ptrs.size() * sizeof(uint64_t));
+    duckdb_web_udf_scalar_call(&response, function.function_id, joined.c_str(), joined.size(), data_ptrs.data(),
+                               data_ptrs.size() * sizeof(uint64_t));
     // UDF call failed?
     if (response.statusCode != 0) {
         uintptr_t err_ptr = response.dataOrValue;
@@ -423,32 +433,31 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
 
     // wild casting games commence
     // Unpack result buffer, first entry is data, second is validity, third is length (strings/lists)
-    auto res_arr = (double*) (uintptr_t) response.dataOrValue;
-    auto validity_arr = (uint8_t*) (uintptr_t) res_arr[1]; // TODO WTF why is this 2 and not 1?
+    auto res_arr = (double*)(uintptr_t)response.dataOrValue;
+    auto validity_arr = (uint8_t*)(uintptr_t)res_arr[1];  // TODO WTF why is this 2 and not 1?
     for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
         FlatVector::SetNull(out, row_idx, !validity_arr[row_idx]);
     }
 
-
     // special handling for strings, we need to interpret the funky pointers and the lengths
     // basically inverse of what happens above for strings
     if (out.GetType().id() == LogicalTypeId::VARCHAR) {
-        auto string_ptr_buf = (double*) (uintptr_t) res_arr[0];
+        auto string_ptr_buf = (double*)(uintptr_t)res_arr[0];
         auto out_string_ptr = FlatVector::GetData<string_t>(out);
-        auto len_buf = (double*) (uintptr_t)res_arr[2];
+        auto len_buf = (double*)(uintptr_t)res_arr[2];
         for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-            if (!validity_arr[row_idx]) { // don't go chasing waternulls
+            if (!validity_arr[row_idx]) {  // don't go chasing waternulls
                 continue;
             }
-            auto string_ptr = (const char*) (uintptr_t) string_ptr_buf[row_idx];
+            auto string_ptr = (const char*)(uintptr_t)string_ptr_buf[row_idx];
             out_string_ptr[row_idx] = StringVector::AddString(out, string_ptr, len_buf[row_idx]);
         }
 
     } else {
-        auto res_buf = (char*) (uintptr_t) res_arr[0];
+        auto res_buf = (char*)(uintptr_t)res_arr[0];
         auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
         out.SetAuxiliary(shared_buffer);
-        duckdb::FlatVector::SetData(out, (data_ptr_t) res_buf);
+        duckdb::FlatVector::SetData(out, (data_ptr_t)res_buf);
     }
 
     free(validity_arr);

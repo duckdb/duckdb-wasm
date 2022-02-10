@@ -55,7 +55,7 @@ function ptr_to_arr(mod: DuckDBModule, ptr: number, ptype: string, n:number) {
             return new Float64Array(in_buf.buffer, in_buf.byteOffset, n);
         }
         default:
-            return new Array<number>(0); // cough
+            return new Array<string>(0); // cough
     }
 }
 
@@ -91,8 +91,8 @@ export function callScalarUDF(
         // create argument arrays
         for (const idx in desc.args) {
             const arg = desc.args[idx];
-            const arg_arr = ptr_to_arr(mod, ptrs[arg.data_buffer], arg.physical_type, desc.rows);
-            const validity = ptr_to_arr(mod, ptrs[arg.validity_buffer], 'UINT8', desc.rows);
+            const arg_arr = ptr_to_arr(mod, ptrs[arg.data_buffer] as number, arg.physical_type, desc.rows);
+            const validity = ptr_to_arr(mod, ptrs[arg.validity_buffer] as number, 'UINT8', desc.rows);
 
             if (arg_arr.length == 0 || validity.length == 0) {
                 storeError(mod, response, "Can't create physical arrays for argument " + arg.physical_type);
@@ -102,7 +102,7 @@ export function callScalarUDF(
 
             // some special handling for more involved types
             if (arg.physical_type == 'VARCHAR') {
-                const length_arr = ptr_to_arr(mod, ptrs[arg.length_buffer], 'DOUBLE', desc.rows);
+                const length_arr = ptr_to_arr(mod, ptrs[arg.length_buffer] as number, 'DOUBLE', desc.rows);
 
                 const string_data_arr = [];
                 const decoder = new TextDecoder();
@@ -111,7 +111,7 @@ export function callScalarUDF(
                         string_data_arr.push(undefined);
                         continue;
                     }
-                    const subarray = mod.HEAPU8.subarray(arg_arr[i], arg_arr[i] + length_arr[i]);
+                    const subarray = mod.HEAPU8.subarray(arg_arr[i] as number, (arg_arr[i] as number) + (length_arr[i] as number));
                     const str = decoder.decode(subarray);
                     string_data_arr.push(str);
                 }
@@ -137,9 +137,8 @@ export function callScalarUDF(
             return;
         }
 
-        let out_data_org = out_data;
+        const out_data_org = out_data;
         if (desc.ret.physical_type == 'VARCHAR') {
-            // @ts-ignore
             out_data = new Array<string>(desc.rows);
         }
             // TODO can we do something with .apply() here?
@@ -181,8 +180,7 @@ export function callScalarUDF(
 
             // TODO we need two loops to figure out the total length but maybe we can avoid the double allocation
             for (let row_idx = 0; row_idx < desc.rows; ++row_idx) {
-                // @ts-ignore TODO how do we cast this?
-                utf_arrs[row_idx] = enc.encode(out_data[row_idx]);
+                utf_arrs[row_idx] = enc.encode(out_data[row_idx] as unknown as string);
                 total_len += utf_arrs[row_idx].length;
                 out_len[row_idx] = utf_arrs[row_idx].length;
             }
