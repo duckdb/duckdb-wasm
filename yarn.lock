@@ -777,10 +777,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-virtualized@^9.21.17":
-  version "9.21.17"
-  resolved "https://registry.yarnpkg.com/@types/react-virtualized/-/react-virtualized-9.21.17.tgz#3c30104d2d38832b748419b58ac04f839ee838fe"
-  integrity sha512-8JWc9GzurY9L0iqlL+dPziUsyP7MsY27m8k8mCEZNvuYwA3o2vvbkRkb1IoCdV2XYwPU4w8wfaBHungLGr0b4w==
+"@types/react-virtualized@^9.21.18":
+  version "9.21.18"
+  resolved "https://registry.yarnpkg.com/@types/react-virtualized/-/react-virtualized-9.21.18.tgz#5dd5fd6c4cc4461b610fc922b087f57dcfa6ffb5"
+  integrity sha512-H9pbaun17MFRWztcGDhARit0sJkzuAFvS268KzQwpym0DANO6DGKPUhb8AGrHId8IQejChRA3n5HF2DvFJvXYg==
   dependencies:
     "@types/prop-types" "*"
     "@types/react" "*"
