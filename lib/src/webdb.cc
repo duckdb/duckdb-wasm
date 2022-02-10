@@ -339,10 +339,10 @@ class SharedVectorBuffer : public VectorBuffer {
 
 typedef vector<unique_ptr<data_t[]>> additional_buffers_t;
 
-static data_ptr_t create_additional_buffer(vector<uint64_t>& data_ptrs, additional_buffers_t& additional_buffers, idx_t size, int64_t& buffer_idx) {
+static data_ptr_t create_additional_buffer(vector<double>& data_ptrs, additional_buffers_t& additional_buffers, idx_t size, int64_t& buffer_idx) {
     additional_buffers.emplace_back(unique_ptr<data_t []>(new data_t[size]));
     auto res_ptr = additional_buffers.back().get();
-    data_ptrs.push_back((uint64_t)res_ptr);
+    data_ptrs.push_back((double)(uintptr_t)res_ptr);
     buffer_idx = data_ptrs.size() - 1;
     return res_ptr;
 }
@@ -354,7 +354,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     auto data_size = chunk.size();
     vector<string> type_desc;
     auto data_ptrs_len = chunk.ColumnCount();
-    vector<uint64_t> data_ptrs;
+    vector<double> data_ptrs;
     // TODO support function returning NULLs
     // TODO support function returning strings
     // TODO complex type support
@@ -384,18 +384,18 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
         switch(vec_type.id()) {
             case LogicalTypeId::INTEGER:
             case LogicalTypeId::DOUBLE:
-                data_ptrs.push_back((uint64_t) vec.GetData());
+                data_ptrs.push_back((double)(uintptr_t) vec.GetData());
                 data_idx = data_ptrs.size()-1;
                 break;
             case LogicalTypeId::BLOB:
             case LogicalTypeId::VARCHAR: {
                 auto data_ptr = (double*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), data_idx);
-                auto len_ptr = (idx_t*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(idx_t), length_idx);
+                auto len_ptr = (double*) create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), length_idx);
 
                 auto string_ptr = FlatVector::GetData<string_t>(vec);
                 for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
                     data_ptr[row_idx] = (double) (ptrdiff_t) string_ptr[row_idx].GetDataUnsafe();
-                    len_ptr[row_idx] = string_ptr[row_idx].GetSize();
+                    len_ptr[row_idx] = (double) string_ptr[row_idx].GetSize();
                 }
                 break;
             }
