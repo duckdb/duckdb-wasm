@@ -45,12 +45,6 @@ function ptr_to_arr(mod: DuckDBModule, ptr: number, ptype: string, n:number) {
         case 'INT32': {
             return new Int32Array(in_buf.buffer, in_buf.byteOffset, n);
         }
-        case 'INT64': {
-            return new BigInt64Array(in_buf.buffer, in_buf.byteOffset, n);
-        }
-        case 'UINT64': {
-            return new BigUint64Array(in_buf.buffer, in_buf.byteOffset, n);
-        }
         case 'FLOAT': {
             return new Float32Array(in_buf.buffer, in_buf.byteOffset, n);
         }
@@ -61,7 +55,7 @@ function ptr_to_arr(mod: DuckDBModule, ptr: number, ptype: string, n:number) {
             return new Float64Array(in_buf.buffer, in_buf.byteOffset, n);
         }
         default:
-            return new Array<string>(0); // cough
+            return new Array<number>(0); // cough
     }
 }
 
@@ -89,16 +83,16 @@ export function callScalarUDF(
         //console.log(desc);
 
         // array of buffer pointers referred to from schema
-        const ptrs_buf = mod.HEAPU8.subarray(ptrsPtr, ptrsPtr + ptrsSize);
-        const ptrs = new BigUint64Array(ptrs_buf.buffer, ptrs_buf.byteOffset, ptrsSize / 8);
+        const ptrs = ptr_to_arr(mod, ptrsPtr, 'DOUBLE', ptrsSize/8);
+
         const validity_arr = [];
         const data_arr = [];
 
         // create argument arrays
         for (const idx in desc.args) {
             const arg = desc.args[idx];
-            const arg_arr = ptr_to_arr(mod, Number(ptrs[arg.data_buffer]), arg.physical_type, desc.rows);
-            const validity = ptr_to_arr(mod, Number(ptrs[arg.validity_buffer]), 'UINT8', desc.rows);
+            const arg_arr = ptr_to_arr(mod, ptrs[arg.data_buffer], arg.physical_type, desc.rows);
+            const validity = ptr_to_arr(mod, ptrs[arg.validity_buffer], 'UINT8', desc.rows);
 
             if (arg_arr.length == 0 || validity.length == 0) {
                 storeError(mod, response, "Can't create physical arrays for argument " + arg.physical_type);
@@ -108,7 +102,7 @@ export function callScalarUDF(
 
             // some special handling for more involved types
             if (arg.physical_type == 'VARCHAR') {
-                const length_arr = ptr_to_arr(mod, Number(ptrs[arg.length_buffer]), 'UINT64', desc.rows);
+                const length_arr = ptr_to_arr(mod, ptrs[arg.length_buffer], 'DOUBLE', desc.rows);
 
                 const string_data_arr = [];
                 const decoder = new TextDecoder();
@@ -117,7 +111,7 @@ export function callScalarUDF(
                         string_data_arr.push(undefined);
                         continue;
                     }
-                    const subarray = mod.HEAPU8.subarray(Number(arg_arr[i]), Number(arg_arr[i]) + Number(length_arr[i]));
+                    const subarray = mod.HEAPU8.subarray(arg_arr[i], arg_arr[i] + length_arr[i]);
                     const str = decoder.decode(subarray);
                     string_data_arr.push(str);
                 }
@@ -132,7 +126,7 @@ export function callScalarUDF(
         // TODO we probably do not want to recreate those every time
          const out_data_len = desc.rows * type_size(desc.ret.physical_type);
         const out_data_ptr = mod._malloc(out_data_len);
-        var out_data = ptr_to_arr(mod, out_data_ptr, desc.ret.physical_type, desc.rows);
+        let out_data = ptr_to_arr(mod, out_data_ptr, desc.ret.physical_type, desc.rows);
 
         const out_validity_ptr = mod._malloc(desc.rows);
         const out_validity = ptr_to_arr(mod, out_validity_ptr, 'UINT8', desc.rows);
@@ -143,8 +137,9 @@ export function callScalarUDF(
             return;
         }
 
-        var out_data_org = out_data;
+        let out_data_org = out_data;
         if (desc.ret.physical_type == 'VARCHAR') {
+            // @ts-ignore
             out_data = new Array<string>(desc.rows);
         }
             // TODO can we do something with .apply() here?
@@ -176,11 +171,11 @@ export function callScalarUDF(
         }
 
         // return value encoding. Most fun for strings so far.
-        var out_len_ptr = 0;
+        let out_len_ptr = 0;
         if (desc.ret.physical_type == 'VARCHAR') {
-            var enc = new TextEncoder();
+            const enc = new TextEncoder();
             const utf_arrs = new Array<Uint8Array>(0); // cough
-            var total_len = 0;
+            let total_len = 0;
             out_len_ptr = mod._malloc(desc.rows * type_size('DOUBLE'));
             const out_len = ptr_to_arr(mod, out_len_ptr, 'DOUBLE', desc.rows);
 
@@ -196,7 +191,7 @@ export function callScalarUDF(
             const out_string_ptr = mod._malloc(total_len);
             const out_string_buf = mod.HEAPU8.subarray(out_string_ptr, out_string_ptr + total_len);
             // now copy all the strings to the new buffer back to back and fill the out_data and out_length arrays
-            var out_offset = 0;
+            let out_offset = 0;
             out_data = out_data_org;
 
             for (let row_idx = 0; row_idx < desc.rows; ++row_idx) {
