@@ -23,7 +23,7 @@
         "csv"
     ],
     "dependencies": {
-        "apache-arrow": "^6.0.1",
+        "apache-arrow": "^7.0.0",
         "wasm-feature-detect": "^1.2.11",
         "fast-glob": "^3.2.11",
         "web-worker": "^1.2.0",
