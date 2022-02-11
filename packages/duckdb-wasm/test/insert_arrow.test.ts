@@ -41,13 +41,16 @@ export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arr
     const batches = [];
     for (let i = 0; i < n; ) {
         const rows = Math.min(1000, n - i);
-        const vectors = columns.map(c => arrow.makeVector(new Int32Array(c.slice(i, i + n))));
         const data = arrow.makeData({
-            type: new arrow.Struct(schema.fields),
-            length: rows,
-            children: vectors,
-            nullCount: 0,
+            type: new arrow.Struct(fields),
+            children: columns.map(c =>
+                arrow.makeData({
+                    type: new arrow.Int32(),
+                    data: new Int32Array(c.slice(i, i + n)),
+                }),
+            ),
         });
+        batches.push(new arrow.RecordBatch(schema, data));
         i += rows;
     }
     return [schema, batches];
