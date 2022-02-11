@@ -1,5 +1,4 @@
 import * as duckdb from '../src/';
-import {Float64, Int32, Utf8} from 'apache-arrow';
 
 export function testFTS(db: () => duckdb.DuckDBBindings): void {
     let conn: duckdb.DuckDBConnection;
