@@ -24,7 +24,8 @@ ExternalProject_Add(
              -DCMAKE_BUILD_TYPE=${DUCKDB_BUILD_TYPE}
              -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
              -DBUILD_PARQUET_EXTENSION=TRUE
-             -DBUILD_SHELL=FALSE
+             -DBUILD_FTS_EXTENSION=TRUE
+        -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
@@ -35,7 +36,8 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libduckdb_pg_query.a
     <INSTALL_DIR>/lib/libduckdb_utf8proc.a
     <INSTALL_DIR>/lib/libduckdb_fastpforlib.a
-    <INSTALL_DIR>/lib/libparquet_extension.a)
+    <INSTALL_DIR>/lib/libparquet_extension.a
+    <INSTALL_DIR>/lib/libfts_extension.a)
 
 ExternalProject_Get_Property(duckdb_ep install_dir)
 ExternalProject_Get_Property(duckdb_ep binary_dir)
@@ -61,6 +63,7 @@ target_link_libraries(
   INTERFACE ${install_dir}/lib/libduckdb_pg_query.a
   INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
   INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
+  INTERFACE ${install_dir}/lib/libfts_extension.a
   INTERFACE dl)
 
 target_include_directories(
