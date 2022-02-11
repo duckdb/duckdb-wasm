@@ -77,6 +77,7 @@ import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { testTableNames, testTableNamesAsync } from './tablenames.test';
 import { testUDF } from './udf.test';
 import { testRegressionAsync } from './regression';
+import { testFTS } from './fts.test';
 
 testUDF(() => db!);
 testTableNames(() => db!);
@@ -97,3 +98,4 @@ testCSVInsert(() => db!);
 testCSVInsertAsync(() => adb!);
 testTokenization(() => db!);
 testTokenizationAsync(() => adb!);
+testFTS(() => db!);
