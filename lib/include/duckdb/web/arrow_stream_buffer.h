@@ -1,6 +1,5 @@
 #include <string>
 
-#include "arrow/c/bridge.h"
 #include "arrow/ipc/reader.h"
 #include "arrow/record_batch.h"
 #include "arrow/result.h"

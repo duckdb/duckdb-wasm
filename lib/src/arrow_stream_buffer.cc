@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "duckdb/web/arrow_bridge.h"
+
 namespace duckdb {
 namespace web {
 
