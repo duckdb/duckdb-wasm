@@ -63,7 +63,7 @@ export function test334(adb: () => duckdb.AsyncDuckDB): void {
                 for await (const batch of await conn.send<{ v: arrow.Int }>(`
                 SELECT * FROM generate_series(1, 100) t(v)
             `)) {
-                    expect(batch.length).toBeGreaterThan(0);
+                    expect(batch.numRows).toBeGreaterThan(0);
                 }
                 await conn.close();
             });
@@ -78,7 +78,7 @@ export function test334(adb: () => duckdb.AsyncDuckDB): void {
                 const conn = await adb().connect();
                 const stmt = await conn.prepare(`SELECT v + ? FROM generate_series(0, 10000) as t(v);`);
                 for await (const batch of await stmt.send(234)) {
-                    expect(batch.length).toBeGreaterThan(0);
+                    expect(batch.numRows).toBeGreaterThan(0);
                 }
                 await stmt.close();
                 await conn.close();

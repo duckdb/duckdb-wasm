@@ -170,10 +170,10 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
                 for (const row of table) {
-                    expect(row.v).toBe(i++ & 127);
+                    expect(row?.v).toBe(i++ & 127);
                 }
                 expect(i).toBe(testRows + 1);
             });
@@ -182,10 +182,10 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
                 for (const row of table) {
-                    expect(row.v).toBe(i++ & 32767);
+                    expect(row?.v).toBe(i++ & 32767);
                 }
                 expect(i).toBe(testRows + 1);
             });
@@ -194,10 +194,10 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
                 for (const row of table) {
-                    expect(row.v).toBe(i++);
+                    expect(row?.v).toBe(i++);
                 }
                 expect(i).toBe(testRows + 1);
             });
@@ -206,10 +206,10 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
                 for (const row of table) {
-                    expect(row.v.valueOf()).toBe(i++);
+                    expect(row?.v.valueOf()).toBe(i++);
                 }
                 expect(i).toBe(testRows + 1);
             });
@@ -218,10 +218,10 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
                 for (const row of table) {
-                    expect(row.v.valueOf()).toBe(String(i++));
+                    expect(row?.v.valueOf()).toBe(String(i++));
                 }
                 expect(i).toBe(testRows + 1);
             });
@@ -234,9 +234,9 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT (v & 127)::TINYINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
-                for (const v of table.getColumnAt(0)!) {
+                for (const v of table.getChildAt(0)!) {
                     expect(v).toBe(i++ & 127);
                 }
                 expect(i).toBe(testRows + 1);
@@ -246,9 +246,9 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT (v & 32767)::SMALLINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
-                for (const v of table.getColumnAt(0)!) {
+                for (const v of table.getChildAt(0)!) {
                     expect(v).toBe(i++ & 32767);
                 }
                 expect(i).toBe(testRows + 1);
@@ -258,9 +258,9 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT v::INTEGER AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
-                for (const v of table.getColumnAt(0)!) {
+                for (const v of table.getChildAt(0)!) {
                     expect(v).toBe(i++);
                 }
                 expect(i).toBe(testRows + 1);
@@ -270,9 +270,9 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT v::BIGINT AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
-                for (const v of table.getColumnAt(0)!) {
+                for (const v of table.getChildAt(0)!) {
                     expect(v.valueOf()).toBe(i++);
                 }
                 expect(i).toBe(testRows + 1);
@@ -282,9 +282,9 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const result = conn.send(`
                     SELECT v::VARCHAR AS v FROM generate_series(0, ${testRows}) as t(v);
                 `);
-                const table = arrow.Table.from(result);
+                const table = new arrow.Table(result);
                 let i = 0;
-                for (const v of table.getColumnAt(0)!) {
+                for (const v of table.getChildAt(0)!) {
                     expect(v.valueOf()).toBe(String(i++));
                 }
                 expect(i).toBe(testRows + 1);

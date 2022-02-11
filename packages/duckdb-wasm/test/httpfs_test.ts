@@ -83,35 +83,39 @@ export function testHTTPFS(sdb: () => duckdb.DuckDBBindings): void {
             expect(globalFileInfoUpdated?.s3Config).toBeDefined();
             expect(globalFileInfoUpdated?.cacheEpoch).toEqual(cacheEpoch + 5);
             const params = getS3Params(globalFileInfoUpdated?.s3Config, 's3://test-bucket/testfile.txt', 'GET');
-            expect(params.url).toEqual("/testfile.txt");
-            expect(params.query).toEqual("");
-            expect(params.host).toEqual("test-bucket.s3.some.sort.of.cloud");
-            expect(params.region).toEqual("a-very-remote-and-non-existent-s3-region");
-            expect(params.service).toEqual("s3");
-            expect(params.method).toEqual("GET");
-            expect(params.accessKeyId).toEqual("THISACCESSKEYIDISNOTVALID");
-            expect(params.secretAccessKey).toEqual("THISSECRETACCESSKEYISNOTVALID");
-            expect(params.sessionToken).toEqual("ANICESESSIONTOKEN");
+            expect(params.url).toEqual('/testfile.txt');
+            expect(params.query).toEqual('');
+            expect(params.host).toEqual('test-bucket.s3.some.sort.of.cloud');
+            expect(params.region).toEqual('a-very-remote-and-non-existent-s3-region');
+            expect(params.service).toEqual('s3');
+            expect(params.method).toEqual('GET');
+            expect(params.accessKeyId).toEqual('THISACCESSKEYIDISNOTVALID');
+            expect(params.secretAccessKey).toEqual('THISSECRETACCESSKEYISNOTVALID');
+            expect(params.sessionToken).toEqual('ANICESESSIONTOKEN');
 
             // Cover full http endpoint config
             conn!.query("SET s3_endpoint='http://localhost:1337';");
             const globalFileInfoFullHttpEndpoint = BROWSER_RUNTIME.getGlobalFileInfo(module!);
-            const paramsFullHttpEndpoint = getS3Params(globalFileInfoFullHttpEndpoint?.s3Config, 's3://test-bucket/testfile.txt', 'GET');
-            expect(paramsFullHttpEndpoint.host).toEqual("localhost:1337");
+            const paramsFullHttpEndpoint = getS3Params(
+                globalFileInfoFullHttpEndpoint?.s3Config,
+                's3://test-bucket/testfile.txt',
+                'GET',
+            );
+            expect(paramsFullHttpEndpoint.host).toEqual('localhost:1337');
 
             // Reset should clear config
             await reset();
             const globalFileInfoCleared = BROWSER_RUNTIME.getGlobalFileInfo(module!);
             const paramsCleared = getS3Params(globalFileInfoCleared?.s3Config, 's3://test-bucket/testfile.txt', 'GET');
-            expect(paramsCleared.url).toEqual("/testfile.txt");
-            expect(paramsCleared.query).toEqual("");
-            expect(paramsCleared.host).toEqual("test-bucket.s3.amazonaws.com");
-            expect(paramsCleared.region).toEqual("");
-            expect(paramsCleared.service).toEqual("s3");
-            expect(paramsCleared.method).toEqual("GET");
-            expect(paramsCleared.accessKeyId).toEqual("");
-            expect(paramsCleared.secretAccessKey).toEqual("");
-            expect(paramsCleared.sessionToken).toEqual("");
+            expect(paramsCleared.url).toEqual('/testfile.txt');
+            expect(paramsCleared.query).toEqual('');
+            expect(paramsCleared.host).toEqual('test-bucket.s3.amazonaws.com');
+            expect(paramsCleared.region).toEqual('');
+            expect(paramsCleared.service).toEqual('s3');
+            expect(paramsCleared.method).toEqual('GET');
+            expect(paramsCleared.accessKeyId).toEqual('');
+            expect(paramsCleared.secretAccessKey).toEqual('');
+            expect(paramsCleared.sessionToken).toEqual('');
         });
 
         it('url parsing is correct', () => {
@@ -233,7 +237,7 @@ export function testHTTPFSAsync(
     const assertTestFileResultCorrect = async function (result: any, test_data: Uint8Array | null) {
         await adb().registerFileBuffer('test_file_baseline.parquet', test_data!);
         const result_baseline = await conn!.query(`SELECT * FROM parquet_scan('test_file_baseline.parquet');`);
-        expect(result.getColumnAt(0).toArray()).toEqual(result_baseline.getColumnAt(0)?.toArray());
+        expect(result.getChildAt(0).toArray()).toEqual(result_baseline.getChildAt(0)?.toArray());
     };
 
     // Reset databases between tests
@@ -249,7 +253,7 @@ export function testHTTPFSAsync(
             const results = await conn!.query(
                 `select * from "https://raw.githubusercontent.com/duckdb/duckdb-wasm/master/data/test.csv";`,
             );
-            expect(results.getColumnAt(2)?.get(2)).toEqual(9);
+            expect(results.getChildAt(2)?.get(2)).toEqual(9);
         });
 
         it('can read and write csv file from S3 with correct auth credentials', async () => {
@@ -288,7 +292,7 @@ export function testHTTPFSAsync(
             const results_correct = await conn!.query(
                 `select l_partkey from "s3://${BUCKET_NAME}/file_cache_invalidation_test.parquet" limit 1;`,
             );
-            expect(results_correct.getColumnAt(0)?.get(0)).toEqual(1552);
+            expect(results_correct.getChildAt(0)?.get(0)).toEqual(1552);
             await setAwsConfig(conn!, AWSConfigType.INVALID);
             await expectAsync(
                 conn!.query(`select avg(l_partkey) from "s3://${BUCKET_NAME}/lineitem.parquet";`),
@@ -301,7 +305,7 @@ export function testHTTPFSAsync(
                 `COPY (SELECT * FROM range(1000,1010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,
             );
             const result = await conn!.query(`SELECT * FROM "s3://${BUCKET_NAME}/test_written.csv";`);
-            expect(result.getColumnAt(0)?.get(6)).toEqual(1006);
+            expect(result.getChildAt(0)?.get(6)).toEqual(1006);
             await expectAsync(
                 conn!.query(
                     `COPY (SELECT * FROM range(2000,2010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,

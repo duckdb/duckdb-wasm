@@ -1,5 +1,5 @@
 import * as duckdb from '../src/';
-import { Column, Vector } from 'apache-arrow';
+import { Vector } from 'apache-arrow';
 import { DuckDBQueryConfig } from '../src/';
 
 // The max interval in microsec from DuckDB is 83 years 3 months 999 days 00:16:39.999999, with months as 30 days.
@@ -211,12 +211,15 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
                     skip.set(s, true);
                 }
                 for (let i = 0; i < results.numCols; i++) {
-                    const col = results.getColumnAt(i) as Column;
-                    if (skip.get(col.name)) continue;
+                    const name = results.schema.fields[i].name;
+                    const col = results.getChildAt(i);
+                    if (skip.get(name)) continue;
+                    expect(col).not.toBeNull();
+                    expect(col?.length).not.toEqual(0);
 
-                    expect(unpack(getValue(col.get(0)))).toEqual(test.answerMap[col.name][0]); // Min
-                    expect(unpack(getValue(col.get(1)))).toEqual(test.answerMap[col.name][1]); // Max
-                    expect(col.get(2)).toEqual(test.answerMap[col.name][2]); // Null
+                    expect(unpack(getValue(col!.get(0)))).toEqual(test.answerMap[name][0]); // Min
+                    expect(unpack(getValue(col!.get(1)))).toEqual(test.answerMap[name][1]); // Max
+                    expect(col!.get(2)).toEqual(test.answerMap[name][2]); // Null
                 }
             });
         }
@@ -252,13 +255,16 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
                     skip.set(s, true);
                 }
                 for (let i = 0; i < results.numCols; i++) {
-                    const col = results.getColumnAt(i) as Column;
-                    if (skip.get(col.name)) continue;
+                    const name = results.schema.fields[i].name;
+                    const col = results.getChildAt(i);
+                    if (skip.get(name)) continue;
+                    expect(col).not.toBeNull();
+                    expect(col?.length).not.toEqual(0);
 
-                    expect(Object.keys(test.answerMap)).toContain(col.name);
-                    expect(unpack(getValue(col.get(0)))).toEqual(test.answerMap[col.name][0]); // Min
-                    expect(unpack(getValue(col.get(1)))).toEqual(test.answerMap[col.name][1]); // Max
-                    expect(col.get(2)).toEqual(test.answerMap[col.name][2]); // Null
+                    expect(Object.keys(test.answerMap)).toContain(name);
+                    expect(unpack(getValue(col!.get(0)))).toEqual(test.answerMap[name][0]); // Min
+                    expect(unpack(getValue(col!.get(1)))).toEqual(test.answerMap[name][1]); // Max
+                    expect(col!.get(2)).toEqual(test.answerMap[name][2]); // Null
                 }
             });
         }

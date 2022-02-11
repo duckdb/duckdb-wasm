@@ -43,7 +43,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                 let table = conn.query<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
                 let rows = table.toArray();
                 expect(rows.length).toEqual(1);
-                expect(rows[0].name).toEqual('foo');
+                expect(rows[0]?.name).toEqual('foo');
                 await db().reset();
                 conn = db().connect();
                 table = conn.query<{ name: arrow.Utf8 }>('PRAGMA show_tables;');
@@ -56,7 +56,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             it('Materialized', async () => {
                 const stmt = conn.prepare('SELECT v::INTEGER + ? AS v FROM generate_series(0, 10000) as t(v);');
                 const result = stmt.query(234);
-                expect(result.length).toBe(10001);
+                expect(result.numRows).toBe(10001);
                 stmt.close();
             });
 
@@ -65,7 +65,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
                 const stream = stmt.send(234);
                 let size = 0;
                 for (const batch of stream) {
-                    size += batch.length;
+                    size += batch.numRows;
                 }
                 expect(size).toBe(10001);
                 conn.close();
@@ -169,7 +169,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 }>('select count(*)::INTEGER as a from lineitem');
                 const rows = table.toArray();
                 expect(rows.length).toEqual(1);
-                expect(rows[0].a).toEqual(60175);
+                expect(rows[0]?.a).toEqual(60175);
             });
         });
 
@@ -206,7 +206,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 const conn = await adb().connect();
                 const stmt = await conn.prepare('SELECT v + ? FROM generate_series(0, 10000) as t(v);');
                 const result = await stmt.query(234);
-                expect(result.length).toBe(10001);
+                expect(result.numRows).toBe(10001);
                 await stmt.close();
             });
 
@@ -216,7 +216,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 const stream = await stmt.send(234);
                 let size = 0;
                 for await (const batch of stream) {
-                    size += batch.length;
+                    size += batch.numRows;
                 }
                 expect(size).toBe(10001);
                 await conn.close();

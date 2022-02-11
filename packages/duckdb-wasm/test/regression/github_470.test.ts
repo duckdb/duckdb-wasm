@@ -17,7 +17,6 @@ export function test470(db: () => duckdb.AsyncDuckDB): void {
     });
     describe('GitHub issues', () => {
         it('470', async () => {
-
             // Baseline without cast: we expect an error to be thrown because of the duration type that is emitted
             await db().open({
                 path: ':memory:',
@@ -29,8 +28,10 @@ export function test470(db: () => duckdb.AsyncDuckDB): void {
             conn.query<{
                 interval: arrow.TimeMicrosecond;
             }>(`SELECT INTERVAL '3' MONTH AS interval`)
-                .then((x) => fail("Query is expected to fail due to duration type not being implemented"))
-                .catch(x => {expect(x).toEqual(new Error("Unrecognized type: \"Duration\" (18)"))});
+                .then(x => fail('Query is expected to fail due to duration type not being implemented'))
+                .catch(x => {
+                    expect(x).toEqual(new Error('Unrecognized type: "Duration" (18)'));
+                });
 
             // Cast explicitly enabled: Time64 value is returned
             await db().open({
@@ -41,21 +42,20 @@ export function test470(db: () => duckdb.AsyncDuckDB): void {
             });
             conn = await db().connect();
             const resultWithCast = await conn.query<{
-                interval:  arrow.TimeMicrosecond;
+                interval: arrow.TimeMicrosecond;
             }>(`SELECT INTERVAL '3' MONTH AS interval`);
-            expect(resultWithCast.toArray()[0].interval?.toString()).toEqual("7776000000000");
+            expect(resultWithCast.toArray()[0]?.interval?.toString()).toEqual('7776000000000');
 
             // Cast should be on by default
             await db().open({
                 path: ':memory:',
-                query: {
-                },
+                query: {},
             });
             conn = await db().connect();
             const resultWithDefault = await conn.query<{
-                interval:  arrow.TimeMicrosecond;
+                interval: arrow.TimeMicrosecond;
             }>(`SELECT INTERVAL '3' MONTH AS interval`);
-            expect(resultWithDefault.toArray()[0].interval?.toString()).toEqual("7776000000000");
+            expect(resultWithDefault.toArray()[0]?.interval?.toString()).toEqual('7776000000000');
         });
     });
 }

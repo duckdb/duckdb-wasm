@@ -31,7 +31,7 @@ export class DuckDBConnection {
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
         console.assert(reader.isFile());
-        return arrow.Table.from(reader);
+        return new arrow.Table(reader);
     }
 
     /** Send a query */
@@ -62,7 +62,7 @@ export class DuckDBConnection {
 
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
-        const buffer = table.serialize('binary', true);
+        const buffer = arrow.tableToIPC(table, 'stream');
         this.insertArrowFromIPCStream(buffer, options);
     }
     /** Insert an arrow table from an ipc stream */
@@ -140,7 +140,7 @@ export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
         console.assert(reader.isFile());
-        return arrow.Table.from(reader as arrow.RecordBatchFileReader);
+        return new arrow.Table(reader as arrow.RecordBatchFileReader);
     }
 
     /** Send a prepared statement */

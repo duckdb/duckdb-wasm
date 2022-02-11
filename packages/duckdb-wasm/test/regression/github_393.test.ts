@@ -27,7 +27,7 @@ export function test393(db: () => duckdb.AsyncDuckDB): void {
             const resultWithoutCast = await conn.query<{
                 ts: arrow.TimestampMillisecond;
             }>(`SELECT TIMESTAMP '1992-03-22 01:02:03' as ts`);
-            expect(resultWithoutCast.toArray()[0].ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)).getTime());
+            expect(resultWithoutCast.toArray()[0]?.ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)).getTime());
 
             await db().open({
                 path: ':memory:',
@@ -39,7 +39,7 @@ export function test393(db: () => duckdb.AsyncDuckDB): void {
             const resultWithCast = await conn.query<{
                 ts: arrow.DateMillisecond;
             }>(`SELECT TIMESTAMP '1992-03-22 01:02:03' as ts`);
-            expect(resultWithCast.toArray()[0].ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)));
+            expect(resultWithCast.toArray()[0]?.ts).toEqual(new Date(Date.UTC(1992, 2, 22, 1, 2, 3)));
         });
     });
 }
