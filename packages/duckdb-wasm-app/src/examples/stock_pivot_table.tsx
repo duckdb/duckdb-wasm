@@ -10,11 +10,10 @@ import styles from './stock_pivot_table.module.css';
 import { StockDataSource } from './stock_data';
 import icon_pivot from '../../static/svg/icons/pivot.svg';
 
-const INSERTS_PER_SECOND = 1000;
+const INSERT_INTERVAL = 0.15;
 const INSERT_BATCH_SIZE = 100;
-const INSERT_INTERVAL = (INSERT_BATCH_SIZE / INSERTS_PER_SECOND) * 1000;
 const ROWS_TO_KEEP = 10000;
-const SECONDS_TO_KEEP = Math.ceil(ROWS_TO_KEEP / INSERTS_PER_SECOND);
+const SECONDS_TO_KEEP = (ROWS_TO_KEEP / INSERT_BATCH_SIZE) * INSERT_INTERVAL;
 
 interface DraggableProps {
     className?: string;
@@ -48,32 +47,40 @@ interface ExplorerProps {
     className?: string;
 }
 
+interface PivotConfig {
+    groupRowsBy: rdt.PivotRowGrouping[];
+    groupColumnsBy: number[];
+    aggregates: rdt.PivotAggregate[];
+}
+
 export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => {
     const conn = rd.useDuckDBConnection()!;
     const table = rd.useTableSchema();
-    const groupRowsBy = React.useRef<rdt.PivotRowGrouping[]>([
-        {
-            expression: 'name',
-            alias: 'name',
-        },
-        {
-            expression: `date_trunc('second', last_update)`,
-            alias: 'timestamp',
-        },
-    ]);
-    const groupColumnsBy = React.useRef<number[]>([1]);
-    const aggregates = React.useRef<rdt.PivotAggregate[]>([
-        {
-            expression: 'ask',
-            func: rdt.PivotAggregationFunction.SUM,
-            alias: 'ask',
-        },
-        {
-            expression: 'bid',
-            func: rdt.PivotAggregationFunction.SUM,
-            alias: 'bid',
-        },
-    ]);
+    const [pivot, _setPivot] = React.useState<PivotConfig>({
+        groupRowsBy: [
+            {
+                expression: 'name',
+                alias: 'name',
+            },
+            {
+                expression: `date_trunc('second', last_update)`,
+                alias: 'timestamp',
+            },
+        ],
+        groupColumnsBy: [],
+        aggregates: [
+            {
+                expression: 'ask',
+                func: rdt.PivotAggregationFunction.SUM,
+                alias: 'ask',
+            },
+            {
+                expression: 'bid',
+                func: rdt.PivotAggregationFunction.SUM,
+                alias: 'bid',
+            },
+        ],
+    });
 
     return (
         <div className={styles.pivot_container}>
@@ -92,7 +99,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
             </div>
             <div className={styles.pivot_columns}>
                 <div className={styles.label_top}>Column Groups</div>
-                {groupColumnsBy.current.map((n, i) => (
+                {pivot.groupColumnsBy.map((n, i) => (
                     <Draggable key={i} id={i} className={styles.pivot_column} type="pivot_column">
                         {table?.columnNames[n]}
                     </Draggable>
@@ -100,7 +107,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
             </div>
             <div className={styles.pivot_rows}>
                 <div className={styles.label_left}>Row Groups</div>
-                {groupRowsBy.current.map((n, i) => (
+                {pivot.groupRowsBy.map((n, i) => (
                     <Draggable key={i} id={i} className={styles.pivot_row} type="pivot_row">
                         {n.alias}
                     </Draggable>
@@ -108,23 +115,38 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
             </div>
             <div className={styles.pivot_values}>
                 <div className={styles.label_left}>Values</div>
-                {aggregates.current.map((n, i) => (
+                {pivot.aggregates.map((n, i) => (
                     <Draggable key={i} id={i} className={styles.pivot_aggregate} type="pivot_aggregate">
                         {n.alias || undefined}
                     </Draggable>
                 ))}
             </div>
             <div className={styles.pivot_body}>
-                <rdt.PivotTableProvider
-                    name="pivot"
-                    connection={conn}
-                    table={table}
-                    groupRowsBy={groupRowsBy.current}
-                    groupColumnsBy={groupColumnsBy.current}
-                    aggregates={aggregates.current}
-                >
-                    <rdt.WiredTableViewer connection={conn} />
-                </rdt.PivotTableProvider>
+                {pivot.groupColumnsBy.length == 0 && pivot.groupRowsBy.length == 0 ? (
+                    <rdt.WiredTableViewer
+                        connection={conn}
+                        ordering={[
+                            {
+                                columnIndex: 0,
+                            },
+                            {
+                                columnIndex: 2,
+                                descending: true,
+                            },
+                        ]}
+                    />
+                ) : (
+                    <rdt.PivotTableProvider
+                        name="pivot"
+                        connection={conn}
+                        table={table}
+                        groupRowsBy={pivot.groupRowsBy}
+                        groupColumnsBy={pivot.groupColumnsBy}
+                        aggregates={pivot.aggregates}
+                    >
+                        <rdt.WiredTableViewer connection={conn} />
+                    </rdt.PivotTableProvider>
+                )}
             </div>
         </div>
     );
@@ -207,7 +229,7 @@ export const StockPivotTableDemo: React.FC<DemoProps> = (props: DemoProps) => {
                 schemaEpoch: s.schemaEpoch,
                 dataEpoch: (s.dataEpoch || 0) + 1,
             }));
-            setTimeout(() => inserter(), INSERT_INTERVAL);
+            setTimeout(() => inserter(), INSERT_INTERVAL * 1000);
         }
     }, [conn, setupDone]);
 

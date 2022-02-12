@@ -4,7 +4,7 @@ import * as rd from '@duckdb/react-duckdb';
 import { TableSchema } from '@duckdb/react-duckdb';
 import { TableCardinalityProvider, TABLE_CARDINALITY } from './table_cardinality_provider';
 import { SimpleScanProvider } from './simple_scan_provider';
-import { ScanRequest, SCAN_RESULT, SCAN_STATISTICS } from './scan_provider';
+import { ScanRequest, OrderSpecification, SCAN_RESULT, SCAN_STATISTICS } from './scan_provider';
 import DataGrid from './data_grid';
 import { formatBytes, formatThousands } from './format';
 
@@ -41,6 +41,8 @@ export const TableViewer: React.FC<Props> = (props: Props) => {
 interface WiredProps {
     /// The connection
     connection: duckdb.AsyncDuckDBConnection | null;
+    /// The ordering (if any)
+    ordering?: OrderSpecification[];
 }
 
 export const WiredTableViewer: React.FC<WiredProps> = (props: WiredProps) => {
@@ -53,7 +55,7 @@ export const WiredTableViewer: React.FC<WiredProps> = (props: WiredProps) => {
             <SimpleScanProvider
                 connection={props.connection}
                 table={table}
-                request={new ScanRequest().withRange(0, 128)}
+                request={new ScanRequest().withRange(0, 128).withOrdering(props.ordering ?? null)}
             >
                 <TableViewer table={table} />
             </SimpleScanProvider>

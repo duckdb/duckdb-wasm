@@ -95,9 +95,10 @@ export const SimpleScanProvider: React.FC<Props> = (props: Props) => {
         async (request: ScanRequest): Promise<ScanResult & { duration: number }> => {
             const offset = request.begin;
             const limit = request.end - offset;
+            const ordering = request.ordering ?? props.request.ordering;
             let query = `SELECT * FROM ${getQualifiedName(props.table)}`;
-            if (request.ordering != null && request.ordering.length > 0) {
-                const clauses = request.ordering.map(o => {
+            if (ordering != null && ordering.length > 0) {
+                const clauses = ordering.map(o => {
                     let buffer = props.table.columnNames[o.columnIndex];
                     if (o.descending) {
                         buffer += ' DESC';
@@ -124,7 +125,7 @@ export const SimpleScanProvider: React.FC<Props> = (props: Props) => {
                 duration,
             };
         },
-        [props.table],
+        [props.table, props.request.ordering],
     );
 
     // Schedule queued queries

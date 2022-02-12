@@ -37,7 +37,7 @@ export interface PivotRowGrouping {
 
 interface PivotQuery {
     /// The query
-    query: string;
+    text: string;
     /// The column aliases
     columnAliases: (string | null)[];
     /// The column grouping sets
@@ -48,7 +48,7 @@ interface PivotQuery {
     dataColumns: number;
 }
 
-export function buildPivotQuery(
+export function buildColumnAggregation(
     table: rd.TableSchema,
     groupRowsBy: PivotRowGrouping[],
     groupColumnsBy: number[],
@@ -156,9 +156,81 @@ export function buildPivotQuery(
     )} GROUP BY GROUPING SETS (${groupingSets}) ORDER BY ${orderBy}`;
 
     return {
-        query,
+        text: query,
         columnAliases,
         columnGroupingSets,
+        rowGroupingSets: rowSubsetIds,
+        dataColumns: columnAliases.length,
+    };
+}
+
+export function buildRowAggregation(
+    table: rd.TableSchema,
+    groupRowsBy: PivotRowGrouping[],
+    aggregates: PivotAggregate[],
+): PivotQuery {
+    // Collect grouping sets for row pivoting
+    const rowSubsets: string[][] = [[]];
+    const rowSubsetIds: number[][] = [[]];
+    for (let i = 0; i < groupRowsBy.length; ++i) {
+        const columns = [];
+        const columnIds = [];
+        for (let j = 0; j <= i; ++j) {
+            columnIds.push(j);
+            columns.push(groupRowsBy[j].alias);
+        }
+        rowSubsets.push(columns);
+        rowSubsetIds.push(columnIds);
+    }
+    const groupCols = groupRowsBy.map(g => `${g.expression} AS ${g.alias}`).join(',');
+    const groupingSets = [];
+    for (const subset of rowSubsets) {
+        const groupingSet = subset.join(',');
+        groupingSets.push(`(${groupingSet})`);
+    }
+
+    // Collect attributes
+    const aggregateValues = [];
+    const columnAliases = [];
+    for (let i = 0; i < aggregates.length; ++i) {
+        const attr = aggregates[i].expression;
+        let func = '';
+        switch (aggregates[i].func) {
+            case PivotAggregationFunction.AVG:
+                func = 'avg';
+                break;
+            case PivotAggregationFunction.SUM:
+                func = 'sum';
+                break;
+            case PivotAggregationFunction.MIN:
+                func = 'min';
+                break;
+            case PivotAggregationFunction.MAX:
+                func = 'max';
+                break;
+            case PivotAggregationFunction.COUNT:
+                func = 'count';
+                break;
+        }
+        const alias = aggregates[i].alias ?? `p_${i}`;
+        aggregateValues.push(`${func}(${attr}) AS ${alias}`);
+        columnAliases.push(aggregates[i].alias || attr);
+    }
+    const orderBy = groupRowsBy.map(name => `${name.alias} DESC NULLS FIRST`).join(',');
+
+    // Track pivot set depth
+    const depthExpr = groupRowsBy.map(g => `(${g.alias} IS NOT NULL)::INTEGER`).join(' + ');
+    const depthAlias = '__duckdb__nesting_depth';
+
+    // Build query
+    const query = `SELECT ${groupCols}, ${aggregateValues}, (${depthExpr}) AS ${depthAlias} FROM ${rd.getQualifiedName(
+        table,
+    )} GROUP BY GROUPING SETS (${groupingSets}) ORDER BY ${orderBy}`;
+
+    return {
+        text: query,
+        columnAliases,
+        columnGroupingSets: [],
         rowGroupingSets: rowSubsetIds,
         dataColumns: columnAliases.length,
     };
@@ -244,18 +316,27 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         if (!props.connection || !props.table || updating.current) {
             return;
         }
-        if (props.groupRowsBy.length == 0 || props.groupColumnsBy.length == 0 || props.aggregates.length == 0) {
+        if (props.groupRowsBy.length == 0 || props.aggregates.length == 0) {
             return;
         }
-
         // Update column groups?
-        if (
-            state.columnGroups == null ||
-            state.columnGroups.numRows == 0 ||
-            props.name != state.name ||
-            props.table != state.inputTable ||
-            props.groupColumnsBy != state.groupColumnsBy ||
-            epochColumnGroups != state.ownEpochColumnGroups
+        console.log(state.groupColumnsBy);
+        if (props.groupColumnsBy.length == 0 && props.groupColumnsBy !== state.groupColumnsBy) {
+            setState(s => ({
+                ...s,
+                name: props.name,
+                inputTable: props.table,
+                groupColumnsBy: props.groupColumnsBy,
+                ownEpochColumnGroups: epochColumnGroups,
+                columnGroups: null,
+            }));
+            return;
+        } else if (
+            props.groupColumnsBy.length > 0 &&
+            (props.groupColumnsBy != state.groupColumnsBy ||
+                props.name != state.name ||
+                props.table != state.inputTable ||
+                epochColumnGroups != state.ownEpochColumnGroups)
         ) {
             updating.current = true;
             const cols = props.groupColumnsBy.map(id => props.table!.columnNames[id]).join(',');
@@ -276,27 +357,30 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
             return;
         }
 
-        // Update pivot table?
+        // Update table?
         if (
-            state.columnGroups != null &&
-            state.columnGroups.numRows > 0 &&
-            (props.table != state.inputTable ||
-                props.groupRowsBy != state.groupRowsBy ||
-                props.aggregates != state.aggregates ||
-                epochRows != state.ownEpochRows)
+            props.table != state.inputTable ||
+            props.groupColumnsBy != state.groupColumnsBy ||
+            props.groupRowsBy != state.groupRowsBy ||
+            props.aggregates != state.aggregates ||
+            epochRows != state.ownEpochRows
         ) {
             updating.current = true;
-            const pivot = buildPivotQuery(
-                props.table,
-                props.groupRowsBy,
-                props.groupColumnsBy,
-                state.columnGroups,
-                props.aggregates,
-            );
+            const query =
+                props.groupColumnsBy.length == 0 || state.columnGroups == null
+                    ? buildRowAggregation(props.table, props.groupRowsBy, props.aggregates)
+                    : buildColumnAggregation(
+                          props.table,
+                          props.groupRowsBy,
+                          props.groupColumnsBy,
+                          state.columnGroups,
+                          props.aggregates,
+                      );
+            console.log(query);
             const queryText = `
                 BEGIN TRANSACTION;
                 DROP TABLE IF EXISTS ${props.name};
-                CREATE TABLE ${props.name} AS ${pivot.query};
+                CREATE TABLE ${props.name} AS ${query.text};
                 COMMIT;
             `;
             const createPivotTable = async (epoch: number | null) => {
@@ -312,9 +396,9 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                     });
                     metadata = {
                         ...metadata,
-                        columnGroupingSets: pivot.columnGroupingSets,
-                        columnAliases: pivot.columnAliases,
-                        rowGroupingSets: pivot.rowGroupingSets,
+                        columnGroupingSets: query.columnGroupingSets,
+                        columnAliases: query.columnAliases,
+                        rowGroupingSets: query.rowGroupingSets,
                         dataColumns: metadata.dataColumns - 1,
                     };
                 }
