@@ -67,7 +67,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
                 alias: 'timestamp',
             },
         ],
-        groupColumnsBy: [],
+        groupColumnsBy: [1],
         aggregates: [
             {
                 expression: 'ask',

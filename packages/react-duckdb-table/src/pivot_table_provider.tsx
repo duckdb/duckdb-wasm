@@ -320,7 +320,6 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
             return;
         }
         // Update column groups?
-        console.log(state.groupColumnsBy);
         if (props.groupColumnsBy.length == 0 && props.groupColumnsBy !== state.groupColumnsBy) {
             setState(s => ({
                 ...s,
@@ -376,7 +375,6 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                           state.columnGroups,
                           props.aggregates,
                       );
-            console.log(query);
             const queryText = `
                 BEGIN TRANSACTION;
                 DROP TABLE IF EXISTS ${props.name};
