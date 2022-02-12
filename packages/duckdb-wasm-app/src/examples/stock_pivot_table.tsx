@@ -10,9 +10,9 @@ import styles from './stock_pivot_table.module.css';
 import { StockDataSource } from './stock_data';
 import icon_pivot from '../../static/svg/icons/pivot.svg';
 
-const INSERT_INTERVAL = 0.15;
+const INSERT_INTERVAL = 0.2;
 const INSERT_BATCH_SIZE = 100;
-const ROWS_TO_KEEP = 10000;
+const ROWS_TO_KEEP = 4000;
 const SECONDS_TO_KEEP = (ROWS_TO_KEEP / INSERT_BATCH_SIZE) * INSERT_INTERVAL;
 
 interface DraggableProps {
