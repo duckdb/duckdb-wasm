@@ -24,7 +24,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
                 fn: async () => {
                     let sum = 0;
                     let count = 0;
-                    for (const v of container.value!.getColumnAt(0)!) {
+                    for (const v of container.value!.getChildAt(0)!) {
                         sum += v!;
                         ++count;
                     }
@@ -52,7 +52,7 @@ export function benchmarkFormat(db: () => duckdb.DuckDBBindings): Benchmark[] {
                     let sum = 0;
                     let count = 0;
                     for (const row of container.value!) {
-                        sum += row.foo!;
+                        sum += row!.foo!;
                         ++count;
                     }
                     if (count != tupleCount || sum != (tupleCount * (tupleCount + 1)) / 2) {

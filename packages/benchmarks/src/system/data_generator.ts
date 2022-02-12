@@ -16,7 +16,16 @@ export function generateArrowInt32(n: number): [arrow.Schema, arrow.RecordBatch[
     const batches = [];
     for (let i = 0; i < n; ) {
         const rows = Math.min(1000, n - i);
-        batches.push(new arrow.RecordBatch(schema, rows, [arrow.Int32Vector.from(values.slice(i, i + n))]));
+        const data = arrow.makeData({
+            type: new arrow.Struct(schema.fields),
+            children: [
+                arrow.makeData({
+                    type: new arrow.Int32(),
+                    data: new Int32Array(values.slice(i, i + rows)),
+                }),
+            ],
+        });
+        batches.push(new arrow.RecordBatch(schema, data));
         i += rows;
     }
     return [schema, batches];
@@ -37,7 +46,7 @@ export function generate2Int32(n: number, step: number): [number[], number[]] {
 }
 
 export function generateArrow2Int32(n: number, step: number): [arrow.Schema, arrow.RecordBatch[]] {
-    const [values0, values1] = generate2Int32(n, step);
+    const columns = generate2Int32(n, step);
     const schema = new arrow.Schema([
         new arrow.Field('v0', new arrow.Int32()),
         new arrow.Field('v1', new arrow.Int32()),
@@ -45,12 +54,16 @@ export function generateArrow2Int32(n: number, step: number): [arrow.Schema, arr
     const batches = [];
     for (let i = 0; i < n; ) {
         const rows = Math.min(1000, n - i);
-        batches.push(
-            new arrow.RecordBatch(schema, rows, [
-                arrow.Int32Vector.from(values0.slice(i, i + n)),
-                arrow.Int32Vector.from(values1.slice(i, i + n)),
-            ]),
-        );
+        const data = arrow.makeData({
+            type: new arrow.Struct(schema.fields),
+            children: columns.map(c =>
+                arrow.makeData({
+                    type: new arrow.Int32(),
+                    data: new Int32Array(c.slice(i, i + rows)),
+                }),
+            ),
+        });
+        batches.push(new arrow.RecordBatch(schema, data));
         i += rows;
     }
     return [schema, batches];
@@ -65,13 +78,28 @@ export function generateUtf8(n: number, chars: number): string[] {
     return values;
 }
 
+const buildUtf8Array = (values: string[]) => {
+    const builder = new arrow.Utf8Builder({
+        type: new arrow.Utf8(),
+    });
+    for (const v of values) {
+        builder.append(v);
+    }
+    builder.finish();
+    return builder.flush();
+};
+
 export function generateArrowUtf8(n: number, chars: number): [arrow.Schema, arrow.RecordBatch[]] {
     const values = generateUtf8(n, chars);
     const schema = new arrow.Schema([new arrow.Field('v0', new arrow.Utf8())]);
     const batches = [];
     for (let i = 0; i < n; ) {
         const rows = Math.min(1000, n - i);
-        batches.push(new arrow.RecordBatch(schema, rows, [arrow.Utf8Vector.from(values.slice(i, i + n))]));
+        const data = arrow.makeData({
+            type: new arrow.Struct(schema.fields),
+            children: [buildUtf8Array(values.slice(i, i + rows))],
+        });
+        batches.push(new arrow.RecordBatch(schema, data));
         i += rows;
     }
     return [schema, batches];
@@ -92,7 +120,7 @@ export function generateGroupedInt32(n: number, groupSize: number): [number[], n
 }
 
 export function generateArrowGroupedInt32(n: number, groupSize: number): [arrow.Schema, arrow.RecordBatch[]] {
-    const [values0, values1] = generateGroupedInt32(n, groupSize);
+    const columns = generateGroupedInt32(n, groupSize);
     const schema = new arrow.Schema([
         new arrow.Field('v0', new arrow.Int32()),
         new arrow.Field('v1', new arrow.Int32()),
@@ -100,12 +128,16 @@ export function generateArrowGroupedInt32(n: number, groupSize: number): [arrow.
     const batches = [];
     for (let i = 0; i < n; ) {
         const rows = Math.min(1000, n - i);
-        batches.push(
-            new arrow.RecordBatch(schema, rows, [
-                arrow.Int32Vector.from(values0.slice(i, i + n)),
-                arrow.Int32Vector.from(values1.slice(i, i + n)),
-            ]),
-        );
+        const data = arrow.makeData({
+            type: new arrow.Struct(schema.fields),
+            children: columns.map(c =>
+                arrow.makeData({
+                    type: new arrow.Int32(),
+                    data: new Int32Array(c.slice(i, i + n)),
+                }),
+            ),
+        });
+        batches.push(new arrow.RecordBatch(schema, data));
         i += rows;
     }
     return [schema, batches];
@@ -172,13 +204,16 @@ export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arr
     const batches = [];
     for (let i = 0; i < n; ) {
         const rows = Math.min(1000, n - i);
-        batches.push(
-            new arrow.RecordBatch(
-                schema,
-                rows,
-                columns.map(c => arrow.Int32Vector.from(c.slice(i, i + n))),
+        const data = arrow.makeData({
+            type: new arrow.Struct(fields),
+            children: columns.map(c =>
+                arrow.makeData({
+                    type: new arrow.Int32(),
+                    data: new Int32Array(c.slice(i, i + rows)),
+                }),
             ),
-        );
+        });
+        batches.push(new arrow.RecordBatch(schema, data));
         i += rows;
     }
     return [schema, batches];

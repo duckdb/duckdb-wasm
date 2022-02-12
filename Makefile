@@ -151,7 +151,7 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
-.PHONY: bench_node_internal
+.PHONY: bench_internal
 bench_internal:
 	yarn workspace @duckdb/benchmarks build
 	yarn workspace @duckdb/benchmarks bench:internal

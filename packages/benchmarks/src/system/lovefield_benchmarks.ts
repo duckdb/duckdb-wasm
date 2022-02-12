@@ -137,15 +137,15 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             partRows.push(
                 partTable.createRow({
-                    p_partkey: row.p_partkey,
-                    p_name: row.p_name,
-                    p_mfgr: row.p_mfgr,
-                    p_brand: row.p_brand,
-                    p_type: row.p_type,
-                    p_size: row.p_size,
-                    p_container: row.p_container,
-                    p_retailprice: row.p_retailprice,
-                    p_comment: row.p_comment,
+                    p_partkey: row?.p_partkey,
+                    p_name: row?.p_name,
+                    p_mfgr: row?.p_mfgr,
+                    p_brand: row?.p_brand,
+                    p_type: row?.p_type,
+                    p_size: row?.p_size,
+                    p_container: row?.p_container,
+                    p_retailprice: row?.p_retailprice,
+                    p_comment: row?.p_comment,
                 }),
             );
         }
@@ -163,11 +163,11 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             partsuppRows.push(
                 partsuppTable.createRow({
-                    ps_partkey: row.ps_partkey,
-                    ps_suppkey: row.ps_suppkey,
-                    ps_availqty: row.ps_availqty,
-                    ps_supplycost: row.ps_supplycost,
-                    ps_comment: row.ps_comment,
+                    ps_partkey: row?.ps_partkey,
+                    ps_suppkey: row?.ps_suppkey,
+                    ps_availqty: row?.ps_availqty,
+                    ps_supplycost: row?.ps_supplycost,
+                    ps_comment: row?.ps_comment,
                 }),
             );
         }
@@ -183,9 +183,9 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             regionRows.push(
                 regionTable.createRow({
-                    r_nationkey: row.r_regionkey,
-                    r_name: row.r_name,
-                    r_comment: row.r_comment,
+                    r_nationkey: row?.r_regionkey,
+                    r_name: row?.r_name,
+                    r_comment: row?.r_comment,
                 }),
             );
         }
@@ -202,10 +202,10 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             nationRows.push(
                 nationTable.createRow({
-                    n_nationkey: row.n_nationkey,
-                    n_name: row.n_name,
-                    n_regionkey: row.n_regionkey,
-                    n_comment: row.n_comment,
+                    n_nationkey: row?.n_nationkey,
+                    n_name: row?.n_name,
+                    n_regionkey: row?.n_regionkey,
+                    n_comment: row?.n_comment,
                 }),
             );
         }
@@ -226,14 +226,14 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             customerRows.push(
                 customerTable.createRow({
-                    c_custkey: row.c_custkey,
-                    c_name: row.c_name,
-                    c_address: row.c_address,
-                    c_nationkey: row.c_nationkey,
-                    c_phone: row.c_phone,
-                    c_acctbal: row.c_acctbal,
-                    c_mktsegment: row.c_mktsegment,
-                    c_comment: row.c_comment,
+                    c_custkey: row?.c_custkey,
+                    c_name: row?.c_name,
+                    c_address: row?.c_address,
+                    c_nationkey: row?.c_nationkey,
+                    c_phone: row?.c_phone,
+                    c_acctbal: row?.c_acctbal,
+                    c_mktsegment: row?.c_mktsegment,
+                    c_comment: row?.c_comment,
                 }),
             );
         }
@@ -255,15 +255,15 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             ordersRows.push(
                 ordersTable.createRow({
-                    o_orderkey: row.o_orderkey,
-                    o_custkey: row.o_custkey,
-                    o_orderstatus: row.o_orderstatus,
-                    o_totalprice: row.o_totalprice,
-                    o_orderdate: row.o_orderdate,
-                    o_orderpriority: row.o_orderpriority,
-                    o_clerk: row.o_clerk,
-                    o_shippriority: row.o_shippriority,
-                    o_comment: row.o_comment,
+                    o_orderkey: row?.o_orderkey,
+                    o_custkey: row?.o_custkey,
+                    o_orderstatus: row?.o_orderstatus,
+                    o_totalprice: row?.o_totalprice,
+                    o_orderdate: row?.o_orderdate,
+                    o_orderpriority: row?.o_orderpriority,
+                    o_clerk: row?.o_clerk,
+                    o_shippriority: row?.o_shippriority,
+                    o_comment: row?.o_comment,
                 }),
             );
         }
@@ -283,13 +283,13 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             supplierRows.push(
                 supplierTable.createRow({
-                    s_suppkey: row.s_suppkey,
-                    s_name: row.s_name,
-                    s_address: row.s_address,
-                    s_nationkey: row.s_nationkey,
-                    s_phone: row.s_phone,
-                    s_acctbal: row.s_acctbal,
-                    s_comment: row.s_comment,
+                    s_suppkey: row?.s_suppkey,
+                    s_name: row?.s_name,
+                    s_address: row?.s_address,
+                    s_nationkey: row?.s_nationkey,
+                    s_phone: row?.s_phone,
+                    s_acctbal: row?.s_acctbal,
+                    s_comment: row?.s_comment,
                 }),
             );
         }
@@ -318,22 +318,22 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
         }>) {
             lineitemRows.push(
                 lineitemTable.createRow({
-                    l_orderkey: row.l_orderkey,
-                    l_partkey: row.l_partkey,
-                    l_suppkey: row.l_suppkey,
-                    l_linenumber: row.l_linenumber,
-                    l_quantity: row.l_quantity,
-                    l_extendedprice: row.l_extendedprice,
-                    l_discount: row.l_extendedprice,
-                    l_tax: row.l_tax,
-                    l_returnflag: row.l_returnflag,
-                    l_linestatus: row.l_linestatus,
-                    l_shipdate: row.l_shipdate,
-                    l_commitdate: row.l_commitdate,
-                    l_receiptdate: row.l_receiptdate,
-                    l_shipinstruct: row.l_shipinstruct,
-                    l_shipmode: row.l_shipmode,
-                    l_comment: row.l_comment,
+                    l_orderkey: row?.l_orderkey,
+                    l_partkey: row?.l_partkey,
+                    l_suppkey: row?.l_suppkey,
+                    l_linenumber: row?.l_linenumber,
+                    l_quantity: row?.l_quantity,
+                    l_extendedprice: row?.l_extendedprice,
+                    l_discount: row?.l_extendedprice,
+                    l_tax: row?.l_tax,
+                    l_returnflag: row?.l_returnflag,
+                    l_linestatus: row?.l_linestatus,
+                    l_shipdate: row?.l_shipdate,
+                    l_commitdate: row?.l_commitdate,
+                    l_receiptdate: row?.l_receiptdate,
+                    l_shipinstruct: row?.l_shipinstruct,
+                    l_shipmode: row?.l_shipmode,
+                    l_comment: row?.l_comment,
                 }),
             );
         }
@@ -785,8 +785,8 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 let sum_promo = 0;
                 let sum_total = 0;
                 for (const row of query) {
-                    sum_promo += row.p_type.match(/^PROMO.*/) ? row.l_extendedprice * (1 - row.l_discount) : 0;
-                    sum_total += row.l_extendedprice * (1 - row.l_discount);
+                    sum_promo += row?.p_type.match(/^PROMO.*/) ? row?.l_extendedprice * (1 - row?.l_discount) : 0;
+                    sum_total += row?.l_extendedprice * (1 - row?.l_discount);
                 }
                 noop((100 * sum_promo) / sum_total);
                 break;
@@ -878,7 +878,7 @@ export class LovefieldTPCHBenchmark implements SystemBenchmark {
                 }>;
                 let revenue = 0;
                 for (const row of query) {
-                    revenue += row.l_extendedprice * (1 - row.l_discount);
+                    revenue += row?.l_extendedprice * (1 - row?.l_discount);
                 }
                 noop(revenue);
                 break;

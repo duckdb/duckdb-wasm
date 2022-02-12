@@ -57,7 +57,7 @@ export function generateArrowXInt32(n: number, cols: number): [arrow.Schema, arr
             children: columns.map(c =>
                 arrow.makeData({
                     type: new arrow.Int32(),
-                    data: new Int32Array(c.slice(i, i + n)),
+                    data: new Int32Array(c.slice(i, i + rows)),
                 }),
             ),
         });
