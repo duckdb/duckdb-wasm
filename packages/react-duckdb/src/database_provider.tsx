@@ -9,11 +9,13 @@ export interface DuckDBStatus {
 
 const dbCtx = React.createContext<duckdb.AsyncDuckDB | null>(null);
 const statusCtx = React.createContext<DuckDBStatus | null>(null);
-export const useDuckDB = (): duckdb.AsyncDuckDB => React.useContext(dbCtx)!;
-export const useDuckDBStatus = (): DuckDBStatus => React.useContext(statusCtx)!;
+
+export const useDuckDB = (): duckdb.AsyncDuckDB | null => React.useContext(dbCtx);
+export const useDuckDBStatus = (): DuckDBStatus | null => React.useContext(statusCtx);
 
 type DuckDBProps = {
     children: React.ReactElement | ReactElement[];
+    config?: duckdb.DuckDBConfig;
 };
 
 export const DuckDBProvider: React.FC<DuckDBProps> = (props: DuckDBProps) => {
@@ -59,6 +61,9 @@ export const DuckDBProvider: React.FC<DuckDBProps> = (props: DuckDBProps) => {
                         console.warn(`progress handler failed with error: ${e.toString()}`);
                     }
                 });
+                if (props.config !== undefined) {
+                    await next.open(props.config!);
+                }
             } catch (e) {
                 lock.current = false;
                 setStatus({

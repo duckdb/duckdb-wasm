@@ -1,0 +1,14 @@
+:root {
+    --border_color: rgb(220, 220, 220);
+    --border_radius: 8px;
+    --datagrid_cell_anchor_bg: hsl(210deg 12% 96%);
+    --datagrid_cell_border: 1px solid rgb(200, 200, 200);
+    --datagrid_cell_headers_bg: black;
+    --datagrid_cell_header_filler_bg: black;
+    --datagrid_cell_headers_border: 1px solid rgb(100, 100, 100);
+    --datagrid_cell_headers_fg: white;
+    --datagrid_cell_nodata_bg: rgb(225, 225, 225);
+    --datagrid_col_label_bg: rgb(80, 80, 80);
+    --datagrid_font_size: 95%;
+    --minibar_height: 6px;
+}

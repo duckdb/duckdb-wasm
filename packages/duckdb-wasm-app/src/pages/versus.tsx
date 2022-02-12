@@ -39,6 +39,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
         setState(s => {
             const entries = readBenchmarks(table);
             const grouped = groupBenchmarks(entries);
+            console.log(grouped);
             return {
                 ...s,
                 status: LoadingStatus.SUCCEEDED,

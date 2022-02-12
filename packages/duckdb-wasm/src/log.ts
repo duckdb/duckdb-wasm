@@ -64,8 +64,11 @@ export class VoidLogger implements Logger {
 }
 
 export class ConsoleLogger implements Logger {
+    constructor(protected level: LogLevel = LogLevel.INFO) {}
     public log(entry: LogEntryVariant): void {
-        console.log(entry);
+        if (entry.level >= this.level) {
+            console.log(entry);
+        }
     }
 }
 

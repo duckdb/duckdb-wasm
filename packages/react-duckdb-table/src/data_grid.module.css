@@ -1,0 +1,101 @@
+@import './theme.module.css';
+
+:global(.react-grid-item) {
+    transition: none !important;
+}
+
+.table {
+    background-color: white;
+    width: 100%;
+    height: 100%;
+}
+
+.scrollbars {
+    border-radius: 0 0 var(--border_radius) var(--border_radius);
+}
+
+.header_row {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+}
+
+.header_cell {
+    box-sizing: border-box;
+    border-bottom: var(--datagrid_cell_headers_border);
+    border-right: var(--datagrid_cell_headers_border);
+    color: var(--datagrid_cell_headers_fg);
+    background-color: var(--datagrid_cell_headers_bg);
+    white-space: nowrap;
+    overflow: hidden;
+
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    grid-template-columns: fit-content(80%);
+
+    font-size: var(--datagrid_font_size);
+}
+
+.header_filler {
+    box-sizing: border-box;
+    border-bottom: var(--datagrid_cell_headers_border);
+    border-right: var(--datagrid_cell_headers_border);
+    color: var(--datagrid_cell_headers_fg);
+    background-color: var(--datagrid_cell_header_filler_bg);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.header_cell_label {
+    background: var(--datagrid_col_label_bg);
+    padding: 0 8px;
+    border-radius: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nodata_cell {
+    box-sizing: border-box;
+    border-bottom: var(--datagrid_cell_border);
+    border-right: var(--datagrid_cell_border);
+
+    display: grid;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--datagrid_nodata_cell_bg);
+}
+
+.grid_container {
+    width: 100%;
+    height: 100%;
+}
+
+.grid_header {
+    position: relative;
+    grid-row: 1;
+    grid-column: 1;
+    overflow: hidden !important;
+    outline: none;
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: row;
+}
+
+.grid_body {
+    grid-row: 2;
+    grid-column: 1;
+    outline: none;
+    overflow: hidden !important;
+}
+
+.grid_body_scrollbars {
+    grid-row: 2;
+    grid-column: 1;
+}

@@ -1,12 +1,13 @@
 import * as React from 'react';
 import classNames from 'classnames';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useSearchParams } from 'react-router-dom';
 
 import styles from './navbar.module.css';
 
 import logo from '../../static/svg/logo/duckdb.svg';
 import icon_shell from '../../static/svg/icons/shell.svg';
 import icon_book from '../../static/svg/icons/book.svg';
+import icon_table from '../../static/svg/icons/table.svg';
 
 type TabProps = {
     route: string;
@@ -64,23 +65,27 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
             </div>
             <div className={styles.tabs}>
                 <Tab route="/" location={location.pathname} icon={icon_shell} />
+                <Tab route="/pivot" location={location.pathname} icon={icon_table} />
                 <Tab route="docs/modules/index.html" location={location.pathname} icon={icon_book} external />
-                <Tab route="/versus" location={location.pathname} text="vs" />
             </div>
         </div>
     );
 };
 
-export function withNavBar<P>(Component: React.ComponentType<P>): React.FunctionComponent<P> {
-    // eslint-disable-next-line react/display-name
-    return (props: P) => {
+type ContainerProps = {
+    children: React.ReactElement[] | React.ReactElement;
+};
+
+export const NavBarContainer: React.FC<ContainerProps> = (props: ContainerProps) => {
+    const [searchParams] = useSearchParams();
+    if ((searchParams.get('fullscreen') || '') === 'true') {
+        return <>props.children</>;
+    } else {
         return (
             <div className={styles.container}>
                 <NavBar />
-                <div className={styles.page}>
-                    <Component {...props} />
-                </div>
+                <div className={styles.page}>{props.children}</div>
             </div>
         );
-    };
-}
+    }
+};

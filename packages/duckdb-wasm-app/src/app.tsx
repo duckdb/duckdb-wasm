@@ -2,9 +2,10 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
-import { Route, Routes, Navigate, BrowserRouter, useSearchParams } from 'react-router-dom';
-import { withNavBar } from './components/navbar';
-import { DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
+import { StockPivotTableDemo } from './examples/stock_pivot_table';
+import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
+import { NavBarContainer } from './components/navbar';
+import { DuckDBConnectionProvider, DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
 
 import '../static/fonts/fonts.module.css';
 import './globals.css';
@@ -35,20 +36,7 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
         ).toString(),
     },
 };
-const logger = new duckdb.ConsoleLogger();
-
-type ReactiveShellProps = Record<string, string>;
-export const ReactiveShell: React.FC<ReactiveShellProps> = (props: ReactiveShellProps) => {
-    const [searchParams] = useSearchParams();
-    const shell = () => <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />;
-    if ((searchParams.get('fullscreen') || '') === 'true') {
-        return shell();
-    } else {
-        return withNavBar(() => shell())(props);
-    }
-};
-
-const Versus_ = withNavBar(() => <Versus />);
+const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING);
 
 const paths = /(.*)(\/versus|\/docs\/.*|\/)$/;
 const pathMatches = (window?.location?.pathname || '').match(paths);
@@ -59,17 +47,42 @@ if (pathMatches != null && pathMatches.length >= 2) {
 
 const element = document.getElementById('root');
 ReactDOM.render(
-    <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
-        <DuckDBProvider>
-            <BrowserRouter basename={basename}>
-                <Routes>
-                    <Route index element={<ReactiveShell />} />
-                    <Route path="/versus" element={<Versus_ />} />
-                    <Route path="/table" element={<ReactiveShell />} />
-                    <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
-            </BrowserRouter>
-        </DuckDBProvider>
-    </DuckDBPlatform>,
+    <React.StrictMode>
+        <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
+            <DuckDBProvider>
+                <DuckDBConnectionProvider>
+                    <BrowserRouter basename={basename}>
+                        <Routes>
+                            <Route
+                                index
+                                element={
+                                    <NavBarContainer>
+                                        <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />
+                                    </NavBarContainer>
+                                }
+                            />
+                            <Route
+                                path="/versus"
+                                element={
+                                    <NavBarContainer>
+                                        <Versus />
+                                    </NavBarContainer>
+                                }
+                            />
+                            <Route
+                                path="/pivot"
+                                element={
+                                    <NavBarContainer>
+                                        <StockPivotTableDemo />
+                                    </NavBarContainer>
+                                }
+                            />
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                    </BrowserRouter>
+                </DuckDBConnectionProvider>
+            </DuckDBProvider>
+        </DuckDBPlatform>
+    </React.StrictMode>,
     element,
 );

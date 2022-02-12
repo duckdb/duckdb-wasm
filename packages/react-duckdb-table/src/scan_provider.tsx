@@ -1,8 +1,38 @@
 import * as React from 'react';
 import * as arrow from 'apache-arrow';
-import * as duckdb from '@duckdb/duckdb-wasm';
 
-type RequestScanFn = (request: ScanRequest) => void;
+export type RequestScanFn = (request: ScanRequest) => void;
+
+export const SCAN_RESULT = React.createContext<ScanResult | null>(null);
+export const SCAN_STATISTICS = React.createContext<ScanStatistics | null>(null);
+export const SCAN_REQUESTER = React.createContext<RequestScanFn | null>(null);
+
+export interface ScanResult {
+    /// The scan request
+    request: ScanRequest;
+    /// The query result buffer
+    result: arrow.Table;
+}
+
+export interface ScanStatistics {
+    /// The number of queries
+    queryCount: number;
+    /// The total query execution
+    queryExecutionTotalMs: number;
+    /// The returned result rows
+    resultRows: number;
+    /// The returned result bytes
+    resultBytes: number;
+}
+
+export interface OrderSpecification {
+    /// The column
+    columnIndex: number;
+    /// Descending?
+    descending?: boolean;
+    /// Nulls first?
+    nullsFirst?: boolean;
+}
 
 export class ScanRequest {
     /// The offset of a range
@@ -11,12 +41,19 @@ export class ScanRequest {
     limit = 0;
     /// The overscan
     overscan = 0;
+    /// The ordering
+    ordering: OrderSpecification[] | null = null;
 
     /// Configure range
     public withRange(offset: number, limit: number, overscan = 0): ScanRequest {
         this.offset = offset;
         this.limit = limit;
         this.overscan = overscan;
+        return this;
+    }
+
+    public withOrdering(ordering: OrderSpecification[] | null): ScanRequest {
+        this.ordering = ordering;
         return this;
     }
 
@@ -29,9 +66,30 @@ export class ScanRequest {
         return this.offset + this.limit + this.overscan;
     }
 
+    /// Has same ordering?
+    sameOrdering(other: ScanRequest): boolean {
+        if (this.ordering == other.ordering) {
+            return true;
+        }
+        const l = this.ordering;
+        const r = other.ordering;
+        if (l != null && r != null && l.length == r.length) {
+            for (let i = 0; i < l.length; ++i) {
+                for (let j = 0; j < r.length; ++j) {
+                    const eq =
+                        l[i].columnIndex == r[i].columnIndex &&
+                        l[i].descending == r[i].descending &&
+                        l[i].nullsFirst == r[i].nullsFirst;
+                    if (!eq) return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /// Does a scan fully include a given range?
     includesRequest(other: ScanRequest): boolean {
-        return this.includesRange(other.offset, other.limit);
+        return this.includesRange(other.offset, other.limit) && this.sameOrdering(other);
     }
 
     /// Does a scan fully include a given range?
@@ -59,123 +117,3 @@ export class ScanRequest {
         }
     }
 }
-
-export interface ScanResult {
-    /// The scan request
-    request: ScanRequest;
-    /// The query result buffer
-    result: arrow.Table;
-}
-
-interface Props {
-    /// The connection
-    connection: duckdb.AsyncDuckDBConnection;
-    /// The table name
-    table: string;
-    /// The request
-    request: ScanRequest;
-    /// The children
-    children: (scanResult: ScanResult, requestScan: RequestScanFn) => JSX.Element;
-}
-
-interface State {
-    /// The queued query
-    queryQueued: ScanRequest | null;
-    /// The query Promise
-    queryInFlightPromise: Promise<ScanResult> | null;
-    /// The in-flight query
-    queryInFlight: ScanRequest | null;
-    /// The available result
-    availableResult: ScanResult | null;
-}
-
-export const ScanProvider: React.FC<Props> = (props: Props) => {
-    const [state, dispatchState] = React.useState<State>({
-        queryQueued: props.request,
-        queryInFlightPromise: null,
-        queryInFlight: null,
-        availableResult: null,
-    });
-
-    // Detect unmount
-    const isMountedRef = React.useRef(true);
-    React.useEffect(() => {
-        return () => void (isMountedRef.current = false);
-    }, []);
-
-    // Request a scan
-    const requestScan = React.useCallback(
-        (request: ScanRequest) => {
-            // Nothing to do?
-            if (
-                (state.availableResult && state.availableResult.request.includesRequest(request)) ||
-                (state.queryInFlight && state.queryInFlight.includesRequest(request))
-            ) {
-                return;
-            }
-
-            // Replace the queued query
-            dispatchState(s => ({
-                ...s,
-                queryQueued: request,
-            }));
-        },
-        [state],
-    );
-
-    // Run a query
-    const runQuery = React.useCallback(
-        async (request: ScanRequest): Promise<ScanResult> => {
-            const offset = request.begin;
-            const limit = request.end - offset;
-            let query = `SELECT * FROM ${props.table}`;
-            if (request.offset > 0) {
-                query += ` OFFSET ${offset}`;
-            }
-            if (request.limit > 0) {
-                query += ` LIMIT ${limit}`;
-            }
-            const result = await props.connection.query(query);
-            return {
-                request,
-                result,
-            };
-        },
-        [props.table],
-    );
-
-    /// Schedule queued queries
-    React.useEffect(() => {
-        if (state.queryInFlight || !state.queryQueued) return;
-
-        const inFlight = state.queryQueued;
-        const promise = runQuery(inFlight);
-        dispatchState(s => ({
-            ...s,
-            queryQueued: null,
-            queryInFlight: inFlight,
-            queryInFlightPromise: promise,
-        }));
-
-        (async () => {
-            try {
-                const result = await promise;
-                if (!isMountedRef.current) return;
-                dispatchState(s => ({
-                    ...s,
-                    queryInFlight: null,
-                    queryInFlightPromise: null,
-                    availableResult: result,
-                }));
-            } catch (e) {
-                console.error(e);
-            }
-        })();
-    }, [state.queryInFlight, state.queryQueued]);
-
-    if (!state.availableResult) {
-        return <div />;
-    }
-
-    return props.children(state.availableResult, requestScan);
-};

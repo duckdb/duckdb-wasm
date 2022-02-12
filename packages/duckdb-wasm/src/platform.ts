@@ -1,6 +1,24 @@
 import * as check from 'wasm-feature-detect';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './version';
 
+// Platform check taken from here:
+// https://github.com/xtermjs/xterm.js/blob/master/src/common/Platform.ts#L21
+
+interface INavigator {
+    userAgent: string;
+    language: string;
+    platform: string;
+}
+
+// We're declaring a navigator global here as we expect it in all runtimes (node and browser), but
+// we want this module to live in common.
+declare const navigator: INavigator;
+
+export const isNode = () => (typeof navigator === 'undefined' ? true : false);
+const userAgent = () => (isNode() ? 'node' : navigator.userAgent);
+export const isFirefox = () => userAgent().includes('Firefox');
+export const isSafari = () => /^((?!chrome|android).)*safari/i.test(userAgent());
+
 export interface DuckDBBundles {
     mvp: {
         mainModule: string;
@@ -58,10 +76,6 @@ declare namespace globalThis {
     let crossOriginIsolated: boolean;
 }
 
-function isNode(): boolean {
-    return typeof process !== 'undefined' && process.release.name === 'node';
-}
-
 export async function getPlatformFeatures(): Promise<PlatformFeatures> {
     if (bigInt64Array == null) {
         bigInt64Array = typeof BigInt64Array != 'undefined';
@@ -90,7 +104,10 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 
 export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
     const platform = await getPlatformFeatures();
-    if (platform.wasmExceptions) {
+    // TODO(ankoh):
+    // Safari WASM exceptions are a bit buggy at the moment.
+    // Pivot demo crashes only in safari with eh: Unexpected "RangeError: Maximum call stack size exceeded."
+    if (platform.wasmExceptions && !isSafari()) {
         if (platform.wasmSIMD && platform.wasmThreads && platform.crossOriginIsolated && bundles.coi) {
             return {
                 mainModule: bundles.coi.mainModule,
