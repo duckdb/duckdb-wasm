@@ -45,18 +45,14 @@ const NOT_IMPLEMENTED_TYPES = [
 
 // These types are supported, but not the full range returned from the test_all_types() table function, here we define
 // the limits we do expect to be supported.
-const PARTIALLY_IMPLEMENTED_TYPES = ['ubigint', 'bigint', 'date', 'timestamp'];
+const PARTIALLY_IMPLEMENTED_TYPES = ['date', 'timestamp'];
 const PARTIALLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
-    ubigint: [0, Number.MAX_SAFE_INTEGER, null],
-    bigint: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, null],
     date: [MINIMUM_DATE.valueOf(), MAXIMUM_DATE.valueOf(), null],
     timestamp: [MINIMUM_DATE.valueOf(), MAXIMUM_DATE.valueOf(), null],
 };
 
 // Subqueries that return the limits of the subset of the full range that is implemented
 const PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS = [
-    `(SELECT array_extract([0::UINT64,${Number.MAX_SAFE_INTEGER}::UINT64,null::UINT64],i)) as ubigint`,
-    `(SELECT array_extract([${Number.MIN_SAFE_INTEGER}::INT64,${Number.MAX_SAFE_INTEGER}::INT64,null],i)) as bigint`,
     `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Date,'${MAXIMUM_DATE_STR}'::Date,null],i)) as date`,
     `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Timestamp,'${MAXIMUM_DATE_STR}'::Timestamp,null],i)) as timestamp`,
 ];
@@ -73,12 +69,18 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     utinyint: [0, 255, null],
     usmallint: [0, 65535, null],
     uint: [0, 4294967295, null],
+    ubigint: [BigInt(0), BigInt('18446744073709551615'), null],
+    bigint: [BigInt('-9223372036854775808'), BigInt('9223372036854775807'), null],
 
     // Note that we multiply by thousand (and add 999 for the max) because the value returned by DuckDB is in microseconds,
     // whereas the Date object is in milliseconds.
-    time: [0, new Date('1970-01-01T23:59:59.999+00:00').valueOf() * 1000 + 999, null],
-    time_tz: [0, new Date('1970-01-01T23:59:59.999+00:00').valueOf() * 1000 + 999, null],
-    interval: [0, MAX_INTERVAL_US, null],
+    time: [BigInt(0), BigInt(new Date('1970-01-01T23:59:59.999+00:00').valueOf()) * BigInt(1000) + BigInt(999), null],
+    time_tz: [
+        BigInt(0),
+        BigInt(new Date('1970-01-01T23:59:59.999+00:00').valueOf()) * BigInt(1000) + BigInt(999),
+        null,
+    ],
+    interval: [BigInt(0), BigInt(MAX_INTERVAL_US), null],
 
     float: [-3.4028234663852886e38, 3.4028234663852886e38, null],
     double: [-1.7976931348623157e308, 1.7976931348623157e308, null],
@@ -217,8 +219,12 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
                     expect(col).not.toBeNull();
                     expect(col?.length).not.toEqual(0);
 
-                    expect(unpack(getValue(col!.get(0)))).toEqual(test.answerMap[name][0]); // Min
-                    expect(unpack(getValue(col!.get(1)))).toEqual(test.answerMap[name][1]); // Max
+                    expect(unpack(getValue(col!.get(0))))
+                        .withContext(name)
+                        .toEqual(test.answerMap[name][0]); // Min
+                    expect(unpack(getValue(col!.get(1))))
+                        .withContext(name)
+                        .toEqual(test.answerMap[name][1]); // Max
                     expect(col!.get(2)).toEqual(test.answerMap[name][2]); // Null
                 }
             });
@@ -262,8 +268,12 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
                     expect(col?.length).not.toEqual(0);
 
                     expect(Object.keys(test.answerMap)).toContain(name);
-                    expect(unpack(getValue(col!.get(0)))).toEqual(test.answerMap[name][0]); // Min
-                    expect(unpack(getValue(col!.get(1)))).toEqual(test.answerMap[name][1]); // Max
+                    expect(unpack(getValue(col!.get(0))))
+                        .withContext(name)
+                        .toEqual(test.answerMap[name][0]); // Min
+                    expect(unpack(getValue(col!.get(1))))
+                        .withContext(name)
+                        .toEqual(test.answerMap[name][1]); // Max
                     expect(col!.get(2)).toEqual(test.answerMap[name][2]); // Null
                 }
             });

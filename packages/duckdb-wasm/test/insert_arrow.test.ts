@@ -108,8 +108,8 @@ const ARROW_INSERT_TESTS: ArrowInsertTest[] = [
                 numRows: 3,
                 columns: [
                     arrow.makeData({ type: new arrow.Int32(), data: new Int32Array([1, 4, 7]) }),
-                    arrow.makeData({ type: new arrow.Int32(), data: new Int32Array([2, 5, 8]) }),
-                    arrow.vectorFromArray<arrow.Utf8>(['3', '6', '9']).data[0], // xxx
+                    arrow.makeData({ type: new arrow.Int16(), data: new Int16Array([2, 5, 8]) }),
+                    buildUtf8Array(['3', '6', '9']),
                 ],
             },
         ],

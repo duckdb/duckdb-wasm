@@ -23,7 +23,11 @@ export function testFilesystem(
     describe('File buffer registration', () => {
         const test = async () => {
             const result = await conn.send(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
-            const table = await new arrow.Table<{ matrnr: arrow.Int }>(result);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ matrnr: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
@@ -59,7 +63,11 @@ export function testFilesystem(
             expect(students).not.toBeNull();
             await db().registerFileBuffer('studenten.parquet', students!);
             const result = await conn.send(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
-            const table = await new arrow.Table<{ matrnr: arrow.Int }>(result);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ matrnr: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
@@ -82,7 +90,11 @@ export function testFilesystem(
                     INNER JOIN parquet_scan('hoeren.parquet') hoeren ON (students.matrnr = hoeren.matrnr)
                     INNER JOIN parquet_scan('vorlesungen.parquet') vorlesungen ON (vorlesungen.vorlnr = hoeren.vorlnr);
                 `);
-            const table = await new arrow.Table<{ matrnr: arrow.Int; titel: arrow.Utf8 }>(result);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ matrnr: arrow.Int; titel: arrow.Utf8 }>(batches);
             expect(table.numCols).toBe(2);
             const flat = [];
             for (const row of table) {
@@ -154,7 +166,11 @@ export function testFilesystem(
             expect(url).not.toBeNull();
             await conn.query(`CREATE TABLE students4 AS SELECT * FROM parquet_scan('students3.parquet');`);
             const result = await conn.send(`SELECT matrnr FROM students4;`);
-            const table = await new arrow.Table<{ matrnr: arrow.Int }>(result);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ matrnr: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
@@ -165,7 +181,11 @@ export function testFilesystem(
         it('Small Parquet file', async () => {
             await db().registerFileURL('studenten.parquet', `${baseDir}/uni/studenten.parquet`);
             const result = await conn.send(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
-            const table = await new arrow.Table<{ matrnr: arrow.Int }>(result);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ matrnr: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.toArray()).toEqual(
                 new Int32Array([24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555]),
             );
@@ -174,7 +194,11 @@ export function testFilesystem(
         it('Large Parquet file', async () => {
             await db().registerFileURL('lineitem.parquet', `${baseDir}/tpch/0_01/parquet/lineitem.parquet`);
             const result = await conn.send(`SELECT count(*)::INTEGER as cnt FROM parquet_scan('lineitem.parquet');`);
-            const table = await new arrow.Table<{ cnt: arrow.Int }>(result);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ cnt: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
         });
     });

@@ -29,7 +29,7 @@ export function test448(db: () => duckdb.AsyncDuckDB): void {
             expect(result.numRows).toBe(1);
             const array = result.getChildAt(0)!.toArray();
             expect(array.length).toEqual(1);
-            expect(array[0].toString()).toEqual('{ 1: 2, 2: 1 }');
+            expect(array[0].toString()).toEqual('{1: 2, 2: 1}');
         });
     });
 }
