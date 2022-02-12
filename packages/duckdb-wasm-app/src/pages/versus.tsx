@@ -35,15 +35,14 @@ export const Versus: React.FC<Props> = (props: Props) => {
     const fetch_data = async () => {
         const data = await fetch(DATA_URL);
         const buffer = await data.arrayBuffer();
+        const table = arrow.tableFromIPC(new Uint8Array(buffer));
         setState(s => {
-            const table = arrow.Table.from(new Uint8Array(buffer));
             const entries = readBenchmarks(table);
             const grouped = groupBenchmarks(entries);
-            console.log(grouped);
             return {
                 ...s,
                 status: LoadingStatus.SUCCEEDED,
-                table: arrow.Table.from(new Uint8Array(buffer)),
+                table: table,
                 benchmarks: grouped,
             };
         });
