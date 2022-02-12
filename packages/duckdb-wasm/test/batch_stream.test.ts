@@ -273,7 +273,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const table = new arrow.Table(result);
                 let i = 0;
                 for (const v of table.getChildAt(0)!) {
-                    expect(v.valueOf()).toBe(i++);
+                    expect(v).toBe(i++);
                 }
                 expect(i).toBe(testRows + 1);
             });
@@ -285,7 +285,7 @@ export function testBatchStream(db: () => duckdb.DuckDBBindings): void {
                 const table = new arrow.Table(result);
                 let i = 0;
                 for (const v of table.getChildAt(0)!) {
-                    expect(v.valueOf()).toBe(String(i++));
+                    expect(v).toBe(String(i++));
                 }
                 expect(i).toBe(testRows + 1);
             });
