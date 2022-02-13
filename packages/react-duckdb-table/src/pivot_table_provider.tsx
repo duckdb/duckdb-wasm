@@ -283,6 +283,8 @@ interface State {
     /// The aggregates
     aggregates: imm.List<PivotAggregate> | null;
 
+    /// Stable table schema
+    tableSchemaChanged: boolean;
     /// The epoch of the column groups
     ownEpochColumnGroups: number | null;
     /// The epoch of the metadata
@@ -304,6 +306,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         groupRowsBy: null,
         groupColumnsBy: null,
         aggregates: null,
+        tableSchemaChanged: false,
         ownEpochColumnGroups: null,
         ownEpochSchema: null,
         ownEpochRows: null,
@@ -329,59 +332,59 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         if (props.groupRowsBy.isEmpty() || props.aggregates.isEmpty()) {
             return;
         }
-        // Update column groups?
-        if (props.groupColumnsBy.isEmpty() && props.groupColumnsBy !== state.groupColumnsBy) {
-            setState(s => ({
-                ...s,
-                name: props.name,
-                inputTable: props.table,
-                groupColumnsBy: props.groupColumnsBy,
-                ownEpochColumnGroups: epochColumnGroups,
-                columnGroups: null,
-            }));
-            return;
-        } else if (
-            !props.groupColumnsBy.isEmpty() &&
-            (props.groupColumnsBy != state.groupColumnsBy ||
-                props.name != state.name ||
-                props.table != state.inputTable ||
-                epochColumnGroups != state.ownEpochColumnGroups)
+        // Clear column groups?
+        if (
+            props.table !== state.inputTable ||
+            props.groupColumnsBy !== state.groupColumnsBy ||
+            epochColumnGroups !== state.ownEpochColumnGroups
         ) {
-            updating.current = true;
-            const cols = props.groupColumnsBy.map(id => props.table!.columnNames[id]).join(',');
-            const query = `SELECT DISTINCT ${cols} FROM ${rd.getQualifiedName(props.table)} ORDER BY ${cols}`;
-            const updateColumnGroups = async (epoch: number | null) => {
-                const result = await props.connection.query(query);
-                updating.current = false;
+            if (props.groupColumnsBy.isEmpty()) {
                 setState(s => ({
                     ...s,
                     name: props.name,
                     inputTable: props.table,
                     groupColumnsBy: props.groupColumnsBy,
-                    ownEpochColumnGroups: epoch,
-                    columnGroups: result || null,
+                    tableSchemaChanged: true,
+                    ownEpochColumnGroups: epochColumnGroups,
+                    columnGroups: null,
                 }));
-            };
-            updateColumnGroups(epochColumnGroups).catch(e => console.error(e));
+            } else {
+                updating.current = true;
+                const cols = props.groupColumnsBy.map(id => props.table!.columnNames[id]).join(',');
+                const query = `SELECT DISTINCT ${cols} FROM ${rd.getQualifiedName(props.table)} ORDER BY ${cols}`;
+                const updateColumnGroups = async (epoch: number | null) => {
+                    const result = await props.connection.query(query);
+                    updating.current = false;
+                    setState(s => ({
+                        ...s,
+                        name: props.name,
+                        inputTable: props.table,
+                        groupColumnsBy: props.groupColumnsBy,
+                        tableSchemaChanged: true,
+                        ownEpochColumnGroups: epoch,
+                        columnGroups: result || null,
+                    }));
+                };
+                updateColumnGroups(epochColumnGroups).catch(e => console.error(e));
+            }
             return;
         }
 
         // Update table?
         if (
-            props.table != state.inputTable ||
-            props.groupColumnsBy != state.groupColumnsBy ||
+            state.tableSchemaChanged ||
             props.groupRowsBy != state.groupRowsBy ||
             props.aggregates != state.aggregates ||
             epochRows != state.ownEpochRows
         ) {
             updating.current = true;
             const query =
-                props.groupColumnsBy.isEmpty() || state.columnGroups == null
-                    ? buildRowAggregation(props.table, props.groupRowsBy, props.aggregates)
+                state.groupColumnsBy == null || state.groupColumnsBy.isEmpty() || state.columnGroups == null
+                    ? buildRowAggregation(state.inputTable, props.groupRowsBy, props.aggregates)
                     : buildColumnAggregation(
-                          props.table,
+                          state.inputTable,
                           props.groupRowsBy,
-                          props.groupColumnsBy,
+                          state.groupColumnsBy,
                           state.columnGroups,
                           props.aggregates,
                       );
@@ -397,7 +400,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
 
                 // Need to refresh the table metadata?
                 let metadata = state.pivotTable;
-                if (state.pivotTable == null || state.ownEpochSchema != state.ownEpochColumnGroups) {
+                if (state.tableSchemaChanged) {
                     metadata = await rd.collectTableSchema(props.connection, {
                         tableSchema: '',
                         tableName: props.name,
@@ -415,10 +418,10 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                 updating.current = false;
                 setState(s => ({
                     ...s,
-                    inputTable: props.table,
                     pivotTable: metadata,
                     groupRowsBy: props.groupRowsBy,
                     aggregates: props.aggregates,
+                    tableSchemaChanged: false,
                     ownEpochSchema: state.ownEpochColumnGroups,
                     ownEpochRows: epoch,
                 }));
@@ -438,6 +441,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         epochRows,
     ]);
 
+    // Schema outdated?
     return (
         <rd.TABLE_SCHEMA_EPOCH.Provider value={state.ownEpochSchema}>
             <rd.TABLE_DATA_EPOCH.Provider value={state.ownEpochRows}>

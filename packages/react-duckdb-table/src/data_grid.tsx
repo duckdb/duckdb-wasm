@@ -198,7 +198,9 @@ export const DataGrid: React.FC<Props> = (props: Props) => {
     const rowCount = React.useContext(TABLE_CARDINALITY) || 0;
     const tableHeader = React.useRef<Grid>(null);
     const tableBody = React.useRef<Grid>(null);
+
     const columnHeaderRows = 1 + (table?.columnGroupingSets?.length ?? 0);
+    const columnHeaderHeight = columnHeaderRows * HEADER_ROW_HEIGHT;
 
     const [state, setState] = React.useState<State>({
         data: null,
@@ -208,7 +210,7 @@ export const DataGrid: React.FC<Props> = (props: Props) => {
         width: 0,
         height: 0,
 
-        columnHeaderHeight: columnHeaderRows * HEADER_ROW_HEIGHT,
+        columnHeaderHeight,
         columnWidths: [],
         columnWidthSum: 0,
         columnNames: [],
@@ -339,7 +341,7 @@ export const DataGrid: React.FC<Props> = (props: Props) => {
             return;
         }
 
-        // Not data available?
+        // No data available?
         if (!data || !table) {
             setState(s => ({
                 ...s,
@@ -350,6 +352,7 @@ export const DataGrid: React.FC<Props> = (props: Props) => {
 
                 width: props.width,
                 height: props.height,
+                columnHeaderHeight,
                 columnWidths: [],
                 columnWidthSum: 0,
                 columnNames: [],
@@ -410,6 +413,7 @@ export const DataGrid: React.FC<Props> = (props: Props) => {
 
             width: props.width,
             height: props.width,
+            columnHeaderHeight,
             columnWidths: updateColumnWidths ? columnWidths : state.columnWidths,
             columnWidthSum: updateColumnWidths ? columnWidthSum : state.columnWidthSum,
             columnNames,

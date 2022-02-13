@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as arrow from 'apache-arrow';
+import * as rd from '@duckdb/react-duckdb';
 
 export type RequestScanFn = (request: ScanRequest) => void;
 
@@ -10,6 +11,8 @@ export const SCAN_REQUESTER = React.createContext<RequestScanFn | null>(null);
 export interface ScanResult {
     /// The scan request
     request: ScanRequest;
+    /// The schema
+    table: rd.TableSchema;
     /// The query result buffer
     result: arrow.Table;
 }

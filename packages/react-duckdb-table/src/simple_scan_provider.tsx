@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
+import * as rd from '@duckdb/react-duckdb';
 import { SCAN_REQUESTER, SCAN_RESULT, SCAN_STATISTICS, ScanRequest, ScanStatistics, ScanResult } from './scan_provider';
 import { TableSchema, getQualifiedName, useTableDataEpoch } from '@duckdb/react-duckdb';
 
@@ -120,6 +121,7 @@ export const SimpleScanProvider: React.FC<Props> = (props: Props) => {
             const result = await props.connection.query(query);
             const duration = performance.now() - before;
             return {
+                table: props.table,
                 request,
                 result,
                 duration,
@@ -176,9 +178,11 @@ export const SimpleScanProvider: React.FC<Props> = (props: Props) => {
 
     return (
         <SCAN_REQUESTER.Provider value={requestScan}>
-            <SCAN_RESULT.Provider value={state.availableResult}>
-                <SCAN_STATISTICS.Provider value={state.statistics}>{props.children}</SCAN_STATISTICS.Provider>
-            </SCAN_RESULT.Provider>
+            <rd.TABLE_METADATA.Provider value={state.availableResult.table}>
+                <SCAN_RESULT.Provider value={state.availableResult}>
+                    <SCAN_STATISTICS.Provider value={state.statistics}>{props.children}</SCAN_STATISTICS.Provider>
+                </SCAN_RESULT.Provider>
+            </rd.TABLE_METADATA.Provider>
         </SCAN_REQUESTER.Provider>
     );
 };
