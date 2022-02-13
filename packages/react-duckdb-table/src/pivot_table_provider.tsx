@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as rd from '@duckdb/react-duckdb';
+import * as imm from 'immutable';
 
 // We compute pivots with the following 2 queries:
 // 1. Select distinct column pivots.
@@ -50,24 +51,26 @@ interface PivotQuery {
 
 export function buildColumnAggregation(
     table: rd.TableSchema,
-    groupRowsBy: PivotRowGrouping[],
-    groupColumnsBy: number[],
+    groupRowsBy: imm.List<PivotRowGrouping>,
+    groupColumnsBy: imm.List<number>,
     columnValues: arrow.Table,
-    aggregates: PivotAggregate[],
+    aggregates: imm.List<PivotAggregate>,
 ): PivotQuery {
-    if (columnValues.numCols != groupColumnsBy.length) {
+    if (columnValues.numCols != groupColumnsBy.count()) {
         throw new Error('unexpected number of column pivots');
     }
+    const aggregateCount = aggregates.count();
 
     // Collect grouping sets for row pivoting
+    const groupRowsByArray = groupRowsBy.toArray();
     const rowSubsets: string[][] = [[]];
     const rowSubsetIds: number[][] = [[]];
-    for (let i = 0; i < groupRowsBy.length; ++i) {
+    for (let i = 0; i < groupRowsByArray.length; ++i) {
         const columns = [];
         const columnIds = [];
         for (let j = 0; j <= i; ++j) {
             columnIds.push(j);
-            columns.push(groupRowsBy[j].alias);
+            columns.push(groupRowsByArray[j].alias);
         }
         rowSubsets.push(columns);
         rowSubsetIds.push(columnIds);
@@ -82,14 +85,16 @@ export function buildColumnAggregation(
     // Collect cases for column pivoting
     const pivotCases = [];
     const columnGroupingSets: rd.TableSchemaColumnGroup[][] = [[]];
-    const columnAliases = groupRowsBy.map(g => g.alias);
+    const columnAliases = groupRowsByArray.map(g => g.alias);
     for (let instance = 0; instance < Math.min(columnValues.numRows, MAX_PIVOT_COLUMNS); instance += 1) {
         const predicates = [];
         const group_name: string[] = [];
-        for (let attr = 0; attr < groupColumnsBy.length; attr += 1) {
-            const attr_name = table.columnNames[groupColumnsBy[attr]];
-            const attr_type = table.columnTypes[groupColumnsBy[attr]];
-            const attr_values = columnValues.getChildAt(attr);
+        let columnAttrId = 0;
+        for (const columnId of groupColumnsBy) {
+            const attr_name = table.columnNames[columnId];
+            const attr_type = table.columnTypes[columnId];
+            const attr_values = columnValues.getChildAt(columnAttrId);
+            columnAttrId += 1;
             const attr_value = attr_values!.get(instance);
             let attr_value_str;
             switch (attr_type.typeId) {
@@ -117,13 +122,14 @@ export function buildColumnAggregation(
         }
         columnGroupingSets[0].push({
             title: group_name.join(','),
-            spanBegin: groupRowsBy.length + instance * aggregates.length,
-            spanSize: aggregates.length,
+            spanBegin: groupRowsByArray.length + instance * aggregateCount,
+            spanSize: aggregateCount,
         });
-        for (let i = 0; i < aggregates.length; ++i) {
-            const attr = aggregates[i].expression;
+        let i = 0;
+        for (const aggregate of aggregates) {
+            const attr = aggregate.expression;
             let func = '';
-            switch (aggregates[i].func) {
+            switch (aggregate.func) {
                 case PivotAggregationFunction.AVG:
                     func = 'avg';
                     break;
@@ -141,7 +147,8 @@ export function buildColumnAggregation(
                     break;
             }
             pivotCases.push(`${func}(CASE WHEN ${predicates.join(' AND ')} THEN ${attr} END) AS p_${instance}_${i}`);
-            columnAliases.push(aggregates[i].alias || attr);
+            columnAliases.push(aggregate.alias || attr);
+            i += 1;
         }
     }
     const orderBy = groupRowsBy.map(name => `${name.alias} DESC NULLS FIRST`).join(',');
@@ -166,18 +173,19 @@ export function buildColumnAggregation(
 
 export function buildRowAggregation(
     table: rd.TableSchema,
-    groupRowsBy: PivotRowGrouping[],
-    aggregates: PivotAggregate[],
+    groupRowsBy: imm.List<PivotRowGrouping>,
+    aggregates: imm.List<PivotAggregate>,
 ): PivotQuery {
     // Collect grouping sets for row pivoting
+    const groupRowsByArray = groupRowsBy.toArray();
     const rowSubsets: string[][] = [[]];
     const rowSubsetIds: number[][] = [[]];
-    for (let i = 0; i < groupRowsBy.length; ++i) {
+    for (let i = 0; i < groupRowsByArray.length; ++i) {
         const columns = [];
         const columnIds = [];
         for (let j = 0; j <= i; ++j) {
             columnIds.push(j);
-            columns.push(groupRowsBy[j].alias);
+            columns.push(groupRowsByArray[j].alias);
         }
         rowSubsets.push(columns);
         rowSubsetIds.push(columnIds);
@@ -192,10 +200,11 @@ export function buildRowAggregation(
     // Collect attributes
     const aggregateValues = [];
     const columnAliases = [];
-    for (let i = 0; i < aggregates.length; ++i) {
-        const attr = aggregates[i].expression;
+    let i = 0;
+    for (const aggregate of aggregates) {
+        const attr = aggregate.expression;
         let func = '';
-        switch (aggregates[i].func) {
+        switch (aggregate.func) {
             case PivotAggregationFunction.AVG:
                 func = 'avg';
                 break;
@@ -212,9 +221,10 @@ export function buildRowAggregation(
                 func = 'count';
                 break;
         }
-        const alias = aggregates[i].alias ?? `p_${i}`;
+        const alias = aggregate.alias ?? `p_${i}`;
         aggregateValues.push(`${func}(${attr}) AS ${alias}`);
-        columnAliases.push(aggregates[i].alias || attr);
+        columnAliases.push(aggregate.alias || attr);
+        i += 1;
     }
     const orderBy = groupRowsBy.map(name => `${name.alias} DESC NULLS FIRST`).join(',');
 
@@ -251,11 +261,11 @@ interface Props {
     table: rd.TableSchema | null;
 
     /// The pivot rows
-    groupRowsBy: PivotRowGrouping[];
+    groupRowsBy: imm.List<PivotRowGrouping>;
     /// The pivot columns
-    groupColumnsBy: number[];
+    groupColumnsBy: imm.List<number>;
     /// The aggregates
-    aggregates: PivotAggregate[];
+    aggregates: imm.List<PivotAggregate>;
 }
 
 interface State {
@@ -267,11 +277,11 @@ interface State {
     pivotTable: rd.TableSchema | null;
 
     /// The pivot rows
-    groupRowsBy: PivotRowGrouping[] | null;
+    groupRowsBy: imm.List<PivotRowGrouping> | null;
     /// The pivot columns
-    groupColumnsBy: number[] | null;
+    groupColumnsBy: imm.List<number> | null;
     /// The aggregates
-    aggregates: PivotAggregate[] | null;
+    aggregates: imm.List<PivotAggregate> | null;
 
     /// The epoch of the column groups
     ownEpochColumnGroups: number | null;
@@ -316,11 +326,11 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         if (!props.connection || !props.table || updating.current) {
             return;
         }
-        if (props.groupRowsBy.length == 0 || props.aggregates.length == 0) {
+        if (props.groupRowsBy.isEmpty() || props.aggregates.isEmpty()) {
             return;
         }
         // Update column groups?
-        if (props.groupColumnsBy.length == 0 && props.groupColumnsBy !== state.groupColumnsBy) {
+        if (props.groupColumnsBy.isEmpty() && props.groupColumnsBy !== state.groupColumnsBy) {
             setState(s => ({
                 ...s,
                 name: props.name,
@@ -331,7 +341,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
             }));
             return;
         } else if (
-            props.groupColumnsBy.length > 0 &&
+            !props.groupColumnsBy.isEmpty() &&
             (props.groupColumnsBy != state.groupColumnsBy ||
                 props.name != state.name ||
                 props.table != state.inputTable ||
@@ -366,7 +376,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         ) {
             updating.current = true;
             const query =
-                props.groupColumnsBy.length == 0 || state.columnGroups == null
+                props.groupColumnsBy.isEmpty() || state.columnGroups == null
                     ? buildRowAggregation(props.table, props.groupRowsBy, props.aggregates)
                     : buildColumnAggregation(
                           props.table,
