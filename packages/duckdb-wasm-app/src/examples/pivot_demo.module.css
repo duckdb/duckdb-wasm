@@ -89,7 +89,9 @@
     position: relative;
     grid-row: 1;
     grid-column: 2;
-    border: var(--pivot_border);
+    border-top: var(--pivot_border);
+    border-left: var(--pivot_border);
+    border-right: var(--pivot_border);
     background-color: var(--pivot_bg);
 }
 
@@ -116,6 +118,7 @@
     grid-row: 2;
     grid-column: 2;
     position: relative;
+    border-top: var(--pivot_border);
     border-left: var(--pivot_border);
     border-right: var(--pivot_border);
     background-color: var(--pivot_bg);

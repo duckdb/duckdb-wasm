@@ -284,7 +284,7 @@ interface State {
     aggregates: imm.List<PivotAggregate> | null;
 
     /// Stable table schema
-    tableSchemaChanged: boolean;
+    stalePivotMetadata: boolean;
     /// The epoch of the column groups
     ownEpochColumnGroups: number | null;
     /// The epoch of the metadata
@@ -306,7 +306,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         groupRowsBy: null,
         groupColumnsBy: null,
         aggregates: null,
-        tableSchemaChanged: false,
+        stalePivotMetadata: false,
         ownEpochColumnGroups: null,
         ownEpochSchema: null,
         ownEpochRows: null,
@@ -344,7 +344,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                     name: props.name,
                     inputTable: props.table,
                     groupColumnsBy: props.groupColumnsBy,
-                    tableSchemaChanged: true,
+                    stalePivotMetadata: true,
                     ownEpochColumnGroups: epochColumnGroups,
                     columnGroups: null,
                 }));
@@ -360,7 +360,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                         name: props.name,
                         inputTable: props.table,
                         groupColumnsBy: props.groupColumnsBy,
-                        tableSchemaChanged: true,
+                        stalePivotMetadata: true,
                         ownEpochColumnGroups: epoch,
                         columnGroups: result || null,
                     }));
@@ -371,12 +371,9 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         }
 
         // Update table?
-        if (
-            state.tableSchemaChanged ||
-            props.groupRowsBy != state.groupRowsBy ||
-            props.aggregates != state.aggregates ||
-            epochRows != state.ownEpochRows
-        ) {
+        const stalePivotMetadata =
+            state.stalePivotMetadata || props.groupRowsBy != state.groupRowsBy || props.aggregates != state.aggregates;
+        if (stalePivotMetadata || epochRows != state.ownEpochRows) {
             updating.current = true;
             const query =
                 state.groupColumnsBy == null || state.groupColumnsBy.isEmpty() || state.columnGroups == null
@@ -400,7 +397,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
 
                 // Need to refresh the table metadata?
                 let metadata = state.pivotTable;
-                if (state.tableSchemaChanged) {
+                if (stalePivotMetadata) {
                     metadata = await rd.collectTableSchema(props.connection, {
                         tableSchema: '',
                         tableName: props.name,
@@ -421,7 +418,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                     pivotTable: metadata,
                     groupRowsBy: props.groupRowsBy,
                     aggregates: props.aggregates,
-                    tableSchemaChanged: false,
+                    stalePivotMetadata: false,
                     ownEpochSchema: state.ownEpochColumnGroups,
                     ownEpochRows: epoch,
                 }));

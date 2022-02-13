@@ -37,7 +37,7 @@ interface PivotItemProps {
 }
 
 function PivotItem(props: PivotItemProps) {
-    const [state, dragRef] = dnd.useDrag(
+    const [state, dragRef, dragPreviewRef] = dnd.useDrag(
         () => ({
             type: props.type,
             item: () => ({
@@ -74,7 +74,7 @@ function PivotItem(props: PivotItemProps) {
         [],
     );
     return (
-        <div ref={dragRef} className={props.className} style={{ opacity: state.isDragging ? 0.0 : 1.0 }}>
+        <div ref={dragRef} className={props.className}>
             {props.children}
         </div>
     );
@@ -157,7 +157,7 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
             // Helper to add a column to a target (row group, column group, values)
             const addTo = (config: PivotConfig, columnId: number, target: string): PivotConfig => {
                 const expr = table!.columnNames[columnId]!;
-                const alias = table!.columnAliases[columnId]!;
+                const alias = table!.columnAliases[columnId] || table!.columnNames[columnId]!;
                 switch (target) {
                     // Noop, we don't "add" a table column through the pivot explorer
                     case DRAG_ID_TABLE_COLUMN:
@@ -172,7 +172,7 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
                             ...config,
                             values: config.values.push({
                                 expression: expr,
-                                func: rdt.PivotAggregationFunction.MAX,
+                                func: rdt.PivotAggregationFunction.SUM,
                                 alias: alias,
                             }),
                         };
