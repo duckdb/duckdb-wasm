@@ -1,9 +1,8 @@
 import * as arrow from 'apache-arrow';
 import * as rd from '@duckdb/react-duckdb';
 import * as rdt from '@duckdb/react-duckdb-table';
+import * as dnd from 'react-dnd';
 import React from 'react';
-import { useDrag } from 'react-dnd';
-import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import styles from './stock_pivot_table.module.css';
@@ -15,15 +14,26 @@ const INSERT_BATCH_SIZE = 100;
 const ROWS_TO_KEEP = 4000;
 const SECONDS_TO_KEEP = (ROWS_TO_KEEP / INSERT_BATCH_SIZE) * INSERT_INTERVAL;
 
-interface DraggableProps {
+const DRAG_ID_TABLE_COLUMN = 'table_column';
+const DRAG_ID_COLUMN_GROUP = 'column_group';
+const DRAG_ID_ROW_GROUP = 'row_group';
+const DRAG_ID_VALUE = 'value';
+
+interface DragItem {
+    type: string;
+    id: number;
+    text: string;
+}
+
+interface PivotItemProps {
     className?: string;
     type: string;
     id: number;
     children?: React.ReactElement | React.ReactElement[] | string;
 }
 
-const Draggable = (props: DraggableProps) => {
-    const [state, dragRef] = useDrag(
+function PivotItem(props: PivotItemProps) {
+    const [state, dragRef] = dnd.useDrag(
         () => ({
             type: props.type,
             item: () => ({
@@ -41,7 +51,34 @@ const Draggable = (props: DraggableProps) => {
             {props.children}
         </div>
     );
-};
+}
+
+interface PivotItemListProps<ValueType> {
+    listClass: string;
+    itemClass: string;
+    itemType: string;
+    values: ValueType[];
+    valueRenderer: (value: ValueType) => string;
+    drop: (item: DragItem) => void;
+}
+
+function PivotItemList<ValueType>(props: PivotItemListProps<ValueType>) {
+    const state = dnd.useDrop(() => ({
+        accept: [DRAG_ID_ROW_GROUP, DRAG_ID_TABLE_COLUMN, DRAG_ID_COLUMN_GROUP, DRAG_ID_VALUE],
+        drop: (item: DragItem) => {
+            props.drop(item);
+        },
+    }));
+    return (
+        <div className={props.listClass} ref={state[1]}>
+            {props.values.map((v, i) => (
+                <PivotItem key={i} id={i} className={props.itemClass} type={props.itemType}>
+                    {props.valueRenderer(v)}
+                </PivotItem>
+            ))}
+        </div>
+    );
+}
 
 interface ExplorerProps {
     className?: string;
@@ -89,37 +126,49 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
                     <use xlinkHref={`${icon_pivot}#sym`} />
                 </svg>
             </div>
-            <div className={styles.table_columns}>
+            <div className={styles.table_column_area}>
                 <div className={styles.label_top}>Table</div>
-                {table?.columnNames.map((n, i) => (
-                    <Draggable key={i} id={i} className={styles.table_column} type="table_column">
-                        {n}
-                    </Draggable>
-                ))}
+                <PivotItemList<string>
+                    listClass={styles.table_column_list}
+                    itemClass={styles.table_column}
+                    itemType={DRAG_ID_TABLE_COLUMN}
+                    values={table?.columnNames || []}
+                    valueRenderer={n => n}
+                    drop={item => {}}
+                />
             </div>
-            <div className={styles.pivot_columns}>
+            <div className={styles.pivot_column_area}>
                 <div className={styles.label_top}>Column Groups</div>
-                {pivot.groupColumnsBy.map((n, i) => (
-                    <Draggable key={i} id={i} className={styles.pivot_column} type="pivot_column">
-                        {table?.columnNames[n]}
-                    </Draggable>
-                ))}
+                <PivotItemList<number>
+                    listClass={styles.pivot_column_list}
+                    itemClass={styles.pivot_column}
+                    itemType={DRAG_ID_COLUMN_GROUP}
+                    values={pivot.groupColumnsBy || []}
+                    valueRenderer={i => table?.columnNames[i]?.toString() || ''}
+                    drop={item => {}}
+                />
             </div>
-            <div className={styles.pivot_rows}>
+            <div className={styles.pivot_row_area}>
                 <div className={styles.label_left}>Row Groups</div>
-                {pivot.groupRowsBy.map((n, i) => (
-                    <Draggable key={i} id={i} className={styles.pivot_row} type="pivot_row">
-                        {n.alias}
-                    </Draggable>
-                ))}
+                <PivotItemList<rdt.PivotRowGrouping>
+                    listClass={styles.pivot_row_list}
+                    itemClass={styles.pivot_row}
+                    itemType={DRAG_ID_ROW_GROUP}
+                    values={pivot.groupRowsBy || []}
+                    valueRenderer={n => n.alias || ''}
+                    drop={item => {}}
+                />
             </div>
-            <div className={styles.pivot_values}>
+            <div className={styles.pivot_value_area}>
                 <div className={styles.label_left}>Values</div>
-                {pivot.aggregates.map((n, i) => (
-                    <Draggable key={i} id={i} className={styles.pivot_aggregate} type="pivot_aggregate">
-                        {n.alias || undefined}
-                    </Draggable>
-                ))}
+                <PivotItemList<rdt.PivotAggregate>
+                    listClass={styles.pivot_value_list}
+                    itemClass={styles.pivot_value}
+                    itemType={DRAG_ID_VALUE}
+                    values={pivot.aggregates || []}
+                    valueRenderer={n => n.alias || ''}
+                    drop={item => {}}
+                />
             </div>
             <div className={styles.pivot_body}>
                 {pivot.groupColumnsBy.length == 0 && pivot.groupRowsBy.length == 0 ? (
@@ -248,7 +297,7 @@ export const StockPivotTableDemo: React.FC<DemoProps> = (props: DemoProps) => {
         );
     }
     return (
-        <DndProvider backend={HTML5Backend}>
+        <dnd.DndProvider backend={HTML5Backend}>
             <div className={styles.table_page}>
                 <rd.TABLE_SCHEMA_EPOCH.Provider value={state.schemaEpoch}>
                     <rd.TABLE_DATA_EPOCH.Provider value={state.dataEpoch}>
@@ -260,6 +309,6 @@ export const StockPivotTableDemo: React.FC<DemoProps> = (props: DemoProps) => {
                     </rd.TABLE_DATA_EPOCH.Provider>
                 </rd.TABLE_SCHEMA_EPOCH.Provider>
             </div>
-        </DndProvider>
+        </dnd.DndProvider>
     );
 };
