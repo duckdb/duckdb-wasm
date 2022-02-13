@@ -29,11 +29,18 @@ interface DropResult {
     type: string;
 }
 
+interface PivotModification {
+    sourceType: string;
+    targetType: string | null;
+    id: number;
+}
+
 interface PivotItemProps {
     className?: string;
     type: string;
     id: number;
     children?: React.ReactElement | React.ReactElement[] | string;
+    modify: (m: PivotModification) => void;
 }
 
 function PivotItem(props: PivotItemProps) {
@@ -51,14 +58,23 @@ function PivotItem(props: PivotItemProps) {
                 const result = monitor.getDropResult() as DropResult | null;
                 // Dropped somewhere
                 if (result != null) {
-                    /// Dropped somwhere else?
-                    if (result.type !== props.type) {
-                        console.log(`dragged from ${props.type} to ${result.type}`);
-                    } else {
-                        console.log(`dropped ${props.type} back`);
+                    /// Dropped back?
+                    if (result.type === props.type) {
+                        return;
                     }
+                    // Move to other area
+                    props.modify({
+                        sourceType: props.type,
+                        targetType: result.type,
+                        id: props.id,
+                    });
                 } else {
-                    console.log(`removed ${props.type}`);
+                    // Dragged to nowhere, remove
+                    props.modify({
+                        sourceType: props.type,
+                        targetType: null,
+                        id: props.id,
+                    });
                 }
             },
         }),
@@ -77,21 +93,20 @@ interface PivotItemListProps<ValueType> {
     itemType: string;
     values: ValueType[];
     valueRenderer: (value: ValueType) => string;
-    drop: (item: DragItem) => void;
+    modify: (m: PivotModification) => void;
 }
 
 function PivotItemList<ValueType>(props: PivotItemListProps<ValueType>) {
     const state = dnd.useDrop(() => ({
         accept: [DRAG_ID_ROW_GROUP, DRAG_ID_TABLE_COLUMN, DRAG_ID_COLUMN_GROUP, DRAG_ID_VALUE],
         drop: (item: DragItem) => {
-            props.drop(item);
             return { type: props.itemType };
         },
     }));
     return (
         <div className={props.listClass} ref={state[1]}>
             {props.values.map((v, i) => (
-                <PivotItem key={i} id={i} className={props.itemClass} type={props.itemType}>
+                <PivotItem key={i} id={i} className={props.itemClass} type={props.itemType} modify={props.modify}>
                     {props.valueRenderer(v)}
                 </PivotItem>
             ))}
@@ -153,7 +168,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
                     itemType={DRAG_ID_TABLE_COLUMN}
                     values={table?.columnNames || []}
                     valueRenderer={n => n}
-                    drop={item => {}}
+                    modify={m => console.log(m)}
                 />
             </div>
             <div className={styles.pivot_column_area}>
@@ -164,7 +179,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
                     itemType={DRAG_ID_COLUMN_GROUP}
                     values={pivot.groupColumnsBy || []}
                     valueRenderer={i => table?.columnNames[i]?.toString() || ''}
-                    drop={item => {}}
+                    modify={m => console.log(m)}
                 />
             </div>
             <div className={styles.pivot_row_area}>
@@ -175,7 +190,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
                     itemType={DRAG_ID_ROW_GROUP}
                     values={pivot.groupRowsBy || []}
                     valueRenderer={n => n.alias || ''}
-                    drop={item => {}}
+                    modify={m => console.log(m)}
                 />
             </div>
             <div className={styles.pivot_value_area}>
@@ -186,7 +201,7 @@ export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps
                     itemType={DRAG_ID_VALUE}
                     values={pivot.aggregates || []}
                     valueRenderer={n => n.alias || ''}
-                    drop={item => {}}
+                    modify={m => console.log(m)}
                 />
             </div>
             <div className={styles.pivot_body}>
