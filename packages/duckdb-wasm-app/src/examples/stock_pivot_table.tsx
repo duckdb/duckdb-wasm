@@ -25,6 +25,10 @@ interface DragItem {
     text: string;
 }
 
+interface DropResult {
+    type: string;
+}
+
 interface PivotItemProps {
     className?: string;
     type: string;
@@ -43,6 +47,20 @@ function PivotItem(props: PivotItemProps) {
             collect: monitor => ({
                 isDragging: monitor.isDragging(),
             }),
+            end: (item, monitor) => {
+                const result = monitor.getDropResult() as DropResult | null;
+                // Dropped somewhere
+                if (result != null) {
+                    /// Dropped somwhere else?
+                    if (result.type !== props.type) {
+                        console.log(`dragged from ${props.type} to ${result.type}`);
+                    } else {
+                        console.log(`dropped ${props.type} back`);
+                    }
+                } else {
+                    console.log(`removed ${props.type}`);
+                }
+            },
         }),
         [],
     );
@@ -67,6 +85,7 @@ function PivotItemList<ValueType>(props: PivotItemListProps<ValueType>) {
         accept: [DRAG_ID_ROW_GROUP, DRAG_ID_TABLE_COLUMN, DRAG_ID_COLUMN_GROUP, DRAG_ID_VALUE],
         drop: (item: DragItem) => {
             props.drop(item);
+            return { type: props.itemType };
         },
     }));
     return (
