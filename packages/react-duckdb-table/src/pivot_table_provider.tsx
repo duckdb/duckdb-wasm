@@ -438,6 +438,12 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         epochRows,
     ]);
 
+    // Stale metadata?
+    // Print nothing since queries might run against a table that gets deleted.
+    if (state.stalePivotMetadata) {
+        return <div />;
+    }
+
     // Schema outdated?
     return (
         <rd.TABLE_SCHEMA_EPOCH.Provider value={state.ownEpochSchema}>
