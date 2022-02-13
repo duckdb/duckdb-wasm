@@ -5,7 +5,7 @@ import * as dnd from 'react-dnd';
 import React from 'react';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import styles from './stock_pivot_table.module.css';
+import styles from './pivot_explorer.module.css';
 import { StockDataSource } from './stock_data';
 import icon_pivot from '../../static/svg/icons/pivot.svg';
 
@@ -124,7 +124,7 @@ interface PivotConfig {
     aggregates: rdt.PivotAggregate[];
 }
 
-export const StockPivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => {
+export const PivotTable: React.FC<ExplorerProps> = (props: ExplorerProps) => {
     const conn = rd.useDuckDBConnection()!;
     const table = rd.useTableSchema();
     const [pivot, _setPivot] = React.useState<PivotConfig>({
@@ -244,7 +244,7 @@ interface State {
     dataEpoch: number | null;
 }
 
-export const StockPivotTableDemo: React.FC<DemoProps> = (props: DemoProps) => {
+export const PivotExplorer: React.FC<DemoProps> = (props: DemoProps) => {
     const conn = rd.useDuckDBConnection();
     const connDialer = rd.useDuckDBConnectionDialer();
     const [setupDone, setSetupDone] = React.useState(false);
@@ -337,7 +337,7 @@ export const StockPivotTableDemo: React.FC<DemoProps> = (props: DemoProps) => {
                     <rd.TABLE_DATA_EPOCH.Provider value={state.dataEpoch}>
                         <rdt.PIVOT_COLUMNS_EPOCH.Provider value={0}>
                             <rd.DuckDBTableSchemaProvider name="stock_pivot_table">
-                                <StockPivotExplorer />
+                                <PivotTable />
                             </rd.DuckDBTableSchemaProvider>
                         </rdt.PIVOT_COLUMNS_EPOCH.Provider>
                     </rd.TABLE_DATA_EPOCH.Provider>

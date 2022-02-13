@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
-import { StockPivotTableDemo } from './examples/stock_pivot_table';
+import { PivotExplorer } from './examples/pivot_explorer';
 import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
 import { NavBarContainer } from './components/navbar';
 import { DuckDBConnectionProvider, DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
@@ -73,7 +73,7 @@ ReactDOM.render(
                                 path="/pivot"
                                 element={
                                     <NavBarContainer>
-                                        <StockPivotTableDemo />
+                                        <PivotExplorer />
                                     </NavBarContainer>
                                 }
                             />
