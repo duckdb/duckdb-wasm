@@ -25,8 +25,9 @@ ExternalProject_Add(
              -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
              -DBUILD_PARQUET_EXTENSION=TRUE
              -DBUILD_FTS_EXTENSION=TRUE
-        -DBUILD_SHELL=FALSE
+             -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
+             -DDISABLE_BUILTIN_EXTENSIONS=TRUE
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
     <INSTALL_DIR>/lib/libduckdb_static.a
@@ -76,6 +77,7 @@ target_include_directories(
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/miniz
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/thrift
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/zstd
-  INTERFACE ${DUCKDB_SOURCE_DIR}/extension/parquet/include)
+  INTERFACE ${DUCKDB_SOURCE_DIR}/extension/parquet/include
+  INTERFACE ${DUCKDB_SOURCE_DIR}/extension/fts/include)
 
 add_dependencies(duckdb duckdb_ep)
