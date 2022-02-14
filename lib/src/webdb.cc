@@ -788,6 +788,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(buffered_fs);
         db_config.maximum_threads = config_->maximum_threads;
+        db_config.use_temporary_directory = false;
         db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         db->LoadExtension<duckdb::ParquetExtension>();
