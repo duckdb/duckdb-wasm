@@ -4,12 +4,12 @@
 #include "duckdb/common/types/date.hpp"
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
+#include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/test/config.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
-#include "parquet-extension.hpp"
 
 using namespace duckdb::web;
 using namespace std;
@@ -19,6 +19,7 @@ namespace {
 
 TEST(ParquetLoadTest, LoadParquet) {
     auto db = make_shared<WebDB>(NATIVE);
+    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -42,6 +43,7 @@ INTEGER	VARCHAR	INTEGER
 
 TEST(ParquetLoadTest, LoadParquetTwice) {
     auto db = make_shared<WebDB>(NATIVE);
+    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -81,6 +83,7 @@ INTEGER	VARCHAR	INTEGER
 
 TEST(FileSystemBufferTest, FlushFrameMemoryBugRegression) {
     auto db = make_shared<WebDB>(NATIVE);
+    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
     for (const auto& f : files) {

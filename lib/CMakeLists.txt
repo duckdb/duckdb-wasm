@@ -215,7 +215,17 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
+add_library(
+  duckdb_web_fts
+  ${CMAKE_SOURCE_DIR}/src/extensions/fts_extension.cc)
+
+add_library(
+  duckdb_web_parquet
+  ${CMAKE_SOURCE_DIR}/src/extensions/parquet_extension.cc)
+
 target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
+target_link_libraries(duckdb_web_fts duckdb duckdb_fts)
+target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
 
 # ---------------------------------------------------------------------------
 # Emscripten
@@ -311,7 +321,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
       ${CMAKE_SOURCE_DIR}/test/tester.cc)
-  set(TEST_LIBS duckdb_web gtest gmock gflags ${THREAD_LIBS})
+  set(TEST_LIBS duckdb_web duckdb_web_fts duckdb_web_parquet gtest gmock gflags ${THREAD_LIBS})
 
   add_executable(tester ${TEST_CC})
   target_link_libraries(tester ${TEST_LIBS})

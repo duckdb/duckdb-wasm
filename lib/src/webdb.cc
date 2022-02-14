@@ -53,8 +53,6 @@
 #include "duckdb/web/udf.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/wasm_response.h"
-#include "fts-extension.hpp"
-#include "parquet-extension.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/rapidjson.h"
@@ -792,8 +790,6 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         db_config.use_temporary_directory = false;
         db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
-        db->LoadExtension<duckdb::ParquetExtension>();
-        db->LoadExtension<duckdb::FTSExtension>();
         RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
