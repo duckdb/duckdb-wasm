@@ -17,6 +17,21 @@ const INSERT_BATCH_SIZE = 100;
 const ROWS_TO_KEEP = 4000;
 const SECONDS_TO_KEEP = (ROWS_TO_KEEP / INSERT_BATCH_SIZE) * INSERT_INTERVAL;
 
+interface LevelPickerProps {
+    current: number;
+}
+
+const LevelPicker: React.FC<LevelPickerProps> = (props: LevelPickerProps) => (
+    <div className={styles.levels_container}>
+        {[...Array(props.current)].map((_, i) => (
+            <div key={i} className={styles.level_set} />
+        ))}
+        {[...Array(3 - props.current)].map((_, i) => (
+            <div key={props.current + i} className={styles.level_unset} />
+        ))}
+    </div>
+);
+
 interface DemoProps {
     className?: string;
 }
@@ -117,6 +132,16 @@ export const PivotDemo: React.FC<DemoProps> = (props: DemoProps) => {
             <div className={styles.table_page}>
                 <div className={styles.demo_header_container}>
                     <div className={styles.demo_setup}>
+                        <div className={styles.demo_setup_config}>
+                            <LevelPicker current={1} />
+                            <div className={styles.level_label}>Server Latency</div>
+                            <LevelPicker current={1} />
+                            <div className={styles.level_label}>Channel Latency</div>
+                            <LevelPicker current={1} />
+                            <div className={styles.level_label}>Poll Frequency</div>
+                            <LevelPicker current={1} />
+                            <div className={styles.level_label}>Batch Size</div>
+                        </div>
                         <div className={styles.demo_setup_icon_container}>
                             <svg className={styles.demo_setup_icon} width="40px" height="40px">
                                 <use xlinkHref={`${icon_pivot}#sym`} />
