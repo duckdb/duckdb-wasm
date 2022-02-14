@@ -223,7 +223,7 @@ add_library(
   duckdb_web_parquet
   ${CMAKE_SOURCE_DIR}/src/extensions/parquet_extension.cc)
 
-target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
+target_link_libraries(duckdb_web duckdb duckdb_web_fts duckdb_web_parquet arrow rapidjson ${THREAD_LIBS})
 target_link_libraries(duckdb_web_fts duckdb duckdb_fts)
 target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
 
