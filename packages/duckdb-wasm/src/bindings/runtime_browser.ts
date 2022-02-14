@@ -1,5 +1,5 @@
-import {StatusCode} from '../status';
-import {addS3Headers, getHTTPUrl} from '../utils'
+import { StatusCode } from '../status';
+import { addS3Headers, getHTTPUrl } from '../utils';
 
 import {
     callSRet,
@@ -10,9 +10,9 @@ import {
     DuckDBRuntime,
     failWith,
     FileFlags,
-    readString
+    readString,
 } from './runtime';
-import {DuckDBModule} from './duckdb_module';
+import { DuckDBModule } from './duckdb_module';
 import * as udf from './udf_runtime';
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
@@ -30,7 +30,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
             const cached = BROWSER_RUNTIME._fileInfoCache.get(fileId);
-            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number', 'number'], [fileId, cached?.cacheEpoch || 0]);
+            const [s, d, n] = callSRet(
+                mod,
+                'duckdb_web_fs_get_file_info_by_id',
+                ['number', 'number'],
+                [fileId, cached?.cacheEpoch || 0],
+            );
             if (s !== StatusCode.SUCCESS) {
                 return null;
             } else if (n === 0) {
@@ -53,7 +58,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
     getGlobalFileInfo(mod: DuckDBModule): DuckDBGlobalFileInfo | null {
         try {
-            const [s, d, n] = callSRet(mod, 'duckdb_web_get_global_file_info', ['number'], [BROWSER_RUNTIME._globalFileInfo?.cacheEpoch || 0]);
+            const [s, d, n] = callSRet(
+                mod,
+                'duckdb_web_get_global_file_info',
+                ['number'],
+                [BROWSER_RUNTIME._globalFileInfo?.cacheEpoch || 0],
+            );
             if (s !== StatusCode.SUCCESS) {
                 return null;
             } else if (n === 0) {
@@ -92,9 +102,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.HTTP:
                 case DuckDBDataProtocol.S3: {
                     if (flags & FileFlags.FILE_FLAGS_READ && flags & FileFlags.FILE_FLAGS_WRITE) {
-                        throw new Error(`Opening file ${file.fileName} failed: cannot open file with both read and write flags set`);
-                    } else if (flags & FileFlags.FILE_FLAGS_APPEND){
-                        throw new Error(`Opening file ${file.fileName} failed: appending to HTTP/S3 files is not supported`);
+                        throw new Error(
+                            `Opening file ${file.fileName} failed: cannot open file with both read and write flags set`,
+                        );
+                    } else if (flags & FileFlags.FILE_FLAGS_APPEND) {
+                        throw new Error(
+                            `Opening file ${file.fileName} failed: appending to HTTP/S3 files is not supported`,
+                        );
                     } else if (flags & FileFlags.FILE_FLAGS_WRITE) {
                         // We send a HEAD request to try to determine if we can write to data_url
                         const xhr = new XMLHttpRequest();
@@ -108,9 +122,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                         // Expect 200 for existing files that we will overwrite or 404 for non-existent files can be created
                         if (xhr.status != 200 && xhr.status != 404) {
-                            throw new Error(`Opening file ${file.fileName} failed: Unexpected return status from server (${xhr.status})`);
-                        } else if (xhr.status == 404 &&!(flags & FileFlags.FILE_FLAGS_FILE_CREATE || flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW)) {
-                            throw new Error(`Opening file ${file.fileName} failed: Cannot write to non-existent file without FILE_FLAGS_FILE_CREATE or FILE_FLAGS_FILE_CREATE_NEW flag.`);
+                            throw new Error(
+                                `Opening file ${file.fileName} failed: Unexpected return status from server (${xhr.status})`,
+                            );
+                        } else if (
+                            xhr.status == 404 &&
+                            !(flags & FileFlags.FILE_FLAGS_FILE_CREATE || flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW)
+                        ) {
+                            throw new Error(
+                                `Opening file ${file.fileName} failed: Cannot write to non-existent file without FILE_FLAGS_FILE_CREATE or FILE_FLAGS_FILE_CREATE_NEW flag.`,
+                            );
                         }
                         // Return an empty buffer that can be used to buffer the writes to this s3/http file
                         const data = mod._malloc(1);
