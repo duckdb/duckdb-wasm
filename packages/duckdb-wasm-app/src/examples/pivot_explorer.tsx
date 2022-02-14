@@ -37,7 +37,7 @@ interface PivotItemProps {
 }
 
 function PivotItem(props: PivotItemProps) {
-    const [state, dragRef] = dnd.useDrag(
+    const [, dragRef] = dnd.useDrag(
         () => ({
             type: props.type,
             item: () => ({
