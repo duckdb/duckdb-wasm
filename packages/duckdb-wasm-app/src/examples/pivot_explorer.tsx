@@ -127,17 +127,22 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
     const conn = rd.useDuckDBConnection()!;
     const table = rd.useTableSchema();
     const [pivot, setPivot] = React.useState<PivotConfig>({
-        groupRowsBy: imm.List(),
+        groupRowsBy: imm.List([
+            {
+                expression: 'name',
+                alias: 'name',
+            },
+        ]),
         groupColumnsBy: imm.List(),
         values: imm.List([
             {
                 expression: 'bid',
-                alias: null,
+                alias: 'bid',
                 func: rdt.PivotAggregationFunction.SUM,
             },
             {
                 expression: 'ask',
-                alias: null,
+                alias: 'ask',
                 func: rdt.PivotAggregationFunction.SUM,
             },
         ]),
@@ -314,7 +319,7 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
                     itemClass={styles.pivot_row}
                     itemType={DRAG_ID_ROW_GROUP}
                     values={pivot.groupRowsBy || []}
-                    valueRenderer={n => n.alias || ''}
+                    valueRenderer={n => n.alias}
                     modify={modify}
                 />
             </div>

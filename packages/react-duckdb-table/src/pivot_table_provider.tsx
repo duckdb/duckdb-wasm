@@ -40,7 +40,7 @@ interface PivotQuery {
     /// The query
     text: string;
     /// The column aliases
-    columnAliases: (string | null)[];
+    columnAliases: string[];
     /// The column grouping sets
     columnGroupingSets: rd.TableSchemaColumnGroup[][];
     /// The row grouping sets
@@ -70,7 +70,7 @@ export function buildColumnAggregation(
         const columnIds = [];
         for (let j = 0; j <= i; ++j) {
             columnIds.push(j);
-            columns.push(groupRowsByArray[j].alias);
+            columns.push(groupRowsByArray[j].alias || groupRowsByArray[j].expression);
         }
         rowSubsets.push(columns);
         rowSubsetIds.push(columnIds);
@@ -85,7 +85,7 @@ export function buildColumnAggregation(
     // Collect cases for column pivoting
     const pivotCases = [];
     const columnGroupingSets: rd.TableSchemaColumnGroup[][] = [[]];
-    const columnAliases = groupRowsByArray.map(g => g.alias);
+    const columnAliases = groupRowsByArray.map(g => g.alias || g.expression);
     for (let instance = 0; instance < Math.min(columnValues.numRows, MAX_PIVOT_COLUMNS); instance += 1) {
         const predicates = [];
         const group_name: string[] = [];
@@ -185,7 +185,7 @@ export function buildRowAggregation(
         const columnIds = [];
         for (let j = 0; j <= i; ++j) {
             columnIds.push(j);
-            columns.push(groupRowsByArray[j].alias);
+            columns.push(groupRowsByArray[j].alias || groupRowsByArray[j].expression);
         }
         rowSubsets.push(columns);
         rowSubsetIds.push(columnIds);
@@ -199,7 +199,7 @@ export function buildRowAggregation(
 
     // Collect attributes
     const aggregateValues = [];
-    const columnAliases = [];
+    const columnAliases = groupRowsByArray.map(g => g.alias);
     let i = 0;
     for (const aggregate of aggregates) {
         const attr = aggregate.expression;
