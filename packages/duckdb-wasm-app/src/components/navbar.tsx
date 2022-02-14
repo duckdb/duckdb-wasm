@@ -7,7 +7,6 @@ import styles from './navbar.module.css';
 import logo from '../../static/svg/logo/duckdb.svg';
 import icon_shell from '../../static/svg/icons/shell.svg';
 import icon_book from '../../static/svg/icons/book.svg';
-import icon_table from '../../static/svg/icons/table.svg';
 
 type TabProps = {
     route: string;
@@ -65,7 +64,6 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
             </div>
             <div className={styles.tabs}>
                 <Tab route="/" location={location.pathname} icon={icon_shell} />
-                <Tab route="/vldb" location={location.pathname} icon={icon_table} />
                 <Tab route="docs/modules/index.html" location={location.pathname} icon={icon_book} external />
             </div>
         </div>
