@@ -9,6 +9,9 @@ import { PivotExplorer } from './pivot_explorer';
 import styles from './pivot_demo.module.css';
 import { StockDataSource } from './stock_data';
 
+import icon_pivot from '../../static/svg/icons/pivot.svg';
+import icon_cloud from '../../static/svg/icons/cloud.svg';
+
 const INSERT_INTERVAL = 0.2;
 const INSERT_BATCH_SIZE = 100;
 const ROWS_TO_KEEP = 4000;
@@ -112,6 +115,24 @@ export const PivotDemo: React.FC<DemoProps> = (props: DemoProps) => {
     return (
         <dnd.DndProvider backend={HTML5Backend}>
             <div className={styles.table_page}>
+                <div className={styles.demo_header_container}>
+                    <div className={styles.demo_setup}>
+                        <div className={styles.demo_setup_icon_container}>
+                            <svg className={styles.demo_setup_icon} width="40px" height="40px">
+                                <use xlinkHref={`${icon_pivot}#sym`} />
+                            </svg>
+                        </div>
+                        <div className={styles.demo_setup_channel} />
+                        <div className={styles.demo_setup_icon_container}>
+                            <svg className={styles.demo_setup_icon} width="40px" height="40px">
+                                <use xlinkHref={`${icon_cloud}#sym`} />
+                            </svg>
+                        </div>
+                        <div className={styles.demo_setup_perf}>0 ms</div>
+                        <div className={styles.demo_setup_perf}>0 ms</div>
+                        <div className={styles.demo_setup_perf}>0 ms</div>
+                    </div>
+                </div>
                 <rd.TABLE_SCHEMA_EPOCH.Provider value={state.schemaEpoch}>
                     <rd.TABLE_DATA_EPOCH.Provider value={state.dataEpoch}>
                         <rdt.PIVOT_COLUMNS_EPOCH.Provider value={0}>

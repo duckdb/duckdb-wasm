@@ -4,7 +4,7 @@ import * as dnd from 'react-dnd';
 import * as imm from 'immutable';
 import React from 'react';
 
-import styles from './pivot_demo.module.css';
+import styles from './pivot_explorer.module.css';
 import icon_pivot from '../../static/svg/icons/pivot.svg';
 
 const DRAG_ID_TABLE_COLUMN = 'table_column';
