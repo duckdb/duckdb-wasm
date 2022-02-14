@@ -65,7 +65,7 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
             </div>
             <div className={styles.tabs}>
                 <Tab route="/" location={location.pathname} icon={icon_shell} />
-                <Tab route="/pivot" location={location.pathname} icon={icon_table} />
+                <Tab route="/vldb" location={location.pathname} icon={icon_table} />
                 <Tab route="docs/modules/index.html" location={location.pathname} icon={icon_book} external />
             </div>
         </div>

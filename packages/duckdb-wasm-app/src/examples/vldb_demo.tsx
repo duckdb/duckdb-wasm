@@ -6,7 +6,7 @@ import React from 'react';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { PivotExplorer } from './pivot_explorer';
 
-import styles from './pivot_demo.module.css';
+import styles from './vldb_demo.module.css';
 import { StockDataSource } from './stock_data';
 
 import icon_pivot from '../../static/svg/icons/pivot.svg';
@@ -41,7 +41,7 @@ interface State {
     dataEpoch: number | null;
 }
 
-export const PivotDemo: React.FC<DemoProps> = (props: DemoProps) => {
+export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
     const conn = rd.useDuckDBConnection();
     const connDialer = rd.useDuckDBConnectionDialer();
     const [setupDone, setSetupDone] = React.useState(false);
@@ -133,14 +133,21 @@ export const PivotDemo: React.FC<DemoProps> = (props: DemoProps) => {
                 <div className={styles.demo_header_container}>
                     <div className={styles.demo_setup}>
                         <div className={styles.demo_setup_config}>
-                            <LevelPicker current={1} />
+                            <LevelPicker current={0} />
                             <div className={styles.level_label}>Server Latency</div>
-                            <LevelPicker current={1} />
+                            <div className={styles.level_label}>0 ms</div>
+                            <LevelPicker current={0} />
                             <div className={styles.level_label}>Channel Latency</div>
+                            <div className={styles.level_label}>0 ms</div>
                             <LevelPicker current={1} />
                             <div className={styles.level_label}>Poll Frequency</div>
-                            <LevelPicker current={1} />
+                            <div className={styles.level_label}>20 ms</div>
+                            <LevelPicker current={2} />
                             <div className={styles.level_label}>Batch Size</div>
+                            <div className={styles.level_label}>1000</div>
+                            <LevelPicker current={2} />
+                            <div className={styles.level_label}>Window Size</div>
+                            <div className={styles.level_label}>10000</div>
                         </div>
                         <div className={styles.demo_setup_icon_container}>
                             <svg className={styles.demo_setup_icon} width="40px" height="40px">
