@@ -12,10 +12,11 @@ import { StockDataSource } from './stock_data';
 import icon_pivot from '../../static/svg/icons/pivot.svg';
 import icon_cloud from '../../static/svg/icons/cloud.svg';
 
-const INSERT_INTERVAL = 0.2;
-const INSERT_BATCH_SIZE = 100;
-const ROWS_TO_KEEP = 4000;
-const SECONDS_TO_KEEP = (ROWS_TO_KEEP / INSERT_BATCH_SIZE) * INSERT_INTERVAL;
+const INSERT_INTERVALS = [0.1, 0.2, 0.5, 1.0];
+const CHANNEL_LATENCIES = [0, 0.03, 0.1, 0.2];
+const SERVER_LATENCIES = [0, 0.1, 0.5, 1.0];
+const INSERT_BATCH_SIZES = [10, 100, 1000, 10000];
+const WINDOW_SIZES = [1000, 10000, 100000, 1000000];
 
 interface LevelPickerProps {
     current: number;
@@ -41,6 +42,14 @@ interface State {
     dataEpoch: number | null;
 }
 
+interface DemoSettings {
+    insertInterval: number;
+    channelLatencies: number;
+    serverLatencies: number;
+    batchSize: number;
+    windowSize: number;
+}
+
 export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
     const conn = rd.useDuckDBConnection();
     const connDialer = rd.useDuckDBConnectionDialer();
@@ -48,6 +57,13 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
     const [state, setState] = React.useState<State>({
         schemaEpoch: 0,
         dataEpoch: 0,
+    });
+    const [settings, setSettings] = React.useState<DemoSettings>({
+        insertInterval: 1,
+        channelLatencies: 0,
+        serverLatencies: 0,
+        batchSize: 2,
+        windowSize: 1,
     });
     const stockData = React.useRef(new StockDataSource());
 
@@ -86,22 +102,33 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
         setup();
     }, [conn]);
 
+    const insertInterval = INSERT_INTERVALS[settings.insertInterval];
+    const channelLatency = CHANNEL_LATENCIES[settings.channelLatencies];
+    const serverLatency = SERVER_LATENCIES[settings.serverLatencies];
+    const batchSize = INSERT_BATCH_SIZES[settings.batchSize];
+    const windowSize = WINDOW_SIZES[settings.windowSize];
+    const secondsToKeep = (windowSize / batchSize) * insertInterval;
+
     // Prepare the inserter
+    const inserting = React.useRef(false);
     const inserter = React.useCallback(async () => {
+        if (inserting.current) return;
         if (!conn) return;
         if (!setupDone) return;
         if (!isMounted.current) return;
+        inserting.current = true;
 
         // Insert the next batch
-        const table = new arrow.Table([stockData.current.genBatch(INSERT_BATCH_SIZE)]);
+        const table = new arrow.Table([stockData.current.genBatch(batchSize)]);
         await conn.insertArrowTable(table, {
             name: 'stock_pivot_table',
             create: false,
         });
         await conn.query(`
             DELETE FROM stock_pivot_table
-            WHERE last_update < date_trunc('second', now() - INTERVAL ${SECONDS_TO_KEEP} SECOND)
+            WHERE last_update < date_trunc('second', now() - INTERVAL ${secondsToKeep} SECOND)
         `);
+        inserting.current = false;
 
         // Schedule again
         if (isMounted.current) {
@@ -109,9 +136,9 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
                 schemaEpoch: s.schemaEpoch,
                 dataEpoch: (s.dataEpoch || 0) + 1,
             }));
-            setTimeout(() => inserter(), INSERT_INTERVAL * 1000);
+            setTimeout(() => inserter(), (insertInterval + channelLatency + serverLatency) * 1000);
         }
-    }, [conn, setupDone]);
+    }, [conn, setupDone, settings]);
 
     // Kick the first insert
     React.useEffect(() => {
@@ -135,19 +162,19 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
                         <div className={styles.demo_setup_config}>
                             <LevelPicker current={0} />
                             <div className={styles.level_label}>Server Latency</div>
-                            <div className={styles.level_label}>0 ms</div>
+                            <div className={styles.level_label}>{Math.round(serverLatency * 1000)} ms</div>
                             <LevelPicker current={0} />
                             <div className={styles.level_label}>Channel Latency</div>
-                            <div className={styles.level_label}>0 ms</div>
+                            <div className={styles.level_label}>{Math.round(channelLatency * 1000)} ms</div>
                             <LevelPicker current={1} />
-                            <div className={styles.level_label}>Poll Frequency</div>
-                            <div className={styles.level_label}>20 ms</div>
+                            <div className={styles.level_label}>Insert Interval</div>
+                            <div className={styles.level_label}>{Math.round(insertInterval * 1000)} ms</div>
                             <LevelPicker current={2} />
                             <div className={styles.level_label}>Batch Size</div>
-                            <div className={styles.level_label}>1000</div>
+                            <div className={styles.level_label}>{batchSize}</div>
                             <LevelPicker current={2} />
                             <div className={styles.level_label}>Window Size</div>
-                            <div className={styles.level_label}>10000</div>
+                            <div className={styles.level_label}>{windowSize}</div>
                         </div>
                         <div className={styles.demo_setup_icon_container}>
                             <svg className={styles.demo_setup_icon} width="40px" height="40px">
