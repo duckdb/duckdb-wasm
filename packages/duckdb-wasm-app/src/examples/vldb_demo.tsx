@@ -20,15 +20,24 @@ const WINDOW_SIZES = [1000, 10000, 100000, 1000000];
 
 interface LevelPickerProps {
     current: number;
+    select: (level: number) => void;
 }
 
 const LevelPicker: React.FC<LevelPickerProps> = (props: LevelPickerProps) => (
     <div className={styles.levels_container}>
         {[...Array(props.current)].map((_, i) => (
-            <div key={i} className={styles.level_set} />
+            <div
+                key={i}
+                className={styles.level_set}
+                onClick={() => props.select(i == 1 && props.current == i ? 1 : i)}
+            />
         ))}
         {[...Array(3 - props.current)].map((_, i) => (
-            <div key={props.current + i} className={styles.level_unset} />
+            <div
+                key={props.current + i}
+                className={styles.level_unset}
+                onClick={() => props.select(props.current + i + 1)}
+            />
         ))}
     </div>
 );
@@ -44,8 +53,8 @@ interface State {
 
 interface DemoSettings {
     insertInterval: number;
-    channelLatencies: number;
-    serverLatencies: number;
+    channelLatency: number;
+    serverLatency: number;
     batchSize: number;
     windowSize: number;
 }
@@ -60,8 +69,8 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
     });
     const [settings, setSettings] = React.useState<DemoSettings>({
         insertInterval: 1,
-        channelLatencies: 0,
-        serverLatencies: 0,
+        channelLatency: 0,
+        serverLatency: 0,
         batchSize: 2,
         windowSize: 1,
     });
@@ -102,21 +111,22 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
         setup();
     }, [conn]);
 
-    const insertInterval = INSERT_INTERVALS[settings.insertInterval];
-    const channelLatency = CHANNEL_LATENCIES[settings.channelLatencies];
-    const serverLatency = SERVER_LATENCIES[settings.serverLatencies];
-    const batchSize = INSERT_BATCH_SIZES[settings.batchSize];
-    const windowSize = WINDOW_SIZES[settings.windowSize];
-    const secondsToKeep = (windowSize / batchSize) * insertInterval;
-
     // Prepare the inserter
     const inserting = React.useRef(false);
+    const inserterTimeout = React.useRef<any>(undefined);
     const inserter = React.useCallback(async () => {
         if (inserting.current) return;
         if (!conn) return;
         if (!setupDone) return;
         if (!isMounted.current) return;
         inserting.current = true;
+
+        const insertInterval = INSERT_INTERVALS[settings.insertInterval];
+        const channelLatency = CHANNEL_LATENCIES[settings.channelLatency];
+        const serverLatency = SERVER_LATENCIES[settings.serverLatency];
+        const batchSize = INSERT_BATCH_SIZES[settings.batchSize];
+        const windowSize = WINDOW_SIZES[settings.windowSize];
+        const secondsToKeep = (windowSize / batchSize) * insertInterval;
 
         // Insert the next batch
         const table = new arrow.Table([stockData.current.genBatch(batchSize)]);
@@ -136,7 +146,10 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
                 schemaEpoch: s.schemaEpoch,
                 dataEpoch: (s.dataEpoch || 0) + 1,
             }));
-            setTimeout(() => inserter(), (insertInterval + channelLatency + serverLatency) * 1000);
+            inserterTimeout.current = setTimeout(
+                () => inserter(),
+                (insertInterval + channelLatency + serverLatency) * 1000,
+            );
         }
     }, [conn, setupDone, settings]);
 
@@ -144,8 +157,9 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
     React.useEffect(() => {
         if (!conn) return;
         if (!setupDone) return;
+        clearTimeout(inserterTimeout.current);
         setTimeout(() => inserter(), 0);
-    }, [conn, setupDone]);
+    }, [conn, setupDone, settings]);
 
     if (conn == null || !setupDone) {
         return (
@@ -154,27 +168,40 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
             </div>
         );
     }
+
+    const channelLatency = CHANNEL_LATENCIES[settings.channelLatency];
+    const serverLatency = SERVER_LATENCIES[settings.serverLatency];
     return (
         <dnd.DndProvider backend={HTML5Backend}>
             <div className={styles.table_page}>
                 <div className={styles.demo_header_container}>
                     <div className={styles.demo_setup}>
                         <div className={styles.demo_setup_config}>
-                            <LevelPicker current={0} />
+                            <LevelPicker
+                                current={settings.serverLatency}
+                                select={i => setSettings(s => ({ ...s, serverLatency: i }))}
+                            />
                             <div className={styles.level_label}>Server Latency</div>
-                            <div className={styles.level_label}>{Math.round(serverLatency * 1000)} ms</div>
-                            <LevelPicker current={0} />
+                            <LevelPicker
+                                current={settings.channelLatency}
+                                select={i => setSettings(s => ({ ...s, channelLatency: i }))}
+                            />
                             <div className={styles.level_label}>Channel Latency</div>
-                            <div className={styles.level_label}>{Math.round(channelLatency * 1000)} ms</div>
-                            <LevelPicker current={1} />
+                            <LevelPicker
+                                current={settings.insertInterval}
+                                select={i => setSettings(s => ({ ...s, insertInterval: i }))}
+                            />
                             <div className={styles.level_label}>Insert Interval</div>
-                            <div className={styles.level_label}>{Math.round(insertInterval * 1000)} ms</div>
-                            <LevelPicker current={2} />
+                            <LevelPicker
+                                current={settings.batchSize}
+                                select={i => setSettings(s => ({ ...s, batchSize: i }))}
+                            />
                             <div className={styles.level_label}>Batch Size</div>
-                            <div className={styles.level_label}>{batchSize}</div>
-                            <LevelPicker current={2} />
+                            <LevelPicker
+                                current={settings.windowSize}
+                                select={i => setSettings(s => ({ ...s, windowSize: i }))}
+                            />
                             <div className={styles.level_label}>Window Size</div>
-                            <div className={styles.level_label}>{windowSize}</div>
                         </div>
                         <div className={styles.demo_setup_icon_container}>
                             <svg className={styles.demo_setup_icon} width="40px" height="40px">
@@ -187,9 +214,9 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
                                 <use xlinkHref={`${icon_cloud}#sym`} />
                             </svg>
                         </div>
-                        <div className={styles.demo_setup_perf}>0 ms</div>
-                        <div className={styles.demo_setup_perf}>0 ms</div>
-                        <div className={styles.demo_setup_perf}>0 ms</div>
+                        <div className={styles.demo_setup_perf}></div>
+                        <div className={styles.demo_setup_perf}>{Math.round(channelLatency * 1000)} ms</div>
+                        <div className={styles.demo_setup_perf}>{Math.round(serverLatency * 1000)} ms</div>
                     </div>
                 </div>
                 <rd.TABLE_SCHEMA_EPOCH.Provider value={state.schemaEpoch}>
