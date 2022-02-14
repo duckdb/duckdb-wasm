@@ -34,14 +34,14 @@
 }
 
 .demo_setup_icon {
-    color: rgb(255, 240, 0);
+    color: white;
 }
 
 .demo_setup_channel {
     grid-row: 1;
     height: 4px;
     width: 100%;
-    background-color: rgb(255, 240, 0);
+    background-color: white;
 }
 
 .demo_setup_perf {
