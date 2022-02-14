@@ -20,7 +20,7 @@
 @media only screen and (min-width: 600px) {
     .pivot_container {
         width: 90%;
-        max-width: 900px;
+        max-width: 1200px;
     }
 }
 @media only screen and (max-width: 600px) {

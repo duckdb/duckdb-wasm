@@ -127,27 +127,18 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
     const conn = rd.useDuckDBConnection()!;
     const table = rd.useTableSchema();
     const [pivot, setPivot] = React.useState<PivotConfig>({
-        groupRowsBy: imm.List([
-            {
-                expression: 'name',
-                alias: 'name',
-            },
-            {
-                expression: `date_trunc('second', last_update)`,
-                alias: 'timestamp',
-            },
-        ]),
-        groupColumnsBy: imm.List([1]),
+        groupRowsBy: imm.List(),
+        groupColumnsBy: imm.List(),
         values: imm.List([
             {
-                expression: 'ask',
+                expression: 'bid',
+                alias: null,
                 func: rdt.PivotAggregationFunction.SUM,
-                alias: 'ask',
             },
             {
-                expression: 'bid',
+                expression: 'ask',
+                alias: null,
                 func: rdt.PivotAggregationFunction.SUM,
-                alias: 'bid',
             },
         ]),
     });
@@ -276,6 +267,17 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
         [table, pivot],
     );
 
+    let values = pivot.values;
+    if (values.isEmpty()) {
+        values = imm.List(
+            table?.columnNames?.map(n => ({
+                expression: n,
+                alias: null,
+                func: rdt.PivotAggregationFunction.SUM,
+            })) || [],
+        );
+    }
+
     return (
         <div className={styles.pivot_container}>
             <div className={styles.pivot_icon_container}>
@@ -323,7 +325,7 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
                     itemClass={styles.pivot_value}
                     itemType={DRAG_ID_VALUE}
                     values={pivot.values || []}
-                    valueRenderer={n => n.alias || ''}
+                    valueRenderer={n => n.alias || n.expression}
                     modify={modify}
                 />
             </div>
@@ -348,7 +350,7 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
                         table={table}
                         groupRowsBy={pivot.groupRowsBy}
                         groupColumnsBy={pivot.groupColumnsBy}
-                        aggregates={pivot.values}
+                        aggregates={values}
                     >
                         <rdt.WiredTableViewer connection={conn} />
                     </rdt.PivotTableProvider>
