@@ -70,7 +70,7 @@ ReactDOM.render(
                                 }
                             />
                             <Route
-                                path="/pivot"
+                                path="/vldb"
                                 element={
                                     <NavBarContainer>
                                         <VLDBDemo />
