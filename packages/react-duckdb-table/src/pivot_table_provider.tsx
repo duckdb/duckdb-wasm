@@ -285,20 +285,20 @@ interface State {
 
     /// Stable table schema
     stalePivotMetadata: boolean;
-    /// The epoch of the column groups
-    ownEpochColumnGroups: number | null;
-    /// The epoch of the metadata
-    ownEpochSchema: number | null;
-    /// The epoch of the rows
-    ownEpochRows: number | null;
+    /// The epoch of the input column groups
+    epochInputColumnGroups: number | null;
+    /// The epoch of the input rows
+    epochInputRows: number | null;
+    /// The epoch of the own pivot table
+    epochPivotTable: number;
 
     /// The column groups
     columnGroups: arrow.Table | null;
 }
 
 export const PivotTableProvider: React.FC<Props> = (props: Props) => {
-    const epochColumnGroups = usePivotColumns();
-    const epochRows = rd.useTableDataEpoch();
+    const epochInputColumnGroups = usePivotColumns();
+    const epochInputRows = rd.useTableDataEpoch();
     const [state, setState] = React.useState<State>({
         name: null,
         inputTable: null,
@@ -307,9 +307,9 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         groupColumnsBy: null,
         aggregates: null,
         stalePivotMetadata: false,
-        ownEpochColumnGroups: null,
-        ownEpochSchema: null,
-        ownEpochRows: null,
+        epochInputColumnGroups: null,
+        epochInputRows: null,
+        epochPivotTable: 0,
         columnGroups: null,
     });
     const updating = React.useRef<boolean>(false);
@@ -336,7 +336,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         if (
             props.table !== state.inputTable ||
             props.groupColumnsBy !== state.groupColumnsBy ||
-            epochColumnGroups !== state.ownEpochColumnGroups
+            epochInputColumnGroups !== state.epochInputColumnGroups
         ) {
             if (props.groupColumnsBy.isEmpty()) {
                 setState(s => ({
@@ -345,7 +345,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                     inputTable: props.table,
                     groupColumnsBy: props.groupColumnsBy,
                     stalePivotMetadata: true,
-                    ownEpochColumnGroups: epochColumnGroups,
+                    epochInputColumnGroups: epochInputColumnGroups,
                     columnGroups: null,
                 }));
             } else {
@@ -361,19 +361,21 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                         inputTable: props.table,
                         groupColumnsBy: props.groupColumnsBy,
                         stalePivotMetadata: true,
-                        ownEpochColumnGroups: epoch,
+                        epochInputColumnGroups: epoch,
                         columnGroups: result || null,
                     }));
                 };
-                updateColumnGroups(epochColumnGroups).catch(e => console.error(e));
+                updateColumnGroups(epochInputColumnGroups).catch(e => console.error(e));
             }
             return;
         }
 
         // Update table?
         const stalePivotMetadata =
-            state.stalePivotMetadata || props.groupRowsBy != state.groupRowsBy || props.aggregates != state.aggregates;
-        if (stalePivotMetadata || epochRows != state.ownEpochRows) {
+            state.stalePivotMetadata ||
+            props.groupRowsBy !== state.groupRowsBy ||
+            props.aggregates !== state.aggregates;
+        if (stalePivotMetadata || epochInputRows != state.epochInputRows) {
             updating.current = true;
             const query =
                 state.groupColumnsBy == null || state.groupColumnsBy.isEmpty() || state.columnGroups == null
@@ -419,11 +421,12 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                     groupRowsBy: props.groupRowsBy,
                     aggregates: props.aggregates,
                     stalePivotMetadata: false,
-                    ownEpochSchema: state.ownEpochColumnGroups,
+                    epochInputRows: epoch,
+                    epochPivotTable: state.epochPivotTable + 1,
                     ownEpochRows: epoch,
                 }));
             };
-            createPivotTable(epochRows).catch(e => console.error(e));
+            createPivotTable(epochInputRows).catch(e => console.error(e));
             return;
         }
     }, [
@@ -434,8 +437,8 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
         props.groupColumnsBy,
         props.groupRowsBy,
         props.aggregates,
-        epochColumnGroups,
-        epochRows,
+        epochInputColumnGroups,
+        epochInputRows,
     ]);
 
     // Stale metadata?
@@ -446,8 +449,8 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
 
     // Schema outdated?
     return (
-        <rd.TABLE_SCHEMA_EPOCH.Provider value={state.ownEpochSchema}>
-            <rd.TABLE_DATA_EPOCH.Provider value={state.ownEpochRows}>
+        <rd.TABLE_SCHEMA_EPOCH.Provider value={state.epochPivotTable}>
+            <rd.TABLE_DATA_EPOCH.Provider value={state.epochPivotTable}>
                 <rd.TABLE_METADATA.Provider value={state.pivotTable}>{props.children}</rd.TABLE_METADATA.Provider>
             </rd.TABLE_DATA_EPOCH.Provider>
         </rd.TABLE_SCHEMA_EPOCH.Provider>
