@@ -192,7 +192,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/arrow_type_mapping.cc
   ${CMAKE_SOURCE_DIR}/src/config.cc
   ${CMAKE_SOURCE_DIR}/src/csv_insert_options.cc
-  ${CMAKE_SOURCE_DIR}/src/ext/table_function_relation.cc
+  ${CMAKE_SOURCE_DIR}/src/functions/table_function_relation.cc
   ${CMAKE_SOURCE_DIR}/src/insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc

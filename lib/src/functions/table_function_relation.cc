@@ -1,4 +1,4 @@
-#include "duckdb/web/ext/table_function_relation.h"
+#include "duckdb/web/functions/table_function_relation.h"
 
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/parser/expression/columnref_expression.hpp"
