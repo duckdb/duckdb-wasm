@@ -151,6 +151,20 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
+.PHONY: bench_all
+bench_all:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:internal
+	yarn workspace @duckdb/benchmarks bench:system:sort:int
+	yarn workspace @duckdb/benchmarks bench:system:sum:csv
+	yarn workspace @duckdb/benchmarks bench:system:sum:int
+	yarn workspace @duckdb/benchmarks bench:system:regex
+	yarn workspace @duckdb/benchmarks bench:system:join:2
+	yarn workspace @duckdb/benchmarks bench:system:join:3
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
+
 .PHONY: bench_internal
 bench_internal:
 	yarn workspace @duckdb/benchmarks build
