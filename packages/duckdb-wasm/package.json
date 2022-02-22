@@ -36,7 +36,7 @@
         "eslint-plugin-react": "^7.28.0",
         "fast-glob": "^3.2.11",
         "jasmine": "^4.0.2",
-        "jasmine-core": "^4.0.0",
+        "jasmine-core": "^4.0.1",
         "jasmine-spec-reporter": "^7.0.0",
         "js-sha256": "^0.9.0",
         "karma": "^6.3.16",
