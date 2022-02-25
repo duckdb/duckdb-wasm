@@ -619,6 +619,7 @@ jobs:
               with:
                   script: |-
                       rm -rf ./packages/duckdb-wasm-shell/dist/
+                      yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
                       yarn workspace @duckdb/duckdb-wasm-shell build:release
 
             - name: Build @duckdb/duckdb-wasm-app
