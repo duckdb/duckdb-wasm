@@ -120,7 +120,7 @@ export function callScalarUDF(
                     const dataArray = [];
                     for (let j = 0; j < desc.rows; ++j) {
                         if (!validity[j]) {
-                            dataArray.push(undefined);
+                            dataArray.push(null);
                             continue;
                         }
                         const subarray = mod.HEAPU8.subarray(
