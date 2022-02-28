@@ -104,18 +104,18 @@ export function callScalarUDF(
         const argValidity = [];
         const argData = [];
         for (let i = 0; i < desc.args.length; ++i) {
-            const arg = desc.args[i];
-            const data = ptrToArray(mod, ptrs[arg.dataBuffer] as number, arg.physicalType, desc.rows);
-            const validity = ptrToUint8Array(mod, ptrs[arg.validityBuffer] as number, desc.rows);
+            const argDesc = desc.args[i];
+            const data = ptrToArray(mod, ptrs[argDesc.dataBuffer] as number, argDesc.physicalType, desc.rows);
+            const validity = ptrToUint8Array(mod, ptrs[argDesc.validityBuffer] as number, desc.rows);
             if (data.length == 0 || validity.length == 0) {
-                storeError(mod, response, "Can't create physical arrays for argument " + arg.physicalType);
+                storeError(mod, response, "Can't create physical arrays for argument " + argDesc.physicalType);
                 return;
             }
             argValidity.push(validity);
 
-            switch (arg.physicalType) {
+            switch (argDesc.physicalType) {
                 case 'VARCHAR': {
-                    const lengthsArray = ptrToFloat64Array(mod, ptrs[arg.lengthBuffer] as number, desc.rows);
+                    const lengthsArray = ptrToFloat64Array(mod, ptrs[argDesc.lengthBuffer] as number, desc.rows);
                     const dataArray = [];
                     const decoder = new TextDecoder();
                     for (let j = 0; j < desc.rows; ++j) {
@@ -175,7 +175,7 @@ export function callScalarUDF(
         let resultLengthsPtr = 0;
         switch (desc.ret.physicalType) {
             case 'VARCHAR': {
-                // Allocate  result buffers
+                // Allocate result buffers
                 const resultDataUTF8 = new Array<Uint8Array>(0); // cough
                 resultLengthsPtr = mod._malloc(desc.rows * getTypeSize('DOUBLE'));
                 const resultLengths = ptrToFloat64Array(mod, resultLengthsPtr, desc.rows);
@@ -183,10 +183,11 @@ export function callScalarUDF(
                 // TODO: We need two loops to figure out the total length but maybe we can avoid the double allocation
                 let totalLength = 0;
                 const enc = new TextEncoder();
-                for (let row_idx = 0; row_idx < desc.rows; ++row_idx) {
-                    resultDataUTF8[row_idx] = enc.encode(rawResultData[row_idx] as unknown as string);
-                    resultLengths[row_idx] = resultDataUTF8[row_idx].length;
-                    totalLength += resultDataUTF8[row_idx].length;
+                for (let row = 0; row < desc.rows; ++row) {
+                    const utf8 = enc.encode((rawResultData as string[])[row]);
+                    resultDataUTF8.push(utf8);
+                    resultLengths[row] = utf8.length;
+                    totalLength += utf8.length;
                 }
 
                 // We malloc a buffer for the strings to live in for now
@@ -195,9 +196,9 @@ export function callScalarUDF(
 
                 // Now copy all the strings to the new buffer back to back
                 let writerOffset = 0;
-                for (let rowIdx = 0; rowIdx < desc.rows; ++rowIdx) {
-                    resultData[rowIdx] = writerOffset;
-                    const resultUTF8 = resultDataUTF8[rowIdx];
+                for (let row = 0; row < desc.rows; ++row) {
+                    resultData[row] = writerOffset;
+                    const resultUTF8 = resultDataUTF8[row];
                     const writer = resultStringBuf.subarray(writerOffset, writerOffset + resultUTF8.length);
                     writer.set(resultUTF8);
                     writerOffset += resultUTF8.length;
