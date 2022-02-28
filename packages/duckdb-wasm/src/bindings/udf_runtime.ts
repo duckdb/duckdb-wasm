@@ -213,7 +213,8 @@ export function callScalarUDF(
         retBuffer[1] = resultValidityPtr;
         retBuffer[2] = resultLengthsPtr;
 
-        mod.HEAPF64[(response >> 3) + 0] = 0; // status
+        // Pack response
+        mod.HEAPF64[(response >> 3) + 0] = 0;
         mod.HEAPF64[(response >> 3) + 1] = retPtr;
         mod.HEAPF64[(response >> 3) + 2] = 0;
     } catch (e: any) {

@@ -410,15 +410,28 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
                 return arrow::Status::ExecutionError("Unsupported UDF argument type " + vec.GetType().ToString());
         }
         type_desc.push_back(StringUtil::Format(
-            "{\"logicalType\": \"%s\", \"physicalType\": \"%s\", \"validityBuffer\": %d, \"dataBuffer\": %d, "
-            "\"lengthBuffer\": %d}",
+            R"RAW({
+                "logicalType": "%s",
+                "physicalType": "%s",
+                "validityBuffer": %d,
+                "dataBuffer": %d,
+                "lengthBuffer": %d
+            })RAW",
             vec_type.ToString(), TypeIdToString(vec_type.InternalType()), validity_idx, data_idx, length_idx));
     }
 
     // create a json description of the schema to pass
     auto joined = StringUtil::Format(
-        "{\"rows\": %d, \"args\": [%s], \"ret\": {\"logicalType\": \"%s\", \"physicalType\": \"%s\"}}", chunk.size(),
-        StringUtil::Join(type_desc, ","), out.GetType().ToString(), TypeIdToString(out.GetType().InternalType()));
+        R"RAW({
+            "rows": %d,
+            "args": [%s], 
+            "ret": {
+                "logicalType": "%s",
+                "physicalType": "%s"
+            }
+        })RAW",
+        chunk.size(), StringUtil::Join(type_desc, ","), out.GetType().ToString(),
+        TypeIdToString(out.GetType().InternalType()));
 
     // actually call the UDF
     WASMResponse response;
