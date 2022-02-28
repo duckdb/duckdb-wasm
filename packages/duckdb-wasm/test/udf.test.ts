@@ -40,7 +40,7 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
             expect(result.getChildAt(0)?.toArray()).toEqual(new Float64Array([10000]));
         });
 
-        it('twoargs', async () => {
+        it('2 args', async () => {
             conn.createScalarFunction('jsudf3', new Int32(), (a, b) => a + b);
 
             const result = conn.query(
@@ -51,6 +51,32 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
             expect(result.numCols).toEqual(1);
             expect(result.getChildAt(0)?.length).toEqual(1);
             expect(result.getChildAt(0)?.toArray()).toEqual(new Int32Array([20000]));
+        });
+
+        it('3 args', async () => {
+            conn.createScalarFunction('jsudf3args', new Int32(), (a, b, c) => a + b + c);
+
+            const result = conn.query(
+                'SELECT max(jsudf3args(v::INTEGER, v::INTEGER, v::INTEGER))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.numRows).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getChildAt(0)?.length).toEqual(1);
+            expect(result.getChildAt(0)?.toArray()).toEqual(new Int32Array([30000]));
+        });
+
+        it('4 args', async () => {
+            conn.createScalarFunction('jsudf4args', new Int32(), (a, b, c, d) => a + b + c + d);
+
+            const result = conn.query(
+                'SELECT max(jsudf4args(v::INTEGER, v::INTEGER, v::INTEGER, v::INTEGER))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
+            );
+
+            expect(result.numRows).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getChildAt(0)?.length).toEqual(1);
+            expect(result.getChildAt(0)?.toArray()).toEqual(new Int32Array([40000]));
         });
 
         it('noargs', async () => {
