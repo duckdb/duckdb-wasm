@@ -345,7 +345,7 @@ static data_ptr_t create_additional_buffer(vector<double>& data_ptrs, additional
                                            idx_t size, int64_t& buffer_idx) {
     additional_buffers.emplace_back(unique_ptr<data_t[]>(new data_t[size]));
     auto res_ptr = additional_buffers.back().get();
-    data_ptrs.push_back((double)(uintptr_t)res_ptr);
+    data_ptrs.push_back(static_cast<double>(reinterpret_cast<uintptr_t>(res_ptr)));
     buffer_idx = data_ptrs.size() - 1;
     return res_ptr;
 }
@@ -358,50 +358,49 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     vector<string> type_desc;
     auto data_ptrs_len = chunk.ColumnCount();
     vector<double> data_ptrs;
-    // TODO support function returning NULLs
-    // TODO support function returning strings
-    // TODO complex type support
 
+    // TODO complex type support
     // TODO create the descriptor in the bind phase for performance
     // TODO special handling if all arguments are non-NULL for performance
     additional_buffers_t additional_buffers;
 
     for (idx_t col_idx = 0; col_idx < chunk.ColumnCount(); col_idx++) {
         auto& vec = chunk.data[col_idx];
-        // make sure we only have flat vectors hereafter (for now)
+        // Make sure we only have flat vectors hereafter (for now)
         vec.Normalify(chunk.size());
 
         int64_t validity_idx = -1;
         int64_t data_idx = -1;
         int64_t length_idx = -1;
 
+        // Create bool array to hold NULL flags ("validity"), passed to js as an additional array
         auto& validity = FlatVector::Validity(vec);
-        // create bool array to hold NULL flags ("validity"), passed to js as an additional array
         auto validity_ptr = create_additional_buffer(data_ptrs, additional_buffers, chunk.size(), validity_idx);
         for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
             validity_ptr[row_idx] = validity.RowIsValid(row_idx);
         }
 
-        // create js-compatible buffers for supported types. Very simple for primitive types, bit more involved for
-        // strings etc.
+        // Create js-compatible buffers for supported types.
+        // Very simple for primitive types, bit more involved for strings etc.
         auto& vec_type = vec.GetType();
         switch (vec_type.id()) {
             case LogicalTypeId::INTEGER:
             case LogicalTypeId::DOUBLE:
-                data_ptrs.push_back((double)(uintptr_t)vec.GetData());
+                data_ptrs.push_back(static_cast<double>(reinterpret_cast<uintptr_t>(vec.GetData())));
                 data_idx = data_ptrs.size() - 1;
                 break;
             case LogicalTypeId::BLOB:
             case LogicalTypeId::VARCHAR: {
-                auto data_ptr = (double*)create_additional_buffer(data_ptrs, additional_buffers,
-                                                                  chunk.size() * sizeof(double), data_idx);
-                auto len_ptr = (double*)create_additional_buffer(data_ptrs, additional_buffers,
-                                                                 chunk.size() * sizeof(double), length_idx);
+                auto data_ptr = reinterpret_cast<double*>(
+                    create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), data_idx));
+                auto len_ptr = reinterpret_cast<double*>(
+                    create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), length_idx));
 
                 auto string_ptr = FlatVector::GetData<string_t>(vec);
                 for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-                    data_ptr[row_idx] = (double)(ptrdiff_t)string_ptr[row_idx].GetDataUnsafe();
-                    len_ptr[row_idx] = (double)string_ptr[row_idx].GetSize();
+                    data_ptr[row_idx] =
+                        static_cast<double>(reinterpret_cast<ptrdiff_t>(string_ptr[row_idx].GetDataUnsafe()));
+                    len_ptr[row_idx] = static_cast<double>(string_ptr[row_idx].GetSize());
                 }
                 break;
             }
@@ -445,30 +444,30 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
         return arrow::Status::ExecutionError(err);
     }
 
-    // wild casting games commence
     // Unpack result buffer, first entry is data, second is validity, third is length (strings/lists)
-    auto res_arr = (double*)(uintptr_t)response.dataOrValue;
-    auto validity_arr = (uint8_t*)(uintptr_t)res_arr[1];  // TODO WTF why is this 2 and not 1?
+    auto res_arr = reinterpret_cast<double*>(static_cast<uintptr_t>(response.dataOrValue));
+    auto validity_arr =
+        reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(res_arr[1]));  // TODO WTF why is this 2 and not 1?
     for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
         FlatVector::SetNull(out, row_idx, !validity_arr[row_idx]);
     }
 
-    // special handling for strings, we need to interpret the funky pointers and the lengths
+    // Special handling for strings, we need to interpret the funky pointers and the lengths
     // basically inverse of what happens above for strings
     if (out.GetType().id() == LogicalTypeId::VARCHAR) {
-        auto string_ptr_buf = (double*)(uintptr_t)res_arr[0];
+        auto string_ptr_buf = reinterpret_cast<double*>(static_cast<uintptr_t>(res_arr[0]));
         auto out_string_ptr = FlatVector::GetData<string_t>(out);
-        auto len_buf = (double*)(uintptr_t)res_arr[2];
+        auto len_buf = reinterpret_cast<double*>(static_cast<uintptr_t>(res_arr[2]));
         for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-            if (!validity_arr[row_idx]) {  // don't go chasing waternulls
+            if (!validity_arr[row_idx]) {
                 continue;
             }
-            auto string_ptr = (const char*)(uintptr_t)string_ptr_buf[row_idx];
+            auto string_ptr = reinterpret_cast<const char*>(static_cast<uintptr_t>(string_ptr_buf[row_idx]));
             out_string_ptr[row_idx] = StringVector::AddString(out, string_ptr, len_buf[row_idx]);
         }
 
     } else {
-        auto res_buf = (char*)(uintptr_t)res_arr[0];
+        auto res_buf = reinterpret_cast<char*>(static_cast<uintptr_t>(res_arr[0]));
         auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
         out.SetAuxiliary(shared_buffer);
         duckdb::FlatVector::SetData(out, (data_ptr_t)res_buf);
@@ -515,9 +514,9 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
 
         /// Execute the arrow scan
         vector<Value> params;
-        params.push_back(duckdb::Value::POINTER((uintptr_t)&stream_reader));
-        params.push_back(
-            duckdb::Value::POINTER((uintptr_t)ArrowIPCStreamBufferReader::CreateArrayStreamFromSharedPtrPtr));
+        params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&stream_reader)));
+        params.push_back(duckdb::Value::POINTER(
+            reinterpret_cast<uintptr_t>(ArrowIPCStreamBufferReader::CreateArrayStreamFromSharedPtrPtr)));
         params.push_back(duckdb::Value::UBIGINT(1000000));
         auto func = connection_.TableFunction("arrow_scan", params);
 
@@ -637,8 +636,9 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
 
         /// Execute the arrow scan
         vector<Value> params;
-        params.push_back(duckdb::Value::POINTER((uintptr_t)&table_reader));
-        params.push_back(duckdb::Value::POINTER((uintptr_t)json::TableReader::CreateArrayStreamFromSharedPtrPtr));
+        params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&table_reader)));
+        params.push_back(
+            duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(json::TableReader::CreateArrayStreamFromSharedPtrPtr)));
         params.push_back(duckdb::Value::UBIGINT(1000000));
         auto func = connection_.TableFunction("arrow_scan", params);
 
