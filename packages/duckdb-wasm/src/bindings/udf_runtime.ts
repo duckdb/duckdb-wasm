@@ -2,6 +2,7 @@ import { DuckDBRuntime } from './runtime';
 import { DuckDBModule } from './duckdb_module';
 
 const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder('utf-8');
 
 function storeError(mod: DuckDBModule, response: number, message: string) {
     const msgBuffer = TEXT_ENCODER.encode(message);
@@ -47,7 +48,7 @@ function ptrToArray(mod: DuckDBModule, ptr: number, ptype: string, n: number) {
         case 'VARCHAR':
             return new Float64Array(heap.buffer, heap.byteOffset, n);
         default:
-            return new Array<string>(0); // cough
+            return new Array<string | undefined | null>(0); // cough
     }
 }
 
@@ -96,7 +97,7 @@ export function callScalarUDF(
             storeError(mod, response, 'Unknown UDF with id: ' + funcId);
             return;
         }
-        const descStr = new TextDecoder().decode(mod.HEAPU8.subarray(descPtr, descPtr + descSize));
+        const descStr = TEXT_DECODER.decode(mod.HEAPU8.subarray(descPtr, descPtr + descSize));
         const desc = JSON.parse(descStr) as SchemaDescription;
         const ptrs = ptrToFloat64Array(mod, ptrsPtr, ptrsSize / 8);
 
@@ -117,7 +118,6 @@ export function callScalarUDF(
                 case 'VARCHAR': {
                     const lengthsArray = ptrToFloat64Array(mod, ptrs[argDesc.lengthBuffer] as number, desc.rows);
                     const dataArray = [];
-                    const decoder = new TextDecoder();
                     for (let j = 0; j < desc.rows; ++j) {
                         if (!validity[j]) {
                             dataArray.push(undefined);
@@ -127,7 +127,7 @@ export function callScalarUDF(
                             data[j] as number,
                             (data[j] as number) + (lengthsArray[j] as number),
                         );
-                        const str = decoder.decode(subarray);
+                        const str = TEXT_DECODER.decode(subarray);
                         dataArray.push(str);
                     }
                     argData.push(dataArray);
@@ -152,16 +152,14 @@ export function callScalarUDF(
         }
         let rawResultData = resultData;
         if (desc.ret.physicalType == 'VARCHAR') {
-            rawResultData = new Array<string>(desc.rows);
+            rawResultData = new Array<string | undefined | null>(desc.rows);
         }
 
-        // Prepare the arguments
+        // Call the function
         const args = [];
         for (let i = 0; i < desc.args.length; ++i) {
             args.push(null);
         }
-
-        // Call the function
         for (let i = 0; i < desc.rows; ++i) {
             for (let j = 0; j < desc.args.length; ++j) {
                 args[j] = argValidity[j][i] ? argData[j][i] : null;
@@ -182,9 +180,8 @@ export function callScalarUDF(
 
                 // TODO: We need two loops to figure out the total length but maybe we can avoid the double allocation
                 let totalLength = 0;
-                const enc = new TextEncoder();
                 for (let row = 0; row < desc.rows; ++row) {
-                    const utf8 = enc.encode((rawResultData as string[])[row]);
+                    const utf8 = TEXT_ENCODER.encode((rawResultData as (string | null | undefined)[])[row] || '');
                     resultDataUTF8.push(utf8);
                     resultLengths[row] = utf8.length;
                     totalLength += utf8.length;
