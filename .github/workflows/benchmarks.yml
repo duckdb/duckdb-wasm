@@ -13,7 +13,7 @@ jobs:
         name: TPCH Generator
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
 
@@ -43,7 +43,7 @@ jobs:
         name: Dataprep
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
 
@@ -78,7 +78,7 @@ jobs:
         name: DuckDB Shell
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
 
@@ -114,7 +114,7 @@ jobs:
         name: Microbenchmarks
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -204,7 +204,7 @@ jobs:
             - tpchgen
             - duckdb_shell
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -299,7 +299,7 @@ jobs:
             - tpchgen
             - duckdb_shell
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -394,7 +394,7 @@ jobs:
             - tpchgen
             - duckdb_shell
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -489,7 +489,7 @@ jobs:
             - tpchgen
             - duckdb_shell
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -586,7 +586,7 @@ jobs:
             - bench_tpch_0_25
             - bench_tpch_0_5
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   submodules: 'recursive'
 
