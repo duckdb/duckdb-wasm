@@ -21,7 +21,7 @@ struct JSONTypedefTest {
         }
     };
     std::string_view name;
-    duckdb::LogicalType type;
+    duckdb::LogicalType logical;
     std::string_view as_json;
     std::string_view as_arrow;
 };
@@ -47,7 +47,7 @@ TEST_P(JSONTypedefTestSuite, Writing) {
     auto& test = GetParam();
 
     rapidjson::Document doc;
-    auto root = duckdb::web::json::WriteSQLType(doc, test.type);
+    auto root = duckdb::web::json::WriteSQLType(doc, test.logical);
     ASSERT_TRUE(root.ok());
     ASSERT_TRUE(root.ValueUnsafe().IsObject());
     doc.SetObject().Swap(root.ValueUnsafe());
@@ -64,288 +64,202 @@ TEST_P(JSONTypedefTestSuite, Writing) {
 static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
 //    {
 //        .name = "binary",
-//        .as_json = R"JSON({ "type": "binary" })JSON",
+//        .as_json = R"JSON({ "logical": "binary" })JSON",
 //        .as_text = "binary",
 //    },
     {
         .name = "bool",
-        .type = duckdb::LogicalType::BOOLEAN,
-        .as_json = R"JSON({"type":"bool"})JSON",
+        .logical = duckdb::LogicalType::BOOLEAN,
+        .as_json = R"JSON({"logicalType":"bool"})JSON",
         .as_arrow = "bool",
     },
-//    {
-//        .name = "date",
-//        .as_json = R"JSON({"type": "date"})JSON",
-//        .as_arrow = "date64[ms]",
-//    },
-//    {
-//        .name = "date32",
-//        .as_json = R"JSON({ "type": "date32" })JSON",
-//        .as_text = "date32[day]",
-//    },
-//    {
-//        .name = "date64",
-//        .as_json = R"JSON({ "type": "date64" })JSON",
-//        .as_text = "date64[ms]",
-//    },
+    {
+        .name = "date",
+        .logical = duckdb::LogicalType::DATE,
+        .as_json = R"JSON({"logicalType":"date32[d]"})JSON",
+        .as_arrow = "date32[day]",
+    },
 //    {
 //        .name = "decimal128",
-//        .as_json = R"JSON({ "type": "decimal128", "precision": 30, "scale": 4 })JSON",
-//        .as_text = "decimal128(30, 4)",
+//        .logical = duckdb::LogicalType::DECIMAL(30, 4),
+//        .as_json = R"JSON({"logical":"decimal128","precision":30,"scale":4})JSON",
+//        .as_arrow = "decimal128(30,4)",
 //    },
 //    {
 //        .name = "decimal256",
-//        .as_json = R"JSON({ "type": "decimal256", "precision": 40, "scale": 4 })JSON",
-//        .as_text = "decimal256(40, 4)",
+//        .logical = duckdb::LogicalType::DECIMAL(40, 4),
+//        .as_json = R"JSON({"logical":"decimal256","precision":40,"scale":4})JSON",
+//        .as_arrow = "decimal256(40,4)",
 //    },
-//    {
-//        .name = "double",
-//        .as_json = R"JSON({ "type": "double" })JSON",
-//        .as_text = "double",
-//    },
-//    {
-//        .name = "float64",
-//        .as_json = R"JSON({ "type": "float64" })JSON",
-//        .as_text = "double",
-//    },
-//    {
-//        .name = "float",
-//        .as_json = R"JSON({ "type": "float32" })JSON",
-//        .as_text = "float",
-//    },
-//    {
-//        .name = "float32",
-//        .as_json = R"JSON({ "type": "float32" })JSON",
-//        .as_text = "float",
-//    },
-//    {
-//        .name = "halffloat",
-//        .as_json = R"JSON({ "type": "halffloat" })JSON",
-//        .as_text = "halffloat",
-//    },
-//    {
-//        .name = "float16",
-//        .as_json = R"JSON({ "type": "float16" })JSON",
-//        .as_text = "halffloat",
-//    },
-//    {
-//        .name = "int8",
-//        .as_json = R"JSON({ "type": "int8" })JSON",
-//        .as_text = "int8",
-//    },
-//    {
-//        .name = "int16",
-//        .as_json = R"JSON({ "type": "int16" })JSON",
-//        .as_text = "int16",
-//    },
-//    {
-//        .name = "int32",
-//        .as_json = R"JSON({ "type": "int32" })JSON",
-//        .as_text = "int32",
-//    },
-//    {
-//        .name = "int64",
-//        .as_json = R"JSON({ "type": "int64" })JSON",
-//        .as_text = "int64",
-//    },
-//    {
-//        .name = "uint8",
-//        .as_json = R"JSON({ "type": "uint8" })JSON",
-//        .as_text = "uint8",
-//    },
-//    {
-//        .name = "uint16",
-//        .as_json = R"JSON({ "type": "uint16" })JSON",
-//        .as_text = "uint16",
-//    },
-//    {
-//        .name = "uint32",
-//        .as_json = R"JSON({ "type": "uint32" })JSON",
-//        .as_text = "uint32",
-//    },
-//    {
-//        .name = "uint64",
-//        .as_json = R"JSON({ "type": "uint64" })JSON",
-//        .as_text = "uint64",
-//    },
+    {
+        .name = "double",
+        .logical = duckdb::LogicalType::DOUBLE,
+        .as_json = R"JSON({"logicalType":"double"})JSON",
+        .as_arrow = "double",
+    },
+    {
+        .name = "float",
+        .logical = duckdb::LogicalType::FLOAT,
+        .as_json = R"JSON({"logicalType":"float"})JSON",
+        .as_arrow = "float",
+    },
 //    {
 //        .name = "duration",
-//        .as_json = R"JSON({ "type": "duration" })JSON",
+//        .as_json = R"JSON({ "logical": "duration" })JSON",
 //        .as_text = "duration[ms]",
 //    },
 //    {
 //        .name = "duration_ms",
-//        .as_json = R"JSON({ "type": "duration[ms]" })JSON",
+//        .as_json = R"JSON({ "logical": "duration[ms]" })JSON",
 //        .as_text = "duration[ms]",
 //    },
 //    {
 //        .name = "duration_ns",
-//        .as_json = R"JSON({ "type": "duration[ns]" })JSON",
+//        .as_json = R"JSON({ "logical": "duration[ns]" })JSON",
 //        .as_text = "duration[ns]",
 //    },
 //    {
 //        .name = "duration_s",
-//        .as_json = R"JSON({ "type": "duration[s]" })JSON",
+//        .as_json = R"JSON({ "logical": "duration[s]" })JSON",
 //        .as_text = "duration[s]",
 //    },
 //    {
 //        .name = "duration_us",
-//        .as_json = R"JSON({ "type": "duration[us]" })JSON",
+//        .as_json = R"JSON({ "logical": "duration[us]" })JSON",
 //        .as_text = "duration[us]",
 //    },
 //    {
 //        .name = "fixedsizebinary",
-//        .as_json = R"JSON({ "type": "fixedsizebinary", "byteWidth": 200 })JSON",
+//        .as_json = R"JSON({ "logical": "fixedsizebinary", "byteWidth": 200 })JSON",
 //        .as_text = "fixed_size_binary[200]",
 //    },
 //    {
 //        .name = "fixedsizelist",
-//        .as_json = R"JSON({ "type": "fixedsizelist", "listSize": 200, "children": [{"name": "bar", "type": "int32"}] })JSON",
+//        .as_json = R"JSON({ "logical": "fixedsizelist", "listSize": 200, "children": [{"name": "bar", "logical": "int32"}] })JSON",
 //        .as_text = "fixed_size_list<bar: int32>[200]",
 //    },
 //    {
 //        .name = "interval_dt",
-//        .as_json = R"JSON({ "type": "interval[dt]"})JSON",
+//        .as_json = R"JSON({ "logical": "interval[dt]"})JSON",
 //        .as_text = "day_time_interval",
 //    },
 //    {
 //        .name = "interval_dt_explicit",
-//        .as_json = R"JSON({ "type": "daytimeinterval"})JSON",
+//        .as_json = R"JSON({ "logical": "daytimeinterval"})JSON",
 //        .as_text = "day_time_interval",
 //    },
 //    {
 //        .name = "interval_m",
-//        .as_json = R"JSON({ "type": "interval[m]"})JSON",
+//        .as_json = R"JSON({ "logical": "interval[m]"})JSON",
 //        .as_text = "month_interval",
 //    },
 //    {
 //        .name = "interval_m_explicit",
-//        .as_json = R"JSON({ "type": "monthinterval"})JSON",
+//        .as_json = R"JSON({ "logical": "monthinterval"})JSON",
 //        .as_text = "month_interval",
 //    },
 //    {
 //        .name = "null",
-//        .as_json = R"JSON({ "type": "null"})JSON",
+//        .as_json = R"JSON({ "logical": "null"})JSON",
 //        .as_text = "null",
 //    },
 //    {
 //        .name = "utf8",
-//        .as_json = R"JSON({ "type": "utf8"})JSON",
+//        .as_json = R"JSON({ "logical": "utf8"})JSON",
 //        .as_text = "string",
 //    },
 //    {
 //        .name = "string",
-//        .as_json = R"JSON({ "type": "string"})JSON",
+//        .as_json = R"JSON({ "logical": "string"})JSON",
 //        .as_text = "string",
 //    },
 //    {
 //        .name = "time_ms",
-//        .as_json = R"JSON({ "type": "time[ms]"})JSON",
+//        .as_json = R"JSON({ "logical": "time[ms]"})JSON",
 //        .as_text = "time32[ms]",
 //    },
 //    {
 //        .name = "time_ns",
-//        .as_json = R"JSON({ "type": "time[ns]"})JSON",
+//        .as_json = R"JSON({ "logical": "time[ns]"})JSON",
 //        .as_text = "time64[ns]",
 //    },
 //    {
 //        .name = "time_us",
-//        .as_json = R"JSON({ "type": "time[us]"})JSON",
+//        .as_json = R"JSON({ "logical": "time[us]"})JSON",
 //        .as_text = "time64[us]",
 //    },
 //    {
 //        .name = "time_s",
-//        .as_json = R"JSON({ "type": "time[s]"})JSON",
+//        .as_json = R"JSON({ "logical": "time[s]"})JSON",
 //        .as_text = "time32[s]",
 //    },
 //    {
 //        .name = "time32_ms",
-//        .as_json = R"JSON({ "type": "time32[ms]"})JSON",
+//        .as_json = R"JSON({ "logical": "time32[ms]"})JSON",
 //        .as_text = "time32[ms]",
 //    },
 //    {
 //        .name = "time32_s",
-//        .as_json = R"JSON({ "type": "time32[s]"})JSON",
+//        .as_json = R"JSON({ "logical": "time32[s]"})JSON",
 //        .as_text = "time32[s]",
 //    },
 //    {
 //        .name = "time64_ns",
-//        .as_json = R"JSON({ "type": "time64[ns]"})JSON",
+//        .as_json = R"JSON({ "logical": "time64[ns]"})JSON",
 //        .as_text = "time64[ns]",
 //    },
 //    {
 //        .name = "time64_us",
-//        .as_json = R"JSON({ "type": "time64[us]"})JSON",
+//        .as_json = R"JSON({ "logical": "time64[us]"})JSON",
 //        .as_text = "time64[us]",
 //    },
-//    {
-//        .name = "timestamp_default",
-//        .as_json = R"JSON({ "type": "timestamp"})JSON",
-//        .as_text = "timestamp[s]",
-//    },
-//    {
-//        .name = "timestamp_s",
-//        .as_json = R"JSON({ "type": "timestamp[s]"})JSON",
-//        .as_text = "timestamp[s]",
-//    },
-//    {
-//        .name = "timestamp_ms",
-//        .as_json = R"JSON({ "type": "timestamp[ms]"})JSON",
-//        .as_text = "timestamp[ms]",
-//    },
-//    {
-//        .name = "timestamp_ns",
-//        .as_json = R"JSON({ "type": "timestamp[ns]"})JSON",
-//        .as_text = "timestamp[ns]",
-//    },
-//    {
-//        .name = "timestamp_us",
-//        .as_json = R"JSON({ "type": "timestamp[us]"})JSON",
-//        .as_text = "timestamp[us]",
-//    },
-//    {
-//        .name = "timestamp_s_timezone",
-//        .as_json = R"JSON({ "type": "timestamp[s]", "timezone": "utc"})JSON",
-//        .as_text = "timestamp[s, tz=utc]",
-//    },
-//    {
-//        .name = "list",
-//        .as_json = R"JSON({ "type": "list", "children": [{"name": "bar", "type": "int32"}] })JSON",
-//        .as_text = "list<bar: int32>",
-//    },
+    {
+        .name = "timestamp_default",
+        .logical = duckdb::LogicalType::TIMESTAMP,
+        .as_json = R"JSON({"logicalType":"timestamp"})JSON",
+        .as_arrow = "timestamp[s]",
+    },
+    {
+        .name = "timestamp_s",
+        .logical = duckdb::LogicalType::TIMESTAMP_S,
+        .as_json = R"JSON({"logicalType":"timestamp[s]"})JSON",
+        .as_arrow = "timestamp[s]",
+    },
+    {
+        .name = "timestamp_ms",
+        .logical = duckdb::LogicalType::TIMESTAMP_MS,
+        .as_json = R"JSON({"logicalType":"timestamp[ms]"})JSON",
+        .as_arrow = "timestamp[ms]",
+    },
+    {
+        .name = "timestamp_ns",
+        .logical = duckdb::LogicalType::TIMESTAMP_NS,
+        .as_json = R"JSON({"logicalType":"timestamp[ns]"})JSON",
+        .as_arrow = "timestamp[ns]",
+    },
+    {
+        .name = "list",
+        .logical = duckdb::LogicalType::LIST(duckdb::LogicalType::INTEGER),
+        .as_json = R"JSON({"logicalType":"list","valueType":{"logicalType":"int32"}})JSON",
+        .as_arrow = "list<value: int32>",
+    },
     {
         .name = "struct_simple",
-        .type = duckdb::LogicalType::STRUCT({
+        .logical = duckdb::LogicalType::STRUCT({
             {"bar", duckdb::LogicalType::INTEGER}
         }),
-        .as_json = R"JSON({"type":"struct","children":[{"type":"int32","name":"bar"}]})JSON",
+        .as_json = R"JSON({"logicalType":"struct","fields":[{"logicalType":"int32","name":"bar"}]})JSON",
         .as_arrow = "struct<bar: int32>",
     },
-//    {
-//        .name = "struct_map",
-//        .as_json = R"JSON({
-//            "type": "map",
-//            "children": [
-//                {
-//                    "name": "bar",
-//                    "type": "struct",
-//                    "nullable": false,
-//                    "children": [
-//                        {
-//                            "name": "key",
-//                            "type": "int32",
-//                            "nullable": false
-//                        },
-//                        {
-//                            "name": "value",
-//                            "type": "int32"
-//                        }
-//                    ]
-//                }
-//            ]
-//        })JSON",
-//        .as_text = "map<int32, int32 ('bar')>",
-//    },
+    {
+        .name = "struct_map",
+        .logical = duckdb::LogicalType::MAP({
+            {"key", duckdb::LogicalType::INTEGER},
+            {"vaue", duckdb::LogicalType::INTEGER}
+        }),
+        .as_json = R"JSON({"logicalType":"map","keyType":{"logicalType":"int32"},"valueType":{"logicalType":"int32"}})JSON",
+        .as_arrow = "map<int32, int32 ('entry')>",
+    },
 };
 // clang-format on
 
