@@ -90,8 +90,8 @@ TEST(TableReaderOptions, Fields) {
     doc.Parse(R"JSON({
         "shape": "row-array",
         "columns": [
-            {"name": "foo", "type": "int32"},
-            {"name": "bar", "type": "utf8"}
+            {"name": "foo", "sqlType": "int32"},
+            {"name": "bar", "sqlType": "utf8"}
         ]
     })JSON");
     json::JSONInsertOptions options;

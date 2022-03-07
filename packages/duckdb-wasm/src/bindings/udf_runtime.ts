@@ -62,7 +62,7 @@ function ptrToFloat64Array(mod: DuckDBModule, ptr: number, n: number) {
 }
 
 interface ArgumentTypeDescription {
-    logicalType: string;
+    sqlType: string;
     physicalType: string;
     validityBuffer: number;
     dataBuffer: number;
@@ -70,7 +70,7 @@ interface ArgumentTypeDescription {
 }
 
 interface ReturnTypeDescription {
-    logicalType: string;
+    sqlType: string;
     physicalType: string;
 }
 

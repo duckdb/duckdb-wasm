@@ -117,9 +117,9 @@ INTEGER	INTEGER	INTEGER
             "schema": "main",
             "name": "foo",
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int32" },
-                { "name": "c", "type": "int32" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int32" },
+                { "name": "c", "sqlType": "int32" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -146,9 +146,9 @@ INTEGER	INTEGER	INTEGER
             "detect": false,
             "header": true,
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "int64" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "int64" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -174,9 +174,9 @@ INTEGER	SMALLINT	BIGINT
             "detect": false,
             "header": false,
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "int64" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "int64" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -202,9 +202,9 @@ INTEGER	SMALLINT	BIGINT
             "detect": false,
             "header": false,
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "utf8" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "utf8" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -231,9 +231,9 @@ INTEGER	SMALLINT	VARCHAR
             "header": false,
             "delimiter": "|",
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "utf8" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "utf8" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -261,9 +261,9 @@ INTEGER	SMALLINT	VARCHAR
             "delimiter": "|",
             "quote": "'",
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "utf8" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "utf8" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -292,9 +292,9 @@ INTEGER	SMALLINT	VARCHAR
             "quote": "'",
             "dateFormat": "%m/%d/%Y",
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "date" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "date" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
@@ -323,9 +323,9 @@ INTEGER	SMALLINT	DATE
             "quote": "'",
             "timestampFormat": "%H:%M:%S %Y-%m-%d",
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "timestamp" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "timestamp" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",

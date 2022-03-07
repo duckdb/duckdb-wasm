@@ -190,7 +190,7 @@ Result<std::shared_ptr<DataType>> ReadUnionType(const rapidjson::Value::ConstObj
 
 /// Read a type
 arrow::Result<std::shared_ptr<arrow::DataType>> SQLToArrowType(const rapidjson::Value::ConstObject& type) {
-    ARROW_ASSIGN_OR_RAISE(const auto obj, GetStringField(type, "logicalType", ""));
+    ARROW_ASSIGN_OR_RAISE(const auto obj, GetStringField(type, "sqlType", ""));
 
     using TypeResolver =
         std::function<arrow::Result<std::shared_ptr<arrow::DataType>>(const rapidjson::Value::ConstObject&)>;
@@ -295,64 +295,64 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
     rapidjson::Value out(rapidjson::kObjectType);
     switch (type.id()) {
         case duckdb::LogicalTypeId::INVALID:
-            out.AddMember("logicalType", "invalid", alloc);
+            out.AddMember("sqlType", "invalid", alloc);
             break;
         case duckdb::LogicalTypeId::SQLNULL:
-            out.AddMember("logicalType", "null", alloc);
+            out.AddMember("sqlType", "null", alloc);
             break;
         case duckdb::LogicalTypeId::UNKNOWN:
-            out.AddMember("logicalType", "unknown", alloc);
+            out.AddMember("sqlType", "unknown", alloc);
             break;
         case duckdb::LogicalTypeId::ANY:
-            out.AddMember("logicalType", "any", alloc);
+            out.AddMember("sqlType", "any", alloc);
             break;
         case duckdb::LogicalTypeId::USER:
-            out.AddMember("logicalType", "user", alloc);
+            out.AddMember("sqlType", "user", alloc);
             break;
         case duckdb::LogicalTypeId::BOOLEAN:
-            out.AddMember("logicalType", "bool", alloc);
+            out.AddMember("sqlType", "bool", alloc);
             break;
         case duckdb::LogicalTypeId::TINYINT:
-            out.AddMember("logicalType", "int8", alloc);
+            out.AddMember("sqlType", "int8", alloc);
             break;
         case duckdb::LogicalTypeId::SMALLINT:
-            out.AddMember("logicalType", "int16", alloc);
+            out.AddMember("sqlType", "int16", alloc);
             break;
         case duckdb::LogicalTypeId::INTEGER:
-            out.AddMember("logicalType", "int32", alloc);
+            out.AddMember("sqlType", "int32", alloc);
             break;
         case duckdb::LogicalTypeId::BIGINT:
-            out.AddMember("logicalType", "int64", alloc);
+            out.AddMember("sqlType", "int64", alloc);
             break;
         case duckdb::LogicalTypeId::DATE:
-            out.AddMember("logicalType", "date32[d]", alloc);
+            out.AddMember("sqlType", "date32[d]", alloc);
             break;
         case duckdb::LogicalTypeId::TIME:
-            out.AddMember("logicalType", "time[us]", alloc);
+            out.AddMember("sqlType", "time[us]", alloc);
             break;
         case duckdb::LogicalTypeId::TIMESTAMP_SEC:
-            out.AddMember("logicalType", "timestamp[s]", alloc);
+            out.AddMember("sqlType", "timestamp[s]", alloc);
             break;
         case duckdb::LogicalTypeId::TIMESTAMP_MS:
-            out.AddMember("logicalType", "timestamp[ms]", alloc);
+            out.AddMember("sqlType", "timestamp[ms]", alloc);
             break;
         case duckdb::LogicalTypeId::TIMESTAMP:
-            out.AddMember("logicalType", "timestamp", alloc);
+            out.AddMember("sqlType", "timestamp", alloc);
             break;
         case duckdb::LogicalTypeId::TIMESTAMP_NS:
-            out.AddMember("logicalType", "timestamp[ns]", alloc);
+            out.AddMember("sqlType", "timestamp[ns]", alloc);
             break;
         case duckdb::LogicalTypeId::FLOAT:
-            out.AddMember("logicalType", "float", alloc);
+            out.AddMember("sqlType", "float", alloc);
             break;
         case duckdb::LogicalTypeId::DOUBLE:
-            out.AddMember("logicalType", "double", alloc);
+            out.AddMember("sqlType", "double", alloc);
             break;
         case duckdb::LogicalTypeId::VARCHAR:
-            out.AddMember("logicalType", "utf8", alloc);
+            out.AddMember("sqlType", "utf8", alloc);
             break;
         case duckdb::LogicalTypeId::STRUCT: {
-            out.AddMember("logicalType", "struct", alloc);
+            out.AddMember("sqlType", "struct", alloc);
             rapidjson::Value children(rapidjson::kArrayType);
             for (auto& child : duckdb::StructType::GetChildTypes(type)) {
                 ARROW_ASSIGN_OR_RAISE(auto field, WriteSQLField(doc, child.first, child.second, true));
@@ -362,14 +362,14 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
             break;
         }
         case duckdb::LogicalTypeId::LIST: {
-            out.AddMember("logicalType", "list", alloc);
+            out.AddMember("sqlType", "list", alloc);
             rapidjson::Value children(rapidjson::kArrayType);
             ARROW_ASSIGN_OR_RAISE(auto value, WriteSQLType(doc, duckdb::ListType::GetChildType(type)));
             out.AddMember("valueType", value, alloc);
             break;
         }
         case duckdb::LogicalTypeId::MAP: {
-            out.AddMember("logicalType", "map", alloc);
+            out.AddMember("sqlType", "map", alloc);
             rapidjson::Value children(rapidjson::kArrayType);
             ARROW_ASSIGN_OR_RAISE(auto key, WriteSQLType(doc, duckdb::MapType::KeyType(type)));
             ARROW_ASSIGN_OR_RAISE(auto value, WriteSQLType(doc, duckdb::MapType::ValueType(type)));

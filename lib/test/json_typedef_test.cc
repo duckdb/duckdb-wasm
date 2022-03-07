@@ -69,38 +69,38 @@ static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
 //    },
     {
         .name = "bool",
-        .logical = duckdb::LogicalType::BOOLEAN,
-        .as_json = R"JSON({"logicalType":"bool"})JSON",
+        .logical = duckdb::LogicalTypeId::BOOLEAN,
+        .as_json = R"JSON({"sqlType":"bool"})JSON",
         .as_arrow = "bool",
     },
     {
         .name = "date",
-        .logical = duckdb::LogicalType::DATE,
-        .as_json = R"JSON({"logicalType":"date32[d]"})JSON",
+        .logical = duckdb::LogicalTypeId::DATE,
+        .as_json = R"JSON({"sqlType":"date32[d]"})JSON",
         .as_arrow = "date32[day]",
     },
 //    {
 //        .name = "decimal128",
-//        .logical = duckdb::LogicalType::DECIMAL(30, 4),
+//        .logical = duckdb::LogicalTypeId::DECIMAL(30, 4),
 //        .as_json = R"JSON({"logical":"decimal128","precision":30,"scale":4})JSON",
 //        .as_arrow = "decimal128(30,4)",
 //    },
 //    {
 //        .name = "decimal256",
-//        .logical = duckdb::LogicalType::DECIMAL(40, 4),
+//        .logical = duckdb::LogicalTypeId::DECIMAL(40, 4),
 //        .as_json = R"JSON({"logical":"decimal256","precision":40,"scale":4})JSON",
 //        .as_arrow = "decimal256(40,4)",
 //    },
     {
         .name = "double",
-        .logical = duckdb::LogicalType::DOUBLE,
-        .as_json = R"JSON({"logicalType":"double"})JSON",
+        .logical = duckdb::LogicalTypeId::DOUBLE,
+        .as_json = R"JSON({"sqlType":"double"})JSON",
         .as_arrow = "double",
     },
     {
         .name = "float",
-        .logical = duckdb::LogicalType::FLOAT,
-        .as_json = R"JSON({"logicalType":"float"})JSON",
+        .logical = duckdb::LogicalTypeId::FLOAT,
+        .as_json = R"JSON({"sqlType":"float"})JSON",
         .as_arrow = "float",
     },
 //    {
@@ -215,49 +215,49 @@ static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
 //    },
     {
         .name = "timestamp_default",
-        .logical = duckdb::LogicalType::TIMESTAMP,
-        .as_json = R"JSON({"logicalType":"timestamp"})JSON",
+        .logical = duckdb::LogicalTypeId::TIMESTAMP,
+        .as_json = R"JSON({"sqlType":"timestamp"})JSON",
         .as_arrow = "timestamp[s]",
     },
     {
         .name = "timestamp_s",
-        .logical = duckdb::LogicalType::TIMESTAMP_S,
-        .as_json = R"JSON({"logicalType":"timestamp[s]"})JSON",
+        .logical = duckdb::LogicalTypeId::TIMESTAMP_SEC,
+        .as_json = R"JSON({"sqlType":"timestamp[s]"})JSON",
         .as_arrow = "timestamp[s]",
     },
     {
         .name = "timestamp_ms",
-        .logical = duckdb::LogicalType::TIMESTAMP_MS,
-        .as_json = R"JSON({"logicalType":"timestamp[ms]"})JSON",
+        .logical = duckdb::LogicalTypeId::TIMESTAMP_MS,
+        .as_json = R"JSON({"sqlType":"timestamp[ms]"})JSON",
         .as_arrow = "timestamp[ms]",
     },
     {
         .name = "timestamp_ns",
-        .logical = duckdb::LogicalType::TIMESTAMP_NS,
-        .as_json = R"JSON({"logicalType":"timestamp[ns]"})JSON",
+        .logical = duckdb::LogicalTypeId::TIMESTAMP_NS,
+        .as_json = R"JSON({"sqlType":"timestamp[ns]"})JSON",
         .as_arrow = "timestamp[ns]",
     },
     {
         .name = "list",
-        .logical = duckdb::LogicalType::LIST(duckdb::LogicalType::INTEGER),
-        .as_json = R"JSON({"logicalType":"list","valueType":{"logicalType":"int32"}})JSON",
+        .logical = duckdb::LogicalType::LIST(duckdb::LogicalTypeId::INTEGER),
+        .as_json = R"JSON({"sqlType":"list","valueType":{"sqlType":"int32"}})JSON",
         .as_arrow = "list<value: int32>",
     },
     {
         .name = "struct_simple",
         .logical = duckdb::LogicalType::STRUCT({
-            {"bar", duckdb::LogicalType::INTEGER}
+            {"bar", duckdb::LogicalTypeId::INTEGER}
         }),
-        .as_json = R"JSON({"logicalType":"struct","fields":[{"logicalType":"int32","name":"bar"}]})JSON",
+        .as_json = R"JSON({"sqlType":"struct","fields":[{"sqlType":"int32","name":"bar"}]})JSON",
         .as_arrow = "struct<bar: int32>",
     },
     {
         .name = "struct_map",
         .logical = duckdb::LogicalType::MAP({
-            {"key", duckdb::LogicalType::INTEGER},
-            {"vaue", duckdb::LogicalType::INTEGER}
+            {"key", duckdb::LogicalTypeId::INTEGER},
+            {"vaue", duckdb::LogicalTypeId::INTEGER}
         }),
-        .as_json = R"JSON({"logicalType":"map","keyType":{"logicalType":"int32"},"valueType":{"logicalType":"int32"}})JSON",
+        .as_json = R"JSON({"sqlType":"map","keyType":{"sqlType":"int32"},"valueType":{"sqlType":"int32"}})JSON",
         .as_arrow = "map<int32, int32 ('entry')>",
     },
 };

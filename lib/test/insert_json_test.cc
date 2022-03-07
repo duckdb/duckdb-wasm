@@ -103,9 +103,9 @@ INTEGER	INTEGER	INTEGER
             "name": "foo",
             "shape": "row-array",
             "columns": [
-                { "name": "a", "type": "int32" },
-                { "name": "b", "type": "int16" },
-                { "name": "c", "type": "utf8" }
+                { "name": "a", "sqlType": "int32" },
+                { "name": "b", "sqlType": "int16" },
+                { "name": "c", "sqlType": "utf8" }
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",

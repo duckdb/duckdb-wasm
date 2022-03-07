@@ -410,7 +410,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
         }
         type_desc.push_back(StringUtil::Format(
             R"RAW({
-                "logicalType": "%s",
+                "sqlType": "%s",
                 "physicalType": "%s",
                 "validityBuffer": %d,
                 "dataBuffer": %d,
@@ -425,7 +425,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
             "rows": %d,
             "args": [%s], 
             "ret": {
-                "logicalType": "%s",
+                "sqlType": "%s",
                 "physicalType": "%s"
             }
         })RAW",
