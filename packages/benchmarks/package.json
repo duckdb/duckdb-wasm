@@ -4,7 +4,7 @@
     "license": "MPL-2.0",
     "private": true,
     "dependencies": {
-        "@duckdb/duckdb-wasm": "^1.11.0",
+        "@duckdb/duckdb-wasm": "link:../duckdb-wasm",
         "apache-arrow": "^7.0.0",
         "arquero": "^4.8.8",
         "kleur": "^4.1.4",
