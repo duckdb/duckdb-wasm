@@ -455,7 +455,7 @@ TEST(FilePageBufferTest, ParallelScans) {
 TEST(FilePageBufferTest, ParallelReaderWriter) {
     constexpr size_t PageCount = 10;
     constexpr size_t ThreadCount = 4;
-    constexpr size_t JobCount = 1000;
+    constexpr size_t JobCount = 100;
 
     // Prepare test files
     std::vector<std::filesystem::path> test_files{
