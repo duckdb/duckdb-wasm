@@ -1,6 +1,6 @@
 import * as arrow from 'apache-arrow';
 
-export interface FlatArrowType {
+export interface SQLType {
     /// The type
     type: string;
     /// Is nullable?
@@ -14,10 +14,10 @@ export interface FlatArrowType {
     /// Byte width (FixedSizeBinary)
     byteWidth?: number;
     /// Fields
-    children?: FlatArrowField[];
+    children?: SQLField[];
 }
 
-export function flattenArrowType(type: arrow.DataType): FlatArrowType {
+export function arrowToSQLType(type: arrow.DataType): SQLType {
     switch (type.typeId) {
         case arrow.Type.Binary:
             return { type: 'binary' };
@@ -65,7 +65,7 @@ export function flattenArrowType(type: arrow.DataType): FlatArrowType {
             const list = type as arrow.List;
             return {
                 type: 'list',
-                children: [flattenArrowField(list.valueField.name, list.valueField.type)],
+                children: [arrowToSQLField(list.valueField.name, list.valueField.type)],
             };
         }
         case arrow.Type.FixedSizeBinary: {
@@ -80,7 +80,7 @@ export function flattenArrowType(type: arrow.DataType): FlatArrowType {
             const struct_ = type as arrow.Struct;
             return {
                 type: 'struct',
-                children: struct_.children.map(c => flattenArrowField(c.name, c.type)),
+                children: struct_.children.map(c => arrowToSQLField(c.name, c.type)),
             };
         }
         case arrow.Type.Time:
@@ -117,10 +117,10 @@ export function flattenArrowType(type: arrow.DataType): FlatArrowType {
     throw new Error(`unsupported arrow type: ${type.toString()}`);
 }
 
-export type FlatArrowField = FlatArrowType & { name: string };
+export type SQLField = SQLType & { name: string };
 
-export function flattenArrowField(name: string, type: arrow.DataType): FlatArrowField {
-    const t = flattenArrowType(type) as FlatArrowField;
+export function arrowToSQLField(name: string, type: arrow.DataType): SQLField {
+    const t = arrowToSQLType(type) as SQLField;
     t.name = name;
     return t;
 }

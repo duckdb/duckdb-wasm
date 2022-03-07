@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "duckdb/common/types.hpp"
 #include "duckdb/web/json_analyzer.h"
 #include "gtest/gtest.h"
 #include "rapidjson/document.h"
@@ -19,8 +20,8 @@ struct JSONTypedefTest {
         }
     };
     std::string_view name;
-    std::string_view input;
-    std::string_view expected;
+    std::string_view as_json;
+    std::string_view as_text;
 };
 
 struct JSONTypedefTestSuite : public testing::TestWithParam<JSONTypedefTest> {};
@@ -29,284 +30,282 @@ TEST_P(JSONTypedefTestSuite, ReadFields) {
     auto& test = GetParam();
 
     rapidjson::Document doc;
-    doc.Parse(test.input.data(), test.input.size());
+    doc.Parse(test.as_json.data(), test.as_json.size());
     ASSERT_FALSE(doc.HasParseError()) << doc.GetParseError() << std::endl;
-    ASSERT_TRUE(doc.IsArray());
+    ASSERT_TRUE(doc.IsObject());
 
-    auto array = ((const rapidjson::Document&)(doc)).GetArray();
-    auto fields = ReadFields(array);
-    ASSERT_TRUE(fields.ok()) << fields.status().message();
+    auto type_doc = ((const rapidjson::Document&)(doc)).GetObject();
+    auto type = SQLToArrowType(type_doc);
+    ASSERT_TRUE(type.ok()) << type.status().message();
 
-    auto have = arrow::struct_(std::move(fields.ValueUnsafe()));
-    ASSERT_EQ(std::string{test.expected}, std::string{have->ToString()});
+    ASSERT_EQ(std::string{test.as_text}, std::string{type.ValueUnsafe()->ToString()});
 }
 
 // clang-format off
 static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
     {
         .name = "binary",
-        .input = R"JSON([{ "name": "foo", "type": "binary" }])JSON",
-        .expected = "struct<foo: binary>",
+        .as_json = R"JSON({ "type": "binary" })JSON",
+        .as_text = "binary",
     },
     {
         .name = "bool",
-        .input = R"JSON([{ "name": "foo", "type": "bool" }])JSON",
-        .expected = "struct<foo: bool>",
+        .as_json = R"JSON({ "type": "bool" })JSON",
+        .as_text = "bool",
     },
     {
         .name = "boolean",
-        .input = R"JSON([{ "name": "foo", "type": "boolean" }])JSON",
-        .expected = "struct<foo: bool>",
+        .as_json = R"JSON({ "type": "boolean" })JSON",
+        .as_text = "bool",
     },
     {
         .name = "date",
-        .input = R"JSON([{ "name": "foo", "type": "date" }])JSON",
-        .expected = "struct<foo: date64[ms]>",
+        .as_json = R"JSON({ "type": "date" })JSON",
+        .as_text = "date64[ms]",
     },
     {
         .name = "date32",
-        .input = R"JSON([{ "name": "foo", "type": "date32" }])JSON",
-        .expected = "struct<foo: date32[day]>",
+        .as_json = R"JSON({ "type": "date32" })JSON",
+        .as_text = "date32[day]",
     },
     {
         .name = "date64",
-        .input = R"JSON([{ "name": "foo", "type": "date64" }])JSON",
-        .expected = "struct<foo: date64[ms]>",
+        .as_json = R"JSON({ "type": "date64" })JSON",
+        .as_text = "date64[ms]",
     },
     {
         .name = "decimal128",
-        .input = R"JSON([{ "name": "foo", "type": "decimal128", "precision": 30, "scale": 4 }])JSON",
-        .expected = "struct<foo: decimal128(30, 4)>",
+        .as_json = R"JSON({ "type": "decimal128", "precision": 30, "scale": 4 })JSON",
+        .as_text = "decimal128(30, 4)",
     },
     {
         .name = "decimal256",
-        .input = R"JSON([{ "name": "foo", "type": "decimal256", "precision": 40, "scale": 4 }])JSON",
-        .expected = "struct<foo: decimal256(40, 4)>",
+        .as_json = R"JSON({ "type": "decimal256", "precision": 40, "scale": 4 })JSON",
+        .as_text = "decimal256(40, 4)",
     },
     {
         .name = "double",
-        .input = R"JSON([{ "name": "foo", "type": "double" }])JSON",
-        .expected = "struct<foo: double>",
+        .as_json = R"JSON({ "type": "double" })JSON",
+        .as_text = "double",
     },
     {
         .name = "float64",
-        .input = R"JSON([{ "name": "foo", "type": "float64" }])JSON",
-        .expected = "struct<foo: double>",
+        .as_json = R"JSON({ "type": "float64" })JSON",
+        .as_text = "double",
     },
     {
         .name = "float",
-        .input = R"JSON([{ "name": "foo", "type": "float32" }])JSON",
-        .expected = "struct<foo: float>",
+        .as_json = R"JSON({ "type": "float32" })JSON",
+        .as_text = "float",
     },
     {
         .name = "float32",
-        .input = R"JSON([{ "name": "foo", "type": "float32" }])JSON",
-        .expected = "struct<foo: float>",
+        .as_json = R"JSON({ "type": "float32" })JSON",
+        .as_text = "float",
     },
     {
         .name = "halffloat",
-        .input = R"JSON([{ "name": "foo", "type": "halffloat" }])JSON",
-        .expected = "struct<foo: halffloat>",
+        .as_json = R"JSON({ "type": "halffloat" })JSON",
+        .as_text = "halffloat",
     },
     {
         .name = "float16",
-        .input = R"JSON([{ "name": "foo", "type": "float16" }])JSON",
-        .expected = "struct<foo: halffloat>",
+        .as_json = R"JSON({ "type": "float16" })JSON",
+        .as_text = "halffloat",
     },
     {
         .name = "int8",
-        .input = R"JSON([{ "name": "foo", "type": "int8" }])JSON",
-        .expected = "struct<foo: int8>",
+        .as_json = R"JSON({ "type": "int8" })JSON",
+        .as_text = "int8",
     },
     {
         .name = "int16",
-        .input = R"JSON([{ "name": "foo", "type": "int16" }])JSON",
-        .expected = "struct<foo: int16>",
+        .as_json = R"JSON({ "type": "int16" })JSON",
+        .as_text = "int16",
     },
     {
         .name = "int32",
-        .input = R"JSON([{ "name": "foo", "type": "int32" }])JSON",
-        .expected = "struct<foo: int32>",
+        .as_json = R"JSON({ "type": "int32" })JSON",
+        .as_text = "int32",
     },
     {
         .name = "int64",
-        .input = R"JSON([{ "name": "foo", "type": "int64" }])JSON",
-        .expected = "struct<foo: int64>",
+        .as_json = R"JSON({ "type": "int64" })JSON",
+        .as_text = "int64",
     },
     {
         .name = "uint8",
-        .input = R"JSON([{ "name": "foo", "type": "uint8" }])JSON",
-        .expected = "struct<foo: uint8>",
+        .as_json = R"JSON({ "type": "uint8" })JSON",
+        .as_text = "uint8",
     },
     {
         .name = "uint16",
-        .input = R"JSON([{ "name": "foo", "type": "uint16" }])JSON",
-        .expected = "struct<foo: uint16>",
+        .as_json = R"JSON({ "type": "uint16" })JSON",
+        .as_text = "uint16",
     },
     {
         .name = "uint32",
-        .input = R"JSON([{ "name": "foo", "type": "uint32" }])JSON",
-        .expected = "struct<foo: uint32>",
+        .as_json = R"JSON({ "type": "uint32" })JSON",
+        .as_text = "uint32",
     },
     {
         .name = "uint64",
-        .input = R"JSON([{ "name": "foo", "type": "uint64" }])JSON",
-        .expected = "struct<foo: uint64>",
+        .as_json = R"JSON({ "type": "uint64" })JSON",
+        .as_text = "uint64",
     },
     {
         .name = "duration",
-        .input = R"JSON([{ "name": "foo", "type": "duration" }])JSON",
-        .expected = "struct<foo: duration[ms]>",
+        .as_json = R"JSON({ "type": "duration" })JSON",
+        .as_text = "duration[ms]",
     },
     {
         .name = "duration_ms",
-        .input = R"JSON([{ "name": "foo", "type": "duration[ms]" }])JSON",
-        .expected = "struct<foo: duration[ms]>",
+        .as_json = R"JSON({ "type": "duration[ms]" })JSON",
+        .as_text = "duration[ms]",
     },
     {
         .name = "duration_ns",
-        .input = R"JSON([{ "name": "foo", "type": "duration[ns]" }])JSON",
-        .expected = "struct<foo: duration[ns]>",
+        .as_json = R"JSON({ "type": "duration[ns]" })JSON",
+        .as_text = "duration[ns]",
     },
     {
         .name = "duration_s",
-        .input = R"JSON([{ "name": "foo", "type": "duration[s]" }])JSON",
-        .expected = "struct<foo: duration[s]>",
+        .as_json = R"JSON({ "type": "duration[s]" })JSON",
+        .as_text = "duration[s]",
     },
     {
         .name = "duration_us",
-        .input = R"JSON([{ "name": "foo", "type": "duration[us]" }])JSON",
-        .expected = "struct<foo: duration[us]>",
+        .as_json = R"JSON({ "type": "duration[us]" })JSON",
+        .as_text = "duration[us]",
     },
     {
         .name = "fixedsizebinary",
-        .input = R"JSON([{ "name": "foo", "type": "fixedsizebinary", "byteWidth": 200 }])JSON",
-        .expected = "struct<foo: fixed_size_binary[200]>",
+        .as_json = R"JSON({ "type": "fixedsizebinary", "byteWidth": 200 })JSON",
+        .as_text = "fixed_size_binary[200]",
     },
     {
         .name = "fixedsizelist",
-        .input = R"JSON([{ "name": "foo", "type": "fixedsizelist", "listSize": 200, "children": [{"name": "bar", "type": "int32"}] }])JSON",
-        .expected = "struct<foo: fixed_size_list<bar: int32>[200]>",
+        .as_json = R"JSON({ "type": "fixedsizelist", "listSize": 200, "children": [{"name": "bar", "type": "int32"}] })JSON",
+        .as_text = "fixed_size_list<bar: int32>[200]",
     },
     {
         .name = "interval_dt",
-        .input = R"JSON([{ "name": "foo", "type": "interval[dt]"}])JSON",
-        .expected = "struct<foo: day_time_interval>",
+        .as_json = R"JSON({ "type": "interval[dt]"})JSON",
+        .as_text = "day_time_interval",
     },
     {
         .name = "interval_dt_explicit",
-        .input = R"JSON([{ "name": "foo", "type": "daytimeinterval"}])JSON",
-        .expected = "struct<foo: day_time_interval>",
+        .as_json = R"JSON({ "type": "daytimeinterval"})JSON",
+        .as_text = "day_time_interval",
     },
     {
         .name = "interval_m",
-        .input = R"JSON([{ "name": "foo", "type": "interval[m]"}])JSON",
-        .expected = "struct<foo: month_interval>",
+        .as_json = R"JSON({ "type": "interval[m]"})JSON",
+        .as_text = "month_interval",
     },
     {
         .name = "interval_m_explicit",
-        .input = R"JSON([{ "name": "foo", "type": "monthinterval"}])JSON",
-        .expected = "struct<foo: month_interval>",
+        .as_json = R"JSON({ "type": "monthinterval"})JSON",
+        .as_text = "month_interval",
     },
     {
         .name = "null",
-        .input = R"JSON([{ "name": "foo", "type": "null"}])JSON",
-        .expected = "struct<foo: null>",
+        .as_json = R"JSON({ "type": "null"})JSON",
+        .as_text = "null",
     },
     {
         .name = "utf8",
-        .input = R"JSON([{ "name": "foo", "type": "utf8"}])JSON",
-        .expected = "struct<foo: string>",
+        .as_json = R"JSON({ "type": "utf8"})JSON",
+        .as_text = "string",
     },
     {
         .name = "string",
-        .input = R"JSON([{ "name": "foo", "type": "string"}])JSON",
-        .expected = "struct<foo: string>",
+        .as_json = R"JSON({ "type": "string"})JSON",
+        .as_text = "string",
     },
     {
         .name = "time_ms",
-        .input = R"JSON([{ "name": "foo", "type": "time[ms]"}])JSON",
-        .expected = "struct<foo: time32[ms]>",
+        .as_json = R"JSON({ "type": "time[ms]"})JSON",
+        .as_text = "time32[ms]",
     },
     {
         .name = "time_ns",
-        .input = R"JSON([{ "name": "foo", "type": "time[ns]"}])JSON",
-        .expected = "struct<foo: time64[ns]>",
+        .as_json = R"JSON({ "type": "time[ns]"})JSON",
+        .as_text = "time64[ns]",
     },
     {
         .name = "time_us",
-        .input = R"JSON([{ "name": "foo", "type": "time[us]"}])JSON",
-        .expected = "struct<foo: time64[us]>",
+        .as_json = R"JSON({ "type": "time[us]"})JSON",
+        .as_text = "time64[us]",
     },
     {
         .name = "time_s",
-        .input = R"JSON([{ "name": "foo", "type": "time[s]"}])JSON",
-        .expected = "struct<foo: time32[s]>",
+        .as_json = R"JSON({ "type": "time[s]"})JSON",
+        .as_text = "time32[s]",
     },
     {
         .name = "time32_ms",
-        .input = R"JSON([{ "name": "foo", "type": "time32[ms]"}])JSON",
-        .expected = "struct<foo: time32[ms]>",
+        .as_json = R"JSON({ "type": "time32[ms]"})JSON",
+        .as_text = "time32[ms]",
     },
     {
         .name = "time32_s",
-        .input = R"JSON([{ "name": "foo", "type": "time32[s]"}])JSON",
-        .expected = "struct<foo: time32[s]>",
+        .as_json = R"JSON({ "type": "time32[s]"})JSON",
+        .as_text = "time32[s]",
     },
     {
         .name = "time64_ns",
-        .input = R"JSON([{ "name": "foo", "type": "time64[ns]"}])JSON",
-        .expected = "struct<foo: time64[ns]>",
+        .as_json = R"JSON({ "type": "time64[ns]"})JSON",
+        .as_text = "time64[ns]",
     },
     {
         .name = "time64_us",
-        .input = R"JSON([{ "name": "foo", "type": "time64[us]"}])JSON",
-        .expected = "struct<foo: time64[us]>",
+        .as_json = R"JSON({ "type": "time64[us]"})JSON",
+        .as_text = "time64[us]",
     },
     {
         .name = "timestamp_default",
-        .input = R"JSON([{ "name": "foo", "type": "timestamp"}])JSON",
-        .expected = "struct<foo: timestamp[s]>",
+        .as_json = R"JSON({ "type": "timestamp"})JSON",
+        .as_text = "timestamp[s]",
     },
     {
         .name = "timestamp_s",
-        .input = R"JSON([{ "name": "foo", "type": "timestamp[s]"}])JSON",
-        .expected = "struct<foo: timestamp[s]>",
+        .as_json = R"JSON({ "type": "timestamp[s]"})JSON",
+        .as_text = "timestamp[s]",
     },
     {
         .name = "timestamp_ms",
-        .input = R"JSON([{ "name": "foo", "type": "timestamp[ms]"}])JSON",
-        .expected = "struct<foo: timestamp[ms]>",
+        .as_json = R"JSON({ "type": "timestamp[ms]"})JSON",
+        .as_text = "timestamp[ms]",
     },
     {
         .name = "timestamp_ns",
-        .input = R"JSON([{ "name": "foo", "type": "timestamp[ns]"}])JSON",
-        .expected = "struct<foo: timestamp[ns]>",
+        .as_json = R"JSON({ "type": "timestamp[ns]"})JSON",
+        .as_text = "timestamp[ns]",
     },
     {
         .name = "timestamp_us",
-        .input = R"JSON([{ "name": "foo", "type": "timestamp[us]"}])JSON",
-        .expected = "struct<foo: timestamp[us]>",
+        .as_json = R"JSON({ "type": "timestamp[us]"})JSON",
+        .as_text = "timestamp[us]",
     },
     {
         .name = "timestamp_s_timezone",
-        .input = R"JSON([{ "name": "foo", "type": "timestamp[s]", "timezone": "utc"}])JSON",
-        .expected = "struct<foo: timestamp[s, tz=utc]>",
+        .as_json = R"JSON({ "type": "timestamp[s]", "timezone": "utc"})JSON",
+        .as_text = "timestamp[s, tz=utc]",
     },
     {
         .name = "list",
-        .input = R"JSON([{ "name": "foo", "type": "list", "children": [{"name": "bar", "type": "int32"}] }])JSON",
-        .expected = "struct<foo: list<bar: int32>>",
+        .as_json = R"JSON({ "type": "list", "children": [{"name": "bar", "type": "int32"}] })JSON",
+        .as_text = "list<bar: int32>",
     },
     {
         .name = "struct_simple",
-        .input = R"JSON([{ "name": "foo", "type": "struct", "children": [{"name": "bar", "type": "int32"}] }])JSON",
-        .expected = "struct<foo: struct<bar: int32>>",
+        .as_json = R"JSON({ "type": "struct", "children": [{"name": "bar", "type": "int32"}] })JSON",
+        .as_text = "struct<bar: int32>",
     },
     {
         .name = "struct_map",
-        .input = R"JSON([{
-            "name": "foo",
+        .as_json = R"JSON({
             "type": "map",
             "children": [
                 {
@@ -326,8 +325,8 @@ static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
                     ]
                 }
             ]
-        }])JSON",
-        .expected = "struct<foo: map<int32, int32 ('bar')>>",
+        })JSON",
+        .as_text = "map<int32, int32 ('bar')>",
     },
 };
 // clang-format on
@@ -335,4 +334,36 @@ static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
 INSTANTIATE_TEST_SUITE_P(JSONTypedefTest, JSONTypedefTestSuite, testing::ValuesIn(JSON_TYPEDEF_TESTS),
                          JSONTypedefTest::TestPrinter());
 
+// struct JSONTypedefWriterTest {
+//     struct TestPrinter {
+//         std::string operator()(const ::testing::TestParamInfo<JSONTypedefTest>& info) const {
+//             return std::string{info.param.name};
+//         }
+//     };
+//     std::string_view name;
+//     duckdb::LogicalType input;
+//     std::string_view expected;
+// };
+//
+// struct JSONTypedefWriterTestSuite : public testing::TestWithParam<JSONTypedefWriterTest> {};
+//
+// TEST_P(JSONTypedefWriterTestSuite, WriteType) {
+//     auto& test = GetParam();
+//
+//     rapidjson::Document doc;
+//     auto root = duckdb::web::json::WriteSQLType(doc, test.input);
+//     ASSERT_EQ(root.)
+//     doc.Set(root.ValueUnsafe());
+//
+//     doc.Parse(test.input, test.input.size());
+//     ASSERT_FALSE(doc.HasParseError()) << doc.GetParseError() << std::endl;
+//     ASSERT_TRUE(doc.IsArray());
+//
+//     auto array = ((const rapidjson::Document&)(doc)).GetArray();
+//     auto fields = SQLToArrowFields(array);
+//     ASSERT_TRUE(fields.ok()) << fields.status().message();
+//
+//     auto have = arrow::struct_(std::move(fields.ValueUnsafe()));
+//     ASSERT_EQ(std::string{test.expected}, std::string{have->ToString()});
+// }
 }  // namespace

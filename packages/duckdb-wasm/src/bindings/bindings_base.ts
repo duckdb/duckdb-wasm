@@ -9,7 +9,7 @@ import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } 
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
-import { flattenArrowField, flattenArrowType } from '../flat_arrow';
+import { arrowToSQLField, arrowToSQLType } from '../json_typedef';
 import { WebFile } from './web_file';
 import { UDFFunction, UDFFunctionDeclaration } from './udf_function';
 import * as arrow from 'apache-arrow';
@@ -211,7 +211,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const decl: UDFFunctionDeclaration = {
             functionId: this._nextUDFId,
             name: name,
-            returnType: flattenArrowType(returns),
+            returnType: arrowToSQLType(returns),
         };
         const def: UDFFunction = {
             functionId: decl.functionId,
@@ -323,7 +323,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (options.columns !== undefined) {
             options.columnsFlat = [];
             for (const k in options.columns) {
-                options.columnsFlat.push(flattenArrowField(k, options.columns[k]));
+                options.columnsFlat.push(arrowToSQLField(k, options.columns[k]));
             }
         }
         const opt = { ...options } as any;
@@ -348,7 +348,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (options.columns !== undefined) {
             options.columnsFlat = [];
             for (const k in options.columns) {
-                options.columnsFlat.push(flattenArrowField(k, options.columns[k]));
+                options.columnsFlat.push(arrowToSQLField(k, options.columns[k]));
             }
         }
         const opt = { ...options } as any;

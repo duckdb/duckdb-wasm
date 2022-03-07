@@ -50,7 +50,7 @@ arrow::Status UDFFunctionDeclaration::ReadFrom(const rapidjson::Document& doc) {
             case FieldTag::RETURN_TYPE: {
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kObjectType, name));
                 const auto& type_obj = iter->value.GetObject();
-                ARROW_ASSIGN_OR_RAISE(return_type, json::ReadType(type_obj));
+                ARROW_ASSIGN_OR_RAISE(return_type, json::SQLToArrowType(type_obj));
                 break;
             }
 

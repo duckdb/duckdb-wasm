@@ -15,7 +15,7 @@ import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { InstantiationProgress } from '../bindings/progress';
-import { flattenArrowField } from '../flat_arrow';
+import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
 
 const TEXT_ENCODER = new TextEncoder();
@@ -548,7 +548,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             const out = [];
             for (const k in options.columns) {
                 const type = options.columns[k];
-                out.push(flattenArrowField(k, type));
+                out.push(arrowToSQLField(k, type));
             }
             options.columnsFlat = out;
             delete options.columns;
@@ -568,7 +568,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             const out = [];
             for (const k in options.columns) {
                 const type = options.columns[k];
-                out.push(flattenArrowField(k, type));
+                out.push(arrowToSQLField(k, type));
             }
             options.columnsFlat = out;
             delete options.columns;

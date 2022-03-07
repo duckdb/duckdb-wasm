@@ -1,10 +1,10 @@
-import { FlatArrowType } from '../flat_arrow';
+import { SQLType } from '../json_typedef';
 import * as arrow from 'apache-arrow';
 
 export interface UDFFunctionDeclaration {
     functionId: number;
     name: string;
-    returnType: FlatArrowType;
+    returnType: SQLType;
 }
 
 export interface UDFFunction {
