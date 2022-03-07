@@ -339,9 +339,6 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
         case duckdb::LogicalTypeId::TIMESTAMP_NS:
             out.AddMember("type", "timestamp[ns]", alloc);
             break;
-        case duckdb::LogicalTypeId::DECIMAL:
-            out.AddMember("type", "timestamp[ns]", alloc);
-            break;
         case duckdb::LogicalTypeId::FLOAT:
             out.AddMember("type", "float32", alloc);
             break;
@@ -361,6 +358,7 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
             out.AddMember("children", children, alloc);
             break;
         }
+        case duckdb::LogicalTypeId::DECIMAL:
         case duckdb::LogicalTypeId::LIST:
         case duckdb::LogicalTypeId::MAP:
         case duckdb::LogicalTypeId::INTERVAL:
@@ -390,7 +388,6 @@ arrow::Result<rapidjson::Value> WriteSQLField(rapidjson::Document& doc, std::str
     auto& alloc = doc.GetAllocator();
     ARROW_ASSIGN_OR_RAISE(auto out, WriteSQLType(doc, type));
     out.AddMember("name", rapidjson::StringRef(name.data(), name.length()), alloc);
-    out.AddMember("nullable", nullable, alloc);
     return out;
 }
 
