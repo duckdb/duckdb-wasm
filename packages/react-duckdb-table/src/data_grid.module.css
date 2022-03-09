@@ -49,6 +49,7 @@
 }
 
 .header_cell_label {
+    color: var(--duckdb_table_col_label_fg);
     background: var(--duckdb_table_col_label_bg);
     padding: 0 8px;
     border-radius: 16px;

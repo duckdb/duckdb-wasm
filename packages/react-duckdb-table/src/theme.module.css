@@ -7,6 +7,7 @@
     --duckdb_table_cell_headers_fg: white;
     --duckdb_table_cell_nodata_bg: rgb(225, 225, 225);
     --duckdb_table_col_label_bg: rgb(80, 80, 80);
+    --duckdb_table_col_label_fg: black;
     --duckdb_table_font_size: 95%;
     --duckdb_table_border_radius_nw: 0px;
     --duckdb_table_border_radius_ne: 0px;
