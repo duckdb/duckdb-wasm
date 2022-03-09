@@ -402,7 +402,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                 let metadata = state.pivotTable;
                 if (stalePivotMetadata) {
                     metadata = await rdt.collectTableSchema(props.connection, {
-                        tableSchema: '',
+                        tableSchema: null,
                         tableName: props.name,
                     });
                     metadata = {

@@ -14,7 +14,7 @@ export interface TableSchemaColumnGroup {
 /// A table metadatStorea
 export interface TableSchema {
     /// The table schema
-    readonly tableSchema: string;
+    readonly tableSchema: string | null;
     /// The table name
     readonly tableName: string;
 
@@ -38,24 +38,24 @@ export interface TableSchema {
 
 /// Get raw qualified name
 export function getQualifiedNameRaw(schema: string, name: string) {
-    return `${schema || 'main'}.${name}`;
+    return `${schema != null ? schema + '.' : ''}${name}`;
 }
 /// Get qualified name
 export function getQualifiedName(table: TableSchema) {
-    return `${table.tableSchema}.${table.tableName}`;
+    return `${table.tableSchema != null ? table.tableSchema + '.' : ''}${table.tableName}`;
 }
 
 /// Collect table info
 export async function collectTableSchema(
     conn: duckdb.AsyncDuckDBConnection,
-    info: Partial<TableSchema> & { tableSchema?: string; tableName: string },
+    info: Partial<TableSchema> & { tableSchema?: string | null; tableName: string },
 ): Promise<TableSchema> {
     // Use DESCRIBE to find all column types
     const columnNames: string[] = [];
     const columnNameMapping: Map<string, number> = new Map();
     const columnTypes: arrow.DataType[] = [];
     const describe = await conn.query<{ Field: arrow.Utf8; Type: arrow.Utf8 }>(
-        `DESCRIBE ${info.tableSchema || 'main'}.${info.tableName}`,
+        `DESCRIBE ${info.tableSchema != null ? info.tableSchema + '.' : ''}${info.tableName}`,
     );
     let column = 0;
     for (const row of describe) {
@@ -103,7 +103,7 @@ export async function collectTableSchema(
     }
     const table: TableSchema = {
         ...info,
-        tableSchema: info.tableSchema || 'main',
+        tableSchema: info.tableSchema ?? null,
         columnNames,
         columnTypes,
         dataColumns: columnTypes.length,

@@ -81,7 +81,6 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
     // Create connection if needed
     React.useEffect(() => {
         if (!db.resolving()) {
-            console.log('resolving db');
             resolveDB();
         }
         if (db.value != null && conn == null) {

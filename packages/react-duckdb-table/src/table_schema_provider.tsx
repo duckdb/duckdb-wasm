@@ -49,7 +49,7 @@ export const TableSchemaProvider: React.FC<Props> = (props: Props) => {
             return;
         }
         inFlight.current = true;
-        const resolve = async (schema: string, name: string, epoch: number | null) => {
+        const resolve = async (schema: string | null, name: string, epoch: number | null) => {
             const metadata = await collectTableSchema(conn!, {
                 tableSchema: schema,
                 tableName: name,
@@ -63,7 +63,7 @@ export const TableSchemaProvider: React.FC<Props> = (props: Props) => {
                 metadata,
             });
         };
-        resolve(props.schema || 'main', props.name, epoch).catch(e => console.error(e));
+        resolve(props.schema ?? null, props.name, epoch).catch(e => console.error(e));
     }, [conn, props.schema, props.name, epoch]);
 
     return <TABLE_SCHEMA.Provider value={state.metadata}>{props.children}</TABLE_SCHEMA.Provider>;
