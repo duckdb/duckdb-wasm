@@ -28,9 +28,9 @@ export const DuckDBProvider: React.FC<DuckDBProps> = (props: DuckDBProps) => {
     const lock = React.useRef<boolean>(false);
     React.useEffect(() => {
         // No bundle available?
-        if (!bundle) return;
+        if (!bundle) return () => {};
         // Is updating?
-        if (lock.current) return;
+        if (lock.current) return () => {};
         lock.current = true;
 
         // Create worker and next database
@@ -45,7 +45,7 @@ export const DuckDBProvider: React.FC<DuckDBProps> = (props: DuckDBProps) => {
                 instantiationProgress: null,
                 instantiationError: e,
             });
-            return;
+            return () => {};
         }
 
         // Instantiate the database asynchronously
