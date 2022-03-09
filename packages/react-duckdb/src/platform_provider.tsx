@@ -18,22 +18,26 @@ export const useDuckDBBundleResolver = (): Resolver<duckdb.DuckDBBundle> => Reac
 export const DuckDBPlatform: React.FC<PlatformProps> = (props: PlatformProps) => {
     const [bundle, setBundle] = React.useState<Resolvable<duckdb.DuckDBBundle>>(new Resolvable());
 
-    const lock = React.useRef<boolean>(false);
+    const inFlight = React.useRef<Promise<duckdb.DuckDBBundle | null> | null>(null);
     const resolver = React.useCallback(async () => {
-        if (lock.current) return null;
-        lock.current = true;
-        try {
-            setBundle(b => b.updateRunning());
-            const next = await duckdb.selectBundle(props.bundles);
-            lock.current = false;
-            setBundle(b => b.completeWith(next));
-            return next;
-        } catch (e: any) {
-            lock.current = false;
-            console.error(e);
-            setBundle(b => b.failWith(e));
-            return null;
-        }
+        if (bundle.error) return null;
+        if (bundle.value) return bundle.value;
+        if (inFlight.current) return await inFlight.current;
+        inFlight.current = (async () => {
+            try {
+                setBundle(b => b.updateRunning());
+                const next = await duckdb.selectBundle(props.bundles);
+                inFlight.current = null;
+                setBundle(b => b.completeWith(next));
+                return next;
+            } catch (e: any) {
+                inFlight.current = null;
+                console.error(e);
+                setBundle(b => b.failWith(e));
+                return null;
+            }
+        })();
+        return await inFlight.current;
     }, [props.bundles]);
 
     return (

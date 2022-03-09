@@ -60,8 +60,10 @@ interface DemoSettings {
 }
 
 export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
+    const db = rd.useDuckDB()!;
     const conn = rd.useDuckDBConnection();
-    const connDialer = rd.useDuckDBConnectionDialer();
+    const resolveDB = rd.useDuckDBResolver();
+    const resolveConn = rd.useDuckDBConnectionDialer();
     const [setupDone, setSetupDone] = React.useState(false);
     const [state, setState] = React.useState<State>({
         schemaEpoch: 0,
@@ -78,10 +80,14 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
 
     // Create connection if needed
     React.useEffect(() => {
-        if (conn == null) {
-            connDialer();
+        if (!db.resolving()) {
+            console.log('resolving db');
+            resolveDB();
         }
-    }, [conn]);
+        if (db.value != null && conn == null) {
+            resolveConn();
+        }
+    }, [db, conn]);
 
     // Detect unmount
     const isMounted = React.useRef(true);

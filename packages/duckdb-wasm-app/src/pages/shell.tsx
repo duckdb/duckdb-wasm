@@ -16,14 +16,16 @@ interface ShellProps {
 export const Shell: React.FC<ShellProps> = (props: ShellProps) => {
     const termContainer = React.useRef<HTMLDivElement | null>(null);
     const db = rd.useDuckDB();
-    const dbResolver = rd.useDuckDBResolver();
+    const resolveDB = rd.useDuckDBResolver();
     const shellDBResolver = React.useRef<[(db: duckdb.AsyncDuckDB) => void, (err: any) => void] | null>(null);
     const shellStatusUpdater = React.useRef<duckdb.InstantiationProgressHandler | null>(null);
 
     // Launch DuckDB
     React.useEffect(() => {
-        dbResolver();
-    });
+        if (!db.resolving()) {
+            resolveDB();
+        }
+    }, [db]);
 
     // Embed the shell into the term container
     React.useEffect(() => {
