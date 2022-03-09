@@ -59,6 +59,7 @@ interface ShellProps {
     shellModule: RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
     container: HTMLDivElement;
     resolveDatabase: (p: duckdb.InstantiationProgressHandler) => Promise<duckdb.AsyncDuckDB>;
+    backgroundColor?: string;
 }
 
 function formatBytes(value: number): string {
@@ -75,7 +76,7 @@ export async function embed(props: ShellProps) {
     // Embed into container
     const runtime = new ShellRuntime(props.container);
     shell.embed(props.container!, runtime, {
-        backgroundColor: '#333',
+        backgroundColor: props.backgroundColor ?? '#333',
         withWebGL: hasWebGL(),
     });
     props.container.onresize = runtime.resizeHandler;
