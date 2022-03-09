@@ -29,7 +29,7 @@ interface State {
 }
 
 export const SimpleScanProvider: React.FC<Props> = (props: Props) => {
-    const epoch = useTableDataEpoch();
+    const epoch = useTableDataEpoch() ?? Number.MIN_SAFE_INTEGER;
     const [state, setState] = React.useState<State>({
         statistics: {
             queryCount: 0,

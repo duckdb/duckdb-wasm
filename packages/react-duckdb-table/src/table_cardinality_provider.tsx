@@ -25,7 +25,7 @@ export const TableCardinalityProvider: React.FC<Props> = (props: Props) => {
         ownEpoch: null,
         cardinality: null,
     });
-    const dataEpoch = rd.useTableDataEpoch();
+    const dataEpoch = rd.useTableDataEpoch() ?? Number.MIN_SAFE_INTEGER;
     const inFlight = React.useRef<boolean>(false);
 
     const isMounted = React.useRef(true);

@@ -27,8 +27,8 @@ export const TABLE_METADATA = React.createContext<TableSchema | null>(null);
 export const useTableSchema = (): TableSchema | null => React.useContext(TABLE_METADATA);
 
 export const DuckDBTableSchemaProvider: React.FC<Props> = (props: Props) => {
+    const epoch = useTableSchemaEpoch() ?? Number.MIN_SAFE_INTEGER;
     const conn = useDuckDBConnection();
-    const epoch = useTableSchemaEpoch();
     const [state, setState] = React.useState<State>({
         schema: null,
         name: null,
