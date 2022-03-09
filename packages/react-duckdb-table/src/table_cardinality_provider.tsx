@@ -59,7 +59,7 @@ export const TableCardinalityProvider: React.FC<Props> = (props: Props) => {
 
     return (
         <rd.TABLE_DATA_EPOCH.Provider value={state.ownEpoch}>
-            <TABLE_CARDINALITY.Provider value={state.cardinality}>{props.children}</TABLE_CARDINALITY.Provider>;
+            <TABLE_CARDINALITY.Provider value={state.cardinality}>{props.children}</TABLE_CARDINALITY.Provider>
         </rd.TABLE_DATA_EPOCH.Provider>
     );
 };
