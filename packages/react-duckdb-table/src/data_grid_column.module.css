@@ -1,13 +1,13 @@
 .cell {
     box-sizing: border-box;
-    border-bottom: var(--datagrid_cell_border);
-    border-right: var(--datagrid_cell_border);
+    border-bottom: var(--duckdb_table_cell_border);
+    border-right: var(--duckdb_table_cell_border);
     position: relative;
 
     display: grid;
     grid-template-columns: 100%;
 
-    font-size: var(--datagrid_font_size);
+    font-size: var(--duckdb_table_font_size);
 }
 
 .data_value {

@@ -1,22 +1,23 @@
 .container {
     width: 100%;
     height: 100%;
-    display: grid;
-    grid-template-columns: 100%;
-    grid-template-rows: auto 24px;
+    display: flex;
+    flex-direction: column;
 }
 
 .table {
+    flex: 1;
 }
 
 .statsbar {
-    border-top: var(--datagrid_cell_headers_border);
-    background-color: black;
-    color: white;
+    border-top: var(--duckdb_table_cell_headers_border);
+    background-color: var(--duckdb_table_stats_bg);
+    color: var(--duckdb_table_stats_fg);
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
+    border-radius: 0 0 var(--duckdb_table_stats_border_radius_sw) var(--duckdb_table_stats_border_radius_se);
 }
 
 .bean {

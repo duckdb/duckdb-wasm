@@ -9,7 +9,7 @@
 }
 
 .scrollbars {
-    border-radius: 0 0 var(--border_radius) var(--border_radius);
+    border-radius: 0 var(--duckdb_table_border_radius_ne) var(--datagrid_border_radius_se) 0;
 }
 
 .header_row {
@@ -23,10 +23,10 @@
 
 .header_cell {
     box-sizing: border-box;
-    border-bottom: var(--datagrid_cell_headers_border);
-    border-right: var(--datagrid_cell_headers_border);
-    color: var(--datagrid_cell_headers_fg);
-    background-color: var(--datagrid_cell_headers_bg);
+    border-bottom: var(--duckdb_table_cell_headers_border);
+    border-right: var(--duckdb_table_cell_headers_border);
+    color: var(--duckdb_table_cell_headers_fg);
+    background-color: var(--duckdb_table_cell_headers_bg);
     white-space: nowrap;
     overflow: hidden;
 
@@ -35,21 +35,21 @@
     justify-content: center;
     grid-template-columns: fit-content(80%);
 
-    font-size: var(--datagrid_font_size);
+    font-size: var(--duckdb_table_font_size);
 }
 
 .header_filler {
     box-sizing: border-box;
-    border-bottom: var(--datagrid_cell_headers_border);
-    border-right: var(--datagrid_cell_headers_border);
-    color: var(--datagrid_cell_headers_fg);
-    background-color: var(--datagrid_cell_header_filler_bg);
+    border-bottom: var(--duckdb_table_cell_headers_border);
+    border-right: var(--duckdb_table_cell_headers_border);
+    color: var(--duckdb_table_cell_headers_fg);
+    background-color: var(--duckdb_table_cell_header_filler_bg);
     white-space: nowrap;
     overflow: hidden;
 }
 
 .header_cell_label {
-    background: var(--datagrid_col_label_bg);
+    background: var(--duckdb_table_col_label_bg);
     padding: 0 8px;
     border-radius: 16px;
     overflow: hidden;
@@ -58,14 +58,14 @@
 
 .nodata_cell {
     box-sizing: border-box;
-    border-bottom: var(--datagrid_cell_border);
-    border-right: var(--datagrid_cell_border);
+    border-bottom: var(--duckdb_table_cell_border);
+    border-right: var(--duckdb_table_cell_border);
 
     display: grid;
     align-items: center;
     justify-content: center;
 
-    background-color: var(--datagrid_nodata_cell_bg);
+    background-color: var(--duckdb_table_nodata_cell_bg);
 }
 
 .grid_container {
@@ -81,6 +81,7 @@
     outline: none;
     width: 100%;
     height: 100%;
+    border-radius: var(--duckdb_table_border_radius_nw) var(--datagrid_border_radius_ne) 0 0;
 
     display: flex;
     flex-direction: row;
@@ -91,6 +92,7 @@
     grid-column: 1;
     outline: none;
     overflow: hidden !important;
+    border-radius: 0 0 var(--duckdb_table_border_radius_sw) var(--datagrid_border_radius_se);
 }
 
 .grid_body_scrollbars {

@@ -1,14 +1,19 @@
 :root {
-    --border_color: rgb(220, 220, 220);
-    --border_radius: 8px;
-    --datagrid_cell_anchor_bg: hsl(210deg 12% 96%);
-    --datagrid_cell_border: 1px solid rgb(200, 200, 200);
-    --datagrid_cell_headers_bg: black;
-    --datagrid_cell_header_filler_bg: black;
-    --datagrid_cell_headers_border: 1px solid rgb(100, 100, 100);
-    --datagrid_cell_headers_fg: white;
-    --datagrid_cell_nodata_bg: rgb(225, 225, 225);
-    --datagrid_col_label_bg: rgb(80, 80, 80);
-    --datagrid_font_size: 95%;
-    --minibar_height: 6px;
+    --duckdb_table_cell_anchor_bg: hsl(210deg 12% 96%);
+    --duckdb_table_cell_border: 1px solid rgb(200, 200, 200);
+    --duckdb_table_cell_headers_bg: black;
+    --duckdb_table_cell_header_filler_bg: black;
+    --duckdb_table_cell_headers_border: 1px solid rgb(100, 100, 100);
+    --duckdb_table_cell_headers_fg: white;
+    --duckdb_table_cell_nodata_bg: rgb(225, 225, 225);
+    --duckdb_table_col_label_bg: rgb(80, 80, 80);
+    --duckdb_table_font_size: 95%;
+    --duckdb_table_border_radius_nw: 0px;
+    --duckdb_table_border_radius_ne: 0px;
+    --duckdb_table_border_radius_sw: 0px;
+    --duckdb_table_border_radius_se: 0px;
+    --duckdb_table_stats_border_radius_sw: 0px;
+    --duckdb_table_stats_border_radius_se: 0px;
+    --duckdb_table_stats_bg: black;
+    --duckdb_table_stats_fg: white;
 }

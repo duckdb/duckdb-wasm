@@ -357,7 +357,7 @@ export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => 
                         groupColumnsBy={pivot.groupColumnsBy}
                         aggregates={values}
                     >
-                        <rdt.WiredTableViewer connection={conn} />
+                        <rdt.WiredTableViewer connection={conn} stats={true} />
                     </rdt.PivotTableProvider>
                 )}
             </div>
