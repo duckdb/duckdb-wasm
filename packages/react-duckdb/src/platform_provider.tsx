@@ -1,5 +1,6 @@
 import React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
+import { Resolvable, Resolver, ResolvableStatus } from './resolvable';
 
 type PlatformProps = {
     children: React.ReactElement | React.ReactElement[];
@@ -8,35 +9,38 @@ type PlatformProps = {
 };
 
 const loggerCtx = React.createContext<duckdb.Logger | null>(null);
-const bundleCtx = React.createContext<duckdb.DuckDBBundle | null>(null);
-const launcherCtx = React.createContext<(() => void) | null>(null);
-export const useDuckDBLauncher = (): (() => void) => React.useContext(launcherCtx)!;
+const bundleCtx = React.createContext<Resolvable<duckdb.DuckDBBundle> | null>(null);
+const resolverCtx = React.createContext<Resolver<duckdb.DuckDBBundle> | null>(null);
 export const useDuckDBLogger = (): duckdb.Logger => React.useContext(loggerCtx)!;
-export const useDuckDBBundle = (): duckdb.DuckDBBundle => React.useContext(bundleCtx)!;
+export const useDuckDBBundle = (): Resolvable<duckdb.DuckDBBundle> => React.useContext(bundleCtx)!;
+export const useDuckDBBundleResolver = (): Resolver<duckdb.DuckDBBundle> => React.useContext(resolverCtx)!;
 
 export const DuckDBPlatform: React.FC<PlatformProps> = (props: PlatformProps) => {
-    const [bundle, setBundle] = React.useState<duckdb.DuckDBBundle | null>(null);
-    const [launched, setLaunched] = React.useState<boolean>(false);
+    const [bundle, setBundle] = React.useState<Resolvable<duckdb.DuckDBBundle>>(new Resolvable());
+
     const lock = React.useRef<boolean>(false);
-    React.useEffect(() => {
-        if (!launched || bundle != null || lock.current) return;
+    const resolver = React.useCallback(async () => {
+        if (lock.current) return null;
         lock.current = true;
-        (async () => {
-            try {
-                const b = await duckdb.selectBundle(props.bundles);
-                setBundle(b);
-            } catch (e) {
-                console.error(e);
-            }
+        try {
+            setBundle(b => b.updateRunning());
+            const next = await duckdb.selectBundle(props.bundles);
             lock.current = false;
-        })();
-    }, [launched, props.bundles]);
-    const launcher = React.useCallback(() => setLaunched(true), [setLaunched]);
+            setBundle(b => b.completeWith(next));
+            return next;
+        } catch (e: any) {
+            lock.current = false;
+            console.error(e);
+            setBundle(b => b.failWith(e));
+            return null;
+        }
+    }, [props.bundles]);
+
     return (
         <loggerCtx.Provider value={props.logger}>
-            <launcherCtx.Provider value={launcher}>
+            <resolverCtx.Provider value={resolver}>
                 <bundleCtx.Provider value={bundle}>{props.children}</bundleCtx.Provider>
-            </launcherCtx.Provider>
+            </resolverCtx.Provider>
         </loggerCtx.Provider>
     );
 };

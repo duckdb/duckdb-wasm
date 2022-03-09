@@ -9,10 +9,12 @@ interface Props {
 
 export const TableViewer: React.FC<Props> = (props: Props) => {
     const db = rd.useDuckDB();
-    const dbLauncher = rd.useDuckDBLauncher();
+    const resolveDB = rd.useDuckDBResolver();
     React.useEffect(() => {
-        dbLauncher();
-    });
+        if (!db.resolving()) {
+            resolveDB();
+        }
+    }, [db]);
 
     if (db == null) {
         return (
