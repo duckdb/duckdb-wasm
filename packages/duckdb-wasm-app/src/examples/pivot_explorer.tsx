@@ -125,7 +125,7 @@ interface PivotConfig {
 
 export const PivotExplorer: React.FC<ExplorerProps> = (props: ExplorerProps) => {
     const conn = rd.useDuckDBConnection()!;
-    const table = rd.useTableSchema();
+    const table = rdt.useTableSchema();
     const [pivot, setPivot] = React.useState<PivotConfig>({
         groupRowsBy: imm.List([
             {

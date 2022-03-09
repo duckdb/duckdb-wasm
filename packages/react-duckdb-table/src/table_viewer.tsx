@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import * as rd from '@duckdb/react-duckdb';
-import { TableSchema } from '@duckdb/react-duckdb';
+import { TableSchema } from './table_schema';
+import { useTableSchema } from './table_schema_provider';
 import { TableCardinalityProvider, TABLE_CARDINALITY } from './table_cardinality_provider';
 import { SimpleScanProvider } from './simple_scan_provider';
 import { ScanRequest, OrderSpecification, SCAN_RESULT, SCAN_STATISTICS } from './scan_provider';
@@ -46,7 +46,7 @@ interface WiredProps {
 }
 
 export const WiredTableViewer: React.FC<WiredProps> = (props: WiredProps) => {
-    const table = rd.useTableSchema();
+    const table = useTableSchema();
     if (props.connection == null || table == null) {
         return <div />;
     }

@@ -6,3 +6,6 @@ export * from './pivot_table_provider';
 export * from './virtual_scrollbars';
 export * from './max_element_size';
 export * from './autosizer';
+export * from './table_schema';
+export * from './table_schema_provider';
+export * from './epoch_contexts';

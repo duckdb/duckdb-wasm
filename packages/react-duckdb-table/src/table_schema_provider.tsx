@@ -1,7 +1,7 @@
 import * as React from 'react';
+import * as rd from '@duckdb/react-duckdb';
 import { TableSchema, collectTableSchema } from './table_schema';
 import { useTableSchemaEpoch } from './epoch_contexts';
-import { useDuckDBConnection } from './connection_provider';
 
 interface Props {
     /// The children
@@ -23,12 +23,12 @@ interface State {
     ownEpoch: number | null;
 }
 
-export const TABLE_METADATA = React.createContext<TableSchema | null>(null);
-export const useTableSchema = (): TableSchema | null => React.useContext(TABLE_METADATA);
+export const TABLE_SCHEMA = React.createContext<TableSchema | null>(null);
+export const useTableSchema = (): TableSchema | null => React.useContext(TABLE_SCHEMA);
 
-export const DuckDBTableSchemaProvider: React.FC<Props> = (props: Props) => {
+export const TableSchemaProvider: React.FC<Props> = (props: Props) => {
     const epoch = useTableSchemaEpoch() ?? Number.MIN_SAFE_INTEGER;
-    const conn = useDuckDBConnection();
+    const conn = rd.useDuckDBConnection();
     const [state, setState] = React.useState<State>({
         schema: null,
         name: null,
@@ -66,5 +66,5 @@ export const DuckDBTableSchemaProvider: React.FC<Props> = (props: Props) => {
         resolve(props.schema || 'main', props.name, epoch).catch(e => console.error(e));
     }, [conn, props.schema, props.name, epoch]);
 
-    return <TABLE_METADATA.Provider value={state.metadata}>{props.children}</TABLE_METADATA.Provider>;
+    return <TABLE_SCHEMA.Provider value={state.metadata}>{props.children}</TABLE_SCHEMA.Provider>;
 };

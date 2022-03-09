@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as arrow from 'apache-arrow';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as rd from '@duckdb/react-duckdb';
+import * as rdt from '@duckdb/react-duckdb-table';
 import * as imm from 'immutable';
 
 // We compute pivots with the following 2 queries:
@@ -42,7 +43,7 @@ interface PivotQuery {
     /// The column aliases
     columnAliases: string[];
     /// The column grouping sets
-    columnGroupingSets: rd.TableSchemaColumnGroup[][];
+    columnGroupingSets: rdt.TableSchemaColumnGroup[][];
     /// The row grouping sets
     rowGroupingSets: number[][];
     /// The number of data columns
@@ -50,7 +51,7 @@ interface PivotQuery {
 }
 
 export function buildColumnAggregation(
-    table: rd.TableSchema,
+    table: rdt.TableSchema,
     groupRowsBy: imm.List<PivotRowGrouping>,
     groupColumnsBy: imm.List<number>,
     columnValues: arrow.Table,
@@ -84,7 +85,7 @@ export function buildColumnAggregation(
 
     // Collect cases for column pivoting
     const pivotCases = [];
-    const columnGroupingSets: rd.TableSchemaColumnGroup[][] = [[]];
+    const columnGroupingSets: rdt.TableSchemaColumnGroup[][] = [[]];
     const columnAliases = groupRowsByArray.map(g => g.alias || g.expression);
     for (let instance = 0; instance < Math.min(columnValues.numRows, MAX_PIVOT_COLUMNS); instance += 1) {
         const predicates = [];
@@ -158,7 +159,7 @@ export function buildColumnAggregation(
     const depthAlias = '__duckdb__nesting_depth';
 
     // Build query
-    const query = `SELECT ${groupCols}, ${pivotCases}, (${depthExpr}) AS ${depthAlias} FROM ${rd.getQualifiedName(
+    const query = `SELECT ${groupCols}, ${pivotCases}, (${depthExpr}) AS ${depthAlias} FROM ${rdt.getQualifiedName(
         table,
     )} GROUP BY GROUPING SETS (${groupingSets}) ORDER BY ${orderBy}`;
 
@@ -172,7 +173,7 @@ export function buildColumnAggregation(
 }
 
 export function buildRowAggregation(
-    table: rd.TableSchema,
+    table: rdt.TableSchema,
     groupRowsBy: imm.List<PivotRowGrouping>,
     aggregates: imm.List<PivotAggregate>,
 ): PivotQuery {
@@ -233,7 +234,7 @@ export function buildRowAggregation(
     const depthAlias = '__duckdb__nesting_depth';
 
     // Build query
-    const query = `SELECT ${groupCols}, ${aggregateValues}, (${depthExpr}) AS ${depthAlias} FROM ${rd.getQualifiedName(
+    const query = `SELECT ${groupCols}, ${aggregateValues}, (${depthExpr}) AS ${depthAlias} FROM ${rdt.getQualifiedName(
         table,
     )} GROUP BY GROUPING SETS (${groupingSets}) ORDER BY ${orderBy}`;
 
@@ -258,7 +259,7 @@ interface Props {
     /// The connection
     connection: duckdb.AsyncDuckDBConnection;
     /// The input data table
-    table: rd.TableSchema | null;
+    table: rdt.TableSchema | null;
 
     /// The pivot rows
     groupRowsBy: imm.List<PivotRowGrouping>;
@@ -272,9 +273,9 @@ interface State {
     /// The name
     name: string | null;
     /// The input table
-    inputTable: rd.TableSchema | null;
+    inputTable: rdt.TableSchema | null;
     /// The pivot table
-    pivotTable: rd.TableSchema | null;
+    pivotTable: rdt.TableSchema | null;
 
     /// The pivot rows
     groupRowsBy: imm.List<PivotRowGrouping> | null;
@@ -298,7 +299,7 @@ interface State {
 
 export const PivotTableProvider: React.FC<Props> = (props: Props) => {
     const epochInputColumnGroups = usePivotColumns();
-    const epochInputRows = rd.useTableDataEpoch();
+    const epochInputRows = rdt.useTableDataEpoch();
     const [state, setState] = React.useState<State>({
         name: null,
         inputTable: null,
@@ -351,7 +352,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
             } else {
                 updating.current = true;
                 const cols = props.groupColumnsBy.map(id => props.table!.columnNames[id]).join(',');
-                const query = `SELECT DISTINCT ${cols} FROM ${rd.getQualifiedName(props.table)} ORDER BY ${cols}`;
+                const query = `SELECT DISTINCT ${cols} FROM ${rdt.getQualifiedName(props.table)} ORDER BY ${cols}`;
                 const updateColumnGroups = async (epoch: number | null) => {
                     const result = await props.connection.query(query);
                     updating.current = false;
@@ -400,7 +401,7 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
                 // Need to refresh the table metadata?
                 let metadata = state.pivotTable;
                 if (stalePivotMetadata) {
-                    metadata = await rd.collectTableSchema(props.connection, {
+                    metadata = await rdt.collectTableSchema(props.connection, {
                         tableSchema: '',
                         tableName: props.name,
                     });
@@ -449,10 +450,10 @@ export const PivotTableProvider: React.FC<Props> = (props: Props) => {
 
     // Schema outdated?
     return (
-        <rd.TABLE_SCHEMA_EPOCH.Provider value={state.epochPivotTable}>
-            <rd.TABLE_DATA_EPOCH.Provider value={state.epochPivotTable}>
-                <rd.TABLE_METADATA.Provider value={state.pivotTable}>{props.children}</rd.TABLE_METADATA.Provider>
-            </rd.TABLE_DATA_EPOCH.Provider>
-        </rd.TABLE_SCHEMA_EPOCH.Provider>
+        <rdt.TABLE_SCHEMA_EPOCH.Provider value={state.epochPivotTable}>
+            <rdt.TABLE_DATA_EPOCH.Provider value={state.epochPivotTable}>
+                <rdt.TABLE_SCHEMA.Provider value={state.pivotTable}>{props.children}</rdt.TABLE_SCHEMA.Provider>
+            </rdt.TABLE_DATA_EPOCH.Provider>
+        </rdt.TABLE_SCHEMA_EPOCH.Provider>
     );
 };

@@ -1,6 +1,9 @@
 import * as React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import * as rd from '@duckdb/react-duckdb';
+import { TableSchema } from './table_schema';
+import { useTableDataEpoch } from './epoch_contexts';
+import { getQualifiedName } from './table_schema';
+import { TABLE_DATA_EPOCH } from './epoch_contexts';
 
 export const TABLE_CARDINALITY = React.createContext<number | null>(null);
 
@@ -8,7 +11,7 @@ interface Props {
     /// The connection
     connection: duckdb.AsyncDuckDBConnection;
     /// The table
-    table: rd.TableSchema;
+    table: TableSchema;
     /// The children
     children: React.ReactElement[] | React.ReactElement;
 }
@@ -25,7 +28,7 @@ export const TableCardinalityProvider: React.FC<Props> = (props: Props) => {
         ownEpoch: null,
         cardinality: null,
     });
-    const dataEpoch = rd.useTableDataEpoch() ?? Number.MIN_SAFE_INTEGER;
+    const dataEpoch = useTableDataEpoch() ?? Number.MIN_SAFE_INTEGER;
     const inFlight = React.useRef<boolean>(false);
 
     const isMounted = React.useRef(true);
@@ -34,9 +37,7 @@ export const TableCardinalityProvider: React.FC<Props> = (props: Props) => {
     }, []);
 
     const updateCardinality = async (e: number | null) => {
-        const result = await props.connection!.query(
-            `SELECT COUNT(*)::INTEGER FROM ${rd.getQualifiedName(props.table)}`,
-        );
+        const result = await props.connection!.query(`SELECT COUNT(*)::INTEGER FROM ${getQualifiedName(props.table)}`);
         const cardinality = result.getChildAt(0)?.get(0) || null;
         if (!isMounted.current) return;
 
@@ -58,8 +59,8 @@ export const TableCardinalityProvider: React.FC<Props> = (props: Props) => {
     }, [props.connection, props.table, dataEpoch, state]);
 
     return (
-        <rd.TABLE_DATA_EPOCH.Provider value={state.ownEpoch}>
+        <TABLE_DATA_EPOCH.Provider value={state.ownEpoch}>
             <TABLE_CARDINALITY.Provider value={state.cardinality}>{props.children}</TABLE_CARDINALITY.Provider>
-        </rd.TABLE_DATA_EPOCH.Provider>
+        </TABLE_DATA_EPOCH.Provider>
     );
 };

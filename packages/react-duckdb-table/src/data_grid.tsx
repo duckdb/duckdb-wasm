@@ -14,7 +14,7 @@ import { VirtualScrollbars, PositionValues } from './virtual_scrollbars';
 import { ColumnRenderer, deriveColumnRenderers } from './data_grid_column';
 import { SCAN_REQUESTER, SCAN_RESULT } from './scan_provider';
 import { TABLE_CARDINALITY } from './table_cardinality_provider';
-import { useTableSchema } from '@duckdb/react-duckdb';
+import { useTableSchema } from './table_schema_provider';
 
 import styles from './data_grid.module.css';
 import { withAutoSizer } from './autosizer';

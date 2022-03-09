@@ -1,5 +1,5 @@
 import * as arrow from 'apache-arrow';
-import * as rd from '@duckdb/react-duckdb';
+import * as rdt from '@duckdb/react-duckdb-table';
 import * as scan from './scan_provider';
 import classNames from 'classnames';
 import React from 'react';
@@ -39,7 +39,7 @@ export class TextColumnRenderer implements ColumnRenderer {
         this.valueAvgLength = valueAvgLength;
     }
 
-    public static ReadFrom(table: rd.TableSchema, data: arrow.Table, index: number): TextColumnRenderer {
+    public static ReadFrom(table: rdt.TableSchema, data: arrow.Table, index: number): TextColumnRenderer {
         const column = data.getChildAt(index)!;
         const columnAlias = table.columnAliases[index] ?? data.schema.fields[index].name;
         let valueClassName = styles.data_value_text;
@@ -156,7 +156,7 @@ export class TextColumnRenderer implements ColumnRenderer {
     }
 }
 
-export function deriveColumnRenderers(table: rd.TableSchema, data: scan.ScanResult): ColumnRenderer[] {
+export function deriveColumnRenderers(table: rdt.TableSchema, data: scan.ScanResult): ColumnRenderer[] {
     const columns = [];
     for (let i = 0; i < table.dataColumns; ++i) {
         const renderer = TextColumnRenderer.ReadFrom(table, data.result, i);

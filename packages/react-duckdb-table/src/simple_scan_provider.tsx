@@ -1,8 +1,9 @@
 import * as React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import * as rd from '@duckdb/react-duckdb';
 import { SCAN_REQUESTER, SCAN_RESULT, SCAN_STATISTICS, ScanRequest, ScanStatistics, ScanResult } from './scan_provider';
-import { TableSchema, getQualifiedName, useTableDataEpoch } from '@duckdb/react-duckdb';
+import { TableSchema, getQualifiedName } from './table_schema';
+import { useTableDataEpoch } from './epoch_contexts';
+import { TABLE_SCHEMA } from './table_schema_provider';
 
 interface Props {
     /// The connection
@@ -178,11 +179,11 @@ export const SimpleScanProvider: React.FC<Props> = (props: Props) => {
 
     return (
         <SCAN_REQUESTER.Provider value={requestScan}>
-            <rd.TABLE_METADATA.Provider value={state.availableResult.table}>
+            <TABLE_SCHEMA.Provider value={state.availableResult.table}>
                 <SCAN_RESULT.Provider value={state.availableResult}>
                     <SCAN_STATISTICS.Provider value={state.statistics}>{props.children}</SCAN_STATISTICS.Provider>
                 </SCAN_RESULT.Provider>
-            </rd.TABLE_METADATA.Provider>
+            </TABLE_SCHEMA.Provider>
         </SCAN_REQUESTER.Provider>
     );
 };

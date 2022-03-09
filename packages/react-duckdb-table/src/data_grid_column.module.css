@@ -1,5 +1,3 @@
-@import './theme.module.css';
-
 .cell {
     box-sizing: border-box;
     border-bottom: var(--datagrid_cell_border);

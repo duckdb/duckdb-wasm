@@ -1,5 +1,3 @@
-@import './theme.module.css';
-
 :global(.react-grid-item) {
     transition: none !important;
 }

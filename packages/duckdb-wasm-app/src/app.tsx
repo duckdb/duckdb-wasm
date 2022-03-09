@@ -13,6 +13,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'xterm/css/xterm.css';
 import 'react-popper-tooltip/dist/styles.css';
 
+import '@duckdb/react-duckdb-table/src/theme.module.css';
+
 import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';

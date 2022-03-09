@@ -225,15 +225,15 @@ export const VLDBDemo: React.FC<DemoProps> = (props: DemoProps) => {
                         <div className={styles.demo_setup_perf}>{Math.round(serverLatency * 1000)} ms</div>
                     </div>
                 </div>
-                <rd.TABLE_SCHEMA_EPOCH.Provider value={state.schemaEpoch}>
-                    <rd.TABLE_DATA_EPOCH.Provider value={state.dataEpoch}>
+                <rdt.TABLE_SCHEMA_EPOCH.Provider value={state.schemaEpoch}>
+                    <rdt.TABLE_DATA_EPOCH.Provider value={state.dataEpoch}>
                         <rdt.PIVOT_COLUMNS_EPOCH.Provider value={0}>
-                            <rd.DuckDBTableSchemaProvider name="stock_pivot_table">
+                            <rdt.TableSchemaProvider name="stock_pivot_table">
                                 <PivotExplorer />
-                            </rd.DuckDBTableSchemaProvider>
+                            </rdt.TableSchemaProvider>
                         </rdt.PIVOT_COLUMNS_EPOCH.Provider>
-                    </rd.TABLE_DATA_EPOCH.Provider>
-                </rd.TABLE_SCHEMA_EPOCH.Provider>
+                    </rdt.TABLE_DATA_EPOCH.Provider>
+                </rdt.TABLE_SCHEMA_EPOCH.Provider>
             </div>
         </dnd.DndProvider>
     );
