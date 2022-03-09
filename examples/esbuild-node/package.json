@@ -9,7 +9,7 @@
     },
     "devDependencies": {
         "esbuild": "^0.14.25",
-        "typescript": "^4.5.5"
+        "typescript": "^4.6.2"
     },
     "type": "module",
     "scripts": {
