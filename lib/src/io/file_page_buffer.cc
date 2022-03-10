@@ -639,7 +639,6 @@ bool FilePageBuffer::BuffersFile(std::string_view path) {
     if (it == files_by_name.end()) {
         return false;
     }
-    assert(it->second->GetReferenceCount() > 0);
     return true;
 }
 
