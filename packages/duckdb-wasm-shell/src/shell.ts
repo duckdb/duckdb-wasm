@@ -3,6 +3,9 @@ import * as shell from '../crate/pkg';
 import { HistoryStore } from './utils/history_store';
 import { pickFiles } from './utils/files';
 import { InstantiationProgress } from '@duckdb/duckdb-wasm/dist/types/src/bindings';
+import FontFaceObserver from 'fontfaceobserver';
+
+const SHELL_FONT_FAMILY = 'Roboto Mono';
 
 const hasWebGL = (): boolean => {
     if (duckdb.isSafari()) {
@@ -70,12 +73,18 @@ function formatBytes(value: number): string {
 }
 
 export async function embed(props: ShellProps) {
+    // load font families
+    const regular = new FontFaceObserver(SHELL_FONT_FAMILY).load();
+    const bold = new FontFaceObserver(SHELL_FONT_FAMILY, { weight: 'bold' }).load();
+    await Promise.all([regular, bold]);
+
     // Initialize the shell
     await shell.default(props.shellModule);
 
     // Embed into container
     const runtime = new ShellRuntime(props.container);
     shell.embed(props.container!, runtime, {
+        fontFamily: SHELL_FONT_FAMILY,
         backgroundColor: props.backgroundColor ?? '#333',
         withWebGL: hasWebGL(),
     });

@@ -279,6 +279,10 @@ js_tests_node_debug: js_debug
 	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
 .PHONY: shell
+wasmpack:
+	yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
+
+.PHONY: shell
 shell:
 	yarn workspace @duckdb/duckdb-wasm-shell build:debug
 
