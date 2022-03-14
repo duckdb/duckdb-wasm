@@ -33,7 +33,7 @@
         "esbuild": "^0.14.25",
         "eslint": "^8.10.0",
         "eslint-plugin-jasmine": "^4.1.3",
-        "eslint-plugin-react": "^7.29.3",
+        "eslint-plugin-react": "^7.29.4",
         "fast-glob": "^3.2.11",
         "jasmine": "^4.0.2",
         "jasmine-core": "^4.0.1",
