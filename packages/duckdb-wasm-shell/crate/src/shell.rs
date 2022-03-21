@@ -498,6 +498,26 @@ impl Shell {
                     }
                 }
             }
+            "track" => {
+                let filename = args[subcmd.len()..].trim();
+                db.collect_file_statistics(filename, true).await.unwrap();
+                Shell::with_mut(|s| {
+                    s.access_file(filename, |info| {
+                        info.file_stats_enabled = true;
+                    });
+                    s.writeln(&format!("Tracking file statistics for: {}", filename))
+                });
+            }
+            "reads" => {
+                let filename = args[subcmd.len()..].trim();
+                let stats = db.export_file_statistics(filename).await.unwrap();
+                Shell::with(|s| s.write(&stats.print_read_stats(s.terminal_width)));
+            }
+            "paging" => {
+                let filename = args[subcmd.len()..].trim();
+                let stats = db.export_file_statistics(filename).await.unwrap();
+                Shell::with(|s| s.write(&stats.print_page_stats(s.terminal_width)));
+            }
             _ => {
                 let files = match db.glob_files("*").await {
                     Ok(files) => files,
@@ -565,54 +585,6 @@ impl Shell {
         }
     }
 
-    pub async fn fstats_command(args: String) {
-        let db_ptr = Shell::with(|s| s.db.clone());
-        let db = match db_ptr {
-            Some(ref db) => db.read().unwrap(),
-            None => return,
-        };
-        let subcmd = &args[..args.find(' ').unwrap_or_else(|| args.len())];
-        let options = args[subcmd.len()..].trim();
-        let filename = options;
-        match subcmd {
-            "collect" => {
-                db.collect_file_statistics(filename, true).await.unwrap();
-                Shell::with_mut(|s| {
-                    s.access_file(filename, |info| {
-                        info.file_stats_enabled = true;
-                    });
-                    s.writeln(&format!("Collecting file statistics for: {}", options))
-                });
-            }
-            "disable" => {
-                db.collect_file_statistics(filename, false).await.unwrap();
-                Shell::with_mut(|s| {
-                    s.access_file(filename, |info| {
-                        info.file_stats_enabled = true;
-                    });
-                    s.writeln(&format!("Disabled file statistics for: {}", options))
-                });
-            }
-            "reset" => {
-                Shell::with(|s| s.writeln(&format!("Resetted file statistics for: {}", options)));
-            }
-            "reads" => {
-                let stats = db.export_file_statistics(filename).await.unwrap();
-                Shell::with(|s| s.write(&stats.print_read_stats(s.terminal_width)));
-            }
-            "paging" => {
-                let stats = db.export_file_statistics(filename).await.unwrap();
-                Shell::with(|s| s.write(&stats.print_page_stats(s.terminal_width)));
-            }
-            _ => {
-                Shell::with(|s| {
-                    s.writeln(&format!("Resetted file statistics for: {}", filename));
-                    s.writeln("Usage: .fstats [collect/disable/reset/reads/paging] <file>");
-                });
-            }
-        }
-    }
-
     fn remember_command(&mut self, text: String) {
         self.history.push_back(text.clone());
         if self.history.len() > HISTORY_LENGTH {
@@ -658,11 +630,9 @@ impl Shell {
                         ".files download $FILE  Download a file.\r\n",
                         ".files drop            Drop all files.\r\n",
                         ".files drop $FILE      Drop a single file.\r\n",
-                        ".fstats collect $FILE  Collect file statistics.\r\n",
-                        ".fstats disable $FILE  Disable file statistics.\r\n",
-                        ".fstats paging $FILE   Show file paging.\r\n",
-                        ".fstats reads $FILE    Show file reads.\r\n",
-                        ".fstats reset $FILE    Reset file statistics.\r\n",
+                        ".files track $FILE     Collect file statistics.\r\n",
+                        ".files paging $FILE    Show file paging.\r\n",
+                        ".files reads $FILE     Show file reads.\r\n",
                         ".open $FILE            Open database file.\r\n",
                         ".reset                 Reset the shell.\r\n",
                         ".timer on|off          Turn query timer on or off.\r\n",
@@ -713,9 +683,6 @@ impl Shell {
                     s.writeln("Usage: .timer [on/off]")
                 }
             }),
-            ".fstats" => {
-                Shell::fstats_command(args.to_string()).await;
-            }
             ".open" => {
                 Shell::open_command(args.to_string()).await;
                 Shell::with_mut(|s| s.remember_command(text.clone()));

@@ -87,7 +87,7 @@ impl FileStatistics {
         column_totals: &[u64],
         blocks: &[char],
         block_size: u64,
-        max_hits: u8,
+        _max_hits: u8,
     ) {
         let column_count = column_names.len();
         let column_border_count = column_count + 1;
@@ -104,21 +104,21 @@ impl FileStatistics {
             normal = vt100::MODES_OFF,
             bytes = block_bytes
         ));
-        let mut legend_width = 1 + 1 + block_bytes.len() + 3;
-        for i in 0..4 {
-            let v = i * max_hits / 4;
-            let hits = (1 << v) - 1;
-            let hits_fmt = format!("{}", hits);
-            legend.push_str(&format!(
-                " {fg}{sym}{normal} > {hits}",
-                sym = BLOCK_CHARS[i as usize],
-                hits = &hits_fmt,
-                fg = vt100::COLOR_FG_BRIGHT_YELLOW,
-                normal = vt100::MODES_OFF,
-            ));
-            legend_width += 1 + 1 + 3 + hits_fmt.len();
-        }
-        legend_width += 2;
+        let legend_width = 1 + 1 + block_bytes.len() + 3;
+        // for i in 0..4 {
+        //     let v = i * max_hits / 4;
+        //     let hits = (1 << v) - 1;
+        //     let hits_fmt = format!("{}", hits);
+        //     legend.push_str(&format!(
+        //         " {fg}{sym}{normal} > {hits}",
+        //         sym = BLOCK_CHARS[i as usize],
+        //         hits = &hits_fmt,
+        //         fg = vt100::COLOR_FG_BRIGHT_YELLOW,
+        //         normal = vt100::MODES_OFF,
+        //     ));
+        //     legend_width += 1 + 1 + 3 + hits_fmt.len();
+        // }
+        // legend_width += 2;
         out.push_str(&" ".repeat(terminal_width.max(legend_width) - legend_width));
         out.push_str(&legend);
         out.push_str("\r\n");
@@ -225,7 +225,7 @@ impl FileStatistics {
         FileStatistics::print_block_stats(
             &mut out,
             width,
-            &["Cold", "Read-Ahead", "Cached"],
+            &["Cold", "Read-Ahead", "Buffered"],
             &[
                 self.total_file_reads_cold,
                 self.total_file_reads_ahead,
@@ -273,7 +273,7 @@ impl FileStatistics {
         FileStatistics::print_block_stats(
             &mut out,
             width,
-            &["Loads", "Accesses"],
+            &["Page Loads", "Page Hits"],
             &[self.total_page_loads, self.total_page_accesses],
             &block_chars,
             self.block_size,
