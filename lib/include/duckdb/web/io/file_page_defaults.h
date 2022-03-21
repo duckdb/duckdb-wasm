@@ -8,7 +8,7 @@ namespace web {
 namespace io {
 
 constexpr size_t DEFAULT_FILE_PAGE_CAPACITY = 10000;
-constexpr size_t DEFAULT_FILE_PAGE_SHIFT = 12;  // 4KB pages
+constexpr size_t DEFAULT_FILE_PAGE_SHIFT = 14;  // 16KB pages
 
 }  // namespace io
 }  // namespace web
