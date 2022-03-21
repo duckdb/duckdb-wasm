@@ -41,6 +41,8 @@ pub enum ShellInputContext {
 
 /// Shell settings
 struct ShellSettings {
+    /// Enable query output
+    output: bool,
     /// Enable query timer
     timer: bool,
     /// Is WebGL enabled?
@@ -50,7 +52,8 @@ struct ShellSettings {
 impl ShellSettings {
     fn default() -> Self {
         Self {
-            timer: false,
+            output: true,
+            timer: true,
             webgl: false,
         }
     }
@@ -566,21 +569,24 @@ impl Shell {
                 )
                 .unwrap();
 
-                if batch.num_rows() == 0 {
-                    Shell::with_mut(|s| {
+                Shell::with_mut(|s| {
+                    if !s.settings.output {
+                        return;
+                    }
+                    if batch.num_rows() == 0 {
                         s.writeln("No files registered");
-                    });
-                } else {
-                    let pretty_table = pretty_format_batches(
-                        &[batch],
-                        terminal_width as u16,
-                        UTF8_BORDERS_NO_HORIZONTAL,
-                    )
-                    .unwrap_or_default();
-                    Shell::with_mut(|s| {
-                        s.writeln(&pretty_table);
-                    });
-                }
+                    } else {
+                        let pretty_table = pretty_format_batches(
+                            &[batch],
+                            terminal_width as u16,
+                            UTF8_BORDERS_NO_HORIZONTAL,
+                        )
+                        .unwrap_or_default();
+                        Shell::with_mut(|s| {
+                            s.writeln(&pretty_table);
+                        });
+                    }
+                });
             }
         }
     }
@@ -636,6 +642,7 @@ impl Shell {
                         ".open $FILE            Open database file.\r\n",
                         ".reset                 Reset the shell.\r\n",
                         ".timer on|off          Turn query timer on or off.\r\n",
+                        ".output on|off         Print results on or off.\r\n",
                         "\r\n",
                         "{bold}Repositories:{normal}\r\n",
                         "   https://github.com/duckdb/duckdb\r\n",
@@ -672,6 +679,17 @@ impl Shell {
             ".features" => {
                 Shell::features_command().await;
             }
+            ".output" => Shell::with_mut(|s| {
+                if args.ends_with("on") {
+                    s.settings.output = true;
+                    s.writeln("Output enabled");
+                } else if args.ends_with("off") {
+                    s.settings.output = false;
+                    s.writeln("Output disabled");
+                } else {
+                    s.writeln("Usage: .Output [on/off]")
+                }
+            }),
             ".timer" => Shell::with_mut(|s| {
                 if args.ends_with("on") {
                     s.settings.timer = true;
@@ -777,13 +795,17 @@ impl Shell {
             }
         }
 
-        // Print the table
-        let pretty_table =
-            pretty_format_batches(&batches, terminal_width as u16, UTF8_BORDERS_NO_HORIZONTAL)
-                .unwrap_or_default();
-
         Shell::with_mut(|s| {
-            s.writeln(&pretty_table);
+            // Print the table
+            if s.settings.output {
+                let pretty_table = pretty_format_batches(
+                    &batches,
+                    terminal_width as u16,
+                    UTF8_BORDERS_NO_HORIZONTAL,
+                )
+                .unwrap_or_default();
+                s.writeln(&pretty_table);
+            }
 
             // Print elapsed time (if requested)
             if s.settings.timer {
