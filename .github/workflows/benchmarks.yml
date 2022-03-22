@@ -18,7 +18,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Cache generator
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               id: cache-generator
               with:
                   path: ./submodules/tpch-dbgen/dbgen/dbgen
@@ -48,7 +48,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Cache rust build
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./.cargo/bin/
@@ -87,7 +87,7 @@ jobs:
                   git submodule status ./submodules/duckdb > git_submodule_status.txt
 
             - name: Cache ccache
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./.ccache
@@ -120,7 +120,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Cache node_modules
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./node_modules
@@ -225,7 +225,7 @@ jobs:
                   path: ./submodules/duckdb/build/Release/
 
             - name: Cache node_modules
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./node_modules
@@ -320,7 +320,7 @@ jobs:
                   path: ./submodules/duckdb/build/Release/
 
             - name: Cache node_modules
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./node_modules
@@ -415,7 +415,7 @@ jobs:
                   path: ./submodules/duckdb/build/Release/
 
             - name: Cache node_modules
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./node_modules
@@ -510,7 +510,7 @@ jobs:
                   path: ./submodules/duckdb/build/Release/
 
             - name: Cache node_modules
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ./node_modules
