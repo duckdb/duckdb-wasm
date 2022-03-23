@@ -666,7 +666,7 @@ impl Shell {
                         "  SELECT * FROM 'https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet' LIMIT 10;\r\n",
                         "\r\n",
                         "{bold}Remote Parquet/Parquet Join:{normal}\r\n",
-                        "  SELECT n_name, avg(c_acctbal)\r\n",
+                        "  SELECT n_name, count(*)\r\n",
                         "  FROM 'https://shell.duckdb.org/data/tpch/0_01/parquet/customer.parquet',\r\n",
                         "       'https://shell.duckdb.org/data/tpch/0_01/parquet/nation.parquet'\r\n",
                         "  WHERE c_nationkey = n_nationkey GROUP BY n_name;\r\n",
