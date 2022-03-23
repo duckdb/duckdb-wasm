@@ -43,6 +43,19 @@ esbuild.build({
     external: EXTERNALS,
 });
 
+console.log('[ ESBUILD ] am4.js');
+esbuild.build({
+    entryPoints: ['./src/suite_am4.ts'],
+    outfile: 'dist/am4.js',
+    platform: 'node',
+    format: 'cjs',
+    target: TARGET,
+    bundle: true,
+    minify: false,
+    sourcemap: true,
+    external: EXTERNALS,
+});
+
 console.log('[ ESBUILD ] system-sort-int.js');
 esbuild.build({
     entryPoints: ['./src/suite_system_sort_int.ts'],

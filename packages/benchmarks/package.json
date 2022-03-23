@@ -30,6 +30,7 @@
         "build": "node ./bundle.mjs && tsc --noEmit",
         "lint": "eslint src",
         "bench:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/internal.js",
+        "bench:am4": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/am4.js",
         "bench:system:sort:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sort-int.js",
         "bench:system:join:2": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-2.js",
         "bench:system:join:3": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-3.js",
