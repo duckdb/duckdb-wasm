@@ -1261,7 +1261,7 @@ anymatch@~3.1.2:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
-apache-arrow@^3.0.0:
+"apache-arrow-3@npm:apache-arrow@^3.0.0", apache-arrow@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/apache-arrow/-/apache-arrow-3.0.0.tgz#5e774865b9e2afc3c17b98587f509423f7737c1b"
   integrity sha512-QyQ1aZgZJUHB735K163XdYgFYoekTfIHQ5ucoX7S1ZcLfR7NzA/OH5qzCkjQNsygOMSzQXo/8hlbDGprtxnZFA==

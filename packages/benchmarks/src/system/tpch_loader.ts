@@ -1,4 +1,5 @@
 import * as arrow from 'apache-arrow';
+import * as arrow3 from 'apache-arrow-3';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsAsync from 'fs/promises';
@@ -46,10 +47,16 @@ export function getTPCHArrowFilePath(base: string, sf: number, name: string): st
 
 export async function getTPCHArrowTable(base: string, sf: number, name: string): Promise<arrow.Table> {
     const filePath = await getTPCHArrowFilePath(base, sf, name);
+    const buffer = await fsAsync.readFile(filePath);
+    return arrow.tableFromIPC(buffer);
+}
+
+export async function getTPCHArrow3Table(base: string, sf: number, name: string): Promise<arrow3.Table> {
+    const filePath = await getTPCHArrowFilePath(base, sf, name);
     const buffer = fsAsync.readFile(filePath);
-    const reader = await arrow.AsyncRecordBatchFileReader.from(buffer);
-    const batches: arrow.RecordBatch[] = [...reader];
-    return new arrow.Table(batches[0].schema, batches);
+    const reader = await arrow3.AsyncRecordBatchFileReader.from(buffer);
+    const batches: arrow3.RecordBatch[] = [...reader];
+    return new arrow3.Table(batches[0].schema, batches);
 }
 
 export async function getTPCHQuery(base: string, name: string): Promise<string> {

@@ -151,6 +151,30 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
+.PHONY: bench_tpch_aq
+bench_tpch_aq:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
+	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
+	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
+
+# Run all benchmarks for the paper
+.PHONY: bench_tpch
+bench_tpch_paper:
+	yarn workspace @duckdb/benchmarks build
+	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
+	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
+	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
+	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
+	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
+	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
+	yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.01
+	yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.1
+	yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.5
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.01
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
+	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
+
 .PHONY: bench_all
 bench_all:
 	yarn workspace @duckdb/benchmarks build

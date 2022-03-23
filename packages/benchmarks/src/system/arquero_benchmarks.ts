@@ -1,4 +1,4 @@
-import * as arrow from 'apache-arrow';
+import * as arrow3 from 'apache-arrow';
 import * as aq from 'arquero';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import {
@@ -10,7 +10,7 @@ import {
     generateCSVGroupedInt32,
     generateJSONGroupedInt32,
 } from './data_generator';
-import { getTPCHArrowTable } from './tpch_loader';
+import { getTPCHArrow3Table } from './tpch_loader';
 
 export class ArqueroTPCHBenchmark implements SystemBenchmark {
     tables: { [key: string]: aq.internal.Table } = {};
@@ -35,14 +35,14 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
         };
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
-        const lineitem = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'lineitem.arrow');
-        const orders = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'orders.arrow');
-        const customer = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'customer.arrow');
-        const supplier = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'supplier.arrow');
-        const region = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'region.arrow');
-        const nation = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'nation.arrow');
-        const partsupp = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'partsupp.arrow');
-        const part = await getTPCHArrowTable(ctx.projectRootPath, this.scaleFactor, 'part.arrow');
+        const lineitem = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'lineitem.arrow');
+        const orders = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'orders.arrow');
+        const customer = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'customer.arrow');
+        const supplier = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'supplier.arrow');
+        const region = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'region.arrow');
+        const nation = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'nation.arrow');
+        const partsupp = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'partsupp.arrow');
+        const part = await getTPCHArrow3Table(ctx.projectRootPath, this.scaleFactor, 'part.arrow');
         this.tables['lineitem'] = aq.fromArrow(lineitem);
         this.tables['orders'] = aq.fromArrow(orders);
         this.tables['customer'] = aq.fromArrow(customer);
@@ -712,7 +712,7 @@ export class ArqueroIntegerSumBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         const [schema, batches] = generateArrowGroupedInt32(this.tuples, this.groupSize);
-        const table = new arrow.Table(schema, batches);
+        const table = new arrow3.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -767,7 +767,7 @@ export class ArqueroIntegerSortBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
-        const table = new arrow.Table(schema, batches);
+        const table = new arrow3.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -820,7 +820,7 @@ export class ArqueroIntegerTopKBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         const [schema, batches] = generateArrowXInt32(this.tuples, this.columnCount);
-        const table = new arrow.Table(schema, batches);
+        const table = new arrow3.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
@@ -967,8 +967,8 @@ export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
-        const tableA = new arrow.Table(schemaA, batchesA);
-        const tableB = new arrow.Table(schemaB, batchesB);
+        const tableA = new arrow3.Table(schemaA, batchesA);
+        const tableB = new arrow3.Table(schemaB, batchesB);
         this.tables['A'] = aq.fromArrow(tableA);
         this.tables['B'] = aq.fromArrow(tableB);
     }
@@ -1034,9 +1034,9 @@ export class ArqueroIntegerJoin3Benchmark implements SystemBenchmark {
         const [schemaA, batchesA] = generateArrowInt32(this.tuplesA);
         const [schemaB, batchesB] = generateArrow2Int32(this.tuplesB, this.stepAB);
         const [schemaC, batchesC] = generateArrow2Int32(this.tuplesC, this.stepBC);
-        const tableA = new arrow.Table(schemaA, batchesA);
-        const tableB = new arrow.Table(schemaB, batchesB);
-        const tableC = new arrow.Table(schemaC, batchesC);
+        const tableA = new arrow3.Table(schemaA, batchesA);
+        const tableB = new arrow3.Table(schemaB, batchesB);
+        const tableC = new arrow3.Table(schemaC, batchesC);
         this.tables['A'] = aq.fromArrow(tableA);
         this.tables['B'] = aq.fromArrow(tableB);
         this.tables['C'] = aq.fromArrow(tableC);
@@ -1096,7 +1096,7 @@ export class ArqueroRegexBenchmark implements SystemBenchmark {
     }
     async beforeAll(ctx: SystemBenchmarkContext): Promise<void> {
         const [schema, batches] = generateArrowUtf8(this.tuples, this.chars);
-        const table = new arrow.Table(schema, batches);
+        const table = new arrow3.Table(schema, batches);
         this.tables[this.getName()] = aq.fromArrow(table);
     }
     async beforeEach(_ctx: SystemBenchmarkContext): Promise<void> {}
