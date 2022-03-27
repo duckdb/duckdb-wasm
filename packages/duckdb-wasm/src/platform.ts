@@ -104,10 +104,7 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
 
 export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
     const platform = await getPlatformFeatures();
-    // TODO(ankoh):
-    // Safari WASM exceptions are a bit buggy at the moment.
-    // Pivot demo crashes only in safari with eh: Unexpected "RangeError: Maximum call stack size exceeded."
-    if (platform.wasmExceptions && !isSafari()) {
+    if (platform.wasmExceptions) {
         if (platform.wasmSIMD && platform.wasmThreads && platform.crossOriginIsolated && bundles.coi) {
             return {
                 mainModule: bundles.coi.mainModule,
