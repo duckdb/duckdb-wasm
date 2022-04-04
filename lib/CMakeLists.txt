@@ -203,6 +203,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/web_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/json_analyzer.cc
+  ${CMAKE_SOURCE_DIR}/src/json_dataview.cc
   ${CMAKE_SOURCE_DIR}/src/json_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/json_parser.cc
   ${CMAKE_SOURCE_DIR}/src/json_table.cc
@@ -314,6 +315,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/json_analyzer_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
+      ${CMAKE_SOURCE_DIR}/test/json_dataview_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/parquet_test.cc
       ${CMAKE_SOURCE_DIR}/test/readahead_buffer_test.cc
