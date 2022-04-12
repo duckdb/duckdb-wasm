@@ -15,11 +15,30 @@ Try it out at [shell.duckdb.org](https://shell.duckdb.org) and on [Observable](h
 _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our benchmarks](https://shell.duckdb.org/versus)._
 
 ## Instantiation
-
+cdn(jsdelivr)  
 ```ts
 import * as duckdb from '@duckdb/duckdb-wasm';
 
-// Either bundle them manually, for example as Webpack assets
+const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+
+// Select a bundle based on browser checks
+const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+
+const worker_url = URL.createObjectURL(
+  new Blob([`importScripts("${bundle.mainWorker!}");`], {type: 'text/javascript'})
+);
+
+// Instantiate the asynchronus version of DuckDB-wasm
+const worker = new Worker(worker_url);
+const logger = new duckdb.ConsoleLogger();
+const db = new duckdb.AsyncDuckDB(logger, worker);
+await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+URL.revokeObjectURL(worker_url);
+```
+
+webpack  
+```ts
+import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
 import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
@@ -32,9 +51,6 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
     },
 };
-// ..., or load the bundles from jsdelivr
-const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
-
 // Select a bundle based on browser checks
 const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
 // Instantiate the asynchronus version of DuckDB-wasm
@@ -43,6 +59,54 @@ const logger = new duckdb.ConsoleLogger();
 const db = new duckdb.AsyncDuckDB(logger, worker);
 await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 ```
+vite  
+```ts
+import * as duckdb from '@duckdb/duckdb-wasm';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
+import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
+
+const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
+    mvp: {
+        mainModule: duckdb_wasm,
+        mainWorker: eh_worker,
+    },
+    eh: {
+        mainModule: duckdb_wasm_next,
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
+    },
+};
+// Select a bundle based on browser checks
+const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+// Instantiate the asynchronus version of DuckDB-wasm
+const worker = new Worker(bundle.mainWorker!);
+const logger = new duckdb.ConsoleLogger();
+const db = new duckdb.AsyncDuckDB(logger, worker);
+await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+```
+static served(manually download the files from https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.13.0/dist/)  
+```ts
+import * as duckdb from '@duckdb/duckdb-wasm';
+
+const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
+    mvp: {
+        mainModule: 'change/me/../duckdb-mvp.wasm',
+        mainWorker: 'change/me/../duckdb-browser-mvp.worker.js',
+    },
+    eh: {
+        mainModule: 'change/m/../duckdb-eh.wasm',
+        mainWorker: 'change/m/../duckdb-browser-eh.worker.js',
+    },
+};
+// Select a bundle based on browser checks
+const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+// Instantiate the asynchronus version of DuckDB-wasm
+const worker = new Worker(bundle.mainWorker!);
+const logger = new duckdb.ConsoleLogger();
+const db = new duckdb.AsyncDuckDB(logger, worker);
+await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+```  
 
 ## Data Import
 
