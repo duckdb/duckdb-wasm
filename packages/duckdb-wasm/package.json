@@ -30,7 +30,7 @@
         "@types/jasmine": "^4.0.3",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.17.0",
-        "esbuild": "^0.14.28",
+        "esbuild": "^0.14.36",
         "eslint": "^8.12.0",
         "eslint-plugin-jasmine": "^4.1.3",
         "eslint-plugin-react": "^7.29.4",
