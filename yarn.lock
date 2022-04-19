@@ -2307,7 +2307,7 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
-dnd-core@^16.0.0, dnd-core@^16.0.1:
+dnd-core@^16.0.1:
   version "16.0.1"
   resolved "https://registry.yarnpkg.com/dnd-core/-/dnd-core-16.0.1.tgz#a1c213ed08961f6bd1959a28bb76f1a868360d19"
   integrity sha512-HK294sl7tbw6F6IeuK16YSBUoorvHpY8RHO+9yFfaJyCDVb6n7PRcezrOEOa2SBCqiYpemh5Jx20ZcjKdFAVng==
@@ -5402,12 +5402,12 @@ react-bootstrap@^2.2.3:
     uncontrollable "^7.2.1"
     warning "^4.0.3"
 
-react-dnd-html5-backend@^16.0.0:
-  version "16.0.0"
-  resolved "https://registry.yarnpkg.com/react-dnd-html5-backend/-/react-dnd-html5-backend-16.0.0.tgz#671d6c64a119e91604eb8a8c3111c0a0af350479"
-  integrity sha512-be3lKEbbT8FQcoTjFlQ4ZXG/NVrFNJu9W0INc5rm/5EFQpHCkz+xpbB2U8j9uh5Bvk7AsJyQrZznEut0hrNPIA==
+react-dnd-html5-backend@^16.0.1:
+  version "16.0.1"
+  resolved "https://registry.yarnpkg.com/react-dnd-html5-backend/-/react-dnd-html5-backend-16.0.1.tgz#87faef15845d512a23b3c08d29ecfd34871688b6"
+  integrity sha512-Wu3dw5aDJmOGw8WjH1I1/yTH+vlXEL4vmjk5p+MHxP8HuHJS1lAGeIdG/hze1AvNeXWo/JgULV87LyQOr+r5jw==
   dependencies:
-    dnd-core "^16.0.0"
+    dnd-core "^16.0.1"
 
 react-dnd@^16.0.1:
   version "16.0.1"
