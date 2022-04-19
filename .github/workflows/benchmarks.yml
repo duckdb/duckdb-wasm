@@ -209,17 +209,17 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
@@ -304,17 +304,17 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
@@ -399,17 +399,17 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
@@ -494,17 +494,17 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
@@ -590,32 +590,32 @@ jobs:
               with:
                   submodules: 'recursive'
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: reports_micro
                   path: ./reports/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: reports_tpch_0_01
                   path: ./reports/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: reports_tpch_0_1
                   path: ./reports/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: reports_tpch_0_25
                   path: ./reports/
 
-            - uses: actions/download-artifact@v2
+            - uses: actions/download-artifact@v3
               with:
                   name: reports_tpch_0_5
                   path: ./reports/
