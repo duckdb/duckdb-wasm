@@ -575,10 +575,10 @@
   resolved "https://registry.yarnpkg.com/@react-dnd/shallowequal/-/shallowequal-3.0.0.tgz#ccfe1d6eead7591b4cebf6d7fec7150eb4de1962"
   integrity sha512-1ELWQdJB2UrCXTKK5cCD9uGLLIwECLIEdttKA255owdpchtXohIjZBTlFJszwYi2ZKe2Do+QvUzsGyGCMNwbdw==
 
-"@restart/hooks@^0.4.0", "@restart/hooks@^0.4.5":
-  version "0.4.5"
-  resolved "https://registry.yarnpkg.com/@restart/hooks/-/hooks-0.4.5.tgz#e7acbea237bfc9e479970500cf87538b41a1ed02"
-  integrity sha512-tLGtY0aHeIfT7aPwUkvQuhIy3+q3w4iqmUzFLPlOAf/vNUacLaBt1j/S//jv/dQhenRh8jvswyMojCwmLvJw8A==
+"@restart/hooks@^0.4.0", "@restart/hooks@^0.4.6":
+  version "0.4.6"
+  resolved "https://registry.yarnpkg.com/@restart/hooks/-/hooks-0.4.6.tgz#15dcf34631a618c513efc924705c7cbe349a4a0c"
+  integrity sha512-FzpEzy6QeLB3OpUrC9OQD/lWCluQmilLfRGa/DqbB6OmV05AEt/0Lgn3Jf6l27UIJMK0qFmNcps6p8DNLXa6Pw==
   dependencies:
     dequal "^2.0.2"
 
@@ -5444,13 +5444,13 @@ rc-scrollbars@^1.1.3:
     dom-css "^2.1.0"
     raf "^3.4.1"
 
-react-bootstrap@^2.2.2:
-  version "2.2.2"
-  resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-2.2.2.tgz#cddf53174df295253c471df54f131e1730a6660f"
-  integrity sha512-zfVGUU14BMZo7KqR1QHXBAqpbWa6bu4S9dZ6O4rd/hDZi1tiNeGkISbuBednb1TxyXrOwpvnvlHNk3OuYQNq6w==
+react-bootstrap@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-2.2.3.tgz#1c563018c8b856071334dd5a35f25507185136e2"
+  integrity sha512-gXsAEBdDUHnOpJ2C+DDQ4mFt7tN6u6qWnTH3tqiE9jUvV6gGY8uHFp0iGBsM+yjrBwmR6bqCBFh8Z82aQj1LSw==
   dependencies:
     "@babel/runtime" "^7.17.2"
-    "@restart/hooks" "^0.4.5"
+    "@restart/hooks" "^0.4.6"
     "@restart/ui" "^1.2.0"
     "@types/invariant" "^2.2.35"
     "@types/prop-types" "^15.7.4"
