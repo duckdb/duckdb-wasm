@@ -94,7 +94,7 @@ jobs:
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: tpch-dbgen
                   path: |
@@ -129,7 +129,7 @@ jobs:
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: dataprep
                   path: |
@@ -166,7 +166,7 @@ jobs:
                       ccache -s
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/duckdb
@@ -404,7 +404,7 @@ jobs:
                       ccache -s
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: wasm-mvp
                   path: |
@@ -456,7 +456,7 @@ jobs:
                       ccache -s
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: wasm-eh
                   path: |
@@ -508,7 +508,7 @@ jobs:
                       ccache -s
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: wasm-coi
                   path: |
