@@ -98,7 +98,7 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
             for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
                 validity_ptr[row_idx] = validity.RowIsValid(row_idx);
             }
-            desc.AddMember("validityBuffer", validity_idx, allocator);
+            desc.AddMember("validityBuffer", rapidjson::Value{static_cast<uint64_t>(validity_idx)}, allocator);
 
             // Create js-compatible buffers for supported types.
             // Very simple for primitive types, bit more involved for strings etc.
@@ -106,7 +106,8 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
                 case LogicalTypeId::INTEGER:
                 case LogicalTypeId::DOUBLE:
                     data_ptrs.push_back(static_cast<double>(reinterpret_cast<uintptr_t>(vec->GetData())));
-                    desc.AddMember("dataBuffer", data_ptrs.size() - 1, allocator);
+                    desc.AddMember("dataBuffer", rapidjson::Value{static_cast<uint64_t>(data_ptrs.size() - 1)},
+                                   allocator);
                     break;
                 case LogicalTypeId::BLOB:
                 case LogicalTypeId::VARCHAR: {
@@ -121,8 +122,8 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
                             static_cast<double>(reinterpret_cast<ptrdiff_t>(string_ptr[row_idx].GetDataUnsafe()));
                         len_ptr[row_idx] = static_cast<double>(string_ptr[row_idx].GetSize());
                     }
-                    desc.AddMember("dataBuffer", data_idx, allocator);
-                    desc.AddMember("lengthBuffer", length_idx, allocator);
+                    desc.AddMember("dataBuffer", rapidjson::Value{static_cast<uint64_t>(data_idx)}, allocator);
+                    desc.AddMember("lengthBuffer", rapidjson::Value{static_cast<uint64_t>(length_idx)}, allocator);
                     break;
                 }
                 case LogicalTypeId::STRUCT: {
