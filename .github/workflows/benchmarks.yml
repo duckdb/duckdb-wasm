@@ -32,7 +32,7 @@ jobs:
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: tpch-dbgen
                   path: |
@@ -67,7 +67,7 @@ jobs:
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: dataprep
                   path: |
@@ -104,7 +104,7 @@ jobs:
                       ccache -s
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/duckdb
@@ -184,7 +184,7 @@ jobs:
                       yarn workspace @duckdb/benchmarks bench:system:sum:csv
 
             - name: Upload reports
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: reports_micro
                   path: |
@@ -281,7 +281,7 @@ jobs:
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 
             - name: Upload reports
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_01
                   path: |
@@ -376,7 +376,7 @@ jobs:
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
 
             - name: Upload reports
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_1
                   path: |
@@ -471,7 +471,7 @@ jobs:
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
 
             - name: Upload reports
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_25
                   path: |
@@ -566,7 +566,7 @@ jobs:
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
 
             - name: Upload reports
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_5
                   path: |
@@ -628,7 +628,7 @@ jobs:
                       ./target/release/dataprep merge-benchmarks -r ./reports/
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
                   name: reports_all
                   path: |
