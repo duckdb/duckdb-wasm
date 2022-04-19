@@ -4292,10 +4292,10 @@ karma-webpack@^5.0.0:
     minimatch "^3.0.4"
     webpack-merge "^4.1.5"
 
-karma@^6.3.18:
-  version "6.3.18"
-  resolved "https://registry.yarnpkg.com/karma/-/karma-6.3.18.tgz#85402f7cf5937eeb20eb21944c1d30055570033e"
-  integrity sha512-YEwXVHRILKWKN7uEW9IkgTPjnYGb3YA3MDvlp04xpSRAyrNPoRmsBayLDgHykKAwBm6/mAOckj4xi/1JdQfhzQ==
+karma@^6.3.19:
+  version "6.3.19"
+  resolved "https://registry.yarnpkg.com/karma/-/karma-6.3.19.tgz#e50759667b0b9c6ad758655db0547d3ab4d2abf5"
+  integrity sha512-NDhWckzES/Y9xMiddyU1RzaKL76/scCsu8Mp0vR0Z3lQRvC3p72+Ab4ppoxs36S9tyPNX5V48yvaV++RNEBPZw==
   dependencies:
     "@colors/colors" "1.5.0"
     body-parser "^1.19.0"
@@ -5561,13 +5561,12 @@ react-virtualized@^9.22.3:
     prop-types "^15.7.2"
     react-lifecycles-compat "^3.0.4"
 
-react@^17.0.2:
-  version "17.0.2"
-  resolved "https://registry.yarnpkg.com/react/-/react-17.0.2.tgz#d0b5cc516d29eb3eee383f75b62864cfb6800037"
-  integrity sha512-gnhPt75i/dq/z3/6q/0asP78D0u592D5L1pd7M8P+dck6Fu/jJeL6iVVK23fptSUZj8Vjf++7wXA8UNclGQcbA==
+react@^18.0.0:
+  version "18.0.0"
+  resolved "https://registry.yarnpkg.com/react/-/react-18.0.0.tgz#b468736d1f4a5891f38585ba8e8fb29f91c3cb96"
+  integrity sha512-x+VL6wbT4JRVPm7EGxXhZ8w8LTROaxPXOqhlGyVSrv0sB1jkyFGgXxJ8LVoPRLvPR6/CIZGFmfzqUa2NYeMr2A==
   dependencies:
     loose-envify "^1.1.0"
-    object-assign "^4.1.1"
 
 readable-stream@^2.0.1:
   version "2.3.7"
