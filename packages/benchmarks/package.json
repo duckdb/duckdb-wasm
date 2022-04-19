@@ -15,13 +15,13 @@
         "web-worker": "^1.2.0"
     },
     "devDependencies": {
-        "@types/lodash": "^4.14.180",
+        "@types/lodash": "^4.14.182",
         "@types/sql.js": "^1.4.2",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.17.0",
         "assert": "^2.0.0",
         "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
-        "eslint": "^8.12.0",
+        "eslint": "^8.13.0",
         "eslint-plugin-react": "^7.29.4",
         "ts-loader": "^9.2.8",
         "typescript": "^4.6.3"
