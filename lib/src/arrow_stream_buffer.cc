@@ -42,18 +42,15 @@ arrow::Status ArrowIPCStreamBufferReader::ReadNext(std::shared_ptr<arrow::Record
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateArrayStreamFromSharedPtrPtr(
-    uintptr_t this_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
-    duckdb::TableFilterCollection* filters) {
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateStream(uintptr_t this_ptr) {
     assert(this_ptr != 0);
-
-    // Rewind the reader
-    auto reader = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBufferReader>*>(this_ptr);
+    auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(this_ptr);
+    auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
 
     // Create arrow stream
     auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
-    auto maybe_ok = arrow::ExportRecordBatchReader(*reader, &stream_wrapper->arrow_array_stream);
+    auto maybe_ok = arrow::ExportRecordBatchReader(reader, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
         if (stream_wrapper->arrow_array_stream.release) {
             stream_wrapper->arrow_array_stream.release(&stream_wrapper->arrow_array_stream);
@@ -63,6 +60,26 @@ std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::Cre
 
     // Release the stream
     return stream_wrapper;
+}
+
+void ArrowIPCStreamBufferReader::GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema) {
+    assert(this_ptr != 0);
+    auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(this_ptr);
+    auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
+
+    // Create arrow stream
+    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    stream_wrapper->arrow_array_stream.release = nullptr;
+    auto maybe_ok = arrow::ExportRecordBatchReader(reader, &stream_wrapper->arrow_array_stream);
+    if (!maybe_ok.ok()) {
+        if (stream_wrapper->arrow_array_stream.release) {
+            stream_wrapper->arrow_array_stream.release(&stream_wrapper->arrow_array_stream);
+        }
+        return;
+    }
+
+    // Pass ownership to caller
+    stream_wrapper->arrow_array_stream.get_schema(&stream_wrapper->arrow_array_stream, &schema.arrow_schema);
 }
 
 /// Constructor

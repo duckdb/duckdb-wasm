@@ -101,7 +101,8 @@ class MemoryFileSystem : public duckdb::FileSystem {
     /// Recursively remove a directory and all files in it
     void RemoveDirectory(const std::string &directory) override;
     /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
-    bool ListFiles(const std::string &directory, const std::function<void(std::string, bool)> &callback) override;
+    bool ListFiles(const std::string &directory,
+                   const std::function<void(const std::string &, bool)> &callback) override;
     /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
     /// properties
     void MoveFile(const std::string &source, const std::string &target) override;
@@ -113,7 +114,7 @@ class MemoryFileSystem : public duckdb::FileSystem {
     void FileSync(duckdb::FileHandle &handle) override;
 
     /// Runs a glob on the file system, returning a list of matching files
-    std::vector<std::string> Glob(const std::string &path) override;
+    std::vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override;
 
     /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
     void Seek(duckdb::FileHandle &handle, idx_t location) override;

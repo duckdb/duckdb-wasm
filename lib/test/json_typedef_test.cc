@@ -254,8 +254,8 @@ static std::vector<JSONTypedefTest> JSON_TYPEDEF_TESTS = {
     {
         .name = "struct_map",
         .logical = duckdb::LogicalType::MAP({
-            {"key", duckdb::LogicalTypeId::INTEGER},
-            {"vaue", duckdb::LogicalTypeId::INTEGER}
+            {"key", duckdb::LogicalType::LIST(duckdb::LogicalTypeId::INTEGER)},
+            {"vaue", duckdb::LogicalType::LIST(duckdb::LogicalTypeId::INTEGER)}
         }),
         .as_json = R"JSON({"sqlType":"map","keyType":{"sqlType":"int32"},"valueType":{"sqlType":"int32"}})JSON",
         .as_arrow = "map<int32, int32 ('entry')>",

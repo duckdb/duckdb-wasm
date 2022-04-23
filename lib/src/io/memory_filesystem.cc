@@ -132,7 +132,8 @@ void MemoryFileSystem::CreateDirectory(const std::string &directory) {}
 void MemoryFileSystem::RemoveDirectory(const std::string &directory) {}
 
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
-bool MemoryFileSystem::ListFiles(const std::string &directory, const std::function<void(std::string, bool)> &callback) {
+bool MemoryFileSystem::ListFiles(const std::string &directory,
+                                 const std::function<void(const std::string &, bool)> &callback) {
     bool any = false;
     for (auto &[path, buffer] : file_paths) {
         if (std::equal(directory.begin(), directory.begin() + std::min(directory.size(), path.size()), path.begin())) {
@@ -180,7 +181,7 @@ void MemoryFileSystem::RemoveFile(const std::string &filename) {
 void MemoryFileSystem::FileSync(duckdb::FileHandle &handle) {}
 
 /// Runs a glob on the file system, returning a list of matching files
-std::vector<std::string> MemoryFileSystem::Glob(const std::string &path) {
+std::vector<std::string> MemoryFileSystem::Glob(const std::string &path, FileOpener *opener) {
     // For now, just do exact matches
     auto file_paths_iter = file_paths.find(path);
     if (file_paths_iter == file_paths.end()) return {};
