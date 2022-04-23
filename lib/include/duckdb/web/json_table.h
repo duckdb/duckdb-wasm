@@ -61,14 +61,16 @@ class TableReader : public arrow::RecordBatchReader {
     virtual arrow::Status Prepare() = 0;
     /// Rewind the table reader
     virtual arrow::Status Rewind() = 0;
+    /// Clone the table reader
+    virtual std::shared_ptr<TableReader> CloneShared() const = 0;
 
     /// Create a table reader
     static arrow::Result<std::shared_ptr<TableReader>> Resolve(std::unique_ptr<io::InputFileStream> table,
                                                                TableType type, size_t batch_size = 1024);
     /// Arrow array stream factory function
-    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateArrayStreamFromSharedPtrPtr(
-        uintptr_t this_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
-        duckdb::TableFilterCollection* filters);
+    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateStream(uintptr_t this_ptr);
+    /// Create arrow array stream wrapper
+    static void GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema);
 };
 
 }  // namespace json

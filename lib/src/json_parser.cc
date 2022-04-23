@@ -20,6 +20,9 @@
 
 #include "duckdb/web/json_parser.h"
 
+#include <rapidjson/error/error.h>
+#include <rapidjson/reader.h>
+
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -44,6 +47,7 @@
 #include "arrow/util/value_parsing.h"
 #include "duckdb/web/json_analyzer.h"
 #include "rapidjson/document.h"
+#include "rapidjson/prettywriter.h"
 #include "rapidjson/writer.h"
 
 namespace duckdb {
@@ -897,7 +901,7 @@ arrow::Result<std::shared_ptr<arrow::Array>> ArrayFromJSON(const std::shared_ptr
                                                            std::string_view json) {
     rapidjson::Document json_doc;
     try {
-        json_doc.Parse(json.begin(), json.size());
+        json_doc.Parse<rapidjson::kParseNanAndInfFlag>(json.begin(), json.size());
     } catch (...) {
         return arrow::Status::Invalid("invalid json document: ", json);
     }

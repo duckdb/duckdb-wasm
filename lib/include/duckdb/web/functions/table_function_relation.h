@@ -7,7 +7,7 @@ namespace web {
 
 class TableFunctionRelation : public Relation {
    public:
-    TableFunctionRelation(ClientContext &context, string name, vector<Value> unnamed_parameters,
+    TableFunctionRelation(const std::shared_ptr<ClientContext> &context, string name, vector<Value> unnamed_parameters,
                           unordered_map<string, Value> named_parameters,
                           shared_ptr<Relation> input_relation_p = nullptr);
 

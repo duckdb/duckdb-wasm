@@ -49,7 +49,7 @@ TEST(JSONDataView, Select1) {
     ASSERT_EQ(std::string{buffer.GetString()}, R"JSON({
     "args": [
         {
-            "sqlType": "STRUCT<foo: INTEGER, bar: VARCHAR>",
+            "sqlType": "STRUCT(foo INTEGER, bar VARCHAR)",
             "physicalType": "STRUCT<?>",
             "validityBuffer": 0,
             "children": [

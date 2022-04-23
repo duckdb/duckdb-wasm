@@ -105,7 +105,8 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// Recursively remove a directory and all files in it
     void RemoveDirectory(const std::string &directory) override;
     /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
-    bool ListFiles(const std::string &directory, const std::function<void(std::string, bool)> &callback) override {
+    bool ListFiles(const std::string &directory,
+                   const std::function<void(const std::string &, bool)> &callback) override {
         return filesystem_.ListFiles(directory, callback);
     }
     /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
@@ -117,7 +118,9 @@ class BufferedFileSystem : public duckdb::FileSystem {
     void RemoveFile(const std::string &filename) override;
 
     /// Runs a glob on the file system, returning a list of matching files
-    std::vector<std::string> Glob(const std::string &path) override { return filesystem_.Glob(path); }
+    std::vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override {
+        return filesystem_.Glob(path, opener);
+    }
 
     /// Register subsystem
     void RegisterSubSystem(unique_ptr<FileSystem> sub_fs) override;

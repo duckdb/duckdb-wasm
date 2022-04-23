@@ -14,7 +14,8 @@
 namespace duckdb {
 namespace web {
 
-TableFunctionRelation::TableFunctionRelation(ClientContext &context, string name, vector<Value> unnamed_parameters,
+TableFunctionRelation::TableFunctionRelation(const std::shared_ptr<ClientContext> &context, string name,
+                                             vector<Value> unnamed_parameters,
                                              unordered_map<string, Value> named_parameters,
                                              shared_ptr<Relation> input_relation_p)
     : Relation(context, RelationType::TABLE_FUNCTION_RELATION),
@@ -22,7 +23,7 @@ TableFunctionRelation::TableFunctionRelation(ClientContext &context, string name
       unnamed_parameters(move(unnamed_parameters)),
       named_parameters(move(named_parameters)),
       input_relation(move(input_relation_p)) {
-    context.TryBindRelation(*this, this->columns);
+    context->TryBindRelation(*this, this->columns);
 }
 
 unique_ptr<QueryNode> TableFunctionRelation::GetQueryNode() {

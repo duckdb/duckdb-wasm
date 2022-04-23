@@ -24,7 +24,7 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
-static const std::function<void(std::string, bool)> *list_files_callback = {};
+static const std::function<void(const std::string &, bool)> *list_files_callback = {};
 
 namespace duckdb {
 namespace web {
@@ -918,7 +918,8 @@ void WebFileSystem::RemoveDirectory(const std::string &directory) {
     return duckdb_web_fs_directory_remove(directory.c_str(), directory.size());
 }
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
-bool WebFileSystem::ListFiles(const std::string &directory, const std::function<void(std::string, bool)> &callback) {
+bool WebFileSystem::ListFiles(const std::string &directory,
+                              const std::function<void(const std::string &, bool)> &callback) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     list_files_callback = &callback;
     bool result = duckdb_web_fs_directory_list_files(directory.c_str(), directory.size());
@@ -937,9 +938,7 @@ bool WebFileSystem::FileExists(const std::string &filename) {
     return duckdb_web_fs_file_exists(filename.c_str(), filename.size());
 }
 /// Remove a file from disk
-void WebFileSystem::RemoveFile(const std::string &filename) {
-    throw std::logic_error("WebFileSystem::RemoveFile not implemented");
-}
+void WebFileSystem::RemoveFile(const std::string &filename) {}
 
 /// Sync a file handle to disk
 void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
@@ -947,7 +946,7 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 }
 
 /// Runs a glob on the file system, returning a list of matching files
-std::vector<std::string> WebFileSystem::Glob(const std::string &path) {
+std::vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     std::vector<std::string> results;
     auto glob = glob_to_regex(path);

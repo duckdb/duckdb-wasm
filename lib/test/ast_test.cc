@@ -47,7 +47,7 @@ TEST(ASTIntrospection, SingleRemote) {
     auto& from = *reinterpret_cast<duckdb::TableFunctionRef*>(select_node.from_table.get());
 
     // Unpack the table function
-    ASSERT_EQ(from.function->ToString(), "parquet_scan(http://foo)");
+    ASSERT_EQ(from.function->ToString(), "parquet_scan('http://foo')");
     ASSERT_EQ(from.function->type, duckdb::ExpressionType::FUNCTION);
     auto& func = *reinterpret_cast<duckdb::FunctionExpression*>(from.function.get());
     ASSERT_EQ(func.function_name, "parquet_scan");
@@ -58,7 +58,7 @@ TEST(ASTIntrospection, SingleRemote) {
     // .. which is a constant value
     ASSERT_EQ(func.children[0]->type, duckdb::ExpressionType::VALUE_CONSTANT);
     auto& constant = *reinterpret_cast<duckdb::ConstantExpression*>(func.children[0].get());
-    ASSERT_EQ(constant.ToString(), "http://foo");
+    ASSERT_EQ(constant.ToString(), "'http://foo'");
     ASSERT_EQ(constant.value.type().id(), duckdb::LogicalTypeId::VARCHAR);
     ASSERT_EQ(constant.value.ToString(), "http://foo");
 

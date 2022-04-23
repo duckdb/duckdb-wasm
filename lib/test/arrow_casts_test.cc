@@ -1,5 +1,7 @@
 #include "duckdb/web/arrow_casts.h"
 
+#include <duckdb/common/types.hpp>
+
 #include "arrow/c/bridge.h"
 #include "arrow/status.h"
 #include "duckdb/web/io/file_page_buffer.h"
@@ -21,7 +23,7 @@ TEST(ArrowCasts, PatchBigInt) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    result->ToArrowSchema(&raw_schema);
+    result->ToArrowSchema(&raw_schema, result->types, result->names);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -65,7 +67,7 @@ TEST(ArrowCasts, PatchTimestamp) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    result->ToArrowSchema(&raw_schema);
+    result->ToArrowSchema(&raw_schema, result->types, result->names);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();

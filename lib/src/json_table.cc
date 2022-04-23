@@ -10,6 +10,7 @@
 #include "arrow/type_fwd.h"
 #include "duckdb/common/arrow.hpp"
 #include "duckdb/function/table_function.hpp"
+#include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_parser.h"
 #include "duckdb/web/json_typedef.h"
@@ -156,6 +157,8 @@ struct RowArrayTableReader : public TableReader {
     arrow::Status Rewind() override;
     /// Read the the next arrow batch
     arrow::Status ReadNext(std::shared_ptr<arrow::RecordBatch>* batch) override;
+    /// Clone the table reader
+    std::shared_ptr<TableReader> CloneShared() const override;
 };
 
 arrow::Status RowArrayTableReader::Prepare() {
@@ -198,6 +201,14 @@ arrow::Status RowArrayTableReader::ReadNext(std::shared_ptr<arrow::RecordBatch>*
     return arrow::Status::OK();
 }
 
+std::shared_ptr<TableReader> RowArrayTableReader::CloneShared() const {
+    auto table_copy = std::make_unique<io::InputFileStream>(*table_file_);
+    table_copy->Rewind();
+    auto reader = std::make_shared<RowArrayTableReader>(std::move(table_copy), table_type_, batch_size_);
+    reader->Prepare().ok();
+    return reader;
+}
+
 struct ColumnObjectTableReader : public TableReader {
     /// A column parser
     struct ColumnReader {
@@ -223,6 +234,8 @@ struct ColumnObjectTableReader : public TableReader {
     arrow::Status Rewind() override;
     /// Read the the next arrow batch
     arrow::Status ReadNext(std::shared_ptr<arrow::RecordBatch>* batch) override;
+    /// Clone the table reader
+    std::shared_ptr<TableReader> CloneShared() const override;
 };
 
 arrow::Status ColumnObjectTableReader::Rewind() {
@@ -230,6 +243,15 @@ arrow::Status ColumnObjectTableReader::Rewind() {
     column_readers_.clear();
     ARROW_RETURN_NOT_OK(Prepare());
     return arrow::Status::OK();
+}
+
+/// Clone the table reader
+std::shared_ptr<TableReader> ColumnObjectTableReader::CloneShared() const {
+    auto table_copy = std::make_unique<io::InputFileStream>(*table_file_);
+    table_copy->Rewind();
+    auto reader = std::make_shared<ColumnObjectTableReader>(std::move(table_copy), table_type_, batch_size_);
+    reader->Prepare().ok();
+    return reader;
 }
 
 arrow::Status ColumnObjectTableReader::Prepare() {
@@ -330,24 +352,15 @@ arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateArrayStreamFromSharedPtrPtr(
-    uintptr_t this_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
-    duckdb::TableFilterCollection* filters) {
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(uintptr_t this_ptr) {
     assert(this_ptr != 0);
-
-    // XXX Not relevant at the moment since we use the json table reader for imports only
-    (void)project_columns;
-    (void)filters;
-
-    // Rewind the reader
     auto reader = reinterpret_cast<std::shared_ptr<TableReader>*>(this_ptr);
-    auto maybe_ok = (*reader)->Rewind();
-    if (!maybe_ok.ok()) return nullptr;
+    auto reader_copy = (*reader)->CloneShared();
 
     // Create arrow stream
     auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
-    maybe_ok = arrow::ExportRecordBatchReader(*reader, &stream_wrapper->arrow_array_stream);
+    auto maybe_ok = arrow::ExportRecordBatchReader(reader_copy, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
         if (stream_wrapper->arrow_array_stream.release) {
             stream_wrapper->arrow_array_stream.release(&stream_wrapper->arrow_array_stream);
@@ -355,12 +368,28 @@ std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateArrayStreamF
         return nullptr;
     }
 
-    // XXX
-    // ArrowSchema schema;
-    // stream->get_schema(stream.get(), &schema);
-
     // Release the stream
     return stream_wrapper;
+}
+
+void TableReader::GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema) {
+    assert(this_ptr != 0);
+    auto reader = reinterpret_cast<std::shared_ptr<TableReader>*>(this_ptr);
+    auto reader_copy = (*reader)->CloneShared();
+
+    // Create arrow stream
+    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    stream_wrapper->arrow_array_stream.release = nullptr;
+    auto maybe_ok = arrow::ExportRecordBatchReader(reader_copy, &stream_wrapper->arrow_array_stream);
+    if (!maybe_ok.ok()) {
+        if (stream_wrapper->arrow_array_stream.release) {
+            stream_wrapper->arrow_array_stream.release(&stream_wrapper->arrow_array_stream);
+        }
+        return;
+    }
+
+    // Pass ownership to caller
+    stream_wrapper->arrow_array_stream.get_schema(&stream_wrapper->arrow_array_stream, &schema.arrow_schema);
 }
 
 }  // namespace json
