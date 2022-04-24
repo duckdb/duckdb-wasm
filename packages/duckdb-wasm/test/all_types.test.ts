@@ -54,8 +54,8 @@ const PARTIALLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
 
 // Subqueries that return the limits of the subset of the full range that is implemented
 const PARTIALLY_IMPLEMENTED_TYPES_SUBSTITUTIONS = [
-    `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Date,'${MAXIMUM_DATE_STR}'::Date,null],i)) as date`,
-    `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Timestamp,'${MAXIMUM_DATE_STR}'::Timestamp,null],i)) as timestamp`,
+    `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Date,'${MAXIMUM_DATE_STR}'::Date,null],i + 1)) as date`,
+    `(SELECT array_extract(['${MINIMUM_DATE_STR}'::Timestamp,'${MAXIMUM_DATE_STR}'::Timestamp,null],i + 1)) as timestamp`,
 ];
 
 // These types do not work with default configuration, but have
@@ -271,12 +271,14 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
 
                     expect(Object.keys(test.answerMap)).toContain(name);
                     expect(unpack(getValue(col!.get(0))))
-                        .withContext(name)
+                        .withContext(name + '|' + col?.toString() + '|[0]')
                         .toEqual(test.answerMap[name][0]); // Min
                     expect(unpack(getValue(col!.get(1))))
-                        .withContext(name)
+                        .withContext(name + '|' + col?.toString() + '|[1]')
                         .toEqual(test.answerMap[name][1]); // Max
-                    expect(col!.get(2)).toEqual(test.answerMap[name][2]); // Null
+                    expect(col!.get(2))
+                        .withContext(name + '|' + col?.toString() + '|[2]')
+                        .toEqual(test.answerMap[name][2]); // Null
                 }
             });
         }
