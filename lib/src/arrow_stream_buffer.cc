@@ -42,9 +42,11 @@ arrow::Status ArrowIPCStreamBufferReader::ReadNext(std::shared_ptr<arrow::Record
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateStream(uintptr_t this_ptr) {
-    assert(this_ptr != 0);
-    auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(this_ptr);
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateStream(
+    uintptr_t buffer_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
+    TableFilterCollection* filters) {
+    assert(buffer_ptr != 0);
+    auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(buffer_ptr);
     auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
 
     // Create arrow stream
@@ -62,9 +64,9 @@ std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::Cre
     return stream_wrapper;
 }
 
-void ArrowIPCStreamBufferReader::GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema) {
-    assert(this_ptr != 0);
-    auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(this_ptr);
+void ArrowIPCStreamBufferReader::GetSchema(uintptr_t buffer_ptr, duckdb::ArrowSchemaWrapper& schema) {
+    assert(buffer_ptr != 0);
+    auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(buffer_ptr);
     auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
 
     // Create arrow stream

@@ -352,7 +352,9 @@ arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(uintptr_t this_ptr) {
+std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(
+    uintptr_t this_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
+    duckdb::TableFilterCollection* filters) {
     assert(this_ptr != 0);
     auto reader = reinterpret_cast<std::shared_ptr<TableReader>*>(this_ptr);
     auto reader_copy = (*reader)->CloneShared();
