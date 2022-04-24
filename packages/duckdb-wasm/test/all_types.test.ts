@@ -41,6 +41,7 @@ const NOT_IMPLEMENTED_TYPES = [
     'dec38_10',
     'uuid',
     'map',
+    'json',
 ];
 
 // These types are supported, but not the full range returned from the test_all_types() table function, here we define
@@ -90,6 +91,7 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     large_enum: ['enum_0', 'enum_69999', null],
 
     int_array: [[], [42, 999, null, null, -42], null],
+    double_array: [[], [42.0, NaN, Infinity, -Infinity, null, -42.0], null],
     varchar_array: [[], ['🦆🦆🦆🦆🦆🦆', 'goose', null, ''], null],
     nested_int_array: [[], [[], [42, 999, null, null, -42], null, [], [42, 999, null, null, -42]], null],
 
@@ -225,7 +227,7 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
                     expect(unpack(getValue(col!.get(1))))
                         .withContext(name)
                         .toEqual(test.answerMap[name][1]); // Max
-                    expect(col!.get(2)).toEqual(test.answerMap[name][2]); // Null
+                    expect(col!.get(2)).withContext(name).toEqual(test.answerMap[name][2]); // Null
                 }
             });
         }
