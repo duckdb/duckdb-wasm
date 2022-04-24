@@ -29,6 +29,13 @@ template <class ARRAY_TYPE, class ARRAY_EXPECTED_TYPE>
 void AssertArraysMatch(ARRAY_TYPE array, ARRAY_EXPECTED_TYPE array_expected) {
     auto have = array->ToString();
     auto expected = array_expected->ToString();
+    ASSERT_TRUE(array->Equals(*array_expected)) << have << " expected to be " << endl << expected << endl;
+}
+
+template <class ARRAY_TYPE, class ARRAY_EXPECTED_TYPE>
+void AssertArraysMatchByString(ARRAY_TYPE array, ARRAY_EXPECTED_TYPE array_expected) {
+    auto have = array->ToString();
+    auto expected = array_expected->ToString();
     ASSERT_EQ(have, expected) << have << " expected to be " << endl << expected << endl;
 }
 
@@ -311,13 +318,13 @@ TEST(AllTypesTest, FullRangeTypes) {
     AssertCorrectDictionary<arrow::UInt32Type>("large_enum", dictionary_large, indices_large, batch);
 
     // Nested types
-    //    AssertArraysMatch(batch->GetColumnByName("int_array"), GetExpectedIntArray());
-    //    AssertArraysMatch(batch->GetColumnByName("varchar_array"), GetExpectedStringArray());
-    AssertArraysMatch(batch->GetColumnByName("double_array"), GetExpectedDoubleArray());
-    //    AssertArraysMatch(batch->GetColumnByName("nested_int_array"), GetExpectedNestedIntArray());
-    //    AssertArraysMatch(batch->GetColumnByName("struct"), GetExpectedStructArray());
-    //    AssertArraysMatch(batch->GetColumnByName("struct_of_arrays"), GetExpectedStructOfArrayArray());
-    //    AssertArraysMatch(batch->GetColumnByName("array_of_structs"), GetExpectedArrayOfStructsArray());
-    //    AssertArraysMatch(batch->GetColumnByName("map"), GetExpectedMapArray());
+    AssertArraysMatch(batch->GetColumnByName("int_array"), GetExpectedIntArray());
+    AssertArraysMatch(batch->GetColumnByName("varchar_array"), GetExpectedStringArray());
+    AssertArraysMatchByString(batch->GetColumnByName("double_array"), GetExpectedDoubleArray());
+    AssertArraysMatch(batch->GetColumnByName("nested_int_array"), GetExpectedNestedIntArray());
+    AssertArraysMatch(batch->GetColumnByName("struct"), GetExpectedStructArray());
+    AssertArraysMatch(batch->GetColumnByName("struct_of_arrays"), GetExpectedStructOfArrayArray());
+    AssertArraysMatch(batch->GetColumnByName("array_of_structs"), GetExpectedArrayOfStructsArray());
+    AssertArraysMatch(batch->GetColumnByName("map"), GetExpectedMapArray());
 }
 }  // namespace
