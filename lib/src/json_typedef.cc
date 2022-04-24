@@ -395,6 +395,7 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
         case duckdb::LogicalTypeId::CHAR:
         case duckdb::LogicalTypeId::TABLE:
         case duckdb::LogicalTypeId::AGGREGATE_STATE:
+        case duckdb::LogicalTypeId::JSON:
             break;
     }
     return out;

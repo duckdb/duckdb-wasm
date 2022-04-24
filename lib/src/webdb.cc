@@ -129,9 +129,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Import the schema
     ArrowSchema raw_schema;
-    std::vector<LogicalType> types;
-    std::vector<string> names;
-    current_query_result_->ToArrowSchema(&raw_schema, types, names);
+    current_query_result_->ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
     current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
 
@@ -511,8 +509,9 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
         /// Execute the arrow scan
         vector<Value> params;
         params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&arrow_ipc_stream_->buffer())));
-        params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(ArrowIPCStreamBufferReader::CreateStream)));
-        params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(ArrowIPCStreamBufferReader::GetSchema)));
+        params.push_back(
+            duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&ArrowIPCStreamBufferReader::CreateStream)));
+        params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&ArrowIPCStreamBufferReader::GetSchema)));
         params.push_back(duckdb::Value::UBIGINT(1000000));
         auto func = connection_.TableFunction("arrow_scan", params);
 
