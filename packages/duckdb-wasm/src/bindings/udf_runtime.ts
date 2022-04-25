@@ -62,11 +62,13 @@ function ptrToFloat64Array(mod: DuckDBModule, ptr: number, n: number) {
 }
 
 interface ArgumentTypeDescription {
+    name?: string;
     sqlType: string;
     physicalType: string;
-    validityBuffer: number;
-    dataBuffer: number;
-    lengthBuffer: number;
+    validityBuffer?: number;
+    dataBuffer?: number;
+    lengthBuffer?: number;
+    children?: ArgumentTypeDescription[];
 }
 
 interface ReturnTypeDescription {
@@ -79,6 +81,8 @@ interface SchemaDescription {
     args: ArgumentTypeDescription[];
     ret: ReturnTypeDescription;
 }
+
+type ArgumentResolver = (row: number) => any | null;
 
 // this is called from webdb.cc/CallScalarUDFFunction, changes here need to be matched there
 export function callScalarUDF(
@@ -97,46 +101,72 @@ export function callScalarUDF(
             storeError(mod, response, 'Unknown UDF with id: ' + funcId);
             return;
         }
-        const descStr = TEXT_DECODER.decode(mod.HEAPU8.subarray(descPtr, descPtr + descSize));
-        const desc = JSON.parse(descStr) as SchemaDescription;
+        const rawDesc = TEXT_DECODER.decode(mod.HEAPU8.subarray(descPtr, descPtr + descSize));
+        const desc = JSON.parse(rawDesc) as SchemaDescription;
         const ptrs = ptrToFloat64Array(mod, ptrsPtr, ptrsSize / 8);
 
-        // Create argument arrays
-        const argValidity = [];
-        const argData = [];
-        for (let i = 0; i < desc.args.length; ++i) {
-            const argDesc = desc.args[i];
-            const data = ptrToArray(mod, ptrs[argDesc.dataBuffer] as number, argDesc.physicalType, desc.rows);
-            const validity = ptrToUint8Array(mod, ptrs[argDesc.validityBuffer] as number, desc.rows);
-            if (data.length == 0 || validity.length == 0) {
-                storeError(mod, response, "Can't create physical arrays for argument " + argDesc.physicalType);
-                return;
+        const buildResolver = (arg: ArgumentTypeDescription): ArgumentResolver => {
+            let validity: Uint8Array | null = null;
+            if (arg.validityBuffer) {
+                validity = ptrToUint8Array(mod, ptrs[arg.validityBuffer] as number, desc.rows);
             }
-            argValidity.push(validity);
-
-            switch (argDesc.physicalType) {
+            switch (arg.physicalType) {
                 case 'VARCHAR': {
-                    const lengthsArray = ptrToFloat64Array(mod, ptrs[argDesc.lengthBuffer] as number, desc.rows);
-                    const dataArray = [];
+                    if (arg.dataBuffer === null || arg.dataBuffer === undefined) {
+                        throw new Error('malformed data view, expected data buffer for VARCHAR argument');
+                    }
+                    if (arg.lengthBuffer === null || arg.lengthBuffer === undefined) {
+                        throw new Error('malformed data view, expected data length buffer for VARCHAR argument');
+                    }
+                    const raw = ptrToArray(mod, ptrs[arg.dataBuffer] as number, arg.physicalType, desc.rows);
+                    const strings: (string | null)[] = [];
+                    const stringLengths = ptrToFloat64Array(mod, ptrs[arg.lengthBuffer] as number, desc.rows);
                     for (let j = 0; j < desc.rows; ++j) {
-                        if (!validity[j]) {
-                            dataArray.push(null);
+                        if (validity != null && !validity[j]) {
+                            strings.push(null);
                             continue;
                         }
                         const subarray = mod.HEAPU8.subarray(
-                            data[j] as number,
-                            (data[j] as number) + (lengthsArray[j] as number),
+                            raw[j] as number,
+                            (raw[j] as number) + (stringLengths[j] as number),
                         );
                         const str = TEXT_DECODER.decode(subarray);
-                        dataArray.push(str);
+                        strings.push(str);
                     }
-                    argData.push(dataArray);
-                    break;
+                    return (row: number) => strings[row];
+                }
+                case 'STRUCT<?>': {
+                    const tmp: any = {};
+                    const children: ((row: number) => void)[] = [];
+                    for (let j = 0; j < (arg.children?.length || 0); ++j) {
+                        const child = buildResolver(arg.children![j]);
+                        children.push((row: number) => {
+                            tmp[arg.name!] = child(row);
+                        });
+                    }
+                    return (row: number) => {
+                        for (const resolver of children) {
+                            resolver(row);
+                        }
+                        return tmp;
+                    };
                 }
                 default: {
-                    argData.push(data);
+                    if (arg.dataBuffer === null || arg.dataBuffer === undefined) {
+                        throw new Error(
+                            'malformed data view, expected data buffer for argument of type: ' + arg.physicalType,
+                        );
+                    }
+                    const data = ptrToArray(mod, ptrs[arg.dataBuffer] as number, arg.physicalType, desc.rows);
+                    return (row: number) => data[row];
                 }
             }
+        };
+
+        // Translate argument data
+        const argResolvers = [];
+        for (let i = 0; i < desc.args.length; ++i) {
+            argResolvers.push(buildResolver(desc.args[i]));
         }
 
         // Prepare result buffers
@@ -162,7 +192,7 @@ export function callScalarUDF(
         }
         for (let i = 0; i < desc.rows; ++i) {
             for (let j = 0; j < desc.args.length; ++j) {
-                args[j] = argValidity[j][i] ? argData[j][i] : null;
+                args[j] = argResolvers[j];
             }
             const res = udf.func(...args);
             rawResultData[i] = res;

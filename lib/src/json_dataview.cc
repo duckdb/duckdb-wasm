@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <duckdb/common/types.hpp>
+#include <duckdb/common/types/vector.hpp>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -71,9 +72,8 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
         pending.push_back({false, &chunk_vec, rapidjson::Value(rapidjson::kObjectType), 0});
 
         while (!pending.empty()) {
-            auto& [visited, vec, desc, parent_idx] = pending.back();
-
             // Already visited?
+            auto& [visited, vec, desc, parent_idx] = pending.back();
             if (visited) {
                 if (pending.size() == 1) {
                     col_desc = std::move(desc);
@@ -127,10 +127,15 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
                     break;
                 }
                 case LogicalTypeId::STRUCT: {
+                    auto child_count = StructType::GetChildCount(vec_type);
                     auto& entries = StructVector::GetEntries(*vec);
                     desc.AddMember("children", rapidjson::Value(rapidjson::kArrayType), allocator);
-                    for (auto& entry : entries) {
+                    for (size_t i = 0; i < child_count; ++i) {
+                        auto c = child_count - 1 - i;
+                        auto& entry = entries[c];
                         rapidjson::Value desc{rapidjson::kObjectType};
+                        auto name = StructType::GetChildName(vec_type, c);
+                        desc.AddMember("name", rapidjson::Value{name, allocator}, allocator);
                         pending.push_back({false, entry.get(), std::move(desc), current_idx});
                     }
                     break;

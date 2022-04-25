@@ -54,17 +54,19 @@ TEST(JSONDataView, Select1) {
             "validityBuffer": 0,
             "children": [
                 {
-                    "sqlType": "VARCHAR",
-                    "physicalType": "VARCHAR",
-                    "validityBuffer": 1,
-                    "dataBuffer": 2,
-                    "lengthBuffer": 3
-                },
-                {
+                    "name": "foo",
                     "sqlType": "INTEGER",
                     "physicalType": "INT32",
-                    "validityBuffer": 4,
-                    "dataBuffer": 5
+                    "validityBuffer": 1,
+                    "dataBuffer": 2
+                },
+                {
+                    "name": "bar",
+                    "sqlType": "VARCHAR",
+                    "physicalType": "VARCHAR",
+                    "validityBuffer": 3,
+                    "dataBuffer": 4,
+                    "lengthBuffer": 5
                 }
             ]
         }
