@@ -361,6 +361,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
 
     // Normalify the data chunk
     chunk.Normalify();
+    out.Normalify(chunk.size());
 
     // TODO create the descriptor in the bind phase for performance
     // TODO special handling if all arguments are non-NULL for performance
