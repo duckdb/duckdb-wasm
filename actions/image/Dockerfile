@@ -43,8 +43,8 @@ RUN groupadd -g ${GID} -o ${UNAME} \
     && useradd -m -g ${GID} -u ${UID} -s /bin/bash ${UNAME}
 
 ENV NVM_DIR=/opt/nvm
-ARG NVM_VERSION="v0.38.0"
-ARG NODE_VERSION="v16.1.0"
+ARG NVM_VERSION="v0.39.1"
+ARG NODE_VERSION="v17.6.0"
 RUN mkdir -p /opt/nvm \
     && ls -lisah /opt/nvm \
     && curl https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash \
@@ -55,7 +55,7 @@ RUN mkdir -p /opt/nvm \
     && npm install --global yarn \
     && chown -R ${UID}:${GID} /opt/nvm
 
-ARG RUST_VERSION="1.52.1"
+ARG RUST_VERSION="1.60.0"
 RUN export RUSTUP_HOME=/opt/rust \
     && export CARGO_HOME=/opt/rust \
     && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y \
