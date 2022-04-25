@@ -145,7 +145,15 @@ export interface DuckDBRuntime {
     removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
 
     // Call a scalar UDF function
-    callScalarUDF(mod: DuckDBModule, response: number, funcId: number, descPtr: number, descSize: number, ptrsPtr: number, ptrsSize: number): void;
+    callScalarUDF(
+        mod: DuckDBModule,
+        response: number,
+        funcId: number,
+        descPtr: number,
+        descSize: number,
+        ptrsPtr: number,
+        ptrsSize: number,
+    ): void;
 }
 
 export const DEFAULT_RUNTIME: DuckDBRuntime = {

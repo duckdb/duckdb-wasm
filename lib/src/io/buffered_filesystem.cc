@@ -18,6 +18,24 @@ namespace duckdb {
 namespace web {
 namespace io {
 
+std::string_view BufferedFileSystem::PatchFilename(std::string_view file) {
+    std::string_view suffix{".tmp"};
+    if (suffix.size() > file.size()) return file;
+    if (std::equal(suffix.rbegin(), suffix.rend(), file.rbegin())) {
+        return file.substr(0, file.size() - suffix.size());
+    }
+    return file;
+}
+
+std::string BufferedFileSystem::PatchFilenameOwned(const std::string &file) {
+    std::string_view suffix{".tmp"};
+    if (suffix.size() > file.size()) return file;
+    if (std::equal(suffix.rbegin(), suffix.rend(), file.rbegin())) {
+        return file.substr(0, file.size() - suffix.size());
+    }
+    return file;
+}
+
 /// Constructor
 void BufferedFileHandle::Close() { file_ref_->Release(); }
 
@@ -39,12 +57,14 @@ BufferedFileSystem::BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_ma
 
 /// Pass through a file
 void BufferedFileSystem::RegisterFile(std::string_view file, FileConfig config) {
+    file = PatchFilename(file);
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
     file_configs_.insert({std::string{file}, config});
 }
 
 /// Try to drop a file
 bool BufferedFileSystem::TryDropFile(std::string_view file) {
+    file = PatchFilename(file);
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
     if (file_page_buffer_->BuffersFile(file)) {
         return file_page_buffer_->TryDropFile(file);
@@ -61,8 +81,10 @@ void BufferedFileSystem::DropFiles() {
 }
 
 /// Open a file
-std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                                 FileCompressionType compression, FileOpener *opener) {
+std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &raw_path, uint8_t flags,
+                                                                 FileLockType lock, FileCompressionType compression,
+                                                                 FileOpener *opener) {
+    auto path = PatchFilenameOwned(raw_path);
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
 
     // Bypass the buffering?
@@ -206,12 +228,15 @@ void BufferedFileSystem::RemoveDirectory(const std::string &directory) {
 
 /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
 /// properties
-void BufferedFileSystem::MoveFile(const std::string &source, const std::string &target) {
+void BufferedFileSystem::MoveFile(const std::string &raw_source, const std::string &raw_target) {
+    auto source = PatchFilenameOwned(raw_source);
+    auto target = PatchFilenameOwned(raw_target);
     // XXX Invalidate buffer manager!
     return filesystem_.MoveFile(source, target);
 }
 /// Remove a file from disk
-void BufferedFileSystem::RemoveFile(const std::string &filename) {
+void BufferedFileSystem::RemoveFile(const std::string &raw_filename) {
+    auto filename = PatchFilenameOwned(raw_filename);
     // XXX Invalidate buffer manager!
     return filesystem_.RemoveFile(filename);
 }

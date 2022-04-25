@@ -7,7 +7,8 @@ import {
     failWith,
     readString,
     decodeText,
-    DuckDBDataProtocol, FileFlags,
+    DuckDBDataProtocol,
+    FileFlags,
 } from './runtime';
 import { StatusCode } from '../status';
 import { DuckDBModule } from './duckdb_module';
@@ -26,7 +27,12 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
             const cached = NODE_RUNTIME._fileInfoCache.get(fileId);
-            const [s, d, n] = callSRet(mod, 'duckdb_web_fs_get_file_info_by_id', ['number', 'number'], [fileId, cached?.cacheEpoch || 0]);
+            const [s, d, n] = callSRet(
+                mod,
+                'duckdb_web_fs_get_file_info_by_id',
+                ['number', 'number'],
+                [fileId, cached?.cacheEpoch || 0],
+            );
             if (s !== StatusCode.SUCCESS) {
                 failWith(mod, readString(mod, d, n));
                 return null;
@@ -45,7 +51,6 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             return null;
         }
     },
-
     testPlatformFeature: (_mod: DuckDBModule, feature: number): boolean => {
         switch (feature) {
             case 1:
@@ -241,14 +246,20 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
     },
     moveFile: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
-        try {
-            const from = decodeText(mod.HEAPU8.subarray(fromPtr, fromPtr + fromLen));
-            const to = decodeText(mod.HEAPU8.subarray(toPtr, toPtr + toLen));
-            return fs.renameSync(from, to);
-        } catch (e: any) {
-            failWith(mod, e.toString());
-            return 0;
+        const from = readString(mod, fromPtr, fromLen);
+        const to = readString(mod, toPtr, toLen);
+        const handle = NODE_RUNTIME._files?.get(from);
+        if (handle !== undefined) {
+            NODE_RUNTIME._files!.delete(handle);
+            NODE_RUNTIME._files!.set(to, handle);
         }
+        for (const [key, value] of NODE_RUNTIME._fileInfoCache?.entries() || []) {
+            if (value.dataUrl == from) {
+                NODE_RUNTIME._fileInfoCache.delete(key);
+                break;
+            }
+        }
+        return true;
     },
     checkFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {

@@ -278,6 +278,9 @@ void WebFileSystem::WebFileHandle::Close() {
     auto file_id = file.file_id_;
     auto file_proto = file.data_protocol_;
     fs.files_by_name_.erase(file.file_name_);
+    if (file.data_url_.has_value()) {
+        fs.files_by_url_.erase(file.data_url_.value());
+    }
     auto iter = fs.files_by_id_.find(file.file_id_);
     auto tmp = std::move(iter->second);
     fs.files_by_id_.erase(iter);
@@ -378,6 +381,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     // Register the file
     files_by_id_.insert({file_id, file});
     files_by_name_.insert({file->file_name_, file});
+    files_by_url_.insert({std::string{file_url}, file});
 
     // Build the file handle
     return std::make_unique<WebFileHandle>(file);
@@ -438,6 +442,9 @@ void WebFileSystem::DropDanglingFiles() {
     for (auto &[file_id, file] : files_by_id_) {
         if (file->handle_count_ == 0) {
             files_by_name_.erase(file->file_name_);
+            if (file->data_url_.has_value()) {
+                files_by_url_.erase(file->data_url_.value());
+            }
             to_delete.push_back(file_id);
         }
     }
@@ -455,6 +462,9 @@ bool WebFileSystem::TryDropFile(std::string_view file_name) {
     if (iter->second->handle_count_ == 0) {
         files_by_id_.erase(iter->second->file_id_);
         files_by_name_.erase(iter->second->file_name_);
+        if (iter->second->data_url_.has_value()) {
+            files_by_url_.erase(iter->second->data_url_.value());
+        }
         return true;
     }
     return false;
@@ -602,6 +612,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
         std::string file_name{file->file_name_};
         files_by_id_.insert({file_id, file});
         files_by_name_.insert({file_name, file});
+        files_by_url_.insert({file->data_url_.value(), file});
     } else {
         file = iter->second;
     }
@@ -664,6 +675,9 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 /// Something went wrong, abort opening the file
                 fs_guard.lock();
                 files_by_name_.erase(file->file_name_);
+                if (file->data_url_.has_value()) {
+                    files_by_url_.erase(file->data_url_.value());
+                }
                 auto iter = files_by_id_.find(file->file_id_);
                 auto tmp = std::move(iter->second);
                 files_by_id_.erase(iter);
@@ -929,6 +943,19 @@ bool WebFileSystem::ListFiles(const std::string &directory,
 /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
 /// properties
 void WebFileSystem::MoveFile(const std::string &source, const std::string &target) {
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    if (auto iter = files_by_url_.find(source); iter != files_by_url_.end()) {
+        auto file = std::move(iter->second);
+        file->data_url_ = target;
+        files_by_url_.erase(iter);
+        files_by_url_.insert({target, file});
+    }
+    if (auto iter = files_by_name_.find(source); iter != files_by_name_.end()) {
+        auto file = std::move(iter->second);
+        file->file_name_ = target;
+        files_by_name_.erase(iter);
+        files_by_name_.insert({target, file});
+    }
     duckdb_web_fs_file_move(source.c_str(), source.size(), target.c_str(), target.size());
 }
 /// Check if a file exists

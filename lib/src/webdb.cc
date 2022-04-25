@@ -123,7 +123,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(
     std::unique_ptr<duckdb::QueryResult> result) {
-    current_query_result_ = move(result);
+    current_query_result_ = std::move(result);
     current_schema_.reset();
     current_schema_patched_.reset();
 
@@ -142,7 +142,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
         // Send the query
         auto result = connection_.SendQuery(std::string{text});
         if (!result->success) {
-            return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
+            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
         }
         return MaterializeQueryResult(std::move(result));
     } catch (std::exception& e) {
@@ -156,7 +156,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendQuery(std::
     try {
         // Send the query
         auto result = connection_.SendQuery(std::string{text});
-        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
+        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
         return StreamQueryResult(std::move(result));
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
@@ -175,7 +175,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
         if (!current_query_result_->success) {
-            return arrow::Status{arrow::StatusCode::ExecutionError, move(current_query_result_->error)};
+            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(current_query_result_->error)};
         }
         // Reached end?
         if (!chunk) {
@@ -266,7 +266,7 @@ arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePr
         }
 
         auto result = stmt->second->Execute(values);
-        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, move(result->error)};
+        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
         return result;
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
@@ -307,7 +307,7 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
     ARROW_ASSIGN_OR_RAISE(auto ret_type, mapArrowTypeToDuckDB(*def->return_type));
 
     // UDF lambda
-    auto udf = [&, udf = move(def)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
+    auto udf = [&, udf = std::move(def)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
         auto status = CallScalarUDFFunction(*udf, chunk, state, vec);
         if (!status.ok()) {
             throw std::runtime_error(status.message());
@@ -579,7 +579,7 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
                 ARROW_ASSIGN_OR_RAISE(auto type, mapArrowTypeToDuckDB(*col->type()));
                 columns.push_back(make_pair(col->name(), Value(type.ToString())));
             }
-            named_params.insert({"columns", Value::STRUCT(move(columns))});
+            named_params.insert({"columns", Value::STRUCT(std::move(columns))});
         }
         named_params.insert({"auto_detect", Value::BOOLEAN(options.auto_detect.value_or(true))});
 
@@ -765,7 +765,7 @@ std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 WebDB::Connection* WebDB::Connect() {
     auto conn = std::make_unique<WebDB::Connection>(*this);
     auto conn_ptr = conn.get();
-    connections_.insert({conn_ptr, move(conn)});
+    connections_.insert({conn_ptr, std::move(conn)});
     return conn_ptr;
 }
 
