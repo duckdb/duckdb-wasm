@@ -137,11 +137,12 @@ export function callScalarUDF(
                 }
                 case 'STRUCT<?>': {
                     const tmp: any = {};
-                    const children: ((row: number) => void)[] = [];
+                    const children: ArgumentResolver[] = [];
                     for (let j = 0; j < (arg.children?.length || 0); ++j) {
-                        const child = buildResolver(arg.children![j]);
+                        const attr = arg.children![j];
+                        const child = buildResolver(attr);
                         children.push((row: number) => {
-                            tmp[arg.name!] = child(row);
+                            tmp[attr.name!] = child(row);
                         });
                     }
                     return (row: number) => {
