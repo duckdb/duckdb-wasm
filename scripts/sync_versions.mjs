@@ -7,7 +7,6 @@ const pkgPaths = [
     './packages/duckdb-wasm-shell/package.json',
     './packages/duckdb-wasm/package.json',
     './packages/react-duckdb/package.json',
-    './packages/react-duckdb-table/package.json',
     './packages/benchmarks/package.json',
     './examples/esbuild-browser/package.json',
     './examples/esbuild-node/package.json',

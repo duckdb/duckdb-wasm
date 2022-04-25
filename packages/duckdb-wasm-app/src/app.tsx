@@ -2,7 +2,6 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
-import { VLDBDemo } from './examples/vldb_demo';
 import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
 import { NavBarContainer } from './components/navbar';
 import { DuckDBConnectionProvider, DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
@@ -12,8 +11,6 @@ import './globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'xterm/css/xterm.css';
 import 'react-popper-tooltip/dist/styles.css';
-
-import '@duckdb/react-duckdb-table/src/theme.module.css';
 
 import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
@@ -68,14 +65,6 @@ ReactDOM.render(
                                 element={
                                     <NavBarContainer>
                                         <Versus />
-                                    </NavBarContainer>
-                                }
-                            />
-                            <Route
-                                path="/vldb"
-                                element={
-                                    <NavBarContainer>
-                                        <VLDBDemo />
                                     </NavBarContainer>
                                 }
                             />
