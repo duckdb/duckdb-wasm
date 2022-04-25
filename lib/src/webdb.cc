@@ -359,6 +359,9 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     auto data_size = chunk.size();
     vector<string> type_desc;
 
+    // Normalify the data chunk
+    chunk.Normalify();
+
     // TODO create the descriptor in the bind phase for performance
     // TODO special handling if all arguments are non-NULL for performance
     additional_buffers_t additional_buffers;
