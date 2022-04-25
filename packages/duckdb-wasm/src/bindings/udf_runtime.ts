@@ -107,7 +107,7 @@ export function callScalarUDF(
 
         const buildResolver = (arg: ArgumentTypeDescription): ArgumentResolver => {
             let validity: Uint8Array | null = null;
-            if (arg.validityBuffer) {
+            if (arg.validityBuffer !== undefined) {
                 validity = ptrToUint8Array(mod, ptrs[arg.validityBuffer] as number, desc.rows);
             }
             switch (arg.physicalType) {
@@ -152,13 +152,17 @@ export function callScalarUDF(
                     };
                 }
                 default: {
-                    if (arg.dataBuffer === null || arg.dataBuffer === undefined) {
+                    if (arg.dataBuffer === undefined) {
                         throw new Error(
                             'malformed data view, expected data buffer for argument of type: ' + arg.physicalType,
                         );
                     }
                     const data = ptrToArray(mod, ptrs[arg.dataBuffer] as number, arg.physicalType, desc.rows);
-                    return (row: number) => data[row];
+                    if (validity != null) {
+                        return (row: number) => (!validity![row] ? null : data[row]);
+                    } else {
+                        return (row: number) => data[row];
+                    }
                 }
             }
         };
@@ -192,7 +196,7 @@ export function callScalarUDF(
         }
         for (let i = 0; i < desc.rows; ++i) {
             for (let j = 0; j < desc.args.length; ++j) {
-                args[j] = argResolvers[j];
+                args[j] = argResolvers[j](i);
             }
             const res = udf.func(...args);
             rawResultData[i] = res;
