@@ -89,7 +89,7 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
             expect(result.getChildAt(0)?.toArray()).toEqual(new Int32Array([42]));
         });
         it('withnulls', async () => {
-            conn.createScalarFunction('jsudf5', new Int32(), a => (a == undefined ? -100 : a));
+            conn.createScalarFunction('jsudf5', new Int32(), a => (a == null ? -100 : a));
             const result = conn.query(
                 'SELECT min(jsudf5((case when v % 2 = 0 then v else null end)::INTEGER))::INTEGER as foo FROM generate_series(1, 10000) as t(v)',
             );
