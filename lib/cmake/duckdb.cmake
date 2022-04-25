@@ -7,6 +7,7 @@ if(EMSCRIPTEN)
   set(DUCKDB_BUILD_TYPE Release)
 endif()
 
+set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
 ExternalProject_Add(
