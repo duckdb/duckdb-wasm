@@ -145,12 +145,24 @@ export function callScalarUDF(
                             tmp[attr.name!] = child(row);
                         });
                     }
-                    return (row: number) => {
-                        for (const resolver of children) {
-                            resolver(row);
-                        }
-                        return tmp;
-                    };
+                    if (validity != null) {
+                        return (row: number) => {
+                            if (!validity![row]) {
+                                return null;
+                            }
+                            for (const resolver of children) {
+                                resolver(row);
+                            }
+                            return tmp;
+                        };
+                    } else {
+                        return (row: number) => {
+                            for (const resolver of children) {
+                                resolver(row);
+                            }
+                            return tmp;
+                        };
+                    }
                 }
                 default: {
                     if (arg.dataBuffer === undefined) {
