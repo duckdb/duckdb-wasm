@@ -49,15 +49,12 @@ std::pair<T*, size_t> create_additional_buffer(vector<double>& data_ptrs, additi
 
 /// Serialize a DuckDB Vector as JSON data view
 arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb::DataChunk& chunk,
-                                               additional_buffers_t& buffers) {
+                                               std::vector<double>& data_ptrs,
+                                               additional_buffers_t& additional_buffers) {
     auto allocator = doc.GetAllocator();
-    auto data_ptr = chunk.data[0].GetData();
-    vector<double> data_ptrs;
-    vector<string> column_type_descs;
 
     // TODO create the descriptor in the bind phase for performance
     // TODO special handling if all arguments are non-NULL for performance
-    additional_buffers_t additional_buffers;
 
     rapidjson::Value col_descs{rapidjson::kArrayType};
     for (idx_t col_idx = 0; col_idx < chunk.ColumnCount(); col_idx++) {

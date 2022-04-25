@@ -1,3 +1,5 @@
+#define RAPIDJSON_HAS_STDSTRING 1
+
 #include "duckdb/web/webdb.h"
 
 #include <cstddef>
@@ -50,6 +52,7 @@
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/json_analyzer.h"
+#include "duckdb/web/json_dataview.h"
 #include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_table.h"
 #include "duckdb/web/udf.h"
@@ -353,89 +356,34 @@ static data_ptr_t create_additional_buffer(vector<double>& data_ptrs, additional
 // this talks to udf_runtime.ts, changes need to be mirrored there
 arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk,
                                                        ExpressionState& state, Vector& out) {
-    auto data_ptr = chunk.data[0].GetData();
     auto data_size = chunk.size();
     vector<string> type_desc;
-    auto data_ptrs_len = chunk.ColumnCount();
-    vector<double> data_ptrs;
 
-    // TODO complex type support
     // TODO create the descriptor in the bind phase for performance
     // TODO special handling if all arguments are non-NULL for performance
     additional_buffers_t additional_buffers;
-
-    for (idx_t col_idx = 0; col_idx < chunk.ColumnCount(); col_idx++) {
-        auto& vec = chunk.data[col_idx];
-        // Make sure we only have flat vectors hereafter (for now)
-        vec.Normalify(chunk.size());
-
-        int64_t validity_idx = -1;
-        int64_t data_idx = -1;
-        int64_t length_idx = -1;
-
-        // Create bool array to hold NULL flags ("validity"), passed to js as an additional array
-        auto& validity = FlatVector::Validity(vec);
-        auto validity_ptr = create_additional_buffer(data_ptrs, additional_buffers, chunk.size(), validity_idx);
-        for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-            validity_ptr[row_idx] = validity.RowIsValid(row_idx);
-        }
-
-        // Create js-compatible buffers for supported types.
-        // Very simple for primitive types, bit more involved for strings etc.
-        auto& vec_type = vec.GetType();
-        switch (vec_type.id()) {
-            case LogicalTypeId::INTEGER:
-            case LogicalTypeId::DOUBLE:
-                data_ptrs.push_back(static_cast<double>(reinterpret_cast<uintptr_t>(vec.GetData())));
-                data_idx = data_ptrs.size() - 1;
-                break;
-            case LogicalTypeId::BLOB:
-            case LogicalTypeId::VARCHAR: {
-                auto data_ptr = reinterpret_cast<double*>(
-                    create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), data_idx));
-                auto len_ptr = reinterpret_cast<double*>(
-                    create_additional_buffer(data_ptrs, additional_buffers, chunk.size() * sizeof(double), length_idx));
-
-                auto string_ptr = FlatVector::GetData<string_t>(vec);
-                for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
-                    data_ptr[row_idx] =
-                        static_cast<double>(reinterpret_cast<ptrdiff_t>(string_ptr[row_idx].GetDataUnsafe()));
-                    len_ptr[row_idx] = static_cast<double>(string_ptr[row_idx].GetSize());
-                }
-                break;
-            }
-
-            default:
-                return arrow::Status::ExecutionError("Unsupported UDF argument type " + vec.GetType().ToString());
-        }
-        type_desc.push_back(StringUtil::Format(
-            R"RAW({
-                "sqlType": "%s",
-                "physicalType": "%s",
-                "validityBuffer": %d,
-                "dataBuffer": %d,
-                "lengthBuffer": %d
-            })RAW",
-            vec_type.ToString(), TypeIdToString(vec_type.InternalType()), validity_idx, data_idx, length_idx));
+    vector<double> data_ptrs;
+    rapidjson::Document desc_doc;
+    {
+        auto json_alloc = desc_doc.GetAllocator();
+        ARROW_ASSIGN_OR_RAISE(auto args, json::CreateDataView(desc_doc, chunk, data_ptrs, additional_buffers));
+        desc_doc.SetObject().AddMember("args", args, desc_doc.GetAllocator());
+        desc_doc.AddMember("rows", chunk.size(), json_alloc);
+        rapidjson::Value ret{rapidjson::kObjectType};
+        ret.AddMember("sqlType", rapidjson::Value{out.GetType().ToString(), json_alloc}, json_alloc);
+        ret.AddMember("physicalType", rapidjson::Value{TypeIdToString(out.GetType().InternalType()), json_alloc},
+                      json_alloc);
+        desc_doc.AddMember("ret", ret, json_alloc);
     }
 
-    // create a json description of the schema to pass
-    auto joined = StringUtil::Format(
-        R"RAW({
-            "rows": %d,
-            "args": [%s], 
-            "ret": {
-                "sqlType": "%s",
-                "physicalType": "%s"
-            }
-        })RAW",
-        chunk.size(), StringUtil::Join(type_desc, ","), out.GetType().ToString(),
-        TypeIdToString(out.GetType().InternalType()));
+    rapidjson::StringBuffer desc_buffer;
+    rapidjson::Writer desc_writer{desc_buffer};
+    desc_doc.Accept(desc_writer);
 
     // actually call the UDF
     WASMResponse response;
-    duckdb_web_udf_scalar_call(&response, function.function_id, joined.c_str(), joined.size(), data_ptrs.data(),
-                               data_ptrs.size() * sizeof(uint64_t));
+    duckdb_web_udf_scalar_call(&response, function.function_id, desc_buffer.GetString(), desc_buffer.GetLength(),
+                               data_ptrs.data(), data_ptrs.size() * sizeof(uint64_t));
     // UDF call failed?
     if (response.statusCode != 0) {
         uintptr_t err_ptr = response.dataOrValue;

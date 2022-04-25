@@ -21,7 +21,7 @@ typedef vector<unique_ptr<data_t[]>> additional_buffers_t;
 
 /// Serialize a DuckDB Vector as JSON data view
 arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb::DataChunk& chunk,
-                                               additional_buffers_t& buffers);
+                                               std::vector<double>& data_ptrs, additional_buffers_t& buffers);
 
 }  // namespace json
 }  // namespace web

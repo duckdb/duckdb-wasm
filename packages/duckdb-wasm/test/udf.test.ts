@@ -172,5 +172,17 @@ export function testUDF(db: () => duckdb.DuckDBBindings): void {
             expect(result.getChildAt(0)?.length).toEqual(1);
             expect(result.getChildAt(0)?.toArray()).toEqual(new Int32Array([5000]));
         });
+
+        it('struct', async () => {
+            conn.createScalarFunction('jsudf11', new Int32(), a => (a.x == null ? -100 : a.x));
+            const result = conn.query(
+                `SELECT min(jsudf11({'x': (case when v % 2 = 0 then v else null end)::INTEGER, 'y': 42}))::INTEGER as foo FROM generate_series(1, 10000) as t(v)`,
+            );
+
+            expect(result.numRows).toEqual(1);
+            expect(result.numCols).toEqual(1);
+            expect(result.getChildAt(0)?.length).toEqual(1);
+            expect(result.getChildAt(0)?.toArray()).toEqual(new Int32Array([-100]));
+        });
     });
 }
