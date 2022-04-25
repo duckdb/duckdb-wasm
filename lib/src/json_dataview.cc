@@ -89,6 +89,7 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
             desc.AddMember("physicalType", TypeIdToString(vec_type.InternalType()), allocator);
 
             // Create validity vector
+            vec->Normalify(chunk.size());
             auto& validity = FlatVector::Validity(*vec);
             auto [validity_ptr, validity_idx] =
                 create_additional_buffer<uint8_t>(data_ptrs, additional_buffers, chunk.size());

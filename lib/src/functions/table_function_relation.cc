@@ -19,10 +19,10 @@ TableFunctionRelation::TableFunctionRelation(const std::shared_ptr<ClientContext
                                              unordered_map<string, Value> named_parameters,
                                              shared_ptr<Relation> input_relation_p)
     : Relation(context, RelationType::TABLE_FUNCTION_RELATION),
-      name(move(name)),
-      unnamed_parameters(move(unnamed_parameters)),
-      named_parameters(move(named_parameters)),
-      input_relation(move(input_relation_p)) {
+      name(std::move(name)),
+      unnamed_parameters(std::move(unnamed_parameters)),
+      named_parameters(std::move(named_parameters)),
+      input_relation(std::move(input_relation_p)) {
     context->TryBindRelation(*this, this->columns);
 }
 
@@ -30,7 +30,7 @@ unique_ptr<QueryNode> TableFunctionRelation::GetQueryNode() {
     auto result = make_unique<SelectNode>();
     result->select_list.push_back(make_unique<StarExpression>());
     result->from_table = GetTableRef();
-    return move(result);
+    return std::move(result);
 }
 
 unique_ptr<TableRef> TableFunctionRelation::GetTableRef() {
@@ -40,7 +40,7 @@ unique_ptr<TableRef> TableFunctionRelation::GetTableRef() {
         subquery->subquery = make_unique<SelectStatement>();
         subquery->subquery->node = input_relation->GetQueryNode();
         subquery->subquery_type = SubqueryType::SCALAR;
-        children.push_back(move(subquery));
+        children.push_back(std::move(subquery));
     }
     for (auto &parameter : unnamed_parameters) {
         children.push_back(make_unique<ConstantExpression>(parameter));
@@ -48,13 +48,13 @@ unique_ptr<TableRef> TableFunctionRelation::GetTableRef() {
     for (auto &[k, v] : named_parameters) {
         auto l = make_unique<ColumnRefExpression>(k);
         auto r = make_unique<ConstantExpression>(v);
-        auto eq = make_unique<ComparisonExpression>(ExpressionType::COMPARE_EQUAL, move(l), move(r));
-        children.push_back(move(eq));
+        auto eq = make_unique<ComparisonExpression>(ExpressionType::COMPARE_EQUAL, std::move(l), std::move(r));
+        children.push_back(std::move(eq));
     }
     auto table_function = make_unique<TableFunctionRef>();
-    auto function = make_unique<FunctionExpression>(name, move(children));
-    table_function->function = move(function);
-    return move(table_function);
+    auto function = make_unique<FunctionExpression>(name, std::move(children));
+    table_function->function = std::move(function);
+    return std::move(table_function);
 }
 
 string TableFunctionRelation::GetAlias() { return name; }

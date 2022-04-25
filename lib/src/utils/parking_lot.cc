@@ -53,14 +53,14 @@ void ParkingLot::Park(const void* addr, std::function<bool()> check, std::chrono
         }
         std::unique_ptr<BucketList::Bucket> n;
         if (lot.inactive) {
-            n = move(lot.inactive);
-            lot.inactive = move(n->next_bucket);
+            n = std::move(lot.inactive);
+            lot.inactive = std::move(n->next_bucket);
         } else {
             n = std::make_unique<BucketList::Bucket>();
         }
         n->address = addr;
-        n->next_bucket = move(lot.buckets);
-        lot.buckets = move(n);
+        n->next_bucket = std::move(lot.buckets);
+        lot.buckets = std::move(n);
         return *lot.buckets;
     }();
 
@@ -85,10 +85,10 @@ void ParkingLot::Park(const void* addr, std::function<bool()> check, std::chrono
             next_ref = &((*next_ref)->next_bucket);
         }
         // Mark as inactive
-        auto self = move(*next_ref);
-        (*next_ref) = move(bucket.next_bucket);
-        bucket.next_bucket = move(lot.inactive);
-        lot.inactive = move(self);
+        auto self = std::move(*next_ref);
+        (*next_ref) = std::move(bucket.next_bucket);
+        bucket.next_bucket = std::move(lot.inactive);
+        lot.inactive = std::move(self);
     }
 }
 
