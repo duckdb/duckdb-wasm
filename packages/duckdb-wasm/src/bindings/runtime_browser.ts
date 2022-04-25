@@ -273,24 +273,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 } else {
                     xhr.open('HEAD', path!, false);
                 }
-
-                xhr.setRequestHeader('Range', `bytes=0-`);
                 xhr.send(null);
-                let supportsRanges = false;
-                if (xhr.status == 206) {
-                    supportsRanges = true;
-                } else if (xhr.status == 200) {
-                    const header = xhr.getResponseHeader('Accept-Ranges');
-                    supportsRanges = header === 'bytes';
-                } else {
-                    return false;
-                }
-                if (!supportsRanges) {
-                    return false;
-                }
-
-                // HTTP file exists and supports range requests
-                return true;
+                return xhr.status == 206 || xhr.status == 200;
             }
         } catch (e: any) {
             return false;
@@ -439,7 +423,22 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         console.log(`listDirectoryEntries: ${path}`);
         return false;
     },
-    moveFile: (_mod: DuckDBModule, _fromPtr: number, _fromLen: number, _toPtr: number, _toLen: number) => {},
+    moveFile: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
+        const from = readString(mod, fromPtr, fromLen);
+        const to = readString(mod, toPtr, toLen);
+        const handle = BROWSER_RUNTIME._files?.get(from);
+        if (handle !== undefined) {
+            BROWSER_RUNTIME._files!.delete(handle);
+            BROWSER_RUNTIME._files!.set(to, handle);
+        }
+        for (const [key, value] of BROWSER_RUNTIME._fileInfoCache?.entries() || []) {
+            if (value.dataUrl == from) {
+                BROWSER_RUNTIME._fileInfoCache.delete(key);
+                break;
+            }
+        }
+        return true;
+    },
     removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     callScalarUDF: (
         mod: DuckDBModule,

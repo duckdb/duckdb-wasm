@@ -61,7 +61,7 @@ class WebFileSystem : public duckdb::FileSystem {
         /// The file identifier
         const uint32_t file_id_;
         /// The file path
-        const std::string file_name_;
+        std::string file_name_;
         /// The data protocol
         DataProtocol data_protocol_;
         /// The handle count
@@ -149,8 +149,10 @@ class WebFileSystem : public duckdb::FileSystem {
     LightMutex fs_mutex_ = {};
     /// The files by id
     std::unordered_map<uint32_t, std::shared_ptr<WebFile>> files_by_id_ = {};
-    /// The files by path
+    /// The files by name
     std::unordered_map<std::string, std::shared_ptr<WebFile>> files_by_name_ = {};
+    /// The files by url
+    std::unordered_map<std::string, std::shared_ptr<WebFile>> files_by_url_ = {};
     /// The next file id
     uint32_t next_file_id_ = 0;
     /// The thread-local readahead buffers

@@ -58,6 +58,12 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// The files that are passed through
     std::unordered_map<std::string, FileConfig> file_configs_;
 
+    /// Patch a filename.
+    /// TODO(ankoh) This is a temporary workaround until we can disable writes to .tmp files.
+    std::string_view PatchFilename(std::string_view file);
+    /// Patch a filename
+    std::string PatchFilenameOwned(const std::string &file);
+
    public:
     /// Constructor
     BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_manager);
@@ -113,13 +119,15 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// properties
     void MoveFile(const std::string &source, const std::string &target) override;
     /// Check if a file exists
-    bool FileExists(const std::string &filename) override { return filesystem_.FileExists(filename); }
+    bool FileExists(const std::string &filename) override {
+        return filesystem_.FileExists(PatchFilenameOwned(filename));
+    }
     /// Remove a file from disk
     void RemoveFile(const std::string &filename) override;
 
     /// Runs a glob on the file system, returning a list of matching files
     std::vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override {
-        return filesystem_.Glob(path, opener);
+        return filesystem_.Glob(PatchFilenameOwned(path), opener);
     }
 
     /// Register subsystem
