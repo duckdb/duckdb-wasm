@@ -213,12 +213,12 @@ export function testFilesystem(
             expect(results.length).toEqual(3);
             const filenames = results.map(file => file.fileName).sort();
             expect(filenames).toEqual([
-                '/tmp/duckdbexportcsv/0_foo.csv',
+                '/tmp/duckdbexportcsv/foo.csv',
                 '/tmp/duckdbexportcsv/load.sql',
                 '/tmp/duckdbexportcsv/schema.sql',
             ]);
 
-            const csv_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/0_foo.csv');
+            const csv_buffer_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/foo.csv');
             const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/load.sql');
             const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportcsv/schema.sql');
             expect(load_script_utf8.length).not.toEqual(0);
@@ -229,7 +229,7 @@ export function testFilesystem(
             const schema_script = decoder.decode(schema_script_utf8);
             const csv_buffer = decoder.decode(csv_buffer_utf8);
             expect(load_script.trim()).toEqual(
-                `COPY foo FROM '/tmp/duckdbexportcsv/0_foo.csv' (FORMAT 'csv', quote '"', delimiter ',', header 0);`,
+                `COPY foo FROM '/tmp/duckdbexportcsv/foo.csv' (FORMAT 'csv', quote '"', delimiter ',', header 0);`,
             );
             expect(schema_script.trim()).toEqual(`CREATE TABLE foo(v BIGINT);`);
             expect(csv_buffer.trim()).toEqual(`1\n2\n3\n4\n5`);
@@ -244,12 +244,12 @@ export function testFilesystem(
             expect(results.length).toEqual(3);
             const filenames = results.map(file => file.fileName).sort();
             expect(filenames).toEqual([
-                '/tmp/duckdbexportparquet/0_foo.parquet',
+                '/tmp/duckdbexportparquet/foo.parquet',
                 '/tmp/duckdbexportparquet/load.sql',
                 '/tmp/duckdbexportparquet/schema.sql',
             ]);
 
-            const parquet_buffer = await db().copyFileToBuffer('/tmp/duckdbexportparquet/0_foo.parquet');
+            const parquet_buffer = await db().copyFileToBuffer('/tmp/duckdbexportparquet/foo.parquet');
             const load_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/load.sql');
             const schema_script_utf8 = await db().copyFileToBuffer('/tmp/duckdbexportparquet/schema.sql');
             expect(load_script_utf8.length).not.toEqual(0);
@@ -257,7 +257,7 @@ export function testFilesystem(
             expect(parquet_buffer.length).not.toEqual(0);
 
             const content = await conn.query(
-                `SELECT v::integer FROM parquet_scan('/tmp/duckdbexportparquet/0_foo.parquet')`,
+                `SELECT v::integer FROM parquet_scan('/tmp/duckdbexportparquet/foo.parquet')`,
             );
             expect(content.nullCount).toEqual(0);
             expect(content.numRows).toEqual(5);
