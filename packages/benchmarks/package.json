@@ -23,7 +23,7 @@
         "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
         "eslint": "^8.14.0",
         "eslint-plugin-react": "^7.29.4",
-        "ts-loader": "^9.2.8",
+        "ts-loader": "^9.2.9",
         "typescript": "^4.6.3"
     },
     "scripts": {
