@@ -174,6 +174,7 @@ impl ArrowStreamReader {
                     batch,
                     self.schema(),
                     &self.dictionaries_by_field,
+                    None,
                 )
                 .map(Some)
             }

@@ -200,7 +200,7 @@ impl AsyncDuckDBConnection {
             .into();
         let copy = ui8array.to_vec();
         let cursor = Cursor::new(copy);
-        let reader = FileReader::try_new(cursor).unwrap();
+        let reader = FileReader::try_new(cursor, None).unwrap();
         let mut batches: Vec<arrow::record_batch::RecordBatch> = Vec::new();
         for maybe_batch in reader {
             match maybe_batch {

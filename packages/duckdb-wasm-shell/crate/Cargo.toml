@@ -39,13 +39,14 @@ wasm-bindgen = { version = "0.2.74", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.24"
 chrono = "0.4.19"
 js-sys = "0.3.51"
-arrow = "4.1.0"
+arrow = { version = "13.0.0", features = ["csv", "ipc"] }
 lazy_static = "1.4.0"
 encode_unicode = "0.3.6"
 unicode-width = "0.1.8"
 ropey = "1.2.0"
 strum = "^0.20"
 strum_macros = "^0.20"
+getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.12"
