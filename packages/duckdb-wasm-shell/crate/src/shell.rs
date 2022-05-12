@@ -582,9 +582,7 @@ impl Shell {
                             UTF8_BORDERS_NO_HORIZONTAL,
                         )
                         .unwrap_or_default();
-                        Shell::with_mut(|s| {
-                            s.writeln(&pretty_table);
-                        });
+                        s.writeln(&pretty_table);
                     }
                 });
             }
