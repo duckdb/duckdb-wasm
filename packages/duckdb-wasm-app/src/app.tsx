@@ -47,33 +47,31 @@ if (pathMatches != null && pathMatches.length >= 2) {
 const element = document.getElementById('root');
 const root = createRoot(element!);
 root.render(
-    <React.StrictMode>
-        <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
-            <DuckDBProvider>
-                <DuckDBConnectionProvider>
-                    <BrowserRouter basename={basename}>
-                        <Routes>
-                            <Route
-                                index
-                                element={
-                                    <NavBarContainer>
-                                        <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />
-                                    </NavBarContainer>
-                                }
-                            />
-                            <Route
-                                path="/versus"
-                                element={
-                                    <NavBarContainer>
-                                        <Versus />
-                                    </NavBarContainer>
-                                }
-                            />
-                            <Route path="*" element={<Navigate to="/" />} />
-                        </Routes>
-                    </BrowserRouter>
-                </DuckDBConnectionProvider>
-            </DuckDBProvider>
-        </DuckDBPlatform>
-    </React.StrictMode>,
+    <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
+        <DuckDBProvider>
+            <DuckDBConnectionProvider>
+                <BrowserRouter basename={basename}>
+                    <Routes>
+                        <Route
+                            index
+                            element={
+                                <NavBarContainer>
+                                    <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />
+                                </NavBarContainer>
+                            }
+                        />
+                        <Route
+                            path="/versus"
+                            element={
+                                <NavBarContainer>
+                                    <Versus />
+                                </NavBarContainer>
+                            }
+                        />
+                        <Route path="*" element={<Navigate to="/" />} />
+                    </Routes>
+                </BrowserRouter>
+            </DuckDBConnectionProvider>
+        </DuckDBProvider>
+    </DuckDBPlatform>,
 );
