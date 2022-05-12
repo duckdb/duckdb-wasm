@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
@@ -45,7 +45,8 @@ if (pathMatches != null && pathMatches.length >= 2) {
 }
 
 const element = document.getElementById('root');
-ReactDOM.render(
+const root = createRoot(element!);
+root.render(
     <React.StrictMode>
         <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
             <DuckDBProvider>
@@ -75,5 +76,4 @@ ReactDOM.render(
             </DuckDBProvider>
         </DuckDBPlatform>
     </React.StrictMode>,
-    element,
 );
