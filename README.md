@@ -25,3 +25,4 @@ _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our 
 | [@duckdb/duckdb-wasm-shell](/packages/duckdb-wasm-shell) | SQL Shell      | Rust       |
 | [@duckdb/duckdb-wasm-app](/packages/duckdb-wasm-app)     | GitHub Page    | Typescript |
 | [@duckdb/benchmarks](/packages/benchmarks)               | Benchmarks     | Typescript |
+| [@duckdb/react-duckdb](/packages/react-duckdb)           | React Hooks    | Typescript |
