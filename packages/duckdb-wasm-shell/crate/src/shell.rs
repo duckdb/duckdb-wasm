@@ -1030,7 +1030,7 @@ impl Shell {
             normal = vt100::MODES_OFF,
             endl = vt100::CRLF,
             mode = match &self.db_access {
-                DatabaseType::InMemory => "transient in-memory",
+                DatabaseType::InMemory => "local transient in-memory",
                 DatabaseType::RemoteReadOnly => "read-only remote"
             },
             url = match self.db_path.as_str() {
