@@ -57,11 +57,7 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
     return (
         <div className={styles.navbar}>
             <div className={styles.logo}>
-                <img
-                    width="32px"
-                    height="32px"
-                    src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.14.3/dist/img/duckdb.svg"
-                />
+                <img src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.14.3/dist/img/duckdb.svg" />
             </div>
             <div className={styles.tabs}>
                 <Tab route="/" location={location.pathname} icon={icon_shell} />
