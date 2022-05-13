@@ -4,7 +4,6 @@ import { useLocation, Link, useSearchParams } from 'react-router-dom';
 
 import styles from './navbar.module.css';
 
-import logo from '../../static/svg/logo/duckdb.svg';
 import icon_shell from '../../static/svg/icons/shell.svg';
 import icon_book from '../../static/svg/icons/book.svg';
 
@@ -58,9 +57,11 @@ export const NavBar: React.FC<Props> = (_props: Props) => {
     return (
         <div className={styles.navbar}>
             <div className={styles.logo}>
-                <svg width="32px" height="32px">
-                    <use xlinkHref={`${logo}#sym`} />
-                </svg>
+                <img
+                    width="32px"
+                    height="32px"
+                    src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb.svg"
+                />
             </div>
             <div className={styles.tabs}>
                 <Tab route="/" location={location.pathname} icon={icon_shell} />
