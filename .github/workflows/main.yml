@@ -678,7 +678,6 @@ jobs:
                   ./scripts/npm_publish_lib.sh || true
                   ./scripts/npm_publish_shell.sh || true
                   ./scripts/npm_publish_react.sh || true
-                  ./scripts/npm_publish_react_table.sh || true
 
             - name: Deploy GitHub Page
               if: github.ref == 'refs/heads/master'
