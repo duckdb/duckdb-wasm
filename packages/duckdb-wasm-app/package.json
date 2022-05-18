@@ -46,7 +46,7 @@
         "@types/react-dom": "^18.0.4",
         "@types/react-router-dom": "^5.3.3",
         "@types/react-virtualized": "^9.21.21",
-        "copy-webpack-plugin": "^10.2.4",
+        "copy-webpack-plugin": "^11.0.0",
         "css-loader": "^6.7.1",
         "eslint": "^8.15.0",
         "eslint-plugin-jasmine": "^4.1.3",
