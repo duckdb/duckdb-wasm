@@ -99,7 +99,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                     success(output.instance, output.module);
                 });
             }
-        } else {
+        } else if (typeof XMLHttpRequest == 'function') {
             // Otherwise we fall back to XHRs
             const xhr = new XMLHttpRequest();
             const url = this.mainModuleURL;
@@ -153,6 +153,17 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                     });
             };
             xhr.send();
+        } else {
+            console.warn('instantiating with manual fetch since streaming instantiation and xhrs are unavailable');
+            const run = async () => {
+                const request = new Request(this.mainModuleURL);
+                const response = await fetch(request);
+                const buffer = await response.arrayBuffer();
+                WebAssembly.instantiate(buffer, imports).then(output => {
+                    success(output.instance, output.module);
+                });
+            };
+            run();
         }
         return [];
     }
