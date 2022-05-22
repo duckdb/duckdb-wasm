@@ -39,61 +39,66 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         imports: any,
         success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ): Emscripten.WebAssemblyExports {
+        // We rely on the following here:
+        //
+        // ...when a Request object is created using the Request.Request constructor,
+        // the value of the mode property for that Request is set to cors.
+        // [ref: MDN]
+        //
+        // Cloudflare throws when mode: 'cors' is set
+        //
         globalThis.DUCKDB_RUNTIME = this._runtime;
         const handlers = this.onInstantiationProgress;
 
-        // Does the browser support transform streams?
-        if (
-            typeof TransformStream === 'function' &&
-            ReadableStream.prototype.pipeThrough &&
-            WebAssembly.instantiateStreaming
-        ) {
-            // We rely on the following here:
-            //
-            // ...when a Request object is created using the Request.Request constructor,
-            // the value of the mode property for that Request is set to cors.
-            // [ref: MDN]
-            //
-            // Cloudflare throws when mode: 'cors' is set
-            //
-            const fetchWithProgress = async () => {
-                // Try to determine file size
-                const request = new Request(this.mainModuleURL);
-                const response = await fetch(request);
-                const contentLengthHdr = response.headers.get('content-length');
-                const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
+        // Does the browser support streaming instantiation?
+        if (WebAssembly.instantiateStreaming) {
+            // Does the browser support transform streams?
+            if (typeof TransformStream === 'function' && ReadableStream.prototype.pipeThrough) {
+                const fetchWithProgress = async () => {
+                    // Try to determine file size
+                    const request = new Request(this.mainModuleURL);
+                    const response = await fetch(request);
+                    const contentLengthHdr = response.headers.get('content-length');
+                    const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
 
-                // Transform the stream
-                const start = new Date();
-                const progress: InstantiationProgress = {
-                    startedAt: start,
-                    updatedAt: start,
-                    bytesTotal: contentLength || 0,
-                    bytesLoaded: 0,
-                };
-                const tracker = {
-                    transform(chunk: any, ctrl: TransformStreamDefaultController) {
-                        progress.bytesLoaded += chunk.byteLength;
-                        const now = new Date();
-                        if (now.getTime() - progress.updatedAt.getTime() < 20) {
-                            progress.updatedAt = now;
+                    // Transform the stream
+                    const start = new Date();
+                    const progress: InstantiationProgress = {
+                        startedAt: start,
+                        updatedAt: start,
+                        bytesTotal: contentLength || 0,
+                        bytesLoaded: 0,
+                    };
+                    const tracker = {
+                        transform(chunk: any, ctrl: TransformStreamDefaultController) {
+                            progress.bytesLoaded += chunk.byteLength;
+                            const now = new Date();
+                            if (now.getTime() - progress.updatedAt.getTime() < 20) {
+                                progress.updatedAt = now;
+                                ctrl.enqueue(chunk);
+                                return;
+                            }
+                            for (const p of handlers) {
+                                p(progress);
+                            }
                             ctrl.enqueue(chunk);
-                            return;
-                        }
-                        for (const p of handlers) {
-                            p(progress);
-                        }
-                        ctrl.enqueue(chunk);
-                    },
+                        },
+                    };
+                    const ts = new TransformStream(tracker);
+                    return new Response(response.body?.pipeThrough(ts), response);
                 };
-                const ts = new TransformStream(tracker);
-                return new Response(response.body?.pipeThrough(ts), response);
-            };
-            // Instantiate streaming
-            const response = fetchWithProgress();
-            WebAssembly.instantiateStreaming(response, imports).then(output => {
-                success(output.instance, output.module);
-            });
+                // Instantiate streaming
+                const response = fetchWithProgress();
+                WebAssembly.instantiateStreaming(response, imports).then(output => {
+                    success(output.instance, output.module);
+                });
+            } else {
+                console.warn('instantiating without progress handler since transform streams are unavailable');
+                const request = new Request(this.mainModuleURL);
+                WebAssembly.instantiateStreaming(fetch(request), imports).then(output => {
+                    success(output.instance, output.module);
+                });
+            }
         } else {
             // Otherwise we fall back to XHRs
             const xhr = new XMLHttpRequest();
