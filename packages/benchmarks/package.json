@@ -21,7 +21,7 @@
         "@typescript-eslint/parser": "^5.25.0",
         "assert": "^2.0.0",
         "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
-        "eslint": "^8.15.0",
+        "eslint": "^8.16.0",
         "eslint-plugin-react": "^7.30.0",
         "ts-loader": "^9.3.0",
         "typescript": "^4.6.4"
