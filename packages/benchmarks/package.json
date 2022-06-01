@@ -11,7 +11,7 @@
         "kleur": "^4.1.4",
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
-        "sql.js": "^1.6.2",
+        "sql.js": "^1.7.0",
         "web-worker": "^1.2.0"
     },
     "devDependencies": {
