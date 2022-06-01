@@ -53,7 +53,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         // Does the browser support streaming instantiation?
         if (WebAssembly.instantiateStreaming) {
             // Does the browser support transform streams?
-            if (typeof TransformStream === 'function' && ReadableStream.prototype.pipeThrough) {
+            if (typeof TransformStream === 'function') {
                 const fetchWithProgress = async () => {
                     // Try to determine file size
                     const request = new Request(this.mainModuleURL);
