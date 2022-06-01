@@ -8,7 +8,7 @@
         "@duckdb/duckdb-wasm": "link:../../packages/duckdb-wasm"
     },
     "devDependencies": {
-        "http-server": "^14.1.0"
+        "http-server": "^14.1.1"
     },
     "scripts": {
         "build": "node ./bundle.mjs",
