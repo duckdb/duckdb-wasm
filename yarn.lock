@@ -1165,7 +1165,7 @@ acorn-walk@^8.0.0:
   resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-8.2.0.tgz#741210f2e2426454508853a2f44d0ab83b7f69c1"
   integrity sha512-k+iyHEuPgSw6SbuDpGQM+06HQUa04DZ3o+F6CSzXMvvI5KMvnaEqXe+YVe555R9nn6GPt404fos4wcgpw12SDA==
 
-acorn@^8.0.4, acorn@^8.4.1, acorn@^8.7.0, acorn@^8.7.1:
+acorn@^8.0.4, acorn@^8.4.1, acorn@^8.7.1:
   version "8.7.1"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.7.1.tgz#0197122c843d1bf6d0a5e83220a788f278f63c30"
   integrity sha512-Xx54uLJQZ19lKygFXOWsscKUbsBZW0CPykPhVQdhIeIwrbPmJzqeASDInc8nKBnp/JT6igTs82qPXz069H8I/A==
@@ -1268,8 +1268,7 @@ anymatch@~3.1.2:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
-"apache-arrow-3@npm:apache-arrow@^3.0.0", apache-arrow@^3.0.0:
-  name apache-arrow-3
+"apache-arrow-3@npm:apache-arrow@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/apache-arrow/-/apache-arrow-3.0.0.tgz#5e774865b9e2afc3c17b98587f509423f7737c1b"
   integrity sha512-QyQ1aZgZJUHB735K163XdYgFYoekTfIHQ5ucoX7S1ZcLfR7NzA/OH5qzCkjQNsygOMSzQXo/8hlbDGprtxnZFA==
@@ -1334,14 +1333,14 @@ argv-tools@^0.1.1:
     array-back "^2.0.0"
     find-replace "^2.0.1"
 
-arquero@^4.8.8:
-  version "4.8.8"
-  resolved "https://registry.yarnpkg.com/arquero/-/arquero-4.8.8.tgz#6dfbce881c38332ab3fcdd2063f8601c444aa211"
-  integrity sha512-372Yc215PbJtZz+kvaBfOCgPbpEMd4pk6MuhnE8AhMznmsdCm/Fwrj+W625tr8NoYaMobikPOSq3ZIgv0Xo4BQ==
+arquero@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/arquero/-/arquero-5.0.0.tgz#7b29c06848df8b859aa2f77d0ea7db5bd1149eb4"
+  integrity sha512-Lf9SJKlrwuN0Eioi0sNUSRGBmeYeoNy18gKF98FF+Obfk1uCO8tFI8fN+0TP614C3BXIwfHiccBVM0J47s3pGQ==
   dependencies:
-    acorn "^8.7.0"
-    apache-arrow "^3.0.0"
-    node-fetch "^2.6.6"
+    acorn "^8.7.1"
+    apache-arrow "^8.0.0"
+    node-fetch "^2.6.7"
 
 array-back@^2.0.0:
   version "2.0.0"
@@ -4740,7 +4739,7 @@ no-case@^3.0.4:
     lower-case "^2.0.2"
     tslib "^2.0.3"
 
-node-fetch@2.6.7, node-fetch@^2.6.6:
+node-fetch@2.6.7, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
