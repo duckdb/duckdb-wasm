@@ -7,7 +7,7 @@
         "@duckdb/duckdb-wasm": "link:../duckdb-wasm",
         "apache-arrow-3": "npm:apache-arrow@^3.0.0",
         "apache-arrow": "^8.0.0",
-        "arquero": "^4.8.8",
+        "arquero": "^5.0.0",
         "kleur": "^4.1.4",
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
@@ -17,7 +17,7 @@
     "devDependencies": {
         "@types/lodash": "^4.14.182",
         "@types/sql.js": "^1.4.2",
-        "@typescript-eslint/eslint-plugin": "^5.27.0",
+        "@typescript-eslint/eslint-plugin": "^5.27.1",
         "@typescript-eslint/parser": "^5.27.0",
         "assert": "^2.0.0",
         "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
