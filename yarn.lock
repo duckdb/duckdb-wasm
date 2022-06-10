@@ -4089,13 +4089,13 @@ jasmine-spec-reporter@^7.0.0:
   dependencies:
     colors "1.4.0"
 
-jasmine@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-4.1.0.tgz#0de347ca8bb6cc764b0ed186ae4cfc45bd64bdc4"
-  integrity sha512-4VhjbUgwfNS9CBnUMoSWr9tdNgOoOhNIjAD8YRxTn+PmOf4qTSC0Uqhk66dWGnz2vJxtNIU0uBjiwnsp4Ud9VA==
+jasmine@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-4.2.0.tgz#a5e9e2af25813da3517f5dafa9e46b2d896d996a"
+  integrity sha512-6SQRXHs5O++mp52PkoJoi9zuLYqp1IaqepRNmAQn5rUBo9VUnckpkkXQQD5PAuCCVVB1ULDImvWYCPV/ZVnaGQ==
   dependencies:
     glob "^7.1.6"
-    jasmine-core "^4.1.0"
+    jasmine-core "^4.2.0"
 
 jest-worker@^27.0.6:
   version "27.2.4"
