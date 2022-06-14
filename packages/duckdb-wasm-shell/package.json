@@ -41,7 +41,7 @@
         "make-dir": "^3.1.0",
         "prettier": "^2.6.2",
         "rimraf": "^3.0.2",
-        "wasm-pack": "^0.10.2"
+        "wasm-pack": "^0.10.3"
     },
     "scripts": {
         "install:wasmpack": "node ../../node_modules/wasm-pack/install.js",
