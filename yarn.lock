@@ -6747,10 +6747,10 @@ wasm-feature-detect@^1.2.11:
   resolved "https://registry.yarnpkg.com/wasm-feature-detect/-/wasm-feature-detect-1.2.11.tgz#e21992fd1f1d41a47490e392a5893cb39d81e29e"
   integrity sha512-HUqwaodrQGaZgz1lZaNioIkog9tkeEJjrM3eq4aUL04whXOVDRc/o2EGb/8kV0QX411iAYWEqq7fMBmJ6dKS6w==
 
-wasm-pack@^0.10.2:
-  version "0.10.2"
-  resolved "https://registry.yarnpkg.com/wasm-pack/-/wasm-pack-0.10.2.tgz#38efc358b2e3e06f313a9781b6f68c76fda66859"
-  integrity sha512-Kuh8XAArQNVoikMUenjDs4+g6LpktgfXgqlp03G2dJKDBokA7Y8Cx6MDCnvREzNnmprk9IohHytwycVSemwe/w==
+wasm-pack@^0.10.3:
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/wasm-pack/-/wasm-pack-0.10.3.tgz#2d7dd78ba539c34b3817e2249c3f30c646c84b69"
+  integrity sha512-dg1PPyp+QwWrhfHsgG12K/y5xzwfaAoK1yuVC/DUAuQsDy5JywWDuA7Y/ionGwQz+JBZVw8jknaKBnaxaJfwTA==
   dependencies:
     binary-install "^0.1.0"
 
