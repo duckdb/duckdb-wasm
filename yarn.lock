@@ -4089,10 +4089,10 @@ jasmine-spec-reporter@^7.0.0:
   dependencies:
     colors "1.4.0"
 
-jasmine@^4.2.0:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-4.2.0.tgz#a5e9e2af25813da3517f5dafa9e46b2d896d996a"
-  integrity sha512-6SQRXHs5O++mp52PkoJoi9zuLYqp1IaqepRNmAQn5rUBo9VUnckpkkXQQD5PAuCCVVB1ULDImvWYCPV/ZVnaGQ==
+jasmine@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/jasmine/-/jasmine-4.2.1.tgz#55f81ab9d5d32f2645aa598d1356b6858407f4a9"
+  integrity sha512-LNZEKcScnjPRj5J92I1P515bxTvaHMRAERTyCoaGnWr87eOT6zv+b3M+kxKdH/06Gz4TnnXyHbXLiPtMHZ0ncw==
   dependencies:
     glob "^7.1.6"
     jasmine-core "^4.2.0"
@@ -5339,10 +5339,10 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
 
-puppeteer@^14.3.0:
-  version "14.3.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-14.3.0.tgz#0099cabf97767461aca02486313e84fcfc776af6"
-  integrity sha512-pDtg1+vyw1UPIhUjh2/VW1HUdQnaZJHfMacrJciR3AVm+PBiqdCEcFeFb3UJ/CDEQlHOClm3/WFa7IjY25zIGg==
+puppeteer@^14.4.1:
+  version "14.4.1"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-14.4.1.tgz#6c7437a65f7ba98ef8ad7c2b0f1cf808e91617bb"
+  integrity sha512-+H0Gm84aXUvSLdSiDROtLlOofftClgw2TdceMvvCU9UvMryappoeS3+eOLfKvoy4sm8B8MWnYmPhWxVFudAOFQ==
   dependencies:
     cross-fetch "3.1.5"
     debug "4.3.4"
