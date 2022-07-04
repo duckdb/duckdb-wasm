@@ -30,7 +30,7 @@
         "react-bootstrap": "^2.4.0",
         "react-dnd": "^16.0.1",
         "react-dnd-html5-backend": "^16.0.1",
-        "react-dom": "^18.1.0",
+        "react-dom": "^18.2.0",
         "react-popper-tooltip": "^4.4.1",
         "react-router-dom": "^6.3.0",
         "react-virtualized": "^9.22.3",
