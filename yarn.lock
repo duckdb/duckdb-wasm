@@ -5469,10 +5469,10 @@ react-lifecycles-compat@^3.0.4:
   resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
 
-react-popper-tooltip@^4.4.1:
-  version "4.4.1"
-  resolved "https://registry.yarnpkg.com/react-popper-tooltip/-/react-popper-tooltip-4.4.1.tgz#dc97900290f4fd4aad6a2d6698fc842b7d966f94"
-  integrity sha512-Qe4KH/CAdUYKWzCiV5g7XQGAHxqw9HIbZJpCUmvS+9s0d4qXk+ViCBp/lcTjUr1EG9FeNRt5LCy52tYBh2kO1Q==
+react-popper-tooltip@^4.4.2:
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/react-popper-tooltip/-/react-popper-tooltip-4.4.2.tgz#0dc4894b8e00ba731f89bd2d30584f6032ec6163"
+  integrity sha512-y48r0mpzysRTZAIh8m2kpZ8S1YPNqGtQPDrlXYSGvDS1c1GpG/NUXbsbIdfbhXfmSaRJuTcaT6N1q3CKuHRVbg==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@popperjs/core" "^2.11.5"
