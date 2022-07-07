@@ -1,3 +1,4 @@
+#include <arrow/type.h>
 #include <arrow/type_fwd.h>
 
 #include <filesystem>
@@ -106,6 +107,12 @@ shared_ptr<arrow::Array> GetExpectedDoubleArray() {
         .ValueOrDie();
 }
 
+// shared_ptr<arrow::Array> GetExpectedDateArray() {
+//     auto type = arrow::list(arrow::field("l", make_shared<arrow::Date64Type>()));
+//     return duckdb::web::json::ArrayFromJSON(type, "[[], [\"1970-01-01\", Inf, -Inf, null, \"2022-05-12\"], null]")
+//         .ValueOrDie();
+// };
+
 shared_ptr<arrow::Array> GetExpectedStringArray() {
     auto type = arrow::list(arrow::field("l", make_shared<arrow::StringType>()));
     return duckdb::web::json::ArrayFromJSON(type, "[[], [\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"], null]")
@@ -210,6 +217,9 @@ vector<string> UNSUPPORTED_TYPES = {
     // Awaiting Timezone implementation in duckdb to allow patching range: is only partially supported
     "timestamp_s", "timestamp_ms", "timestamp_ns", "timestamp_tz",
 
+    // Linked to timestamp support
+    "date_array", "timestamp_array", "timestamptz_array",
+
     // Currently does not work
     "uuid", "json"};
 
@@ -275,8 +285,7 @@ TEST(AllTypesTest, FullRangeTypes) {
                                                         arrow::time64(arrow::TimeUnit::MICRO));
     AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time_tz", 0, 86399999999, batch,
                                                         arrow::time64(arrow::TimeUnit::MICRO));
-    AssertSimpleTypeCorrect<arrow::Date32Type, int32_t>("date", numeric_limits<int32_t>::min(),
-                                                        numeric_limits<int32_t>::max(), batch);
+    AssertSimpleTypeCorrect<arrow::Date32Type, int32_t>("date", -2147483646, 2147483646, batch);
 
     AssertSimpleTypeCorrect<arrow::StringType>("varchar", "🦆🦆🦆🦆🦆🦆", "goose", batch);
     AssertSimpleTypeCorrect<arrow::BinaryType>("blob", "thisisalongblob\x00withnullbytes"s, "\x5Cx00\x5Cx00\x5Cx00a"s,
