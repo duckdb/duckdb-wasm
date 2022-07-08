@@ -42,6 +42,9 @@ const NOT_IMPLEMENTED_TYPES = [
     'uuid',
     'map',
     'json',
+    'date_array',
+    'timestamp_array',
+    'timestamptz_array',
 ];
 
 // These types are supported, but not the full range returned from the test_all_types() table function, here we define

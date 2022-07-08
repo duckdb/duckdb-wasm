@@ -10,6 +10,7 @@
 #include "arrow/type_fwd.h"
 #include "duckdb/common/arrow.hpp"
 #include "duckdb/common/arrow_wrapper.hpp"
+#include "duckdb/function/table_function.hpp"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/json_insert_options.h"
 #include "duckdb/web/json_parser.h"
@@ -70,7 +71,7 @@ class TableReader : public arrow::RecordBatchReader {
     /// Arrow array stream factory function
     static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateStream(
         uintptr_t buffer_ptr, std::pair<std::unordered_map<idx_t, string>, std::vector<string>>& project_columns,
-        duckdb::TableFilterCollection* filters);
+        duckdb::TableFilterSet* filters);
     /// Create arrow array stream wrapper
     static void GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema);
 };

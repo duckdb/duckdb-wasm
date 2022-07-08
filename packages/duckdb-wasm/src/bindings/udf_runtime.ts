@@ -135,7 +135,7 @@ export function callScalarUDF(
                     }
                     return (row: number) => strings[row];
                 }
-                case 'STRUCT<?>': {
+                case 'STRUCT': {
                     const tmp: any = {};
                     const children: ArgumentResolver[] = [];
                     for (let j = 0; j < (arg.children?.length || 0); ++j) {

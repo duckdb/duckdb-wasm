@@ -51,7 +51,7 @@ TEST(JSONDataView, Select1) {
     "args": [
         {
             "sqlType": "STRUCT(foo INTEGER, bar VARCHAR)",
-            "physicalType": "STRUCT<?>",
+            "physicalType": "STRUCT",
             "validityBuffer": 0,
             "children": [
                 {

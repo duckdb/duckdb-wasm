@@ -23,7 +23,8 @@ TEST(ArrowCasts, PatchBigInt) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    result->ToArrowSchema(&raw_schema, result->types, result->names);
+    std::string config_timezone;
+    result->ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -67,7 +68,8 @@ TEST(ArrowCasts, PatchTimestamp) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    result->ToArrowSchema(&raw_schema, result->types, result->names);
+    std::string config_timezone;
+    result->ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
