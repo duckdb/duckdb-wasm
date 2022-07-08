@@ -224,9 +224,19 @@ add_library(
   duckdb_web_parquet
   ${CMAKE_SOURCE_DIR}/src/extensions/parquet_extension.cc)
 
-target_link_libraries(duckdb_web duckdb duckdb_web_fts duckdb_web_parquet arrow rapidjson ${THREAD_LIBS})
+add_library(
+  duckdb_web_excel
+  ${CMAKE_SOURCE_DIR}/src/extensions/excel_extension.cc)
+  
+add_library(
+  duckdb_web_json
+  ${CMAKE_SOURCE_DIR}/src/extensions/json_extension.cc)
+
+target_link_libraries(duckdb_web duckdb duckdb_web_fts duckdb_web_parquet duckdb_web_excel duckdb_web_json arrow rapidjson ${THREAD_LIBS})
 target_link_libraries(duckdb_web_fts duckdb duckdb_fts)
 target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
+target_link_libraries(duckdb_web_excel duckdb duckdb_excel)
+target_link_libraries(duckdb_web_json duckdb duckdb_json)
 
 # ---------------------------------------------------------------------------
 # Emscripten
@@ -323,7 +333,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
       ${CMAKE_SOURCE_DIR}/test/tester.cc)
-  set(TEST_LIBS duckdb_web duckdb_web_fts duckdb_web_parquet gtest gmock gflags ${THREAD_LIBS})
+  set(TEST_LIBS duckdb_web duckdb_web_fts duckdb_web_parquet duckdb_web_excel duckdb_web_json gtest gmock gflags ${THREAD_LIBS})
 
   add_executable(tester ${TEST_CC})
   target_link_libraries(tester ${TEST_LIBS})
