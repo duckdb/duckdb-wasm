@@ -43,7 +43,9 @@
 #include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
 #include "duckdb/web/environment.h"
+#include "duckdb/web/extensions/excel_extension.h"
 #include "duckdb/web/extensions/fts_extension.h"
+#include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/io/arrow_ifstream.h"
@@ -754,6 +756,8 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         duckdb_web_parquet_init(db.get());
         duckdb_web_fts_init(db.get());
+        duckdb_web_excel_init(db.get());
+        duckdb_web_json_init(db.get());
         RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
