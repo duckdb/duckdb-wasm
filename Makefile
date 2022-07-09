@@ -29,6 +29,10 @@ CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 GTEST_FILTER=*
 JS_FILTER=
 
+EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
+EXCEL_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/excel"
+JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
+
 # ---------------------------------------------------------------------------
 # Formatting
 
@@ -234,6 +238,15 @@ bench_system_tpch_duckdb:
 wasm_caches:
 	mkdir -p ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 	chown -R $(id -u):$(id -g) ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
+	rm -rf ${EXTENSION_CACHE_DIR}
+	mkdir -p ${EXTENSION_CACHE_DIR}
+	chown -R $(id -u):$(id -g) ${EXTENSION_CACHE_DIR}
+ifeq (${DUCKDB_EXCEL}, 1)
+	touch ${EXCEL_EXTENSION_CACHE_FILE}
+endif
+ifeq (${DUCKDB_JSON}, 1)
+	touch ${JSON_EXTENSION_CACHE_FILE}
+endif
 
 .PHONY: wasm
 wasm: wasm_caches
