@@ -107,8 +107,8 @@ import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { testTableNames, testTableNamesAsync } from './tablenames.test';
 import { testRegressionAsync } from './regression';
 import { testUDF } from './udf.test';
-import { testEXCEL } from './excel.test';
-import { testJSON } from './json.test';
+//import { testEXCEL } from './excel.test';
+//import { testJSON } from './json.test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
