@@ -134,5 +134,5 @@ testCSVInsert(() => db!);
 testCSVInsertAsync(() => adb!);
 testTokenization(() => db!);
 testTokenizationAsync(() => adb!);
-testEXCEL(() => db!);
-testJSON(() => db!);
+//testEXCEL(() => db!);
+//testJSON(() => db!);
