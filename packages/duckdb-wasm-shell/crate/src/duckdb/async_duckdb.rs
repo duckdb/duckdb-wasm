@@ -11,13 +11,32 @@ use wasm_bindgen::prelude::*;
 
 type ConnectionID = u32;
 
+#[wasm_bindgen]
+#[derive(Default)]
+pub struct DuckDBConfig {
+    path: Option<String>,
+}
+
+#[wasm_bindgen]
+impl DuckDBConfig {
+    #[wasm_bindgen(getter)]
+    pub fn path(&self) -> Option<String> {
+        self.path.clone()
+    }
+    #[wasm_bindgen(setter)]
+    pub fn set_path(&mut self, path: Option<String>) {
+        self.path = path;
+    }
+}
+
+
 #[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
 extern "C" {
     #[wasm_bindgen(js_name = "AsyncDuckDB")]
     pub type JsAsyncDuckDB;
 
     #[wasm_bindgen(catch, method, js_name = "open")]
-    async fn open(this: &JsAsyncDuckDB, text: &str) -> Result<JsValue, JsValue>;
+    async fn open(this: &JsAsyncDuckDB, config: DuckDBConfig) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "getVersion")]
     async fn get_version(this: &JsAsyncDuckDB) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "getFeatureFlags")]
@@ -69,8 +88,8 @@ impl AsyncDuckDB {
     }
 
     /// Open a database
-    pub async fn open(&self, path: &str) -> Result<(), js_sys::Error> {
-        let _status = self.bindings.open(path).await?;
+    pub async fn open(&self, config: DuckDBConfig) -> Result<(), js_sys::Error> {
+        let _status = self.bindings.open(config).await?;
         Ok(())
     }
 
