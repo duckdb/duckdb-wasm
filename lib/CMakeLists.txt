@@ -349,7 +349,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
       ${CMAKE_SOURCE_DIR}/test/tester.cc)
 
-  set(TEST_LIBS duckdb_web duckdb_web_fts duckdb_web_parquet ${DUCKDB_WEB_EXCEL} ${DUCKDB_WEB_JSON} gmock gflags ${THREAD_LIBS})
+  set(TEST_LIBS duckdb_web duckdb_web_fts duckdb_web_parquet ${DUCKDB_WEB_EXCEL} ${DUCKDB_WEB_JSON} gtest gmock gflags ${THREAD_LIBS})
 
   add_executable(tester ${TEST_CC})
   target_link_libraries(tester ${TEST_LIBS})
