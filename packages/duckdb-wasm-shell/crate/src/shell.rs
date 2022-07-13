@@ -1,6 +1,6 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
 use crate::duckdb::{
-    AsyncDuckDB, AsyncDuckDBConnection, DataProtocol, PACKAGE_NAME, PACKAGE_VERSION,
+    AsyncDuckDB, AsyncDuckDBConnection, DataProtocol, PACKAGE_NAME, PACKAGE_VERSION, DuckDBConfig,
 };
 use crate::key_event::{Key, KeyEvent};
 use crate::platform;
@@ -375,8 +375,12 @@ impl Shell {
         };
 
         // Try to open the database
-        let target = &args[..args.find(' ').unwrap_or_else(|| args.len())];
-        if let Err(e) = db.open(target).await {
+        let target = &args[..args.find(' ').unwrap_or(args.len())];
+        let mut config = DuckDBConfig::default();
+        if !target.is_empty() {
+            config.set_path(Some(target.to_string()))
+        }
+        if let Err(e) = db.open(config).await {
             let msg: String = e.message().into();
             Shell::with(|s| s.writeln(&msg));
             return;
