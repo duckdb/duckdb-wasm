@@ -313,6 +313,7 @@ if(EMSCRIPTEN)
           _duckdb_web_query_fetch_results, \
           _duckdb_web_query_run, \
           _duckdb_web_query_send, \
+          _duckdb_web_query_cancel, \
           _duckdb_web_reset, \
           _duckdb_web_tokenize, \
           _duckdb_web_udf_scalar_create \

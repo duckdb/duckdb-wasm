@@ -109,6 +109,7 @@ import { testRegressionAsync } from './regression';
 import { testUDF } from './udf.test';
 //import { testEXCEL } from './excel.test';
 //import { testJSON } from './json.test';
+import { testCancelAsync } from './cancel_test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
@@ -136,3 +137,4 @@ testTokenization(() => db!);
 testTokenizationAsync(() => adb!);
 //testEXCEL(() => db!);
 //testJSON(() => db!);
+testCancelAsync(() => adb!);

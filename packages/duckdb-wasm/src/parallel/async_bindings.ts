@@ -38,7 +38,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** The promise for the worker shutdown */
     protected _workerShutdownPromise: Promise<null> | null = null;
     /** Make the worker as terminated */
-    protected _workerShutdownResolver: (value: PromiseLike<null> | null) => void = () => {};
+    protected _workerShutdownResolver: (value: PromiseLike<null> | null) => void = () => { };
 
     /** The next message id */
     protected _nextMessageId = 0;
@@ -80,7 +80,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         this._worker = null;
         this._workerShutdownResolver(null);
         this._workerShutdownPromise = null;
-        this._workerShutdownResolver = () => {};
+        this._workerShutdownResolver = () => { };
     }
 
     /** Kill the worker */
@@ -90,7 +90,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         //await this._workerShutdownPromise; TODO deadlocking in karma?
         this._worker = null;
         this._workerShutdownPromise = null;
-        this._workerShutdownResolver = () => {};
+        this._workerShutdownResolver = () => { };
     }
 
     /** Post a task */
@@ -171,6 +171,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerRequestType.REGISTER_FILE_HANDLE:
             case WorkerRequestType.REGISTER_FILE_URL:
             case WorkerRequestType.RESET:
+            case WorkerRequestType.CANCEL_QUERY:
                 if (response.type == WorkerResponseType.OK) {
                     task.promiseResolver(response.data);
                     return;
@@ -309,7 +310,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     public async instantiate(
         mainModuleURL: string,
         pthreadWorkerURL: string | null = null,
-        progress: (progress: InstantiationProgress) => void = _p => {},
+        progress: (progress: InstantiationProgress) => void = _p => { },
     ): Promise<null> {
         this._onInstantiationProgress.push(progress);
         const task = new WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>(
@@ -386,6 +387,15 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             [conn, text],
         );
         return await this.postTask(task);
+    }
+
+    /** Cancel a query */
+    public async cancelQuery(conn: ConnectionID): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.CANCEL_QUERY, [ConnectionID], null>(
+            WorkerRequestType.CANCEL_QUERY,
+            [conn],
+        );
+        await this.postTask(task);
     }
 
     /** Fetch query results */

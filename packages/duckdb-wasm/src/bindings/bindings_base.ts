@@ -41,7 +41,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** The loading promise */
     protected _initPromise: Promise<void> | null = null;
     /** The resolver for the open promise (called by onRuntimeInitialized) */
-    protected _initPromiseResolver: () => void = () => {};
+    protected _initPromiseResolver: () => void = () => { };
     /** The next UDF id */
     protected _nextUDFId: number;
 
@@ -69,7 +69,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** Instantiate the module */
     protected onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
     /** Instantiate the database */
-    public async instantiate(onProgress: (progress: InstantiationProgress) => void = _ => {}): Promise<this> {
+    public async instantiate(onProgress: (progress: InstantiationProgress) => void = _ => { }): Promise<this> {
         // Already opened?
         if (this._instance != null) {
             return this;
@@ -179,6 +179,10 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
         return res;
+    }
+    /** Cancel a query asynchronously. */
+    public cancelQuery(conn: number): void {
+        callSRet(this.mod, 'duckdb_web_query_cancel', ['number'], [conn]);
     }
     /** Fetch query results */
     public fetchQueryResults(conn: number): Uint8Array {

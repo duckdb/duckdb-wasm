@@ -67,6 +67,19 @@ export class AsyncDuckDBConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
+    /** Cancel a query */
+    public async cancel() {
+        this._bindings.logger.log({
+            timestamp: new Date(),
+            level: LogLevel.INFO,
+            origin: LogOrigin.ASYNC_DUCKDB,
+            topic: LogTopic.QUERY,
+            event: LogEvent.RUN,
+            value: String("cancel query"),
+        });
+        await this._bindings.cancelQuery(this._conn);
+    }
+
     /** Get table names */
     public async getTableNames(query: string): Promise<string[]> {
         return await this._bindings.getTableNames(this._conn, query);

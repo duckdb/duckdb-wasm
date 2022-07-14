@@ -17,6 +17,7 @@ export interface DuckDBBindings {
     disconnect(conn: number): void;
     runQuery(conn: number, text: string): Uint8Array;
     sendQuery(conn: number, text: string): Uint8Array;
+    cancelQuery(conn: number): void;
     fetchQueryResults(conn: number): Uint8Array;
     getTableNames(conn: number, text: string): string[];
 

@@ -89,7 +89,7 @@ arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
 
 /// Constructor
 WebDB::Connection::Connection(WebDB& webdb)
-    : webdb_(webdb), connection_(*webdb.database_), arrow_ipc_stream_(nullptr) {}
+    : webdb_(webdb), connection_(*webdb.database_), arrow_ipc_stream_(nullptr), is_cancel_state(false) {}
 /// Constructor
 WebDB::Connection::~Connection() = default;
 
@@ -163,7 +163,15 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendQuery(std::string_view text) {
     try {
         // Send the query
-        auto result = connection_.SendQuery(std::string{text});
+        // auto result = connection_.SendQuery(std::string{text});
+        is_cancel_state = false;
+        auto pending_query = connection_.PendingQuery(std::string{text});
+        while (pending_query->ExecuteTask() == PendingExecutionResult::RESULT_NOT_READY && !is_cancel_state)
+            ;
+        if (is_cancel_state) {
+            return arrow::Status{arrow::StatusCode::Cancelled, std::string("")};
+        }
+        auto result = pending_query->Execute();
         if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
         return StreamQueryResult(std::move(result));
     } catch (std::exception& e) {

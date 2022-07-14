@@ -37,6 +37,8 @@ class WebDB {
         WebDB& webdb_;
         /// The connection
         duckdb::Connection connection_;
+        /// The flag to indicate query cancel state
+        bool is_cancel_state;
 
         /// The current result (if any)
         std::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
@@ -81,6 +83,8 @@ class WebDB {
         arrow::Result<std::shared_ptr<arrow::Buffer>> RunQuery(std::string_view text);
         /// Send a query and return an arrow buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> SendQuery(std::string_view text);
+        /// Cancel a query
+        void CancelQuery() { is_cancel_state = true; };
         /// Fetch query results and return an arrow buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> FetchQueryResults();
         /// Get table names

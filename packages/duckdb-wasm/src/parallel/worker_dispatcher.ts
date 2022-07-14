@@ -236,6 +236,11 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     );
                     break;
                 }
+                case WorkerRequestType.CANCEL_QUERY: {
+                    this._bindings.cancelQuery(request.data[0]);
+                    this.sendOK(request);
+                    break;
+                }
                 case WorkerRequestType.FETCH_QUERY_RESULTS: {
                     const result = this._bindings.fetchQueryResults(request.data);
                     this.postMessage(
