@@ -271,6 +271,7 @@ if(EMSCRIPTEN)
       -s ENVIRONMENT='web,node,worker' \
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
+      -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
       -s FILESYSTEM=0 \
       -s EXPORT_ES6=1 \
