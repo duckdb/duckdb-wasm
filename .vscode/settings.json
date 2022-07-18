@@ -6,10 +6,6 @@
         "source.fixAll.eslint": true
     },
     "files.insertFinalNewline": true,
-
-    /* Rust settings */
-    "rust-analyzer.experimental.procAttrMacros": true,
-    "rust-analyzer.cargo.loadOutDirsFromCheck": true,
     "rust-analyzer.procMacro.enable": true,
     "rust-analyzer.checkOnSave.command": "clippy",
 
@@ -71,5 +67,7 @@
     },
     "[rust]": {
         "editor.defaultFormatter": "matklad.rust-analyzer"
-    }
+    },
+    "rust-analyzer.cargo.buildScripts.enable": true,
+    "rust-analyzer.procMacro.attributes.enable": true
 }
