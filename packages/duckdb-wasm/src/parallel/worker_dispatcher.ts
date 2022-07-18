@@ -254,8 +254,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             data: result,
                         },
                         transfer,
-<<<<<<< HEAD
-=======
                     );
                     break;
                 }
@@ -269,7 +267,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             data: result,
                         },
                         [],
->>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
                     );
                     break;
                 }
