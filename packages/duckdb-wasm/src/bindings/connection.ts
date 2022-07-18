@@ -55,6 +55,11 @@ export class DuckDBConnection {
         return reader;
     }
 
+    /** Cancel a query that was sent earlier */
+    public cancelSent() {
+        this._bindings.cancelPendingQuery(this._conn);
+    }
+
     /** Get table names */
     public getTableNames(query: string): string[] {
         return this._bindings.getTableNames(this._conn, query);
