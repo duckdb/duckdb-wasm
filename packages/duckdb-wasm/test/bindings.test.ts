@@ -301,5 +301,56 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 await conn.close();
             });
         });
+
+        describe('Cancellation', () => {
+            it('hello cancel', async () => {
+                await adb().open({
+                    path: ':memory:',
+                    query: {
+                        queryPollingInterval: 0,
+                    },
+                });
+                const conn = await adb().connect();
+                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'select 42::integer;'));
+                expect(result).toBeNull();
+                const cancelOK = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(cancelOK).toBeTrue();
+                let polledHeader = null;
+                let polledError = null;
+                try {
+                    polledHeader = await conn.useUnsafe((db, id) => db.pollPendingQuery(id));
+                } catch (e: any) {
+                    polledError = e;
+                }
+                expect(polledHeader).toBeNull();
+                expect(polledError).not.toBeNull();
+                expect(polledError.toString()).toEqual('Error: query was canceled');
+            });
+
+            it('noop cancel', async () => {
+                await adb().open({
+                    path: ':memory:',
+                    query: {
+                        queryPollingInterval: 0,
+                    },
+                });
+                const conn = await adb().connect();
+                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'select 42::integer;'));
+                expect(result).toBeNull();
+                let polledHeader = null;
+                let polledError = null;
+                try {
+                    while (polledHeader == null) {
+                        polledHeader = await conn.useUnsafe((db, id) => db.pollPendingQuery(id));
+                    }
+                } catch (e: any) {
+                    polledError = e;
+                }
+                expect(polledHeader).not.toBeNull();
+                expect(polledError).toBeNull();
+                const cancelOK = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(cancelOK).toBeFalse();
+            });
+        });
     });
 }

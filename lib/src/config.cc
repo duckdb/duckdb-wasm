@@ -66,6 +66,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         }
         if (doc.HasMember("query") && doc["query"].IsObject()) {
             auto q = doc["query"].GetObject();
+            if (q.HasMember("queryPollingInterval") && q["queryPollingInterval"].IsNumber()) {
+                config.query.query_polling_interval = q["queryPollingInterval"].GetInt64();
+            }
             if (q.HasMember("castBigIntToDouble") && q["castBigIntToDouble"].IsBool()) {
                 config.query.cast_bigint_to_double = q["castBigIntToDouble"].GetBool();
             }

@@ -171,7 +171,11 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(st
         current_query_result_.reset();
         current_schema_.reset();
         current_schema_patched_.reset();
-        return PollPendingQuery();
+        if (webdb_.config_->query.query_polling_interval.value_or(20) > 0) {
+            return PollPendingQuery();
+        } else {
+            return nullptr;
+        }
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     } catch (...) {
@@ -187,6 +191,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
     }
     auto before = std::chrono::steady_clock::now();
     uint64_t elapsed;
+    auto polling_interval = webdb_.config_->query.query_polling_interval.value_or(20);
     do {
         switch (current_pending_query_result_->ExecuteTask()) {
             case PendingExecutionResult::RESULT_READY:
@@ -201,15 +206,18 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
         }
         auto after = std::chrono::steady_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
-    } while (elapsed < 20);
+    } while (elapsed < polling_interval);
     return nullptr;
 }
 
-void WebDB::Connection::CancelPendingQuery() {
+bool WebDB::Connection::CancelPendingQuery() {
     // Only reset the pending query if it hasn't completed yet
-    if (current_query_result_ != nullptr) {
+    if (current_pending_query_result_ != nullptr && current_query_result_ == nullptr) {
         current_pending_query_was_canceled_ = true;
         current_pending_query_result_.reset();
+        return true;
+    } else {
+        return false;
     }
 }
 

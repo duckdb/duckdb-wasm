@@ -199,5 +199,5 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.SEND_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
     | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>
-    | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, null>
+    | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>
     | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>;

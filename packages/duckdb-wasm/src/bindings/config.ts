@@ -1,5 +1,9 @@
 export interface DuckDBQueryConfig {
     /**
+     * The polling interval for queries
+     */
+    queryPollingInterval?: number;
+    /**
      * Cast BigInt to Double?
      */
     castBigIntToDouble?: boolean;

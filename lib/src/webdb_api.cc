@@ -205,9 +205,9 @@ void duckdb_web_pending_query_poll(WASMResponse* packed, ConnectionHdl connHdl, 
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Cancel a pending query
-void duckdb_web_pending_query_cancel(ConnectionHdl connHdl, const char* script) {
+bool duckdb_web_pending_query_cancel(ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    c->CancelPendingQuery();
+    return c->CancelPendingQuery();
 }
 /// Fetch query results
 void duckdb_web_query_fetch_results(WASMResponse* packed, ConnectionHdl connHdl) {

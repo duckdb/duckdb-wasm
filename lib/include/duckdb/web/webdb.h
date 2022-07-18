@@ -89,7 +89,7 @@ class WebDB {
         /// Poll a pending query and return the schema when finished
         arrow::Result<std::shared_ptr<arrow::Buffer>> PollPendingQuery();
         /// Cancel a pending query
-        void CancelPendingQuery();
+        bool CancelPendingQuery();
         /// Fetch a data chunk from a pending query
         arrow::Result<std::shared_ptr<arrow::Buffer>> FetchQueryResults();
         /// Get table names

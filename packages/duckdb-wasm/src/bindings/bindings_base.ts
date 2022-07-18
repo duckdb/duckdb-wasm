@@ -181,7 +181,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
-        if (d == null) {
+        if (d == 0) {
             return null;
         }
         const res = copyBuffer(this.mod, d, n);
@@ -194,7 +194,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
-        if (d == null) {
+        if (d == 0) {
             return null;
         }
         const res = copyBuffer(this.mod, d, n);
@@ -202,17 +202,8 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return res;
     }
     /** Cancel a pending query */
-    public cancelPendingQuery(conn: number): Uint8Array | null {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_cancel', ['number'], [conn]);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
-        }
-        if (d == null) {
-            return null;
-        }
-        const res = copyBuffer(this.mod, d, n);
-        dropResponseBuffers(this.mod);
-        return res;
+    public cancelPendingQuery(conn: number): boolean {
+        return this.mod.ccall('duckdb_web_pending_query_cancel', 'boolean', ['number'], [conn]);
     }
     /** Fetch query results */
     public fetchQueryResults(conn: number): Uint8Array {

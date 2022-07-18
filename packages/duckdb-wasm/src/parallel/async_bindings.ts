@@ -155,7 +155,6 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
         // Otherwise differentiate between the tasks first
         switch (task.type) {
-            case WorkerRequestType.CANCEL_PENDING_QUERY:
             case WorkerRequestType.CLOSE_PREPARED:
             case WorkerRequestType.COLLECT_FILE_STATISTICS:
             case WorkerRequestType.COPY_FILE_TO_PATH:
@@ -253,6 +252,13 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
                 break;
             case WorkerRequestType.POLL_PENDING_QUERY:
                 if (response.type == WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.CANCEL_PENDING_QUERY:
+                this._onInstantiationProgress = [];
+                if (response.type == WorkerResponseType.SUCCESS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -408,12 +414,12 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         return await this.postTask(task);
     }
     /** Cancel a pending query */
-    public async cancelPendingQuery(conn: ConnectionID): Promise<void> {
-        const task = new WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, null>(
+    public async cancelPendingQuery(conn: ConnectionID): Promise<boolean> {
+        const task = new WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>(
             WorkerRequestType.CANCEL_PENDING_QUERY,
             conn,
         );
-        await this.postTask(task);
+        return await this.postTask(task);
     }
 
     /** Fetch query results */
