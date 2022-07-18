@@ -19,7 +19,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             it('INVALID SQL', async () => {
                 let error: Error | null = null;
                 try {
-                    conn.send('INVALID');
+                    await conn.send('INVALID');
                 } catch (e: any) {
                     error = e;
                 }
@@ -299,6 +299,63 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     );
                 });
                 await conn.close();
+            });
+        });
+
+        describe('Cancellation', () => {
+            it('hello cancel', async () => {
+                // Set query polling interval to 0 to poll 1 task at a time
+                await adb().open({
+                    path: ':memory:',
+                    query: {
+                        queryPollingInterval: 0,
+                    },
+                });
+                const conn = await adb().connect();
+                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'select 42::integer;'));
+                expect(result).toBeNull();
+                const cancelOK = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(cancelOK).toBeTrue();
+                let polledHeader = null;
+                let polledError = null;
+                try {
+                    polledHeader = await conn.useUnsafe((db, id) => db.pollPendingQuery(id));
+                } catch (e: any) {
+                    polledError = e;
+                }
+                expect(polledHeader).toBeNull();
+                expect(polledError).not.toBeNull();
+                expect(polledError.toString()).toEqual('Error: query was canceled');
+                const canceledAgain = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(canceledAgain).toBeFalse();
+            });
+
+            it('noop cancel', async () => {
+                await adb().open({
+                    path: ':memory:',
+                    query: {
+                        queryPollingInterval: 0,
+                    },
+                });
+                const conn = await adb().connect();
+                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'select 42::integer;'));
+                expect(result).toBeNull();
+                let polledHeader = null;
+                let polledError = null;
+                try {
+                    // We execute 1 task at a time, so this may take multiple polls
+                    while (polledHeader == null) {
+                        polledHeader = await conn.useUnsafe((db, id) => db.pollPendingQuery(id));
+                    }
+                } catch (e: any) {
+                    polledError = e;
+                }
+                expect(polledHeader).not.toBeNull();
+                expect(polledError).toBeNull();
+                const cancelOK = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(cancelOK).toBeFalse();
+                const anotherOne = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(anotherOne).toBeFalse();
             });
         });
     });

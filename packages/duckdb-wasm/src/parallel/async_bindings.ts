@@ -240,8 +240,26 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
                 }
                 break;
             case WorkerRequestType.SEND_PREPARED:
-            case WorkerRequestType.SEND_QUERY:
-                if (response.type == WorkerResponseType.QUERY_START) {
+                if (response.type == WorkerResponseType.QUERY_RESULT_HEADER) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.START_PENDING_QUERY:
+                if (response.type == WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.POLL_PENDING_QUERY:
+                if (response.type == WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL) {
+                    task.promiseResolver(response.data);
+                    return;
+                }
+                break;
+            case WorkerRequestType.CANCEL_PENDING_QUERY:
+                this._onInstantiationProgress = [];
+                if (response.type == WorkerResponseType.SUCCESS) {
                     task.promiseResolver(response.data);
                     return;
                 }
@@ -380,11 +398,27 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         return await this.postTask(task);
     }
 
-    /** Send a query */
-    public async sendQuery(conn: ConnectionID, text: string): Promise<Uint8Array> {
-        const task = new WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>(
-            WorkerRequestType.SEND_QUERY,
+    /** Start a pending query */
+    public async startPendingQuery(conn: ConnectionID, text: string): Promise<Uint8Array | null> {
+        const task = new WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>(
+            WorkerRequestType.START_PENDING_QUERY,
             [conn, text],
+        );
+        return await this.postTask(task);
+    }
+    /** Poll a pending query */
+    public async pollPendingQuery(conn: ConnectionID): Promise<Uint8Array | null> {
+        const task = new WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>(
+            WorkerRequestType.POLL_PENDING_QUERY,
+            conn,
+        );
+        return await this.postTask(task);
+    }
+    /** Cancel a pending query */
+    public async cancelPendingQuery(conn: ConnectionID): Promise<boolean> {
+        const task = new WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>(
+            WorkerRequestType.CANCEL_PENDING_QUERY,
+            conn,
         );
         return await this.postTask(task);
     }

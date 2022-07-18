@@ -271,6 +271,7 @@ if(EMSCRIPTEN)
       -s ENVIRONMENT='web,node,worker' \
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
+      -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
       -s FILESYSTEM=0 \
       -s EXPORT_ES6=1 \
@@ -291,7 +292,6 @@ if(EMSCRIPTEN)
           _duckdb_web_flush_files, \
           _duckdb_web_fs_drop_file, \
           _duckdb_web_fs_drop_files, \
-          _duckdb_web_get_global_file_info, \
           _duckdb_web_fs_get_file_info_by_id, \
           _duckdb_web_fs_get_file_info_by_name, \
           _duckdb_web_fs_glob_add_path, \
@@ -300,20 +300,22 @@ if(EMSCRIPTEN)
           _duckdb_web_fs_register_file_url, \
           _duckdb_web_fs_set_file_descriptor, \
           _duckdb_web_get_feature_flags, \
+          _duckdb_web_get_global_file_info, \
           _duckdb_web_get_tablenames, \
           _duckdb_web_get_version, \
           _duckdb_web_insert_arrow_from_ipc_stream, \
           _duckdb_web_insert_csv_from_path, \
           _duckdb_web_insert_json_from_path, \
           _duckdb_web_open, \
+          _duckdb_web_pending_query_cancel, \
+          _duckdb_web_pending_query_poll, \
+          _duckdb_web_pending_query_start, \
           _duckdb_web_prepared_close, \
           _duckdb_web_prepared_create, \
           _duckdb_web_prepared_run, \
           _duckdb_web_prepared_send, \
           _duckdb_web_query_fetch_results, \
           _duckdb_web_query_run, \
-          _duckdb_web_query_send, \
-          _duckdb_web_query_cancel, \
           _duckdb_web_reset, \
           _duckdb_web_tokenize, \
           _duckdb_web_udf_scalar_create \

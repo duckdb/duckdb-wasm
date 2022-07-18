@@ -2,6 +2,7 @@
 #define INCLUDE_DUCKDB_WEB_WEBDB_H_
 
 #include <cstring>
+#include <duckdb/main/pending_query_result.hpp>
 #include <duckdb/main/prepared_statement.hpp>
 #include <initializer_list>
 #include <stdexcept>
@@ -40,7 +41,11 @@ class WebDB {
         /// The flag to indicate query cancel state
         bool is_cancel_state;
 
-        /// The current result (if any)
+        /// The current pending query result (if any)
+        std::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
+        /// The current pending query was canceled
+        bool current_pending_query_was_canceled_ = false;
+        /// The current query result (if any)
         std::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
         /// The current arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
@@ -79,13 +84,23 @@ class WebDB {
         /// Get the filesystem
         duckdb::FileSystem& filesystem();
 
-        /// Run a query and return an arrow buffer
+        /// Run a query and return the materialized query result
         arrow::Result<std::shared_ptr<arrow::Buffer>> RunQuery(std::string_view text);
+<<<<<<< HEAD
         /// Send a query and return an arrow buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> SendQuery(std::string_view text);
         /// Cancel a query
         void CancelQuery() { is_cancel_state = true; };
         /// Fetch query results and return an arrow buffer
+=======
+        /// Execute a query as pending query and return the stream schema when finished
+        arrow::Result<std::shared_ptr<arrow::Buffer>> PendingQuery(std::string_view text);
+        /// Poll a pending query and return the schema when finished
+        arrow::Result<std::shared_ptr<arrow::Buffer>> PollPendingQuery();
+        /// Cancel a pending query
+        bool CancelPendingQuery();
+        /// Fetch a data chunk from a pending query
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
         arrow::Result<std::shared_ptr<arrow::Buffer>> FetchQueryResults();
         /// Get table names
         arrow::Result<std::string> GetTableNames(std::string_view text);

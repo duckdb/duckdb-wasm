@@ -38,6 +38,8 @@ constexpr uint32_t STATIC_WEBDB_FEATURES = (0
 uint32_t ResolveFeatureFlags();
 
 struct QueryConfig {
+    /// Polling interval for pending queries (in ms)
+    std::optional<int64_t> query_polling_interval = std::nullopt;
     /// Cast BigInts to Doubles
     std::optional<bool> cast_bigint_to_double = std::nullopt;
     /// Cast Timestamp[ms] to Date64

@@ -35,7 +35,7 @@ TEST(WebDB, NativeFeatures) {
 TEST(WebDB, InvalidSQL) {
     auto db = make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
-    auto expected = conn.SendQuery(R"RAW(
+    auto expected = conn.RunQuery(R"RAW(
         INVALID SQL
     )RAW");
     ASSERT_FALSE(expected.ok());
@@ -48,10 +48,10 @@ TEST(WebDB, RunQuery) {
     ASSERT_TRUE(buffer.ok()) << buffer.status().message();
 }
 
-TEST(WebDB, SendQuery) {
+TEST(WebDB, PendingQuery) {
     auto db = make_shared<WebDB>(NATIVE);
     WebDB::Connection conn{*db};
-    auto buffer = conn.SendQuery("SELECT (v & 127)::TINYINT FROM generate_series(0, 2000) as t(v);");
+    auto buffer = conn.PendingQuery("SELECT (v & 127)::TINYINT FROM generate_series(0, 2000) as t(v);");
     ASSERT_TRUE(buffer.ok()) << buffer.status().message();
 }
 

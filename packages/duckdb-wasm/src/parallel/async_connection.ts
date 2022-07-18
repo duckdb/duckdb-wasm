@@ -59,7 +59,10 @@ export class AsyncDuckDBConnection {
             event: LogEvent.RUN,
             value: text,
         });
-        const header = await this._bindings.sendQuery(this._conn, text);
+        let header = await this._bindings.startPendingQuery(this._conn, text);
+        while (header == null) {
+            header = await this._bindings.pollPendingQuery(this._conn);
+        }
         const iter = new AsyncResultStreamIterator(this._bindings, this._conn, header);
         const reader = await arrow.RecordBatchReader.from<T>(iter);
         console.assert(reader.isAsync());
@@ -67,17 +70,9 @@ export class AsyncDuckDBConnection {
         return reader as unknown as arrow.AsyncRecordBatchStreamReader<T>; // XXX
     }
 
-    /** Cancel a query */
-    public async cancel() {
-        this._bindings.logger.log({
-            timestamp: new Date(),
-            level: LogLevel.INFO,
-            origin: LogOrigin.ASYNC_DUCKDB,
-            topic: LogTopic.QUERY,
-            event: LogEvent.RUN,
-            value: String("cancel query"),
-        });
-        await this._bindings.cancelQuery(this._conn);
+    /** Cancel a query that was sent earlier */
+    public async cancelSent(): Promise<boolean> {
+        return await this._bindings.cancelPendingQuery(this._conn);
     }
 
     /** Get table names */

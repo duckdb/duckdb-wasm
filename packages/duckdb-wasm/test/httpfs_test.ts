@@ -227,7 +227,7 @@ export function testHTTPFSAsync(
             conn = await adb().connect();
         }
         await setAwsConfig(conn, AWSConfigType.VALID);
-        await conn.send(`CREATE TABLE test_table AS (SELECT * FROM parquet_scan('test_file.parquet'));`);
+        await conn.query(`CREATE TABLE test_table AS (SELECT * FROM parquet_scan('test_file.parquet'));`);
         await conn.query(`COPY test_table TO 's3://${BUCKET_NAME}/${fileName}.${format}' (FORMAT '${format}');`);
         await adb().flushFiles();
         await adb().dropFiles();

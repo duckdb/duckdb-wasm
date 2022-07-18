@@ -216,23 +216,57 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                         {
                             messageId: this._nextMessageId++,
                             requestId: request.messageId,
-                            type: WorkerResponseType.QUERY_START,
+                            type: WorkerResponseType.QUERY_RESULT_HEADER,
                             data: result,
                         },
                         [result.buffer],
                     );
                     break;
                 }
-                case WorkerRequestType.SEND_QUERY: {
-                    const result = this._bindings.sendQuery(request.data[0], request.data[1]);
+                case WorkerRequestType.START_PENDING_QUERY: {
+                    const result = this._bindings.startPendingQuery(request.data[0], request.data[1]);
+                    const transfer = [];
+                    if (result) {
+                        transfer.push(result.buffer);
+                    }
                     this.postMessage(
                         {
                             messageId: this._nextMessageId++,
                             requestId: request.messageId,
-                            type: WorkerResponseType.QUERY_START,
+                            type: WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL,
                             data: result,
                         },
-                        [result.buffer],
+                        transfer,
+                    );
+                    break;
+                }
+                case WorkerRequestType.POLL_PENDING_QUERY: {
+                    const result = this._bindings.pollPendingQuery(request.data);
+                    const transfer = [];
+                    if (result) {
+                        transfer.push(result.buffer);
+                    }
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL,
+                            data: result,
+                        },
+                        transfer,
+                    );
+                    break;
+                }
+                case WorkerRequestType.CANCEL_PENDING_QUERY: {
+                    const result = this._bindings.cancelPendingQuery(request.data);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.SUCCESS,
+                            data: result,
+                        },
+                        [],
                     );
                     break;
                 }
