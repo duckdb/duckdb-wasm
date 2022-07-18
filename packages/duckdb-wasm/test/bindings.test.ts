@@ -304,6 +304,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
 
         describe('Cancellation', () => {
             it('hello cancel', async () => {
+                // Set query polling interval to 0 to poll 1 task at a time
                 await adb().open({
                     path: ':memory:',
                     query: {
@@ -325,6 +326,8 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 expect(polledHeader).toBeNull();
                 expect(polledError).not.toBeNull();
                 expect(polledError.toString()).toEqual('Error: query was canceled');
+                const canceledAgain = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(canceledAgain).toBeFalse();
             });
 
             it('noop cancel', async () => {
@@ -340,6 +343,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 let polledHeader = null;
                 let polledError = null;
                 try {
+                    // We execute 1 task at a time, so this may take multiple polls
                     while (polledHeader == null) {
                         polledHeader = await conn.useUnsafe((db, id) => db.pollPendingQuery(id));
                     }
@@ -350,6 +354,8 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 expect(polledError).toBeNull();
                 const cancelOK = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
                 expect(cancelOK).toBeFalse();
+                const anotherOne = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
+                expect(anotherOne).toBeFalse();
             });
         });
     });

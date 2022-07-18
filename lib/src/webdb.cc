@@ -70,6 +70,8 @@
 namespace duckdb {
 namespace web {
 
+static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
+
 /// Create the default webdb database
 std::unique_ptr<WebDB> WebDB::Create() {
     if constexpr (ENVIRONMENT == Environment::WEB) {
@@ -171,7 +173,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(st
         current_query_result_.reset();
         current_schema_.reset();
         current_schema_patched_.reset();
-        if (webdb_.config_->query.query_polling_interval.value_or(20) > 0) {
+        if (webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL) > 0) {
             return PollPendingQuery();
         } else {
             return nullptr;
@@ -191,7 +193,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
     }
     auto before = std::chrono::steady_clock::now();
     uint64_t elapsed;
-    auto polling_interval = webdb_.config_->query.query_polling_interval.value_or(20);
+    auto polling_interval = webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL);
     do {
         switch (current_pending_query_result_->ExecuteTask()) {
             case PendingExecutionResult::RESULT_READY:
