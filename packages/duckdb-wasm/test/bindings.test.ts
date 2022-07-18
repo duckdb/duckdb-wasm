@@ -146,7 +146,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
 }
 
 export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string): void {
-    beforeEach(async () => { });
+    beforeEach(async () => {});
 
     afterEach(async () => {
         await adb().flushFiles();
