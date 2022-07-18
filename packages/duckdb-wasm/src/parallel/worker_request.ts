@@ -41,9 +41,6 @@ export enum WorkerRequestType {
     RUN_PREPARED = 'RUN_PREPARED',
     RUN_QUERY = 'RUN_QUERY',
     SEND_PREPARED = 'SEND_PREPARED',
-    SEND_QUERY = 'SEND_QUERY',
-    CANCEL_QUERY = 'CANCEL_QUERY',
-    START_PENDING_QUERY = 'START_PENDING_QUERY',
     START_PENDING_QUERY = 'START_PENDING_QUERY',
     TOKENIZE = 'TOKENIZE',
 }
@@ -91,8 +88,8 @@ export class WorkerTask<T, D, P> {
     readonly type: T;
     readonly data: D;
     promise: Promise<P>;
-    promiseResolver: (value: P | PromiseLike<P>) => void = () => { };
-    promiseRejecter: (value: any) => void = () => { };
+    promiseResolver: (value: P | PromiseLike<P>) => void = () => {};
+    promiseRejecter: (value: any) => void = () => {};
 
     constructor(type: T, data: D) {
         this.type = type;
@@ -125,9 +122,9 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
     | WorkerRequest<WorkerRequestType.GLOB_FILE_INFOS, string>
     | WorkerRequest<
-        WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
-        [number, Uint8Array, ArrowInsertOptions | undefined]
-    >
+          WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
+          [number, Uint8Array, ArrowInsertOptions | undefined]
+      >
     | WorkerRequest<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions]>
     | WorkerRequest<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions]>
     | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
@@ -183,10 +180,10 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.GET_TABLE_NAMES, [number, string], string[]>
     | WorkerTask<WorkerRequestType.GET_VERSION, null, string>
     | WorkerTask<
-        WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
-        [number, Uint8Array, ArrowInsertOptions | undefined],
-        null
-    >
+          WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
+          [number, Uint8Array, ArrowInsertOptions | undefined],
+          null
+      >
     | WorkerTask<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions], null>
     | WorkerTask<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions], null>
     | WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>
@@ -200,11 +197,6 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_PREPARED, [number, number, any[]], Uint8Array>
-    | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
-    | WorkerTask<WorkerRequestType.CANCEL_QUERY, [ConnectionID], null>
-    | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
-    | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>
-    | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>
     | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
     | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>
     | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>

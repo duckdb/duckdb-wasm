@@ -92,7 +92,7 @@ arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
 
 /// Constructor
 WebDB::Connection::Connection(WebDB& webdb)
-    : webdb_(webdb), connection_(*webdb.database_), arrow_ipc_stream_(nullptr), is_cancel_state(false) {}
+    : webdb_(webdb), connection_(*webdb.database_), arrow_ipc_stream_(nullptr) {}
 /// Constructor
 WebDB::Connection::~Connection() = default;
 

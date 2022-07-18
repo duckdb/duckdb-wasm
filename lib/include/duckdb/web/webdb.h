@@ -84,11 +84,6 @@ class WebDB {
 
         /// Run a query and return the materialized query result
         arrow::Result<std::shared_ptr<arrow::Buffer>> RunQuery(std::string_view text);
-        /// Send a query and return an arrow buffer
-        arrow::Result<std::shared_ptr<arrow::Buffer>> SendQuery(std::string_view text);
-        /// Cancel a query
-        void CancelQuery() { is_cancel_state = true; };
-        /// Fetch query results and return an arrow buffer
         /// Execute a query as pending query and return the stream schema when finished
         arrow::Result<std::shared_ptr<arrow::Buffer>> PendingQuery(std::string_view text);
         /// Poll a pending query and return the schema when finished
