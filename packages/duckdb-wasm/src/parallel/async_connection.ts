@@ -71,8 +71,8 @@ export class AsyncDuckDBConnection {
     }
 
     /** Cancel a query that was sent earlier */
-    public async cancelSent() {
-        await this._bindings.cancelPendingQuery(this._conn);
+    public async cancelSent(): Promise<boolean> {
+        return await this._bindings.cancelPendingQuery(this._conn);
     }
 
     /** Get table names */
