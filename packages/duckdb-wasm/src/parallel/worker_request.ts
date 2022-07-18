@@ -10,6 +10,7 @@ export type ConnectionID = number;
 export type StatementID = number;
 
 export enum WorkerRequestType {
+    CANCEL_PENDING_QUERY = 'CANCEL_PENDING_QUERY',
     CLOSE_PREPARED = 'CLOSE_PREPARED',
     COLLECT_FILE_STATISTICS = 'COLLECT_FILE_STATISTICS',
     CONNECT = 'CONNECT',
@@ -32,6 +33,7 @@ export enum WorkerRequestType {
     INSTANTIATE = 'INSTANTIATE',
     OPEN = 'OPEN',
     PING = 'PING',
+    POLL_PENDING_QUERY = 'POLL_PENDING_QUERY',
     REGISTER_FILE_BUFFER = 'REGISTER_FILE_BUFFER',
     REGISTER_FILE_HANDLE = 'REGISTER_FILE_HANDLE',
     REGISTER_FILE_URL = 'REGISTER_FILE_URL',
@@ -39,7 +41,7 @@ export enum WorkerRequestType {
     RUN_PREPARED = 'RUN_PREPARED',
     RUN_QUERY = 'RUN_QUERY',
     SEND_PREPARED = 'SEND_PREPARED',
-    SEND_QUERY = 'SEND_QUERY',
+    START_PENDING_QUERY = 'START_PENDING_QUERY',
     TOKENIZE = 'TOKENIZE',
 }
 
@@ -58,7 +60,8 @@ export enum WorkerResponseType {
     QUERY_PLAN = 'QUERY_PLAN',
     QUERY_RESULT = 'QUERY_RESULT',
     QUERY_RESULT_CHUNK = 'QUERY_RESULT_CHUNK',
-    QUERY_START = 'QUERY_START',
+    QUERY_RESULT_HEADER = 'QUERY_RESULT_HEADER',
+    QUERY_RESULT_HEADER_OR_NULL = 'QUERY_RESULT_HEADER_OR_NULL',
     REGISTERED_FILE = 'REGISTERED_FILE',
     SCRIPT_TOKENS = 'SCRIPT_TOKENS',
     SUCCESS = 'SUCCESS',
@@ -102,6 +105,7 @@ export class WorkerTask<T, D, P> {
 
 export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CLOSE_PREPARED, [ConnectionID, StatementID]>
+    | WorkerRequest<WorkerRequestType.CANCEL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
@@ -116,6 +120,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.GET_FEATURE_FLAGS, null>
     | WorkerRequest<WorkerRequestType.GET_TABLE_NAMES, [number, string]>
     | WorkerRequest<WorkerRequestType.GET_VERSION, null>
+    | WorkerRequest<WorkerRequestType.GLOB_FILE_INFOS, string>
     | WorkerRequest<
           WorkerRequestType.INSERT_ARROW_FROM_IPC_STREAM,
           [number, Uint8Array, ArrowInsertOptions | undefined]
@@ -125,15 +130,15 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
     | WorkerRequest<WorkerRequestType.OPEN, DuckDBConfig>
     | WorkerRequest<WorkerRequestType.PING, null>
+    | WorkerRequest<WorkerRequestType.POLL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
-    | WorkerRequest<WorkerRequestType.GLOB_FILE_INFOS, string>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_PREPARED, [number, number, any[]]>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.SEND_PREPARED, [number, number, any[]]>
-    | WorkerRequest<WorkerRequestType.SEND_QUERY, [number, string]>
+    | WorkerRequest<WorkerRequestType.START_PENDING_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.TOKENIZE, string>;
 
 export type WorkerResponseVariant =
@@ -151,7 +156,8 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT_CHUNK, Uint8Array>
-    | WorkerResponse<WorkerResponseType.QUERY_START, Uint8Array>
+    | WorkerResponse<WorkerResponseType.QUERY_RESULT_HEADER, Uint8Array>
+    | WorkerResponse<WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL, Uint8Array | null>
     | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
     | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
     | WorkerResponse<WorkerResponseType.TABLE_NAMES, string[]>
@@ -191,5 +197,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_PREPARED, [number, number, any[]], Uint8Array>
-    | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
+    | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
+    | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>
+    | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, null>
     | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>;

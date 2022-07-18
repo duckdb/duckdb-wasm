@@ -35,8 +35,19 @@ export class DuckDBConnection {
     }
 
     /** Send a query */
-    public send<T extends { [key: string]: arrow.DataType } = any>(text: string): arrow.RecordBatchStreamReader<T> {
-        const header = this._bindings.sendQuery(this._conn, text);
+    public async send<T extends { [key: string]: arrow.DataType } = any>(
+        text: string,
+    ): Promise<arrow.RecordBatchStreamReader<T>> {
+        let header = this._bindings.startPendingQuery(this._conn, text);
+        while (header == null) {
+            header = await new Promise((resolve, reject) => {
+                try {
+                    resolve(this._bindings.pollPendingQuery(this._conn));
+                } catch (e: any) {
+                    reject(e);
+                }
+            });
+        }
         const iter = new ResultStreamIterator(this._bindings, this._conn, header);
         const reader = arrow.RecordBatchReader.from<T>(iter);
         console.assert(reader.isSync());

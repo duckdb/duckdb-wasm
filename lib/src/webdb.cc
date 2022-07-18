@@ -2,6 +2,7 @@
 
 #include "duckdb/web/webdb.h"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <functional>
@@ -160,16 +161,55 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
     }
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::SendQuery(std::string_view text) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(std::string_view text) {
     try {
         // Send the query
-        auto result = connection_.SendQuery(std::string{text});
+        auto result = connection_.PendingQuery(std::string{text});
         if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
-        return StreamQueryResult(std::move(result));
+        current_pending_query_result_ = std::move(result);
+        current_pending_query_was_canceled_ = false;
+        current_query_result_.reset();
+        current_schema_.reset();
+        current_schema_patched_.reset();
+        return PollPendingQuery();
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     } catch (...) {
         return arrow::Status{arrow::StatusCode::ExecutionError, "unknown exception"};
+    }
+}
+
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuery() {
+    if (current_pending_query_was_canceled_) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, "query was canceled"};
+    } else if (current_pending_query_result_ == nullptr) {
+        return arrow::Status{arrow::StatusCode::ExecutionError, "no active pending query"};
+    }
+    auto before = std::chrono::steady_clock::now();
+    uint64_t elapsed;
+    do {
+        switch (current_pending_query_result_->ExecuteTask()) {
+            case PendingExecutionResult::RESULT_READY:
+                return StreamQueryResult(current_pending_query_result_->Execute());
+            case PendingExecutionResult::RESULT_NOT_READY:
+                break;
+            case PendingExecutionResult::EXECUTION_ERROR: {
+                auto err = current_pending_query_result_->error;
+                current_pending_query_result_.reset();
+                return arrow::Status{arrow::StatusCode::ExecutionError, err};
+            }
+        }
+        auto after = std::chrono::steady_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
+    } while (elapsed < 20);
+    return nullptr;
+}
+
+void WebDB::Connection::CancelPendingQuery() {
+    // Only reset the pending query if it hasn't completed yet
+    if (current_query_result_ != nullptr) {
+        current_pending_query_was_canceled_ = true;
+        current_pending_query_result_.reset();
     }
 }
 

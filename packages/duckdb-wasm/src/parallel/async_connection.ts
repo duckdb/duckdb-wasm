@@ -59,7 +59,10 @@ export class AsyncDuckDBConnection {
             event: LogEvent.RUN,
             value: text,
         });
-        const header = await this._bindings.sendQuery(this._conn, text);
+        let header = await this._bindings.startPendingQuery(this._conn, text);
+        while (header == null) {
+            header = await this._bindings.pollPendingQuery(this._conn);
+        }
         const iter = new AsyncResultStreamIterator(this._bindings, this._conn, header);
         const reader = await arrow.RecordBatchReader.from<T>(iter);
         console.assert(reader.isAsync());

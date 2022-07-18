@@ -19,7 +19,7 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             it('INVALID SQL', async () => {
                 let error: Error | null = null;
                 try {
-                    conn.send('INVALID');
+                    await conn.send('INVALID');
                 } catch (e: any) {
                     error = e;
                 }

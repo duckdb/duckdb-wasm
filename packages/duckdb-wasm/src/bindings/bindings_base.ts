@@ -170,11 +170,45 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         dropResponseBuffers(this.mod);
         return res;
     }
-    /** Send a query asynchronously. Results have to be fetched with `fetchQueryResults` */
-    public sendQuery(conn: number, text: string): Uint8Array {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_send', ['number', 'string'], [conn, text]);
+    /**
+     *  Start a pending query asynchronously.
+     *  This method returns either the arrow ipc schema or null.
+     *  On null, the query has to be executed using `pollPendingQuery` until that returns != null.
+     *  Results can then be fetched using `fetchQueryResults`
+     */
+    public startPendingQuery(conn: number, text: string): Uint8Array | null {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_start', ['number', 'string'], [conn, text]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
+        }
+        if (d == null) {
+            return null;
+        }
+        const res = copyBuffer(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return res;
+    }
+    /** Poll a pending query */
+    public pollPendingQuery(conn: number): Uint8Array | null {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_poll', ['number'], [conn]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        if (d == null) {
+            return null;
+        }
+        const res = copyBuffer(this.mod, d, n);
+        dropResponseBuffers(this.mod);
+        return res;
+    }
+    /** Cancel a pending query */
+    public cancelPendingQuery(conn: number): Uint8Array | null {
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_cancel', ['number'], [conn]);
+        if (s !== StatusCode.SUCCESS) {
+            throw new Error(readString(this.mod, d, n));
+        }
+        if (d == null) {
+            return null;
         }
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
