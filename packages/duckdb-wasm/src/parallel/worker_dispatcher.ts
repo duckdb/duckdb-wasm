@@ -254,6 +254,22 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             data: result,
                         },
                         transfer,
+<<<<<<< HEAD
+=======
+                    );
+                    break;
+                }
+                case WorkerRequestType.CANCEL_PENDING_QUERY: {
+                    const result = this._bindings.cancelPendingQuery(request.data);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.SUCCESS,
+                            data: result,
+                        },
+                        [],
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
                     );
                     break;
                 }

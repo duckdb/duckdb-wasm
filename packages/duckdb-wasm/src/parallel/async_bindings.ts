@@ -422,6 +422,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         );
         return await this.postTask(task);
     }
+<<<<<<< HEAD
 
     /** Cancel a query */
     public async cancelQuery(conn: ConnectionID): Promise<void> {
@@ -431,6 +432,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         );
         await this.postTask(task);
     }
+=======
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
 
     /** Fetch query results */
     public async fetchQueryResults(conn: ConnectionID): Promise<Uint8Array> {

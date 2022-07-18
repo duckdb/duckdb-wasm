@@ -42,8 +42,12 @@ export enum WorkerRequestType {
     RUN_QUERY = 'RUN_QUERY',
     SEND_PREPARED = 'SEND_PREPARED',
 <<<<<<< HEAD
+<<<<<<< HEAD
     SEND_QUERY = 'SEND_QUERY',
     CANCEL_QUERY = 'CANCEL_QUERY',
+=======
+    START_PENDING_QUERY = 'START_PENDING_QUERY',
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
 =======
     START_PENDING_QUERY = 'START_PENDING_QUERY',
 >>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
@@ -203,8 +207,14 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_PREPARED, [number, number, any[]], Uint8Array>
 <<<<<<< HEAD
+<<<<<<< HEAD
     | WorkerTask<WorkerRequestType.SEND_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.CANCEL_QUERY, [ConnectionID], null>
+=======
+    | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
+    | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>
+    | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
 =======
     | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
     | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>

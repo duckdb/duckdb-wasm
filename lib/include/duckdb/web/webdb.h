@@ -38,8 +38,11 @@ class WebDB {
         WebDB& webdb_;
         /// The connection
         duckdb::Connection connection_;
+<<<<<<< HEAD
         /// The flag to indicate query cancel state
         bool is_cancel_state;
+=======
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
 
         /// The current pending query result (if any)
         std::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
@@ -87,12 +90,15 @@ class WebDB {
         /// Run a query and return the materialized query result
         arrow::Result<std::shared_ptr<arrow::Buffer>> RunQuery(std::string_view text);
 <<<<<<< HEAD
+<<<<<<< HEAD
         /// Send a query and return an arrow buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> SendQuery(std::string_view text);
         /// Cancel a query
         void CancelQuery() { is_cancel_state = true; };
         /// Fetch query results and return an arrow buffer
 =======
+=======
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
         /// Execute a query as pending query and return the stream schema when finished
         arrow::Result<std::shared_ptr<arrow::Buffer>> PendingQuery(std::string_view text);
         /// Poll a pending query and return the schema when finished
@@ -100,6 +106,9 @@ class WebDB {
         /// Cancel a pending query
         bool CancelPendingQuery();
         /// Fetch a data chunk from a pending query
+<<<<<<< HEAD
+>>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
+=======
 >>>>>>> cde1e027fd276d86b69d0ab8f40356b1c2abed07
         arrow::Result<std::shared_ptr<arrow::Buffer>> FetchQueryResults();
         /// Get table names
