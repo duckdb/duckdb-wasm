@@ -312,7 +312,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     },
                 });
                 const conn = await adb().connect();
-                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'select 42::integer;'));
+                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'SELECT SUM(i) FROM range(1000000) tbl(i);'));
                 expect(result).toBeNull();
                 const cancelOK = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
                 expect(cancelOK).toBeTrue();
@@ -328,6 +328,9 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                 expect(polledError.toString()).toEqual('Error: query was canceled');
                 const canceledAgain = await conn.useUnsafe((db, id) => db.cancelPendingQuery(id));
                 expect(canceledAgain).toBeFalse();
+                // Check the connection is destroyed or not when we cancel query
+                const table = await conn.query("select 42::integer;");
+                expect(table.schema.fields.length).toEqual(1);
             });
 
             it('noop cancel', async () => {
@@ -338,7 +341,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
                     },
                 });
                 const conn = await adb().connect();
-                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'select 42::integer;'));
+                const result = await conn.useUnsafe((db, id) => db.startPendingQuery(id, 'SELECT SUM(i) FROM range(1000000) tbl(i);'));
                 expect(result).toBeNull();
                 let polledHeader = null;
                 let polledError = null;
