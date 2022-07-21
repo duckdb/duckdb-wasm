@@ -78,9 +78,7 @@ export class DuckDBConnection {
 
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
-        const writer = new arrow.RecordBatchStreamWriter();
-        writer.writeAll(table);
-        const buffer = writer.toUint8Array(true);
+        const buffer = arrow.tableToIPC(table);
         this.insertArrowFromIPCStream(buffer, options);
     }
     /** Insert an arrow table from an ipc stream */
