@@ -29,7 +29,7 @@
         "@types/emscripten": "^1.39.6",
         "@types/jasmine": "^4.0.3",
         "@typescript-eslint/eslint-plugin": "^5.31.0",
-        "@typescript-eslint/parser": "^5.31.0",
+        "@typescript-eslint/parser": "^5.32.0",
         "esbuild": "^0.14.51",
         "eslint": "^8.21.0",
         "eslint-plugin-jasmine": "^4.1.3",
