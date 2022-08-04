@@ -6,7 +6,7 @@
     "dependencies": {
         "@duckdb/duckdb-wasm": "link:../duckdb-wasm",
         "apache-arrow-3": "npm:apache-arrow@^3.0.0",
-        "apache-arrow": "^8.0.0",
+        "apache-arrow": "^9.0.0",
         "arquero": "^5.0.0",
         "kleur": "^4.1.5",
         "lodash": "^4.17.21",
