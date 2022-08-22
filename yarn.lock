@@ -5210,7 +5210,7 @@ pirates@^4.0.1:
   dependencies:
     node-modules-regexp "^1.0.0"
 
-pkg-dir@4.2.0, pkg-dir@^4.1.0, pkg-dir@^4.2.0:
+pkg-dir@^4.1.0, pkg-dir@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/pkg-dir/-/pkg-dir-4.2.0.tgz#f099133df7ede422e81d1d8448270eeb3e4261f3"
   integrity sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==
@@ -5429,17 +5429,16 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
 
-puppeteer@^16.1.1:
-  version "16.1.1"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-16.1.1.tgz#1bb8ec3b86f755c34b913421b81e9cd2cfad3588"
-  integrity sha512-lBneizsNF0zi1/iog9c0ogVnvDHJG4IWpkdIAgE2oiDKhr0MJRV8JeM2xbhUwCwhDJXjjVS2TNCZdLsMp9Ojdg==
+puppeteer@^16.2.0:
+  version "16.2.0"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-16.2.0.tgz#3fc9cc0c461d3166a98562a7dcd0bf3424a0523c"
+  integrity sha512-7Au6iC98rS6WEAD110V4Bxd0iIbqoFtzz9XzkG1BSofidS1VAJ881E1+GFR7Xn2Yea0hbj8n0ErzRyseMp1Ctg==
   dependencies:
     cross-fetch "3.1.5"
     debug "4.3.4"
     devtools-protocol "0.0.1019158"
     extract-zip "2.0.1"
     https-proxy-agent "5.0.1"
-    pkg-dir "4.2.0"
     progress "2.0.3"
     proxy-from-env "1.1.0"
     rimraf "3.0.2"
