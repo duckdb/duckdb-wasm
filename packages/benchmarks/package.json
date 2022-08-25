@@ -15,7 +15,7 @@
         "web-worker": "^1.2.0"
     },
     "devDependencies": {
-        "@types/lodash": "^4.14.182",
+        "@types/lodash": "^4.14.184",
         "@types/sql.js": "^1.4.2",
         "@typescript-eslint/eslint-plugin": "^5.34.0",
         "@typescript-eslint/parser": "^5.34.0",
