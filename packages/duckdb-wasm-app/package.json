@@ -42,7 +42,7 @@
     },
     "devDependencies": {
         "@types/fontfaceobserver": "^2.1.0",
-        "@types/node": "^18.7.13",
+        "@types/node": "^18.7.14",
         "@types/react-dom": "^18.0.6",
         "@types/react-router-dom": "^5.3.3",
         "@types/react-virtualized": "^9.21.21",
@@ -70,7 +70,7 @@
         "webpack": "^5.74.0",
         "webpack-bundle-analyzer": "^4.6.1",
         "webpack-cli": "^4.10.0",
-        "webpack-dev-server": "^4.10.0",
+        "webpack-dev-server": "^4.10.1",
         "webpackbar": "^5.0.2"
     },
     "type": "module"
