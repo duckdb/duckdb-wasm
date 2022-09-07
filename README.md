@@ -8,7 +8,7 @@
 
 **DuckDB-Wasm**
 
-DuckDB-Wasm is an in-process analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. You can learn more about DuckDB-Wasm in our [VLDB publication](https://www.vldb.org/pvldb/vol15/p3574-kohn.pdf) and the [recorded talk](https://www.youtube.com/watch?v=wm82b7PlM6s).
+DuckDB-Wasm is an in-process analytical SQL database for the browser. It is powered by WebAssembly, speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Learn more about DuckDB-Wasm from our [VLDB publication](https://www.vldb.org/pvldb/vol15/p3574-kohn.pdf) or the [recorded talk](https://www.youtube.com/watch?v=wm82b7PlM6s).
 
 Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https://observablehq.com/@cmudig/duckdb), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.gg/tcvwpjfnZx).
 
