@@ -822,10 +822,10 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-1.3.2.tgz#93e25bf9ee75fe0fd80b594bc4feb0e862111b5a"
   integrity sha512-YATxVxgRqNH6nHEIsvg6k2Boc1JHI9ZbH5iWFFv/MTkchz3b1ieGDa5T0a9RznNdI0KhVbdbWSN+KWWrQZRxTw==
 
-"@types/node@*", "@types/node@>=10.0.0", "@types/node@^18.7.14":
-  version "18.7.14"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.7.14.tgz#0fe081752a3333392d00586d815485a17c2cf3c9"
-  integrity sha512-6bbDaETVi8oyIARulOE9qF1/Qdi/23z6emrUh0fNJRUmjznqrixD4MpGDdgOFk5Xb0m2H6Xu42JGdvAxaJR/wA==
+"@types/node@*", "@types/node@>=10.0.0", "@types/node@^18.7.18":
+  version "18.7.18"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.7.18.tgz#633184f55c322e4fb08612307c274ee6d5ed3154"
+  integrity sha512-m+6nTEOadJZuTPkKR/SYK3A2d7FZrgElol9UP1Kae90VVU4a6mxnPuLiIW1m4Cq4gZ/nWb9GrdVXJCoCazDAbg==
 
 "@types/node@^12.0.4":
   version "12.20.27"
@@ -2329,10 +2329,10 @@ detect-node@^2.0.4:
   resolved "https://registry.yarnpkg.com/detect-node/-/detect-node-2.1.0.tgz#c9c70775a49c3d03bc2c06d9a73be550f978f8b1"
   integrity sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==
 
-devtools-protocol@0.0.1019158:
-  version "0.0.1019158"
-  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1019158.tgz#4b08d06108a784a2134313149626ba55f030a86f"
-  integrity sha512-wvq+KscQ7/6spEV7czhnZc9RM/woz1AY+/Vpd8/h2HFMwJSdTliu7f/yr1A6vDdJfKICZsShqsYpEQbdhg8AFQ==
+devtools-protocol@0.0.1036444:
+  version "0.0.1036444"
+  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1036444.tgz#a570d3cdde61527c82f9b03919847b8ac7b1c2b9"
+  integrity sha512-0y4f/T8H9lsESV9kKP1HDUXgHxCdniFeJh6Erq+FbdOEvp/Ydp9t8kcAAM5gOd17pMrTDlFWntoHtzzeTUWKNw==
 
 di@^0.0.1:
   version "0.0.1"
@@ -3241,10 +3241,10 @@ forwarded@0.2.0:
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.2.0.tgz#2269936428aad4c15c7ebe9779a84bf0b2a81811"
   integrity sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==
 
-framer-motion@^7.2.1:
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-7.2.1.tgz#0db5992ece791cb58357787ef9c29dd76281720d"
-  integrity sha512-bt2ZqqGpPsW6UojYUa5poWQJu3sDr4Dp3IZsdVBYdKUJ8p+9PxOk1fYRAT8lTGGmaC5HFoKrbDXQeKWGAKZz9g==
+framer-motion@^7.3.4:
+  version "7.3.4"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-7.3.4.tgz#d3d4188102d1c8b8f24c55b698853d34de2ff18e"
+  integrity sha512-TE0qQtrJ0laUb6Gzt+RBbHy7MmS5TrUshhjwWTpZP/MIBQ8HWrgJ6GpNCu6GOYayNVcgbvAWO33tRVEAcw/52w==
   dependencies:
     "@motionone/dom" "10.13.1"
     framesync "6.1.2"
@@ -5435,14 +5435,14 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
 
-puppeteer@^17.0.0:
-  version "17.0.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-17.0.0.tgz#85fea801a7b8b8c9e2913b1491e98c867be49a6b"
-  integrity sha512-T2rdzlPxnPezF218kywFP3O+0YI5/8Kl8riNUicGb+KuMyDTrqRjhSOSDp6coQ1T4QYPBARTFp4EMBepMOzAQA==
+puppeteer@^17.1.3:
+  version "17.1.3"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-17.1.3.tgz#2814cf221925e19c681c69aa97401a68b30240c9"
+  integrity sha512-tVtvNSOOqlq75rUgwLeDAEQoLIiBqmRg0/zedpI6fuqIocIkuxG23A7FIl1oVSkuSMMLgcOP5kVhNETmsmjvPw==
   dependencies:
     cross-fetch "3.1.5"
     debug "4.3.4"
-    devtools-protocol "0.0.1019158"
+    devtools-protocol "0.0.1036444"
     extract-zip "2.0.1"
     https-proxy-agent "5.0.1"
     progress "2.0.3"
@@ -6636,10 +6636,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typedoc@^0.23.13:
-  version "0.23.13"
-  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.23.13.tgz#a522ed86eb326c918a05d4acad4e6d815cd1b1f8"
-  integrity sha512-47VgWyZ5Q8g5dtJxjIHvFqX7ZD+YQRLAFRhLjt6v9KW0//feHtLUrbukHkKcvQuua1xQtdvkQ17fCjmF7qLXlg==
+typedoc@^0.23.14:
+  version "0.23.14"
+  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.23.14.tgz#d3af50b38fe98210ac39e112b5892f9d88546c93"
+  integrity sha512-s2I+ZKBET38EctZvbXp2GooHrNaKjWZkrwGEK/sttnOGiKJqU0vHrsdcwLgKZGuo2aedNL3RRPj1LnAAeYscig==
   dependencies:
     lunr "^2.3.9"
     marked "^4.0.19"

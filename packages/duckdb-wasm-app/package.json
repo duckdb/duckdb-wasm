@@ -23,7 +23,7 @@
         "apache-arrow": "^9.0.0",
         "bootstrap": "^5.2.0",
         "classnames": "^2.3.1",
-        "framer-motion": "^7.2.1",
+        "framer-motion": "^7.3.4",
         "immutable": "^4.1.0",
         "rc-scrollbars": "^1.1.5",
         "react": "^18.2.0",
@@ -42,7 +42,7 @@
     },
     "devDependencies": {
         "@types/fontfaceobserver": "^2.1.0",
-        "@types/node": "^18.7.14",
+        "@types/node": "^18.7.18",
         "@types/react-dom": "^18.0.6",
         "@types/react-router-dom": "^5.3.3",
         "@types/react-virtualized": "^9.21.21",
