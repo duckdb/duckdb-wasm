@@ -3241,10 +3241,10 @@ forwarded@0.2.0:
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.2.0.tgz#2269936428aad4c15c7ebe9779a84bf0b2a81811"
   integrity sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==
 
-framer-motion@^7.2.1:
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-7.2.1.tgz#0db5992ece791cb58357787ef9c29dd76281720d"
-  integrity sha512-bt2ZqqGpPsW6UojYUa5poWQJu3sDr4Dp3IZsdVBYdKUJ8p+9PxOk1fYRAT8lTGGmaC5HFoKrbDXQeKWGAKZz9g==
+framer-motion@^7.3.5:
+  version "7.3.5"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-7.3.5.tgz#9a3d30658290a473acca268f19c3b65e4c6aeb70"
+  integrity sha512-JrLLVCi59LMI3+ZvSSbxf/Z7SOIdYRZrgdkUvJkzyT2RXu34HtGy26n41jNrcD5K85boqlZhGTbfqnAIfMHRLQ==
   dependencies:
     "@motionone/dom" "10.13.1"
     framesync "6.1.2"
