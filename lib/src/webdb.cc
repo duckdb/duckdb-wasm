@@ -28,6 +28,7 @@
 #include "arrow/type_fwd.h"
 #include "duckdb.hpp"
 #include "duckdb/common/arrow/arrow.hpp"
+#include "duckdb/common/arrow/arrow_converter.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
@@ -105,7 +106,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    result->ToArrowSchema(&raw_schema, result->types, result->names, timezone_config);
+    ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, timezone_config);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
 
     // Patch the schema (if necessary)
@@ -118,7 +119,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
         // Import the data chunk as record batch
         ArrowArray array;
-        chunk->ToArrowArray(&array);
+        ArrowConverter::ToArrowArray(*chunk, &array);
         // Import the record batch
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
         // Patch the record batch
@@ -139,8 +140,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Import the schema
     ArrowSchema raw_schema;
-    current_query_result_->ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names,
-                                         timezone_config);
+    ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names,
+                                  timezone_config);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
     current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
 
@@ -152,8 +153,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
     try {
         // Send the query
         auto result = connection_.SendQuery(std::string{text});
-        if (!result->success) {
-            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
+        if (result->HasError()) {
+            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
         }
         return MaterializeQueryResult(std::move(result));
     } catch (std::exception& e) {
@@ -167,7 +168,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(st
     try {
         // Send the query
         auto result = connection_.PendingQuery(std::string{text});
-        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
+        if (result->HasError()) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
         current_pending_query_result_ = std::move(result);
         current_pending_query_was_canceled_ = false;
         current_query_result_.reset();
@@ -201,7 +202,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
             case PendingExecutionResult::RESULT_NOT_READY:
                 break;
             case PendingExecutionResult::EXECUTION_ERROR: {
-                auto err = current_pending_query_result_->error;
+                auto err = current_pending_query_result_->GetError();
                 current_pending_query_result_.reset();
                 return arrow::Status{arrow::StatusCode::ExecutionError, err};
             }
@@ -232,8 +233,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
         }
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
-        if (!current_query_result_->success) {
-            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(current_query_result_->error)};
+        if (current_query_result_->HasError()) {
+            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(current_query_result_->GetError())};
         }
         // Reached end?
         if (!chunk) {
@@ -245,7 +246,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
 
         // Serialize the record batch
         ArrowArray array;
-        chunk->ToArrowArray(&array);
+        ArrowConverter::ToArrowArray(*chunk, &array);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
         // Patch the record batch
         ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_->query));
@@ -281,7 +282,7 @@ arrow::Result<std::string> WebDB::Connection::GetTableNames(std::string_view tex
 arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_view text) {
     try {
         auto prep = connection_.Prepare(std::string{text});
-        if (!prep->success) return arrow::Status{arrow::StatusCode::ExecutionError, prep->error};
+        if (prep->HasError()) return arrow::Status{arrow::StatusCode::ExecutionError, prep->GetError()};
         auto id = next_prepared_statement_id_++;
 
         // Wrap around if maximum exceeded
@@ -324,7 +325,7 @@ arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePr
         }
 
         auto result = stmt->second->Execute(values);
-        if (!result->success) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->error)};
+        if (result->HasError()) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
         return result;
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
@@ -414,9 +415,9 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     auto data_size = chunk.size();
     vector<string> type_desc;
 
-    // Normalify the data chunk
-    chunk.Normalify();
-    out.Normalify(chunk.size());
+    // Normalify the data chunk - # TODO use UnifiedFormat
+    chunk.Flatten();
+    out.Flatten(chunk.size());
 
     // TODO create the descriptor in the bind phase for performance
     // TODO special handling if all arguments are non-NULL for performance
@@ -803,9 +804,9 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(buffered_fs);
-        db_config.maximum_threads = config_->maximum_threads;
-        db_config.use_temporary_directory = false;
-        db_config.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
+        db_config.options.maximum_threads = config_->maximum_threads;
+        db_config.options.use_temporary_directory = false;
+        db_config.options.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         duckdb_web_parquet_init(db.get());
         duckdb_web_fts_init(db.get());
