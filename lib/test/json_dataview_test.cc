@@ -34,7 +34,7 @@ TEST(JSONDataView, Select1) {
     duckdb::Connection conn{db};
 
     auto result = conn.SendQuery("SELECT {'foo': 42, 'bar': '43'}");
-    ASSERT_TRUE(result->success);
+    ASSERT_FALSE(result->HasError());
     auto chunk = result->Fetch();
 
     additional_buffers_t buffers;
