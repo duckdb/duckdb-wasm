@@ -8,7 +8,7 @@
 #include "arrow/status.h"
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
-#include "duckdb/common/arrow.hpp"
+#include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/json_analyzer.h"

@@ -27,7 +27,7 @@
 #include "arrow/status.h"
 #include "arrow/type_fwd.h"
 #include "duckdb.hpp"
-#include "duckdb/common/arrow.hpp"
+#include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
