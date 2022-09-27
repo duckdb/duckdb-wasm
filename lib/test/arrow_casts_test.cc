@@ -4,6 +4,7 @@
 
 #include "arrow/c/bridge.h"
 #include "arrow/status.h"
+#include "duckdb/common/arrow/arrow_converter.hpp"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
@@ -19,12 +20,12 @@ TEST(ArrowCasts, PatchBigInt) {
     WebDB::Connection conn{*db};
 
     auto result = conn.connection().Query("SELECT (v & 127)::BIGINT FROM generate_series(0, 10) as t(v);");
-    ASSERT_TRUE(result->success);
+    ASSERT_FALSE(result->HasError());
 
     // Configure the output writer
     ArrowSchema raw_schema;
     std::string config_timezone;
-    result->ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
+    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -41,7 +42,7 @@ TEST(ArrowCasts, PatchBigInt) {
 
     // Import the record batch
     ArrowArray array;
-    chunk->ToArrowArray(&array);
+    duckdb::ArrowConverter::ToArrowArray(*chunk, &array);
     auto maybe_batch = arrow::ImportRecordBatch(&array, schema);
     ASSERT_TRUE(maybe_batch.ok());
     auto batch = maybe_batch.MoveValueUnsafe();
@@ -64,12 +65,12 @@ TEST(ArrowCasts, PatchTimestamp) {
     WebDB::Connection conn{*db};
 
     auto result = conn.connection().Query("SELECT TIMESTAMP '1992-09-20 11:30:00'");
-    ASSERT_TRUE(result->success);
+    ASSERT_FALSE(result->HasError());
 
     // Configure the output writer
     ArrowSchema raw_schema;
     std::string config_timezone;
-    result->ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
+    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -86,7 +87,7 @@ TEST(ArrowCasts, PatchTimestamp) {
 
     // Import the record batch
     ArrowArray array;
-    chunk->ToArrowArray(&array);
+    duckdb::ArrowConverter::ToArrowArray(*chunk, &array);
     auto maybe_batch = arrow::ImportRecordBatch(&array, schema);
     ASSERT_TRUE(maybe_batch.ok());
     auto batch = maybe_batch.MoveValueUnsafe();
