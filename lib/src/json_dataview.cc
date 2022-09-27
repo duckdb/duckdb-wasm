@@ -62,7 +62,7 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
 
         // Make sure we only have flat vectors hereafter (for now)
         auto& chunk_vec = chunk.data[col_idx];
-        chunk_vec.Normalify(chunk.size());
+        // FIXME chunk_vec.Normalify(chunk.size());
 
         // Do a post-order DFS traversal
         std::vector<std::tuple<bool, duckdb::Vector*, rapidjson::Value, size_t>> pending;
@@ -89,8 +89,9 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
             desc.AddMember("physicalType", TypeIdToString(vec_type.InternalType()), allocator);
 
             // Create validity vector
-            vec->Normalify(chunk.size());
-            auto& validity = FlatVector::Validity(*vec);
+            UnifiedVectorFormat unified_chunk_vec;
+            chunk_vec.ToUnifiedFormat(chunk.size(), unified_chunk_vec);
+            auto& validity = unified_chunk_vec.validity;
             auto [validity_ptr, validity_idx] =
                 create_additional_buffer<uint8_t>(data_ptrs, additional_buffers, chunk.size());
             for (idx_t row_idx = 0; row_idx < chunk.size(); row_idx++) {
