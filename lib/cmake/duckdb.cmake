@@ -37,6 +37,7 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libduckdb_fmt.a
     <INSTALL_DIR>/lib/libduckdb_hyperloglog.a
     <INSTALL_DIR>/lib/libduckdb_miniz.a
+    <INSTALL_DIR>/lib/libduckdb_mbedtls.a
     <INSTALL_DIR>/lib/libduckdb_pg_query.a
     <INSTALL_DIR>/lib/libduckdb_utf8proc.a
     <INSTALL_DIR>/lib/libduckdb_fastpforlib.a
@@ -65,6 +66,7 @@ target_link_libraries(
   INTERFACE ${install_dir}/lib/libduckdb_fmt.a
   INTERFACE ${install_dir}/lib/libduckdb_hyperloglog.a
   INTERFACE ${install_dir}/lib/libduckdb_miniz.a
+  INTERFACE ${install_dir}/lib/libduckdb_mbedtls.a
   INTERFACE ${install_dir}/lib/libduckdb_pg_query.a
   INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
   INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
