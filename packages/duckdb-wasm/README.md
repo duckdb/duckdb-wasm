@@ -25,7 +25,7 @@ const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
 
 const worker_url = URL.createObjectURL(
-  new Blob([`importScripts("${bundle.mainWorker!}");`], {type: 'text/javascript'})
+  new Blob([`importScripts("${bundle.mainWorker}");`], {type: 'text/javascript'})
 );
 
 // Instantiate the asynchronus version of DuckDB-wasm
