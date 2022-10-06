@@ -45,7 +45,7 @@ TEST_P(JSONInsertTestSuite, TestImport) {
 
     auto result = conn.connection().Query(std::string{test.query});
     ASSERT_TRUE(!result->HasError()) << result->GetError();
-    for(idx_t col_idx = 0; col_idx < test.expected_output.size(); col_idx++) {
+    for (idx_t col_idx = 0; col_idx < test.expected_output.size(); col_idx++) {
         ASSERT_TRUE(CHECK_COLUMN(*result, col_idx, test.expected_output[col_idx]));
     }
 }

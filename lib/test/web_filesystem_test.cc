@@ -20,7 +20,7 @@ namespace duckdb {
 namespace web {
 namespace test {
 
-bool CHECK_COLUMN(MaterializedQueryResult &result, uint32_t column, vector<Value> values) {
+bool CHECK_COLUMN(MaterializedQueryResult& result, uint32_t column, vector<Value> values) {
     if (result.HasError()) {
         printf("CHECK_COLUMN: query failed with error %s\n", result.GetError().c_str());
     }
@@ -31,12 +31,15 @@ bool CHECK_COLUMN(MaterializedQueryResult &result, uint32_t column, vector<Value
     if (column >= result.ColumnCount()) {
         printf("CHECK_COLUMN: Column count out of range\n");
     }
-    for(uint32_t row_idx = 0; row_idx < values.size(); row_idx++) {
+    for (uint32_t row_idx = 0; row_idx < values.size(); row_idx++) {
         auto actual_val = result.GetValue(column, row_idx);
         if (!Value::ValuesAreEqual(values[row_idx], actual_val)) {
             auto expected_str = values[row_idx].ToString();
             auto actual_str = actual_val.ToString();
-            printf("CHECK_COLUMN: Difference between expected value \"%s\" and actual value \"%s\" at position col:%d, row:%d\n", expected_str.c_str(), actual_str.c_str(), int(column), int(row_idx));
+            printf(
+                "CHECK_COLUMN: Difference between expected value \"%s\" and actual value \"%s\" at position col:%d, "
+                "row:%d\n",
+                expected_str.c_str(), actual_str.c_str(), int(column), int(row_idx));
             return false;
         }
     }
@@ -46,7 +49,6 @@ bool CHECK_COLUMN(MaterializedQueryResult &result, uint32_t column, vector<Value
 }  // namespace test
 }  // namespace web
 }  // namespace duckdb
-
 
 namespace {
 
@@ -59,7 +61,9 @@ TEST(WebFileSystemTest, LoadParquet) {
     ss << "SELECT * FROM parquet_scan('" << data.string() << "');";
     auto result = conn.connection().Query(ss.str());
     ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
-    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(
+        *result, 1,
+        {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
     ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 }
 
@@ -75,7 +79,8 @@ TEST(WebFileSystemTest, TestTPCHScans) {
 
         ss << "SELECT * FROM parquet_scan('" << data.string() << "')";
         auto stream = conn.connection().SendQuery(ss.str());
-        ASSERT_TRUE(!stream->HasError()) << stream->GetError();;
+        ASSERT_TRUE(!stream->HasError()) << stream->GetError();
+        ;
         for (auto chunk = stream->Fetch(); !!chunk && chunk->size(); chunk = stream->Fetch())
             ;
     }

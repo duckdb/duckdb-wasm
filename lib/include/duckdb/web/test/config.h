@@ -2,6 +2,7 @@
 #define INCLUDE_DUCKDB_WEB_TEST_CONFIG_H_
 
 #include <filesystem>
+
 #include "duckdb.hpp"
 
 namespace duckdb {
