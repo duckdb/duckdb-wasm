@@ -310,7 +310,7 @@ export function testHTTPFSAsync(
                 conn!.query(
                     `COPY (SELECT * FROM range(2000,2010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,
                 ),
-            ).toBeRejectedWithError('File is not opened in write mode');
+            ).toBeRejectedWithError('Invalid Error: File is not opened in write mode');
         });
     });
 }
