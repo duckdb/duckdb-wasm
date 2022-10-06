@@ -288,8 +288,7 @@ TEST(AllTypesTest, FullRangeTypes) {
     AssertSimpleTypeCorrect<arrow::Date32Type, int32_t>("date", -2147483646, 2147483646, batch);
 
     AssertSimpleTypeCorrect<arrow::StringType>("varchar", "🦆🦆🦆🦆🦆🦆", "goose", batch);
-    AssertSimpleTypeCorrect<arrow::BinaryType>("blob", "thisisalongblob\x00withnullbytes"s, "\x00\x00\x00\x61"s,
-                                               batch);
+    AssertSimpleTypeCorrect<arrow::BinaryType>("blob", "thisisalongblob\x00withnullbytes"s, "\x00\x00\x00\x61"s, batch);
 
     // Decimal types
     AssertParamTypeCorrect<arrow::Decimal128Type>("dec_4_1", arrow::Decimal128("-999.9"), arrow::Decimal128("999.9"),

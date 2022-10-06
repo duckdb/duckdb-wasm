@@ -27,7 +27,9 @@ TEST(ParquetLoadTest, LoadParquet) {
     ss << "SELECT * FROM parquet_scan('" << data.string() << "');";
     auto result = conn.connection().Query(ss.str());
     ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
-    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(
+        *result, 1,
+        {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
     ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 }
 
@@ -41,12 +43,16 @@ TEST(ParquetLoadTest, LoadParquetTwice) {
     auto query = ss.str();
     auto result = conn.connection().Query(query);
     ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
-    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(
+        *result, 1,
+        {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
     ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 
     result = conn.connection().Query(query);
     ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
-    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(
+        *result, 1,
+        {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
     ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 }
 
