@@ -9,7 +9,9 @@
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
 
+using namespace duckdb;
 using namespace duckdb::web;
+using namespace duckdb::web::test;
 
 namespace {
 
@@ -23,7 +25,7 @@ struct JSONInsertTest {
     std::string_view input;
     std::string_view options;
     std::string_view query;
-    std::string expected_output;
+    vector<vector<Value>> expected_output;
 };
 
 struct JSONInsertTestSuite : public testing::TestWithParam<JSONInsertTest> {};
@@ -42,7 +44,10 @@ TEST_P(JSONInsertTestSuite, TestImport) {
     ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
 
     auto result = conn.connection().Query(std::string{test.query});
-    ASSERT_STREQ(result->ToString().c_str(), std::string{test.expected_output}.c_str());
+    ASSERT_TRUE(!result->HasError()) << result->GetError();
+    for(idx_t col_idx = 0; col_idx < test.expected_output.size(); col_idx++) {
+        ASSERT_TRUE(CHECK_COLUMN(*result, col_idx, test.expected_output[col_idx]));
+    }
 }
 
 // clang-format off
@@ -59,15 +64,11 @@ static std::vector<JSONInsertTest> JSON_IMPORT_TEST = {
             "name": "foo"
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	INTEGER	INTEGER	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "cols_integers",
@@ -81,15 +82,11 @@ INTEGER	INTEGER	INTEGER
             "name": "foo"
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	INTEGER	INTEGER	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_1",
@@ -109,15 +106,11 @@ INTEGER	INTEGER	INTEGER
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	VARCHAR	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
 };
 // clang-format on
