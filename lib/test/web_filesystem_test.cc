@@ -80,7 +80,6 @@ TEST(WebFileSystemTest, TestTPCHScans) {
         ss << "SELECT * FROM parquet_scan('" << data.string() << "')";
         auto stream = conn.connection().SendQuery(ss.str());
         ASSERT_TRUE(!stream->HasError()) << stream->GetError();
-        ;
         for (auto chunk = stream->Fetch(); !!chunk && chunk->size(); chunk = stream->Fetch())
             ;
     }
