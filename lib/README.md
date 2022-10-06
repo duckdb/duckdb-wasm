@@ -17,3 +17,10 @@ cd ..
 ```
 
 A standard C++ debugger can be attached to the `tester` program (e.g. `lldb -- ./tester`).
+
+# Formatting
+The following script can be run to format the code.
+
+```bash
+python3 ./scripts/run_clang_format.py --exclude ./lib/build --exclude ./lib/third_party -r ./lib/ -i
+```
