@@ -11,7 +11,9 @@
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
 
+using namespace duckdb;
 using namespace duckdb::web;
+using namespace duckdb::web::test;
 namespace fs = std::filesystem;
 
 namespace {
@@ -38,7 +40,7 @@ struct CSVInsertTest {
     std::string_view input;
     std::string_view options;
     std::string_view query;
-    std::string expected_output;
+    vector<vector<Value>> expected_output;
 };
 
 struct CSVInsertTestSuite : public testing::TestWithParam<CSVInsertTest> {};
@@ -57,7 +59,10 @@ TEST_P(CSVInsertTestSuite, TestImport) {
     ASSERT_TRUE(maybe_ok.ok()) << maybe_ok.message();
 
     auto result = conn.connection().Query(std::string{test.query});
-    ASSERT_STREQ(result->ToString().c_str(), std::string{test.expected_output}.c_str());
+    ASSERT_TRUE(!result->HasError()) << result->GetError();
+    for(idx_t col_idx = 0; col_idx < test.expected_output.size(); col_idx++) {
+        ASSERT_TRUE(CHECK_COLUMN(*result, col_idx, test.expected_output[col_idx]));
+    }
 }
 
 // clang-format off
@@ -74,15 +79,11 @@ static std::vector<CSVInsertTest> CSV_IMPORT_TEST = {
             "name": "foo"
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	INTEGER	INTEGER	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "integers_auto_2",
@@ -96,15 +97,11 @@ INTEGER	INTEGER	INTEGER
             "name": "foo"
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	INTEGER	INTEGER	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT",
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_1",
@@ -123,15 +120,11 @@ INTEGER	INTEGER	INTEGER
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	INTEGER	INTEGER	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_2",
@@ -152,15 +145,11 @@ INTEGER	INTEGER	INTEGER
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	BIGINT	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_3",
@@ -180,15 +169,11 @@ INTEGER	SMALLINT	BIGINT
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	BIGINT	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_4",
@@ -208,15 +193,11 @@ INTEGER	SMALLINT	BIGINT
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	VARCHAR	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_5",
@@ -237,15 +218,11 @@ INTEGER	SMALLINT	VARCHAR
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	VARCHAR	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_6",
@@ -267,15 +244,11 @@ INTEGER	SMALLINT	VARCHAR
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	VARCHAR	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {3, 6, 9}
+        }
     },
     {
         .name = "options_7",
@@ -298,15 +271,11 @@ INTEGER	SMALLINT	VARCHAR
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	DATE	
-[ Rows: 3]
-1	2	2020-01-02	
-4	5	2020-01-03	
-7	8	2020-01-04	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {"2020-01-02", "2020-01-03", "2020-01-04"}
+        }
     },
     {
         .name = "options_8",
@@ -329,15 +298,11 @@ INTEGER	SMALLINT	DATE
             ]
         })JSON",
         .query = "SELECT * FROM main.foo",
-        .expected_output = 
-R"TXT(a	b	c	
-INTEGER	SMALLINT	TIMESTAMP	
-[ Rows: 3]
-1	2	1992-03-02 20:32:45	
-4	5	1992-03-02 20:32:50	
-7	8	1992-03-02 20:32:55	
-
-)TXT"
+        .expected_output = {
+            {1, 4, 7},
+            {2, 5, 8},
+            {"1992-03-02 20:32:45", "1992-03-02 20:32:50", "1992-03-02 20:32:55"}
+        }
     }
 };
 // clang-format on
@@ -368,15 +333,9 @@ TEST(CSVExportTest, TestExport) {
         "name": "foo2"
     })JSON");
     auto result = conn.connection().Query("SELECT * FROM foo2");
-    ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(a	b	c	
-INTEGER	INTEGER	INTEGER	
-[ Rows: 3]
-1	2	3	
-4	5	6	
-7	8	9	
-
-)TXT");
+    ASSERT_TRUE(CHECK_COLUMN(*result, 0, {1, 4, 7}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {2, 5, 8}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 2, {3, 6, 9}));
 }
 
 }  // namespace

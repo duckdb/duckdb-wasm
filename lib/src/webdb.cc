@@ -520,7 +520,6 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
         params.push_back(
             duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&ArrowIPCStreamBufferReader::CreateStream)));
         params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&ArrowIPCStreamBufferReader::GetSchema)));
-        params.push_back(duckdb::Value::UBIGINT(1000000));
         auto func = connection_.TableFunction("arrow_scan", params);
 
         /// Create or insert
@@ -642,7 +641,6 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
         params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(&table_reader)));
         params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(json::TableReader::CreateStream)));
         params.push_back(duckdb::Value::POINTER(reinterpret_cast<uintptr_t>(json::TableReader::GetSchema)));
-        params.push_back(duckdb::Value::UBIGINT(1000000));
         auto func = connection_.TableFunction("arrow_scan", params);
 
         /// Create or insert

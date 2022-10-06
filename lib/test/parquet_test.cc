@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"
 
 using namespace duckdb::web;
+using namespace duckdb::web::test;
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -25,20 +26,9 @@ TEST(ParquetLoadTest, LoadParquet) {
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
     ss << "SELECT * FROM parquet_scan('" << data.string() << "');";
     auto result = conn.connection().Query(ss.str());
-    ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(matrnr	name	semester	
-INTEGER	VARCHAR	INTEGER	
-[ Rows: 8]
-24002	Xenokrates	18	
-25403	Jonas	12	
-26120	Fichte	10	
-26830	Aristoxenos	8	
-27550	Schopenhauer	6	
-28106	Carnap	3	
-29120	Theophrastos	2	
-29555	Feuerbach	2	
-
-)TXT");
+    ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 }
 
 TEST(ParquetLoadTest, LoadParquetTwice) {
@@ -50,35 +40,14 @@ TEST(ParquetLoadTest, LoadParquetTwice) {
     ss << "SELECT * FROM parquet_scan('" << data.string() << "');";
     auto query = ss.str();
     auto result = conn.connection().Query(query);
-    ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(matrnr	name	semester	
-INTEGER	VARCHAR	INTEGER	
-[ Rows: 8]
-24002	Xenokrates	18	
-25403	Jonas	12	
-26120	Fichte	10	
-26830	Aristoxenos	8	
-27550	Schopenhauer	6	
-28106	Carnap	3	
-29120	Theophrastos	2	
-29555	Feuerbach	2	
+    ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 
-)TXT");
     result = conn.connection().Query(query);
-    ASSERT_STREQ(result->ToString().c_str(),
-                 R"TXT(matrnr	name	semester	
-INTEGER	VARCHAR	INTEGER	
-[ Rows: 8]
-24002	Xenokrates	18	
-25403	Jonas	12	
-26120	Fichte	10	
-26830	Aristoxenos	8	
-27550	Schopenhauer	6	
-28106	Carnap	3	
-29120	Theophrastos	2	
-29555	Feuerbach	2	
-
-)TXT");
+    ASSERT_TRUE(CHECK_COLUMN(*result, 0, {24002, 25403, 26120, 26830, 27550, 28106, 29120, 29555}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 1, {"Xenokrates", "Jonas", "Fichte", "Aristoxenos", "Schopenhauer", "Carnap", "Theophrastos", "Feuerbach"}));
+    ASSERT_TRUE(CHECK_COLUMN(*result, 2, {18, 12, 10, 8, 6, 3, 2, 2}));
 }
 
 TEST(FileSystemBufferTest, FlushFrameMemoryBugRegression) {
