@@ -62,6 +62,8 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
     for (idx_t col_idx = 0; col_idx < chunk.ColumnCount(); col_idx++) {
         rapidjson::Value col_desc;
 
+        auto& chunk_vec = chunk.data[col_idx];
+
         // Do a post-order DFS traversal
         std::vector<std::tuple<bool, duckdb::Vector*, rapidjson::Value, size_t>> pending;
         pending.push_back({false, &chunk_vec, rapidjson::Value(rapidjson::kObjectType), 0});
