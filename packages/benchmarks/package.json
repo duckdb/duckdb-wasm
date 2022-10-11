@@ -11,12 +11,12 @@
         "kleur": "^4.1.5",
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
-        "sql.js": "^1.7.0",
+        "sql.js": "^1.8.0",
         "web-worker": "^1.2.0"
     },
     "devDependencies": {
         "@types/lodash": "^4.14.186",
-        "@types/sql.js": "^1.4.2",
+        "@types/sql.js": "^1.4.4",
         "@typescript-eslint/eslint-plugin": "^5.36.1",
         "@typescript-eslint/parser": "^5.40.0",
         "assert": "^2.0.0",
