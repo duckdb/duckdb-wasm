@@ -9,6 +9,9 @@ extern "C" {
     #[wasm_bindgen(js_name = "ITerminalOptions")]
     pub type TerminalOptions;
 
+    #[wasm_bindgen(method, setter, js_name = "allowProposedApi")]
+    pub fn set_allow_proposed_api(this: &TerminalOptions, val: bool);
+
     #[wasm_bindgen(method, setter, js_name = "allowTransparency")]
     pub fn set_allow_transparency(this: &TerminalOptions, val: bool);
 
@@ -546,13 +549,13 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "write")]
     pub fn write(this: &Terminal, data: &str);
 
-    #[wasm_bindgen(method, js_name = "writeUtf8")]
+    #[wasm_bindgen(method, js_name = "write")]
     pub fn write_utf8(this: &Terminal, data: &[u8]);
 
     #[wasm_bindgen(method, js_name = "write")]
     pub fn write_callback(this: &Terminal, data: &str, callback: &Function); // () => void
 
-    #[wasm_bindgen(method, js_name = "writeUtf8")]
+    #[wasm_bindgen(method, js_name = "write")]
     pub fn write_utf8_callback(this: &Terminal, data: &[u8], callback: &Function); // () => void
 
     // ----------
@@ -585,33 +588,6 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "getOption")]
     pub fn get_any_option(this: &Terminal, key: &str) -> JsValue;
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_string_option(this: &Terminal, key: StringOptionKey, value: &str);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_font_option(this: &Terminal, key: FontWeightKey, value: FontWeight);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_log_level_option(this: &Terminal, key: LogLevelKey, value: LogLevel);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_bell_style_option(this: &Terminal, key: BellStyleKey, value: BellStyle);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_cursor_option(this: &Terminal, key: CursorStyleKey, value: CursorStyle);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_bool_option(this: &Terminal, key: BoolOptionKey, value: bool);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_number_option(this: &Terminal, key: NumberOptionKey, value: u32);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_theme_option(this: &Terminal, key: ThemeKey, value: Theme);
-
-    #[wasm_bindgen(method, js_name = "setOption")]
-    pub fn set_any_option(this: &Terminal, key: &str, value: JsValue);
 
     #[wasm_bindgen(method, js_name = "refresh")]
     pub fn refresh(this: &Terminal, start: u32, end: u32);

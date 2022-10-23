@@ -31,6 +31,7 @@ pub fn embed(
             .with_font_size(14) // XXX Make this dynamic based on the device width
             .with_draw_bold_text_in_bright_colors(true)
             .with_right_click_selects_word(true)
+            .with_proposed_api(true)
             .with_theme(
                 Theme::new()
                     .with_bright_yellow("#FFF000")
@@ -38,7 +39,6 @@ pub fn embed(
                     .with_background(&options.get_bg()),
             ),
     );
-    terminal.set_any_option("cursorBlink", true.into());
     terminal.open(elem);
 
     if options.with_webgl() {
