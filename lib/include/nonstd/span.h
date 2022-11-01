@@ -36,7 +36,7 @@
 #define span_HAVE_TWEAK_HEADER 1
 #else
 #define span_HAVE_TWEAK_HEADER 0
-//# pragma message("span.hpp: Note: Tweak header not supported.")
+// # pragma message("span.hpp: Note: Tweak header not supported.")
 #endif
 
 // span selection and configuration:
@@ -553,11 +553,19 @@ using std::remove_volatile;
 
 #else
 
-template <class T> struct remove_const { typedef T type; };
-template <class T> struct remove_const<T const> { typedef T type; };
+template <class T> struct remove_const {
+    typedef T type;
+};
+template <class T> struct remove_const<T const> {
+    typedef T type;
+};
 
-template <class T> struct remove_volatile { typedef T type; };
-template <class T> struct remove_volatile<T volatile> { typedef T type; };
+template <class T> struct remove_volatile {
+    typedef T type;
+};
+template <class T> struct remove_volatile<T volatile> {
+    typedef T type;
+};
 
 template <class T> struct remove_cv {
     typedef typename std11::remove_volatile<typename std11::remove_const<T>::type>::type type;
@@ -613,21 +621,17 @@ using std::size;
 
 #elif span_HAVE_CONSTRAINED_SPAN_CONTAINER_CTOR
 
-template <typename T, std::size_t N> inline span_constexpr auto size(const T (&)[N]) span_noexcept -> size_t {
-    return N;
-}
+template <typename T, std::size_t N> inline span_constexpr auto size(const T (&)[N]) span_noexcept->size_t { return N; }
 
 template <typename C> inline span_constexpr auto size(C const& cont) -> decltype(cont.size()) { return cont.size(); }
 
-template <typename T, std::size_t N> inline span_constexpr auto data(T (&arr)[N]) span_noexcept -> T* {
-    return &arr[0];
-}
+template <typename T, std::size_t N> inline span_constexpr auto data(T (&arr)[N]) span_noexcept->T* { return &arr[0]; }
 
 template <typename C> inline span_constexpr auto data(C& cont) -> decltype(cont.data()) { return cont.data(); }
 
 template <typename C> inline span_constexpr auto data(C const& cont) -> decltype(cont.data()) { return cont.data(); }
 
-template <typename E> inline span_constexpr auto data(std::initializer_list<E> il) span_noexcept -> E const* {
+template <typename E> inline span_constexpr auto data(std::initializer_list<E> il) span_noexcept->E const* {
     return il.begin();
 }
 
@@ -1316,13 +1320,13 @@ inline span_constexpr span<const T, static_cast<extent_t>(N)> make_span(std::arr
 #if span_USES_STD_SPAN || (span_HAVE(CONSTRAINED_SPAN_CONTAINER_CTOR) && span_HAVE(AUTO))
 
 template <class Container, class EP = decltype(std17::data(std::declval<Container&>()))>
-inline span_constexpr auto make_span(Container& cont) span_noexcept -> span<typename std::remove_pointer<EP>::type> {
+inline span_constexpr auto make_span(Container& cont) span_noexcept->span<typename std::remove_pointer<EP>::type> {
     return span<typename std::remove_pointer<EP>::type>(cont);
 }
 
 template <class Container, class EP = decltype(std17::data(std::declval<Container&>()))>
-inline span_constexpr auto make_span(Container const& cont) span_noexcept
-    -> span<const typename std::remove_pointer<EP>::type> {
+inline span_constexpr auto make_span(Container const& cont)
+    span_noexcept->span<const typename std::remove_pointer<EP>::type> {
     return span<const typename std::remove_pointer<EP>::type>(cont);
 }
 
@@ -1371,12 +1375,12 @@ using span_lite::make_span;
 namespace nonstd {
 namespace span_lite {
 
-template <class T> inline span_constexpr auto byte_span(T& t) span_noexcept -> span<std17::byte, span_sizeof(T)> {
+template <class T> inline span_constexpr auto byte_span(T& t) span_noexcept->span<std17::byte, span_sizeof(T)> {
     return span<std17::byte, span_sizeof(t)>(reinterpret_cast<std17::byte*>(&t), span_sizeof(T));
 }
 
 template <class T>
-inline span_constexpr auto byte_span(T const& t) span_noexcept -> span<const std17::byte, span_sizeof(T)> {
+inline span_constexpr auto byte_span(T const& t) span_noexcept->span<const std17::byte, span_sizeof(T)> {
     return span<const std17::byte, span_sizeof(t)>(reinterpret_cast<std17::byte const*>(&t), span_sizeof(T));
 }
 

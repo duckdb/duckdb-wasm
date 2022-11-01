@@ -115,8 +115,7 @@ shared_ptr<arrow::Array> GetExpectedDoubleArray() {
 
 shared_ptr<arrow::Array> GetExpectedStringArray() {
     auto type = arrow::list(arrow::field("l", make_shared<arrow::StringType>()));
-    return duckdb::web::json::ArrayFromJSON(type, "[[], [\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"], null]")
-        .ValueOrDie();
+    return duckdb::web::json::ArrayFromJSON(type, "[[], [\"🦆🦆🦆🦆🦆🦆\", \"goose\", null, \"\"], null]").ValueOrDie();
 }
 
 shared_ptr<arrow::Array> GetExpectedNestedIntArray() {
@@ -132,8 +131,7 @@ shared_ptr<arrow::Array> GetExpectedStructArray() {
     auto value_b_field = arrow::field("b", make_shared<arrow::StringType>());
     vector<shared_ptr<arrow::Field>> fields = {value_a_field, value_b_field};
     auto type = arrow::struct_(fields);
-    return duckdb::web::json::ArrayFromJSON(
-               type, "[{\"a\":null,\"b\":null}, {\"a\":42,\"b\":\"🦆🦆🦆🦆🦆🦆\"}, null]")
+    return duckdb::web::json::ArrayFromJSON(type, "[{\"a\":null,\"b\":null}, {\"a\":42,\"b\":\"🦆🦆🦆🦆🦆🦆\"}, null]")
         .ValueOrDie();
 };
 
@@ -154,8 +152,7 @@ shared_ptr<arrow::Array> GetExpectedArrayOfStructsArray() {
     auto type = arrow::struct_(fields);
     auto array_type = arrow::list(arrow::field("l", type));
     return duckdb::web::json::ArrayFromJSON(
-               array_type,
-               "[[], [{\"a\": null, \"b\": null}, {\"a\": 42, \"b\": \"🦆🦆🦆🦆🦆🦆\"}, null], null]")
+               array_type, "[[], [{\"a\": null, \"b\": null}, {\"a\": 42, \"b\": \"🦆🦆🦆🦆🦆🦆\"}, null], null]")
         .ValueOrDie();
 }
 
