@@ -296,9 +296,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 break;
             case DuckDBDataProtocol.NODE_FS:
             case DuckDBDataProtocol.BROWSER_FILEREADER:
-            case DuckDBDataProtocol.BROWSER_FSACCESS:
                 // XXX Remove from registry
                 return;
+            case DuckDBDataProtocol.BROWSER_FSACCESS: {
+                const handle = BROWSER_RUNTIME._files?.get(file.fileName);
+                if (!handle) {
+                    throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+                }
+                return handle.flush();
+            }
         }
     },
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
@@ -312,10 +318,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 return;
             case DuckDBDataProtocol.BUFFER:
             case DuckDBDataProtocol.NODE_FS:
-            case DuckDBDataProtocol.BROWSER_FSACCESS:
             case DuckDBDataProtocol.BROWSER_FILEREADER:
                 failWith(mod, `truncateFile not implemented`);
                 return;
+            case DuckDBDataProtocol.BROWSER_FSACCESS: {
+                const handle = BROWSER_RUNTIME._files?.get(file.fileName);
+                if (!handle) {
+                    throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+                }
+                return handle.truncate(newSize);
+            }
         }
         return 0;
     },
@@ -377,7 +389,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
                     }
                     const out = mod.HEAPU8.subarray(buf, buf + bytes);
-                    console.log('reading from OPFS');
                     return handle.read(out, { at: location });
                 }
             }
@@ -404,6 +415,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.BROWSER_FILEREADER:
                 failWith(mod, 'cannot write using the html5 file reader api');
                 return 0;
+            case DuckDBDataProtocol.BROWSER_FSACCESS: {
+                const handle = BROWSER_RUNTIME._files?.get(file.fileName);
+                if (!handle) {
+                    throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+                }
+                const input = mod.HEAPU8.subarray(buf, buf + bytes);
+                return handle.write(input, { at: location });
+            }
         }
         return 0;
     },
