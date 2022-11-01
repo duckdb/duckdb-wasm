@@ -226,7 +226,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      chown -R $(id -u):$(id -g) $PWD
+                      chown -R $(id -u):$(id -g) /github/workspace
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
@@ -321,7 +321,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      chown -R $(id -u):$(id -g) $PWD
+                      chown -R $(id -u):$(id -g) /github/workspace
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
@@ -395,7 +395,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      chown -R $(id -u):$(id -g) $PWD
+                      chown -R $(id -u):$(id -g) /github/workspace
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
@@ -448,7 +448,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      chown -R $(id -u):$(id -g) $PWD
+                      chown -R $(id -u):$(id -g) /github/workspace
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
@@ -501,7 +501,7 @@ jobs:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      chown -R $(id -u):$(id -g) $PWD
+                      chown -R $(id -u):$(id -g) /github/workspace
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
@@ -609,7 +609,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
                       ./scripts/npm_version.sh
-                      chown -R $(id -u):$(id -g) $PWD
+                      chown -R $(id -u):$(id -g) /github/workspace
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build @duckdb/duckdb-wasm
