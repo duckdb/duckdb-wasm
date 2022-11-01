@@ -231,8 +231,6 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      chown -R $(id -u):$(id -g) /github/workspace
-                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.8
