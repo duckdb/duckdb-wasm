@@ -1,4 +1,4 @@
-FROM ubuntu:21.04
+FROM ubuntu:22.10
 
 RUN apt-get update -qq \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -18,14 +18,13 @@ RUN apt-get update -qq \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/google.list
 
-ARG EMSDK_VERSION="3.1.9"
+ARG EMSDK_VERSION="3.1.24"
 RUN mkdir -p /opt/emsdk \
     && cd /opt/emsdk \
     && curl -SL https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz | tar -xz --strip-components=1 \
-    && ./emsdk install ${EMSDK_VERSION} ccache-git-emscripten-64bit \
-    && ./emsdk activate ${EMSDK_VERSION} ccache-git-emscripten-64bit \
+    && ./emsdk install ${EMSDK_VERSION} \
+    && ./emsdk activate ${EMSDK_VERSION} \
     && /bin/bash ./emsdk_env.sh \
-    && chmod a+x /opt/emsdk/ccache/git-emscripten_64bit/bin/ccache \
     && rm -rf ./emscripten/tag-*/tests \
     && rm -rf ./emscripten/tag-*/site \
     && rm -rf ./emscripten/tag-*/docs \
@@ -43,8 +42,8 @@ RUN groupadd -g ${GID} -o ${UNAME} \
     && useradd -m -g ${GID} -u ${UID} -s /bin/bash ${UNAME}
 
 ENV NVM_DIR=/opt/nvm
-ARG NVM_VERSION="v0.39.1"
-ARG NODE_VERSION="v17.6.0"
+ARG NVM_VERSION="v0.39.2"
+ARG NODE_VERSION="v18.12.0"
 RUN mkdir -p /opt/nvm \
     && ls -lisah /opt/nvm \
     && curl https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash \
@@ -55,7 +54,7 @@ RUN mkdir -p /opt/nvm \
     && npm install --global yarn \
     && chown -R ${UID}:${GID} /opt/nvm
 
-ARG RUST_VERSION="1.60.0"
+ARG RUST_VERSION="1.64.0"
 RUN export RUSTUP_HOME=/opt/rust \
     && export CARGO_HOME=/opt/rust \
     && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y \
@@ -66,12 +65,13 @@ RUN export RUSTUP_HOME=/opt/rust \
 RUN source /opt/emsdk/emsdk_env.sh \
     && echo "export PATH=$PATH:/opt/rust/bin" >> /opt/env.sh \
     && echo "export EMSDK=$EMSDK" >> /opt/env.sh \
-    && echo "export EM_CONFIG=$EM_CONFIG" >> /opt/env.sh \
-    && echo "export EMSCRIPTEN=$EMSCRIPTEN" >> /opt/env.sh \
+    && echo "export EMSDK_NODE=$EMSDK_NODE" >> /opt/env.sh \
+    && echo "export EM_CONFIG=/opt/emsdk/.emscripten" >> /opt/env.sh \
     && echo "export CARGO_HOME=/opt/rust" >> /opt/env.sh \
     && echo "export RUSTUP_HOME=/opt/rust" >> /opt/env.sh \
     && echo "export BOOST_ARCHIVE=/opt/boost.tar.gz" >> /opt/env.sh \
     && echo "source /opt/nvm/nvm.sh" >> /opt/env.sh \
+    && cat /opt/env.sh \
     && printf '#!/bin/bash\nsource /opt/env.sh\nexec env "$@"\n' > /opt/entrypoint.sh \
     && chmod +x /opt/entrypoint.sh \
     && chown -R ${UID}:${GID} /opt/entrypoint.sh
