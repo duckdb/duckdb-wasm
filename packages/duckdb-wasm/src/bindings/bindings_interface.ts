@@ -1,4 +1,4 @@
-import { DuckDBConfig, DuckDBConnection, FileStatistics, InstantiationProgress } from '.';
+import { DuckDBConfig, DuckDBConnection, DuckDBDataProtocol, FileStatistics, InstantiationProgress } from '.';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { WebFile } from './web_file';
@@ -33,10 +33,15 @@ export interface DuckDBBindings {
     insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): void;
     insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): void;
 
-    registerFileURL(name: string, url?: string): void;
+    registerFileURL(name: string, url: string): void;
     registerFileText(name: string, text: string): void;
     registerFileBuffer(name: string, buffer: Uint8Array): void;
-    registerFileHandle<HandleType>(name: string, handle: HandleType): void;
+    registerFileHandle<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): void;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;
     dropFiles(): void;

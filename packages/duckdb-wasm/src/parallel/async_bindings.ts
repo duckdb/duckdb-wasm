@@ -17,6 +17,7 @@ import { DuckDBConfig } from '../bindings/config';
 import { InstantiationProgress } from '../bindings/progress';
 import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
+import { DuckDBDataProtocol } from '../bindings';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -516,11 +517,17 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** Register a file handle. */
-    public async registerFileHandle<HandleType>(name: string, handle: HandleType): Promise<void> {
-        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>(
+    public async registerFileHandle<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<void> {
+        const task = new WorkerTask<
             WorkerRequestType.REGISTER_FILE_HANDLE,
-            [name, handle],
-        );
+            [string, any, DuckDBDataProtocol, boolean],
+            null
+        >(WorkerRequestType.REGISTER_FILE_HANDLE, [name, handle, protocol, directIO]);
         await this.postTask(task, []);
     }
 

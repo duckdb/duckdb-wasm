@@ -833,7 +833,8 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     return arrow::Status::OK();
 }
 /// Register a file URL
-arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url, bool direct_io) {
+arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                     io::WebFileSystem::DataProtocol protocol, bool direct_io) {
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");

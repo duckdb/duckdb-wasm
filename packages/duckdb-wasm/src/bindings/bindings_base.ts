@@ -5,7 +5,7 @@ import { InstantiationProgress } from './progress';
 import { DuckDBBindings } from './bindings_interface';
 import { DuckDBConnection } from './connection';
 import { StatusCode } from '../status';
-import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer } from './runtime';
+import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer, DuckDBDataProtocol } from './runtime';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
@@ -407,16 +407,11 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return info;
     }
     /** Register a file object URL */
-    public registerFileURL(name: string, url?: string, directIO?: boolean): void {
+    public registerFileURL(name: string, url: string): void {
         if (url === undefined) {
             url = name;
         }
-        const [s, d, n] = callSRet(
-            this.mod,
-            'duckdb_web_fs_register_file_url',
-            ['string', 'string', 'boolean'],
-            [name, url, directIO ?? false],
-        );
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -444,12 +439,17 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         dropResponseBuffers(this.mod);
     }
     /** Register a file object URL */
-    public registerFileHandle<HandleType>(name: string, handle: HandleType): void {
+    public registerFileHandle<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): void {
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_fs_register_file_url',
-            ['string', 'string', 'number'],
-            [name, name, -1],
+            ['string', 'string', 'number', 'boolean'],
+            [name, name, protocol, directIO],
         );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));

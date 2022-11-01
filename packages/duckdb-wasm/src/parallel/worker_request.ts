@@ -5,6 +5,7 @@ import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { WebFile } from '../bindings/web_file';
 import { InstantiationProgress } from '../bindings/progress';
+import { DuckDBDataProtocol } from '../bindings';
 
 export type ConnectionID = number;
 export type StatementID = number;
@@ -132,7 +133,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.PING, null>
     | WorkerRequest<WorkerRequestType.POLL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
-    | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any]>
+    | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any, DuckDBDataProtocol, boolean]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_PREPARED, [number, number, any[]]>
@@ -190,7 +191,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>
     | WorkerTask<WorkerRequestType.PING, null, null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>
-    | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any], null>
+    | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any, DuckDBDataProtocol, boolean], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
     | WorkerTask<WorkerRequestType.GLOB_FILE_INFOS, string, WebFile[]>
     | WorkerTask<WorkerRequestType.RESET, null, null>

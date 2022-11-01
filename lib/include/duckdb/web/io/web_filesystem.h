@@ -201,8 +201,8 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Write the file info as JSON
     rapidjson::Value WriteFileInfo(rapidjson::Document &doc, std::string_view file_name, uint32_t cache_epoch);
     /// Register a file URL
-    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name,
-                                                                  std::string_view file_url);
+    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                                                  DataProtocol protocol);
     /// Register a file buffer
     arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
                                                                      DataBuffer file_buffer);

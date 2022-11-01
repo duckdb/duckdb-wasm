@@ -168,7 +168,8 @@ class WebDB {
     arrow::Status Open(std::string_view args_json = "");
 
     /// Register a file URL
-    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url, bool direct_io);
+    arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                  io::WebFileSystem::DataProtocol protocol, bool direct_io);
     /// Register a file URL
     arrow::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
     /// Glob all known file infos

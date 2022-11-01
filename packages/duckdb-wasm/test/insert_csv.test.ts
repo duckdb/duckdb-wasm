@@ -1,5 +1,6 @@
 import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
+import { DuckDBDataProtocol } from '../src/';
 import { Column, compareTable } from './table_test';
 
 function describeBrowser(description: string, specDefinitions: () => void): void {
@@ -235,7 +236,7 @@ export function testCSVInsertAsync(db: () => duckdb.AsyncDuckDB): void {
                 await conn.query(`DROP TABLE IF EXISTS ${test.options.schema || 'main'}.${test.options.name}`);
                 const buffer = encoder.encode(test.input);
                 const blob = new Blob([buffer]);
-                await db().registerFileHandle(TEST_FILE, blob);
+                await db().registerFileHandle(TEST_FILE, blob, DuckDBDataProtocol.BROWSER_FILEREADER, false);
                 await conn.insertCSVFromPath(TEST_FILE, test.options);
                 const results = await conn.query(test.query);
                 compareTable(results, test.expectedColumns);

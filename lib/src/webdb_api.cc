@@ -4,6 +4,7 @@
 #include "arrow/buffer.h"
 #include "arrow/status.h"
 #include "duckdb/web/config.h"
+#include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "duckdb/web/webdb.h"
 
@@ -114,9 +115,11 @@ void duckdb_web_fs_get_file_info_by_name(WASMResponse* packed, const char* file_
 }
 /// Register a file at a url
 void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name, const char* file_url,
-                                     bool direct_io) {
+                                     uint32_t protocol, bool direct_io) {
     GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.RegisterFileURL(file_name, file_url, direct_io));
+    WASMResponseBuffer::Get().Store(
+        *packed,
+        webdb.RegisterFileURL(file_name, file_url, static_cast<io::WebFileSystem::DataProtocol>(protocol), direct_io));
 }
 /// Register a file buffer
 void duckdb_web_fs_register_file_buffer(WASMResponse* packed, const char* file_name, char* data, uint32_t data_length) {
