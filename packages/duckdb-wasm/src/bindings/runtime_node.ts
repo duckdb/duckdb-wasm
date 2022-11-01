@@ -16,11 +16,13 @@ import * as fg from 'fast-glob';
 import * as udf from './udf_runtime';
 
 export const NODE_RUNTIME: DuckDBRuntime & {
+    _filesById: Map<number, any>;
     _fileInfoCache: Map<number, DuckDBFileInfo>;
 
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
 } = {
     _files: new Map<string, any>(),
+    _filesById: new Map<number, any>(),
     _fileInfoCache: new Map<number, DuckDBFileInfo>(),
     _udfFunctions: new Map(),
 
@@ -38,6 +40,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 return null;
             } else if (n === 0) {
                 // Epoch is up to date with WASM
+                dropResponseBuffers(mod);
                 return cached!;
             }
             const infoStr = readString(mod, d, n);
@@ -60,38 +63,36 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 return false;
         }
     },
-
+    getDefaultDataProtocol(mod: DuckDBModule): number {
+        return DuckDBDataProtocol.NODE_FS;
+    },
     openFile(mod: DuckDBModule, fileId: number, flags: FileFlags): number {
         try {
             NODE_RUNTIME._fileInfoCache.delete(fileId);
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
                 // Native file
-                case DuckDBDataProtocol.NATIVE: {
-                    file.dataNativeFd = fs.openSync(
-                        file.dataUrl!,
-                        fs.constants.O_CREAT | fs.constants.O_RDWR,
-                        fs.constants.S_IRUSR | fs.constants.S_IWUSR,
-                    );
-                    const [s, d, n] = callSRet(
-                        mod,
-                        'duckdb_web_fs_set_file_descriptor',
-                        ['number', 'number'],
-                        [fileId, file.dataNativeFd],
-                    );
-                    if (s !== StatusCode.SUCCESS) {
-                        failWith(mod, readString(mod, d, n));
+                case DuckDBDataProtocol.NODE_FS: {
+                    let fd = NODE_RUNTIME._files?.get(file.dataUrl!);
+                    if (fd === null || fd === undefined) {
+                        fd = fs.openSync(
+                            file.dataUrl!,
+                            fs.constants.O_CREAT | fs.constants.O_RDWR,
+                            fs.constants.S_IRUSR | fs.constants.S_IWUSR,
+                        );
+                        NODE_RUNTIME._filesById?.set(file.fileId!, fd);
                     }
-                    const fileSize = fs.fstatSync(file.dataNativeFd!).size;
+                    const fileSize = fs.fstatSync(fd).size;
                     const result = mod._malloc(2 * 8);
                     mod.HEAPF64[(result >> 3) + 0] = +fileSize;
                     mod.HEAPF64[(result >> 3) + 1] = 0;
                     return result;
                 }
-                // HTTP file
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
                 case DuckDBDataProtocol.S3:
-                    failWith(mod, 'Not implemented');
+                    failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -101,21 +102,22 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
         try {
-            const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
+            const fileInfo = NODE_RUNTIME._fileInfoCache.get(fileId);
             NODE_RUNTIME._fileInfoCache.delete(fileId);
-            switch (file?.dataProtocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    if (!file.dataNativeFd) {
-                        failWith(mod, `File ${fileId} is missing a file descriptor`);
-                        return 0;
+            switch (fileInfo?.dataProtocol) {
+                case DuckDBDataProtocol.NODE_FS: {
+                    const fileHandle = NODE_RUNTIME._filesById.get(fileId);
+                    NODE_RUNTIME._filesById.delete(fileId);
+                    if (fileHandle !== null && fileHandle !== undefined) {
+                        fs.closeSync(fileHandle);
                     }
-                    fs.closeSync(file.dataNativeFd);
-                    file.dataNativeFd = null;
                     break;
                 }
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
                 case DuckDBDataProtocol.S3:
-                    failWith(mod, `Not implemented`);
+                    break;
             }
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -126,17 +128,15 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    if (!file.dataNativeFd) {
-                        failWith(mod, `File ${fileId} is missing a file descriptor`);
-                        return 0;
-                    }
+                case DuckDBDataProtocol.NODE_FS: {
                     fs.truncateSync(file.dataUrl!, newSize);
                     break;
                 }
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
                 case DuckDBDataProtocol.S3:
-                    failWith(mod, `Not implemented`);
+                    failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -147,16 +147,19 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    if (!file.dataNativeFd) {
+                case DuckDBDataProtocol.NODE_FS: {
+                    const fileHandle = NODE_RUNTIME._filesById.get(fileId);
+                    if (fileHandle === null || fileHandle === undefined) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    return fs.readSync(file.dataNativeFd!, mod.HEAPU8, buf, bytes, location);
+                    return fs.readSync(fileHandle, mod.HEAPU8, buf, bytes, location);
                 }
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
                 case DuckDBDataProtocol.S3:
-                    failWith(mod, `Not implemented`);
+                    failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -167,14 +170,20 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    if (!file.dataNativeFd) {
+                case DuckDBDataProtocol.NODE_FS: {
+                    const fileHandle = NODE_RUNTIME._filesById.get(fileId);
+                    if (fileHandle === null || fileHandle === undefined) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
                     const src = mod.HEAPU8.subarray(buf, buf + bytes);
-                    return fs.writeSync(file.dataNativeFd!, src, 0, src.length, location);
+                    return fs.writeSync(fileHandle, src, 0, src.length, location);
                 }
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                case DuckDBDataProtocol.BROWSER_FSACCESS:
+                case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
+                    failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
             failWith(mod, e.toString());
@@ -185,16 +194,19 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
-                case DuckDBDataProtocol.NATIVE: {
-                    if (!file.dataNativeFd) {
+                case DuckDBDataProtocol.NODE_FS: {
+                    const fileHandle = NODE_RUNTIME._filesById.get(fileId);
+                    if (fileHandle === null || fileHandle === undefined) {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    return fs.fstatSync(file.dataNativeFd!).mtime.getTime();
+                    return fs.fstatSync(fileHandle!).mtime.getTime();
                 }
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
                 case DuckDBDataProtocol.S3:
-                    failWith(mod, 'Not implemented');
+                    failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
             failWith(mod, e.toString());

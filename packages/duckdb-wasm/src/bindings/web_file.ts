@@ -1,12 +1,8 @@
-export enum DataProtocol {
-    BUFFER = 0,
-    NATIVE = 1,
-    HTTP = 2,
-}
+import { DuckDBDataProtocol } from './runtime';
 
 export interface WebFile {
     fileName: string;
-    dataProtocol: DataProtocol;
+    dataProtocol: DuckDBDataProtocol;
     fileId?: number;
     fileSize?: number;
     dataUrl?: string;

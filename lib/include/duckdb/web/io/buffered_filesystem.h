@@ -67,6 +67,11 @@ class BufferedFileSystem : public duckdb::FileSystem {
    public:
     /// Constructor
     BufferedFileSystem(std::shared_ptr<FilePageBuffer> buffer_manager);
+    /// Constructor
+    BufferedFileSystem(const BufferedFileSystem &other)
+        : file_page_buffer_(other.file_page_buffer_),
+          filesystem_(other.filesystem_),
+          file_configs_(other.file_configs_) {}
     /// Destructor
     virtual ~BufferedFileSystem() {}
 

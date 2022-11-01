@@ -26,7 +26,14 @@ namespace io {
 class WebFileSystem : public duckdb::FileSystem {
    public:
     /// The data protocol
-    enum DataProtocol : uint8_t { BUFFER = 0, NATIVE = 1, HTTP = 3, S3 = 4 };
+    enum DataProtocol : uint8_t {
+        BUFFER = 0,
+        NODE_FS = 1,
+        BROWSER_FILEREADER = 2,
+        BROWSER_FSACCESS = 3,
+        HTTP = 4,
+        S3 = 5
+    };
 
     /// A simple buffer.
     /// It might be worth to make this chunked eventually.
@@ -73,8 +80,6 @@ class WebFileSystem : public duckdb::FileSystem {
 
         /// XXX Make chunked to upgrade from url to cached version
         std::optional<DataBuffer> data_buffer_ = std::nullopt;
-        /// The data file descriptor (if any)
-        std::optional<uint32_t> data_fd_ = std::nullopt;
         /// The data URL (if any)
         std::optional<std::string> data_url_ = std::nullopt;
 
@@ -147,6 +152,8 @@ class WebFileSystem : public duckdb::FileSystem {
     std::shared_ptr<WebDBConfig> config_ = {};
     /// The filesystem mutex
     LightMutex fs_mutex_ = {};
+    /// The default data protocol
+    DataProtocol default_data_protocol_ = DataProtocol::BUFFER;
     /// The files by id
     std::unordered_map<uint32_t, std::shared_ptr<WebFile>> files_by_id_ = {};
     /// The files by name
@@ -162,6 +169,8 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Cache epoch for synchronization of JS caches
     std::atomic<uint32_t> cache_epoch_ = 1;
 
+    /// Infer the data protocol
+    DataProtocol inferDataProtocol(std::string_view url) const;
     /// Allocate a file id.
     /// XXX This could of course overflow....
     /// Make this a uint64 with emscripten BigInts maybe.
@@ -185,8 +194,6 @@ class WebFileSystem : public duckdb::FileSystem {
     inline WebFile *GetFile(uint32_t file_id) const {
         return files_by_id_.count(file_id) ? files_by_id_.at(file_id).get() : nullptr;
     }
-    /// Set a file descriptor
-    arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor);
     /// Write the global file info as a JSON
     rapidjson::Value WriteGlobalFileInfo(rapidjson::Document &doc, uint32_t cache_epoch);
     /// Write the file info as JSON

@@ -98,7 +98,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != onProgress);
         return this;
     }
-    /** Open a database at a path */
+    /** Open a database with a config */
     public open(config: DuckDBConfig): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_open', ['string'], [JSON.stringify(config)]);
         if (s !== StatusCode.SUCCESS) {

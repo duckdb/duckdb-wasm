@@ -17,6 +17,7 @@ export const decodeText = TextDecoderWrapper();
 
 /** Copy a buffer */
 export function failWith(mod: DuckDBModule, msg: string): void {
+    console.error(`FAIL WITH: ${msg}`);
     mod.ccall('duckdb_web_fail_with', null, ['string'], [msg]);
 }
 
@@ -36,9 +37,11 @@ export function readString(mod: DuckDBModule, begin: number, length: number): st
 /** The data protocol */
 export enum DuckDBDataProtocol {
     BUFFER = 0,
-    NATIVE = 1,
-    HTTP = 3,
-    S3 = 4,
+    NODE_FS = 1,
+    BROWSER_FILEREADER = 2,
+    BROWSER_FSACCESS = 3,
+    HTTP = 4,
+    S3 = 5,
 }
 
 /** File flags for opening files*/
@@ -73,7 +76,6 @@ export interface DuckDBFileInfo {
     fileName: string;
     dataProtocol: DuckDBDataProtocol;
     dataUrl: string | null;
-    dataNativeFd: number | null;
     allowFullHttpReads?: boolean;
     s3Config?: S3Config;
 }
@@ -126,6 +128,7 @@ export interface DuckDBRuntime {
     testPlatformFeature(mod: DuckDBModule, feature: number): boolean;
 
     // File APIs with dedicated file identifier
+    getDefaultDataProtocol(mod: DuckDBModule): number;
     openFile(mod: DuckDBModule, fileId: number, flags: FileFlags): void;
     syncFile(mod: DuckDBModule, fileId: number): void;
     closeFile(mod: DuckDBModule, fileId: number): void;
@@ -160,6 +163,7 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     _udfFunctions: new Map(),
 
     testPlatformFeature: (_mod: DuckDBModule, _feature: number): boolean => false,
+    getDefaultDataProtocol: (_mod: DuckDBModule): number => DuckDBDataProtocol.BUFFER,
     openFile: (_mod: DuckDBModule, _fileId: number, flags: FileFlags): void => {},
     syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
     closeFile: (_mod: DuckDBModule, _fileId: number): void => {},

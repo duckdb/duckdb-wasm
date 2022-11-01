@@ -179,8 +179,6 @@ class WebDB {
     arrow::Result<std::string> GetFileInfo(uint32_t file_id, uint32_t cache_epoch);
     /// Get the file info as JSON
     arrow::Result<std::string> GetFileInfo(std::string_view file_name, uint32_t cache_epoch);
-    /// Set a file descriptor
-    arrow::Status SetFileDescriptor(uint32_t file_id, uint32_t fd);
     /// Flush all file buffers
     void FlushFiles();
     /// Flush file by path

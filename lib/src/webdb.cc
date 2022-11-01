@@ -797,7 +797,8 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     bool in_memory = config_->path == ":memory:" || config_->path == "";
     try {
         // Setup new database
-        auto buffered_fs = std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
+        auto buffered_fs = buffered_filesystem_ ? std::make_unique<io::BufferedFileSystem>(*buffered_filesystem_)
+                                                : std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
         auto buffered_fs_ptr = buffered_fs.get();
 
         duckdb::DBConfig db_config;
@@ -905,12 +906,6 @@ arrow::Status WebDB::DropFile(std::string_view file_name) {
         }
     }
     return arrow::Status::OK();
-}
-/// Set a file descriptor
-arrow::Status WebDB::SetFileDescriptor(uint32_t file_id, uint32_t fd) {
-    auto web_fs = io::WebFileSystem::Get();
-    if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
-    return web_fs->SetFileDescriptor(file_id, fd);
 }
 /// Glob all known files
 arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {

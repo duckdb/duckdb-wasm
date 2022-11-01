@@ -70,7 +70,9 @@ static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     }
     auto &infos = GetLocalState();
     switch (file->GetDataProtocol()) {
-        case WebFileSystem::DataProtocol::NATIVE: {
+        case WebFileSystem::DataProtocol::BROWSER_FSACCESS:
+        case WebFileSystem::DataProtocol::BROWSER_FILEREADER:
+        case WebFileSystem::DataProtocol::NODE_FS: {
             assert(file->GetDataURL());
             if (auto iter = infos.handles.find(file_id); iter != infos.handles.end()) {
                 return *iter->second;
@@ -102,6 +104,7 @@ struct OpenedFile {
 #else
 #define RT_FN(FUNC, IMPL) FUNC IMPL;
 #endif
+RT_FN(uint32_t duckdb_web_fs_get_default_data_protocol(), { return io::WebFileSystem::DataProtocol::NODE_FS; });
 RT_FN(void *duckdb_web_fs_file_open(size_t file_id, uint8_t flags), {
     auto &file = GetOrOpen(file_id);
     auto result = std::make_unique<OpenedFile>();
@@ -215,7 +218,7 @@ static inline bool hasPrefix(std::string_view text, std::string_view prefix) {
     return text.compare(0, prefix.size(), prefix) == 0;
 }
 
-static inline WebFileSystem::DataProtocol inferDataProtocol(std::string_view url) {
+WebFileSystem::DataProtocol WebFileSystem::inferDataProtocol(std::string_view url) const {
     // Infer the data protocol from the prefix
     std::string_view data_url = url;
     auto proto = WebFileSystem::DataProtocol::BUFFER;
@@ -225,9 +228,9 @@ static inline WebFileSystem::DataProtocol inferDataProtocol(std::string_view url
         proto = WebFileSystem::DataProtocol::S3;
     } else if (hasPrefix(url, "file://")) {
         data_url = std::string_view{url}.substr(7);
-        proto = WebFileSystem::DataProtocol::NATIVE;
+        proto = default_data_protocol_;
     } else {
-        proto = WebFileSystem::DataProtocol::NATIVE;
+        proto = default_data_protocol_;
     }
     return proto;
 }
@@ -255,7 +258,7 @@ void WebFileSystem::WebFileHandle::Close() {
     // Is buffered file?
     if (file.data_protocol_ == DataProtocol::BUFFER) {
         if (file.buffered_http_file_) {
-            file.data_protocol_ = inferDataProtocol(file.data_url_.value());
+            file.data_protocol_ = fs.inferDataProtocol(file.data_url_.value());
             fs.IncrementCacheEpoch();
 
             size_t n =
@@ -312,9 +315,6 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
         data_url = rapidjson::Value{data_url_->c_str(), static_cast<rapidjson::SizeType>(data_url_->size())};
         value.AddMember("dataUrl", data_url, allocator);
     }
-    if (data_fd_.has_value()) {
-        value.AddMember("dataNativeFd", rapidjson::Value{data_fd_.value()}, allocator);
-    }
     if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3) &&
         filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
@@ -337,7 +337,9 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
 }
 
 /// Constructor
-WebFileSystem::WebFileSystem(std::shared_ptr<WebDBConfig> config) : config_(std::move(config)) {
+WebFileSystem::WebFileSystem(std::shared_ptr<WebDBConfig> config)
+    : config_(std::move(config)),
+      default_data_protocol_(static_cast<DataProtocol>(duckdb_web_fs_get_default_data_protocol())) {
     assert(WEBFS == nullptr && "Can only register a single WebFileSystem at a time");
     WEBFS = this;
 }
@@ -397,9 +399,11 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     if (iter != files_by_name_.end()) {
         auto file = iter->second;
         switch (file->data_protocol_) {
-            // Was previously registered as native?
+            // Was previously registered as native file?
             // Close file handle and register as buffer
-            case DataProtocol::NATIVE: {
+            case DataProtocol::NODE_FS:
+            case DataProtocol::BROWSER_FSACCESS:
+            case DataProtocol::BROWSER_FILEREADER: {
                 file->file_size_ = file_buffer.Size();
                 file->data_buffer_ = std::move(file_buffer);
                 auto handle = std::make_unique<WebFileHandle>(file);
@@ -468,16 +472,6 @@ bool WebFileSystem::TryDropFile(std::string_view file_name) {
         return true;
     }
     return false;
-}
-
-/// Set a file descriptor
-arrow::Status WebFileSystem::SetFileDescriptor(uint32_t file_id, uint32_t file_descriptor) {
-    DEBUG_TRACE();
-    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
-    auto iter = files_by_id_.find(file_id);
-    if (iter == files_by_id_.end()) return arrow::Status::Invalid("Invalid file id: ", file_id);
-    iter->second->data_fd_ = file_descriptor;
-    return arrow::Status::OK();
 }
 
 /// Write the global filesystem info
@@ -630,10 +624,11 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                 file->file_size_ = 0;
             }
             break;
-        case DataProtocol::NATIVE:
-            // Open the file
-            if (file->data_fd_.has_value()) break;
-            // Otherwise treat as HTTP
+
+        // Open the file using the runtime
+        case DataProtocol::NODE_FS:
+        case DataProtocol::BROWSER_FILEREADER:
+        case DataProtocol::BROWSER_FSACCESS:
         case DataProtocol::HTTP:
         case DataProtocol::S3:
             try {
@@ -739,7 +734,20 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         }
 
         // Just read with the filesystem api
-        case DataProtocol::NATIVE:
+        case DataProtocol::NODE_FS:
+        case DataProtocol::BROWSER_FILEREADER:
+        case DataProtocol::BROWSER_FSACCESS: {
+            auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+            // Register read
+            if (file.file_stats_) {
+                file.file_stats_->RegisterFileReadCold(file_hdl.position_, n);
+            }
+            // Update position
+            file_hdl.position_ += n;
+            return n;
+        }
+
+        // Try to read read with readahead
         case DataProtocol::HTTP:
         case DataProtocol::S3: {
             if (auto ra = file_hdl.ResolveReadAheadBuffer(file_guard)) {
@@ -815,7 +823,8 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             }
             break;
         }
-        case DataProtocol::NATIVE: {
+        case DataProtocol::NODE_FS:
+        case DataProtocol::BROWSER_FSACCESS: {
             auto end = file_hdl.position_ + nr_bytes;
             size_t n;
 
@@ -851,11 +860,13 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             bytes_read = n;
             break;
         }
+
+        case DataProtocol::BROWSER_FILEREADER:
+            throw std::runtime_error("HTML FileReaders do not support writing");
         case DataProtocol::HTTP:
-        case DataProtocol::S3: {
-            // XXX How should handle writing HTTP files?
-            throw std::runtime_error("writing to HTTP files is not implemented");
-        }
+            throw std::runtime_error("HTTP files do not support writing");
+        case DataProtocol::S3:
+            throw std::runtime_error("S3 files do not support writing");
     }
     // Invalidate all readahead buffers
     InvalidateReadAheads(file.file_id_, file_guard);
@@ -880,7 +891,9 @@ time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
     switch (file.data_protocol_) {
         case DataProtocol::BUFFER:
             return 0;
-        case DataProtocol::NATIVE:
+        case DataProtocol::BROWSER_FILEREADER:
+        case DataProtocol::BROWSER_FSACCESS:
+        case DataProtocol::NODE_FS:
         case DataProtocol::HTTP:
         case DataProtocol::S3: {
             return duckdb_web_fs_file_get_last_modified_time(file.file_id_);
@@ -903,7 +916,9 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
         case DataProtocol::BUFFER:
             file.data_buffer_->Resize(new_size);
             break;
-        case DataProtocol::NATIVE:
+        case DataProtocol::BROWSER_FILEREADER:
+        case DataProtocol::BROWSER_FSACCESS:
+        case DataProtocol::NODE_FS:
         case DataProtocol::HTTP:
         case DataProtocol::S3: {
             duckdb_web_fs_file_truncate(file.file_id_, new_size);

@@ -112,11 +112,6 @@ void duckdb_web_fs_get_file_info_by_name(WASMResponse* packed, const char* file_
     GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.GetFileInfo(std::string_view{file_name}, cache_epoch));
 }
-/// Set a file descriptor of an existing file
-void duckdb_web_fs_set_file_descriptor(WASMResponse* packed, uint32_t file_id, uint32_t file_descriptor) {
-    GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.SetFileDescriptor(file_id, file_descriptor));
-}
 /// Register a file at a url
 void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name, const char* file_url,
                                      bool direct_io) {

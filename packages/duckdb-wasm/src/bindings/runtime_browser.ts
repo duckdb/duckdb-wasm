@@ -94,6 +94,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
     },
 
+    getDefaultDataProtocol(mod: DuckDBModule): number {
+        return DuckDBDataProtocol.BROWSER_FILEREADER;
+    },
+
     openFile: (mod: DuckDBModule, fileId: number, flags: FileFlags): number => {
         try {
             BROWSER_RUNTIME._fileInfoCache.delete(fileId);
@@ -205,8 +209,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     }
                     return 0;
                 }
-                // Native File
-                case DuckDBDataProtocol.NATIVE: {
+                // File reader File
+                case DuckDBDataProtocol.BROWSER_FILEREADER: {
                     const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (handle) {
                         const result = mod._malloc(2 * 8);
@@ -286,10 +290,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
         switch (file?.dataProtocol) {
+            case DuckDBDataProtocol.BUFFER:
             case DuckDBDataProtocol.HTTP:
             case DuckDBDataProtocol.S3:
                 break;
-            case DuckDBDataProtocol.NATIVE:
+            case DuckDBDataProtocol.NODE_FS:
+            case DuckDBDataProtocol.BROWSER_FILEREADER:
+            case DuckDBDataProtocol.BROWSER_FSACCESS:
                 // XXX Remove from registry
                 return;
         }
@@ -303,7 +310,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.S3:
                 failWith(mod, `Cannot truncate an s3 file`);
                 return;
-            case DuckDBDataProtocol.NATIVE:
+            case DuckDBDataProtocol.BUFFER:
+            case DuckDBDataProtocol.NODE_FS:
+            case DuckDBDataProtocol.BROWSER_FSACCESS:
+            case DuckDBDataProtocol.BROWSER_FILEREADER:
                 failWith(mod, `truncateFile not implemented`);
                 return;
         }
@@ -351,7 +361,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         throw new Error(`Range request for ${file.dataUrl} failed with error: ${e}"`);
                     }
                 }
-                case DuckDBDataProtocol.NATIVE: {
+                case DuckDBDataProtocol.BROWSER_FILEREADER: {
                     const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (!handle) {
                         throw new Error(`No handle available for file: ${file.fileName}`);
@@ -382,8 +392,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 xhr.send(buffer);
                 return bytes;
             }
-            case DuckDBDataProtocol.NATIVE:
-                failWith(mod, 'writefile not implemented');
+            case DuckDBDataProtocol.BROWSER_FILEREADER:
+                failWith(mod, 'cannot write using the html5 file reader api');
                 return 0;
         }
         return 0;
@@ -391,7 +401,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         switch (file?.dataProtocol) {
-            case DuckDBDataProtocol.NATIVE: {
+            case DuckDBDataProtocol.BROWSER_FILEREADER: {
                 const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                 if (!handle) {
                     throw Error(`No handle available for file: ${file.fileName}`);

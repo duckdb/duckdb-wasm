@@ -298,7 +298,6 @@ if(EMSCRIPTEN)
           _duckdb_web_fs_glob_file_infos, \
           _duckdb_web_fs_register_file_buffer, \
           _duckdb_web_fs_register_file_url, \
-          _duckdb_web_fs_set_file_descriptor, \
           _duckdb_web_get_feature_flags, \
           _duckdb_web_get_global_file_info, \
           _duckdb_web_get_tablenames, \
