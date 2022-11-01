@@ -832,8 +832,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     return arrow::Status::OK();
 }
 /// Register a file URL
-arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,
-                                     std::optional<uint64_t> file_size) {
+arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url, bool direct_io) {
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
@@ -849,8 +848,14 @@ arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_vie
     }
     // Register new file url in web filesystem.
     // Pin the file handle to keep the file alive.
-    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url, file_size));
+    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url));
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
+
+    // Register new file in buffered filesystem.
+    io::BufferedFileSystem::FileConfig file_config = {
+        .force_direct_io = direct_io,
+    };
+    buffered_filesystem_->RegisterFile(file_name, file_config);
     return arrow::Status::OK();
 }
 /// Register a file URL

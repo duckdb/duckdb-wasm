@@ -357,8 +357,8 @@ void WebFileSystem::InvalidateReadAheads(size_t file_id, std::unique_lock<Shared
 }
 
 /// Register a file URL
-arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(
-    std::string_view file_name, std::string_view file_url, std::optional<uint64_t> file_size) {
+arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
+                                                                                            std::string_view file_url) {
     DEBUG_TRACE();
     // Check if the file exists
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
@@ -376,7 +376,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto file_id = AllocateFileID();
     auto file = std::make_shared<WebFile>(*this, file_id, file_name, proto);
     file->data_url_ = file_url;
-    file->file_size_ = file_size;
+    file->file_size_ = std::nullopt;
 
     // Register the file
     files_by_id_.insert({file_id, file});
