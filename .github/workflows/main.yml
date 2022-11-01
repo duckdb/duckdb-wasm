@@ -217,6 +217,11 @@ jobs:
                       ${{ runner.os }}-native2-
 
             - name: Prepare repository
+              run: |
+                  chown -R $(id -u):$(id -g) $PWD
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.8
               with:
                   script: |-
@@ -312,6 +317,11 @@ jobs:
                       ${{ runner.os }}-native2-
 
             - name: Prepare repository
+              run: |
+                  chown -R $(id -u):$(id -g) $PWD
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.8
               with:
                   script: |-
@@ -321,8 +331,6 @@ jobs:
                       ./scripts/generate_uni.sh
                       ccache --max-size 200M
                       ccache -s
-                      chown -R $(id -u):$(id -g) /github/workspace
-                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
               uses: duckdb/duckdb-wasm-ci-env@v0.8
@@ -390,13 +398,16 @@ jobs:
                       ${{ runner.os }}-wasm6-default-
 
             - name: Prepare repository
+              run: |
+                  chown -R $(id -u):$(id -g) $PWD
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.8
               with:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      chown -R $(id -u):$(id -g) /github/workspace
-                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.8
@@ -443,13 +454,16 @@ jobs:
                       ${{ runner.os }}-wasm6-eh-
 
             - name: Prepare repository
+              run: |
+                  chown -R $(id -u):$(id -g) $PWD
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.8
               with:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      chown -R $(id -u):$(id -g) /github/workspace
-                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.8
@@ -496,13 +510,16 @@ jobs:
                       ${{ runner.os }}-wasm6-coi-
 
             - name: Prepare repository
+              run: |
+                  chown -R $(id -u):$(id -g) $PWD
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.8
               with:
                   script: |-
                       ccache --max-size 300M
                       ccache -s
-                      chown -R $(id -u):$(id -g) /github/workspace
-                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
               uses: duckdb/duckdb-wasm-ci-env@v0.8
@@ -598,6 +615,11 @@ jobs:
                   path: ./packages/duckdb-wasm/src/bindings/
 
             - name: Prepare repository
+              run: |
+                  chown -R $(id -u):$(id -g) $PWD
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.8
               with:
                   script: |-
@@ -609,8 +631,6 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.01
                       ./scripts/generate_uni.sh
                       ./scripts/npm_version.sh
-                      chown -R $(id -u):$(id -g) /github/workspace
-                      (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build @duckdb/duckdb-wasm
               uses: duckdb/duckdb-wasm-ci-env@v0.8
