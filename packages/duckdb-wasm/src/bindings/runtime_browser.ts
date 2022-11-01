@@ -364,12 +364,21 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.BROWSER_FILEREADER: {
                     const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (!handle) {
-                        throw new Error(`No handle available for file: ${file.fileName}`);
+                        throw new Error(`No HTML5 file registered with name: ${file.fileName}`);
                     }
                     const sliced = handle!.slice(location, location + bytes);
                     const data = new Uint8Array(new FileReaderSync().readAsArrayBuffer(sliced));
                     mod.HEAPU8.set(data, buf);
                     return data.byteLength;
+                }
+                case DuckDBDataProtocol.BROWSER_FSACCESS: {
+                    const handle = BROWSER_RUNTIME._files?.get(file.fileName);
+                    if (!handle) {
+                        throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+                    }
+                    const out = mod.HEAPU8.subarray(buf, buf + bytes);
+                    console.log('reading from OPFS');
+                    return handle.read(out, { at: location });
                 }
             }
             return 0;

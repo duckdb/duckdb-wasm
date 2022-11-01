@@ -1,7 +1,24 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { DuckDBDataProtocol } from '@duckdb/duckdb-wasm/dist/types/src/bindings';
 
-export function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
+// XXX
+// This is currently not working as expected since the FileSystemFileHandle
+// returned by showOpenFilePicker does NOT contain the method createSyncAccessHandle ?
+//
+// async function pickFilesForOPFS(db: duckdb.AsyncDuckDB): Promise<number> {
+//     const files: any[] = await (window as any).showOpenFilePicker({
+//         multiple: true,
+//     });
+//     console.log(files);
+//     for (let i = 0; i < files.length; ++i) {
+//         const file = files[i];
+//         const accessHandle = await file.createSyncAccessHandle();
+//         await db.dropFile(file.name);
+//         await db.registerFileHandle(file.name, accessHandle, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
+//     }
+//     return files.length;
+// }
+
+function pickFilesForFileReader(db: duckdb.AsyncDuckDB): Promise<number> {
     return new Promise<number>((resolve, _reject) => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -13,7 +30,7 @@ export function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
             for (let i = 0; i < files.length; ++i) {
                 const file = files.item(i)!;
                 await db.dropFile(file.name);
-                await db.registerFileHandle(file.name, file, DuckDBDataProtocol.BROWSER_FILEREADER, true);
+                await db.registerFileHandle(file.name, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
             }
             resolve(files.length);
         };
@@ -36,4 +53,14 @@ export function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
         };
         input.click();
     });
+}
+
+export async function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
+    //    const w = window as any;
+    //    if (typeof w.showOpenFilePicker === 'function') {
+    //        return await pickFilesForOPFS(db);
+    //    } else {
+    //        return await pickFilesForFileReader(db);
+    //    }
+    return await pickFilesForFileReader(db);
 }
