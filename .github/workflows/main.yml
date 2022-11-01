@@ -227,6 +227,7 @@ jobs:
                       ccache --max-size 200M
                       ccache -s
                       git config --global --add safe.directory /github/workspace/
+                      git config --global --add safe.directory /github/workspace/submodules/duckdb/
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
@@ -322,6 +323,7 @@ jobs:
                       ccache --max-size 200M
                       ccache -s
                       git config --global --add safe.directory /github/workspace/
+                      git config --global --add safe.directory /github/workspace/submodules/duckdb/
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build project
@@ -396,6 +398,7 @@ jobs:
                       ccache --max-size 300M
                       ccache -s
                       git config --global --add safe.directory /github/workspace/
+                      git config --global --add safe.directory /github/workspace/submodules/duckdb/
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
@@ -449,6 +452,7 @@ jobs:
                       ccache --max-size 300M
                       ccache -s
                       git config --global --add safe.directory /github/workspace/
+                      git config --global --add safe.directory /github/workspace/submodules/duckdb/
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
@@ -502,6 +506,7 @@ jobs:
                       ccache --max-size 300M
                       ccache -s
                       git config --global --add safe.directory /github/workspace/
+                      git config --global --add safe.directory /github/workspace/submodules/duckdb/
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build WASM module
@@ -610,6 +615,7 @@ jobs:
                       ./scripts/generate_uni.sh
                       ./scripts/npm_version.sh
                       git config --global --add safe.directory /github/workspace/
+                      git config --global --add safe.directory /github/workspace/submodules/duckdb/
                       (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Build @duckdb/duckdb-wasm
