@@ -850,7 +850,7 @@ arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_vie
     }
     // Register new file url in web filesystem.
     // Pin the file handle to keep the file alive.
-    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url));
+    ARROW_ASSIGN_OR_RAISE(auto file_hdl, web_fs->RegisterFileURL(file_name, file_url, protocol));
     pinned_web_files_.insert({file_hdl->GetName(), std::move(file_hdl)});
 
     // Register new file in buffered filesystem.

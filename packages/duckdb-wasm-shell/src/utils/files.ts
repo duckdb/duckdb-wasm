@@ -1,4 +1,5 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
+import { DuckDBDataProtocol } from '@duckdb/duckdb-wasm/dist/types/src/bindings';
 
 export function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
     return new Promise<number>((resolve, _reject) => {
@@ -12,7 +13,7 @@ export function pickFiles(db: duckdb.AsyncDuckDB): Promise<number> {
             for (let i = 0; i < files.length; ++i) {
                 const file = files.item(i)!;
                 await db.dropFile(file.name);
-                await db.registerFileHandle(file.name, file);
+                await db.registerFileHandle(file.name, file, DuckDBDataProtocol.BROWSER_FILEREADER, true);
             }
             resolve(files.length);
         };

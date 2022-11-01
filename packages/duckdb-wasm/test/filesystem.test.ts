@@ -7,6 +7,7 @@ export function testFilesystem(
     db: () => duckdb.AsyncDuckDB,
     resolveData: (url: string) => Promise<Uint8Array | null>,
     baseDir: string,
+    baseDirProto: duckdb.DuckDBDataProtocol,
 ): void {
     let conn: duckdb.AsyncDuckDBConnection;
 
@@ -179,7 +180,7 @@ export function testFilesystem(
 
     describe('File access', () => {
         it('Small Parquet file', async () => {
-            await db().registerFileURL('studenten.parquet', `${baseDir}/uni/studenten.parquet`);
+            await db().registerFileURL('studenten.parquet', `${baseDir}/uni/studenten.parquet`, baseDirProto, true);
             const result = await conn.send(`SELECT matrnr FROM parquet_scan('studenten.parquet');`);
             const batches = [];
             for await (const batch of result) {
@@ -192,7 +193,12 @@ export function testFilesystem(
         });
 
         it('Large Parquet file', async () => {
-            await db().registerFileURL('lineitem.parquet', `${baseDir}/tpch/0_01/parquet/lineitem.parquet`);
+            await db().registerFileURL(
+                'lineitem.parquet',
+                `${baseDir}/tpch/0_01/parquet/lineitem.parquet`,
+                baseDirProto,
+                true,
+            );
             const result = await conn.send(`SELECT count(*)::INTEGER as cnt FROM parquet_scan('lineitem.parquet');`);
             const batches = [];
             for await (const batch of result) {

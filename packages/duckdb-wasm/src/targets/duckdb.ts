@@ -6,4 +6,4 @@ export * from '../platform';
 export * from '../version';
 export * from '../worker';
 
-export { InstantiationProgress, InstantiationProgressHandler } from '../bindings';
+export { InstantiationProgress, InstantiationProgressHandler, DuckDBDataProtocol } from '../bindings';

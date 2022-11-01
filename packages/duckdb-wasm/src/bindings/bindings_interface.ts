@@ -33,7 +33,7 @@ export interface DuckDBBindings {
     insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): void;
     insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): void;
 
-    registerFileURL(name: string, url: string): void;
+    registerFileURL(name: string, url: string, proto: DuckDBDataProtocol, directIO: boolean): void;
     registerFileText(name: string, text: string): void;
     registerFileBuffer(name: string, buffer: Uint8Array): void;
     registerFileHandle<HandleType>(

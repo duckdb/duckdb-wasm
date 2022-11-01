@@ -163,8 +163,8 @@ await c.insertJSONFromPath('columns.json', { name: 'columns' });
 
 // ..., from Parquet files
 const pickedFile: File = letUserPickFile();
-await db.registerFileHandle('local.parquet', pickedFile);
-await db.registerFileURL('remote.parquet', 'https://origin/remote.parquet');
+await db.registerFileHandle('local.parquet', pickedFile, DuckDBDataProtocol.BROWSER_FILEREADER, true);
+await db.registerFileURL('remote.parquet', 'https://origin/remote.parquet', DuckDBDataProtocol.HTTP, false);
 const res = await fetch('https://origin/remote.parquet');
 await db.registerFileBuffer('buffer.parquet', new Uint8Array(await res.arrayBuffer()));
 

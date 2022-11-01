@@ -1,5 +1,6 @@
 import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
+import { DuckDBDataProtocol } from '../src/';
 
 export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): void {
     let conn: duckdb.DuckDBConnection;
@@ -145,7 +146,11 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
     });
 }
 
-export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string): void {
+export function testAsyncBindings(
+    adb: () => duckdb.AsyncDuckDB,
+    baseURL: string,
+    baseDirProto: DuckDBDataProtocol,
+): void {
     beforeEach(async () => {});
 
     afterEach(async () => {
@@ -159,7 +164,7 @@ export function testAsyncBindings(adb: () => duckdb.AsyncDuckDB, baseURL: string
     describe('Bindings', () => {
         describe('Open', () => {
             it('Remote TPCH 0_01', async () => {
-                await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`);
+                await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`, baseDirProto, false);
                 await adb().open({
                     path: 'tpch_0_01.db',
                 });

@@ -311,7 +311,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
 
                 case WorkerRequestType.REGISTER_FILE_URL:
-                    this._bindings.registerFileURL(request.data[0], request.data[1]);
+                    this._bindings.registerFileURL(request.data[0], request.data[1], request.data[2], request.data[3]);
                     this.sendOK(request);
                     break;
 

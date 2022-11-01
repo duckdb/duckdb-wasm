@@ -134,7 +134,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.POLL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array]>
     | WorkerRequest<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any, DuckDBDataProtocol, boolean]>
-    | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string]>
+    | WorkerRequest<WorkerRequestType.REGISTER_FILE_URL, [string, string, DuckDBDataProtocol, boolean]>
     | WorkerRequest<WorkerRequestType.RESET, null>
     | WorkerRequest<WorkerRequestType.RUN_PREPARED, [number, number, any[]]>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
@@ -192,7 +192,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.PING, null, null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_HANDLE, [string, any, DuckDBDataProtocol, boolean], null>
-    | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>
+    | WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string, DuckDBDataProtocol, boolean], null>
     | WorkerTask<WorkerRequestType.GLOB_FILE_INFOS, string, WebFile[]>
     | WorkerTask<WorkerRequestType.RESET, null, null>
     | WorkerTask<WorkerRequestType.RUN_PREPARED, [number, number, any[]], Uint8Array>

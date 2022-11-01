@@ -487,14 +487,20 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         await this.registerFileBuffer(name, buffer);
     }
     /** Register a file path. */
-    public async registerFileURL(name: string, url: string): Promise<void> {
+    public async registerFileURL(
+        name: string,
+        url: string,
+        proto: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<void> {
         if (url === undefined) {
             url = name;
         }
-        const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_URL, [string, string], null>(
+        const task = new WorkerTask<
             WorkerRequestType.REGISTER_FILE_URL,
-            [name, url],
-        );
+            [string, string, DuckDBDataProtocol, boolean],
+            null
+        >(WorkerRequestType.REGISTER_FILE_URL, [name, url, proto, directIO]);
         await this.postTask(task);
     }
 

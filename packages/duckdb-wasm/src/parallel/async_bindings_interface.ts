@@ -6,7 +6,7 @@ import { DuckDBDataProtocol } from '../bindings';
 export interface AsyncDuckDBBindings {
     logger: Logger;
 
-    registerFileURL(name: string, url: string, size: number): Promise<void>;
+    registerFileURL(name: string, url: string, proto: DuckDBDataProtocol, directIO: boolean): Promise<void>;
     registerFileBuffer(name: string, buffer: Uint8Array): Promise<void>;
     registerFileHandle<HandleType>(
         name: string,

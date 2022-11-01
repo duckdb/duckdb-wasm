@@ -407,11 +407,16 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return info;
     }
     /** Register a file object URL */
-    public registerFileURL(name: string, url: string): void {
+    public registerFileURL(name: string, url: string, proto: DuckDBDataProtocol, directIO = false): void {
         if (url === undefined) {
             url = name;
         }
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_register_file_url', ['string', 'string'], [name, url]);
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_fs_register_file_url',
+            ['string', 'string'],
+            [name, url, proto, directIO],
+        );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
