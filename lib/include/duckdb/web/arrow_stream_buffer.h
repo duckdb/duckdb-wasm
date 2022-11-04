@@ -1,3 +1,6 @@
+#ifndef INCLUDE_DUCKDB_WEB_ARROW_STREAM_BUFFER_H_
+#define INCLUDE_DUCKDB_WEB_ARROW_STREAM_BUFFER_H_
+
 #include <string>
 
 #include "arrow/ipc/reader.h"
@@ -85,3 +88,5 @@ struct BufferingArrowIPCStreamDecoder : public arrow::ipc::StreamDecoder {
 
 }  // namespace web
 }  // namespace duckdb
+
+#endif  // INCLUDE_DUCKDB_WEB_ARROW_STREAM_BUFFER_H_
