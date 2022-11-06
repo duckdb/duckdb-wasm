@@ -8,7 +8,7 @@ RUN apt-get update -qq \
         brotli rsync \
         libpthread-stubs0-dev \
         libboost-all-dev \
-        firefox \
+        chromium-browser firefox \
         wget gnupg ca-certificates procps libxss1 \
         zip sqlite3 \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \

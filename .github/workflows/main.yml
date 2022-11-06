@@ -623,7 +623,6 @@ jobs:
                   script: |-
                       mkdir -p ./lib/build/wasm/release ./reports
                       yarn install --frozen-lockfile
-                      node ./node_modules/puppeteer/lib/cjs/puppeteer/node/install.js
                       ./scripts/generate_tpch_tbl.sh 0.01
                       ./scripts/generate_tpch_arrow.sh 0.01
                       ./scripts/generate_tpch_duckdb.sh 0.01
