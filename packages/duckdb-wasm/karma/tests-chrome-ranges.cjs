@@ -1,6 +1,9 @@
-const fs = require('fs');
-const path = require('path');
 const base = require('./karma.base.cjs');
+
+if (process.env.CHROME_BIN === 'undefined') {
+    process.env.CHROME_BIN = require('puppeteer').executablePath();
+}
+console.log(`CHROME_BIN=${process.env.CHROME_BIN}`);
 
 function findByPath(files, path) {
     return Array.from(files).find(file => file.path === path);
