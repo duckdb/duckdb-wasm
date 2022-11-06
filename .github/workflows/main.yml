@@ -657,7 +657,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.9
               with:
                   script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:chrome
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
 
             - name: Test @duckdb/duckdb-wasm on Firefox
               uses: duckdb/duckdb-wasm-ci-env@v0.9
@@ -675,7 +675,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.9
               with:
                   script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
             - name: Build @duckdb/benchmarks
               uses: duckdb/duckdb-wasm-ci-env@v0.9

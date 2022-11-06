@@ -1,6 +1,7 @@
-const puppeteer = require('puppeteer');
-
-process.env.CHROME_BIN = puppeteer.executablePath();
+if (process.env.CHROME_BIN === 'undefined') {
+    process.env.CHROME_BIN = require('puppeteer').executablePath();
+}
+console.log(`CHROME_BIN=${process.env.CHROME_BIN}`);
 
 const JS_TIMEOUT = 900000;
 
