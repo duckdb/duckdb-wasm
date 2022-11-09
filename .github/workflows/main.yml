@@ -659,11 +659,11 @@ jobs:
                   script: |-
                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
 
-            - name: Test @duckdb/duckdb-wasm on Firefox
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      yarn workspace @duckdb/duckdb-wasm test:firefox
+            #            - name: Test @duckdb/duckdb-wasm on Firefox
+            #              uses: duckdb/duckdb-wasm-ci-env@v0.11
+            #              with:
+            #                  script: |-
+            #                      yarn workspace @duckdb/duckdb-wasm test:firefox
 
             - name: Test @duckdb/duckdb-wasm on Node.js
               uses: duckdb/duckdb-wasm-ci-env@v0.11
