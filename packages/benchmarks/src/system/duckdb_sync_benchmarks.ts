@@ -58,7 +58,7 @@ export class DuckDBSyncLoadedTPCHBenchmark implements SystemBenchmark {
         const importTPCH = (name: string) => {
             console.log(`[ RUN ]   ${name}.parquet`);
             const path = getTPCHParquetFilePath(ctx.projectRootPath, scaleFactor, `${name}.parquet`);
-            database.registerFileURL(`${name}.parquet`, path);
+            database.registerFileURL(`${name}.parquet`, path, duckdb.DuckDBDataProtocol.NODE_FS, false);
             connection!.query(`CREATE TABLE ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
             console.log(`[ OK  ]   ${name}.parquet`);
         };
@@ -138,7 +138,7 @@ export class DuckDBSyncParquetTPCHBenchmark implements SystemBenchmark {
         const importTPCH = (name: string) => {
             console.log(`[ RUN ]   ${name}.parquet`);
             const path = getTPCHParquetFilePath(ctx.projectRootPath, scaleFactor, `${name}.parquet`);
-            database.registerFileURL(`${name}.parquet`, path);
+            database.registerFileURL(`${name}.parquet`, path, duckdb.DuckDBDataProtocol.NODE_FS, false);
             connection!.query(`CREATE VIEW ${name} AS SELECT * FROM parquet_scan('${name}.parquet');`);
             console.log(`[ OK  ]   ${name}.parquet`);
         };
