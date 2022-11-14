@@ -30,6 +30,7 @@ ExternalProject_Add(
              -DBUILD_JSON_EXTENSION=TRUE
              -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
+             -DBUILD_JEMALLOC_EXTENSION=FALSE
              -DDISABLE_BUILTIN_EXTENSIONS=TRUE
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
