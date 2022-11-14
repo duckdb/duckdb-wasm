@@ -33,7 +33,7 @@ bool CHECK_COLUMN(MaterializedQueryResult& result, uint32_t column, vector<Value
     }
     for (uint32_t row_idx = 0; row_idx < values.size(); row_idx++) {
         auto actual_val = result.GetValue(column, row_idx);
-        if (!Value::ValuesAreEqual(values[row_idx], actual_val)) {
+        if (!Value::DefaultValuesAreEqual(values[row_idx], actual_val)) {
             auto expected_str = values[row_idx].ToString();
             auto actual_str = actual_val.ToString();
             printf(
