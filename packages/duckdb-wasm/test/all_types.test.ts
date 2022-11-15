@@ -88,7 +88,7 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
 
     float: [-3.4028234663852886e38, 3.4028234663852886e38, null],
     double: [-1.7976931348623157e308, 1.7976931348623157e308, null],
-    varchar: ['🦆🦆🦆🦆🦆🦆', 'goose', null],
+    varchar: ['🦆🦆🦆🦆🦆🦆', 'goo\x00se', null],
     small_enum: ['DUCK_DUCK_ENUM', 'GOOSE', null],
     medium_enum: ['enum_0', 'enum_299', null],
     large_enum: ['enum_0', 'enum_69999', null],
