@@ -24,7 +24,7 @@
         "csv"
     ],
     "dependencies": {
-        "@duckdb/duckdb-wasm": "link:../duckdb-wasm",
+        "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
         "xterm": "^5.0.0",
         "xterm-addon-fit": "^0.6.0",
         "xterm-addon-web-links": "^0.7.0",

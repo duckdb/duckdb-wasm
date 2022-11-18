@@ -438,16 +438,16 @@
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.5.tgz#9283c9ce5b289a3c4f61c12757469e59377f81f3"
   integrity sha512-6nFkfkmSeV/rqSaS4oWHgmpnYw194f6hmWF5is6b0J1naJZoiD0NTc9AiUwPHvWsowkjuHErCZT1wa0jg+BLIA==
 
-"@duckdb/duckdb-wasm-shell@link:packages/duckdb-wasm-shell":
+"@duckdb/duckdb-wasm-shell@file:packages/duckdb-wasm-shell":
   version "1.11.0"
   dependencies:
-    "@duckdb/duckdb-wasm" "link:packages/duckdb-wasm"
+    "@duckdb/duckdb-wasm" "file:../../Library/Caches/Yarn/v6/npm-@duckdb-duckdb-wasm-shell-1.11.0-1fb92c87-bcca-4a2d-9105-21f01b3d6833-1668780033656/node_modules/@duckdb/duckdb-wasm"
     xterm "^5.0.0"
     xterm-addon-fit "^0.6.0"
     xterm-addon-web-links "^0.7.0"
     xterm-addon-webgl "^0.13.0"
 
-"@duckdb/duckdb-wasm@link:packages/duckdb-wasm":
+"@duckdb/duckdb-wasm@file:packages/duckdb-wasm":
   version "1.11.0"
   dependencies:
     apache-arrow "^9.0.0"
