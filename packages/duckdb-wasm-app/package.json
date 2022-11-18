@@ -22,7 +22,7 @@
         "@duckdb/duckdb-wasm-shell": "file:../duckdb-wasm-shell",
         "apache-arrow": "^9.0.0",
         "bootstrap": "^5.2.2",
-        "classnames": "^2.3.1",
+        "classnames": "^2.3.2",
         "framer-motion": "^7.5.3",
         "immutable": "^4.1.0",
         "rc-scrollbars": "^1.1.5",
