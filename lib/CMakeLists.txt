@@ -19,7 +19,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Ccache
 
-if(EMSCRIPTEN)
+if(EMSCRIPTEN AND EXISTS "$ENV{EMSDK}/ccache/git-emscripten_64bit/bin")
   find_program(CCACHE_PROGRAM ccache
                HINTS $ENV{EMSDK}/ccache/git-emscripten_64bit/bin)
 else()
