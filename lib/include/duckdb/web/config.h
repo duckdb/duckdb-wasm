@@ -2,12 +2,13 @@
 #define INCLUDE_DUCKDB_WEB_CONFIG_H_
 
 #include <rapidjson/document.h>
-#include "duckdb/main/config.hpp"
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
+
+#include "duckdb/main/config.hpp"
 
 namespace duckdb {
 namespace web {
