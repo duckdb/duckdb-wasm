@@ -614,6 +614,7 @@ jobs:
             - name: Prepare repository
               run: |
                   chown -R $(id -u):$(id -g) $PWD
+                  git fetch --all --tags
                   (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Prepare environment
