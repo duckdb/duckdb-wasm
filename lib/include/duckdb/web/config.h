@@ -8,8 +8,6 @@
 #include <string>
 #include <string_view>
 
-#include "duckdb/main/config.hpp"
-
 namespace duckdb {
 namespace web {
 
@@ -89,7 +87,7 @@ struct WebDBConfig {
     /// The filesystem
     FileSystemConfig filesystem = {.allow_full_http_reads = std::nullopt};
     /// The database access mode
-    duckdb::AccessMode accessMode = duckdb::AccessMode::AUTOMATIC;
+    uint8_t accessMode = 0;
 
     /// These options are fetched from DuckDB
     DuckDBConfigOptions duckdb_config_options = {
