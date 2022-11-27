@@ -620,6 +620,7 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
+                      chown -R $(id -u):$(id -g) $PWD
                       git config --global --add safe.directory '*'
                       mkdir -p ./lib/build/wasm/release ./reports
                       yarn install --frozen-lockfile
