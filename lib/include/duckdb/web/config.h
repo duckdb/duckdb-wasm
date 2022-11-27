@@ -2,6 +2,7 @@
 #define INCLUDE_DUCKDB_WEB_CONFIG_H_
 
 #include <rapidjson/document.h>
+#include "duckdb/main/config.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -86,6 +87,8 @@ struct WebDBConfig {
     };
     /// The filesystem
     FileSystemConfig filesystem = {.allow_full_http_reads = std::nullopt};
+    /// The database access mode
+    duckdb::AccessMode accessMode = duckdb::AccessMode::AUTOMATIC;
 
     /// These options are fetched from DuckDB
     DuckDBConfigOptions duckdb_config_options = {

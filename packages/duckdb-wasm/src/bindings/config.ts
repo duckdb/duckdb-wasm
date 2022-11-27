@@ -28,7 +28,15 @@ export interface DuckDBFilesystemConfig {
     allowFullHTTPReads?: boolean;
 }
 
+export enum DuckDBAccessMode {
+    UNDEFINED = 0, AUTOMATIC = 1, READ_ONLY = 2, READ_WRITE = 3
+}
+
 export interface DuckDBConfig {
+    /**
+     * The database access mode
+     */
+    accessMode?: DuckDBAccessMode;
     /**
      * The database path
      */

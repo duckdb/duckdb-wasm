@@ -1,6 +1,6 @@
 import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
-import { DuckDBDataProtocol } from '../src/';
+import {DuckDBAccessMode, DuckDBDataProtocol} from '../src/';
 
 export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): void {
     let conn: duckdb.DuckDBConnection;
@@ -304,6 +304,19 @@ export function testAsyncBindings(
                     );
                 });
                 await conn.close();
+            });
+        });
+
+        describe('read only database', () => {
+            it('hello access mode', async () => {
+                await adb().open({
+                    accessMode: DuckDBAccessMode.READ_ONLY
+                });
+                const conn = await adb().connect();
+
+                await expectAsync(() => conn.query('create table t (id int)')).toBeRejectedWithError(
+                    'Database is read only'
+                );
             });
         });
 

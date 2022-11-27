@@ -34,6 +34,18 @@ uint32_t ResolveFeatureFlags() {
     return flags;
 }
 
+static AccessMode ParseAccessMode(std::string access_mode) {
+    if (access_mode == "READ_ONLY") {
+        return AccessMode::READ_ONLY;
+    } else if (access_mode == "AUTOMATIC") {
+        return AccessMode::AUTOMATIC;
+    } else if (access_mode == "READ_WRITE") {
+        return AccessMode::READ_WRITE;
+    } else {
+        return AccessMode::UNDEFINED;
+    }
+}
+
 /// Read the webdb config
 WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     auto config = WebDBConfig{.path = ":memory:",
@@ -88,6 +100,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
             if (fs.HasMember("allowFullHTTPReads") && fs["allowFullHTTPReads"].IsBool()) {
                 config.filesystem.allow_full_http_reads = fs["allowFullHTTPReads"].GetBool();
             }
+        }
+        if (doc.HasMember("access_mode") && doc["access_mode"].IsString()) {
+            config.accessMode = ParseAccessMode(doc["access_mode"].GetString());
         }
     }
     if (!config.query.cast_bigint_to_double.has_value()) {
