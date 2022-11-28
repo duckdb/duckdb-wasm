@@ -26,7 +26,7 @@ jobs:
 
             - name: Build generator
               if: steps.cache-generator.outputs.cache-hit != 'true'
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
@@ -61,7 +61,7 @@ jobs:
                       ${{ runner.os }}-dataprep-
 
             - name: Build generator
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
@@ -96,7 +96,7 @@ jobs:
                       ${{ runner.os }}-duckdb-
 
             - name: Build DuckDB shell
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       ccache -z
@@ -132,7 +132,7 @@ jobs:
                       ${{ runner.os }}-yarn-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn install --frozen-lockfile
@@ -142,43 +142,43 @@ jobs:
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
             - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
             - name: Benchmark sorting integers
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:sort:int
 
             - name: Benchmark joining two relations
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:join:2
 
             - name: Benchmark joining three relations
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:join:3
 
             - name: Benchmark regex filter
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:regex
 
             - name: Benchmark summing up integers
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:sum:int
 
             - name: Benchmark summing up integers in a csv file
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:sum:csv
@@ -237,7 +237,7 @@ jobs:
                       ${{ runner.os }}-yarn-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn install --frozen-lockfile
@@ -251,31 +251,31 @@ jobs:
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
             - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
             - name: Benchmark DuckDB
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.01
 
             - name: Benchmark SQL.js
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.01
 
             - name: Benchmark Arquero
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
 
             - name: Benchmark Lovefield
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
@@ -332,7 +332,7 @@ jobs:
                       ${{ runner.os }}-yarn-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn install --frozen-lockfile
@@ -346,31 +346,31 @@ jobs:
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
             - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
             - name: Benchmark DuckDB
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
 
             - name: Benchmark SQL.js
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.1
 
             - name: Benchmark Arquero
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
 
             - name: Benchmark Lovefield
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
@@ -427,7 +427,7 @@ jobs:
                       ${{ runner.os }}-yarn-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn install --frozen-lockfile
@@ -441,31 +441,31 @@ jobs:
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
             - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
             - name: Benchmark DuckDB
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
 
             - name: Benchmark SQL.js
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.25
 
             - name: Benchmark Arquero
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.25
 
             - name: Benchmark Lovefield
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
@@ -522,7 +522,7 @@ jobs:
                       ${{ runner.os }}-yarn-
 
             - name: Prepare repository
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn install --frozen-lockfile
@@ -536,31 +536,31 @@ jobs:
                   ./scripts/npm_restore.sh ${{ github.event.inputs.pkg_version }}
 
             - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks build
 
             - name: Benchmark DuckDB
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
 
             - name: Benchmark SQL.js
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:sqljs 0.5
 
             - name: Benchmark Arquero
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
 
             - name: Benchmark Lovefield
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
@@ -621,7 +621,7 @@ jobs:
                   path: ./reports/
 
             - name: Merge benchmark reports
-              uses: duckdb/duckdb-wasm-ci-env@v0.7
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
                       chmod +x ./target/release/dataprep
