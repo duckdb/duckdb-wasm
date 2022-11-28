@@ -102,7 +102,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
             }
         }
         if (doc.HasMember("access_mode") && doc["access_mode"].IsString()) {
-            config.accessMode = ParseAccessMode(doc["access_mode"].GetString());
+            config.accessMode = static_cast<uint32_t>(ParseAccessMode(doc["access_mode"].GetString()));
         }
     }
     if (!config.query.cast_bigint_to_double.has_value()) {
