@@ -314,7 +314,7 @@ export function testAsyncBindings(
                 });
                 const conn = await adb().connect();
 
-                await expectAsync(() => conn.query('create table t (id int)')).toBeRejectedWithError(
+                await expectAsync(conn.query('create table t (id int)')).toBeRejectedWithError(
                     'Database is read only'
                 );
             });
