@@ -1,0 +1,2 @@
+# bash can't handle crlf line breaks
+*.sh text eol=lf
