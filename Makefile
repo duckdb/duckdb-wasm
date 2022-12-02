@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Config
 
-ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+ROOT_DIR:=.
 
 UID=${shell id -u}
 GID=${shell id -g}
@@ -15,14 +15,8 @@ LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/lib/build/RelWithDebInfo"
 LIB_XRAY_DIR="${ROOT_DIR}/lib/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
-CI_IMAGE_NAMESPACE="duckdb"
-CI_IMAGE_NAME="wasm-ci"
-CI_IMAGE_TAG="$(shell cat ./actions/image/TAG)"
-CI_IMAGE_FULLY_QUALIFIED="${CI_IMAGE_NAMESPACE}/${CI_IMAGE_NAME}:${CI_IMAGE_TAG}"
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
-IN_IMAGE_MOUNTS=-v${ROOT_DIR}:${ROOT_DIR} -v${ROOT_DIR}/.emscripten_cache/:/mnt/emscripten_cache/ -v${ROOT_DIR}/.ccache/:/mnt/ccache/
-IN_IMAGE_ENV=-e CCACHE_DIR=/mnt/ccache -e CCACHE_BASEDIR=${ROOT_DIR}/lib/ -e EM_CACHE=/mnt/emscripten_cache/
-EXEC_ENVIRONMENT?=docker run -it --rm ${IN_IMAGE_MOUNTS} ${IN_IMAGE_ENV} "${CI_IMAGE_FULLY_QUALIFIED}"
+EXEC_ENVIRONMENT:=docker compose --build run duckdb-wasm-ci
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
@@ -241,6 +235,7 @@ wasm_caches:
 	rm -rf ${EXTENSION_CACHE_DIR}
 	mkdir -p ${EXTENSION_CACHE_DIR}
 	chown -R $(id -u):$(id -g) ${EXTENSION_CACHE_DIR}
+	mkdir -p ${CACHE_DIRS}
 ifeq (${DUCKDB_EXCEL}, 1)
 	touch ${EXCEL_EXTENSION_CACHE_FILE}
 endif
@@ -248,33 +243,38 @@ ifeq (${DUCKDB_JSON}, 1)
 	touch ${JSON_EXTENSION_CACHE_FILE}
 endif
 
-.PHONY: wasm
-wasm: wasm_caches
-	mkdir -p ${CACHE_DIRS}
+wrapped_wasm_caches:
+	${EXEC_ENVIRONMENT} make wasm_caches
+
+.PHONY: wasm_dev
+wasm_dev: wrapped_wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev coi
 
 .PHONY: wasm_debug
-wasm_debug: wasm_caches
-	mkdir -p ${CACHE_DIRS}
+wasm_debug: wrapped_wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
 
 .PHONY: wasm_relperf
-wasm_relperf: wasm_caches
-	mkdir -p ${CACHE_DIRS}
+wasm_relperf: wrapped_wasm_caches
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf coi
 
 .PHONY: wasm_relsize
-wasm_relsize: wasm_caches
-	mkdir -p ${CACHE_DIRS}
+wasm_relsize:
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize coi
+
+.PHONY: wasm
+wasm: wasm_dev
+
+.PHONY: wasm_star
+wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug
@@ -394,17 +394,6 @@ clean:
 	git clean -xfd
 	git submodule foreach --recursive git clean -xfd
 	git submodule update --init --recursive
-
-# Build the docker dev image
-.PHONY: docker_ci_image
-docker_ci_image:
-	tar -cvf - ./actions/image/Dockerfile | docker build \
-		--platform linux/amd64 \
-		-t ${CI_IMAGE_FULLY_QUALIFIED} \
-		-f ./actions/image/Dockerfile \
-		--build-arg UID=${UID} \
-		--build-arg GID=${GID} \
-		-
 
 # Build infrastructure and packages required for development
 .PHONY: bootstrap

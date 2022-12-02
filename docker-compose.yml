@@ -1,0 +1,17 @@
+version: "3.0"
+services:
+  duckdb-wasm-ci:
+    image: duckdb/wasm-ci:0.75
+    build:
+      context: ./actions/image
+      args:
+        - GID=0
+        - UID=0
+    volumes:
+      - .:/wd
+      - ./.ccache:/mnt/ccache
+      - ./.emscripten_cache:/mnt/emscripten_cache
+    environment:
+      - CCACHE_BASEDIR=/wd/lib
+      - CCACHE_DIR=/mnt/ccache
+      - EM_CACHE=/mnt/emscripten_cache/
