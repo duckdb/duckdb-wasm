@@ -3,7 +3,7 @@
     "version": "1.11.0",
     "description": "",
     "author": "Andre Kohn <kohn.a@outlook.com>",
-    "license": "MPL-2.0",
+    "license": "MIT",
     "repository": {
         "type": "git",
         "url": "https://github.com/duckdb/duckdb-wasm.git"
