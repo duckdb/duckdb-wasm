@@ -44,8 +44,9 @@ SHELL ["/bin/bash", "-c"]
 ARG UNAME=actions
 ARG UID=1000
 ARG GID=1000
-RUN groupadd -g ${GID} -o ${UNAME} \
-    && useradd -m -g ${GID} -u ${UID} -s /bin/bash ${UNAME}
+# Create user:group, continue normally if already present
+RUN (id -g ${GID} &> /dev/null && id || groupadd -g ${GID} -o ${UNAME}) \
+    && (id -u ${UID} || useradd -m -g ${GID} -u ${UID} -s /bin/bash ${UNAME})
 
 ENV NVM_DIR=/opt/nvm
 ARG NVM_VERSION="v0.39.2"
@@ -82,7 +83,7 @@ RUN source /opt/emsdk/emsdk_env.sh \
     && chmod +x /opt/entrypoint.sh \
     && chown -R ${UID}:${GID} /opt/entrypoint.sh
 
-USER ${UNAME}
+USER ${UID}:${GID}
 
 ENTRYPOINT ["tini", "-v", "--", "/opt/entrypoint.sh"]
 WORKDIR /wd
