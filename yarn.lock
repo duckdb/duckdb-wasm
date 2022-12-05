@@ -676,10 +676,10 @@
   dependencies:
     dequal "^2.0.2"
 
-"@restart/ui@^1.3.1":
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/@restart/ui/-/ui-1.3.1.tgz#ae16be26128cc205efb7e0bf93d1f34deb1fe116"
-  integrity sha512-MYvMs2eeZTHu2dBJHOXKx72vxzEZeWbZx2z1QjeXq62iYjpjIyukBC2ZEy8x+sb9Gl0AiOiHkPXrl1wn95aOGQ==
+"@restart/ui@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@restart/ui/-/ui-1.4.1.tgz#c9057915f0708c411824eeb16c03d0108c0208d2"
+  integrity sha512-J7wFOx2DcmkBqCqiZgDsggLO7faiNh4Nv1/v80FmbRgP+MYpwaVDKKXLC69DA4+ejgNIsBP5ORtC74EZqO1j8A==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@popperjs/core" "^2.11.5"
@@ -5630,14 +5630,14 @@ rc-scrollbars@^1.1.5:
     dom-css "^2.1.0"
     raf "^3.4.1"
 
-react-bootstrap@^2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-2.5.0.tgz#e25e649e37f080d38eeb92ad5b4ed562a1d7de62"
-  integrity sha512-j/aLR+okzbYk61TM3eDOU1NqOqnUdwyVrF+ojoCRUxPdzc2R0xXvqyRsjSoyRoCo7n82Fs/LWjPCin/QJNdwvA==
+react-bootstrap@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-2.6.0.tgz#bd125889cc9d2bbd7c89334a7c54980ff0a65b94"
+  integrity sha512-WnDgN6PR8WZKo2Og5J8EafFi4BsABjc96lNuMNfksrgiPDCw18/woWQCNhAeHFZQWTQ/PijkOrQ9ncTWwO//AA==
   dependencies:
     "@babel/runtime" "^7.17.2"
     "@restart/hooks" "^0.4.6"
-    "@restart/ui" "^1.3.1"
+    "@restart/ui" "^1.4.1"
     "@types/react-transition-group" "^4.4.4"
     classnames "^2.3.1"
     dom-helpers "^5.2.1"
