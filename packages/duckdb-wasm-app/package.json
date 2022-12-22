@@ -59,7 +59,7 @@
         "karma-chrome-launcher": "^3.1.1",
         "karma-firefox-launcher": "^2.1.2",
         "karma-jasmine": "^5.1.0",
-        "karma-spec-reporter": "^0.0.34",
+        "karma-spec-reporter": "^0.0.36",
         "karma-webpack": "^5.0.0",
         "mini-css-extract-plugin": "^2.6.1",
         "source-map-loader": "^4.0.1",
