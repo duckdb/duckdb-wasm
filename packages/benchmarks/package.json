@@ -18,7 +18,7 @@
         "@types/lodash": "^4.14.191",
         "@types/sql.js": "^1.4.4",
         "@typescript-eslint/eslint-plugin": "^5.48.2",
-        "@typescript-eslint/parser": "^5.48.1",
+        "@typescript-eslint/parser": "^5.49.0",
         "assert": "^2.0.0",
         "buffalo-bench": "https://github.com/ankoh/buffalo-bench#0a1ee2b534973044a30092fc4a01c443c66b9ecd",
         "eslint": "^8.31.0",
