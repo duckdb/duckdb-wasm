@@ -51,7 +51,7 @@
         "nyc": "^15.1.0",
         "prettier": "^2.8.3",
         "puppeteer": "^19.2.0",
-        "rimraf": "^3.0.2",
+        "rimraf": "^4.1.2",
         "s3rver": "^3.7.1",
         "typedoc": "^0.23.24",
         "typescript": "^4.8.4",
