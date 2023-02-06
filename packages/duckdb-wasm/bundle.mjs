@@ -39,8 +39,8 @@ const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
 const TARGET_BROWSER_TEST = ['es2020'];
 const TARGET_NODE = ['node14.6'];
 const EXTERNALS_NODE = ['apache-arrow'];
-const EXTERNALS_BROWSER = ['apache-arrow'];
-const EXTERNALS_WEBWORKER = [];
+const EXTERNALS_BROWSER = ['apache-arrow', 'module'];
+const EXTERNALS_WEBWORKER = ['module'];
 
 // Read CLI flags
 let is_debug = false;
@@ -291,6 +291,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         target: TARGET_BROWSER_TEST,
         bundle: true,
         sourcemap: is_debug ? 'inline' : true,
+        external: EXTERNALS_BROWSER,
     });
 
     console.log('[ ESBUILD ] tests-node.cjs');
