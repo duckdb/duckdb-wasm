@@ -92,7 +92,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
                 ARROW_ASSIGN_OR_RAISE(auto t, mapArrowTypeToDuckDB(*field->type()));
                 children.push_back({field->name(), t});
             }
-            return duckdb::LogicalType::MAP(children);
+            return duckdb::LogicalType::STRUCT(children);
         }
         case arrow::Type::type::MAP: {
             child_list_t<LogicalType> children;
@@ -100,7 +100,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
                 ARROW_ASSIGN_OR_RAISE(auto t, mapArrowTypeToDuckDB(*field->type()));
                 children.push_back({field->name(), t});
             }
-            return duckdb::LogicalType::MAP(children);
+            return duckdb::LogicalType::STRUCT(children);
         }
         case arrow::Type::type::FIXED_SIZE_LIST: {
             ARROW_ASSIGN_OR_RAISE(
