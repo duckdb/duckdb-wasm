@@ -948,7 +948,7 @@ void WebFileSystem::RemoveDirectory(const std::string &directory) {
 }
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
 bool WebFileSystem::ListFiles(const std::string &directory,
-                              const std::function<void(const std::string &, bool)> &callback) {
+                              const std::function<void(const std::string &, bool)> &callback, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     list_files_callback = &callback;
     bool result = duckdb_web_fs_directory_list_files(directory.c_str(), directory.size());

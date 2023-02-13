@@ -133,7 +133,7 @@ void MemoryFileSystem::RemoveDirectory(const std::string &directory) {}
 
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
 bool MemoryFileSystem::ListFiles(const std::string &directory,
-                                 const std::function<void(const std::string &, bool)> &callback) {
+                                 const std::function<void(const std::string &, bool)> &callback, FileOpener *opener) {
     bool any = false;
     for (auto &[path, buffer] : file_paths) {
         if (std::equal(directory.begin(), directory.begin() + std::min(directory.size(), path.size()), path.begin())) {
