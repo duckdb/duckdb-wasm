@@ -691,15 +691,15 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
             webfs->IncrementCacheEpoch();
         };
 
-        config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, callback_s3_region);
-        config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR,
+        config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, Value(), callback_s3_region);
+        config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, Value(),
                                   callback_s3_access_key_id);
-        config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR,
+        config.AddExtensionOption("s3_secret_access_key", "S3 Access Key", LogicalType::VARCHAR, Value(),
                                   callback_s3_secret_access_key);
-        config.AddExtensionOption("s3_session_token", "S3 Session Token", LogicalType::VARCHAR,
+        config.AddExtensionOption("s3_session_token", "S3 Session Token", LogicalType::VARCHAR, Value(),
                                   callback_s3_session_token);
         config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR,
-                                  callback_s3_endpoint);
+                                  Value(), callback_s3_endpoint);
 
         webfs->IncrementCacheEpoch();
     }
