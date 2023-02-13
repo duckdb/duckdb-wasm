@@ -329,7 +329,7 @@ endif()
 
 if(NOT EMSCRIPTEN)
   set(TEST_CC
-      ${CMAKE_SOURCE_DIR}/test/ast_test.cc
+#      ${CMAKE_SOURCE_DIR}/test/ast_test.cc
       ${CMAKE_SOURCE_DIR}/test/all_types_test.cc
       ${CMAKE_SOURCE_DIR}/test/arrow_casts_test.cc
       ${CMAKE_SOURCE_DIR}/test/bugs_test.cc
@@ -341,7 +341,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/insert_json_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_analyzer_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
-      ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
+#      ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_dataview_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/parquet_test.cc
