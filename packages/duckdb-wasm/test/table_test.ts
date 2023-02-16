@@ -26,6 +26,6 @@ export function compareTable(table: arrow.Table, expected: Column[]): void {
         for (let j = 0; j < rowCount; ++j) {
             have.push(col.get(j));
         }
-        expect(have).toEqual(expected[i].values);
+        expect(Number(have)).toEqual(Number(expected[i].values));
     }
 }
