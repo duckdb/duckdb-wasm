@@ -250,8 +250,8 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Recursively remove a directory and all files in it
     void RemoveDirectory(const std::string &directory) override;
     /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
-    bool ListFiles(const std::string &directory,
-                   const std::function<void(const std::string &, bool)> &callback) override;
+    bool ListFiles(const std::string &directory, const std::function<void(const std::string &, bool)> &callback,
+                   FileOpener *opener = nullptr) override;
     /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
     /// properties
     void MoveFile(const std::string &source, const std::string &target) override;

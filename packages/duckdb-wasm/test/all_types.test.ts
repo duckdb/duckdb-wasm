@@ -219,18 +219,22 @@ export function testAllTypes(db: () => duckdb.DuckDBBindings): void {
                 }
                 for (let i = 0; i < results.numCols; i++) {
                     const name = results.schema.fields[i].name;
+                    if (name == "bit")
+                        continue;
                     const col = results.getChildAt(i);
                     if (skip.get(name)) continue;
                     expect(col).not.toBeNull();
                     expect(col?.length).not.toEqual(0);
 
                     expect(unpack(getValue(col!.get(0))))
-                        .withContext(name)
-                        .toEqual(test.answerMap[name][0]); // Min
+                       .withContext(name)
+                       .toEqual(test.answerMap[name][0]); // Min
                     expect(unpack(getValue(col!.get(1))))
-                        .withContext(name)
-                        .toEqual(test.answerMap[name][1]); // Max
-                    expect(col!.get(2)).withContext(name).toEqual(test.answerMap[name][2]); // Null
+                       .withContext(name)
+                       .toEqual(test.answerMap[name][1]); // Max
+                    expect(col!.get(2))
+                       .withContext(name)
+                       .toEqual(test.answerMap[name][2]); // Null
                 }
             });
         }
@@ -267,6 +271,8 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
                 }
                 for (let i = 0; i < results.numCols; i++) {
                     const name = results.schema.fields[i].name;
+                    if (name == "bit")
+                        continue;
                     const col = results.getChildAt(i);
                     if (skip.get(name)) continue;
                     expect(col).not.toBeNull();

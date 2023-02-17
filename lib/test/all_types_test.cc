@@ -205,7 +205,8 @@ vector<string> SUPPORTED_TYPES = {"bool",
                                   "dec_9_4",
                                   "dec_18_6",
                                   "dec38_10",
-                                  "blob"};
+                                  "blob",
+                                  "bit"};
 
 vector<string> UNSUPPORTED_TYPES = {
     // Does not work full range as it overflows during multiplication
@@ -218,7 +219,7 @@ vector<string> UNSUPPORTED_TYPES = {
     "date_array", "timestamp_array", "timestamptz_array",
 
     // Currently does not work
-    "uuid", "json"};
+    "uuid"};
 
 TEST(AllTypesTest, FullRangeTypes) {
     auto db = std::make_shared<WebDB>(NATIVE);
