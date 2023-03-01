@@ -702,9 +702,9 @@ jobs:
                   NPM_PUBLISH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
               if: env.NPM_PUBLISH_TOKEN != null && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
               run: |
-                  ./scripts/npm_publish_lib.sh || true
-                  ./scripts/npm_publish_shell.sh || true
-                  ./scripts/npm_publish_react.sh || true
+                  ./scripts/npm_publish_lib.sh
+                  ./scripts/npm_publish_shell.sh
+                  ./scripts/npm_publish_react.sh
 
             - name: Deploy GitHub Page
               if: github.ref == 'refs/heads/master'
