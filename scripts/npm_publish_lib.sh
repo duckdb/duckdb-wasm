@@ -8,5 +8,4 @@ cp ${PROJECT_ROOT}/misc/duckdb.svg ./dist/img/duckdb.svg
 cp ${PROJECT_ROOT}/misc/duckdb_wasm.svg ./dist/img/duckdb_wasm.svg
 ${PROJECT_ROOT}/scripts/build_duckdb_badge.sh > ./dist/img/duckdb_version_badge.svg
 
-npm config set //registry.npmjs.org/:_authToken ${NPM_PUBLISH_TOKEN}
-npm publish --ignore-scripts --access public ${TAG} || true
+npm publish --ignore-scripts --access public ${TAG}
