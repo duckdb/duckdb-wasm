@@ -16,7 +16,7 @@ LIB_XRAY_DIR="${ROOT_DIR}/lib/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
-EXEC_ENVIRONMENT:=docker compose run duckdb-wasm-ci
+EXEC_ENVIRONMENT:=docker-compose run duckdb-wasm-ci
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
@@ -397,7 +397,7 @@ clean:
 
 .PHONY: docker_ci_image
 docker_ci_image:
-	docker compose build
+	docker-compose build
 
 # Build infrastructure and packages required for development
 .PHONY: bootstrap

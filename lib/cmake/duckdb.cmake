@@ -28,6 +28,7 @@ ExternalProject_Add(
              -DBUILD_FTS_EXTENSION=TRUE
              -DBUILD_EXCEL_EXTENSION=TRUE
              -DBUILD_JSON_EXTENSION=TRUE
+             -DBUILD_ICU_EXTENSION=TRUE
              -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
              -DBUILD_JEMALLOC_EXTENSION=FALSE
@@ -102,8 +103,13 @@ add_library(duckdb_json STATIC IMPORTED)
 set_property(TARGET duckdb_json PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjson_extension.a)
 target_include_directories(duckdb_json INTERFACE ${DUCKDB_SOURCE_DIR}/extension/json/include)
 
+add_library(duckdb_icu STATIC IMPORTED)
+set_property(TARGET duckdb_icu PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libicu_extension.a)
+target_include_directories(duckdb_icu INTERFACE ${DUCKDB_SOURCE_DIR}/extension/icu/include)
+
 add_dependencies(duckdb duckdb_ep)
 add_dependencies(duckdb_fts duckdb_ep)
 add_dependencies(duckdb_parquet duckdb_ep)
 add_dependencies(duckdb_excel duckdb_ep)
 add_dependencies(duckdb_json duckdb_ep)
+add_dependencies(duckdb_icu duckdb_ep)

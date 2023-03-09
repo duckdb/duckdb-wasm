@@ -49,6 +49,7 @@
 #include "duckdb/web/extensions/fts_extension.h"
 #include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
+#include "duckdb/web/extensions/icu_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
@@ -815,6 +816,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 #if defined(DUCKDB_JSON_EXTENSION)
         duckdb_web_json_init(db.get());
 #endif
+        duckdb_web_icu_init(db.get());
         RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
