@@ -7,12 +7,17 @@ if(EMSCRIPTEN)
   set(DUCKDB_BUILD_TYPE Release)
 endif()
 
+set(DUCKDB_CORE_DIR "${CMAKE_SOURCE_DIR}/../submodules/duckdb")
+if(DUCKDB_LOCATION)
+  set(DUCKDB_CORE_DIR ${DUCKDB_LOCATION})
+endif()
+
 set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
 ExternalProject_Add(
   duckdb_ep
-  SOURCE_DIR "${CMAKE_SOURCE_DIR}/../submodules/duckdb"
+  SOURCE_DIR "${DUCKDB_CORE_DIR}"
   PREFIX "${CMAKE_BINARY_DIR}/third_party/duckdb"
   INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/duckdb/install"
   CMAKE_ARGS -G${CMAKE_GENERATOR}
@@ -51,7 +56,7 @@ ExternalProject_Add(
 ExternalProject_Get_Property(duckdb_ep install_dir)
 ExternalProject_Get_Property(duckdb_ep binary_dir)
 
-set(DUCKDB_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../submodules/duckdb")
+set(DUCKDB_SOURCE_DIR "${DUCKDB_CORE_DIR}")
 set(DUCKDB_INCLUDE_DIR "${install_dir}/include")
 set(DUCKDB_UTF8PROC_INCLUDE_DIR
     "${DUCKDB_SOURCE_DIR}/third_party/utf8proc/include")
