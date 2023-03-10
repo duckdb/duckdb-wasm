@@ -8,7 +8,9 @@ PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 
 MODE=${1:-Fast}
 FEATURES=${2:-mvp}
+DUCKDB_LOCATION=${3:-"$PROJECT_ROOT/submodules/duckdb"}
 echo "MODE=${MODE}"
+echo "${DUCKDB_LOCATION}"
 
 CPP_BUILD_DIR="${PROJECT_ROOT}/lib/build/wasm/${MODE}"
 CPP_SOURCE_DIR="${PROJECT_ROOT}/lib"
@@ -54,6 +56,7 @@ emcmake cmake \
     -B${BUILD_DIR} \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DDUCKDB_LOCATION=${DUCKDB_LOCATION} \
     ${ADDITIONAL_FLAGS}
 
 emmake make \
