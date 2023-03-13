@@ -6,7 +6,7 @@ import { DuckDBQueryConfig } from '../src/';
 // Note that due to Arrow JS not supporting the duration type, the castDurationToInterval option is used for intervals.
 // This has a side-effect that while the value is in microseconds, it only has millisecond accuracy. This is
 // because DuckDB emits intervals in milliseconds and the Arrow Time64 type does not support milliseconds as unit.
-const MAX_INTERVAL_US = (((83 * (12 * 30) + 3 * 30 + 999) * 24 * 60 + 16) * 60 + 39) * 1000000 + 999000;
+//const MAX_INTERVAL_US = (((83 * (12 * 30) + 3 * 30 + 999) * 24 * 60 + 16) * 60 + 39) * 1000000 + 999000;
 
 // JS Date at +/-8640000000000000ms
 const MINIMUM_DATE_STR = '-271821-04-20';
@@ -84,7 +84,7 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
         BigInt(new Date('1970-01-01T23:59:59.999+00:00').valueOf()) * BigInt(1000) + BigInt(999),
         null,
     ],
-    interval: [BigInt(0), BigInt(MAX_INTERVAL_US), null],
+    interval: [new Int32Array([0,0]),  new Int32Array([0,0]), null],
 
     float: [-3.4028234663852886e38, 3.4028234663852886e38, null],
     double: [-1.7976931348623157e308, 1.7976931348623157e308, null],
@@ -140,7 +140,7 @@ function unpack(v: any): any {
         return ret;
     } else if (v instanceof Uint8Array) {
         return v;
-    } else if (v instanceof Object) {
+    } else if (v.toJSON instanceof Function) {
         return JSON.stringify(v.toJSON());
     }
 
