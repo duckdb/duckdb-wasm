@@ -7028,10 +7028,10 @@ warning@^4.0.0, warning@^4.0.2, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-wasm-feature-detect@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/wasm-feature-detect/-/wasm-feature-detect-1.4.0.tgz#45a26f8740da8aaa0b5af2529facd9db0892ab87"
-  integrity sha512-9z4Yk3SeHQdb7E4g6ywQYcUt1CHr9HFiCIA5h29rv0gmW4lCE5dnDhheiJI5qzVPSDnXHyXQPLGPyucsuIzacw==
+wasm-feature-detect@^1.5.1:
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/wasm-feature-detect/-/wasm-feature-detect-1.5.1.tgz#0db57a7d7f8c26b743dde85386215ae2b135e78a"
+  integrity sha512-GHr23qmuehNXHY4902/hJ6EV5sUANIJC3R/yMfQ7hWDg3nfhlcJfnIL96R2ohpIwa62araN6aN4bLzzzq5GXkg==
 
 wasm-pack@^0.10.3:
   version "0.10.3"
