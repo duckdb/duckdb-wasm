@@ -55,7 +55,7 @@
         "s3rver": "^3.7.1",
         "typedoc": "^0.23.27",
         "typescript": "^4.8.4",
-        "wasm-feature-detect": "^1.4.0",
+        "wasm-feature-detect": "^1.5.1",
         "web-worker": "^1.2.0"
     },
     "scripts": {
