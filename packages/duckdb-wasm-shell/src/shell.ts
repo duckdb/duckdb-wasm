@@ -90,7 +90,7 @@ export async function embed(props: ShellProps) {
     // Progress handler
     const progressHandler = (progress: InstantiationProgress) => {
         if (progress.bytesTotal > 0) {
-            const blocks = Math.floor((progress.bytesLoaded / progress.bytesTotal) * 10.0);
+            const blocks = Math.max(Math.min(Math.floor((progress.bytesLoaded / progress.bytesTotal) * 10.0), 10.0), 0.0);
             const bar = `${'#'.repeat(blocks)}${'-'.repeat(10 - blocks)}`;
             shell.write(`${TERM_CLEAR}${TERM_BOLD}[ RUN ]${TERM_NORMAL} Loading ${bar}`);
         } else {
