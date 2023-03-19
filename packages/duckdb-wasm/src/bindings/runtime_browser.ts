@@ -152,7 +152,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // Supports ranges?
                     let error: any | null = null;
                     try {
-                        // Send a dummy range request querying the first byte of the file
+                        // Send a dummy HEAD request with range protocol
                         const xhr = new XMLHttpRequest();
                         if (file.dataProtocol == DuckDBDataProtocol.S3) {
                             xhr.open('HEAD', getHTTPUrl(file.s3Config, file.dataUrl!), false);
@@ -165,11 +165,31 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                         // Supports range requests
                         const contentLength = xhr.getResponseHeader('Content-Length');
-                        if (xhr.status == 206 && contentLength !== null) {
-                            const result = mod._malloc(2 * 8);
-                            mod.HEAPF64[(result >> 3) + 0] = +contentLength;
-                            mod.HEAPF64[(result >> 3) + 1] = 0;
-                            return result;
+                        if (contentLength !== null) {
+                            let supportBytes = (xhr.status == 206);
+                            if (!supportBytes && (xhr.status == 200) && (+contentLength > 1)) {
+                                // Send a dummy range request querying the first byte of the file
+                                const xhr2 = new XMLHttpRequest();
+                                if (file.dataProtocol == DuckDBDataProtocol.S3) {
+                                    xhr2.open('HEAD', getHTTPUrl(file.s3Config, file.dataUrl!), false);
+                                    addS3Headers(xhr2, file.s3Config, file.dataUrl!, 'HEAD');
+                                } else {
+                                    xhr2.open('HEAD', file.dataUrl!, false);
+                                }
+                                xhr2.setRequestHeader('Range', `bytes=0-0`);
+                                xhr2.send(null);
+                                const contentLength2 = xhr2.getResponseHeader('Content-Length');
+
+                                if (contentLength2 != null){
+                                    supportBytes = (xhr2.status == 200 || xhr2.status == 206) && ( +contentLength2 == 1);
+                                }
+                            }
+                            if (supportBytes) {
+                                const result = mod._malloc(2 * 8);
+                                mod.HEAPF64[(result >> 3) + 0] = +contentLength;
+                                mod.HEAPF64[(result >> 3) + 1] = 0;
+                                return result;
+                            }
                         }
                     } catch (e: any) {
                         error = e;
