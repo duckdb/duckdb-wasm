@@ -171,10 +171,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 // Send a dummy range request querying the first byte of the file
                                 const xhr2 = new XMLHttpRequest();
                                 if (file.dataProtocol == DuckDBDataProtocol.S3) {
-                                    xhr2.open('HEAD', getHTTPUrl(file.s3Config, file.dataUrl!), false);
-                                    addS3Headers(xhr2, file.s3Config, file.dataUrl!, 'HEAD');
+                                    xhr2.open('GET', getHTTPUrl(file.s3Config, file.dataUrl!), false);
+                                    addS3Headers(xhr2, file.s3Config, file.dataUrl!, 'GET');
                                 } else {
-                                    xhr2.open('HEAD', file.dataUrl!, false);
+                                    xhr2.open('GET', file.dataUrl!, false);
                                 }
                                 xhr2.setRequestHeader('Range', `bytes=0-0`);
                                 xhr2.send(null);
