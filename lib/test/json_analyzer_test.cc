@@ -196,27 +196,6 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         }
     },
     {
-        .name = "cols_timestamp_mixed_1",
-        .input = R"JSON({
-            "a": [
-                1, 2,
-                "2008-02-01 09:00:22",
-                "2009-01-01 12:00:00",
-                "2009-06-30 18:30:00"
-            ]
-        })JSON",
-        .shape = JSONTableShape::COLUMN_OBJECT,
-        .type = "struct<a: timestamp[s]>",
-        .columns = {
-            {"a", R"JSON([
-                1, 2,
-                "2008-02-01 09:00:22",
-                "2009-01-01 12:00:00",
-                "2009-06-30 18:30:00"
-            ])JSON"}
-        }
-    },
-    {
         .name = "cols_2",
         .input = R"JSON({
             "a": [1, -2, 3],
@@ -339,18 +318,6 @@ static std::vector<JSONAnalyzerTest> JSON_ANALYZER_TESTS = {
         .input = R"JSON([
             { "a": "2007-08-31 16:47" },
             { "a": "2007-12-24 18:21" },
-            { "a": "2008-02-01 09:00:22" },
-            { "a": "2009-01-01 12:00:00" },
-            { "a": "2009-06-30 18:30:00" }
-        ])JSON",
-        .shape = JSONTableShape::ROW_ARRAY,
-        .type = "struct<a: timestamp[s]>"
-    },
-    {
-        .name = "rows_timestamp_mixed_1",
-        .input = R"JSON([
-            { "a": 1 },
-            { "a": 2 },
             { "a": "2008-02-01 09:00:22" },
             { "a": "2009-01-01 12:00:00" },
             { "a": "2009-06-30 18:30:00" }

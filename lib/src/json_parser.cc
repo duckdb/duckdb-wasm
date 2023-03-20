@@ -178,9 +178,7 @@ arrow::Result<int64_t> ParseTimestamp(const rapidjson::Value& json_obj, const ar
     auto& type = reinterpret_cast<const arrow::TimestampType&>(t);
     assert(!json_obj.IsNull());
     int64_t value;
-    if (json_obj.IsNumber()) {
-        ARROW_ASSIGN_OR_RAISE(value, ParseNumber<arrow::Int64Type>(json_obj, type));
-    } else if (json_obj.IsString()) {
+    if (json_obj.IsString()) {
         arrow::util::string_view view(json_obj.GetString(), json_obj.GetStringLength());
         if (!arrow::internal::ParseValue(type, view.data(), view.size(), &value)) {
             return arrow::Status::Invalid("couldn't parse timestamp from ", view);
