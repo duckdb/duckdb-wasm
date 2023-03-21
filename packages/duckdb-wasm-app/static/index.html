@@ -7,41 +7,60 @@
         <meta http-equiv="cache-control" content="no-cache" />
         <meta http-equiv="expires" content="0" />
         <meta http-equiv="pragma" content="no-cache" />
-
         <link rel="apple-touch-icon" href="static/favicons/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="static/favicons/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="static/favicons/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="static/favicons/favicon-16x16.png" />
         <link rel="manifest" href="static/favicons/site.webmanifest" />
-        <link rel="mask-icon" href="static/favicons/safari-pinned-tab.svg" c />
+        <link rel="mask-icon" href="static/favicons/safari-pinned-tab.svg" c="" />
         <link rel="shortcut icon" href="static/favicons/favicon.ico" />
         <meta name="apple-mobile-web-app-title" content="DuckDB Shell" />
         <meta name="msapplication-config" coontent="static/favicons/browserconfig.xml" />
         <meta property="og:image" content="static/favicons/sharingduckdb.jpg" />
-
         <title>DuckDB Shell</title>
-        <style>
-            html {
-                width: 100%;
-                height: 100%;
-                padding: 0;
-                margin: 0;
-            }
-            body {
-                width: 100%;
-                height: 100%;
-                padding: 0;
-                margin: 0;
-            }
-            #root {
-                width: 100%;
-                height: 100%;
-                padding: 0;
-                margin: 0;
-            }
-        </style>
+        <link href="static/css/navbar.css" rel="stylesheet">
     </head>
     <body>
-        <div id="root"></div>
+        <div>
+            <div class="level1" style="height:100%">
+                <div class="level2">
+                    <a href="https://duckdb.org" style="display: grid; height:auto; width:100%;" title="Go to DuckDB Website">
+                        <div class="ducklogo" style="width:64px; height:64px; display: grid; align-items:center; justify-content:center; color: rgb(255, 240, 0);"><img src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm/dist/img/duckdb.svg" style="width:32px;"></div>
+                    </a>
+                    <div class="submenu">
+                        <div></div>
+                        <div class="submenu_item current">
+                            <a href="/" title="Restart shell">
+                                <div>
+                                    <svg width="18px" height="18px">
+                                        <use xlink:href="static/img/shell.svg#sym"></use>
+                                    </svg>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="submenu_item">
+                            <a href="/docs/" title="Read the  Documentation">
+                                <div>
+                                    <svg width="18px" height="18px">
+                                        <use xlink:href="static/img/book.svg#sym"></use>
+                                    </svg>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="submenu_item">
+                            <a href="https://github.com/duckdb/duckdb-wasm" target="blank" title="Check GitHub Repo">
+                                <div><img src="static/img/github.svg" width="18px" height="18px" style="filter:invert(1)"></div>
+                            </a>
+                        </div>
+                        <div class="submenu_item">
+                            <a href="https://discord.duckdb.org" target="blank" title="Join DuckDB's Discord">
+                                <div><img src="static/img/discord.svg" width="18px" height="18px" style="filter:invert(1)"></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div id="root"></div>
+            </div>
+        </div>
     </body>
 </html>

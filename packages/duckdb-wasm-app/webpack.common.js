@@ -147,6 +147,14 @@ export function configure(params) {
                         to: './static/favicons',
                     },
                     {
+                        from: './static/svg/icons',
+                        to: './static/img',
+                    },
+                    {
+                        from: './static/css',
+                        to: './static/css',
+                    },
+                    {
                         from: '../duckdb-wasm/docs',
                         to: './docs',
                     },

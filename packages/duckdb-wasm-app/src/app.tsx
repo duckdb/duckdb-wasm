@@ -55,17 +55,13 @@ root.render(
                         <Route
                             index
                             element={
-                                <NavBarContainer>
                                     <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />
-                                </NavBarContainer>
                             }
                         />
                         <Route
                             path="/versus"
                             element={
-                                <NavBarContainer>
                                     <Versus />
-                                </NavBarContainer>
                             }
                         />
                         <Route path="*" element={<Navigate to="/" />} />
