@@ -71,7 +71,12 @@ export class HistoryStore {
                 const idb = req.result;
                 resolve(idb);
             };
-            req.onerror = err => reject(err);
+            req.onerror = err => {
+                console.log("Error while opeing indexedDB connection", err);
+                // NOTE: we are using resolve(null) on purpose, since null is a vaild value,
+		//	and reject (uncatched) will trigger a failure
+                resolve(null);
+            };
         });
         // Load the metadata
         await this.loadMetadata();
@@ -79,6 +84,8 @@ export class HistoryStore {
 
     /// Load the log metadata (if persisted)
     protected async loadMetadata(): Promise<void> {
+        if (!this._idb)
+             return;
         const entry: LogInfo | null = await new Promise((resolve, _reject) => {
             const tx = this._idb!.transaction([TABLE_LOG_INFO]);
             const logInfo = tx.objectStore(TABLE_LOG_INFO);
@@ -119,6 +126,8 @@ export class HistoryStore {
 
     /// Push a new entry
     public async push(input: string): Promise<void> {
+        if (!this._idb)
+             return;
         // Get next key
         const entryKey = this._nextEntryKey++ & ((1 << HISTORY_SIZE_SHIFT) - 1);
         this._entryCount = Math.min(this._entryCount + 1, 1 << HISTORY_SIZE_SHIFT);
