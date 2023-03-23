@@ -21,12 +21,14 @@ export class HistoryStore {
     protected _idb: IDBDatabase | null;
     protected _nextEntryKey: number;
     protected _entryCount: number;
+    protected _isWorking: boolean;
 
     public constructor() {
         this._idbFactory = window.indexedDB;
         this._idb = null;
         this._nextEntryKey = 0;
         this._entryCount = 0;
+        this._isWorking = (this._idbFactory != null);
     }
 
     /// Load entire history
@@ -56,6 +58,8 @@ export class HistoryStore {
 
     /// Open the indexeddb database
     public async open(): Promise<void> {
+        if (!this._isWorking)
+		return;
         // Create the database
         this._idb = await new Promise((resolve, reject) => {
             const req = this._idbFactory.open(DB_NAME, DB_VERSION);
@@ -71,7 +75,13 @@ export class HistoryStore {
                 const idb = req.result;
                 resolve(idb);
             };
-            req.onerror = err => reject(err);
+            req.onerror = err => {
+                this._isWorking = false;
+                console.log("Error while opeing indexedDB connection", err);
+                // NOTE: we are using resolve(null) on purpose, since null is a vaild value,
+		//	and reject (uncatched) will trigger a failure
+                resolve(null);
+            };
         });
         // Load the metadata
         await this.loadMetadata();
@@ -79,6 +89,8 @@ export class HistoryStore {
 
     /// Load the log metadata (if persisted)
     protected async loadMetadata(): Promise<void> {
+        if (!this._isWorking)
+             return;
         const entry: LogInfo | null = await new Promise((resolve, _reject) => {
             const tx = this._idb!.transaction([TABLE_LOG_INFO]);
             const logInfo = tx.objectStore(TABLE_LOG_INFO);
@@ -111,6 +123,8 @@ export class HistoryStore {
 
     /// Reset the indexeddb
     public async reset(): Promise<void> {
+        if (!this._isWorking)
+             return;
         this._idb?.close();
         this._idb = null;
         this._idbFactory.deleteDatabase(DB_NAME);
@@ -119,6 +133,8 @@ export class HistoryStore {
 
     /// Push a new entry
     public async push(input: string): Promise<void> {
+        if (!this._isWorking)
+             return;
         // Get next key
         const entryKey = this._nextEntryKey++ & ((1 << HISTORY_SIZE_SHIFT) - 1);
         this._entryCount = Math.min(this._entryCount + 1, 1 << HISTORY_SIZE_SHIFT);
