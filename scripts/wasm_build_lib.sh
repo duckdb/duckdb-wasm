@@ -12,7 +12,6 @@ DUCKDB_LOCATION=${3:-"$PROJECT_ROOT/submodules/duckdb"}
 echo "MODE=${MODE}"
 echo "${DUCKDB_LOCATION}"
 
-CPP_BUILD_DIR="${PROJECT_ROOT}/lib/build/wasm/${MODE}"
 CPP_SOURCE_DIR="${PROJECT_ROOT}/lib"
 DUCKDB_LIB_DIR="${PROJECT_ROOT}/packages/duckdb-wasm/src/bindings"
 
@@ -45,9 +44,8 @@ esac
 echo "MODE=${MODE}"
 echo "FEATURES=${FEATURES}"
 
-BUILD_DIR="${CPP_SOURCE_DIR}/build/wasm/${MODE}${SUFFIX}"
+BUILD_DIR="${PROJECT_ROOT}/build/${MODE}/${FEATURES}"
 mkdir -p ${BUILD_DIR}
-rm -f ${BUILD_DIR}/duckdb_*.{wasm,js}
 
 set -x
 

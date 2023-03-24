@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := lib_tests
+.DEFAULT_GOAL := app
 
 # ---------------------------------------------------------------------------
 # Config
@@ -9,14 +9,14 @@ UID=${shell id -u}
 GID=${shell id -g}
 
 LIB_SOURCE_DIR="${ROOT_DIR}/lib"
-LIB_DEBUG_DIR="${ROOT_DIR}/lib/build/Debug"
-LIB_RELEASE_DIR="${ROOT_DIR}/lib/build/Release"
-LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/lib/build/RelWithDebInfo"
-LIB_XRAY_DIR="${ROOT_DIR}/lib/build/Xray"
+LIB_DEBUG_DIR="${ROOT_DIR}/build/Debug"
+LIB_RELEASE_DIR="${ROOT_DIR}/build/Release"
+LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/build/RelWithDebInfo"
+LIB_XRAY_DIR="${ROOT_DIR}/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
-EXEC_ENVIRONMENT:=docker compose run duckdb-wasm-ci
+DOCKER_EXEC_ENVIRONMENT=docker compose run duckdb-wasm-ci
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
@@ -26,6 +26,8 @@ JS_FILTER=
 EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
 EXCEL_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/excel"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
+
+cpp_lib: lib_tests
 
 # ---------------------------------------------------------------------------
 # Formatting
@@ -41,10 +43,11 @@ check_format:
 
 # ---------------------------------------------------------------------------
 # Building
+.PHONY: set_environment
+set_environment:
+	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" || EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT}
 
-.PHONY: data
-data:
-	${ROOT_DIR}/scripts/build_duckdb_shell.sh
+build/data: build/duckdb_shell
 	${ROOT_DIR}/scripts/generate_uni.sh
 	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.01
 	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.1
@@ -62,18 +65,11 @@ data:
 	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.1
 	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.25
 	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.5
-
-.PHONY: data
-data_duckdb:
-	${ROOT_DIR}/scripts/build_duckdb_shell.sh
-	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.01
-	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.1
-	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.25
-	${ROOT_DIR}/scripts/generate_tpch_duckdb.sh 0.5
+	touch build/data
 
 # Compile the core in debug mode
 .PHONY: lib
-lib:
+lib: submodules
 	mkdir -p ${LIB_DEBUG_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_DEBUG_DIR} \
 		-DCMAKE_BUILD_TYPE=Debug \
@@ -82,16 +78,18 @@ lib:
 
 # Compile the core in release mode with debug symbols
 .PHONY: lib_relwithdebinfo
-lib_relwithdebinfo:
+lib_relwithdebinfo: submodules
 	mkdir -p ${LIB_RELWITHDEBINFO_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELWITHDEBINFO_DIR} \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
 	make -C${LIB_RELWITHDEBINFO_DIR} -j${CORES}
 
+DUCKDB_SOURCES := $(wildcard ${ROOT_DIR}/submodules/duckdb/src/*)
+
 # Compile the core in release mode with debug symbols
 # XXX Compiling gtest with a recent clang fails at the moment, recheck xray on linux when fixed
 .PHONY: lib_xray
-lib_xray:
+lib_xray: submodules
 	mkdir -p ${LIB_XRAY_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_XRAY_DIR} \
 		-DWITH_XRAY=1 \
@@ -100,7 +98,7 @@ lib_xray:
 
 # Compile the core in release mode
 .PHONY: lib_release
-lib_release:
+lib_release: submodules
 	mkdir -p ${LIB_RELEASE_DIR}
 	cmake -S ${LIB_SOURCE_DIR} -B ${LIB_RELEASE_DIR} \
 		-DCMAKE_BUILD_TYPE=Release
@@ -149,16 +147,20 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
-.PHONY: bench_tpch_aq
-bench_tpch_aq:
+bench_build:
 	yarn workspace @duckdb/benchmarks build
+	touch bench_build
+
+
+.PHONY: bench_tpch_aq
+bench_tpch_aq: build/data bench_build
 	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
 	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
 	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
 
 # Run all benchmarks for the paper
 .PHONY: bench_tpch
-bench_tpch_paper:
+bench_tpch_paper: build/data bench_build
 	yarn workspace @duckdb/benchmarks build
 	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
@@ -174,62 +176,46 @@ bench_tpch_paper:
 	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
 
 .PHONY: bench_all
-bench_all:
-	yarn workspace @duckdb/benchmarks build
-	yarn workspace @duckdb/benchmarks bench:internal
-	yarn workspace @duckdb/benchmarks bench:system:sort:int
-	yarn workspace @duckdb/benchmarks bench:system:sum:csv
-	yarn workspace @duckdb/benchmarks bench:system:sum:int
-	yarn workspace @duckdb/benchmarks bench:system:regex
-	yarn workspace @duckdb/benchmarks bench:system:join:2
-	yarn workspace @duckdb/benchmarks bench:system:join:3
+bench_all: bench_build bench_internal bench_system_sort_int bench_system_sum_csv bench_system_sort_int bench_system_regex bench_system_join_2 bench_system_join_3 build/data
 	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
 	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
 	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
 
 .PHONY: bench_internal
-bench_internal:
-	yarn workspace @duckdb/benchmarks build
+bench_internal: bench_build
 	yarn workspace @duckdb/benchmarks bench:internal
 
 .PHONY: bench_system_sort_int
-bench_system_sort_int:
-	yarn workspace @duckdb/benchmarks build
+bench_system_sort_int: bench_build
 	yarn workspace @duckdb/benchmarks bench:system:sort:int
 
 .PHONY: bench_system_sum_csv
-bench_system_sum_csv:
-	yarn workspace @duckdb/benchmarks build
+bench_system_sum_csv: bench_build
 	yarn workspace @duckdb/benchmarks bench:system:sum:csv
 
 .PHONY: bench_system_sum_int
-bench_system_sum_int:
-	yarn workspace @duckdb/benchmarks build
+bench_system_sum_int: bench_build
 	yarn workspace @duckdb/benchmarks bench:system:sum:int
 
 .PHONY: bench_system_regex
-bench_system_regex:
-	yarn workspace @duckdb/benchmarks build
+bench_system_regex: bench_build
 	yarn workspace @duckdb/benchmarks bench:system:regex
 
 .PHONY: bench_system_join_2
-bench_system_join_2:
-	yarn workspace @duckdb/benchmarks build
+bench_system_join_2: bench_build
 	yarn workspace @duckdb/benchmarks bench:system:join:2
 
 .PHONY: bench_system_join_3
-bench_system_join_3:
-	yarn workspace @duckdb/benchmarks build
+bench_system_join_3: bench_build
 	yarn workspace @duckdb/benchmarks bench:system:join:3
 
 .PHONY: bench_system_tpch
-bench_system_tpch_duckdb:
-	yarn workspace @duckdb/benchmarks build
+bench_system_tpch_duckdb: bench_build build/data
 	yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
 
 
 .PHONY: wasm_caches
-wasm_caches:
+wasm_caches: $(DUCKDB_SOURCES)
 	mkdir -p ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 	chown -R $(id -u):$(id -g) ${ROOT_DIR}/.ccache ${ROOT_DIR}/.emscripten_cache
 	rm -rf ${EXTENSION_CACHE_DIR}
@@ -245,32 +231,50 @@ endif
 
 wrapped_wasm_caches: docker_ci_image
 	${EXEC_ENVIRONMENT} make wasm_caches
+	touch wrapped_wasm_caches
+
+check_duckdb: $(DUCKDB_SOURCES)
+	(cd ${ROOT_DIR}/build/dev/mvp && make clean) || true
+	(cd ${ROOT_DIR}/build/dev/eh && make clean) || true
+	(cd ${ROOT_DIR}/build/dev/coi && make clean) || true
+	(cd ${ROOT_DIR}/build/relsize/mvp && make clean) || true
+	(cd ${ROOT_DIR}/build/relsize/eh && make clean) || true
+	(cd ${ROOT_DIR}/build/relsize/coi && make clean) || true
+	(cd ${ROOT_DIR}/build/relperf/mvp && make clean) || true
+	(cd ${ROOT_DIR}/build/relperf/eh && make clean) || true
+	(cd ${ROOT_DIR}/build/relperf/coi && make clean) || true
+	(cd ${ROOT_DIR}/build/debug/mvp && make clean) || true
+	(cd ${ROOT_DIR}/build/debug/eh && make clean) || true
+	(cd ${ROOT_DIR}/build/debug/coi && make clean) || true
+	touch check_duckdb
+
+wasm_setup: set_environment check_duckdb wrapped_wasm_caches
+	touch wasm_setup
 
 .PHONY: wasm_dev
-wasm_dev: wrapped_wasm_caches docker_ci_image
+wasm_dev: wasm_setup
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev coi
 
-.PHONY: wasm_debug
-wasm_debug: wrapped_wasm_caches docker_ci_image
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
-
 .PHONY: wasm_relperf
-wasm_relperf: wrapped_wasm_caches docker_ci_image
+wasm_relperf: wasm_setup
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf coi
 
 .PHONY: wasm_relsize
-wasm_relsize: wrapped_wasm_caches docker_ci_image
+wasm_relsize: wasm_setup
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize mvp
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize coi
 
-.PHONY: wasm
+.PHONY: wasm_debug
+wasm_debug: wasm_setup
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
+
 wasm: wasm_dev
 
 .PHONY: wasm_star
@@ -278,7 +282,7 @@ wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug
-js_debug:
+js_debug: bootstrap wasm
 	yarn workspace @duckdb/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
@@ -293,38 +297,37 @@ docs:
 
 # Run the duckdb javascript tests
 .PHONY: js_tests
-js_tests: js_debug
+js_tests: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser
-js_tests_browser: js_debug
+js_tests_browser: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test:chrome
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser_debug
-js_tests_browser_debug: js_debug
+js_tests_browser_debug: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test:browser:debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: js_tests_node
-js_tests_node: js_debug
+js_tests_node: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test:node --filter=${JS_FILTER}
 
 .PHONY: js_tests_node_debug
-js_tests_node_debug: js_debug
+js_tests_node_debug: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
-.PHONY: shell
 wasmpack:
 	yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
 
 .PHONY: shell
-shell:
+shell: build/bootstrap js_debug
 	yarn workspace @duckdb/duckdb-wasm-shell build:debug
 
 .PHONY: shell_release
-shell_release:
+shell_release: js_release
 	yarn workspace @duckdb/duckdb-wasm-shell build:release
 
 .PHONY: app_start
@@ -336,7 +339,7 @@ app_start_corp:
 	yarn workspace @duckdb/duckdb-wasm-app start:corp
 
 .PHONY: app
-app:
+app: wasm shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 
 .PHONY: app_server
@@ -375,8 +378,7 @@ examples:
 # ---------------------------------------------------------------------------
 # Environment
 
-.PHONY: duckdb_shell
-duckdb_shell: 
+build/duckdb_shell:
 	${ROOT_DIR}/scripts/build_duckdb_shell.sh
 
 # Generate the compile commands for the language server
@@ -391,16 +393,18 @@ compile_commands:
 # Clean the repository
 .PHONY: clean
 clean:
-	git clean -xfd
-	git submodule foreach --recursive git clean -xfd
-	git submodule update --init --recursive
+	rm -rf build
+	cd packages/duckdb-wasm-shell && rm -rf node_modules
+	rm -rf packages/duckdb-wasm-app/build
 
-.PHONY: docker_ci_image
-docker_ci_image:
-	docker compose build
+build/docker_ci_image:
+	command -v emcc &> /dev/null || docker compose build
+	touch build/docker_ci_image
+
+submodules:
+	git submodule update --init --recursive
+	touch submodules
 
 # Build infrastructure and packages required for development
-.PHONY: bootstrap
-bootstrap:
-	git submodule update --init --recursive
-	make docker_ci_image yarn_install
+build/bootstrap: submodules docker_ci_image yarn_install
+	touch build/bootstrap
