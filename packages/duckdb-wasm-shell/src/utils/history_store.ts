@@ -57,7 +57,7 @@ export class HistoryStore {
     /// Open the indexeddb database
     public async open(): Promise<void> {
         // Create the database
-        this._idb = await new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             const req = this._idbFactory.open(DB_NAME, DB_VERSION);
             req.onupgradeneeded = ev => {
                 const openReq = ev.target as IDBOpenDBRequest;
@@ -68,16 +68,12 @@ export class HistoryStore {
                 tx.onerror = err => reject(err);
             };
             req.onsuccess = (_: any) => {
-                const idb = req.result;
-                resolve(idb);
-            };
-            req.onerror = err => {
-                console.log("Error while opeing indexedDB connection", err);
-                // NOTE: we are using resolve(null) on purpose, since null is a vaild value,
-		//	and reject (uncatched) will trigger a failure
+                this._idb = req.result;
                 resolve(null);
             };
-        });
+            req.onerror = err => reject(err);
+        }).catch(e=>console.warn("Unable to initialize indexedDB, no history persistance"));
+
         // Load the metadata
         await this.loadMetadata();
     }
