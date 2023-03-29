@@ -72,7 +72,7 @@ export class HistoryStore {
                 resolve(null);
             };
             req.onerror = err => reject(err);
-        }).catch(e=>console.warn("Unable to initialize indexedDB, no history persistance"));
+        }).catch(e => console.warn("Unable to initialize indexedDB, no history persistence"));
 
         // Load the metadata
         await this.loadMetadata();
