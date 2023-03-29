@@ -717,3 +717,13 @@ jobs:
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
                   ./scripts/deploy_pages.sh
+
+            - name: Package
+              shell: bash
+              run: zip -r duckdb-wasm-packages.zip ./packages
+
+            - uses: actions/upload-artifact@v3
+              with:
+                name: duckdb-wasm-packages
+                path: |
+                     duckdb-wasm-packages.zip
