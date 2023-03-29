@@ -725,5 +725,4 @@ jobs:
             - uses: actions/upload-artifact@v3
               with:
                 name: duckdb-wasm-packages
-                path: |
-                     duckdb-wasm-packages.zip
+                path: duckdb-wasm-packages.zip
