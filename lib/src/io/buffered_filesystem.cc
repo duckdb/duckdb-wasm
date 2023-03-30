@@ -95,7 +95,7 @@ unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &raw_pa
 
     // Open in page buffer
     auto file = file_page_buffer_->OpenFile(std::string_view{path}, flags, lock);  // XXX compression?
-    return std::make_unique<BufferedFileHandle>(*this, std::move(file));
+    return make_uniq<BufferedFileHandle>(*this, std::move(file));
 }
 
 /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read.

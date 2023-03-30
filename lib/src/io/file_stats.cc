@@ -7,6 +7,7 @@
 
 #include "arrow/buffer.h"
 #include "arrow/result.h"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/utils/parallel.h"
 
 namespace duckdb {

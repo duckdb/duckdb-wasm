@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "arrow/record_batch.h"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/environment.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/json_analyzer.h"
@@ -16,6 +17,8 @@
 #include "rapidjson/reader.h"
 
 using namespace duckdb::web;
+using duckdb::unique_ptr;
+using duckdb::make_uniq;
 
 namespace {
 
@@ -108,7 +111,7 @@ TEST(TableReaderOptions, Fields) {
 }
 
 static std::shared_ptr<io::InputFileStreamBuffer> CreateStreamBuf(const char* path, std::vector<char> buffer) {
-    auto fs = std::make_unique<io::MemoryFileSystem>();
+    auto fs = make_uniq<io::MemoryFileSystem>();
     if (!fs->RegisterFileBuffer(path, std::move(buffer)).ok()) return nullptr;
     auto file_page_buffer = std::make_shared<io::FilePageBuffer>(std::move(fs));
     return std::make_shared<io::InputFileStreamBuffer>(file_page_buffer, path);
@@ -140,13 +143,13 @@ TEST_P(TableReaderTestSuite, DetectAndReadSingleBatch) {
     auto fs_buffer = std::make_shared<io::FilePageBuffer>(fs);
     ASSERT_TRUE(fs->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
-    auto in1 = std::make_unique<io::InputFileStream>(fs_buffer, path);
+    auto in1 = make_uniq<io::InputFileStream>(fs_buffer, path);
     json::TableType type;
     ASSERT_TRUE(json::InferTableType(*in1, type).ok());
     ASSERT_EQ(type.shape, test.expected_shape);
     ASSERT_EQ(type.type->ToString(), std::string(test.expected_type));
 
-    auto in2 = std::make_unique<io::InputFileStream>(fs_buffer, path);
+    auto in2 = make_uniq<io::InputFileStream>(fs_buffer, path);
     auto maybe_reader = json::TableReader::Resolve(std::move(in2), std::move(type), test.batch_size);
     ASSERT_TRUE(maybe_reader.ok());
 

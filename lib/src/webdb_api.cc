@@ -3,12 +3,14 @@
 
 #include "arrow/buffer.h"
 #include "arrow/status.h"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "duckdb/web/webdb.h"
 
 using namespace duckdb::web;
+using duckdb::unique_ptr;
 
 extern "C" {
 

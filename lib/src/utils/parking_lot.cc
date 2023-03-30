@@ -1,4 +1,5 @@
 #include "duckdb/web/utils/parking_lot.h"
+#include "duckdb/common/helper.hpp"
 
 #include <condition_variable>
 #include <thread>
@@ -56,7 +57,7 @@ void ParkingLot::Park(const void* addr, std::function<bool()> check, std::chrono
             n = std::move(lot.inactive);
             lot.inactive = std::move(n->next_bucket);
         } else {
-            n = std::make_unique<BucketList::Bucket>();
+            n = make_uniq<BucketList::Bucket>();
         }
         n->address = addr;
         n->next_bucket = std::move(lot.buckets);

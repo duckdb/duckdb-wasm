@@ -1,4 +1,5 @@
 #include "duckdb/web/arrow_stream_buffer.h"
+#include "duckdb/common/helper.hpp"
 
 #include <iostream>
 
@@ -49,7 +50,7 @@ unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateSt
     auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
 
     // Create arrow stream
-    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    auto stream_wrapper = make_uniq<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
     auto maybe_ok = arrow::ExportRecordBatchReader(reader, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
@@ -69,7 +70,7 @@ void ArrowIPCStreamBufferReader::GetSchema(uintptr_t buffer_ptr, duckdb::ArrowSc
     auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
 
     // Create arrow stream
-    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    auto stream_wrapper = make_uniq<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
     auto maybe_ok = arrow::ExportRecordBatchReader(reader, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {

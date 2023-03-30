@@ -19,17 +19,17 @@
 // under the License.
 
 #include "duckdb/web/json_parser.h"
+#include "duckdb/common/helper.hpp"
+#include "duckdb/common/vector.hpp"
 
 #include <rapidjson/error/error.h>
 #include <rapidjson/reader.h>
 
 #include <algorithm>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <variant>
-#include <vector>
 
 #include "arrow/array/array_dict.h"
 #include "arrow/array/builder_binary.h"
@@ -802,7 +802,7 @@ TypeAnalyzer::TypeAnalyzer(std::shared_ptr<arrow::DataType> type) : type_(std::m
 unique_ptr<TypeAnalyzer> TypeAnalyzer::ResolveScalar(std::shared_ptr<arrow::DataType> type) {
 #define ANALYZER_CASE(ID) \
     case ID:              \
-        return std::make_unique<GenericTypeAnalyzer<ID>>(type);
+        return make_uniq<GenericTypeAnalyzer<ID>>(type);
 
     switch (type->id()) {
         ANALYZER_CASE(arrow::Type::INT8)

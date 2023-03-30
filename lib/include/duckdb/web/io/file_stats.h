@@ -12,6 +12,7 @@
 
 #include "arrow/buffer.h"
 #include "arrow/status.h"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/io/file_page_defaults.h"
 #include "duckdb/web/utils/parallel.h"
 

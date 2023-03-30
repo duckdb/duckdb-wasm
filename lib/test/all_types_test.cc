@@ -14,6 +14,7 @@
 #include "arrow/io/memory.h"
 #include "arrow/ipc/reader.h"
 #include "arrow/util/decimal.h"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
 #include "duckdb/web/environment.h"
@@ -56,7 +57,7 @@ void AssertCorrectBase(string col_name, C_TYPE min, C_TYPE max, BATCH_TYPE batch
 // null]
 template <class ARROW_TYPE, class C_TYPE, class BATCH_TYPE>
 void AssertPrimitiveCorrect(string col_name, BATCH_TYPE batch) {
-    auto builder = make_unique<typename arrow::TypeTraits<ARROW_TYPE>::BuilderType>();
+    auto builder = make_uniq<typename arrow::TypeTraits<ARROW_TYPE>::BuilderType>();
     AssertCorrectBase<ARROW_TYPE>(col_name, numeric_limits<C_TYPE>::min(), numeric_limits<C_TYPE>::max(), batch,
                                   move(builder));
 }
@@ -64,14 +65,14 @@ void AssertPrimitiveCorrect(string col_name, BATCH_TYPE batch) {
 // Assert the values are found in column col_name in batch are equal to [min, max, null]
 template <class ARROW_TYPE, class C_TYPE, class BATCH_TYPE>
 void AssertSimpleTypeCorrect(string col_name, C_TYPE min, C_TYPE max, BATCH_TYPE batch) {
-    auto builder = make_unique<typename arrow::TypeTraits<ARROW_TYPE>::BuilderType>();
+    auto builder = make_uniq<typename arrow::TypeTraits<ARROW_TYPE>::BuilderType>();
     AssertCorrectBase<ARROW_TYPE>(col_name, min, max, batch, move(builder));
 }
 
 // Assert the values are found in column col_name in batch are equal to [min, max, null]
 template <class ARROW_TYPE, class C_TYPE, class BATCH_TYPE, class DATA_TYPE>
 void AssertParamTypeCorrect(string col_name, C_TYPE min, C_TYPE max, BATCH_TYPE batch, DATA_TYPE type) {
-    auto builder = make_unique<typename arrow::TypeTraits<ARROW_TYPE>::BuilderType>(type, arrow::default_memory_pool());
+    auto builder = make_uniq<typename arrow::TypeTraits<ARROW_TYPE>::BuilderType>(type, arrow::default_memory_pool());
     AssertCorrectBase<ARROW_TYPE>(col_name, min, max, batch, move(builder));
 }
 
@@ -79,17 +80,17 @@ void AssertParamTypeCorrect(string col_name, C_TYPE min, C_TYPE max, BATCH_TYPE 
 template <class INDEX_TYPE, class BATCH_TYPE>
 void AssertCorrectDictionary(string col_name, vector<string> dictionary, typename INDEX_TYPE::c_type* indices,
                              BATCH_TYPE batch) {
-    auto string_builder = make_unique<typename arrow::TypeTraits<arrow::StringType>::BuilderType>();
+    auto string_builder = make_uniq<typename arrow::TypeTraits<arrow::StringType>::BuilderType>();
     (void)string_builder->AppendValues(dictionary);
     auto string_array = string_builder->Finish().ValueOrDie();
 
-    auto index_builder = make_unique<typename arrow::TypeTraits<INDEX_TYPE>::BuilderType>();
+    auto index_builder = make_uniq<typename arrow::TypeTraits<INDEX_TYPE>::BuilderType>();
     (void)index_builder->Append(indices[0]);
     (void)index_builder->Append(indices[1]);
     (void)index_builder->AppendNull();
     auto index_array = index_builder->Finish().ValueOrDie();
 
-    auto dict_array = make_unique<arrow::DictionaryArray>(
+    auto dict_array = make_uniq<arrow::DictionaryArray>(
         arrow::dictionary(make_shared<INDEX_TYPE>(), make_shared<arrow::StringType>()), index_array, string_array);
     auto array_actual = batch->GetColumnByName(col_name);
     ASSERT_TRUE(array_actual->Equals(*dict_array))

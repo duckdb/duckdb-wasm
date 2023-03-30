@@ -16,6 +16,7 @@
 #include <utility>
 #include <variant>
 
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/scope_guard.h"
 
@@ -243,7 +244,7 @@ unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view pa
             // Only opened readable before?
             if (!is_writeable) {
                 // Reopen as writeable
-                auto ref = std::make_unique<FileRef>(*this, *files.at(it->second->file_id));
+                auto ref = make_uniq<FileRef>(*this, *files.at(it->second->file_id));
                 dir_guard.unlock();
                 ref->ReOpen(flags, lock_type);
                 return ref;
@@ -259,7 +260,7 @@ unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view pa
                 }
             }
         }
-        return std::make_unique<FileRef>(*this, *files.at(it->second->file_id));
+        return make_uniq<FileRef>(*this, *files.at(it->second->file_id));
     }
     // Allocate file id
     uint16_t file_id;
@@ -277,7 +278,7 @@ unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view pa
     }
 
     // Create file
-    auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags, lock_type);
+    auto file_ptr = make_uniq<BufferedFile>(file_id, path, flags, lock_type);
     auto& file = *file_ptr;
     file.handle = filesystem->OpenFile(file.path.c_str(), flags);
     assert(file.handle != nullptr);
@@ -293,7 +294,7 @@ unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view pa
         }
     }
 
-    return std::make_unique<FileRef>(*this, file);
+    return make_uniq<FileRef>(*this, file);
 }
 
 unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
@@ -482,7 +483,7 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
     // Create a new frame.
     assert(dir_guard.owns_lock());
     assert(buffer_.frames.find(frame_id) == buffer_.frames.end());
-    auto frame_ptr = std::make_unique<BufferFrame>(*file_, frame_id, buffer_.fifo.end(), buffer_.lru.end());
+    auto frame_ptr = make_uniq<BufferFrame>(*file_, frame_id, buffer_.fifo.end(), buffer_.lru.end());
     auto& frame = *frame_ptr;
     frame.frame_state = FilePageBuffer::BufferFrame::State::LOADING;
     frame.buffer = std::move(buffer);

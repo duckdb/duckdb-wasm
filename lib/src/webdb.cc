@@ -76,10 +76,10 @@ static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
 /// Create the default webdb database
 unique_ptr<WebDB> WebDB::Create() {
     if constexpr (ENVIRONMENT == Environment::WEB) {
-        return std::make_unique<WebDB>(WEB);
+        return make_uniq<WebDB>(WEB);
     } else {
         auto fs = duckdb::FileSystem::CreateLocal();
-        return std::make_unique<WebDB>(NATIVE, std::move(fs));
+        return make_uniq<WebDB>(NATIVE, std::move(fs));
     }
 }
 /// Get the static webdb instance
@@ -504,7 +504,7 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
             arrow_insert_options_ = options;
 
             // Create the IPC stream
-            arrow_ipc_stream_ = std::make_unique<BufferingArrowIPCStreamDecoder>();
+            arrow_ipc_stream_ = make_uniq<BufferingArrowIPCStreamDecoder>();
         }
 
         /// Consume stream bytes
@@ -621,7 +621,7 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
         if (options.table_name.empty()) return arrow::Status::Invalid("missing 'name' option");
 
         // Create the input file stream
-        auto ifs = std::make_unique<io::InputFileStream>(webdb_.file_page_buffer_, path);
+        auto ifs = make_uniq<io::InputFileStream>(webdb_.file_page_buffer_, path);
         // Do we need to run the analyzer?
         json::TableType table_type;
         if (!options.table_shape || options.table_shape == json::JSONTableShape::UNRECOGNIZED ||
@@ -769,7 +769,7 @@ std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 
 /// Create a session
 WebDB::Connection* WebDB::Connect() {
-    auto conn = std::make_unique<WebDB::Connection>(*this);
+    auto conn = make_uniq<WebDB::Connection>(*this);
     auto conn_ptr = conn.get();
     connections_.insert({conn_ptr, std::move(conn)});
     return conn_ptr;
@@ -797,8 +797,8 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     bool in_memory = config_->path == ":memory:" || config_->path == "";
     try {
         // Setup new database
-        auto buffered_fs = buffered_filesystem_ ? std::make_unique<io::BufferedFileSystem>(*buffered_filesystem_)
-                                                : std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
+        auto buffered_fs = buffered_filesystem_ ? make_uniq<io::BufferedFileSystem>(*buffered_filesystem_)
+                                                : make_uniq<io::BufferedFileSystem>(file_page_buffer_);
         auto buffered_fs_ptr = buffered_fs.get();
 
         duckdb::DBConfig db_config;

@@ -49,7 +49,7 @@ static auto &GetLocalState() {
     auto tid = GetThreadID();
     auto iter = LOCAL_STATES.find(tid);
     if (iter != LOCAL_STATES.end()) return *iter->second;
-    auto entry = LOCAL_STATES.insert({tid, std::make_unique<LocalState>()});
+    auto entry = LOCAL_STATES.insert({tid, make_uniq<LocalState>()});
     return *entry.first->second;
 }
 /// Clear the native file handles
@@ -107,7 +107,7 @@ struct OpenedFile {
 RT_FN(uint32_t duckdb_web_fs_get_default_data_protocol(), { return io::WebFileSystem::DataProtocol::NODE_FS; });
 RT_FN(void *duckdb_web_fs_file_open(size_t file_id, uint8_t flags), {
     auto &file = GetOrOpen(file_id);
-    auto result = std::make_unique<OpenedFile>();
+    auto result = make_uniq<OpenedFile>();
     result->file_size = file.GetFileSize();
     result->file_buffer = 0;
     return result.release();
@@ -207,7 +207,7 @@ ReadAheadBuffer *WebFileSystem::WebFileHandle::ResolveReadAheadBuffer(std::share
     if (iter != fs.readahead_buffers_.end()) return iter->second.get();
 
     // Create new readahead buffer
-    auto ra = std::make_unique<ReadAheadBuffer>();
+    auto ra = make_uniq<ReadAheadBuffer>();
     auto ra_ptr = ra.get();
     fs.readahead_buffers_.insert({tid, std::move(ra)});
     readahead_ = ra_ptr;
@@ -369,7 +369,7 @@ arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterF
     if (iter != files_by_name_.end()) {
         auto file = iter->second;
         if (file->data_url_ == file_url) {
-            return std::make_unique<WebFileHandle>(std::move(file));
+            return make_uniq<WebFileHandle>(std::move(file));
         }
         return arrow::Status::Invalid("File already registered: ", file_name);
     }
@@ -386,7 +386,7 @@ arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterF
     files_by_url_.insert({std::string{file_url}, file});
 
     // Build the file handle
-    return std::make_unique<WebFileHandle>(file);
+    return make_uniq<WebFileHandle>(file);
 }
 
 /// Register a file buffer
@@ -406,7 +406,7 @@ arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterF
             case DataProtocol::BROWSER_FILEREADER: {
                 file->file_size_ = file_buffer.Size();
                 file->data_buffer_ = std::move(file_buffer);
-                auto handle = std::make_unique<WebFileHandle>(file);
+                auto handle = make_uniq<WebFileHandle>(file);
                 fs_guard.unlock();
                 duckdb_web_fs_file_close(file->file_id_);
                 fs_guard.lock();
@@ -419,7 +419,7 @@ arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterF
                 file->data_protocol_ = DataProtocol::BUFFER;
                 file->file_size_ = file_buffer.Size();
                 file->data_buffer_ = std::move(file_buffer);
-                return std::make_unique<WebFileHandle>(file);
+                return make_uniq<WebFileHandle>(file);
         }
     }
 
@@ -434,7 +434,7 @@ arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterF
     files_by_name_.insert({file->file_name_, file});
 
     // Build the file handle
-    return std::make_unique<WebFileHandle>(file);
+    return make_uniq<WebFileHandle>(file);
 }
 
 /// Drop dangling files
@@ -610,7 +610,7 @@ unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_
     } else {
         file = iter->second;
     }
-    auto handle = std::make_unique<WebFileHandle>(file);
+    auto handle = make_uniq<WebFileHandle>(file);
 
     // Lock the file
     fs_guard.unlock();

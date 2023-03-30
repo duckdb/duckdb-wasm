@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "duckdb/common/helper.hpp"
 #include "duckdb/common/types/date.hpp"
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
@@ -50,7 +51,7 @@ TEST_P(CSVInsertTestSuite, TestImport) {
 
     auto& test = GetParam();
     std::vector<char> input_buffer{test.input.data(), test.input.data() + test.input.size()};
-    auto memory_filesystem = std::make_unique<io::MemoryFileSystem>();
+    auto memory_filesystem = make_uniq<io::MemoryFileSystem>();
     ASSERT_TRUE(memory_filesystem->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
     auto db = std::make_shared<WebDB>(NATIVE, std::move(memory_filesystem));

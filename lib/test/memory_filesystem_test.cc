@@ -5,12 +5,15 @@
 #include <string_view>
 #include <vector>
 
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/test/config.h"
 #include "gtest/gtest.h"
 
 using namespace duckdb::web;
 using namespace std;
+
+using duckdb::make_uniq;
 
 namespace {
 
@@ -22,7 +25,7 @@ TEST(MemoryFilesystem, json) {
     ])";
 
     std::vector<char> input_buffer{raw_input.data(), raw_input.data() + raw_input.size()};
-    auto memory_filesystem = std::make_unique<io::MemoryFileSystem>();
+    auto memory_filesystem = make_uniq<io::MemoryFileSystem>();
     ASSERT_TRUE(memory_filesystem->RegisterFileBuffer(path, std::move(input_buffer)).ok());
 
     auto file_page_buffer = std::make_shared<io::FilePageBuffer>(std::move(memory_filesystem));

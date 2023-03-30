@@ -36,7 +36,7 @@ void MemoryFileSystem::FileHandle::Close() {
 /// Register a file buffer
 arrow::Status MemoryFileSystem::RegisterFileBuffer(std::string name, std::vector<char> buffer) {
     if (file_paths.count(name)) return arrow::Status::Invalid("file already registered");
-    auto file_buffer = std::make_unique<FileBuffer>(next_file_id++, std::move(name), std::move(buffer));
+    auto file_buffer = make_uniq<FileBuffer>(next_file_id++, std::move(name), std::move(buffer));
     auto file_buffer_ptr = file_buffer.get();
     auto file_id = file_buffer->file_id;
     std::string_view file_path = file_buffer->file_path;
@@ -59,7 +59,7 @@ unique_ptr<duckdb::FileHandle> MemoryFileSystem::OpenFile(const string &path, ui
     }
 
     // Register the handle and return it
-    auto handle = std::make_unique<MemoryFileSystem::FileHandle>(*this, file_buffer, 0);
+    auto handle = make_uniq<MemoryFileSystem::FileHandle>(*this, file_buffer, 0);
     file_buffer.handles.insert(handle.get());
     return handle;
 }
