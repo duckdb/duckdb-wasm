@@ -38,7 +38,7 @@ class ReadAheadBuffer {
         /// The buffer capacity
         size_t buffer_capacity = 0;
         /// The buffered data
-        std::unique_ptr<char[]> buffer = nullptr;
+        unique_ptr<char[]> buffer = nullptr;
     };
 
     /// The invalidation mask (never read from files where (~invalidation & file_id == 0)).
@@ -90,7 +90,7 @@ class ReadAheadBuffer {
                 return;
             }
             head.buffer = nullptr;
-            head.buffer = std::unique_ptr<char[]>(new char[size]);
+            head.buffer = unique_ptr<char[]>(new char[size]);
             head.buffer_size = size;
             head.buffer_capacity = size;
         };

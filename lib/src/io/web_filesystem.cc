@@ -33,7 +33,7 @@ namespace io {
 /// The local state
 struct LocalState {
     /// The handles (if any)
-    std::unordered_map<size_t, std::unique_ptr<FileHandle>> handles = {};
+    std::unordered_map<size_t, unique_ptr<FileHandle>> handles = {};
     /// The glob results (if any)
     std::vector<std::string> glob_results = {};
     /// The error message (if any)
@@ -42,7 +42,7 @@ struct LocalState {
 /// The mutex for local state dictionary
 static std::mutex LOCAL_STATES_MTX;
 /// The thread local stats
-static std::unordered_map<size_t, std::unique_ptr<LocalState>> LOCAL_STATES;
+static std::unordered_map<size_t, unique_ptr<LocalState>> LOCAL_STATES;
 /// Get the local state
 static auto &GetLocalState() {
     std::unique_lock<std::mutex> fs_guard{LOCAL_STATES_MTX};
@@ -61,7 +61,7 @@ static void ClearLocalStates() {
 /// Stub the filesystem for native tests
 #ifndef EMSCRIPTEN
 /// This is only used for tests.
-static std::unique_ptr<duckdb::FileSystem> NATIVE_FS = duckdb::FileSystem::CreateLocal();
+static unique_ptr<duckdb::FileSystem> NATIVE_FS = duckdb::FileSystem::CreateLocal();
 /// Get or open a file and throw if something is off
 static duckdb::FileHandle &GetOrOpen(size_t file_id) {
     auto file = WebFileSystem::Get()->GetFile(file_id);
@@ -163,18 +163,18 @@ extern "C" void duckdb_web_fs_glob_add_path(const char *path) {
     GetLocalState().glob_results.push_back(std::string{path});
 }
 
-WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
+WebFileSystem::DataBuffer::DataBuffer(unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
 
 void WebFileSystem::DataBuffer::Resize(size_t n) {
     if (n > capacity_) {
         auto cap = std::max(capacity_ + capacity_ + capacity_ / 4, n);
-        auto next = std::unique_ptr<char[]>(new char[cap]);
+        auto next = unique_ptr<char[]>(new char[cap]);
         ::memcpy(next.get(), data_.get(), size_);
         data_ = std::move(next);
         capacity_ = cap;
     } else if (n < (capacity_ / 2)) {
-        auto next = std::unique_ptr<char[]>(new char[n]);
+        auto next = unique_ptr<char[]>(new char[n]);
         ::memcpy(next.get(), data_.get(), n);
         data_ = std::move(next);
         capacity_ = n;
@@ -359,9 +359,9 @@ void WebFileSystem::InvalidateReadAheads(size_t file_id, std::unique_lock<Shared
 }
 
 /// Register a file URL
-arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
-                                                                                            std::string_view file_url,
-                                                                                            DataProtocol protocol) {
+arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
+                                                                                       std::string_view file_url,
+                                                                                       DataProtocol protocol) {
     DEBUG_TRACE();
     // Check if the file exists
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
@@ -390,8 +390,8 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 }
 
 /// Register a file buffer
-arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(
-    std::string_view file_name, DataBuffer file_buffer) {
+arrow::Result<unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(std::string_view file_name,
+                                                                                          DataBuffer file_buffer) {
     DEBUG_TRACE();
     // Check if the file exists
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
@@ -585,8 +585,8 @@ void WebFileSystem::IncrementCacheEpoch() {
 }
 
 /// Open a file
-std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
-                                                            FileCompressionType compression, FileOpener *opener) {
+unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
+                                                       FileCompressionType compression, FileOpener *opener) {
     DEBUG_TRACE();
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
 
@@ -638,7 +638,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                     std::string msg = std::string{"Failed to open file: "} + file->file_name_;
                     throw std::runtime_error(msg);
                 }
-                auto owned = std::unique_ptr<OpenedFile>(static_cast<OpenedFile *>(opened));
+                auto owned = unique_ptr<OpenedFile>(static_cast<OpenedFile *>(opened));
                 file->file_size_ = owned->file_size;
                 auto *buffer_ptr = reinterpret_cast<char *>(static_cast<uintptr_t>(owned->file_buffer));
 
@@ -652,7 +652,7 @@ std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, u
                         file->buffered_http_file_ = true;
                         file->buffered_http_config_options_ = config_->duckdb_config_options;
                     }
-                    auto owned_buffer = std::unique_ptr<char[]>(buffer_ptr);
+                    auto owned_buffer = unique_ptr<char[]>(buffer_ptr);
                     file->data_protocol_ = DataProtocol::BUFFER;
                     file->data_buffer_ =
                         DataBuffer{std::move(owned_buffer), static_cast<size_t>(file->file_size_.value_or(0))};

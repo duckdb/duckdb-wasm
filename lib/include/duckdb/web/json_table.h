@@ -45,14 +45,14 @@ class TableReader : public arrow::RecordBatchReader {
     /// The batch size
     const size_t batch_size_ = 1024;
     /// The input file stream
-    std::unique_ptr<io::InputFileStream> table_file_ = {};
+    unique_ptr<io::InputFileStream> table_file_ = {};
     /// The table type
     TableType table_type_ = {};
     /// The schema
     std::shared_ptr<arrow::Schema> schema_ = nullptr;
 
     /// Table reader
-    TableReader(std::unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size);
+    TableReader(unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size);
 
    public:
     /// Virtual destructor
@@ -67,11 +67,11 @@ class TableReader : public arrow::RecordBatchReader {
     virtual std::shared_ptr<TableReader> CloneShared() const = 0;
 
     /// Create a table reader
-    static arrow::Result<std::shared_ptr<TableReader>> Resolve(std::unique_ptr<io::InputFileStream> table,
-                                                               TableType type, size_t batch_size = 1024);
+    static arrow::Result<std::shared_ptr<TableReader>> Resolve(unique_ptr<io::InputFileStream> table, TableType type,
+                                                               size_t batch_size = 1024);
     /// Arrow array stream factory function
-    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateStream(uintptr_t buffer_ptr,
-                                                                         duckdb::ArrowStreamParameters& parameters);
+    static unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateStream(uintptr_t buffer_ptr,
+                                                                    duckdb::ArrowStreamParameters& parameters);
     /// Create arrow array stream wrapper
     static void GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema);
 };

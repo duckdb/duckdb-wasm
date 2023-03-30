@@ -40,7 +40,7 @@ class WebFileSystem : public duckdb::FileSystem {
     class DataBuffer {
        protected:
         /// The data
-        std::unique_ptr<char[]> data_;
+        unique_ptr<char[]> data_;
         /// The size
         size_t size_;
         /// The capacity
@@ -48,7 +48,7 @@ class WebFileSystem : public duckdb::FileSystem {
 
        public:
         /// Constructor
-        DataBuffer(std::unique_ptr<char[]> data, size_t size);
+        DataBuffer(unique_ptr<char[]> data, size_t size);
         /// Get get span
         auto Get() { return nonstd::span<char>{data_.get(), size_}; }
         /// Get the capacity
@@ -163,7 +163,7 @@ class WebFileSystem : public duckdb::FileSystem {
     /// The next file id
     uint32_t next_file_id_ = 0;
     /// The thread-local readahead buffers
-    std::unordered_map<uint32_t, std::unique_ptr<ReadAheadBuffer>> readahead_buffers_ = {};
+    std::unordered_map<uint32_t, unique_ptr<ReadAheadBuffer>> readahead_buffers_ = {};
     /// The file statistics
     std::shared_ptr<io::FileStatisticsRegistry> file_statistics_;
     /// Cache epoch for synchronization of JS caches
@@ -201,11 +201,10 @@ class WebFileSystem : public duckdb::FileSystem {
     /// Write the file info as JSON
     rapidjson::Value WriteFileInfo(rapidjson::Document &doc, std::string_view file_name, uint32_t cache_epoch);
     /// Register a file URL
-    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
-                                                                  DataProtocol protocol);
+    arrow::Result<unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
+                                                             DataProtocol protocol);
     /// Register a file buffer
-    arrow::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
-                                                                     DataBuffer file_buffer);
+    arrow::Result<unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer);
     /// Try to drop a specific file
     bool TryDropFile(std::string_view file_name);
     /// Drop all files without references (including buffers)
@@ -220,9 +219,8 @@ class WebFileSystem : public duckdb::FileSystem {
 
    public:
     /// Open a file
-    std::unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,
-                                                 FileCompressionType compression,
-                                                 FileOpener *opener = nullptr) override;
+    unique_ptr<duckdb::FileHandle> OpenFile(const string &url, uint8_t flags, FileLockType lock,
+                                            FileCompressionType compression, FileOpener *opener = nullptr) override;
     /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read. This is
     /// equivalent to calling SetFilePointer(location) followed by calling Read().
     void Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) override;

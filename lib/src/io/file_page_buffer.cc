@@ -212,8 +212,8 @@ FilePageBuffer::FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, u
 /// Destructor
 FilePageBuffer::~FilePageBuffer() { FlushFiles(); }
 
-std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path, uint8_t flags,
-                                                                  duckdb::FileLockType lock_type) {
+unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path, uint8_t flags,
+                                                             duckdb::FileLockType lock_type) {
     DEBUG_TRACE();
     auto dir_guard = Lock();
 
@@ -296,7 +296,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     return std::make_unique<FileRef>(*this, file);
 }
 
-std::unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
+unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_guard) {
     DEBUG_TRACE();
     FilePageBuffer::BufferFrame* frame = nullptr;
     std::shared_lock<SharedMutex> file_guard;
@@ -366,8 +366,8 @@ std::unique_ptr<char[]> FilePageBuffer::EvictAnyBufferFrame(DirectoryGuard& dir_
     return buffer;
 }
 
-std::unique_ptr<char[]> FilePageBuffer::AllocateFrameBuffer(DirectoryGuard& dir_guard) {
-    std::unique_ptr<char[]> buffer = nullptr;
+unique_ptr<char[]> FilePageBuffer::AllocateFrameBuffer(DirectoryGuard& dir_guard) {
+    unique_ptr<char[]> buffer = nullptr;
     while (frames.size() >= page_capacity) {
         auto evicted = EvictAnyBufferFrame(dir_guard);
         if (!evicted) break;
@@ -378,7 +378,7 @@ std::unique_ptr<char[]> FilePageBuffer::AllocateFrameBuffer(DirectoryGuard& dir_
             buffer = std::move(free_buffers.top());
             free_buffers.pop();
         } else {
-            buffer = std::unique_ptr<char[]>(new char[GetPageSize()]);
+            buffer = unique_ptr<char[]>(new char[GetPageSize()]);
         }
     }
     return buffer;
@@ -409,7 +409,7 @@ std::pair<FilePageBuffer::BufferFrame*, FilePageBuffer::FrameGuardVariant> FileP
     // Repeat until we suceed or fail.
     // We might have to wait for a thread that concurrently tries to fix our page.
     // If that thread fails, we try again until we're the one failing.
-    std::unique_ptr<char[]> buffer;
+    unique_ptr<char[]> buffer;
     while (true) {
         // Does the frame exist already?
         if (auto it = buffer_.frames.find(frame_id); it != buffer_.frames.end()) {

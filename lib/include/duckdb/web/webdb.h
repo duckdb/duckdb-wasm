@@ -40,33 +40,32 @@ class WebDB {
         duckdb::Connection connection_;
 
         /// The current pending query result (if any)
-        std::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
+        unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
         /// The current pending query was canceled
         bool current_pending_query_was_canceled_ = false;
         /// The current query result (if any)
-        std::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
+        unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
         /// The current arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
         /// The current patched arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_patched_ = nullptr;
 
         /// The currently active prepared statements
-        std::unordered_map<size_t, std::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
+        std::unordered_map<size_t, unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
         /// The next prepared statement id
         size_t next_prepared_statement_id_ = 0;
         /// The current arrow ipc input stream
         std::optional<ArrowInsertOptions> arrow_insert_options_ = std::nullopt;
         /// The current arrow ipc input stream
-        std::unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
+        unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
 
         // Fully materialize a given result set and return it as an Arrow Buffer
-        arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(
-            std::unique_ptr<duckdb::QueryResult> result);
+        arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(unique_ptr<duckdb::QueryResult> result);
         // Setup streaming of a result set and return the schema as an Arrow Buffer
-        arrow::Result<std::shared_ptr<arrow::Buffer>> StreamQueryResult(std::unique_ptr<duckdb::QueryResult> result);
+        arrow::Result<std::shared_ptr<arrow::Buffer>> StreamQueryResult(unique_ptr<duckdb::QueryResult> result);
         // Execute a prepared statement by setting up all arguments and returning the query result
-        arrow::Result<std::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
-                                                                                     std::string_view args_json);
+        arrow::Result<unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
+                                                                                std::string_view args_json);
         // Call scalar UDF function
         arrow::Status CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk, ExpressionState& state,
                                             Vector& vec);
@@ -127,12 +126,12 @@ class WebDB {
     /// The (shared) database
     std::shared_ptr<duckdb::DuckDB> database_;
     /// The connections
-    std::unordered_map<Connection*, std::unique_ptr<Connection>> connections_;
+    std::unordered_map<Connection*, unique_ptr<Connection>> connections_;
 
     /// The file statistics (if any)
     std::shared_ptr<io::FileStatisticsRegistry> file_stats_ = {};
     /// The pinned web files (if any)
-    std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
+    std::unordered_map<std::string_view, unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
 
     // Register custom extension options in DuckDB for options that are handled in DuckDB-WASM instead of DuckDB
     void RegisterCustomExtensionOptions(std::shared_ptr<duckdb::DuckDB> database);
@@ -141,7 +140,7 @@ class WebDB {
     /// Constructor
     WebDB(WebTag);
     /// Constructor
-    WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs = duckdb::FileSystem::CreateLocal());
+    WebDB(NativeTag, unique_ptr<duckdb::FileSystem> fs = duckdb::FileSystem::CreateLocal());
     /// Destructor
     ~WebDB();
 
@@ -171,7 +170,7 @@ class WebDB {
     arrow::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
                                   io::WebFileSystem::DataProtocol protocol, bool direct_io);
     /// Register a file URL
-    arrow::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
+    arrow::Status RegisterFileBuffer(std::string_view file_name, unique_ptr<char[]> buffer, size_t buffer_length);
     /// Glob all known file infos
     arrow::Result<std::string> GlobFileInfos(std::string_view expression);
     /// Get the global filesystem info
@@ -201,7 +200,7 @@ class WebDB {
     /// Get the static webdb instance
     static arrow::Result<std::reference_wrapper<WebDB>> Get();
     /// Create the default webdb database
-    static std::unique_ptr<WebDB> Create();
+    static unique_ptr<WebDB> Create();
 };
 
 }  // namespace web

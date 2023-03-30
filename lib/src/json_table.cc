@@ -149,7 +149,7 @@ struct RowArrayTableReader : public TableReader {
     std::optional<ArrayReader> struct_reader_ = std::nullopt;
 
     /// Constructor
-    RowArrayTableReader(std::unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size)
+    RowArrayTableReader(unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size)
         : TableReader(std::move(table), std::move(type), batch_size) {}
     /// Prepare the table reader
     arrow::Status Prepare() override;
@@ -223,10 +223,10 @@ struct ColumnObjectTableReader : public TableReader {
     };
 
     /// The column readers
-    std::unordered_map<std::string, std::unique_ptr<ColumnReader>> column_readers_ = {};
+    std::unordered_map<std::string, unique_ptr<ColumnReader>> column_readers_ = {};
 
     /// Constructor
-    ColumnObjectTableReader(std::unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size)
+    ColumnObjectTableReader(unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size)
         : TableReader(std::move(table), std::move(type), batch_size) {}
     /// Prepare the table reader
     arrow::Status Prepare() override;
@@ -333,14 +333,14 @@ arrow::Status ColumnObjectTableReader::ReadNext(std::shared_ptr<arrow::RecordBat
 }  // namespace
 
 /// Constructor
-TableReader::TableReader(std::unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size)
+TableReader::TableReader(unique_ptr<io::InputFileStream> table, TableType type, size_t batch_size)
     : table_file_(std::move(table)), table_type_(std::move(type)), batch_size_(batch_size) {}
 
 /// Access the schema
 std::shared_ptr<arrow::Schema> TableReader::schema() const { return schema_; }
 /// Resolve a table reader
-arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr<io::InputFileStream> table,
-                                                                 TableType type, size_t batch_size) {
+arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(unique_ptr<io::InputFileStream> table, TableType type,
+                                                                 size_t batch_size) {
     switch (type.shape) {
         case JSONTableShape::COLUMN_OBJECT:
             return std::make_shared<ColumnObjectTableReader>(std::move(table), std::move(type), batch_size);
@@ -352,8 +352,8 @@ arrow::Result<std::shared_ptr<TableReader>> TableReader::Resolve(std::unique_ptr
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(uintptr_t this_ptr,
-                                                                           duckdb::ArrowStreamParameters& parameters) {
+unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(uintptr_t this_ptr,
+                                                                      duckdb::ArrowStreamParameters& parameters) {
     assert(this_ptr != 0);
     auto reader = reinterpret_cast<std::shared_ptr<TableReader>*>(this_ptr);
     auto reader_copy = (*reader)->CloneShared();

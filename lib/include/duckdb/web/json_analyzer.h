@@ -37,7 +37,7 @@ class TypeAnalyzer {
     virtual size_t TestValues(const std::vector<rapidjson::Value>& json_values) = 0;
 
     /// Resolve a type analyzer
-    static std::unique_ptr<TypeAnalyzer> ResolveScalar(std::shared_ptr<arrow::DataType> type);
+    static unique_ptr<TypeAnalyzer> ResolveScalar(std::shared_ptr<arrow::DataType> type);
 };
 
 /// A reader event

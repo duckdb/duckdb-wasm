@@ -79,7 +79,7 @@ class FilePageBuffer {
         /// The path
         std::string path = {};
         /// The file
-        std::unique_ptr<duckdb::FileHandle> handle = nullptr;
+        unique_ptr<duckdb::FileHandle> handle = nullptr;
 
         /// This latch ensures that reads and writes are blocked during truncation.
         SharedMutex file_latch = {};
@@ -121,7 +121,7 @@ class FilePageBuffer {
         /// The frame state.
         State frame_state = State::NEW;
         /// The data buffer (constant page size)
-        std::unique_ptr<char[]> buffer = nullptr;
+        unique_ptr<char[]> buffer = nullptr;
         /// How many times this page has been fixed
         uint64_t num_users = 0;
         /// The data size
@@ -296,18 +296,18 @@ class FilePageBuffer {
     LightMutex directory_latch;
 
     /// Maps file ids to their file infos
-    std::unordered_map<uint16_t, std::unique_ptr<BufferedFile>> files = {};
+    std::unordered_map<uint16_t, unique_ptr<BufferedFile>> files = {};
     /// The file ids
     std::unordered_map<std::string_view, BufferedFile*> files_by_name = {};
     /// The free file ids
     std::stack<uint16_t> free_file_ids = {};
     /// The frame buffers
-    std::stack<std::unique_ptr<char[]>> free_buffers = {};
+    std::stack<unique_ptr<char[]>> free_buffers = {};
     /// The next allocated file ids
     uint16_t allocated_file_ids = 0;
 
     /// Maps frame ids to frames
-    std::unordered_map<uint64_t, std::unique_ptr<BufferFrame>> frames = {};
+    std::unordered_map<uint64_t, unique_ptr<BufferFrame>> frames = {};
     /// FIFO list of frames
     std::list<BufferFrame*> fifo = {};
     /// LRU list of frames
@@ -321,15 +321,15 @@ class FilePageBuffer {
 
     /// Returns the next page that can be evicted.
     /// Returns nullptr, when no page can be evicted.
-    std::unique_ptr<char[]> EvictAnyBufferFrame(DirectoryGuard& dir_guard);
+    unique_ptr<char[]> EvictAnyBufferFrame(DirectoryGuard& dir_guard);
     /// Allocate a buffer for a frame.
     /// Evicts a page if neccessary
-    std::unique_ptr<char[]> AllocateFrameBuffer(DirectoryGuard& dir_guard);
+    unique_ptr<char[]> AllocateFrameBuffer(DirectoryGuard& dir_guard);
 
     /// Flush a frame
     void FlushFrame(BufferFrame& frame, FileGuardRefVariant file_guard, DirectoryGuard& dir_guard);
     /// Donate a buffer
-    void DonateFrameBuffer(std::unique_ptr<char[]> buffer, DirectoryGuard& dir_guard) {
+    void DonateFrameBuffer(unique_ptr<char[]> buffer, DirectoryGuard& dir_guard) {
         if (buffer && ((free_buffers.size() + frames.size()) < page_capacity)) {
             free_buffers.push(std::move(buffer));
         }
@@ -356,8 +356,8 @@ class FilePageBuffer {
     void CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector);
 
     /// Open a file
-    std::unique_ptr<FileRef> OpenFile(std::string_view path, uint8_t flags,
-                                      duckdb::FileLockType lock_type = duckdb::FileLockType::NO_LOCK);
+    unique_ptr<FileRef> OpenFile(std::string_view path, uint8_t flags,
+                                 duckdb::FileLockType lock_type = duckdb::FileLockType::NO_LOCK);
     /// Is buffered
     bool BuffersFile(std::string_view path);
     /// Flush file matching name to disk

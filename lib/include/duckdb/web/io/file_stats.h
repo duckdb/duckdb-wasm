@@ -43,7 +43,7 @@ class FileStatisticsCollector {
     /// The block count
     size_t block_count_ = 0;
     /// The file statistics
-    std::unique_ptr<BlockStatistics[]> block_stats_ = {};
+    unique_ptr<BlockStatistics[]> block_stats_ = {};
 
     /// Is active?
     std::atomic<bool> active_ = true;

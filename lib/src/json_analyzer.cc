@@ -303,7 +303,7 @@ arrow::Result<std::shared_ptr<arrow::DataType>> InferDataTypeImpl(
     // The pending object fields
     std::unordered_map<std::string_view, std::vector<std::shared_ptr<arrow::DataType>>> infer_directly;
     // The string field options
-    std::vector<std::unique_ptr<TypeAnalyzer>> analyzers;
+    std::vector<unique_ptr<TypeAnalyzer>> analyzers;
     analyzers.push_back(TypeAnalyzer::ResolveScalar(arrow::timestamp(arrow::TimeUnit::SECOND)));
     analyzers.push_back(TypeAnalyzer::ResolveScalar(arrow::int32()));
     analyzers.push_back(TypeAnalyzer::ResolveScalar(arrow::uint32()));
@@ -571,7 +571,7 @@ class JSONStructArrayAnalyzer : public JSONArrayAnalyzer<JSONTableShape::ROW_ARR
     /// The first-level field limit
     size_t field_limit = 100;
     /// The first-level fields
-    std::vector<std::unique_ptr<char[]>> field_names_ = {};
+    std::vector<unique_ptr<char[]>> field_names_ = {};
     /// The first-level stats
     std::unordered_map<std::string_view, JSONArrayStats> field_stats_ = {};
 
@@ -589,7 +589,7 @@ class JSONStructArrayAnalyzer : public JSONArrayAnalyzer<JSONTableShape::ROW_ARR
                 stats_ = &iter->second;
             } else if (field_names_.size() < field_limit) {
                 // Allocate name buffer
-                std::unique_ptr<char[]> buffer(new char[length + 1]);
+                unique_ptr<char[]> buffer(new char[length + 1]);
                 std::memcpy(buffer.get(), txt, length);
                 *(buffer.get() + length) = 0;
                 auto name = std::string_view{buffer.get(), length};

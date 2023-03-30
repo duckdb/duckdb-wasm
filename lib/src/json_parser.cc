@@ -254,7 +254,7 @@ template <typename Derived, typename BuilderType> class BaseArrayParser : public
     }
     /// Builder factory
     arrow::Status MakeConcreteBuilder(std::shared_ptr<BuilderType>* out) {
-        std::unique_ptr<arrow::ArrayBuilder> builder;
+        unique_ptr<arrow::ArrayBuilder> builder;
         RETURN_NOT_OK(MakeBuilder(arrow::default_memory_pool(), this->type_, &builder));
         *out = arrow::internal::checked_pointer_cast<BuilderType>(std::move(builder));
         return arrow::Status::OK();
@@ -799,7 +799,7 @@ template <arrow::Type::type TYPE> struct GenericTypeAnalyzer : public TypeAnalyz
 TypeAnalyzer::TypeAnalyzer(std::shared_ptr<arrow::DataType> type) : type_(std::move(type)){};
 
 /// Resolve a type analyzer
-std::unique_ptr<TypeAnalyzer> TypeAnalyzer::ResolveScalar(std::shared_ptr<arrow::DataType> type) {
+unique_ptr<TypeAnalyzer> TypeAnalyzer::ResolveScalar(std::shared_ptr<arrow::DataType> type) {
 #define ANALYZER_CASE(ID) \
     case ID:              \
         return std::make_unique<GenericTypeAnalyzer<ID>>(type);

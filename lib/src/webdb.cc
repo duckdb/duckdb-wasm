@@ -74,7 +74,7 @@ namespace web {
 static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
 
 /// Create the default webdb database
-std::unique_ptr<WebDB> WebDB::Create() {
+unique_ptr<WebDB> WebDB::Create() {
     if constexpr (ENVIRONMENT == Environment::WEB) {
         return std::make_unique<WebDB>(WEB);
     } else {
@@ -84,7 +84,7 @@ std::unique_ptr<WebDB> WebDB::Create() {
 }
 /// Get the static webdb instance
 arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
-    static std::unique_ptr<WebDB> db = nullptr;
+    static unique_ptr<WebDB> db = nullptr;
     if (db == nullptr) {
         db = Create();
     }
@@ -98,7 +98,7 @@ WebDB::Connection::Connection(WebDB& webdb)
 WebDB::Connection::~Connection() = default;
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(
-    std::unique_ptr<duckdb::QueryResult> result) {
+    unique_ptr<duckdb::QueryResult> result) {
     current_query_result_.reset();
     current_schema_.reset();
     current_schema_patched_.reset();
@@ -132,7 +132,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 }
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(
-    std::unique_ptr<duckdb::QueryResult> result) {
+    unique_ptr<duckdb::QueryResult> result) {
     current_query_result_ = std::move(result);
     current_schema_.reset();
     current_schema_patched_.reset();
@@ -227,7 +227,7 @@ bool WebDB::Connection::CancelPendingQuery() {
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResults() {
     try {
         // Fetch data if a query is active
-        std::unique_ptr<duckdb::DataChunk> chunk;
+        unique_ptr<duckdb::DataChunk> chunk;
         if (current_query_result_ == nullptr) {
             return nullptr;
         }
@@ -295,8 +295,8 @@ arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_vie
     }
 }
 
-arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(
-    size_t statement_id, std::string_view args_json) {
+arrow::Result<unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(size_t statement_id,
+                                                                                           std::string_view args_json) {
     try {
         auto stmt = prepared_statements_.find(statement_id);
         if (stmt == prepared_statements_.end())
@@ -389,10 +389,10 @@ namespace {
 
 class SharedVectorBuffer : public VectorBuffer {
    protected:
-    std::unique_ptr<char[]> data;
+    unique_ptr<char[]> data;
 
    public:
-    explicit SharedVectorBuffer(std::unique_ptr<char[]> data)
+    explicit SharedVectorBuffer(unique_ptr<char[]> data)
         : VectorBuffer(VectorBufferType::STANDARD_BUFFER), data(std::move(data)) {}
 };
 
@@ -447,7 +447,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
     // UDF call failed?
     if (response.statusCode != 0) {
         uintptr_t err_ptr = response.dataOrValue;
-        std::unique_ptr<char[]> err_buf{reinterpret_cast<char*>(err_ptr)};
+        unique_ptr<char[]> err_buf{reinterpret_cast<char*>(err_ptr)};
         std::string err{err_buf.get(), static_cast<size_t>(response.dataSize)};
         return arrow::Status::ExecutionError(err);
     }
@@ -476,7 +476,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
 
     } else {
         auto res_buf = reinterpret_cast<char*>(static_cast<uintptr_t>(res_arr[0]));
-        auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
+        auto shared_buffer = std::make_shared<SharedVectorBuffer>(unique_ptr<char[]>{res_buf});
         out.SetAuxiliary(shared_buffer);
         duckdb::FlatVector::SetData(out, (data_ptr_t)res_buf);
     }
@@ -724,7 +724,7 @@ WebDB::WebDB(WebTag)
 }
 
 /// Constructor
-WebDB::WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs)
+WebDB::WebDB(NativeTag, unique_ptr<duckdb::FileSystem> fs)
     : config_(std::make_shared<WebDBConfig>()),
       file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
       buffered_filesystem_(nullptr),
@@ -861,8 +861,7 @@ arrow::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_vie
     return arrow::Status::OK();
 }
 /// Register a file URL
-arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer,
-                                        size_t buffer_length) {
+arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, unique_ptr<char[]> buffer, size_t buffer_length) {
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return arrow::Status::Invalid("WebFileSystem is not configured");
@@ -1024,7 +1023,7 @@ arrow::Status WebDB::CopyFileToPath(std::string_view path, std::string_view out)
                            duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW);
 
     auto buffer_size = 16 * 1024;
-    std::unique_ptr<char[]> buffer{new char[buffer_size]};
+    unique_ptr<char[]> buffer{new char[buffer_size]};
     while (true) {
         auto buffered = fs.Read(*src, buffer.get(), buffer_size);
         if (buffered == 0) break;

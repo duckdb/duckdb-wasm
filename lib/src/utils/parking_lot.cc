@@ -15,7 +15,7 @@ struct BucketList {
         /// The waiting threads
         unsigned waiting_threads = 0;
         /// The next bucket
-        std::unique_ptr<Bucket> next_bucket;
+        unique_ptr<Bucket> next_bucket;
         /// The condition variable
         std::condition_variable cv;
     };
@@ -23,9 +23,9 @@ struct BucketList {
     /// The mutex to protect the following member variables
     std::mutex mutex;
     /// The active buckets
-    std::unique_ptr<Bucket> buckets;
+    unique_ptr<Bucket> buckets;
     /// The inactive buckets (if any)
-    std::unique_ptr<Bucket> inactive;
+    unique_ptr<Bucket> inactive;
 };
 
 /// The parking lot bits
@@ -51,7 +51,7 @@ void ParkingLot::Park(const void* addr, std::function<bool()> check, std::chrono
         for (auto iter = lot.buckets.get(); iter; iter = iter->next_bucket.get()) {
             if (iter->address == addr) return *iter;
         }
-        std::unique_ptr<BucketList::Bucket> n;
+        unique_ptr<BucketList::Bucket> n;
         if (lot.inactive) {
             n = std::move(lot.inactive);
             lot.inactive = std::move(n->next_bucket);

@@ -25,7 +25,7 @@ namespace fs = std::filesystem;
 namespace {
 
 struct TestableFilePageBuffer : public io::FilePageBuffer {
-    TestableFilePageBuffer(std::unique_ptr<duckdb::FileSystem> filesystem = duckdb::FileSystem::CreateLocal(),
+    TestableFilePageBuffer(unique_ptr<duckdb::FileSystem> filesystem = duckdb::FileSystem::CreateLocal(),
                            size_t page_capacity = 10, size_t page_size_bits = 14)
         : io::FilePageBuffer(std::move(filesystem), page_capacity, page_size_bits) {}
 
@@ -107,7 +107,7 @@ TEST(FilePageBufferTest, PersistentRestart) {
     std::filesystem::resize_file(file2_path, 10 * page_size);
     std::filesystem::resize_file(file3_path, 10 * page_size);
 
-    std::vector<std::unique_ptr<io::FilePageBuffer::FileRef>> files;
+    std::vector<unique_ptr<io::FilePageBuffer::FileRef>> files;
     auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
                       duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;
     files.push_back(buffer->OpenFile(file1_path.c_str(), file_flags));
@@ -418,7 +418,7 @@ TEST(FilePageBufferTest, ParallelScans) {
             std::discrete_distribution<uint16_t> segment_distr{12.0, 5.0, 2.0, 1.0};
 
             // Open all files once per thread to isolate but
-            std::vector<std::unique_ptr<TestableFilePageBuffer::FileRef>> file_refs;
+            std::vector<unique_ptr<TestableFilePageBuffer::FileRef>> file_refs;
             for (auto& file_path : test_files) {
                 auto file_flags = duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_READ |
                                   duckdb::FileFlags::FILE_FLAGS_FILE_CREATE;

@@ -14,7 +14,7 @@ class InputFileStreamBuffer : public std::streambuf {
     /// The buffer manager
     std::shared_ptr<FilePageBuffer> file_page_buffer_;
     /// The file
-    std::unique_ptr<FilePageBuffer::FileRef> file_;
+    unique_ptr<FilePageBuffer::FileRef> file_;
     /// The buffer
     FilePageBuffer::BufferRef buffer_;
     /// The end of the readable data (might be smaller than the actual file size if the stream is sliced)

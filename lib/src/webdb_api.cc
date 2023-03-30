@@ -124,7 +124,7 @@ void duckdb_web_fs_register_file_url(WASMResponse* packed, const char* file_name
 /// Register a file buffer
 void duckdb_web_fs_register_file_buffer(WASMResponse* packed, const char* file_name, char* data, uint32_t data_length) {
     GET_WEBDB(*packed);
-    auto data_ptr = std::unique_ptr<char[]>(data);
+    auto data_ptr = unique_ptr<char[]>(data);
     WASMResponseBuffer::Get().Store(*packed, webdb.RegisterFileBuffer(file_name, std::move(data_ptr), data_length));
 }
 
