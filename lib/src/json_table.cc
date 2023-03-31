@@ -359,7 +359,7 @@ std::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(uintp
     auto reader_copy = (*reader)->CloneShared();
 
     // Create arrow stream
-    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    auto stream_wrapper = std::make_unique<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
     auto maybe_ok = arrow::ExportRecordBatchReader(reader_copy, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
@@ -379,7 +379,7 @@ void TableReader::GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& sche
     auto reader_copy = (*reader)->CloneShared();
 
     // Create arrow stream
-    auto stream_wrapper = duckdb::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    auto stream_wrapper = std::make_unique<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
     auto maybe_ok = arrow::ExportRecordBatchReader(reader_copy, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
