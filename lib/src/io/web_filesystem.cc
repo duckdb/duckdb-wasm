@@ -585,8 +585,8 @@ void WebFileSystem::IncrementCacheEpoch() {
 }
 
 /// Open a file
-std::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
-                                                            FileCompressionType compression, FileOpener *opener) {
+duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url, uint8_t flags, FileLockType lock,
+                                                               FileCompressionType compression, FileOpener *opener) {
     DEBUG_TRACE();
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
 

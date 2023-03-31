@@ -84,9 +84,9 @@ class BufferedFileSystem : public duckdb::FileSystem {
 
    public:
     /// Open a file
-    std::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                 FileCompressionType compression,
-                                                 FileOpener *opener = nullptr) override;
+    duckdb::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
+                                                    FileCompressionType compression,
+                                                    FileOpener *opener = nullptr) override;
     /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read. This is
     /// equivalent to calling SetFilePointer(location) followed by calling Read().
     void Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) override;

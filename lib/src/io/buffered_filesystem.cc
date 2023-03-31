@@ -81,9 +81,9 @@ void BufferedFileSystem::DropFiles() {
 }
 
 /// Open a file
-std::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &raw_path, uint8_t flags,
-                                                                 FileLockType lock, FileCompressionType compression,
-                                                                 FileOpener *opener) {
+duckdb::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &raw_path, uint8_t flags,
+                                                                    FileLockType lock, FileCompressionType compression,
+                                                                    FileOpener *opener) {
     auto path = PatchFilenameOwned(raw_path);
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
 
