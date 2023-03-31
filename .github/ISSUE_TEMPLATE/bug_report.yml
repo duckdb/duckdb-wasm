@@ -1,0 +1,76 @@
+name: Bug report
+description: Create a report to help us improve
+body:
+  - type: markdown
+    attributes:
+      value: >
+        DuckDB-Wasm is part of the wider DuckDB ecosystem split in different repos, please make sure you're raising your issue in the correct one:
+         * [DuckDB core](https://github.com/duckdb/duckdb/issues/new)
+         * [Our docs/website](https://github.com/duckdb/duckdb-web/issues/new)
+
+        If neither seems to be applicable, you are in the right place!
+
+  - type: textarea
+    attributes:
+      label: What happens?
+      description: A short, clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior. Bonus points if those are only SQL queries.
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "# Environment (please complete the following information):"
+  - type: input
+    attributes:
+      label: "Browser/Environment:"
+      placeholder: e.g. Chrome 110
+      description: Please include version of your browser or JavaScript runtime
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "Device:"
+      placeholder: e.g. Ipad
+      description: The actual device you are running duckdb-wasm on
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "DuckDB-Wasm Version:"
+      placeholder: e.g. 1.24.1
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "DuckDB-Wasm Bundle:"
+      placeholder: e.g. shell.duckdb.org
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "# Identity Disclosure:"
+  - type: input
+    attributes:
+      label: "Full Name:"
+      placeholder: e.g. John Doe
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "Affiliation:"
+      placeholder: e.g. Oracle
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        If the above is not given and is not obvious from your GitHub profile page, we might close your issue without further review. Please refer to the [reasoning behind this rule](https://berthub.eu/articles/posts/anonymous-help/) if you have questions.
