@@ -1,8 +1,8 @@
 #include "duckdb/web/arrow_stream_buffer.h"
-#include "duckdb/common/helper.hpp"
 
 #include <iostream>
 
+#include "duckdb/common/helper.hpp"
 #include "duckdb/web/arrow_bridge.h"
 
 namespace duckdb {

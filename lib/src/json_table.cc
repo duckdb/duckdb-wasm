@@ -18,8 +18,6 @@
 #include "rapidjson/error/en.h"
 #include "rapidjson/istreamwrapper.h"
 
-#include "duckdb/common/helper.hpp"
-
 namespace duckdb {
 namespace web {
 namespace json {

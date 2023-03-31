@@ -19,8 +19,6 @@
 // under the License.
 
 #include "duckdb/web/json_parser.h"
-#include "duckdb/common/helper.hpp"
-#include "duckdb/common/vector.hpp"
 
 #include <rapidjson/error/error.h>
 #include <rapidjson/reader.h>
@@ -45,6 +43,8 @@
 #include "arrow/type_fwd.h"
 #include "arrow/type_traits.h"
 #include "arrow/util/value_parsing.h"
+#include "duckdb/common/helper.hpp"
+#include "duckdb/common/vector.hpp"
 #include "duckdb/web/json_analyzer.h"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"

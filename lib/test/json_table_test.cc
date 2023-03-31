@@ -17,8 +17,8 @@
 #include "rapidjson/reader.h"
 
 using namespace duckdb::web;
-using duckdb::unique_ptr;
 using duckdb::make_uniq;
+using duckdb::unique_ptr;
 
 namespace {
 

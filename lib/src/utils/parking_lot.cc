@@ -1,8 +1,9 @@
 #include "duckdb/web/utils/parking_lot.h"
-#include "duckdb/common/helper.hpp"
 
 #include <condition_variable>
 #include <thread>
+
+#include "duckdb/common/helper.hpp"
 
 namespace duckdb {
 namespace web {
