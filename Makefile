@@ -149,7 +149,7 @@ lib_debug: lib
 
 bench_build:
 	yarn workspace @duckdb/benchmarks build
-	touch bench_build
+	touch build/bench_build
 
 
 .PHONY: bench_tpch_aq
@@ -229,9 +229,10 @@ ifeq (${DUCKDB_JSON}, 1)
 	touch ${JSON_EXTENSION_CACHE_FILE}
 endif
 
-wrapped_wasm_caches: docker_ci_image
+wrapped_wasm_caches:
 	${EXEC_ENVIRONMENT} make wasm_caches
-	touch wrapped_wasm_caches
+	mkdir -p build
+	touch build/wrapped_wasm_caches
 
 check_duckdb: $(DUCKDB_SOURCES)
 	(cd ${ROOT_DIR}/build/dev/mvp && make clean) || true
@@ -282,7 +283,7 @@ wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug
-js_debug: bootstrap wasm
+js_debug: build/bootstrap wasm
 	yarn workspace @duckdb/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
@@ -339,7 +340,7 @@ app_start_corp:
 	yarn workspace @duckdb/duckdb-wasm-app start:corp
 
 .PHONY: app
-app: wasm shell docs
+app: wasm wasmpack shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 
 .PHONY: app_server
@@ -406,5 +407,5 @@ submodules:
 	touch submodules
 
 # Build infrastructure and packages required for development
-build/bootstrap: submodules docker_ci_image yarn_install
+build/bootstrap: submodules yarn_install
 	touch build/bootstrap
