@@ -46,8 +46,8 @@ arrow::Status MemoryFileSystem::RegisterFileBuffer(std::string name, std::vector
 }
 
 /// Open a file
-std::unique_ptr<duckdb::FileHandle> MemoryFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                               FileCompressionType compression, FileOpener *opener) {
+duckdb::unique_ptr<duckdb::FileHandle> MemoryFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
+                                                                  FileCompressionType compression, FileOpener *opener) {
     // Resolve the file buffer
     auto file_iter = file_paths.find(path);
     if (file_iter == file_paths.end()) throw new std::logic_error{"File is not registered"};
