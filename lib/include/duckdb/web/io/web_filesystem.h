@@ -12,12 +12,12 @@
 #include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/vector.hpp"
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/readahead_buffer.h"
 #include "duckdb/web/utils/parallel.h"
 #include "duckdb/web/utils/wasm_response.h"
-#include "duckdb/common/vector.hpp"
 #include "nonstd/span.h"
 
 namespace duckdb {
