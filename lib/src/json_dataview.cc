@@ -37,7 +37,7 @@ namespace json {
 namespace {
 
 template <typename T>
-std::pair<T*, size_t> create_additional_buffer(vector<double>& data_ptrs, additional_buffers_t& additional_buffers,
+std::pair<T*, size_t> create_additional_buffer(std::vector<double>& data_ptrs, additional_buffers_t& additional_buffers,
                                                idx_t size) {
     additional_buffers.emplace_back(unique_ptr<data_t[]>(new data_t[size]));
     auto res_ptr = reinterpret_cast<T*>(additional_buffers.back().get());

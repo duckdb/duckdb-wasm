@@ -988,7 +988,7 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 }
 
 /// Runs a glob on the file system, returning a list of matching files
-std::vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
+vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     std::vector<std::string> results;
     auto glob = glob_to_regex(path);

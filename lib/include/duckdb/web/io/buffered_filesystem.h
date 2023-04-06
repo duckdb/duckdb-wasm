@@ -6,6 +6,7 @@
 
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/vector.hpp"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/utils/parallel.h"
 
@@ -131,7 +132,7 @@ class BufferedFileSystem : public duckdb::FileSystem {
     void RemoveFile(const std::string &filename) override;
 
     /// Runs a glob on the file system, returning a list of matching files
-    std::vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override {
+    vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override {
         return filesystem_.Glob(PatchFilenameOwned(path), opener);
     }
 
