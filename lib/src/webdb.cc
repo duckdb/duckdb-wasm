@@ -591,8 +591,8 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
         named_params.insert({"auto_detect", Value::BOOLEAN(options.auto_detect.value_or(true))});
 
         /// Execute the csv scan
-        auto func =
-            std::make_shared<TableFunctionRelation>(connection_.context, "read_csv", unnamed_params, named_params);
+        auto func = std::make_shared<TableFunctionRelation>(connection_.context, "read_csv", std::move(unnamed_params),
+                                                            named_params);
 
         /// Create or insert
         if (options.create_new) {
