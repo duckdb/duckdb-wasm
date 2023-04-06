@@ -395,9 +395,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             mod.HEAPU8.set(src, buf);
                             return src.byteLength;
                         } else if (xhr.status == 200) {
-                            throw new Error(
-                                `Range request for ${file.dataUrl} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
-                            );
+                            // TODO: here we are actually throwing away all non-relevant bytes, but this is still better than failing
+                            //       proper solution would require notifying duckdb-wasm cache, while we are piggybackign on browser cache
+                            console.warn(`Range request for ${file.dataUrl} did not return a partial response: ${xhr.status} "${xhr.statusText}"`);
+                            const src = new Uint8Array(xhr.response, location, Math.min(xhr.response.byteLength-location, bytes));
+                            mod.HEAPU8.set(src, buf);
+                            return src.byteLength;
                         } else {
                             throw new Error(
                                 `Range request for ${file.dataUrl} did returned non-success status: ${xhr.status} "${xhr.statusText}"`,
