@@ -378,40 +378,22 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - uses: mymindstorm/setup-emsdk@v12
+              with:
+                  version: 3.1.24
+
+            - name: Setup Ccache
+              uses: hendrikmuhs/ccache-action@main
+              with:
+                key: ${{ github.job }}
+
             - name: Git submodule status
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache WASM build
-              uses: actions/cache@v3
-              with:
-                  path: |
-                      ./.emscripten_cache
-                      ./.ccache
-                  key: ${{ runner.os }}-wasm6-default-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
-                  restore-keys: |
-                      ${{ runner.os }}-wasm6-default-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm6-default-
-
-            - name: Prepare repository
-              run: |
-                  chown -R $(id -u):$(id -g) $PWD
-                  (cd ./submodules/duckdb && git fetch --all --tags)
-
-            - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      ccache --max-size 300M
-                      ccache -s
-
             - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      ccache -z
-                      ./scripts/wasm_build_lib.sh relperf mvp
-                      ccache -s
+              run: |
+                  ./scripts/wasm_build_lib.sh relperf mvp
 
             - name: Upload artifact
               uses: actions/upload-artifact@v3
@@ -434,40 +416,22 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - uses: mymindstorm/setup-emsdk@v12
+              with:
+                  version: 3.1.24
+
+            - name: Setup Ccache
+              uses: hendrikmuhs/ccache-action@main
+              with:
+                key: ${{ github.job }}
+
             - name: Git submodule status
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache WASM build
-              uses: actions/cache@v3
-              with:
-                  path: |
-                      ./.emscripten_cache
-                      ./.ccache
-                  key: ${{ runner.os }}-wasm6-eh-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
-                  restore-keys: |
-                      ${{ runner.os }}-wasm6-eh-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm6-eh-
-
-            - name: Prepare repository
-              run: |
-                  chown -R $(id -u):$(id -g) $PWD
-                  (cd ./submodules/duckdb && git fetch --all --tags)
-
-            - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      ccache --max-size 300M
-                      ccache -s
-
             - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      ccache -z
-                      ./scripts/wasm_build_lib.sh relperf eh
-                      ccache -s
+              run: |
+                  ./scripts/wasm_build_lib.sh relperf eh
 
             - name: Upload artifact
               uses: actions/upload-artifact@v3
@@ -490,40 +454,22 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - uses: mymindstorm/setup-emsdk@v12
+              with:
+                  version: 3.1.24
+
+            - name: Setup Ccache
+              uses: hendrikmuhs/ccache-action@main
+              with:
+                key: ${{ github.job }}
+
             - name: Git submodule status
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Cache WASM build
-              uses: actions/cache@v3
-              with:
-                  path: |
-                      ./.emscripten_cache
-                      ./.ccache
-                  key: ${{ runner.os }}-wasm6-coi-${{ hashFiles('git_submodule_status.txt') }}-${{ hashFiles('lib/src/**') }}-${{ hashFiles('lib/include/**') }}
-                  restore-keys: |
-                      ${{ runner.os }}-wasm6-coi-${{ hashFiles('git_submodule_status.txt') }}
-                      ${{ runner.os }}-wasm6-coi-
-
-            - name: Prepare repository
-              run: |
-                  chown -R $(id -u):$(id -g) $PWD
-                  (cd ./submodules/duckdb && git fetch --all --tags)
-
-            - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      ccache --max-size 300M
-                      ccache -s
-
             - name: Build WASM module
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      ccache -z
-                      ./scripts/wasm_build_lib.sh relperf coi
-                      ccache -s
+              run: |
+                  ./scripts/wasm_build_lib.sh relperf coi
 
             - name: Upload artifact
               uses: actions/upload-artifact@v3
