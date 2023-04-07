@@ -28,6 +28,17 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             });
         });
 
+        describe('Check version', () => {
+            it('Version check', async () => {
+                await db().reset();
+                conn = db().connect();
+                const version = conn.query<{ name: arrow.Utf8 }>("select * from (select version()) where version() != 'v0.0.1-dev0';");
+                const rows = version.toArray();
+                expect(rows.length).toEqual(1);
+                await db().reset();
+            });
+        });
+
         //describe('Open', () => {
         // XXX apparently synchronous XHR on the main thread does not allow for arraybuffer response type?
         // it('Remote TPCH 0_01', async () => {
