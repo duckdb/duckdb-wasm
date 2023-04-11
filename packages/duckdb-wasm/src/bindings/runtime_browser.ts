@@ -308,8 +308,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         return;
                     }
                     const contentLength = xhr2.getResponseHeader('Content-Length');
-                    if (contentLength && contentLength > 1) {
-                        console.warn(`Range request for ${file.dataUrl} did not return a partial response: ${xhr2.status} "${xhr2.statusText}"`);
+                    if (contentLength && (+contentLength > 1)) {
+                        console.warn(`Range request for ${path} did not return a partial response: ${xhr2.status} "${xhr2.statusText}"`);
                     }
                 }
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
