@@ -286,8 +286,31 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
                 xhr.send(null);
                 if (xhr.status != 200 && xhr.status !== 206) {
-                    failWith(mod, `HEAD request failed: ${path}`);
-                    return;
+                    // Pre-signed resources on S3 in common configurations fail on any HEAD request
+                    // https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/s3-example-presigned-urls.html
+                    // so we need (if enabled) to bump to a ranged GET
+                    if (!BROWSER_RUNTIME.getGlobalFileInfo(mod)?.allowFullHttpReads) {
+                        failWith(mod, `HEAD request failed: ${path}, with full http reads are disabled`);
+                        return;
+                    }
+                    const xhr2 = new XMLHttpRequest();
+                    if (path.startsWith('s3://')) {
+                        const globalInfo = BROWSER_RUNTIME.getGlobalFileInfo(mod);
+                        xhr2.open('GET', getHTTPUrl(globalInfo?.s3Config, path), false);
+                        addS3Headers(xhr2, globalInfo?.s3Config, path, 'HEAD');
+                    } else {
+                        xhr2.open('GET', path!, false);
+                    }
+                    xhr2.setRequestHeader('Range', `bytes=0-0`);
+                    xhr2.send(null);
+                    if (xhr2.status != 200 && xhr2.status !== 206) {
+                        failWith(mod, `HEAD and GET requests failed: ${path}`);
+                        return;
+                    }
+                    const contentLength = xhr2.getResponseHeader('Content-Length');
+                    if (contentLength && contentLength > 1) {
+                        console.warn(`Range request for ${file.dataUrl} did not return a partial response: ${xhr2.status} "${xhr2.statusText}"`);
+                    }
                 }
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
             }
