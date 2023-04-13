@@ -307,7 +307,7 @@ arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePr
         if (!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
         if (!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array"};
 
-        std::vector<duckdb::Value> values;
+        duckdb::vector<duckdb::Value> values;
         size_t index = 0;
         for (const auto& v : args_doc.GetArray()) {
             if (v.IsLosslessDouble())
