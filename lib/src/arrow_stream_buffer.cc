@@ -42,7 +42,7 @@ arrow::Status ArrowIPCStreamBufferReader::ReadNext(std::shared_ptr<arrow::Record
 }
 
 /// Arrow array stream factory function
-std::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateStream(
+duckdb::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::CreateStream(
     uintptr_t buffer_ptr, duckdb::ArrowStreamParameters& parameters) {
     assert(buffer_ptr != 0);
     auto buffer = reinterpret_cast<std::shared_ptr<ArrowIPCStreamBuffer>*>(buffer_ptr);
