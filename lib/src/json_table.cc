@@ -359,7 +359,7 @@ duckdb::unique_ptr<duckdb::ArrowArrayStreamWrapper> TableReader::CreateStream(
     auto reader_copy = (*reader)->CloneShared();
 
     // Create arrow stream
-    auto stream_wrapper = std::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    auto stream_wrapper = duckdb::make_uniq<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
     auto maybe_ok = arrow::ExportRecordBatchReader(reader_copy, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
