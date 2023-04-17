@@ -50,12 +50,12 @@
         "make-dir": "^3.1.0",
         "nyc": "^15.1.0",
         "prettier": "^2.8.4",
-        "puppeteer": "^19.7.2",
+        "puppeteer": "^19.8.5",
         "rimraf": "^4.3.0",
         "s3rver": "^3.7.1",
         "typedoc": "^0.23.27",
         "typescript": "^4.8.4",
-        "wasm-feature-detect": "^1.4.0",
+        "wasm-feature-detect": "^1.5.1",
         "web-worker": "^1.2.0"
     },
     "scripts": {

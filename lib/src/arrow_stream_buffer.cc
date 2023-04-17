@@ -49,7 +49,7 @@ duckdb::unique_ptr<duckdb::ArrowArrayStreamWrapper> ArrowIPCStreamBufferReader::
     auto reader = std::make_shared<ArrowIPCStreamBufferReader>(*buffer);
 
     // Create arrow stream
-    auto stream_wrapper = std::make_unique<duckdb::ArrowArrayStreamWrapper>();
+    auto stream_wrapper = duckdb::make_uniq<duckdb::ArrowArrayStreamWrapper>();
     stream_wrapper->arrow_array_stream.release = nullptr;
     auto maybe_ok = arrow::ExportRecordBatchReader(reader, &stream_wrapper->arrow_array_stream);
     if (!maybe_ok.ok()) {
