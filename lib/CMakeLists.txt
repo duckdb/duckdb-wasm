@@ -11,6 +11,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS -std=c++17)
 
+if(DUCKDUB_WASM_LOADABLE_EXTENSIONS)
+  set(CMAKE_CXX_FLAGS "-std=c++17 -fPIC -DWASM_LOADABLE_EXTENSIONS=1")
+endif()
+
 if(NOT EMSCRIPTEN)
   set(CMAKE_CXX_FLAGS_DEBUG
       "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")

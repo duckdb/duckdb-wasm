@@ -70,8 +70,8 @@ class TableReader : public arrow::RecordBatchReader {
     static arrow::Result<std::shared_ptr<TableReader>> Resolve(std::unique_ptr<io::InputFileStream> table,
                                                                TableType type, size_t batch_size = 1024);
     /// Arrow array stream factory function
-    static std::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateStream(uintptr_t buffer_ptr,
-                                                                         duckdb::ArrowStreamParameters& parameters);
+    static duckdb::unique_ptr<duckdb::ArrowArrayStreamWrapper> CreateStream(uintptr_t buffer_ptr,
+                                                                            duckdb::ArrowStreamParameters& parameters);
     /// Create arrow array stream wrapper
     static void GetSchema(uintptr_t this_ptr, duckdb::ArrowSchemaWrapper& schema);
 };
