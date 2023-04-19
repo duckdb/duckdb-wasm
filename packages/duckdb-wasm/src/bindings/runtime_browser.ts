@@ -389,6 +389,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         return 0;
     },
     readFile(mod: DuckDBModule, fileId: number, buf: number, bytes: number, location: number) {
+        if (bytes == 0) {
+            // Be robust to empty reads
+            return 0;
+        }
         try {
             const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
             switch (file?.dataProtocol) {
