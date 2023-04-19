@@ -10,9 +10,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS -std=c++17)
+set(WASM_LOADABLE_EXTENSIONS 0)
 
-if(DUCKDUB_WASM_LOADABLE_EXTENSIONS)
+if(DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(CMAKE_CXX_FLAGS "-std=c++17 -fPIC -DWASM_LOADABLE_EXTENSIONS=1")
+  set(WASM_LOADABLE_EXTENSIONS 1)
 endif()
 
 if(NOT EMSCRIPTEN)
@@ -219,42 +221,49 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
-add_library(
-  duckdb_web_fts
-  ${CMAKE_SOURCE_DIR}/src/extensions/fts_extension.cc)
+if(NOT DUCKDB_WASM_LOADABLE_EXTENSIONS)
+  add_library(
+    duckdb_web_fts
+    ${CMAKE_SOURCE_DIR}/src/extensions/fts_extension.cc)
 
-add_library(
-  duckdb_web_parquet
-  ${CMAKE_SOURCE_DIR}/src/extensions/parquet_extension.cc)
+  add_library(
+    duckdb_web_parquet
+    ${CMAKE_SOURCE_DIR}/src/extensions/parquet_extension.cc)
 
-add_library(
-  duckdb_web_excel
-  ${CMAKE_SOURCE_DIR}/src/extensions/excel_extension.cc)
+  add_library(
+    duckdb_web_excel
+    ${CMAKE_SOURCE_DIR}/src/extensions/excel_extension.cc)
   
-add_library(
-  duckdb_web_json
-  ${CMAKE_SOURCE_DIR}/src/extensions/json_extension.cc)
+  add_library(
+    duckdb_web_json
+    ${CMAKE_SOURCE_DIR}/src/extensions/json_extension.cc)
+endif()
 
 set(EXTENSION_CACHE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.ccache/extension")
 set(EXCEL_EXTENSION_CACHE_FILE "${EXTENSION_CACHE_DIR}/excel")
 set(JSON_EXTENSION_CACHE_FILE "${EXTENSION_CACHE_DIR}/json")
 
-set(DUCKDB_WEB_EXCEL "")
-if(EXISTS "${EXCEL_EXTENSION_CACHE_FILE}")
-  set(DUCKDB_WEB_EXCEL "duckdb_web_excel")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_EXCEL_EXTENSION")
-endif()
-set(DUCKDB_WEB_JSON "")
-if(EXISTS "${JSON_EXTENSION_CACHE_FILE}")
-  set(DUCKDB_WEB_JSON "duckdb_web_json")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
+if(NOT DUCKDB_WASM_LOADABLE_EXTENSIONS)
+  set(DUCKDB_WEB_EXCEL "")
+  if(EXISTS "${EXCEL_EXTENSION_CACHE_FILE}")
+    set(DUCKDB_WEB_EXCEL "duckdb_web_excel")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_EXCEL_EXTENSION")
+  endif()
+  set(DUCKDB_WEB_JSON "")
+  if(EXISTS "${JSON_EXTENSION_CACHE_FILE}")
+    set(DUCKDB_WEB_JSON "duckdb_web_json")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
+  endif()
+
+  target_link_libraries(duckdb_web duckdb duckdb_web_fts duckdb_web_parquet ${DUCKDB_WEB_EXCEL} ${DUCKDB_WEB_JSON} arrow rapidjson ${THREAD_LIBS})
+  target_link_libraries(duckdb_web_fts duckdb duckdb_fts)
+  target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
+  target_link_libraries(duckdb_web_excel duckdb duckdb_excel)
+  target_link_libraries(duckdb_web_json duckdb duckdb_json)
+else()
+  target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
 endif()
 
-target_link_libraries(duckdb_web duckdb duckdb_web_fts duckdb_web_parquet ${DUCKDB_WEB_EXCEL} ${DUCKDB_WEB_JSON} arrow rapidjson ${THREAD_LIBS})
-target_link_libraries(duckdb_web_fts duckdb duckdb_fts)
-target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
-target_link_libraries(duckdb_web_excel duckdb duckdb_excel)
-target_link_libraries(duckdb_web_json duckdb duckdb_json)
 
 # ---------------------------------------------------------------------------
 # Emscripten
