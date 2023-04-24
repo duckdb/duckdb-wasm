@@ -1,7 +1,6 @@
 [package]
 name = "duckdb-wasm-shell"
 version = "0.1.0"
-authors = ["Andre Kohn <kohn.a@outlook.com>"]
 edition = "2018"
 publish = false
 

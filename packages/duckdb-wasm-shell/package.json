@@ -2,7 +2,6 @@
     "name": "@duckdb/duckdb-wasm-shell",
     "version": "1.11.0",
     "description": "",
-    "author": "Andre Kohn <kohn.a@outlook.com>",
     "license": "MIT",
     "repository": {
         "type": "git",
