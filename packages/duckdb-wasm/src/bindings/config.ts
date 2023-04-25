@@ -28,7 +28,7 @@ export interface DuckDBFilesystemConfig {
     allowFullHTTPReads?: boolean;
 }
 
-export enum AccessMode {
+export enum DuckDBAccessMode {
     UNDEFINED = 0,
     AUTOMATIC = 1,
     READ_ONLY = 2,
@@ -43,7 +43,7 @@ export interface DuckDBConfig {
     /**
      * The read only mode
      */
-    accessMode?: AccessMode;
+    accessMode?: DuckDBAccessMode;
     /**
      * The maximum number of threads.
      * Note that this will only work with cross-origin isolated sites since it requires SharedArrayBuffers.
