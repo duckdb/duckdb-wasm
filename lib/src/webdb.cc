@@ -795,6 +795,10 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     assert(config_ != nullptr);
     *config_ = WebDBConfig::ReadFrom(args_json);
     bool in_memory = config_->path == ":memory:" || config_->path == "";
+    AccessMode access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
+    if (config_->access_mode.has_value()) {
+        access_mode = static_cast<AccessMode>(config_->access_mode.value());
+    }
     try {
         // Setup new database
         auto buffered_fs = buffered_filesystem_ ? std::make_unique<io::BufferedFileSystem>(*buffered_filesystem_)
@@ -805,7 +809,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         db_config.file_system = std::move(buffered_fs);
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;
-        db_config.options.access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
+        db_config.options.access_mode = access_mode;
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
         duckdb_web_parquet_init(db.get());
         duckdb_web_fts_init(db.get());

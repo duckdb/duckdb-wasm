@@ -37,6 +37,7 @@ uint32_t ResolveFeatureFlags() {
 /// Read the webdb config
 WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     auto config = WebDBConfig{.path = ":memory:",
+                              .access_mode = std::nullopt,
                               .maximum_threads = 1,
                               .query =
                                   QueryConfig{
@@ -61,6 +62,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     if (ok) {
         if (doc.HasMember("path") && doc["path"].IsString()) {
             config.path = doc["path"].GetString();
+        }
+        if (doc.HasMember("accessMode") && doc["accessMode"].IsNumber()) {
+            config.access_mode = doc["accessMode"].GetInt();
         }
         if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
             config.maximum_threads = doc["maximumThreads"].GetInt();
