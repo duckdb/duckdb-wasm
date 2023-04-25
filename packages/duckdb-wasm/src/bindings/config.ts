@@ -41,7 +41,7 @@ export interface DuckDBConfig {
      */
     path?: string;
     /**
-     * The read only mode
+     * The access mode
      */
     accessMode?: DuckDBAccessMode;
     /**
