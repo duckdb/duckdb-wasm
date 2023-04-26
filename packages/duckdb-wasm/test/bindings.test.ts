@@ -1,6 +1,6 @@
 import * as arrow from 'apache-arrow';
 import * as duckdb from '../src/';
-import { DuckDBDataProtocol } from '../src/';
+import { DuckDBAccessMode, DuckDBDataProtocol } from '../src/';
 
 export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): void {
     let conn: duckdb.DuckDBConnection;
@@ -32,7 +32,9 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             it('Version check', async () => {
                 await db().reset();
                 conn = db().connect();
-                const version = conn.query<{ name: arrow.Utf8 }>("select * from (select version()) where version() != 'v0.0.1-dev0';");
+                const version = conn.query<{ name: arrow.Utf8 }>(
+                    "select * from (select version()) where version() != 'v0.0.1-dev0';",
+                );
                 const rows = version.toArray();
                 expect(rows.length).toEqual(1);
                 await db().reset();
@@ -315,6 +317,23 @@ export function testAsyncBindings(
                     );
                 });
                 await conn.close();
+            });
+        });
+
+        describe('AccessMode', () => {
+            it('READ_ONLY', async () => {
+                await expectAsync(
+                    adb().open({
+                        accessMode: DuckDBAccessMode.READ_ONLY,
+                    }),
+                ).toBeRejectedWithError(/Cannot launch in-memory database in read-only mode/);
+            });
+            it('READ_WRITE', async () => {
+                await expectAsync(
+                    adb().open({
+                        accessMode: DuckDBAccessMode.READ_WRITE,
+                    }),
+                ).toBeResolved();
             });
         });
 
