@@ -37,8 +37,16 @@ const getHTTPHost = function (config : S3Config | undefined, url : string, bucke
 
 export function getS3Params (config : S3Config | undefined, url: string, method : string) : S3Params {
     const parsedS3Url = parseS3Url(url);
+
+    // when using S3 path-style access, the signed URL should also include the bucket name, 
+    //  as it is present in the HTTP URL path.
+    // See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html#path-style-url-ex
+    let path =  parsedS3Url.path;
+    if (isPathStyleAccess(config)) {
+        path = `/${parsedS3Url.bucket}${path}`;
+    }
     return {
-        url: parsedS3Url.path,
+        url: path,
         query: "",
         host: getHTTPHost(config, url, parsedS3Url.bucket),
         region: (config?.region) ?? "",
@@ -188,12 +196,18 @@ export function parseS3Url (url: string) : {bucket : string, path : string} {
     return {bucket: bucket, path: path}
 }
 
+function isPathStyleAccess(config : S3Config | undefined) : boolean {
+    if (config?.endpoint?.startsWith("http")) {
+        return true
+    }
+    return false
+}
+
 export function getHTTPUrl(config : S3Config | undefined, url : string) : string {
     const parsedUrl = parseS3Url(url);
-    if (config?.endpoint?.startsWith("http")) {
+    if (isPathStyleAccess(config)) {
         // Endpoint is a full url, we append the bucket
         return `${config?.endpoint}/${parsedUrl.bucket}` + parsedUrl.path;
-    } else {
-        return 'https://' + getHTTPHost(config, url, parsedUrl.bucket) + parsedUrl.path;
     }
+    return 'https://' + getHTTPHost(config, url, parsedUrl.bucket) + parsedUrl.path;
 }
