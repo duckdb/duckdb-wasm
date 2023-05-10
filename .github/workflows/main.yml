@@ -385,7 +385,7 @@ jobs:
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
               with:
-                key: ${{ github.job }}
+                  key: ${{ github.job }}
 
             - name: Git submodule status
               run: |
@@ -423,7 +423,7 @@ jobs:
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
               with:
-                key: ${{ github.job }}
+                  key: ${{ github.job }}
 
             - name: Git submodule status
               run: |
@@ -461,7 +461,7 @@ jobs:
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
               with:
-                key: ${{ github.job }}
+                  key: ${{ github.job }}
 
             - name: Git submodule status
               run: |
@@ -629,12 +629,6 @@ jobs:
                   script: |-
                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
-            - name: Build @duckdb/benchmarks
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      yarn workspace @duckdb/benchmarks build
-
             - name: Build examples
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
@@ -668,5 +662,5 @@ jobs:
 
             - uses: actions/upload-artifact@v3
               with:
-                name: duckdb-wasm-packages
-                path: duckdb-wasm-packages.zip
+                  name: duckdb-wasm-packages
+                  path: duckdb-wasm-packages.zip
