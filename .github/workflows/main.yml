@@ -216,6 +216,7 @@ jobs:
               run: |
                   chown -R $(id -u):$(id -g) $PWD
                   (cd ./submodules/duckdb && git fetch --all --tags)
+                  cd submodules/duckdb && git apply ../../duckdb.patch
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.11
@@ -312,6 +313,7 @@ jobs:
               run: |
                   chown -R $(id -u):$(id -g) $PWD
                   (cd ./submodules/duckdb && git fetch --all --tags)
+                  cd submodules/duckdb && git apply ../../duckdb.patch
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@v0.11

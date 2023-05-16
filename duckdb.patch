@@ -1,0 +1,39 @@
+diff --git a/src/include/duckdb/common/hive_partitioning.hpp b/src/include/duckdb/common/hive_partitioning.hpp
+index 055dc496c5..ce14176dae 100644
+--- a/src/include/duckdb/common/hive_partitioning.hpp
++++ b/src/include/duckdb/common/hive_partitioning.hpp
+@@ -14,7 +14,7 @@
+ #include "duckdb/optimizer/statistics_propagator.hpp"
+ #include "duckdb/planner/expression_iterator.hpp"
+ #include "duckdb/planner/table_filter.hpp"
+-#include "re2/re2.h"
++#include "../../third_party/re2/re2/re2.h"
+ 
+ #include <iostream>
+ #include <sstream>
+diff --git a/src/include/duckdb/common/multi_file_reader_options.hpp b/src/include/duckdb/common/multi_file_reader_options.hpp
+index a9322a2cf4..91ed8a68f1 100644
+--- a/src/include/duckdb/common/multi_file_reader_options.hpp
++++ b/src/include/duckdb/common/multi_file_reader_options.hpp
+@@ -10,7 +10,7 @@
+ 
+ #include "duckdb/common/types.hpp"
+ #include "duckdb/common/hive_partitioning.hpp"
+-#include "re2/re2.h"
++#include "../../third_party/re2/re2/re2.h"
+ 
+ namespace duckdb {
+ class Serializer;
+diff --git a/third_party/re2/re2/re2.h b/third_party/re2/re2/re2.h
+index 56a664fc91..7e92caf9ab 100644
+--- a/third_party/re2/re2/re2.h
++++ b/third_party/re2/re2/re2.h
+@@ -196,7 +196,7 @@
+ #include <mutex>
+ #include <string>
+ 
+-#include "re2/stringpiece.h"
++#include "stringpiece.h"
+ 
+ namespace duckdb_re2 {
+ class Prog;
