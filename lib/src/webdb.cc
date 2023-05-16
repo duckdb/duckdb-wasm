@@ -106,7 +106,9 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, timezone_config);
+    ArrowOptions options;
+    options.offset_size = ArrowOffsetSize::REGULAR;
+    ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, timezone_config, options);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
 
     // Patch the schema (if necessary)
@@ -119,7 +121,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
         // Import the data chunk as record batch
         ArrowArray array;
-        ArrowConverter::ToArrowArray(*chunk, &array);
+        ArrowConverter::ToArrowArray(*chunk, &array, options);
         // Import the record batch
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
         // Patch the record batch
@@ -140,8 +142,10 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Import the schema
     ArrowSchema raw_schema;
+    ArrowOptions options;
+    options.offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names,
-                                  timezone_config);
+                                  timezone_config, options);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
     current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
 
@@ -246,7 +250,9 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
 
         // Serialize the record batch
         ArrowArray array;
-        ArrowConverter::ToArrowArray(*chunk, &array);
+        ArrowOptions arrow_options;
+        arrow_options.offset_size = ArrowOffsetSize::REGULAR;
+        ArrowConverter::ToArrowArray(*chunk, &array, arrow_options);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
         // Patch the record batch
         ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_->query));
