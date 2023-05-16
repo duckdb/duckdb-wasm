@@ -174,8 +174,6 @@ jobs:
         name: Native / Debug
         runs-on: ubuntu-latest
         needs:
-            - clang_format
-            - eslint
             - dataprep
             - tpchgen
         steps:
@@ -272,8 +270,6 @@ jobs:
         name: Native / Release
         runs-on: ubuntu-latest
         needs:
-            - clang_format
-            - eslint
             - dataprep
             - tpchgen
         steps:
@@ -367,11 +363,11 @@ jobs:
                           > ./reports/coverage_lib.txt
 
     wasm_mvp:
-        name: WASM / MVP
+        name: Wasm / mvp
         runs-on: ubuntu-latest
         needs:
-            - native_debug
-            - native_release
+            - dataprep
+            - tpchgen
         steps:
             - uses: actions/checkout@v3
               with:
@@ -391,7 +387,7 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Build WASM module
+            - name: Build Wasm module
               run: |
                   ./scripts/wasm_build_lib.sh relperf mvp
 
@@ -405,11 +401,11 @@ jobs:
                   retention-days: 1
 
     wasm_eh:
-        name: WASM / EH
+        name: Wasm / eh
         runs-on: ubuntu-latest
         needs:
-            - native_debug
-            - native_release
+            - dataprep
+            - tpchgen
         steps:
             - uses: actions/checkout@v3
               with:
@@ -429,7 +425,7 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Build WASM module
+            - name: Build Wasm module
               run: |
                   ./scripts/wasm_build_lib.sh relperf eh
 
@@ -443,11 +439,11 @@ jobs:
                   retention-days: 1
 
     wasm_coi:
-        name: WASM / COI
+        name: Wasm / coi
         runs-on: ubuntu-latest
         needs:
-            - native_debug
-            - native_release
+            - dataprep
+            - tpchgen
         steps:
             - uses: actions/checkout@v3
               with:
@@ -467,7 +463,7 @@ jobs:
               run: |
                   git submodule status > git_submodule_status.txt
 
-            - name: Build WASM module
+            - name: Build Wasm module
               run: |
                   ./scripts/wasm_build_lib.sh relperf coi
 
@@ -485,12 +481,14 @@ jobs:
         name: Js / Libraries
         runs-on: ubuntu-latest
         needs:
+            - native_debug
+            - native_release
             - wasm_mvp
             - wasm_eh
             - wasm_coi
-            - dataprep
-            - tpchgen
             - duckdb_shell
+            - clang_format
+            - eslint
         steps:
             - uses: actions/checkout@v3
               with:
