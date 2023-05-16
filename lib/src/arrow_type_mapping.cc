@@ -204,6 +204,7 @@ arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& 
         }
 
         // Manually convert string_t
+        case arrow::Type::type::LARGE_STRING:
         case arrow::Type::type::STRING: {
             auto& a = *dynamic_cast<const arrow::StringArray*>(&in);
             auto strings = FlatVector::GetData<string_t>(out);
@@ -231,7 +232,6 @@ arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& 
         case arrow::Type::type::MAP:
         case arrow::Type::type::FIXED_SIZE_LIST:
         case arrow::Type::type::DURATION:
-        case arrow::Type::type::LARGE_STRING:
         case arrow::Type::type::LARGE_BINARY:
         case arrow::Type::type::LARGE_LIST:
         case arrow::Type::type::INTERVAL_MONTH_DAY_NANO:
