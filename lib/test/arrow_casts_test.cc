@@ -25,7 +25,9 @@ TEST(ArrowCasts, PatchBigInt) {
     // Configure the output writer
     ArrowSchema raw_schema;
     std::string config_timezone;
-    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
+    duckdb::ArrowOptions options;
+    options.offset_size = duckdb::ArrowOffsetSize::REGULAR;
+    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone, options);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -42,7 +44,7 @@ TEST(ArrowCasts, PatchBigInt) {
 
     // Import the record batch
     ArrowArray array;
-    duckdb::ArrowConverter::ToArrowArray(*chunk, &array);
+    duckdb::ArrowConverter::ToArrowArray(*chunk, &array, options);
     auto maybe_batch = arrow::ImportRecordBatch(&array, schema);
     ASSERT_TRUE(maybe_batch.ok());
     auto batch = maybe_batch.MoveValueUnsafe();
@@ -70,7 +72,9 @@ TEST(ArrowCasts, PatchTimestamp) {
     // Configure the output writer
     ArrowSchema raw_schema;
     std::string config_timezone;
-    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone);
+    duckdb::ArrowOptions options;
+    options.offset_size = duckdb::ArrowOffsetSize::REGULAR;
+    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone, options);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -87,7 +91,7 @@ TEST(ArrowCasts, PatchTimestamp) {
 
     // Import the record batch
     ArrowArray array;
-    duckdb::ArrowConverter::ToArrowArray(*chunk, &array);
+    duckdb::ArrowConverter::ToArrowArray(*chunk, &array, options);
     auto maybe_batch = arrow::ImportRecordBatch(&array, schema);
     ASSERT_TRUE(maybe_batch.ok());
     auto batch = maybe_batch.MoveValueUnsafe();
