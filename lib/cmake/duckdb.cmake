@@ -12,7 +12,7 @@ if(DUCKDB_LOCATION)
   set(DUCKDB_CORE_DIR ${DUCKDB_LOCATION})
 endif()
 
-set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call")
+set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call -DDUCKDB_DEBUG_NO_SAFETY")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
 ExternalProject_Add(
