@@ -24,10 +24,9 @@ TEST(ArrowCasts, PatchBigInt) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    std::string config_timezone;
     duckdb::ArrowOptions options;
     options.offset_size = duckdb::ArrowOffsetSize::REGULAR;
-    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone, options);
+    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
@@ -71,10 +70,9 @@ TEST(ArrowCasts, PatchTimestamp) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    std::string config_timezone;
     duckdb::ArrowOptions options;
     options.offset_size = duckdb::ArrowOffsetSize::REGULAR;
-    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, config_timezone, options);
+    duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
     auto schema = maybe_schema.MoveValueUnsafe();
