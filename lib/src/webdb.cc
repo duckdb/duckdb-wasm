@@ -102,13 +102,12 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     current_query_result_.reset();
     current_schema_.reset();
     current_schema_patched_.reset();
-    std::string timezone_config;
 
     // Configure the output writer
     ArrowSchema raw_schema;
     ArrowOptions options;
     options.offset_size = ArrowOffsetSize::REGULAR;
-    ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, timezone_config, options);
+    ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
 
     // Patch the schema (if necessary)
@@ -138,14 +137,13 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
     current_query_result_ = std::move(result);
     current_schema_.reset();
     current_schema_patched_.reset();
-    std::string timezone_config;
 
     // Import the schema
     ArrowSchema raw_schema;
     ArrowOptions options;
     options.offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names,
-                                  timezone_config, options);
+                                  options);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
     current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
 
