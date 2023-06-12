@@ -71,6 +71,7 @@ endif ()
 if(EMSCRIPTEN)
   # Release build
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
     # ... with min size
     if(WASM_MIN_SIZE)
       set(CMAKE_CXX_FLAGS_RELEASE "-Oz")
