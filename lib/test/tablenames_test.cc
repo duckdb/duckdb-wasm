@@ -10,7 +10,7 @@
 #include "duckdb/web/test/config.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
-#include "parquet-extension.hpp"
+#include "parquet_extension.hpp"
 
 using namespace duckdb::web;
 using namespace std;
