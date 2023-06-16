@@ -24,10 +24,20 @@
 
 [DuckDB](https://duckdb.org) is an in-process SQL OLAP Database Management System.
 
-DuckDB-Wasm is powered by WebAssembly, speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Learn more about DuckDB-Wasm from our [VLDB publication](https://www.vldb.org/pvldb/vol15/p3574-kohn.pdf) or the [recorded talk](https://www.youtube.com/watch?v=wm82b7PlM6s).
+DuckDB-Wasm brings DuckDB to every browser thanks to WebAssembly.
 
-DuckDB-Wasm brings SQL databases to every browser. Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https://observablehq.com/@observablehq/duckdb), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.duckdb.org).
+Duckdb-Wasm speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Learn more about DuckDB-Wasm from our [VLDB publication](https://www.vldb.org/pvldb/vol15/p3574-kohn.pdf) or the [recorded talk](https://www.youtube.com/watch?v=wm82b7PlM6s).
 
+Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https://observablehq.com/@observablehq/duckdb), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.duckdb.org).
+
+## Build from source
+```shell
+git clone https://github.com/duckdb/duckdb-wasm.git
+cd duckdb-wasm
+git submodule init
+git submodule update
+make
+```
 
 ## Repository Structure
 
