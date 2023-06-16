@@ -342,7 +342,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return false;
     },
-    syncFile: (_mod: DuckDBModule, _fileId: number) => { },
+    syncFile: (_mod: DuckDBModule, _fileId: number) => {},
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
@@ -545,7 +545,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return true;
     },
-    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => { },
+    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
     callScalarUDF: (
         mod: DuckDBModule,
         response: number,
