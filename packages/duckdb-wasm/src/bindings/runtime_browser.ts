@@ -342,7 +342,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return false;
     },
-    syncFile: (_mod: DuckDBModule, _fileId: number) => {},
+    syncFile: (_mod: DuckDBModule, _fileId: number) => { },
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
@@ -425,7 +425,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             // TODO: here we are actually throwing away all non-relevant bytes, but this is still better than failing
                             //       proper solution would require notifying duckdb-wasm cache, while we are piggybackign on browser cache
                             console.warn(`Range request for ${file.dataUrl} did not return a partial response: ${xhr.status} "${xhr.statusText}"`);
-                            const src = new Uint8Array(xhr.response, location, Math.min(xhr.response.byteLength-location, bytes));
+                            const src = new Uint8Array(xhr.response, location, Math.min(xhr.response.byteLength - location, bytes));
                             mod.HEAPU8.set(src, buf);
                             return src.byteLength;
                         } else {
@@ -474,6 +474,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 xhr.open('PUT', getHTTPUrl(file?.s3Config, file.dataUrl!), false);
                 addS3Headers(xhr, file?.s3Config, file.dataUrl!, 'PUT', '', buffer);
                 xhr.send(buffer);
+                if (xhr.status !== 200) {
+                    failWith(mod, 'Failed writing file: HTTP ' + xhr.status);
+                    return 0;
+                }
                 return bytes;
             }
             case DuckDBDataProtocol.BROWSER_FILEREADER:
@@ -541,7 +545,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return true;
     },
-    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => { },
     callScalarUDF: (
         mod: DuckDBModule,
         response: number,
