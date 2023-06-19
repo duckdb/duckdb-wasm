@@ -45,7 +45,7 @@ check_format:
 # Building
 .PHONY: set_environment
 set_environment:
-	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" || EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT}
+	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" && echo '\033[1m=== Using native mode ===\033[0m' && echo 'Emscripten from' && which emcc || (EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT} && echo '\033[1m === Using docker environment === \033[0m')
 
 build/data: build/duckdb_shell
 	${ROOT_DIR}/scripts/generate_uni.sh
