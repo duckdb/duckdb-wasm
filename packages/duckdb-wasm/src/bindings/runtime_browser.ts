@@ -474,6 +474,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 xhr.open('PUT', getHTTPUrl(file?.s3Config, file.dataUrl!), false);
                 addS3Headers(xhr, file?.s3Config, file.dataUrl!, 'PUT', '', buffer);
                 xhr.send(buffer);
+                if (xhr.status !== 200) {
+                    failWith(mod, 'Failed writing file: HTTP ' + xhr.status);
+                    return 0;
+                }
                 return bytes;
             }
             case DuckDBDataProtocol.BROWSER_FILEREADER:
