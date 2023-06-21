@@ -45,7 +45,7 @@ check_format:
 # Building
 .PHONY: set_environment
 set_environment:
-	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" || EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT}
+	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" && echo '\033[1m=== Using native mode ===\033[0m' && echo 'Emscripten from' && which emcc || (EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT} && echo '\033[1m === Using docker environment === \033[0m')
 
 build/data: build/duckdb_shell
 	${ROOT_DIR}/scripts/generate_uni.sh
@@ -147,20 +147,20 @@ lib_tests_rel_lldb: lib_relwithdebinfo
 lib_debug: lib
 	lldb --args ${LIB_DEBUG_DIR}/tester ${LIB_SOURCE_DIR}
 
-bench_build:
+bench_build: yarn_install
 	yarn workspace @duckdb/benchmarks build
 	touch build/bench_build
 
 
 .PHONY: bench_tpch_aq
-bench_tpch_aq: build/data bench_build
+bench_tpch_aq: build/data bench_build yarn_install
 	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.01
 	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.1
 	yarn workspace @duckdb/benchmarks bench:system:tpch:arquero 0.5
 
 # Run all benchmarks for the paper
 .PHONY: bench_tpch
-bench_tpch_paper: build/data bench_build
+bench_tpch_paper: build/data bench_build yarn_install
 	yarn workspace @duckdb/benchmarks build
 	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 	yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
@@ -283,17 +283,17 @@ wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug
-js_debug: build/bootstrap wasm
+js_debug: build/bootstrap wasm yarn_install
 	yarn workspace @duckdb/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
 .PHONY: js_release
-js_release:
+js_release: yarn_install
 	yarn workspace @duckdb/duckdb-wasm build:release
 
 # Build the duckdb docs
 .PHONY: docs
-docs:
+docs: yarn_install
 	yarn workspace @duckdb/duckdb-wasm docs
 
 # Run the duckdb javascript tests
@@ -320,7 +320,7 @@ js_tests_node: js_debug build/data
 js_tests_node_debug: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
-wasmpack:
+wasmpack: yarn_install
 	yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
 
 .PHONY: shell
@@ -332,7 +332,7 @@ shell_release: js_release
 	yarn workspace @duckdb/duckdb-wasm-shell build:release
 
 .PHONY: app_start
-app_start:
+app_start: yarn_install
 	yarn workspace @duckdb/duckdb-wasm-app start
 
 .PHONY: app_start_corp
@@ -366,10 +366,10 @@ eslint:
 .PHONY: yarn_install
 yarn_install:
 	yarn
+	yarn install
 
 .PHONY: examples
-examples:
-	yarn install
+examples: yarn_install
 	yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
 	yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
 	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
