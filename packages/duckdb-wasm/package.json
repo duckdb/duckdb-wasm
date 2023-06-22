@@ -50,7 +50,7 @@
         "make-dir": "^3.1.0",
         "nyc": "^15.1.0",
         "prettier": "^2.8.4",
-        "puppeteer": "^19.10.0",
+        "puppeteer": "^20.7.3",
         "rimraf": "^4.3.0",
         "s3rver": "^3.7.1",
         "typedoc": "^0.24.8",
