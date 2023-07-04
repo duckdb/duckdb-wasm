@@ -15,10 +15,6 @@ endif()
 set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call -DDUCKDB_DEBUG_NO_SAFETY")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
-set(DUCKDB_EXTENSIONS "fts;excel;json")
-# Escape semicolons in DUCKDB_EXTENSIONS before passing to ExternalProject_Add
-string(REPLACE ";" "$<SEMICOLON>" DUCKDB_EXTENSIONS_PACKED "${DUCKDB_EXTENSIONS}")
-
 ExternalProject_Add(
   duckdb_ep
   SOURCE_DIR "${DUCKDB_CORE_DIR}"
@@ -33,7 +29,7 @@ ExternalProject_Add(
              -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
              -DCMAKE_BUILD_TYPE=${DUCKDB_BUILD_TYPE}
              -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-             -DBUILD_EXTENSIONS=${DUCKDB_EXTENSIONS_PACKED}
+             -DDUCKDB_EXTENSION_CONFIGS=#{CMAKE_SOURCE_DIR}/duckdb_wasm_extension_config.cmake
              -DSKIP_EXTENSIONS=jemalloc
              -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
