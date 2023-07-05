@@ -243,7 +243,7 @@ jobs:
                           -DCMAKE_CXX_COMPILER=clang++ \
                           -DCMAKE_BUILD_TYPE=Debug
                       ccache -z
-                      make -C./lib/build/debug -j`nproc`
+                      make -C./lib/build/debug -j`nproc` || exit 1
                       ccache -s
 
             - name: Test project
@@ -340,7 +340,7 @@ jobs:
                           -DCMAKE_CXX_COMPILER=clang++ \
                           -DCMAKE_BUILD_TYPE=Release
                       ccache -z
-                      make -C./lib/build/release -j`nproc`
+                      make -C./lib/build/release -j`nproc` || exit 1
                       ccache -s
 
             - name: Test project
