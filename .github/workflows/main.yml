@@ -7,6 +7,10 @@ on:
             - v*
     workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/master' || github.sha }}
+  cancel-in-progress: true
+
 jobs:
     clang_format:
         name: Clang-Format
@@ -487,6 +491,10 @@ jobs:
             - wasm_eh
             - wasm_coi
             - duckdb_shell
+            - native_debug
+            - native_release
+            - clang_format
+            - eslint
         steps:
             - uses: actions/checkout@v3
               with:
@@ -645,64 +653,6 @@ jobs:
                   name: duckdb-wasm-packages
                   path: duckdb-wasm-packages.zip
 
-            - name: Upload artifact
-              uses: actions/upload-artifact@v3
-              with:
-                  name: duckdb-wasm-folder
-                  path: |
-                      ./packages/duckdb-wasm/
-                  retention-days: 1
-
-            - name: Upload artifact
-              uses: actions/upload-artifact@v3
-              with:
-                  name: react-duckdb-folder
-                  path: |
-                      ./packages/react-duckdb/
-                  retention-days: 1
-
-            - name: Upload artifact
-              uses: actions/upload-artifact@v3
-              with:
-                  name: duckdb-wasm-shell-folder
-                  path: |
-                      ./packages/duckdb-wasm-shell/
-                  retention-days: 1
-
-            - name: Upload artifact
-              uses: actions/upload-artifact@v3
-              if: github.ref == 'refs/heads/master'
-              with:
-                  name: github-pages
-                  path: |
-                      ./worktrees/gh-pages/
-                  retention-days: 1
-
-    deploy:
-        name: Deploy to NPM / GitHub Pages
-        runs-on: ubuntu-latest
-        needs:
-            - native_debug
-            - native_release
-            - js_libs
-            - clang_format
-            - eslint
-        steps:
-            - uses: actions/download-artifact@v3
-              with:
-                  name: duckdb-wasm-folder
-                  path: ./packages/duckdb-wasm/
-
-            - uses: actions/download-artifact@v3
-              with:
-                  name: react-duckdb-folder
-                  path: ./packages/react-duckdb/
-
-            - uses: actions/download-artifact@v3
-              with:
-                  name: duckdb-wasm-shell-folder
-                  path: ./packages/duckdb-wasm-shell/
-
             - name: Publish to NPM
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
@@ -711,12 +661,6 @@ jobs:
                   ./scripts/npm_publish_lib.sh
                   ./scripts/npm_publish_shell.sh
                   ./scripts/npm_publish_react.sh
-
-            - uses: actions/download-artifact@v3
-              if: github.ref == 'refs/heads/master'
-              with:
-                  name: github-pages
-                  path: ./worktrees/gh-pages/
 
             - name: Deploy GitHub Page
               if: github.ref == 'refs/heads/master'
