@@ -161,6 +161,22 @@ await db.registerFileText(
 await c.insertJSONFromPath('rows.json', { name: 'rows' });
 await c.insertJSONFromPath('columns.json', { name: 'columns' });
 
+// ... from a Javascript array
+const myArray = [
+  {
+    name: 'Dan',
+    age: 32,
+    numberOfPets: 3
+  }
+];
+const encoder = new TextEncoder();
+const buffer = encoder.encode(myArray);
+await db().registerFileBuffer(myTableName, buffer);
+await c.insertJSONFromPath(myTableName, {
+  schema: 'main',
+  name: 'foo',
+});
+
 // ..., from Parquet files
 const pickedFile: File = letUserPickFile();
 await db.registerFileHandle('local.parquet', pickedFile, DuckDBDataProtocol.BROWSER_FILEREADER, true);
