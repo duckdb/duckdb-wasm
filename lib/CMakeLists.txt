@@ -183,7 +183,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Headers
 
-include_directories("${CMAKE_SOURCE_DIR}/include" "${DUCKDB_UTF8PROC_INCLUDE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}/include" "${DUCKDB_UTF8PROC_INCLUDE_DIR}" "${DUCKDB_RE2_INCLUDE_DIR}")
 
 # ---------------------------------------------------------------------------
 # Libraries
