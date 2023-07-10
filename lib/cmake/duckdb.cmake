@@ -61,6 +61,8 @@ set(DUCKDB_SOURCE_DIR "${DUCKDB_CORE_DIR}")
 set(DUCKDB_INCLUDE_DIR "${install_dir}/include")
 set(DUCKDB_UTF8PROC_INCLUDE_DIR
     "${DUCKDB_SOURCE_DIR}/third_party/utf8proc/include")
+set(DUCKDB_RE2_INCLUDE_DIR
+    "${DUCKDB_SOURCE_DIR}/third_party/re2")
 set(DUCKDB_FMT_INCLUDE_DIR "${DUCKDB_SOURCE_DIR}/third_party/fmt/include")
 set(DUCKDB_LIBRARY_PATH "${install_dir}/lib/libduckdb_static.a")
 file(MAKE_DIRECTORY ${DUCKDB_INCLUDE_DIR})
@@ -86,6 +88,7 @@ target_include_directories(
   INTERFACE ${DUCKDB_INCLUDE_DIR}
   INTERFACE ${DUCKDB_FMT_INCLUDE_DIR}
   INTERFACE ${DUCKDB_UTF8PROC_INCLUDE_DIR}
+  INTERFACE ${DUCKDB_RE2_INCLUDE_DIR}
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/parquet
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/snappy
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/miniz
