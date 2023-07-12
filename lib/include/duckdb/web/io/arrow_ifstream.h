@@ -108,7 +108,7 @@ class ArrowInputFileStream : virtual public arrow::io::InputStream {
     /// May return NotImplemented on streams that don't support it.
     ///
     /// \param[in] nbytes the maximum number of bytes to see
-    arrow::Result<arrow::util::string_view> Peek(int64_t nbytes) override;
+    arrow::Result<std::string_view> Peek(int64_t nbytes) override;
 
     /// Return true if InputStream is capable of zero copy Buffer reads
     ///

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
@@ -18,7 +19,6 @@
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
 #include "arrow/type_traits.h"
-#include "arrow/util/string_view.h"
 #include "arrow/util/value_parsing.h"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/web/json_parser.h"

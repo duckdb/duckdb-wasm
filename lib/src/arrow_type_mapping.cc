@@ -18,6 +18,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
     switch (type.id()) {
         case arrow::Type::type::MAX_ID:
         case arrow::Type::type::NA:
+        case arrow::Type::type::RUN_END_ENCODED:
             return duckdb::LogicalTypeId::INVALID;
         case arrow::Type::type::BOOL:
             return duckdb::LogicalTypeId::BOOLEAN;
