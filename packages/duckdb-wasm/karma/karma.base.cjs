@@ -44,14 +44,14 @@ module.exports = function (config) {
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
-                flags: ['--disable-gpu', '--no-sandbox', '--js-flags="--experimental-wasm-eh'],
+                flags: ['--disable-gpu', '--no-sandbox', '--js-flags=""'],
             },
             ChromeHeadlessNoSandboxThreads: {
                 base: 'ChromeHeadless',
                 flags: [
                     '--disable-gpu',
                     '--no-sandbox',
-                    '--js-flags="--experimental-wasm-eh --experimental-wasm-threads"',
+                    '--js-flags="--experimental-wasm-threads"',
                 ],
             },
         },
