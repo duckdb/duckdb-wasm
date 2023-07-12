@@ -105,7 +105,7 @@ arrow::Result<DecimalValue> ParseDecimal(const rapidjson::Value& json_obj, const
     if (json_obj.IsString()) {
         int32_t precision, scale;
         DecimalValue d;
-        auto view = arrow::util::string_view(json_obj.GetString(), json_obj.GetStringLength());
+        auto view = std::string_view(json_obj.GetString(), json_obj.GetStringLength());
         RETURN_NOT_OK(DecimalValue::FromString(view, &d, &precision, &scale));
         if (scale != subtype.scale()) {
             return arrow::Status::Invalid("Invalid scale for decimal: expected ", subtype.scale(), ", got ", scale);
@@ -179,7 +179,7 @@ arrow::Result<int64_t> ParseTimestamp(const rapidjson::Value& json_obj, const ar
     assert(!json_obj.IsNull());
     int64_t value;
     if (json_obj.IsString()) {
-        arrow::util::string_view view(json_obj.GetString(), json_obj.GetStringLength());
+        std::string_view view(json_obj.GetString(), json_obj.GetStringLength());
         if (!arrow::internal::ParseValue(type, view.data(), view.size(), &value)) {
             return arrow::Status::Invalid("couldn't parse timestamp from ", view);
         }
@@ -204,26 +204,25 @@ arrow::Result<arrow::DayTimeIntervalType::DayMilliseconds> ParseDayTime(const ra
 }
 
 /// Parse a string
-arrow::Result<arrow::util::string_view> ParseString(const rapidjson::Value& json_obj, const arrow::DataType& /*type*/,
-                                                    rapidjson::StringBuffer& sb) {
+arrow::Result<std::string_view> ParseString(const rapidjson::Value& json_obj, const arrow::DataType& /*type*/,
+                                            rapidjson::StringBuffer& sb) {
     assert(!json_obj.IsNull());
     if (json_obj.IsString()) {
-        auto view = arrow::util::string_view(json_obj.GetString(), json_obj.GetStringLength());
+        auto view = std::string_view(json_obj.GetString(), json_obj.GetStringLength());
         return view;
     } else {
         rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
         json_obj.Accept(writer);
-        return arrow::util::string_view(sb.GetString(), sb.GetLength());
+        return std::string_view(sb.GetString(), sb.GetLength());
     }
 }
 
 /// Parse a string
-arrow::Result<arrow::util::string_view> ParseFixedSizeBinary(const rapidjson::Value& json_obj,
-                                                             const arrow::DataType& t) {
+arrow::Result<std::string_view> ParseFixedSizeBinary(const rapidjson::Value& json_obj, const arrow::DataType& t) {
     assert(!json_obj.IsNull());
     auto& type = reinterpret_cast<const arrow::FixedSizeBinaryType&>(t);
     if (json_obj.IsString()) {
-        auto view = arrow::util::string_view(json_obj.GetString(), json_obj.GetStringLength());
+        auto view = std::string_view(json_obj.GetString(), json_obj.GetStringLength());
         if (view.length() != static_cast<size_t>(type.byte_width())) {
             std::stringstream ss;
             ss << "Invalid string length " << view.length() << " in JSON input for " << type.ToString();

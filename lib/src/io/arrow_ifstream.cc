@@ -77,10 +77,10 @@ arrow::Status ArrowInputFileStream::Advance(int64_t nbytes) {
 }
 
 /// Read at most nbytes bytes from the file without advancing the file position
-arrow::Result<arrow::util::string_view> ArrowInputFileStream::Peek(int64_t nbytes) {
+arrow::Result<std::string_view> ArrowInputFileStream::Peek(int64_t nbytes) {
     ARROW_ASSIGN_OR_RAISE(auto view, PeekView(nbytes));
     tmp_page_ = std::move(view);
-    return arrow::util::string_view{*tmp_page_};
+    return std::string_view{*tmp_page_};
 }
 
 }  // namespace io
