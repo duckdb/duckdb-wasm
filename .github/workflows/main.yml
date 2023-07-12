@@ -218,7 +218,6 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  chown -R $(id -u):$(id -g) $PWD
                   (cd ./submodules/duckdb && git fetch --all --tags)
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
@@ -315,7 +314,6 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  chown -R $(id -u):$(id -g) $PWD
                   (cd ./submodules/duckdb && git fetch --all --tags)
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
@@ -567,7 +565,6 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  chown -R $(id -u):$(id -g) $PWD
                   git fetch --tags --no-recurse-submodules -f
                   (cd ./submodules/duckdb && git fetch --all --tags)
 
@@ -575,7 +572,6 @@ jobs:
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
-                      chown -R $(id -u):$(id -g) $PWD
                       git config --global --add safe.directory '*'
                       mkdir -p ./lib/build/wasm/release ./reports
                       yarn install --frozen-lockfile
@@ -587,34 +583,30 @@ jobs:
                       ./scripts/npm_version.sh
 
             - name: Build @duckdb/duckdb-wasm
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       rm -rf ./packages/duckdb-wasm/dist/
                       yarn workspace @duckdb/duckdb-wasm build:release
                       yarn workspace @duckdb/duckdb-wasm docs
 
             - name: Build @duckdb/duckdb-wasm-shell
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       rm -rf ./packages/duckdb-wasm-shell/dist/
                       yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
                       yarn workspace @duckdb/duckdb-wasm-shell build:release
 
             - name: Build @duckdb/duckdb-wasm-app
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       rm -rf ./packages/duckdb-wasm-app/build/
                       yarn workspace @duckdb/duckdb-wasm-app build:release
 
             - name: Test @duckdb/duckdb-wasm on Chrome
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
-
+            
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@v0.11
             #              with:
@@ -622,21 +614,18 @@ jobs:
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
 
             - name: Test @duckdb/duckdb-wasm on Node.js
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Coverage @duckdb/duckdb-wasm
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+              shell: bash
+              run: |
+                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
             - name: Build examples
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       yarn install
                       yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
                       yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
