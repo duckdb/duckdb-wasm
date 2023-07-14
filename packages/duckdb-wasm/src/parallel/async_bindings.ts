@@ -149,7 +149,9 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             // https://bugzilla.mozilla.org/show_bug.cgi?id=1556604
             const e = new Error(response.data.message);
             e.name = response.data.name;
-            e.stack = response.data.stack;
+            if (Object.getOwnPropertyDescriptor(e, 'stack')?.writable) {
+                e.stack = response.data.stack;
+            }
             task.promiseRejecter(e);
             return;
         }
