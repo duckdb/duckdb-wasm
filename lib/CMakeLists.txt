@@ -279,7 +279,6 @@ if(EMSCRIPTEN)
       -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
       -s FILESYSTEM=0 \
-      -s EXPORT_ES6=1 \
       -s EXPORT_NAME='DuckDB' \
       -s EXPORTED_FUNCTIONS='[ \
           _main, \
