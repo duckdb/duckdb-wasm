@@ -378,6 +378,10 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - name: Prepare repository
+              run: |
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+
             - uses: mymindstorm/setup-emsdk@v12
               with:
                   version: 'latest'
@@ -416,6 +420,10 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - name: Prepare repository
+              run: |
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+
             - uses: mymindstorm/setup-emsdk@v12
               with:
                   version: 'latest'
@@ -453,6 +461,10 @@ jobs:
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
+
+            - name: Prepare repository
+              run: |
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v12
               with:
