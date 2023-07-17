@@ -276,7 +276,7 @@ wasm_debug: wasm_setup
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
 	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
 
-wasm: wasm_dev
+wasm: wasm_relperf
 
 .PHONY: wasm_star
 wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
