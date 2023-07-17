@@ -44,6 +44,7 @@ export class DuckDBConnection {
                 try {
                     resolve(this._bindings.pollPendingQuery(this._conn));
                 } catch (e: any) {
+                    console.log(e);
                     reject(e);
                 }
             });

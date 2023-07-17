@@ -52,6 +52,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             BROWSER_RUNTIME._fileInfoCache.set(fileId, file);
             return file;
         } catch (e: any) {
+            console.log(e);
             return null;
         }
     },
@@ -80,6 +81,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
             return BROWSER_RUNTIME._globalFileInfo;
         } catch (e: any) {
+            console.log(e);
             return null;
         }
     },
@@ -315,6 +317,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return 0;
         }
@@ -338,6 +341,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 return xhr.status == 206 || xhr.status == 200;
             }
         } catch (e: any) {
+            console.log(e);
             return false;
         }
         return false;
@@ -434,6 +438,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             );
                         }
                     } catch (e) {
+                        console.log(e);
                         throw new Error(`Range request for ${file.dataUrl} failed with error: ${e}"`);
                     }
                 }
@@ -458,6 +463,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             }
             return 0;
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return 0;
         }

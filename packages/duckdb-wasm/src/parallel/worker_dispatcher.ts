@@ -90,6 +90,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     });
                     this.sendOK(request);
                 } catch (e: any) {
+                    console.log(e);
                     this._bindings = null;
                     this.failWith(request, e);
                 }
@@ -395,6 +396,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
             }
         } catch (e: any) {
+            console.log(e);
             return this.failWith(request, e);
         }
     }
