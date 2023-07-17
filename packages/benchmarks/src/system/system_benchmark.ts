@@ -1,4 +1,4 @@
-import Benchmark from 'buffalo-bench/lib';
+import { Benchmark } from 'buffalo-bench';
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function noop(_arg0?: any): void {}

@@ -1,6 +1,6 @@
 import { benchmarkUDF, benchmarkFormat, benchmarkIterator, benchmarkIteratorAsync } from './internal';
 import { runBenchmarks } from './suite';
-import Benchmark from 'buffalo-bench/lib';
+import { Benchmark } from 'buffalo-bench';
 import { setupDuckDBAsync, setupDuckDBSync, writeReport } from './setup';
 
 async function main() {

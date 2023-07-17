@@ -28,7 +28,7 @@ fs.copyFile(
 // ESM
 
 const TARGET = 'es2020';
-const EXTERNALS = ['web-worker', 'react-native-fetch-blob', 'apache-arrow'];
+const EXTERNALS = ['web-worker', 'react-native-fetch-blob', 'apache-arrow', 'buffalo-bench'];
 
 console.log('[ ESBUILD ] internal.js');
 esbuild.build({

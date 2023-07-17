@@ -5,9 +5,10 @@
     "private": true,
     "dependencies": {
         "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
-        "apache-arrow-3": "npm:apache-arrow@^3.0.0",
         "apache-arrow": "^11.0.0",
+        "apache-arrow-3": "npm:apache-arrow@^3.0.0",
         "arquero": "^5.2.0",
+        "buffalo-bench": "^2.0.0",
         "kleur": "^4.1.5",
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
@@ -29,16 +30,16 @@
     "scripts": {
         "build": "node ./bundle.mjs && tsc --noEmit",
         "lint": "eslint src",
-        "bench:internal": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/internal.js",
-        "bench:system:sort:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sort-int.js",
-        "bench:system:join:2": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-2.js",
-        "bench:system:join:3": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-join-3.js",
-        "bench:system:regex": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-regex.js",
-        "bench:system:sum:csv": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sum-csv.js",
-        "bench:system:sum:int": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=4096 ./dist/system-sum-int.js",
-        "bench:system:tpch:duckdb": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=8192 ./dist/system-tpch-duckdb.js",
-        "bench:system:tpch:arquero": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=8192 ./dist/system-tpch-arquero.js",
-        "bench:system:tpch:lovefield": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=8192 ./dist/system-tpch-lovefield.js",
-        "bench:system:tpch:sqljs": "node --enable-source-maps --experimental-wasm-eh --experimental-wasm-simd --max-old-space-size=8192 ./dist/system-tpch-sqljs.js"
+        "bench:internal": "node --enable-source-maps --max-old-space-size=4096 ./dist/internal.js",
+        "bench:system:sort:int": "node --enable-source-maps --max-old-space-size=4096 ./dist/system-sort-int.js",
+        "bench:system:join:2": "node --enable-source-maps --max-old-space-size=4096 ./dist/system-join-2.js",
+        "bench:system:join:3": "node --enable-source-maps --max-old-space-size=4096 ./dist/system-join-3.js",
+        "bench:system:regex": "node --enable-source-maps --max-old-space-size=4096 ./dist/system-regex.js",
+        "bench:system:sum:csv": "node --enable-source-maps --max-old-space-size=4096 ./dist/system-sum-csv.js",
+        "bench:system:sum:int": "node --enable-source-maps --max-old-space-size=4096 ./dist/system-sum-int.js",
+        "bench:system:tpch:duckdb": "node --enable-source-maps --max-old-space-size=8192 ./dist/system-tpch-duckdb.js",
+        "bench:system:tpch:arquero": "node --enable-source-maps --max-old-space-size=8192 ./dist/system-tpch-arquero.js",
+        "bench:system:tpch:lovefield": "node --enable-source-maps --max-old-space-size=8192 ./dist/system-tpch-lovefield.js",
+        "bench:system:tpch:sqljs": "node --enable-source-maps --max-old-space-size=8192 ./dist/system-tpch-sqljs.js"
     }
 }
