@@ -285,11 +285,13 @@ wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 .PHONY: js_debug
 js_debug: build/bootstrap wasm yarn_install
 	yarn workspace @duckdb/duckdb-wasm build:debug
+	yarn workspace @duckdb/duckdb-wasm test
 
 # Build the duckdb library in release mode
 .PHONY: js_release
 js_release: yarn_install
 	yarn workspace @duckdb/duckdb-wasm build:release
+	yarn workspace @duckdb/duckdb-wasm test
 
 # Build the duckdb docs
 .PHONY: docs
