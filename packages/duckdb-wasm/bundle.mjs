@@ -175,7 +175,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         bundle: true,
         minify: true,
         sourcemap: is_debug ? 'inline' : true,
-        external: [ EXTERNALS_WEBWORKER, 'module' ],
+        external: EXTERNALS_WEBWORKER,
         define: { 'process.release.name': '"browser"' },
     });
 
