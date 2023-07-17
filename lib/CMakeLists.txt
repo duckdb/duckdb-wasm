@@ -69,6 +69,8 @@ endif ()
 # -Os shrinks the module by 600KB but slows down TPC-H by a factor of 2!
 # Dedicated module?
 
+set(DUCKDB_PLATFORM "wasm_mvp")
+
 if(EMSCRIPTEN)
   # Release build
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -107,6 +109,7 @@ if(EMSCRIPTEN)
   endif()
 
   if(WITH_WASM_EXCEPTIONS)
+    set(DUCKDB_PLATFORM "wasm_eh")
     set(CMAKE_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} -fwasm-exceptions -DWEBDB_FAST_EXCEPTIONS=1")
   else()
@@ -126,6 +129,7 @@ if(EMSCRIPTEN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1 -DWEBDB_THREADS=1")
     set(DUCKDB_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=1 -sPTHREAD_POOL_SIZE=4")
+    set(DUCKDB_PLATFORM "wasm_threads")
   else()
     set(CMAKE_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=0 -DDUCKDB_NO_THREADS=1")
@@ -134,6 +138,7 @@ if(EMSCRIPTEN)
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=0")
     set(THREAD_LIBS)
   endif()
+  set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -DDUCKDB_CUSTOM_PLATFORM=${DUCKDB_PLATFORM}")
 else()
   set(CMAKE_CXX_FLAGS
       "${CMAKE_CXX_FLAGS} -DWEBDB_FAST_EXCEPTIONS=1 -DWEBDB_THREADS=1")
