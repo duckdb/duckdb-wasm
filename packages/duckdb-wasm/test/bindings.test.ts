@@ -41,6 +41,20 @@ export function testBindings(db: () => duckdb.DuckDBBindings, baseURL: string): 
             });
         });
 
+        describe('Check platform', () => {
+            it('Platform check', async () => {
+                await db().reset();
+                conn = db().connect();
+                const version = conn.query<{ name: arrow.Utf8 }>(
+                    "PRAGMA platform;",
+                );
+                const rows = version.getChildAt(0)?.toArray();
+                expect(rows.length).toEqual(1);
+                expect(rows[0].toString().substr(0,5)).toEqual("wasm_");
+                await db().reset();
+            });
+        });
+
         //describe('Open', () => {
         // XXX apparently synchronous XHR on the main thread does not allow for arraybuffer response type?
         // it('Remote TPCH 0_01', async () => {
