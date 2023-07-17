@@ -1,4 +1,4 @@
-import Benchmark from 'buffalo-bench/lib';
+import { Benchmark } from 'buffalo-bench';
 import { createSystemBenchmark, SystemBenchmark, SystemBenchmarkContext } from './system';
 
 export interface JsonBenchmark {
