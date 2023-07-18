@@ -673,6 +673,7 @@ jobs:
             - name: Build @duckdb/benchmarks
               shell: bash
               run: |
+                rm -r packages/duckdb-wasm/node_modules/*
                 yarn workspace @duckdb/benchmarks build
                 yarn workspace @duckdb/benchmarks bench:system:sort:int
                 yarn workspace @duckdb/benchmarks bench:system:join:2
