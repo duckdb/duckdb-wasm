@@ -50,6 +50,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             NODE_RUNTIME._fileInfoCache.set(fileId, info);
             return info as DuckDBFileInfo;
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return null;
         }
@@ -95,6 +96,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
         }
         return 0;
@@ -120,6 +122,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     break;
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
         }
         return 0;
@@ -139,6 +142,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
         }
         return 0;
@@ -162,6 +166,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
         }
         return 0;
@@ -186,6 +191,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
         }
         return 0;
@@ -209,6 +215,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     failWith(mod, 'Unsupported data protocol');
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
         }
         return 0;
@@ -219,6 +226,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.existsSync(path);
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return false;
         }
@@ -228,6 +236,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.mkdirSync(path);
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return 0;
         }
@@ -237,6 +246,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.rmdirSync(path);
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return 0;
         }
@@ -253,6 +263,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [entry]);
             }
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return 0;
         }
@@ -278,6 +289,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.existsSync(path);
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return false;
         }
@@ -287,6 +299,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
             return fs.rmSync(path);
         } catch (e: any) {
+            console.log(e);
             failWith(mod, e.toString());
             return 0;
         }
