@@ -669,3 +669,27 @@ jobs:
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
                   ./scripts/deploy_pages.sh
+
+            - name: Build @duckdb/benchmarks
+              shell: bash
+              run: |
+                yarn workspace @duckdb/benchmarks build
+                yarn workspace @duckdb/benchmarks bench:system:sort:int
+                yarn workspace @duckdb/benchmarks bench:system:join:2
+                yarn workspace @duckdb/benchmarks bench:system:join:3
+                yarn workspace @duckdb/benchmarks bench:system:regex
+                yarn workspace @duckdb/benchmarks bench:system:sum:int
+                yarn workspace @duckdb/benchmarks bench:system:sum:csv
+
+            - name: Upload reports
+              uses: actions/upload-artifact@v3
+              with:
+                  name: reports_micro
+                  path: |
+                      ./reports/benchmark_system_sort_int.json
+                      ./reports/benchmark_system_join_2.json
+                      ./reports/benchmark_system_join_3.json
+                      ./reports/benchmark_system_regex.json
+                      ./reports/benchmark_system_sum_csv.json
+                      ./reports/benchmark_system_sum_int.json
+                  retention-days: 1
