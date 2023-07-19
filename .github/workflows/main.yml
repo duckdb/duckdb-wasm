@@ -696,6 +696,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.01
+              if: github.ref == 'refs/heads/master'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -708,6 +709,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.01
 
             - name: Benchmarks TPCH 0.01
+              if: github.ref == 'refs/heads/master'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.01
@@ -716,6 +718,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 
             - name: Upload reports TPCH 0.01
+              if: github.ref == 'refs/heads/master'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_01
@@ -727,6 +730,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.1
+              if: github.ref == 'refs/heads/master'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -739,6 +743,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.1
 
             - name: Benchmarks TPCH 0.1
+              if: github.ref == 'refs/heads/master'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
@@ -747,6 +752,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
 
             - name: Upload reports TPCH 0.1
+              if: github.ref == 'refs/heads/master'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_1
@@ -758,6 +764,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.25
+              if: github.ref == 'refs/heads/master'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -770,6 +777,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.25
 
             - name: Benchmarks TPCH 0.25
+              if: github.ref == 'refs/heads/master'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
@@ -778,6 +786,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
 
             - name: Upload reports TPCH 0.25
+              if: github.ref == 'refs/heads/master'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_25
@@ -789,6 +798,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.5
+              if: github.ref == 'refs/heads/master'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -801,6 +811,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.5
 
             - name: Benchmarks TPCH 0.5
+              if: github.ref == 'refs/heads/master'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
@@ -809,6 +820,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
 
             - name: Upload reports TPCH 0.5
+              if: github.ref == 'refs/heads/master'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_5
@@ -822,6 +834,7 @@ jobs:
     merge_reports:
         name: Merge benchmark reports
         runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/master'
         needs:
             - js_libs
         steps:
@@ -858,6 +871,26 @@ jobs:
               with:
                   name: reports_tpch_0_5
                   path: ./reports/
+
+            - name: Merge reports
+              shell: bash
+              run: |
+                mkdir duckdb
+                cd duckdb
+                wget https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip
+                unzip duckdb_cli-linux-amd64.zip
+                ./duckdb -c "COPY (FROM read_json_auto('../reports/*.json', union_by_name=1)) TO 'benchmarks.json'"
+                ./duckdb -c "COPY (FROM read_json_auto('../reports/*.json', union_by_name=1)) TO 'benchmarks.csv'"
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v3
+              with:
+                  name: reports_various
+                  path: |
+                      ./reports/benchmarks.arrow
+                      ./duckdb/benchmarks.json
+                      ./duckdb/benchmarks.csv
+                  retention-days: 1
 
             - name: Merge benchmark reports
               uses: duckdb/duckdb-wasm-ci-env@v0.11
