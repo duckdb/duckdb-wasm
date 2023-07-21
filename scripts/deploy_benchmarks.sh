@@ -20,6 +20,6 @@ cp -r ${PROJECT_ROOT}/reports/benchmarks.arrow ./data/benchmarks.arrow
 cp -r ${PROJECT_ROOT}/duckdb/benchmarks.json ./data/benchmarks.json
 cp -r ${PROJECT_ROOT}/duckdb/benchmarks.csv ./data/benchmarks.csv
 
-git add ./data/benchmarks.arrow
+git add ./data/*
 git commit --amend -m "Update benchmarks"
 git push origin HEAD:gh-pages --force
