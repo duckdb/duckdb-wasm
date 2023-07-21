@@ -35,8 +35,8 @@ interface FeatureValue {
 
 const DUCKDB_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'C++ & TS' }],
-    [FeatureID.LICENSE, { text: 'MPL-2.0' }],
-    [FeatureID.BUNDLE_SIZE, { text: '68 KB + 1.8 MB', restrictions: ['Streaming Wasm compilation'] }],
+    [FeatureID.LICENSE, { text: 'MIT' }],
+    [FeatureID.BUNDLE_SIZE, { text: '67 KB + 2.5 MB', restrictions: ['Streaming Wasm compilation'] }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Vector at a time' }],
     [FeatureID.QUERY_INPUT, { text: 'SQL Text' }],
     [FeatureID.WORKER_OFFLOADING, { available: true }],
@@ -70,7 +70,7 @@ const SQLJS_FEATURES = new Map<FeatureID, FeatureValue>([
 const ARQUERO_FEATURES = new Map<FeatureID, FeatureValue>([
     [FeatureID.LANGUAGE, { text: 'JS' }],
     [FeatureID.LICENSE, { text: 'BSD-3' }],
-    [FeatureID.BUNDLE_SIZE, { text: '53 KB' }],
+    [FeatureID.BUNDLE_SIZE, { text: '67 KB' }],
     [FeatureID.EVALUATION_STRATEGY, { text: 'Full Materialization' }],
     [FeatureID.QUERY_INPUT, { text: 'Query Builder' }],
     [FeatureID.WORKER_OFFLOADING, { available: true }],
