@@ -302,7 +302,7 @@ js_tests: js_debug build/data
 	yarn workspace @duckdb/duckdb-wasm test
 
 .PHONY: js_tests_release
-js_tests_release: js_release build/data
+js_tests_release: js_release
 	yarn workspace @duckdb/duckdb-wasm test
 
 # Run the duckdb javascript tests in browser
