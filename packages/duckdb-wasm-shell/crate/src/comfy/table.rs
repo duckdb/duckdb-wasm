@@ -386,7 +386,7 @@ impl Table {
         let max_widths = row.max_content_widths();
         for (index, width) in max_widths.iter().enumerate() {
             // We expect this column to exist, since we autoenerate columns just before calling this function
-            let mut column = self.columns.get_mut(index).unwrap();
+            let column = self.columns.get_mut(index).unwrap();
             if column.max_content_width < *width as u16 {
                 column.max_content_width = *width as u16;
             }
