@@ -24,8 +24,8 @@ TEST(ArrowCasts, PatchBigInt) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    duckdb::ArrowOptions options;
-    options.offset_size = duckdb::ArrowOffsetSize::REGULAR;
+    duckdb::ClientProperties options;
+    options.arrow_offset_size = duckdb::ArrowOffsetSize::REGULAR;
     duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
@@ -70,8 +70,8 @@ TEST(ArrowCasts, PatchTimestamp) {
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    duckdb::ArrowOptions options;
-    options.offset_size = duckdb::ArrowOffsetSize::REGULAR;
+    duckdb::ClientProperties options;
+    options.arrow_offset_size = duckdb::ArrowOffsetSize::REGULAR;
     duckdb::ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     auto maybe_schema = arrow::ImportSchema(&raw_schema);
     ASSERT_TRUE(maybe_schema.status().ok());
