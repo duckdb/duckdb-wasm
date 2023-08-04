@@ -105,8 +105,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    ArrowOptions options;
-    options.offset_size = ArrowOffsetSize::REGULAR;
+    ClientProperties options;
+    options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
 
@@ -140,8 +140,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Import the schema
     ArrowSchema raw_schema;
-    ArrowOptions options;
-    options.offset_size = ArrowOffsetSize::REGULAR;
+    ClientProperties options;
+    options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names, options);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
     current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
@@ -247,8 +247,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
 
         // Serialize the record batch
         ArrowArray array;
-        ArrowOptions arrow_options;
-        arrow_options.offset_size = ArrowOffsetSize::REGULAR;
+        ClientProperties arrow_options;
+        arrow_options.arrow_offset_size = ArrowOffsetSize::REGULAR;
         ArrowConverter::ToArrowArray(*chunk, &array, arrow_options);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
         // Patch the record batch
