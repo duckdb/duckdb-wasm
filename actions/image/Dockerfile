@@ -14,9 +14,7 @@ RUN apt-get update -qq \
         software-properties-common \
     && add-apt-repository ppa:mozillateam/ppa \
     && mkdir -p /etc/apt/preferences.d/ \
-    && echo "Package: firefox*\nPin: release o=Ubuntu*\nPin-Priority: -1" > /etc/apt/preferences.d/firefox-no-snap \
     && apt-get update -qq \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y firefox \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
     && apt-get update \
