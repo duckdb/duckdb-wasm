@@ -200,6 +200,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
         switch (current_pending_query_result_->ExecuteTask()) {
             case PendingExecutionResult::RESULT_READY:
                 return StreamQueryResult(current_pending_query_result_->Execute());
+            case PendingExecutionResult::NO_TASKS_AVAILABLE:
+                return nullptr;
             case PendingExecutionResult::RESULT_NOT_READY:
                 break;
             case PendingExecutionResult::EXECUTION_ERROR: {
