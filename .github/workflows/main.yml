@@ -4,6 +4,7 @@ on:
       branches:
         - '**'
         - '!master'
+        - '!main'
       tags:
         - '**'
     pull_request:
@@ -13,7 +14,7 @@ on:
     workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/master' || github.sha }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ (github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main') || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -669,7 +670,7 @@ jobs:
                   ./scripts/npm_publish_react.sh
 
             - name: Deploy GitHub Page
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               run: |
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
@@ -701,7 +702,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.01
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -714,7 +715,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.01
 
             - name: Benchmarks TPCH 0.01
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.01
@@ -723,7 +724,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.01
 
             - name: Upload reports TPCH 0.01
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_01
@@ -735,7 +736,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.1
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -748,7 +749,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.1
 
             - name: Benchmarks TPCH 0.1
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.1
@@ -757,7 +758,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.1
 
             - name: Upload reports TPCH 0.1
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_1
@@ -769,7 +770,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.25
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -782,7 +783,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.25
 
             - name: Benchmarks TPCH 0.25
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.25
@@ -791,7 +792,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.25
 
             - name: Upload reports TPCH 0.25
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_25
@@ -803,7 +804,7 @@ jobs:
                   retention-days: 1
 
             - name: Preparation TPCH 0.5
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: duckdb/duckdb-wasm-ci-env@v0.11
               with:
                   script: |-
@@ -816,7 +817,7 @@ jobs:
                       ./scripts/generate_tpch_sqlite.sh 0.5
 
             - name: Benchmarks TPCH 0.5
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               shell: bash
               run: |
                 yarn workspace @duckdb/benchmarks bench:system:tpch:duckdb 0.5
@@ -825,7 +826,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:tpch:lovefield 0.5
 
             - name: Upload reports TPCH 0.5
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               uses: actions/upload-artifact@v3
               with:
                   name: reports_tpch_0_5
@@ -839,7 +840,7 @@ jobs:
     merge_reports:
         name: Merge benchmark reports
         runs-on: ubuntu-latest
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
         needs:
             - js_libs
         steps:
@@ -913,7 +914,7 @@ jobs:
                   retention-days: 1
 
             - name: Deploy benchmark reports
-              if: github.ref == 'refs/heads/master'
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
