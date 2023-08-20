@@ -33,7 +33,7 @@
         "react-dom": "^18.2.0",
         "react-popper-tooltip": "^4.4.2",
         "react-router-dom": "^6.14.2",
-        "react-virtualized": "^9.22.3",
+        "react-virtualized": "9.22.4",
         "xterm": "^5.1.0",
         "xterm-addon-fit": "^0.7.0",
         "xterm-addon-web-links": "^0.8.0",
