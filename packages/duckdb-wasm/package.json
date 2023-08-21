@@ -54,7 +54,7 @@
         "rimraf": "^4.3.0",
         "s3rver": "^3.7.1",
         "typedoc": "^0.24.8",
-        "typescript": "^4.8.4",
+        "typescript": "^5.1.6",
         "wasm-feature-detect": "^1.5.1",
         "web-worker": "^1.2.0"
     },
