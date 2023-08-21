@@ -11,8 +11,8 @@ if [ ! -d ${PAGES_DIR} ]; then
     git worktree add ${PAGES_DIR} origin/gh-pages
 fi
 
-DEFAULT_BRANCH="master"
-CURRENT_BRANCH=${1:-master}
+DEFAULT_BRANCH="main"
+CURRENT_BRANCH=${1:-main}
 
 cd ${PAGES_DIR}
 git fetch origin gh-pages

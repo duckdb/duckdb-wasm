@@ -124,7 +124,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 <a
                                     className={styles.link}
                                     target="_blank"
-                                    href="https://github.com/duckdb/duckdb-wasm/tree/master/packages/benchmarks"
+                                    href="https://github.com/duckdb/duckdb-wasm/tree/main/packages/benchmarks"
                                     rel="noreferrer"
                                 >
                                     here
@@ -192,7 +192,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 <a
                                     className={styles.link}
                                     target="_blank"
-                                    href="https://github.com/duckdb/duckdb/blob/master/tools/rest/frontend/images/tpch-schema.png"
+                                    href="https://github.com/duckdb/duckdb/blob/main/tools/rest/frontend/images/tpch-schema.png"
                                     rel="noreferrer"
                                 >
                                     here
@@ -216,7 +216,7 @@ export const Versus: React.FC<Props> = (props: Props) => {
                                 <a
                                     className={styles.link}
                                     target="_blank"
-                                    href="https://github.com/duckdb/duckdb-wasm/blob/master/packages/benchmarks/src/system/arquero_benchmarks.ts"
+                                    href="https://github.com/duckdb/duckdb-wasm/blob/main/packages/benchmarks/src/system/arquero_benchmarks.ts"
                                     rel="noreferrer"
                                 >
                                     non-trivial

@@ -251,7 +251,7 @@ export function testHTTPFSAsync(
     describe('HTTPFS Async', () => {
         it('can fetch https file', async () => {
             const results = await conn!.query(
-                `select * from "https://raw.githubusercontent.com/duckdb/duckdb-wasm/master/data/test.csv";`,
+                `select * from "https://raw.githubusercontent.com/duckdb/duckdb-wasm/main/data/test.csv";`,
             );
             expect(BigInt(results.getChildAt(2)?.get(2))).toEqual(BigInt(9n));
         });
