@@ -23,7 +23,7 @@
         "apache-arrow": "^11.0.0",
         "bootstrap": "^5.3.0",
         "classnames": "^2.3.2",
-        "framer-motion": "^10.16.0",
+        "framer-motion": "^10.16.1",
         "immutable": "^4.3.2",
         "rc-scrollbars": "^1.1.5",
         "react": "^18.2.0",
