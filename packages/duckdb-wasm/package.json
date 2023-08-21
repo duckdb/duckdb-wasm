@@ -47,7 +47,7 @@
         "karma-jasmine-html-reporter": "^2.1.0",
         "karma-sourcemap-loader": "^0.4.0",
         "karma-spec-reporter": "^0.0.36",
-        "make-dir": "^3.1.0",
+        "make-dir": "^4.0.0",
         "nyc": "^15.1.0",
         "prettier": "^2.8.4",
         "puppeteer": "^20.8.0",
