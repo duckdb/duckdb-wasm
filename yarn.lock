@@ -6194,10 +6194,10 @@ react-transition-group@^4.4.5:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-react-virtualized@^9.22.3:
-  version "9.22.3"
-  resolved "https://registry.yarnpkg.com/react-virtualized/-/react-virtualized-9.22.3.tgz#f430f16beb0a42db420dbd4d340403c0de334421"
-  integrity sha512-MKovKMxWTcwPSxE1kK1HcheQTWfuCxAuBoSTf2gwyMM21NdX/PXUhnoP8Uc5dRKd+nKm8v41R36OellhdCpkrw==
+react-virtualized@9.22.4:
+  version "9.22.4"
+  resolved "https://registry.yarnpkg.com/react-virtualized/-/react-virtualized-9.22.4.tgz#ca1997d9677d520e742b2aec1463712c3e322e52"
+  integrity sha512-HYOQEK1OWWYKt8C3KnjbEOST224kv5D8USPSdo/huAamDttWzQLTtoi/IvWfqwFOr9cCnwUYzqOTStwPrdkqqQ==
   dependencies:
     "@babel/runtime" "^7.7.2"
     clsx "^1.0.4"
