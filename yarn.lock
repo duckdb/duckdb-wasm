@@ -6085,10 +6085,10 @@ raw-body@2.4.3:
     iconv-lite "0.4.24"
     unpipe "1.0.0"
 
-rc-scrollbars@^1.1.5:
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/rc-scrollbars/-/rc-scrollbars-1.1.5.tgz#0440c9019c30c72d6dae0ef547d52a1dc69a81ba"
-  integrity sha512-JZH/iVE1MEeMOD2cp8HAcV0AX6n1bGceeq7QJba4cz8C6skAhiTf7GbWqXg3IeAF8qlm8UMJuee1lKgWSbOgoQ==
+rc-scrollbars@^1.1.6:
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/rc-scrollbars/-/rc-scrollbars-1.1.6.tgz#4e3f3a23cf0d1b7b73a25070d2d4ef92b436dd2a"
+  integrity sha512-Tr/7dE7JUR4t2Zx50egsC0qLBXsUxez7NK97V3/0BLyNIdZXTy9eEA9Dk7SybZvTgK4VLZbyNlteIvMmesRT1A==
   dependencies:
     dom-css "^2.1.0"
     raf "^3.4.1"

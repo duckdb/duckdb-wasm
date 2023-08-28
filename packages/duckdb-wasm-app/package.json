@@ -25,7 +25,7 @@
         "classnames": "^2.3.2",
         "framer-motion": "^10.16.1",
         "immutable": "^4.3.2",
-        "rc-scrollbars": "^1.1.5",
+        "rc-scrollbars": "^1.1.6",
         "react": "^18.2.0",
         "react-bootstrap": "^2.8.0",
         "react-dnd": "^16.0.1",
