@@ -41,7 +41,7 @@
         "js-sha256": "^0.9.0",
         "karma": "^6.4.2",
         "karma-chrome-launcher": "^3.2.0",
-        "karma-coverage": "^2.2.0",
+        "karma-coverage": "^2.2.1",
         "karma-firefox-launcher": "^2.1.2",
         "karma-jasmine": "^5.1.0",
         "karma-jasmine-html-reporter": "^2.1.0",
