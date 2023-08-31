@@ -15,6 +15,8 @@ LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/build/RelWithDebInfo"
 LIB_XRAY_DIR="${ROOT_DIR}/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
+DUCKDB_HASH=${shell cat .git/modules/submodules/duckdb/refs/heads/main | head -c 10}
+
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
 DOCKER_EXEC_ENVIRONMENT=docker compose run duckdb-wasm-ci
 
@@ -283,7 +285,7 @@ wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 
 # Build the duckdb library in debug mode
 .PHONY: js_debug
-js_debug: build/bootstrap wasm yarn_install
+js_debug: build/bootstrap yarn_install
 	yarn workspace @duckdb/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
@@ -356,6 +358,16 @@ app_start_corp:
 .PHONY: app
 app: wasm wasmpack shell docs js_tests_release
 	yarn workspace @duckdb/duckdb-wasm-app build:release
+
+build_loadable:
+	WASM_LOADABLE_EXTENSIONS=1 GEN=ninja USE_MERGED_VCPKG_MANIFEST=1 VCPKG_TOOLCHAIN_PATH="~/vcpkg/scripts/buildsystems/vcpkg.cmake" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize eh
+	bash ./scripts/build_loadable.sh relsize eh
+
+serve_loadable: wasmpack shell docs
+	yarn workspace @duckdb/duckdb-wasm-app build:release
+	mkdir -p packages/duckdb-wasm-app/build/release/duckdb-wasm/${DUCKDB_HASH}/wasm_eh/
+	cp loadable_extensions/* packages/duckdb-wasm-app/build/release/duckdb-wasm/${DUCKDB_HASH}/wasm_eh/.
+	http-server packages/duckdb-wasm-app/build/release -o
 
 .PHONY: app_server
 app_server:
