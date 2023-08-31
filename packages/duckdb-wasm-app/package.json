@@ -20,7 +20,7 @@
     "dependencies": {
         "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
         "@duckdb/duckdb-wasm-shell": "file:../duckdb-wasm-shell",
-        "apache-arrow": "^11.0.0",
+        "apache-arrow": "^13.0.0",
         "bootstrap": "^5.3.0",
         "classnames": "^2.3.2",
         "framer-motion": "^10.16.1",

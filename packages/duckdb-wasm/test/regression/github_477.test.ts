@@ -18,7 +18,7 @@ export function test477(db: () => duckdb.AsyncDuckDB): void {
     });
     describe('GitHub issues', () => {
         it('477', async () => {
-            // Baseline without cast: we expect the negative decimal values to not work accurately
+            // Baseline without cast: we expect decimal values to not handle fractional parts correctly
             await db().open({
                 path: ':memory:',
                 query: {},
@@ -27,8 +27,8 @@ export function test477(db: () => duckdb.AsyncDuckDB): void {
             const resultWithoutCast = await conn.query(`SELECT (-1.9)::DECIMAL(2,1) as decimal`);
             expect(resultWithoutCast.schema.fields[0].type.scale).toEqual(1);
             expect(resultWithoutCast.schema.fields[0].type.precision).toEqual(2);
-            // If this assertion breaks, arrow JS was likely updated to handle negative values
-            expect(resultWithoutCast.toArray()[0]?.decimal == -19).toBe(false);
+            // Arrow JS now handles negative decimals, but not the fractional part.
+            expect(resultWithoutCast.toArray()[0]?.decimal == -19).toBe(true);
 
             // Using castDecimalToDouble we force decimals to be cast to doubles, note the inevitable imprecision.
             await db().open({
