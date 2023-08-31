@@ -144,6 +144,12 @@ else()
       "${CMAKE_CXX_FLAGS} -DWEBDB_FAST_EXCEPTIONS=1 -DWEBDB_THREADS=1")
 endif()
 
+if (DUCKDUB_WASM_LOADABLE_EXTENSIONS)
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s  -s EXPORT_ALL=1 -s FILESYSTEM=1 -s ENVIRONMENT='web,worker' -s ALLOW_TABLE_GROWTH")
+else()
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker'")
+endif()
+
 # ---------------------------------------------------------------------------
 # Parallelism
 
@@ -278,12 +284,10 @@ if(EMSCRIPTEN)
       LINK_FLAGS
       "${WASM_LINK_FLAGS} \
       -s ALLOW_BLOCKING_ON_MAIN_THREAD=1 \
-      -s ENVIRONMENT='web,node,worker' \
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
       -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
-      -s FILESYSTEM=0 \
       -s EXPORT_NAME='DuckDB' \
       -s EXPORTED_FUNCTIONS='[ \
           _main, \
