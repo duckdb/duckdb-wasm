@@ -816,6 +816,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         db_config.options.use_temporary_directory = false;
         db_config.options.access_mode = access_mode;
         auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
+#ifndef WASM_LOADABLE_EXTENSIONS
         duckdb_web_parquet_init(db.get());
         duckdb_web_fts_init(db.get());
 #if defined(DUCKDB_EXCEL_EXTENSION)
@@ -824,6 +825,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 #if defined(DUCKDB_JSON_EXTENSION)
         duckdb_web_json_init(db.get());
 #endif
+#endif //WASM_LOADABLE_EXTENSIONS
         RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
