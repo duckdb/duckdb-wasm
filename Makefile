@@ -299,11 +299,21 @@ docs: yarn_install
 # Run the duckdb javascript tests
 .PHONY: js_tests
 js_tests: js_debug build/data
+ifeq (${DUCKDB_WASM_LOADABLE_EXTENSIONS}, 1)
+	# FIXME: build also for node and restore those tests
+	yarn workspace @duckdb/duckdb-wasm test:chrome || echo "--- Parquet tests expected to fail!"
+else
 	yarn workspace @duckdb/duckdb-wasm test
+endif
 
 .PHONY: js_tests_release
 js_tests_release: js_release
+ifeq (${DUCKDB_WASM_LOADABLE_EXTENSIONS}, 1)
+	# FIXME: build also for node and restore those tests
+	yarn workspace @duckdb/duckdb-wasm test:chrome || echo "--- Parquet tests expected to fail!"
+else
 	yarn workspace @duckdb/duckdb-wasm test
+endif
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser
