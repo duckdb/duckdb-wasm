@@ -10,6 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ignoreMe "${DUCKDB_WASM_VERSION}")
+set(DUCKDB_WEB_CUSTOM_EXTENSION_DIRS $ENV{DUCKDB_WEB_CUSTOM_EXTENSION_DIRS})
 
 option(DUCKDB_WASM_LOADABLE_EXTENSIONS "Build with loadable extensions" OFF)
 option(DUCKDB_WASM_LOADABLE_EXTENSIONS_UNSIGNED "Build with loadable extensions" OFF)
@@ -288,6 +289,38 @@ target_link_libraries(duckdb_web_excel duckdb duckdb_excel)
 target_link_libraries(duckdb_web_json duckdb duckdb_json)
 
 # ---------------------------------------------------------------------------
+# Custom extensions
+
+function(register_custom_extension name lib)
+  set(DUCKDB_WEB_CUSTOM_EXTENSION_NAMES ${DUCKDB_WEB_CUSTOM_EXTENSION_NAMES} ${name})
+  set(DUCKDB_WEB_CUSTOM_EXTENSION_LIBS ${DUCKDB_WEB_CUSTOM_EXTENSION_LIBS} ${lib})
+endfunction()
+
+set(DUCKDB_WEB_CUSTOM_EXTENSION_NAMES "")
+set(DUCKDB_WEB_CUSTOM_EXTENSION_LIBS "")
+if(DUCKDB_WEB_CUSTOM_EXTENSION_DIRS)
+  foreach(dir ${DUCKDB_WEB_CUSTOM_EXTENSION_DIRS})
+    add_subdirectory(${dir})
+  endforeach()
+endif()
+
+foreach(lib ${DUCKDB_WEB_CUSTOM_EXTENSION_LIBS})
+  target_link_libraries(duckdb_web ${lib})
+endforeach()
+
+set(GENERATED_HEADER_FILE ${PROJECT_BINARY_DIR}/codegen/include/duckdb/generated_extensions_header.hpp)
+set(DUCKDB_WEB_CUSTOM_EXTENSION_INIT_FUNCTIONS "")
+set(DUCKDB_WEB_CUSTOM_EXTENSION_INIT_CALLS "")
+
+foreach(name ${DUCKDB_WEB_CUSTOM_EXTENSION_NAMES})
+  set(DUCKDB_WEB_CUSTOM_EXTENSION_INIT_FUNCTIONS "${DUCKDB_WEB_CUSTOM_EXTENSION_INIT_FUNCTIONS}extern void ${name}_init(duckdb::DuckDB *db);")
+  set(DUCKDB_WEB_CUSTOM_EXTENSION_INIT_CALLS "${DUCKDB_WEB_CUSTOM_EXTENSION_INIT_CALLS}${name}_init(db);")
+endforeach()
+
+configure_file(${CMAKE_SOURCE_DIR}/extension/generated_custom_extensions_header.hpp.in ${GENERATED_HEADER_FILE})
+include_directories(${PROJECT_BINARY_DIR}/codegen/include)
+
+# ---------------------------------------------------------------------------
 # Emscripten
 
 # We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our
@@ -305,6 +338,8 @@ if(EMSCRIPTEN)
       -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
       -s MAXIMUM_MEMORY=4GB \
+      -s INITIAL_MEMORY=32MB \
+      -s STACK_SIZE=16MB \
       -s MODULARIZE=1 \
       -s EXPORT_NAME='DuckDB' \
       -s EXPORTED_FUNCTIONS='[ \

@@ -33,9 +33,20 @@ export function configure(params) {
                 },
                 {
                     test: /\.tsx?$/,
-                    loader: 'ts-loader',
                     exclude: /node_modules/,
-                    options: params.tsLoaderOptions,
+                    use: [
+                        {
+                            loader: 'ts-loader',
+                            options: params.tsLoaderOptions,
+                        },
+                        {
+                            loader: 'ifdef-loader',
+                            options: {
+                                EH_BUILD_ENABLED: process.env['DUCKDB_SKIP_BUILD_EH'] !== '1',
+                                COI_BUILD_ENABLED: process.env['DUCKDB_SKIP_BUILD_COI'] !== '1',
+                            },
+                        },
+                    ],
                 },
                 {
                     test: /\.css$/,

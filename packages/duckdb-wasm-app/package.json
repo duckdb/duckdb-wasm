@@ -54,6 +54,7 @@
         "file-loader": "^6.2.0",
         "html-webpack-plugin": "^5.5.3",
         "jasmine-core": "^5.1.1",
+        "ifdef-loader": "^2.3.2",
         "jasmine-spec-reporter": "^7.0.0",
         "karma": "^6.4.2",
         "karma-chrome-launcher": "^3.2.0",

@@ -1,0 +1,3 @@
+set(DUCKDB_WEB_CUSTOM_EXTENSION_LIB "/path/to/libhello_ext.a")
+
+register_custom_extension("libhello_ext")

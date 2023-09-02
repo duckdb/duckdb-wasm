@@ -62,6 +62,7 @@
 #include "duckdb/web/udf.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/wasm_response.h"
+#include "duckdb/generated_extensions_header.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/rapidjson.h"
@@ -829,6 +830,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         duckdb_web_json_init(db.get());
 #endif
 #endif  // WASM_LOADABLE_EXTENSIONS
+        LoadCustomExtensions(db.get());
         RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
