@@ -28,6 +28,7 @@ JS_FILTER=
 EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
 EXCEL_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/excel"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
+CUSTOM_EXTENSION_ENVIRONMENT=DUCKDB_WEB_CUSTOM_EXTENSION_DIRS="${CUSTOM_EXTENSION_DIRS}"
 
 cpp_lib: lib_tests
 
@@ -256,42 +257,42 @@ wasm_setup: set_environment check_duckdb wrapped_wasm_caches
 
 .PHONY: wasm_dev
 wasm_dev: wasm_setup
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev mvp
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev mvp
 ifneq (${DUCKDB_SKIP_BUILD_EH}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev eh
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev eh
 endif
 ifneq (${DUCKDB_SKIP_BUILD_COI}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev coi
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev coi
 endif
 
 .PHONY: wasm_relperf
 wasm_relperf: wasm_setup
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf mvp
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf mvp
 ifneq (${DUCKDB_SKIP_BUILD_EH}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf eh
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf eh
 endif
 ifneq (${DUCKDB_SKIP_BUILD_COI}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf coi
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf coi
 endif
 
 .PHONY: wasm_relsize
 wasm_relsize: wasm_setup
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize mvp
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize mvp
 ifneq (${DUCKDB_SKIP_BUILD_EH}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize eh
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize eh
 endif
 ifneq (${DUCKDB_SKIP_BUILD_COI}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize coi
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize coi
 endif
 
 .PHONY: wasm_debug
 wasm_debug: wasm_setup
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
 ifneq (${DUCKDB_SKIP_BUILD_EH}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
 endif
 ifneq (${DUCKDB_SKIP_BUILD_COI}, 1)
-	DUCKDB_WEB_CUSTOM_EXTENSION_DIRS=${CUSTOM_EXTENSION_DIRS} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
+	${CUSTOM_EXTENSION_ENVIRONMENT} ${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
 endif
 
 wasm: wasm_relperf

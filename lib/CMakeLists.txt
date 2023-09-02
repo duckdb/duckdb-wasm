@@ -291,16 +291,18 @@ target_link_libraries(duckdb_web_json duckdb duckdb_json)
 # ---------------------------------------------------------------------------
 # Custom extensions
 
-function(register_custom_extension name lib)
-  set(DUCKDB_WEB_CUSTOM_EXTENSION_NAMES ${DUCKDB_WEB_CUSTOM_EXTENSION_NAMES} ${name})
-  set(DUCKDB_WEB_CUSTOM_EXTENSION_LIBS ${DUCKDB_WEB_CUSTOM_EXTENSION_LIBS} ${lib})
-endfunction()
+macro(register_custom_extension name lib)
+  set(DUCKDB_WEB_CUSTOM_EXTENSION_NAMES "${DUCKDB_WEB_CUSTOM_EXTENSION_NAMES};${name}" PARENT_SCOPE)
+  set(DUCKDB_WEB_CUSTOM_EXTENSION_LIBS "${DUCKDB_WEB_CUSTOM_EXTENSION_LIBS};${lib}" PARENT_SCOPE)
+endmacro()
 
 set(DUCKDB_WEB_CUSTOM_EXTENSION_NAMES "")
 set(DUCKDB_WEB_CUSTOM_EXTENSION_LIBS "")
+
 if(DUCKDB_WEB_CUSTOM_EXTENSION_DIRS)
   foreach(dir ${DUCKDB_WEB_CUSTOM_EXTENSION_DIRS})
-    add_subdirectory(${dir})
+    message(STATUS "Adding custom extension dir ${dir}")
+    add_subdirectory(${dir} ${CMAKE_BINARY_DIR}/${dir})
   endforeach()
 endif()
 
