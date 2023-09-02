@@ -1,3 +1,7 @@
-set(DUCKDB_WEB_CUSTOM_EXTENSION_LIB "/path/to/libhello_ext.a")
+# This is a CMake file template for a custom extension.
+# This file is expected to be copied to the extension directory, and specified via
+# `CUSTOM_EXTENSION_DIRS` variable for duckdb-wasm Makefile.
 
-register_custom_extension("libhello_ext")
+# This CMake file is expected to call `register_custom_extension` to tell
+# duckdb-wasm CMake file to link the custom extension library and call the init-function at the startup.
+register_custom_extension("libhello_ext" "/path/to/libhello_ext.a")
