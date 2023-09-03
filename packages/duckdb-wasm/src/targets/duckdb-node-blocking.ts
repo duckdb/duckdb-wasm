@@ -19,13 +19,10 @@ export async function createDuckDB(
     runtime: DuckDBRuntime,
 ): Promise<DuckDBNodeBindings> {
     const platform = await getPlatformFeatures();
-    const duckdbNext = await import('../bindings/bindings_node_eh').catch(e => {
-        console.log(e);
-        return null;
-    });
     if (platform.wasmExceptions) {
-        if (bundles.eh && duckdbNext) {
-            return new duckdbNext.DuckDB(logger, runtime, bundles.eh!.mainModule);
+        if (bundles.eh && __EH_BUILD_ENABLED__) {
+            const duckdb = await import('../bindings/bindings_node_eh');
+            return new duckdb.DuckDB(logger, runtime, bundles.eh!.mainModule);
         }
     }
     return new DuckDBMVP(logger, runtime, bundles.mvp.mainModule);
