@@ -109,6 +109,14 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     // -------------------------------
     // Browser bundles
 
+    const pluginConfig = [
+        ifdefPlugin({
+            variables: {
+                EH_BUILD_ENABLED: ehBuildEnabled(),
+            },
+        })
+    ];
+
     console.log('[ ESBUILD ] duckdb-browser.cjs');
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb.ts'],
@@ -152,8 +160,8 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         define: {
             'process.release.name': '"browser"',
             'process.env.NODE_ENV': '"production"',
-            '__EH_BUILD_ENABLED__': ehBuildEnabled() ? '"1"': '""',
         },
+        plugins: pluginConfig,
     });
 
     console.log('[ ESBUILD ] duckdb-browser-blocking.mjs');
@@ -170,8 +178,8 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         define: {
             'process.release.name': '"browser"',
             'process.env.NODE_ENV': '"production"',
-            '__EH_BUILD_ENABLED__': ehBuildEnabled() ? '"1"': '""',
         },
+        plugins: pluginConfig,
     });
 
     console.log('[ ESBUILD ] duckdb-browser-mvp.worker.js');
@@ -265,7 +273,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         minify: true,
         sourcemap: is_debug ? 'inline' : true,
         external: EXTERNALS_NODE,
-        define: { '__EH_BUILD_ENABLED__': ehBuildEnabled() ? '"1"': '""' },
+        plugins: pluginConfig,
     });
 
     console.log('[ ESBUILD ] duckdb-node-mvp.worker.cjs');

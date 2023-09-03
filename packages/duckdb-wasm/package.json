@@ -56,7 +56,8 @@
         "typedoc": "^0.25.0",
         "typescript": "^5.1.6",
         "wasm-feature-detect": "^1.5.1",
-        "web-worker": "^1.2.0"
+        "web-worker": "^1.2.0",
+        "esbuild-ifdef": "^0.2.0"
     },
     "scripts": {
         "build:debug": "node bundle.mjs debug && tsc --emitDeclarationOnly",
