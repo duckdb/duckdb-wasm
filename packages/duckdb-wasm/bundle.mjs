@@ -4,6 +4,7 @@ import path from 'path';
 import { rimrafSync } from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
+import ifdefPlugin from 'esbuild-ifdef'
 
 // -------------------------------
 // Current bundling strategy
