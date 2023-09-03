@@ -152,7 +152,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         define: {
             'process.release.name': '"browser"',
             'process.env.NODE_ENV': '"production"',
-            '__EH_BUILD_ENABLED__': ehBuildEnabled(),
+            '__EH_BUILD_ENABLED__': ehBuildEnabled() ? "1": "",
         },
     });
 
@@ -170,7 +170,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         define: {
             'process.release.name': '"browser"',
             'process.env.NODE_ENV': '"production"',
-            '__EH_BUILD_ENABLED__': ehBuildEnabled(),
+            '__EH_BUILD_ENABLED__': ehBuildEnabled() ? "1": "",
         },
     });
 
@@ -265,7 +265,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         minify: true,
         sourcemap: is_debug ? 'inline' : true,
         external: EXTERNALS_NODE,
-        define: { '__EH_BUILD_ENABLED__': ehBuildEnabled() },
+        define: { '__EH_BUILD_ENABLED__': ehBuildEnabled() ? "1": "" },
     });
 
     console.log('[ ESBUILD ] duckdb-node-mvp.worker.cjs');
