@@ -4,7 +4,7 @@ import path from 'path';
 import { rimrafSync } from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
-import ifdefPlugin from 'esbuild-ifdef'
+import ifdef from 'esbuild-plugin-ifdef'
 
 // -------------------------------
 // Current bundling strategy
@@ -111,11 +111,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     // Browser bundles
 
     const pluginConfig = [
-        ifdefPlugin({
-            variables: {
-                EH_BUILD_ENABLED: ehBuildEnabled(),
-            },
-        })
+        ifdef(ehBuildEnabled() ? { EH_BUILD_ENABLED: true } : {}),
     ];
 
     console.log('[ ESBUILD ] duckdb-browser.cjs');
@@ -319,6 +315,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         bundle: true,
         sourcemap: is_debug ? 'inline' : true,
         external: EXTERNALS_TEST_BROWSER,
+        plugins: pluginConfig,
     });
 
     console.log('[ ESBUILD ] tests-node.cjs');
@@ -331,8 +328,10 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         bundle: true,
         minify: false,
         sourcemap: is_debug ? 'inline' : true,
-        // web-worker polyfill needs to be excluded from bundling due to their dynamic require messing with bundled modules
+        // web-worker polyfill needs to be excluded from
+        // bundling due to their dynamic require messing with bundled modules
         external: [...EXTERNALS_NODE, 'web-worker'],
+        plugins: pluginConfig,
     });
 
     // -------------------------------
