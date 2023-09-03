@@ -11,7 +11,6 @@ import { Logger } from '../log';
 import { DuckDBRuntime, DuckDBBindings } from '../bindings';
 import { DuckDBBundles, getPlatformFeatures } from '../platform';
 import { DuckDB as DuckDBMVP } from '../bindings/bindings_browser_mvp';
-import { DuckDB as DuckDBNext } from '../bindings/bindings_browser_eh';
 
 export async function createDuckDB(
     bundles: DuckDBBundles,
@@ -19,9 +18,13 @@ export async function createDuckDB(
     runtime: DuckDBRuntime,
 ): Promise<DuckDBBindings> {
     const platform = await getPlatformFeatures();
+    const duckdbNext = await import('../bindings/bindings_browser_eh').catch(e => {
+        console.log(e);
+        return null;
+    });
     if (platform.wasmExceptions) {
-        if (bundles.eh) {
-            return new DuckDBNext(logger, runtime, bundles.eh!.mainModule);
+        if (bundles.eh && duckdbNext) {
+            return new duckdbNext.DuckDB(logger, runtime, bundles.eh!.mainModule);
         }
     }
     return new DuckDBMVP(logger, runtime, bundles.mvp.mainModule);

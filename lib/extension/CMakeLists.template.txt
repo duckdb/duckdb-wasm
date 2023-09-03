@@ -2,6 +2,8 @@
 # This file is expected to be copied to the extension directory, and specified via
 # `CUSTOM_EXTENSION_DIRS` variable for duckdb-wasm Makefile.
 
+cmake_minimum_required(VERSION 3.10)
+
 # This CMake file is expected to call `register_custom_extension` to tell
 # duckdb-wasm CMake file to link the custom extension library and call the init-function at the startup.
 register_custom_extension("libhello_ext" "/path/to/libhello_ext.a")
