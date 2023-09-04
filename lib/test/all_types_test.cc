@@ -15,7 +15,6 @@
 #include "arrow/ipc/reader.h"
 #include "arrow/util/decimal.h"
 #include "duckdb/common/types/timestamp.hpp"
-#include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
 #include "duckdb/web/environment.h"
 #include "duckdb/web/json_parser.h"
 #include "duckdb/web/webdb.h"
