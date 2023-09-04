@@ -13,7 +13,6 @@
 #include "arrow/type.h"
 #include "duckdb/common/types/date.hpp"
 #include "duckdb/common/types/timestamp.hpp"
-#include "duckdb/execution/operator/persistent/buffered_csv_reader.hpp"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/json_parser.h"
