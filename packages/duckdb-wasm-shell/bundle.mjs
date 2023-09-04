@@ -1,7 +1,7 @@
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
-import rimraf from 'rimraf';
+import { rimrafSync } from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -44,14 +44,14 @@ execSync(`wasm-pack build --target web --out-dir ./pkg --out-name shell ${mode}`
 
 const dist = path.resolve(__dirname, 'dist');
 mkdir.sync(dist);
-rimraf.sync(`${dist}/*.wasm`);
-rimraf.sync(`${dist}/*.d.ts`);
-rimraf.sync(`${dist}/*.js`);
-rimraf.sync(`${dist}/*.js.map`);
-rimraf.sync(`${dist}/*.mjs`);
-rimraf.sync(`${dist}/*.mjs.map`);
-rimraf.sync(`${dist}/*.cjs`);
-rimraf.sync(`${dist}/*.cjs.map`);
+rimrafSync(`${dist}/*.wasm`);
+rimrafSync(`${dist}/*.d.ts`);
+rimrafSync(`${dist}/*.js`);
+rimrafSync(`${dist}/*.js.map`);
+rimrafSync(`${dist}/*.mjs`);
+rimrafSync(`${dist}/*.mjs.map`);
+rimrafSync(`${dist}/*.cjs`);
+rimrafSync(`${dist}/*.cjs.map`);
 
 // -------------------------------
 // Copy WASM files
