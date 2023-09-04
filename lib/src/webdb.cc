@@ -828,7 +828,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 #if defined(DUCKDB_JSON_EXTENSION)
         duckdb_web_json_init(db.get());
 #endif
-#endif //WASM_LOADABLE_EXTENSIONS
+#endif  // WASM_LOADABLE_EXTENSIONS
         RegisterCustomExtensionOptions(db);
 
         // Reset state that is specific to the old database
