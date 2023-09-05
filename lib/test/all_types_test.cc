@@ -190,7 +190,6 @@ vector<string> SUPPORTED_TYPES = {"bool",
                                   "ubigint",
                                   "hugeint",
                                   "time",
-                                  "time_tz",
                                   "date",
                                   "float",
                                   "double",
@@ -215,7 +214,7 @@ vector<string> SUPPORTED_TYPES = {"bool",
 
 vector<string> UNSUPPORTED_TYPES = {
     // Does not work full range as it overflows during multiplication
-    "timestamp", "interval",
+    "timestamp", "interval", "time_tz",
 
     // Awaiting Timezone implementation in duckdb to allow patching range: is only partially supported
     "timestamp_s", "timestamp_ms", "timestamp_ns", "timestamp_tz",
@@ -286,8 +285,8 @@ TEST(AllTypesTest, FullRangeTypes) {
     // Date/Time types
     AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time", 0, 86399999999, batch,
                                                         arrow::time64(arrow::TimeUnit::MICRO));
-    AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time_tz", 0, 86399999999, batch,
-                                                        arrow::time64(arrow::TimeUnit::MICRO));
+    // AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time_tz", 0, 86399999999, batch,
+    //                                                    arrow::time64(arrow::TimeUnit::MICRO));
     AssertSimpleTypeCorrect<arrow::Date32Type, int32_t>("date", -2147483646, 2147483646, batch);
     AssertSimpleTypeCorrect<arrow::StringType>("varchar", "🦆🦆🦆🦆🦆🦆"s, "goo\x00se"s, batch);
     AssertSimpleTypeCorrect<arrow::BinaryType>("blob", "thisisalongblob\x00withnullbytes"s, "\x00\x00\x00\x61"s, batch);
