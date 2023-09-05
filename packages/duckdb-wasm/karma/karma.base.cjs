@@ -1,3 +1,7 @@
+if (!process.env.CHROME_BIN) {
+    process.env.CHROME_BIN = require('puppeteer').executablePath();
+}
+
 const JS_TIMEOUT = 900000;
 
 module.exports = function (config) {
