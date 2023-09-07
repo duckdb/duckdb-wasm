@@ -1,24 +1,12 @@
-diff --git a/src/common/arrow/arrow_converter.cpp b/src/common/arrow/arrow_converter.cpp
-index 26db9840ac..7d904aa202 100644
---- a/src/common/arrow/arrow_converter.cpp
-+++ b/src/common/arrow/arrow_converter.cpp
-@@ -138,6 +138,7 @@ void SetArrowFormat(DuckDBArrowSchemaHolder &root_holder, ArrowSchema &child, co
- 		child.format = "tdD";
- 		break;
- 	case LogicalTypeId::TIME:
-+	case LogicalTypeId::TIME_TZ:
- 		child.format = "ttu";
- 		break;
- 	case LogicalTypeId::TIMESTAMP:
 diff --git a/src/function/table/system/test_all_types.cpp b/src/function/table/system/test_all_types.cpp
-index a0b856266c..59761509a4 100644
+index a0b856266c..6674cf8baf 100644
 --- a/src/function/table/system/test_all_types.cpp
 +++ b/src/function/table/system/test_all_types.cpp
 @@ -204,13 +204,14 @@ vector<TestType> TestAllTypesFun::GetTestTypes(bool use_large_enum) {
  	auto max_map_value = Value::MAP(ListType::GetChildType(map_type), map_values);
  	result.emplace_back(map_type, "map", std::move(min_map_value), std::move(max_map_value));
  
-+#ifndef DUCKDB_FROM_DUCKDB_WASM
++#if 0
  	// union
  	child_list_t<LogicalType> members = {{"name", LogicalType::VARCHAR}, {"age", LogicalType::SMALLINT}};
  	auto union_type = LogicalType::UNION(members);
