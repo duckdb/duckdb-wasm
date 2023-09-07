@@ -828,6 +828,8 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 #if defined(DUCKDB_JSON_EXTENSION)
         duckdb_web_json_init(db.get());
 #endif
+#else
+        db_config.options.autoload_known_extensions = true;
 #endif  // WASM_LOADABLE_EXTENSIONS
         RegisterCustomExtensionOptions(db);
 

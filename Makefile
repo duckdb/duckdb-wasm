@@ -15,7 +15,7 @@ LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/build/RelWithDebInfo"
 LIB_XRAY_DIR="${ROOT_DIR}/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 
-DUCKDB_HASH=${shell cat .git/modules/submodules/duckdb/refs/heads/main | head -c 10}
+DUCKDB_HASH=${shell cd submodules/duckdb && git reflog -n 1 | head -c 10}
 
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
 DOCKER_EXEC_ENVIRONMENT=docker compose run duckdb-wasm-ci
