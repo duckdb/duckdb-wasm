@@ -499,6 +499,94 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb-coi.wasm
                   retention-days: 1
 
+    wasm_mvp_loadable:
+        name: Wasm / mvp (loadable version)
+        runs-on: ubuntu-latest
+        needs:
+            - dataprep
+            - tpchgen
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  submodules: 'recursive'
+                  fetch-depth: 0
+
+            - name: Prepare repository
+              run: |
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+
+            - uses: mymindstorm/setup-emsdk@v12
+              with:
+                  version: 'latest'
+
+            - name: Setup Ccache
+              uses: hendrikmuhs/ccache-action@main
+              with:
+                  key: ${{ github.job }}
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Build Wasm module
+              run: |
+                  cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
+                  DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize mvp
+                  bash ./scripts/build_loadable.sh relsize mvp
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v3
+              with:
+                  name: wasm-mvp-loadable
+                  path: |
+                      ./packages/duckdb-wasm/src/bindings/duckdb-mvp.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-mvp.wasm
+                  retention-days: 1
+
+    wasm_eh_loadable:
+        name: Wasm / eh (loadable version)
+        runs-on: ubuntu-latest
+        needs:
+            - dataprep
+            - tpchgen
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  submodules: 'recursive'
+                  fetch-depth: 0
+
+            - name: Prepare repository
+              run: |
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+
+            - uses: mymindstorm/setup-emsdk@v12
+              with:
+                  version: 'latest'
+
+            - name: Setup Ccache
+              uses: hendrikmuhs/ccache-action@main
+              with:
+                  key: ${{ github.job }}
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Build Wasm module
+              run: |
+                  cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
+                  DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
+                  bash ./scripts/build_loadable.sh relsize eh
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v3
+              with:
+                  name: wasm-eh-loadable
+                  path: |
+                      ./packages/duckdb-wasm/src/bindings/duckdb-eh.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-eh.wasm
+                  retention-days: 1
+
     js_libs:
         name: Js / Libraries
         runs-on: ubuntu-latest
@@ -836,6 +924,167 @@ jobs:
                       ./reports/benchmark_system_tpch_05_arquero.json
                       ./reports/benchmark_system_tpch_05_lovefield.json
                   retention-days: 1
+
+    js_libs_loadable:
+        name: Js / Libraries (loadable version)
+        runs-on: ubuntu-latest
+        needs:
+            - wasm_mvp_loadable
+            - wasm_eh_loadable
+            - wasm_coi
+            - duckdb_shell
+            - native_debug
+            - native_release
+            - clang_format
+            - eslint
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  submodules: 'recursive'
+                  fetch-depth: 0
+
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: '18.x'
+                  registry-url: 'https://registry.npmjs.org'
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Cache rust build
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
+                      ./target
+                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-shell-
+
+            - name: Cache node_modules
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ./node_modules
+                      ./packages/benchmarks/node_modules
+                      ./packages/duckdb-wasm/node_modules
+                      ./packages/duckdb-wasm-shell/node_modules
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: dataprep
+                  path: ./target/release/
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: duckdb-shell
+                  path: ./submodules/duckdb/build/Release/
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: wasm-mvp-loadable
+                  path: ./packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: wasm-eh-loadable
+                  path: ./packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: wasm-coi
+                  path: ./packages/duckdb-wasm/src/bindings/
+
+            - name: Prepare repository
+              run: |
+                  git fetch --tags --no-recurse-submodules -f
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
+              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              with:
+                  script: |-
+                      git config --global --add safe.directory '*'
+                      mkdir -p ./lib/build/wasm/release ./reports
+                      yarn install --frozen-lockfile
+                      ./scripts/generate_tpch_tbl.sh 0.01
+                      ./scripts/generate_tpch_arrow.sh 0.01
+                      ./scripts/generate_tpch_duckdb.sh 0.01
+                      ./scripts/generate_tpch_sqlite.sh 0.01
+                      ./scripts/generate_uni.sh
+                      ./scripts/npm_version.sh
+
+            - name: Build @duckdb/duckdb-wasm
+              shell: bash
+              run: |
+                      rm -rf ./packages/duckdb-wasm/dist/
+                      yarn workspace @duckdb/duckdb-wasm build:release
+                      yarn workspace @duckdb/duckdb-wasm docs
+
+            - name: Build @duckdb/duckdb-wasm-shell
+              shell: bash
+              run: |
+                      rm -rf ./packages/duckdb-wasm-shell/dist/
+                      yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
+                      yarn workspace @duckdb/duckdb-wasm-shell build:release
+
+            - name: Build @duckdb/duckdb-wasm-app
+              shell: bash
+              run: |
+                      rm -rf ./packages/duckdb-wasm-app/build/
+                      yarn workspace @duckdb/duckdb-wasm-app build:release
+
+            - name: Test @duckdb/duckdb-wasm on Chrome
+              shell: bash
+              run: |
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
+            
+            #            - name: Test @duckdb/duckdb-wasm on Firefox
+            #              uses: duckdb/duckdb-wasm-ci-env@v0.11
+            #              with:
+            #                  script: |-
+            #                      yarn workspace @duckdb/duckdb-wasm test:firefox
+
+            - name: Test @duckdb/duckdb-wasm on Node.js
+              shell: bash
+              run: |
+                      yarn workspace @duckdb/duckdb-wasm test:node
+
+            - name: Coverage @duckdb/duckdb-wasm
+              shell: bash
+              run: |
+                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+
+            - name: Build examples
+              shell: bash
+              run: |
+                      yarn install
+                      yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
+                      yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
+                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
+                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node test
+                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build
+
+            - name: Package
+              shell: bash
+              run: zip -r duckdb-wasm-packages.zip ./packages
+
+            - uses: actions/upload-artifact@v3
+              with:
+                  name: duckdb-wasm-packages-loadable
+                  path: duckdb-wasm-packages.zip
 
     merge_reports:
         name: Merge benchmark reports
