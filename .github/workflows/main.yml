@@ -1067,16 +1067,6 @@ jobs:
             #  run: |
             #           CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
-            - name: Build examples
-              shell: bash
-              run: |
-                      yarn install
-                      yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
-                      yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
-                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
-                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node test
-                      yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build
-
             - name: Package
               shell: bash
               run: zip -r duckdb-wasm-packages.zip ./packages
