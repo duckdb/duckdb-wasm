@@ -22,7 +22,7 @@ jobs:
         name: Clang-Format
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
 
@@ -39,7 +39,7 @@ jobs:
         name: ESLint
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
 
@@ -83,7 +83,7 @@ jobs:
         name: TPCH Generator
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
 
@@ -113,7 +113,7 @@ jobs:
         name: Dataprep
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
 
@@ -148,7 +148,7 @@ jobs:
         name: DuckDB Shell
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
 
@@ -187,7 +187,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -283,7 +283,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -379,7 +379,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -421,7 +421,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -463,7 +463,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -506,7 +506,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -550,7 +550,7 @@ jobs:
             - dataprep
             - tpchgen
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -600,7 +600,7 @@ jobs:
             - clang_format
             - eslint
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -938,7 +938,7 @@ jobs:
             - clang_format
             - eslint
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
@@ -1083,7 +1083,7 @@ jobs:
         needs:
             - js_libs
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: 'recursive'
 
