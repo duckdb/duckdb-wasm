@@ -360,10 +360,12 @@ app: wasm wasmpack shell docs js_tests_release
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 
 build_loadable:
+	cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
 	DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
 	bash ./scripts/build_loadable.sh relsize eh
 
 build_loadable_unsigned:
+	cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
 	DUCKDB_WASM_LOADABLE_EXTENSIONS="unsigned" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
 	bash ./scripts/build_loadable.sh relsize eh
 
