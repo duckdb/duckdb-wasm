@@ -360,7 +360,11 @@ app: wasm wasmpack shell docs js_tests_release
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 
 build_loadable:
-	WASM_LOADABLE_EXTENSIONS=1 GEN=ninja USE_MERGED_VCPKG_MANIFEST=1 VCPKG_TOOLCHAIN_PATH="~/vcpkg/scripts/buildsystems/vcpkg.cmake" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize eh
+	DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
+	bash ./scripts/build_loadable.sh relsize eh
+
+build_loadable_unsigned:
+	DUCKDB_WASM_LOADABLE_EXTENSIONS="unsigned" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
 	bash ./scripts/build_loadable.sh relsize eh
 
 serve_loadable: wasmpack shell docs
