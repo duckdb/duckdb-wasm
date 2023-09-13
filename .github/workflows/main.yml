@@ -757,13 +757,6 @@ jobs:
                   ./scripts/npm_publish_shell.sh
                   ./scripts/npm_publish_react.sh
 
-            - name: Deploy GitHub Page
-              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
-              run: |
-                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-                  git fetch origin gh-pages
-                  ./scripts/deploy_pages.sh
-
             - name: Build @duckdb/benchmarks
               shell: bash
               run: |
@@ -1066,6 +1059,13 @@ jobs:
             #  shell: bash
             #  run: |
             #           CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+
+            - name: Deploy GitHub Page
+              if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads.main'
+              run: |
+                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+                  git fetch origin gh-pages
+                  ./scripts/deploy_pages.sh
 
             - name: Package
               shell: bash
