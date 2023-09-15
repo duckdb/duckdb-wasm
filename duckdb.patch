@@ -19,7 +19,7 @@ index a0b856266c..753fd6323b 100644
  }
  
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 80d24c2982..2acd6fc1f0 100644
+index 80d24c2982..db698bffd5 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -109,6 +109,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -47,26 +47,29 @@ index 80d24c2982..2acd6fc1f0 100644
 +		    xhr.responseType = "arraybuffer";
 +		    xhr.send(null);
 +		    if (xhr.status != 200)
-+			return 0;
++			    return 0;
 +		    var uInt8Array = xhr.response;
-+		    WebAssembly.validate(uInt8Array);
-+		    var len = uInt8Array.length;
++		    var valid = WebAssembly.validate(uInt8Array);
++		    var len = uInt8Array.byteLength;
 +		    var fileOnWasmHeap = _malloc(len + 4);
-+		    Module.HEAPU8.set(uInt8Array, fileOnWasmHeap + 4);
++
++		    for (var iii = 0; iii < len; iii++) {
++			    Module.HEAPU8[iii + fileOnWasmHeap + 4] = uInt8Array[iii];
++		    }
 +		    var LEN123 = new Uint8Array(4);
-+		    LEN123[0] = len%256;
++		    LEN123[0] = len % 256;
 +		    len -= LEN123[0];
 +		    len /= 256;
-+		    LEN123[1] = len%256;
++		    LEN123[1] = len % 256;
 +		    len -= LEN123[1];
 +		    len /= 256;
-+		    LEN123[2] = len%256;
++		    LEN123[2] = len % 256;
 +		    len -= LEN123[2];
 +		    len /= 256;
-+		    LEN123[3] = len%256;
++		    LEN123[3] = len % 256;
 +		    len -= LEN123[3];
 +		    len /= 256;
-+		    Module.HEAPU8.set(LEN123, fileOnWasmHeap );
++		    Module.HEAPU8.set(LEN123, fileOnWasmHeap);
 +		    console.log('Loading extension ', UTF8ToString($1));
 +
 +		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
@@ -76,7 +79,7 @@ index 80d24c2982..2acd6fc1f0 100644
 +	    filename.c_str(), basename.c_str());
 +	if (!exe) {
 +		throw IOException("Extension %s is not available", filename);
-+	}	
++	}
 +
 +	auto dopen_from = basename;
 +	if (!config.options.allow_unsigned_extensions) {
@@ -87,15 +90,14 @@ index 80d24c2982..2acd6fc1f0 100644
 +
 +		D_ASSERT(exe);
 +		uint64_t LEN = 0;
-+		LEN *= 256; 
-+		LEN += ((uint8_t*)exe)[3];
-+		LEN *= 256; 
-+		LEN += ((uint8_t*)exe)[2];
-+		LEN *= 256; 
-+		LEN += ((uint8_t*)exe)[1];
-+		LEN *= 256; 
-+		LEN += ((uint8_t*)exe)[0];
-+
++		LEN *= 256;
++		LEN += ((uint8_t *)exe)[3];
++		LEN *= 256;
++		LEN += ((uint8_t *)exe)[2];
++		LEN *= 256;
++		LEN += ((uint8_t *)exe)[1];
++		LEN *= 256;
++		LEN += ((uint8_t *)exe)[0];
 +		auto signature_offset = LEN - signature.size();
 +
 +		const idx_t maxLenChunks = 1024ULL * 1024ULL;
@@ -110,9 +112,9 @@ index 80d24c2982..2acd6fc1f0 100644
 +
 +		for (idx_t i = 0; i < numChunks; i++) {
 +			string x;
-+			x.resize(splits[i+1] - splits[i]);
-+			for (idx_t j=0; j<x.size(); j++) {
-+				x[j] = ((uint8_t*)exe)[j+4+splits[i]];
++			x.resize(splits[i + 1] - splits[i]);
++			for (idx_t j = 0; j < x.size(); j++) {
++				x[j] = ((uint8_t *)exe)[j + 4 + splits[i]];
 +			}
 +			ComputeSHA256String(x, &hash_chunks[i]);
 +		}
@@ -127,11 +129,9 @@ index 80d24c2982..2acd6fc1f0 100644
 +		string two_level_hash;
 +		ComputeSHA256String(hash_concatenation, &two_level_hash);
 +
-+
-+			for (idx_t j=0; j<signature.size(); j++) {
-+				signature[j] = ((uint8_t*)exe)[4+signature_offset +j];
-+			}
-+
++		for (idx_t j = 0; j < signature.size(); j++) {
++			signature[j] = ((uint8_t *)exe)[4 + signature_offset + j];
++		}
 +		bool any_valid = false;
 +		for (auto &key : ExtensionHelper::GetPublicKeys()) {
 +			if (duckdb_mbedtls::MbedTlsWrapper::IsValidSha256Signature(key, signature, two_level_hash)) {
