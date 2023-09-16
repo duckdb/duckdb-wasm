@@ -18,8 +18,20 @@ index a0b856266c..753fd6323b 100644
  	return result;
  }
  
+diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
+index 9a453196d5..e6514bad8a 100644
+--- a/src/main/extension/extension_install.cpp
++++ b/src/main/extension/extension_install.cpp
+@@ -161,6 +161,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const ClientConfig> cl
+ 	string default_endpoint = "http://extensions.duckdb.org";
+ 	string versioned_path = "/${REVISION}/${PLATFORM}/${NAME}.duckdb_extension";
+ #ifdef WASM_LOADABLE_EXTENSIONS
++	default_endpoint = "https://extensions.duckdb.org";
+ 	versioned_path = "/duckdb-wasm" + versioned_path + ".wasm";
+ #else
+ 	versioned_path = versioned_path + ".gz";
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 80d24c2982..db698bffd5 100644
+index 80d24c2982..e34dadf813 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -109,6 +109,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -30,7 +42,7 @@ index 80d24c2982..db698bffd5 100644
  	if (!fs.FileExists(filename)) {
  		string message;
  		bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
-@@ -118,6 +119,119 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -118,6 +119,124 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  		error = StringUtil::Format("Extension \"%s\" not found.\n%s", filename, message);
  		return false;
  	}
@@ -53,8 +65,10 @@ index 80d24c2982..db698bffd5 100644
 +		    var len = uInt8Array.byteLength;
 +		    var fileOnWasmHeap = _malloc(len + 4);
 +
++		var properArray = new Uint8Array(uInt8Array);
++
 +		    for (var iii = 0; iii < len; iii++) {
-+			    Module.HEAPU8[iii + fileOnWasmHeap + 4] = uInt8Array[iii];
++			    Module.HEAPU8[iii + fileOnWasmHeap + 4] = properArray[iii];
 +		    }
 +		    var LEN123 = new Uint8Array(4);
 +		    LEN123[0] = len % 256;
@@ -70,6 +84,9 @@ index 80d24c2982..db698bffd5 100644
 +		    len -= LEN123[3];
 +		    len /= 256;
 +		    Module.HEAPU8.set(LEN123, fileOnWasmHeap);
++		//console.log(LEN123);
++		//console.log(properArray);
++		//console.log(new Uint8Array(Module.HEAPU8, fileOnWasmHeap, len+4));
 +		    console.log('Loading extension ', UTF8ToString($1));
 +
 +		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
@@ -150,7 +167,7 @@ index 80d24c2982..db698bffd5 100644
  	if (!config.options.allow_unsigned_extensions) {
  		auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
  
-@@ -180,25 +294,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -180,25 +299,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  	}
  	auto basename = fs.ExtractBaseName(filename);
  
