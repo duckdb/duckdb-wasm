@@ -210,6 +210,11 @@ for await (const batch of await conn.send<{ v: arrow.Int }>(`
 `)) {
     // ...
 }
+// Get query results as JSON
+const result = await conn.query<{ v: arrow.Int }>(`
+    SELECT * FROM generate_series(1, 100) t(v)
+`);
+const jsonResult = result.toArray().map((row) => row.toJSON());
 // Close the connection to release memory
 await conn.close();
 ```
