@@ -1,3 +1,4 @@
 /node_modules
 /*.wasm
 /*.js
+/*.js.map

@@ -12,6 +12,11 @@ import * as arrow from 'apache-arrow';
                 mainModule: './duckdb-eh.wasm',
                 mainWorker: './duckdb-browser-eh.worker.js',
             },
+            coi: {
+                mainModule: './duckdb-coi.wasm',
+                mainWorker: './duckdb-browser-coi.worker.js',
+                pthreadWorker: './duckdb-browser-coi.pthread.worker.js',
+            },
         });
 
         const logger = new duckdb.ConsoleLogger();
