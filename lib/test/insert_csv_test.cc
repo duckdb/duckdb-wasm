@@ -112,6 +112,7 @@ static std::vector<CSVInsertTest> CSV_IMPORT_TEST = {
         .options = R"JSON({
             "schema": "main",
             "name": "foo",
+            "header": true,
             "columns": [
                 { "name": "a", "sqlType": "int32" },
                 { "name": "b", "sqlType": "int32" },

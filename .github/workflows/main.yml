@@ -589,8 +589,6 @@ jobs:
             - wasm_eh
             - wasm_coi
             - duckdb_shell
-            - native_debug
-            - native_release
             - clang_format
             - eslint
         steps:
@@ -920,8 +918,6 @@ jobs:
             - wasm_eh_loadable
             - wasm_coi
             - duckdb_shell
-            - native_debug
-            - native_release
             - clang_format
             - eslint
         steps:
@@ -1036,7 +1032,7 @@ jobs:
             - name: Test @duckdb/duckdb-wasm on Chrome
               shell: bash
               run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome || true
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
             
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@v0.11
