@@ -589,8 +589,6 @@ jobs:
             - wasm_eh
             - wasm_coi
             - duckdb_shell
-            - native_debug
-            - native_release
             - clang_format
             - eslint
         steps:
@@ -920,8 +918,6 @@ jobs:
             - wasm_eh_loadable
             - wasm_coi
             - duckdb_shell
-            - native_debug
-            - native_release
             - clang_format
             - eslint
         steps:
