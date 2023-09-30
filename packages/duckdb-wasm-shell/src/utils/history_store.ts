@@ -47,7 +47,7 @@ export class HistoryStore {
                     results.push((req.result.value as LogEntry).input);
                     req.result.continue();
                 } else {
-                    resolve([results, this._nextEntryKey]);
+                    resolve([results, Math.min(this._nextEntryKey, 1 << HISTORY_SIZE_SHIFT)]);
                 }
             };
             cursor.onerror = reject;
