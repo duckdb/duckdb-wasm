@@ -40,7 +40,7 @@
         "jasmine-spec-reporter": "^7.0.0",
         "make-dir": "^4.0.0",
         "prettier": "^3.0.2",
-        "rimraf": "^5.0.1",
+        "rimraf": "^5.0.5",
         "wasm-pack": "^0.12.1"
     },
     "scripts": {
