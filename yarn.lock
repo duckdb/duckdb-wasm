@@ -1102,15 +1102,15 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-virtualized@^9.21.21":
-  version "9.21.21"
-  resolved "https://registry.yarnpkg.com/@types/react-virtualized/-/react-virtualized-9.21.21.tgz#65c96f25314f0fb3d40536929dc78112753b49e1"
-  integrity sha512-Exx6I7p4Qn+BBA1SRyj/UwQlZ0I0Pq7g7uhAp0QQ4JWzZunqEqNBGTmCmMmS/3N9wFgAGWuBD16ap7k8Y14VPA==
+"@types/react-virtualized@^9.21.23":
+  version "9.21.23"
+  resolved "https://registry.yarnpkg.com/@types/react-virtualized/-/react-virtualized-9.21.23.tgz#62c4b20b796351eca8e2f816c263b39b69ed97d0"
+  integrity sha512-8GX+P+nUl+c1qlyb3z0lQExQfoHPscBliZiBEUQ90PzMHY76XvkMawmKMyhvAUlCemhlEnvZdvWsyQAK5E/Jeg==
   dependencies:
     "@types/prop-types" "*"
-    "@types/react" "^17"
+    "@types/react" "*"
 
-"@types/react@*", "@types/react@>=16.9.11", "@types/react@^17":
+"@types/react@*", "@types/react@>=16.9.11":
   version "17.0.44"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.44.tgz#c3714bd34dd551ab20b8015d9d0dbec812a51ec7"
   integrity sha512-Ye0nlw09GeMp2Suh8qoOv0odfgCoowfM/9MG6WeRD60Gq9wS90bdkdRtYbRkNhXOpG4H+YXGvj4wOWhAC0LJ1g==
@@ -6180,10 +6180,10 @@ react-transition-group@^4.4.5:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-react-virtualized@9.22.4:
-  version "9.22.4"
-  resolved "https://registry.yarnpkg.com/react-virtualized/-/react-virtualized-9.22.4.tgz#ca1997d9677d520e742b2aec1463712c3e322e52"
-  integrity sha512-HYOQEK1OWWYKt8C3KnjbEOST224kv5D8USPSdo/huAamDttWzQLTtoi/IvWfqwFOr9cCnwUYzqOTStwPrdkqqQ==
+react-virtualized@9.22.5:
+  version "9.22.5"
+  resolved "https://registry.yarnpkg.com/react-virtualized/-/react-virtualized-9.22.5.tgz#bfb96fed519de378b50d8c0064b92994b3b91620"
+  integrity sha512-YqQMRzlVANBv1L/7r63OHa2b0ZsAaDp1UhVNEdUaXI8A5u6hTpA5NYtUueLH2rFuY/27mTGIBl7ZhqFKzw18YQ==
   dependencies:
     "@babel/runtime" "^7.7.2"
     clsx "^1.0.4"
