@@ -8,7 +8,7 @@
         "@duckdb/duckdb-wasm": "file:../../packages/duckdb-wasm"
     },
     "devDependencies": {
-        "esbuild": "^0.18.13",
+        "esbuild": "^0.19.4",
         "typescript": "^5.1.6"
     },
     "type": "module",
