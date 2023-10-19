@@ -19,7 +19,7 @@ index a0b856266c..753fd6323b 100644
  }
  
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 80d24c2982..e34dadf813 100644
+index 80d24c2982..61d9e00c1a 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -109,6 +109,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -30,7 +30,7 @@ index 80d24c2982..e34dadf813 100644
  	if (!fs.FileExists(filename)) {
  		string message;
  		bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
-@@ -118,6 +119,124 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -118,6 +119,179 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  		error = StringUtil::Format("Extension \"%s\" not found.\n%s", filename, message);
  		return false;
  	}
@@ -42,13 +42,68 @@ index 80d24c2982..e34dadf813 100644
 +	    {
 +		    // Next few lines should argubly in separate JavaScript-land function call
 +		    // TODO: move them out / have them configurable
-+		    const xhr = new XMLHttpRequest();
-+		    xhr.open("GET", UTF8ToString($0), false);
-+		    xhr.responseType = "arraybuffer";
-+		    xhr.send(null);
-+		    if (xhr.status != 200)
-+			    return 0;
-+		    var uInt8Array = xhr.response;
++
++var url =(UTF8ToString($0));
++    if (typeof XMLHttpRequest === "undefined") {
++        const os = require('os');
++        const path = require('path');
++        const fs = require('fs');
++
++        var array = url.split("/");
++        var l = array.length;
++
++        var folder = path.join(os.homedir(), ".duckdb/extensions/" + array[l - 4] + "/" + array[l - 3] + "/" + array[l - 2] + "/");
++        var filePath = path.join(folder, array[l - 1]);
++
++        try {
++            if (!fs.existsSync(folder)) {
++                fs.mkdirSync(folder, {
++                    recursive: true
++                });
++            }
++
++            if (!fs.existsSync(filePath)) {
++                const int32 = new Int32Array(new SharedArrayBuffer(8));
++var Worker = require('node:worker_threads').Worker;
++                var worker = new Worker("const {Worker,isMainThread,parentPort,workerData,} = require('node:worker_threads');var times = 0;var SAB = 23;var Z = 0;async function ZZZ(e) {var x = await fetch(e);var res = await x.arrayBuffer();Atomics.store(SAB, 1, res.byteLength);Atomics.store(SAB, 0, 1);Atomics.notify(SAB, 1);Atomics.notify(SAB, 0);Z = res;};parentPort.on('message', function(event) {if (times == 0) {times++;SAB = event;} else if (times == 1) {times++;ZZZ(event);} else {const a = new Uint8Array(Z);const b = new Uint8Array(event.buffer);var K = Z.byteLength;for (var i = 0; i < K; i++) {b[i] = a[i];}Atomics.notify(event, 0);Atomics.store(SAB, 0, 2);Atomics.notify(SAB, 0);}});", {
++                    eval: true
++                });
++                var uInt8Array;
++
++                int32[0] = 0;
++                int32[2] = 4;
++                worker.postMessage(int32);
++
++                worker.postMessage(url);
++                Atomics.wait(int32, 0, 0);
++
++                const int32_2 = new Int32Array(new SharedArrayBuffer(int32[1] + 3 - ((int32[1] + 3) % 4)));
++                worker.postMessage(int32_2);
++
++                Atomics.wait(int32, 0, 1);
++
++                var x = new Uint8Array(int32_2.buffer, 0, int32[1]);
++                uInt8Array = x;
++                worker.terminate();
++                fs.writeFileSync(filePath, uInt8Array);
++
++            } else {
++                uInt8Array = fs.readFileSync(filePath);
++            }
++        } catch (e) {
++            console.log("Error fetching module", e);
++            return 0;
++        }
++    } else {
++        const xhr = new XMLHttpRequest();
++        xhr.open("GET", url, false);
++        xhr.responseType = "arraybuffer";
++        xhr.send(null);
++        if (xhr.status != 200)
++            return 0;
++        uInt8Array = xhr.response;
++    }
++
 +		    var valid = WebAssembly.validate(uInt8Array);
 +		    var len = uInt8Array.byteLength;
 +		    var fileOnWasmHeap = _malloc(len + 4);
@@ -155,7 +210,7 @@ index 80d24c2982..e34dadf813 100644
  	if (!config.options.allow_unsigned_extensions) {
  		auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
  
-@@ -180,25 +299,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -180,25 +354,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  	}
  	auto basename = fs.ExtractBaseName(filename);
  
