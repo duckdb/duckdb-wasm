@@ -5,7 +5,7 @@
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
-        "@duckdb/duckdb-wasm": "file:../../packages/duckdb-wasm"
+        "@duckdb/duckdb-wasm": "1.11.0"
     },
     "devDependencies": {
         "esbuild": "^0.18.13",

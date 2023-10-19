@@ -4,7 +4,7 @@
     "license": "MIT",
     "private": true,
     "dependencies": {
-        "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
+        "@duckdb/duckdb-wasm": "1.11.0",
         "apache-arrow": "^13.0.0",
         "apache-arrow-3": "npm:apache-arrow@^3.0.0",
         "arquero": "^5.2.0",

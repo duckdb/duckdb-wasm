@@ -414,7 +414,6 @@ eslint:
 # Install all yarn packages
 .PHONY: yarn_install
 yarn_install:
-	yarn
 	yarn install
 
 .PHONY: examples
