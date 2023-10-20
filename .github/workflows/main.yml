@@ -129,9 +129,8 @@ jobs:
                       ${{ runner.os }}-dataprep-
 
             - name: Build generator
-              uses: duckdb/duckdb-wasm-ci-env@ae43fa250a6b6ba92fe3d825c6c34b6d68a258a0
-              with:
-                  script: |-
+              shell: bash
+              run: |
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
 
             - name: Upload artifact
