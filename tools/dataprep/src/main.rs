@@ -15,50 +15,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .author("Andre Kohn. <kohn.a@outlook.com>")
         .subcommand(
             App::new("uni")
-                .about("Generates parquet files for the university schema")
+                .help("Generates parquet files for the university schema")
                 .arg(
                     Arg::new("out")
                         .short('o')
                         .takes_value(true)
                         .required(true)
-                        .about("Directory where the parquet files are written"),
+                        .help("Directory where the parquet files are written"),
                 ),
         )
         .subcommand(
             App::new("merge-benchmarks")
-                .about("Merges benchmark reports")
+                .help("Merges benchmark reports")
                 .arg(
                     Arg::new("reports")
                         .short('r')
                         .long("reports")
                         .takes_value(true)
                         .required(true)
-                        .about("Report directory"),
+                        .help("Report directory"),
                 ),
         )
         .subcommand(
             App::new("tpch")
-                .about("Generates arrow & parquet files from the TPCH TBL files")
+                .help("Generates arrow & parquet files from the TPCH TBL files")
                 .arg(
                     Arg::new("in")
                         .long("in")
                         .takes_value(true)
                         .required(true)
-                        .about("Directory with generated tbl files"),
+                        .help("Directory with generated tbl files"),
                 )
                 .arg(
                     Arg::new("out-arrow")
                         .long("out-arrow")
                         .takes_value(true)
                         .required(true)
-                        .about("Directory where the arrow files are written"),
+                        .help("Directory where the arrow files are written"),
                 )
                 .arg(
                     Arg::new("out-parquet")
                         .long("out-parquet")
                         .takes_value(true)
                         .required(true)
-                        .about("Directory where the parquet files are written"),
+                        .help("Directory where the parquet files are written"),
                 ),
         )
         .get_matches();
