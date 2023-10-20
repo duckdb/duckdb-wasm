@@ -25,7 +25,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Lint ./lib
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       python3 ./scripts/run_clang_format.py \
@@ -94,7 +94,7 @@ jobs:
 
             - name: Build generator
               if: steps.cache-generator.outputs.cache-hit != 'true'
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
@@ -129,7 +129,7 @@ jobs:
                       ${{ runner.os }}-dataprep-
 
             - name: Build generator
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
@@ -164,7 +164,7 @@ jobs:
                       ${{ runner.os }}-duckdb-
 
             - name: Build DuckDB shell
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       ccache -z
@@ -226,7 +226,7 @@ jobs:
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
             - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       mkdir -p ./lib/build/debug ./reports
@@ -237,7 +237,7 @@ jobs:
                       ccache -s
 
             - name: Build project
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       cmake \
@@ -254,7 +254,7 @@ jobs:
                       ccache -s
 
             - name: Test project
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       export LLVM_PROFILE_FILE=./reports/lib.profraw
@@ -263,7 +263,7 @@ jobs:
                           --gtest_output=xml:./reports/tests_lib_debug.xml
 
             - name: Code Coverage
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       llvm-profdata merge \
@@ -322,7 +322,7 @@ jobs:
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
             - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       mkdir -p ./lib/build/release ./reports
@@ -333,7 +333,7 @@ jobs:
                       ccache -s
 
             - name: Build project
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       cmake \
@@ -350,7 +350,7 @@ jobs:
                       ccache -s
 
             - name: Test project
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       export LLVM_PROFILE_FILE=./reports/lib.profraw
@@ -359,7 +359,7 @@ jobs:
                           --gtest_output=xml:./reports/tests_lib_release.xml
 
             - name: Code Coverage
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       llvm-profdata merge \
@@ -671,7 +671,7 @@ jobs:
                   (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       git config --global --add safe.directory '*'
@@ -780,7 +780,7 @@ jobs:
 
             - name: Preparation TPCH 0.01
               if: github.ref == 'refs/heads/main'
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       git config --global --add safe.directory '*'
@@ -814,7 +814,7 @@ jobs:
 
             - name: Preparation TPCH 0.1
               if: github.ref == 'refs/heads/main'
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       git config --global --add safe.directory '*'
@@ -848,7 +848,7 @@ jobs:
 
             - name: Preparation TPCH 0.25
               if: github.ref == 'refs/heads/main'
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       git config --global --add safe.directory '*'
@@ -882,7 +882,7 @@ jobs:
 
             - name: Preparation TPCH 0.5
               if: github.ref == 'refs/heads/main'
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       git config --global --add safe.directory '*'
@@ -1000,7 +1000,7 @@ jobs:
                   (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Prepare environment
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       git config --global --add safe.directory '*'
@@ -1039,7 +1039,7 @@ jobs:
                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
             
             #            - name: Test @duckdb/duckdb-wasm on Firefox
-            #              uses: duckdb/duckdb-wasm-ci-env@v0.11
+            #              uses: duckdb/duckdb-wasm-ci-env@master
             #              with:
             #                  script: |-
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
@@ -1132,7 +1132,7 @@ jobs:
                   retention-days: 1
 
             - name: Merge benchmark reports
-              uses: duckdb/duckdb-wasm-ci-env@v0.11
+              uses: duckdb/duckdb-wasm-ci-env@master
               with:
                   script: |-
                       chmod +x ./target/release/dataprep
