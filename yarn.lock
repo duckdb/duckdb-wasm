@@ -970,10 +970,10 @@
   resolved "https://registry.yarnpkg.com/@types/flatbuffers/-/flatbuffers-1.10.0.tgz#aa74e30ffdc86445f2f060e1808fc9d56b5603ba"
   integrity sha512-7btbphLrKvo5yl/5CC2OCxUSMx1wV1wvGT1qDXkSt7yi00/YW7E8k6qzXqJHsp+WU0eoG7r6MTQQXI9lIvd0qA==
 
-"@types/fontfaceobserver@^2.1.1":
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/@types/fontfaceobserver/-/fontfaceobserver-2.1.1.tgz#8953914e602d571b3d675d0e061a95bf5f2a029a"
-  integrity sha512-ur2vdKw6m/2Ks1LHFCZxjgXyiXDwM9iThH+vQ4pBoxvoU06UhZ/j+vHnE8eKwsRooBRdGrkNBXSZ4k92JANhAQ==
+"@types/fontfaceobserver@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@types/fontfaceobserver/-/fontfaceobserver-2.1.2.tgz#540482cffc5da400fe6a479777180ca6bbbeb11c"
+  integrity sha512-QPTBzwHoy3KFaj6702gqqw9YpooQbN0biSBGyVUKvYzeIwpqJeZrzSx+HVzndy9Vsp2ZmvsTVs4k/evcySQC3A==
 
 "@types/history@*", "@types/history@^4.7.11":
   version "4.7.11"
