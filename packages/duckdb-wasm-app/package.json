@@ -65,7 +65,7 @@
         "source-map-loader": "^4.0.1",
         "style-loader": "^3.3.3",
         "ts-loader": "^9.5.0",
-        "typescript": "^5.1.6",
+        "typescript": "^5.2.2",
         "typescript-plugin-css-modules": "^5.0.1",
         "webpack": "^5.88.2",
         "webpack-bundle-analyzer": "^4.9.1",
