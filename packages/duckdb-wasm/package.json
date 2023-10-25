@@ -26,11 +26,11 @@
         "apache-arrow": "^13.0.0"
     },
     "devDependencies": {
-        "@types/emscripten": "^1.39.7",
+        "@types/emscripten": "^1.39.8",
         "@types/jasmine": "^4.3.1",
         "@typescript-eslint/eslint-plugin": "^6.5.0",
         "@typescript-eslint/parser": "^6.7.3",
-        "esbuild": "^0.18.13",
+        "esbuild": "^0.19.5",
         "eslint": "^8.50.0",
         "esbuild-ifdef": "^0.2.0",
         "esbuild-plugin-ifdef": "^1.0.1",
@@ -55,7 +55,7 @@
         "puppeteer": "^21.1.1",
         "rimraf": "^5.0.5",
         "s3rver": "^3.7.1",
-        "typedoc": "^0.25.0",
+        "typedoc": "^0.25.2",
         "typescript": "^5.1.6",
         "wasm-feature-detect": "^1.5.1",
         "web-worker": "^1.2.0"
