@@ -25,7 +25,7 @@
         "eslint": "^8.50.0",
         "eslint-plugin-react": "^7.33.2",
         "ts-loader": "^9.5.0",
-        "typescript": "^5.1.6"
+        "typescript": "^5.2.2"
     },
     "scripts": {
         "build": "node ./bundle.mjs && tsc --noEmit",
