@@ -27,7 +27,7 @@
         "immutable": "^4.3.4",
         "rc-scrollbars": "^1.1.6",
         "react": "^18.2.0",
-        "react-bootstrap": "^2.8.0",
+        "react-bootstrap": "^2.9.1",
         "react-dnd": "^16.0.1",
         "react-dnd-html5-backend": "^16.0.1",
         "react-dom": "^18.2.0",
