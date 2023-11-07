@@ -14,18 +14,27 @@ import 'react-popper-tooltip/dist/styles.css';
 
 import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
+/// #if EH_BUILD_ENABLED
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
+/// #endif
+/// #if COI_BUILD_ENABLED
 import duckdb_wasm_coi from '@duckdb/duckdb-wasm/dist/duckdb-coi.wasm';
+/// #endif
 
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
     },
+    /// #if EH_BUILD_ENABLED
     eh: {
         mainModule: duckdb_wasm_eh,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
     },
+    /// #else
+    eh: undefined,
+    /// #endif
+    /// #if COI_BUILD_ENABLED
     coi: {
         mainModule: duckdb_wasm_coi,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-coi.worker.js', import.meta.url).toString(),
@@ -34,6 +43,9 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
             import.meta.url,
         ).toString(),
     },
+    /// #else
+    coi: undefined,
+    /// #endif
 };
 const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING);
 
