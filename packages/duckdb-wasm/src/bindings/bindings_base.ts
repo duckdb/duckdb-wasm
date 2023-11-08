@@ -96,6 +96,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         this._initPromise = null;
         // Remove own progress callback
         this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != onProgress);
+        (globalThis as any).DUCKDB_BINDINGS = this;
         return this;
     }
     /** Open a database with a config */
