@@ -1,10 +1,6 @@
 name: 'Main'
 on:
     push:
-      branches:
-        - '**'
-        - '!main'
-        - '!feature'
     pull_request:
     create:
         tags:
