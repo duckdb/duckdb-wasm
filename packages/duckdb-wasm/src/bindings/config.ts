@@ -50,6 +50,10 @@ export interface DuckDBConfig {
      */
     maximumThreads?: number;
     /**
+     * The direct io flag
+     */
+    useDirectIO?: boolean;
+    /**
      * The query config
      */
     query?: DuckDBQueryConfig;

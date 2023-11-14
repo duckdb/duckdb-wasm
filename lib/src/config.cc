@@ -69,6 +69,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
             config.maximum_threads = doc["maximumThreads"].GetInt();
         }
+        if (doc.HasMember("useDirectIO") && doc["useDirectIO"].IsBool()) {
+            config.use_direct_io = doc["useDirectIO"].GetBool();
+        }
         if (doc.HasMember("query") && doc["query"].IsObject()) {
             auto q = doc["query"].GetObject();
             if (q.HasMember("queryPollingInterval") && q["queryPollingInterval"].IsNumber()) {
