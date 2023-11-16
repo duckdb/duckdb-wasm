@@ -171,7 +171,7 @@ const myArray = [
 ];
 const encoder = new TextEncoder();
 const buffer = encoder.encode(myArray);
-await db().registerFileBuffer(myTableName, buffer);
+await db.registerFileBuffer(myTableName, buffer);
 await c.insertJSONFromPath(myTableName, {
   schema: 'main',
   name: 'foo',
