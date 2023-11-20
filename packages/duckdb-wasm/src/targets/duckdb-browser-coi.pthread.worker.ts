@@ -12,15 +12,17 @@ for (const func of Object.getOwnPropertyNames(BROWSER_RUNTIME)) {
 // We just override the load handler of the pthread wrapper to bundle DuckDB with esbuild.
 globalThis.onmessage = (e: any) => {
     if (e.data.cmd === 'load') {
-        const m = pthread_api.getModule();
+        let m = pthread_api.getModule();
 
-        // Module and memory were sent from main thread
+        (globalThis as any).startWorker = (instance: any) => {
+            m = instance;
+            postMessage({ cmd: 'loaded' });
+        };
         m['wasmModule'] = e.data.wasmModule;
         m['wasmMemory'] = e.data.wasmMemory;
         m['buffer'] = m['wasmMemory'].buffer;
         m['ENVIRONMENT_IS_PTHREAD'] = true;
-
-        DuckDB(m).then(function (instance) {
+        DuckDB(m).then((instance: any) => {
             pthread_api.setModule(instance);
         });
     } else if (e.data.cmd === 'registerFileHandle') {
