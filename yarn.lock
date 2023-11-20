@@ -7607,10 +7607,10 @@ warning@^4.0.0, warning@^4.0.2, warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
-wasm-feature-detect@^1.5.1:
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/wasm-feature-detect/-/wasm-feature-detect-1.5.1.tgz#0db57a7d7f8c26b743dde85386215ae2b135e78a"
-  integrity sha512-GHr23qmuehNXHY4902/hJ6EV5sUANIJC3R/yMfQ7hWDg3nfhlcJfnIL96R2ohpIwa62araN6aN4bLzzzq5GXkg==
+wasm-feature-detect@^1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/wasm-feature-detect/-/wasm-feature-detect-1.6.1.tgz#21c7c35f9b233d71d2948d4a8b3e2098c452b940"
+  integrity sha512-R1i9ED8UlLu/foILNB1ck9XS63vdtqU/tP1MCugVekETp/ySCrBZRk5I/zI67cI1wlQYeSonNm1PLjDHZDNg6g==
 
 wasm-pack@^0.12.1:
   version "0.12.1"
