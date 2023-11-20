@@ -67,7 +67,7 @@
         "ts-loader": "^9.5.0",
         "typescript": "^5.2.2",
         "typescript-plugin-css-modules": "^5.0.2",
-        "webpack": "^5.88.2",
+        "webpack": "^5.89.0",
         "webpack-bundle-analyzer": "^4.9.1",
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^4.15.1",
