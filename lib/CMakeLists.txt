@@ -22,7 +22,7 @@ if(DEFINED ENV{DUCKDB_WASM_LOADABLE_EXTENSIONS})
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -DDUCKDB_WASM=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -DDUCKDB_WASM=1 -DFSST_MUST_ALIGN")
 
 if(DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWASM_LOADABLE_EXTENSIONS=1 -DDUCKDB_EXTENSION_AUTOLOAD_DEFAULT=1 -fPIC")
@@ -110,16 +110,11 @@ if(EMSCRIPTEN)
     endif()
   # Debug build
   elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
-      --profiling \
-      -gsource-map \
-      --source-map-base=file://${CMAKE_BINARY_DIR}/")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} \
       -sASSERTIONS=1 \
       -sSAFE_HEAP=1 \
-      -gsource-map \
-      --source-map-base=file://${CMAKE_BINARY_DIR}/ \
-      -sSEPARATE_DWARF_URL=file://${CMAKE_BINARY_DIR}/duckdb.wasm")
+      -g")
     # ... with fast linking
     if(WASM_FAST_LINKING)
       set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O0")
