@@ -23,7 +23,7 @@
         "csv"
     ],
     "dependencies": {
-        "apache-arrow": "^13.0.0"
+        "apache-arrow": "^14.0.1"
     },
     "devDependencies": {
         "@types/emscripten": "^1.39.8",
