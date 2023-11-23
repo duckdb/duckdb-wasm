@@ -5,7 +5,7 @@
     "private": true,
     "dependencies": {
         "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
-        "apache-arrow": "^13.0.0",
+        "apache-arrow": "^14.0.1",
         "apache-arrow-3": "npm:apache-arrow@^3.0.0",
         "arquero": "^5.2.0",
         "buffalo-bench": "^2.0.0",
