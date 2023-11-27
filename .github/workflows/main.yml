@@ -381,7 +381,7 @@ jobs:
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
-            - uses: mymindstorm/setup-emsdk@v12
+            - uses: mymindstorm/setup-emsdk@v13
               with:
                   version: 'latest'
 
@@ -423,7 +423,7 @@ jobs:
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
-            - uses: mymindstorm/setup-emsdk@v12
+            - uses: mymindstorm/setup-emsdk@v13
               with:
                   version: 'latest'
 
@@ -465,7 +465,7 @@ jobs:
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
-            - uses: mymindstorm/setup-emsdk@v12
+            - uses: mymindstorm/setup-emsdk@v13
               with:
                   version: 'latest'
 
@@ -508,7 +508,7 @@ jobs:
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
-            - uses: mymindstorm/setup-emsdk@v12
+            - uses: mymindstorm/setup-emsdk@v13
               with:
                   version: 'latest'
 
@@ -552,7 +552,7 @@ jobs:
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
 
-            - uses: mymindstorm/setup-emsdk@v12
+            - uses: mymindstorm/setup-emsdk@v13
               with:
                   version: 'latest'
 
