@@ -158,7 +158,7 @@ else()
 endif()
 
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s  -s EXPORT_ALL=1 -s FILESYSTEM=1 -s ENVIRONMENT='web,worker' -s ALLOW_TABLE_GROWTH")
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s  -s EXPORT_ALL=1 -s FILESYSTEM=1 -s ENVIRONMENT='web,worker' -s ALLOW_TABLE_GROWTH -lembind")
 else()
   set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker'")
 endif()
@@ -256,7 +256,7 @@ add_library(
 add_library(
   duckdb_web_excel
   ${CMAKE_SOURCE_DIR}/src/extensions/excel_extension.cc)
-  
+
 add_library(
   duckdb_web_json
   ${CMAKE_SOURCE_DIR}/src/extensions/json_extension.cc)
