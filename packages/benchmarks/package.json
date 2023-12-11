@@ -24,7 +24,7 @@
         "buffalo-bench": "^2.0.0",
         "eslint": "^8.54.0",
         "eslint-plugin-react": "^7.33.2",
-        "ts-loader": "^9.5.0",
+        "ts-loader": "^9.5.1",
         "typescript": "^5.2.2"
     },
     "scripts": {
