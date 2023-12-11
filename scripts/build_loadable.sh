@@ -4,16 +4,17 @@ set -euo pipefail
 
 trap exit SIGINT
 
-PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
+MODE=$1
+FEATURE=$2
+INPUT_PATH=./build/${MODE}/${FEATURE}/
+OUTPUT_PATH=loadable_extensions/${MODE}/${FEATURE}/
 
-mkdir -p loadable_extensions
+mkdir -p "${OUTPUT_PATH}"
 shopt -s nullglob
 
-for f in `find ./build/$1/$2 -name '*.duckdb_extension'`
+for ext_path in $(find "${INPUT_PATH}" -name '*.duckdb_extension')
 do
-        ext=`basename $f .duckdb_extension`
-        echo "Building '$ext'..."
-        emcc $f -sSIDE_MODULE=1 -o loadable_extensions/$ext.duckdb_extension.wasm -O3
+        ext_name=$(basename "$ext_path" .duckdb_extension)
+        echo "Building '$ext_name'..."
+        emcc "$ext_path" -sSIDE_MODULE=1 -o "${OUTPUT_PATH}/$ext_name.duckdb_extension.wasm" -O3
 done
-
-ls -la loadable_extensions
