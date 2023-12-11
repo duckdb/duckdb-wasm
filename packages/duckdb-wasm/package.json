@@ -27,7 +27,7 @@
     },
     "devDependencies": {
         "@types/emscripten": "^1.39.10",
-        "@types/jasmine": "^5.1.1",
+        "@types/jasmine": "^5.1.4",
         "@typescript-eslint/eslint-plugin": "^6.9.1",
         "@typescript-eslint/parser": "^6.11.0",
         "esbuild": "^0.19.8",
