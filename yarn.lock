@@ -992,10 +992,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/jasmine@^5.1.1":
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-5.1.1.tgz#7d2a2a983e1e822858ea9e30d90e11a3fe408fc0"
-  integrity sha512-qL4GoZHHJl1JQ0vK31OtXMfkfGxYJnysmYz9kk0E8j5W96ThKykBF90uD3PcVmQUAzulbsaus2eFiBhCH5itfw==
+"@types/jasmine@^5.1.4":
+  version "5.1.4"
+  resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-5.1.4.tgz#0de3f6ca753e10d1600ce1864ae42cfd47cf9924"
+  integrity sha512-px7OMFO/ncXxixDe1zR13V1iycqWae0MxTaw62RpFlksUi5QuNWgQJFkTQjIOvrmutJbI7Fp2Y2N1F6D2R4G6w==
 
 "@types/json-schema@*", "@types/json-schema@^7.0.8", "@types/json-schema@^7.0.9":
   version "7.0.9"
