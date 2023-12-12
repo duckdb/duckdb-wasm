@@ -19,7 +19,7 @@ index a0b856266c..753fd6323b 100644
  }
  
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 80d24c2982..61d9e00c1a 100644
+index 80d24c2982..2c062a98ff 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -109,6 +109,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -30,7 +30,7 @@ index 80d24c2982..61d9e00c1a 100644
  	if (!fs.FileExists(filename)) {
  		string message;
  		bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
-@@ -118,6 +119,179 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -118,6 +119,180 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  		error = StringUtil::Format("Extension \"%s\" not found.\n%s", filename, message);
  		return false;
  	}
@@ -127,10 +127,11 @@ index 80d24c2982..61d9e00c1a 100644
 +		    len -= LEN123[3];
 +		    len /= 256;
 +		    Module.HEAPU8.set(LEN123, fileOnWasmHeap);
++                //FIXME: found how to expose those to the logger interface
 +		//console.log(LEN123);
 +		//console.log(properArray);
 +		//console.log(new Uint8Array(Module.HEAPU8, fileOnWasmHeap, len+4));
-+		    console.log('Loading extension ', UTF8ToString($1));
++		// console.log('Loading extension ', UTF8ToString($1));
 +
 +		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
 +		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
@@ -210,7 +211,7 @@ index 80d24c2982..61d9e00c1a 100644
  	if (!config.options.allow_unsigned_extensions) {
  		auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
  
-@@ -180,25 +354,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -180,25 +355,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  	}
  	auto basename = fs.ExtractBaseName(filename);
  
