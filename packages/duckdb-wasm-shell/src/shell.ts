@@ -20,6 +20,7 @@ class ShellRuntime {
     database: duckdb.AsyncDuckDB | null;
     history: HistoryStore;
     resizeHandler: (_event: UIEvent) => void;
+    hash: string;
 
     constructor(protected container: HTMLDivElement) {
         this.database = null;
@@ -28,6 +29,7 @@ class ShellRuntime {
             const rect = container.getBoundingClientRect();
             shell.resize(rect.width, rect.height);
         };
+        this.hash = "";
     }
 
     public async pickFiles(this: ShellRuntime): Promise<number> {
@@ -51,13 +53,11 @@ class ShellRuntime {
         return await navigator.clipboard.writeText(value);
     }
     public async pushInputToHistory(this: ShellRuntime, value: string) {
-	var hash = window.location.hash;
 	const encode = encodeURIComponent(extraswaps(value));
-	if (hash === "")
-		hash = "queries=v0";
-	hash += ",";
-	hash += encode;
-	window.location.hash = hash
+	if (this.hash === "")
+		this.hash = "queries=v0";
+	this.hash += ",";
+	this.hash += encode;
         this.history.push(value);
     }
 }
@@ -142,13 +142,12 @@ export async function embed(props: ShellProps) {
     await step('Attaching Shell', async () => {
         shell.configureDatabase(runtime.database);
     });
-	var hash = window.location.hash;
-	var splits = hash.split(',');
-	var sqls : Array<string> = [];
-	for (var i=1; i< splits.length; i++) {
+	const hash = window.location.hash;
+	const splits = hash.split(',');
+	const sqls : Array<string> = [];
+	for (let i=1; i< splits.length; i++) {
 		sqls.push(extraswaps(decodeURIComponent(splits[i])));
 		}
-	window.location.hash="";
     await step('Rewinding history!', async () => {
         shell.passInitQueries(sqls);
     });
