@@ -81,6 +81,13 @@ pub fn load_history(history: &js_sys::Array, cursor: usize) {
     Shell::load_history(h, cursor);
 }
 
+#[wasm_bindgen(js_name = "passInitQueries")]
+pub async fn pass_init_queries(queries: &js_sys::Array) -> Result<(), js_sys::Error> {
+    let q: Vec<String> = queries.iter().map(|ref v| v.as_string().unwrap()).collect();
+    Shell::pass_init_queries(q).await?;
+    Ok(())
+}
+
 #[wasm_bindgen(js_name = "configureDatabase")]
 pub async fn configure_database(db: JsAsyncDuckDB) -> Result<(), js_sys::Error> {
     Shell::configure_database(AsyncDuckDB::from_bindings(db)).await?;
