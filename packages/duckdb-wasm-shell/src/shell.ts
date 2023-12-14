@@ -52,7 +52,7 @@ class ShellRuntime {
     }
     public async pushInputToHistory(this: ShellRuntime, value: string) {
 	var hash = window.location.hash;
-	const encode = btoa(value);
+	const encode = encodeURIComponent(extraswaps(value));
 	if (hash === "")
 		hash = "queries=v0";
 	hash += ",";
@@ -75,6 +75,24 @@ function formatBytes(value: number): string {
     const exp = (Math.log(value) / Math.log(multiple)) | 0;
     const size = Number((value / Math.pow(multiple, exp)).toFixed(2));
     return `${size} ${exp ? `${k}MGTPEZY`[exp - 1] + suffix : `byte${size !== 1 ? 's' : ''}`}`;
+}
+
+function extraswaps(input: string): string {
+    // As long as this function is symmetrical, all good
+    let res : string = "";
+    for (let i=0; i<input.length; i++) {
+	if (input[i] == ' ')
+		res += '-';
+	else if (input[i] == '-')
+		res += ' ';
+	else if (input[i] == ';')
+		res += '~';
+	else if (input[i] == '~')
+		res += ';';
+	else
+		res += input[i];
+	}
+	return res;
 }
 
 export async function embed(props: ShellProps) {
@@ -128,7 +146,7 @@ export async function embed(props: ShellProps) {
 	var splits = hash.split(',');
 	var sqls : Array<string> = [];
 	for (var i=1; i< splits.length; i++) {
-		sqls.push( atob(splits[i]));
+		sqls.push(extraswaps(decodeURIComponent(splits[i])));
 		}
 	window.location.hash="";
     await step('Rewinding history!', async () => {
