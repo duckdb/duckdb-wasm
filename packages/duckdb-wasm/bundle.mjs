@@ -4,6 +4,7 @@ import path from 'path';
 import { rimrafSync } from 'rimraf';
 import mkdir from 'make-dir';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 // -------------------------------
 // Current bundling strategy
@@ -195,6 +196,10 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     });
 
     console.log('[ ESBUILD ] duckdb-browser-coi.worker.js');
+    // Don't attempt to bundle NodeJS modules in the browser build.
+    execSync(
+        `sed -i.bak 's/require("vm")/["vm"].map(require)/g' ./src/bindings/duckdb-coi.pthread.js && rm ./src/bindings/duckdb-coi.pthread.js.bak`,
+    );
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb-browser-coi.worker.ts'],
         outfile: 'dist/duckdb-browser-coi.worker.js',
