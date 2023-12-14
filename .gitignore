@@ -28,3 +28,7 @@ compile_commands.json
 data/tpch/**/*.parquet
 .idea
 lib/.idea
+
+check_duckdb
+wasm_setup
+loadable_extensions/*.wasm
