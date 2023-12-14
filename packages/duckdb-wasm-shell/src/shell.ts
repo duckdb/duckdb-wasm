@@ -51,6 +51,13 @@ class ShellRuntime {
         return await navigator.clipboard.writeText(value);
     }
     public async pushInputToHistory(this: ShellRuntime, value: string) {
+	var hash = window.location.hash;
+	const encode = btoa(value);
+	if (hash === "")
+		hash = "queries=v0";
+	hash += ",";
+	hash += encode;
+	window.location.hash = hash
         this.history.push(value);
     }
 }
@@ -116,5 +123,15 @@ export async function embed(props: ShellProps) {
     });
     await step('Attaching Shell', async () => {
         shell.configureDatabase(runtime.database);
+    });
+	var hash = window.location.hash;
+	var splits = hash.split(',');
+	var sqls : Array<string> = [];
+	for (var i=1; i< splits.length; i++) {
+		sqls.push( atob(splits[i]));
+		}
+	window.location.hash="";
+    await step('Rewinding history!', async () => {
+        shell.passInitQueries(sqls);
     });
 }
