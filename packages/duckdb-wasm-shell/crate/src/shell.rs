@@ -64,6 +64,13 @@ pub enum DatabaseType {
     RemoteReadOnly,
 }
 
+use std::sync::{Mutex, OnceLock};
+
+fn past_queries() -> &'static Mutex<VecDeque<String>> {
+    static ARRAY: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
+    ARRAY.get_or_init(|| Mutex::new(VecDeque::new()))
+}
+
 /// The shell is the primary entrypoint for the web shell api.
 /// It is stored as thread_local singleton and maintains all the state for the interactions with DuckDB
 pub struct Shell {
@@ -176,6 +183,24 @@ impl Shell {
             s.prompt();
             s.focus();
         });
+
+	for entry in &(*past_queries().lock().unwrap()) {
+		    Shell::with_mut(|s| {
+            s.write(&format!(
+                "{bold}{green}",
+                bold = vt100::MODE_BOLD,
+                green = vt100::COLOR_FG_BRIGHT_YELLOW
+            ));
+			s.write(entry);
+            s.write(&format!(
+                "{normal}",
+                normal = vt100::MODES_OFF
+            ));
+
+		    });
+		Self::on_sql(entry.to_string()).await;
+	}
+
         Ok(())
     }
 
@@ -820,6 +845,17 @@ impl Shell {
             }
         });
     }
+
+    /// Pass information on init queries
+    pub async fn pass_init_queries(queries: Vec<String>) -> Result<(), js_sys::Error> {
+
+        let mut h = VecDeque::with_capacity(queries.len());
+        for entry in &queries[0..queries.len()] {
+            h.push_back(entry.clone());
+        }
+            *past_queries().lock().unwrap() = h;
+        Ok(())
+	}
 
     /// Flush output buffer to the terminal
     pub fn flush(&mut self) {
