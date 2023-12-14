@@ -437,7 +437,7 @@ impl PromptBuffer {
                                 self.output_buffer,
                                 "{reset}{fg}{bold}",
                                 reset = vt100::MODES_OFF,
-                                fg = vt100::COLOR_FG_GREEN,
+                                fg = vt100::COLOR_FG_BRIGHT_YELLOW,
                                 bold = vt100::MODE_BOLD
                             )
                             .unwrap();
