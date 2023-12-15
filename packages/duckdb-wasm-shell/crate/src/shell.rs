@@ -1,6 +1,6 @@
 use crate::arrow_printer::{pretty_format_batches, UTF8_BORDERS_NO_HORIZONTAL};
 use crate::duckdb::{
-    AsyncDuckDB, AsyncDuckDBConnection, DataProtocol, PACKAGE_NAME, PACKAGE_VERSION, DuckDBConfig,
+    AsyncDuckDB, AsyncDuckDBConnection, DataProtocol, DuckDBConfig, PACKAGE_NAME, PACKAGE_VERSION,
 };
 use crate::key_event::{Key, KeyEvent};
 use crate::platform;
@@ -184,22 +184,18 @@ impl Shell {
             s.focus();
         });
 
-	for entry in &(*past_queries().lock().unwrap()) {
-		    Shell::with_mut(|s| {
-            s.write(&format!(
-                "{bold}{green}",
-                bold = vt100::MODE_BOLD,
-                green = vt100::COLOR_FG_BRIGHT_YELLOW
-            ));
-			s.write(entry);
-            s.write(&format!(
-                "{normal}",
-                normal = vt100::MODES_OFF
-            ));
-
-		    });
-		Self::on_sql(entry.to_string()).await;
-	}
+        for entry in &(*past_queries().lock().unwrap()) {
+            Shell::with_mut(|s| {
+                s.write(&format!(
+                    "{bold}{green}",
+                    bold = vt100::MODE_BOLD,
+                    green = vt100::COLOR_FG_BRIGHT_YELLOW
+                ));
+                s.write(entry);
+                s.write(&format!("{normal}", normal = vt100::MODES_OFF));
+            });
+            Self::on_sql(entry.to_string()).await;
+        }
 
         Ok(())
     }
@@ -848,14 +844,13 @@ impl Shell {
 
     /// Pass information on init queries
     pub async fn pass_init_queries(queries: Vec<String>) -> Result<(), js_sys::Error> {
-
         let mut h = VecDeque::with_capacity(queries.len());
         for entry in &queries[0..queries.len()] {
             h.push_back(entry.clone());
         }
-            *past_queries().lock().unwrap() = h;
+        *past_queries().lock().unwrap() = h;
         Ok(())
-	}
+    }
 
     /// Flush output buffer to the terminal
     pub fn flush(&mut self) {
