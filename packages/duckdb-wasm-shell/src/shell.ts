@@ -58,6 +58,8 @@ class ShellRuntime {
 		this.hash = "queries=v0";
 	this.hash += ",";
 	this.hash += encode;
+	if (window.location.hash.startsWith("#savequeries"))
+		window.location.hash = "savequeries&" + this.hash;
         this.history.push(value);
     }
 }
