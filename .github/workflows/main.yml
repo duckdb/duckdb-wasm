@@ -185,12 +185,12 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
@@ -281,12 +281,12 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
@@ -630,32 +630,32 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-yarn-
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: wasm-mvp
                   path: ./packages/duckdb-wasm/src/bindings/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: wasm-eh
                   path: ./packages/duckdb-wasm/src/bindings/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: wasm-coi
                   path: ./packages/duckdb-wasm/src/bindings/
@@ -959,32 +959,32 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-yarn-
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: wasm-mvp-loadable
                   path: ./packages/duckdb-wasm/src/bindings/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: wasm-eh-loadable
                   path: ./packages/duckdb-wasm/src/bindings/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: wasm-coi
                   path: ./packages/duckdb-wasm/src/bindings/
@@ -1076,32 +1076,32 @@ jobs:
               with:
                   submodules: 'recursive'
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: dataprep
                   path: ./target/release/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: reports_micro
                   path: ./reports/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: reports_tpch_0_01
                   path: ./reports/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: reports_tpch_0_1
                   path: ./reports/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: reports_tpch_0_25
                   path: ./reports/
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4
               with:
                   name: reports_tpch_0_5
                   path: ./reports/
