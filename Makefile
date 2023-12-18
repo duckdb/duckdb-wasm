@@ -372,7 +372,7 @@ build_loadable_unsigned:
 serve_loadable: wasmpack shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 	mkdir -p packages/duckdb-wasm-app/build/release/duckdb-wasm/${DUCKDB_HASH}/wasm_eh/
-	cp loadable_extensions/* packages/duckdb-wasm-app/build/release/duckdb-wasm/${DUCKDB_HASH}/wasm_eh/.
+	cp loadable_extensions/relsize/eh/* packages/duckdb-wasm-app/build/release/duckdb-wasm/${DUCKDB_HASH}/wasm_eh/.
 	http-server packages/duckdb-wasm-app/build/release -o
 
 .PHONY: app_server
