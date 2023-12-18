@@ -53,7 +53,7 @@ impl ShellSettings {
     fn default() -> Self {
         Self {
             output: true,
-            timer: true,
+            timer: false,
             webgl: false,
         }
     }
