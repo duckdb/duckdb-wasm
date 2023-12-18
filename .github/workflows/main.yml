@@ -96,7 +96,7 @@ jobs:
                       make -C ./submodules/tpch-dbgen/dbgen/ dbgen
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: tpch-dbgen
                   path: |
@@ -130,7 +130,7 @@ jobs:
                       cargo build --manifest-path=./Cargo.toml --release -p dataprep
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: dataprep
                   path: |
@@ -167,7 +167,7 @@ jobs:
                       ccache -s
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: duckdb-shell
                   path: ./submodules/duckdb/build/Release/duckdb
@@ -399,7 +399,7 @@ jobs:
                   ./scripts/wasm_build_lib.sh relperf mvp
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: wasm-mvp
                   path: |
@@ -441,7 +441,7 @@ jobs:
                   ./scripts/wasm_build_lib.sh relperf eh
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: wasm-eh
                   path: |
@@ -483,7 +483,7 @@ jobs:
                   ./scripts/wasm_build_lib.sh relperf coi
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: wasm-coi
                   path: |
@@ -528,7 +528,7 @@ jobs:
                   bash ./scripts/build_loadable.sh relsize mvp
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: wasm-mvp-loadable
                   path: |
@@ -572,7 +572,7 @@ jobs:
                   bash ./scripts/build_loadable.sh relsize eh
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: wasm-eh-loadable
                   path: |
@@ -734,7 +734,7 @@ jobs:
               shell: bash
               run: zip -r duckdb-wasm-packages.zip ./packages
 
-            - uses: actions/upload-artifact@v3
+            - uses: actions/upload-artifact@v4
               with:
                   name: duckdb-wasm-packages
                   path: duckdb-wasm-packages.zip
@@ -761,7 +761,7 @@ jobs:
                 yarn workspace @duckdb/benchmarks bench:system:sum:csv
 
             - name: Upload reports
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_micro
                   path: |
@@ -797,7 +797,7 @@ jobs:
 
             - name: Upload reports TPCH 0.01
               if: github.ref == 'refs/heads/main'
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_tpch_0_01
                   path: |
@@ -831,7 +831,7 @@ jobs:
 
             - name: Upload reports TPCH 0.1
               if: github.ref == 'refs/heads/main'
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_tpch_0_1
                   path: |
@@ -865,7 +865,7 @@ jobs:
 
             - name: Upload reports TPCH 0.25
               if: github.ref == 'refs/heads/main'
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_tpch_0_25
                   path: |
@@ -899,7 +899,7 @@ jobs:
 
             - name: Upload reports TPCH 0.5
               if: github.ref == 'refs/heads/main'
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_tpch_0_5
                   path: |
@@ -1060,7 +1060,7 @@ jobs:
               shell: bash
               run: zip -r duckdb-wasm-packages.zip ./packages
 
-            - uses: actions/upload-artifact@v3
+            - uses: actions/upload-artifact@v4
               with:
                   name: duckdb-wasm-packages-loadable
                   path: duckdb-wasm-packages.zip
@@ -1117,7 +1117,7 @@ jobs:
                 ./duckdb -c "COPY (FROM read_json_auto('../reports/*.json', union_by_name=1)) TO 'benchmarks.csv'"
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_various
                   path: |
@@ -1134,7 +1134,7 @@ jobs:
                       ./target/release/dataprep merge-benchmarks -r ./reports/
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: reports_all
                   path: |
