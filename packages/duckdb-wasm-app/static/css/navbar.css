@@ -40,7 +40,7 @@
     }
      .submenu {
          display: grid;
-         grid-template-rows: repeat(5, 48px);
+         grid-template-rows: repeat(6, 48px);
          grid-template-columns: 100%;
     }
 }
