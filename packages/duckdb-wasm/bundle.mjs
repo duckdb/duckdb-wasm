@@ -132,6 +132,13 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     });
 
     console.log('[ ESBUILD ] duckdb-browser-blocking.cjs');
+    // Don't attempt to bundle NodeJS modules in the browser build.
+    execSync(
+        `sed -i.bak 's/require("child_process")/["child_process"].map(require)/g' ./src/bindings/duckdb-mvp.js && rm ./src/bindings/duckdb-mvp.js.bak`,
+    );
+    execSync(
+        `sed -i.bak 's/require("child_process")/["child_process"].map(require)/g' ./src/bindings/duckdb-eh.js && rm ./src/bindings/duckdb-eh.js.bak`,
+    );
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb-browser-blocking.ts'],
         outfile: 'dist/duckdb-browser-blocking.cjs',
