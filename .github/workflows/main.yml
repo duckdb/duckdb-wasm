@@ -1030,10 +1030,10 @@ jobs:
             #                  script: |-
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
 
-            #- name: Test @duckdb/duckdb-wasm on Node.js
-            #  shell: bash
-            #  run: |
-            #          yarn workspace @duckdb/duckdb-wasm test:node || treu
+            - name: Test @duckdb/duckdb-wasm on Node.js
+              shell: bash
+              run: |
+                      yarn workspace @duckdb/duckdb-wasm test:node
 
             #- name: Coverage @duckdb/duckdb-wasm
             #  shell: bash
