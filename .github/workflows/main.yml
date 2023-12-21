@@ -739,15 +739,6 @@ jobs:
                   name: duckdb-wasm-packages
                   path: duckdb-wasm-packages.zip
 
-            - name: Publish to NPM
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
-              if: env.NODE_AUTH_TOKEN != null && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
-              run: |
-                  ./scripts/npm_publish_lib.sh
-                  ./scripts/npm_publish_shell.sh
-                  ./scripts/npm_publish_react.sh
-
             - name: Build @duckdb/benchmarks
               shell: bash
               run: |
@@ -1049,13 +1040,6 @@ jobs:
             #  run: |
             #           CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
 
-            - name: Deploy GitHub Page
-              if: github.ref == 'refs/heads/main'
-              run: |
-                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-                  git fetch origin gh-pages
-                  ./scripts/deploy_pages.sh
-
             - name: Package
               shell: bash
               run: zip -r duckdb-wasm-packages.zip ./packages
@@ -1064,6 +1048,22 @@ jobs:
               with:
                   name: duckdb-wasm-packages-loadable
                   path: duckdb-wasm-packages.zip
+
+            - name: Publish to NPM
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+              if: env.NODE_AUTH_TOKEN != null && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
+              run: |
+                  ./scripts/npm_publish_lib.sh
+                  ./scripts/npm_publish_shell.sh
+                  ./scripts/npm_publish_react.sh
+
+            - name: Deploy GitHub Page
+              if: github.ref == 'refs/heads/main'
+              run: |
+                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+                  git fetch origin gh-pages
+                  ./scripts/deploy_pages.sh
 
     merge_reports:
         name: Merge benchmark reports
