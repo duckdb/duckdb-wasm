@@ -31,4 +31,4 @@ lib/.idea
 
 check_duckdb
 wasm_setup
-loadable_extensions/*.wasm
+loadable_extensions
