@@ -99,6 +99,13 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-eh.wasm'), path.resolve(dist, 
 fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist, 'duckdb-coi.wasm'), printErr);
 
 (async () => {
+    // Don't attempt to bundle NodeJS modules in the browser build.
+    console.log('[ ESBUILD ] Patch bindings');
+    patchFile('./src/bindings/duckdb-mvp.js', 'child_process');
+    patchFile('./src/bindings/duckdb-eh.js', 'child_process');
+    patchFile('./src/bindings/duckdb-coi.js', 'child_process');
+    patchFile('./src/bindings/duckdb-coi.pthread.js', 'vm');
+
     // -------------------------------
     // Browser bundles
 
@@ -132,13 +139,6 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     });
 
     console.log('[ ESBUILD ] duckdb-browser-blocking.cjs');
-    // Don't attempt to bundle NodeJS modules in the browser build.
-    execSync(
-        `sed -i.bak 's/require("child_process")/["child_process"].map(require)/g' ./src/bindings/duckdb-mvp.js && rm ./src/bindings/duckdb-mvp.js.bak`,
-    );
-    execSync(
-        `sed -i.bak 's/require("child_process")/["child_process"].map(require)/g' ./src/bindings/duckdb-eh.js && rm ./src/bindings/duckdb-eh.js.bak`,
-    );
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb-browser-blocking.ts'],
         outfile: 'dist/duckdb-browser-blocking.cjs',
@@ -203,10 +203,6 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     });
 
     console.log('[ ESBUILD ] duckdb-browser-coi.worker.js');
-    // Don't attempt to bundle NodeJS modules in the browser build.
-    execSync(
-        `sed -i.bak 's/require("vm")/["vm"].map(require)/g' ./src/bindings/duckdb-coi.pthread.js && rm ./src/bindings/duckdb-coi.pthread.js.bak`,
-    );
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb-browser-coi.worker.ts'],
         outfile: 'dist/duckdb-browser-coi.worker.js',
@@ -361,3 +357,9 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         console.log(`Patched ${file}`);
     }
 })();
+
+function patchFile(fileName, moduleName) {
+    // Patch file to make sure ESBuild doesn't statically analyse and attempt to load "moduleName"
+    const sedCommand = `s/require("${moduleName}")/["${moduleName}"].map(require)/g`;
+    execSync(`sed -i.bak '${sedCommand}' ${fileName} && rm ${fileName}.bak`);
+}
