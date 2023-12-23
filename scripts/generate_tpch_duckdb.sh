@@ -26,6 +26,8 @@ mkdir -p ${TPCH_SF_OUT_DUCKDB}
 
 cat << END >${DUCKDB_SCRIPT_FILE}
 .open ${TPCH_SF_OUT_DUCKDB_DB}
+install tpch;
+load tpch;
 call dbgen(sf = ${SCALE_FACTOR});
 checkpoint;
 .databases
