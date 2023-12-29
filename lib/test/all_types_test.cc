@@ -10,6 +10,7 @@
 #include "arrow/array/builder_dict.h"
 #include "arrow/array/builder_nested.h"
 #include "arrow/array/builder_primitive.h"
+#include "arrow/array/builder_union.h"
 #include "arrow/buffer.h"
 #include "arrow/io/memory.h"
 #include "arrow/ipc/reader.h"
@@ -178,6 +179,28 @@ shared_ptr<arrow::Array> GetExpectedMapArray() {
     return map_array_builder->Finish().ValueOrDie();
 }
 
+shared_ptr<arrow::Array> GetExpectedUnionArray() {
+    auto union_builder = std::make_shared<arrow::SparseUnionBuilder>(arrow::default_memory_pool());
+
+    auto str_builder = std::make_shared<arrow::StringBuilder>();
+    union_builder->AppendChild(str_builder, "name");
+
+    auto i16_builder = std::make_shared<arrow::Int16Builder>();
+    union_builder->AppendChild(i16_builder, "age");
+    
+    (void)union_builder->Append(0);
+    (void)str_builder->Append("Frank"s);
+    (void)i16_builder->AppendNull();
+
+    (void)union_builder->Append(1);
+    (void)str_builder->AppendNull();
+    (void)i16_builder->Append(5);
+
+    (void)union_builder->AppendNull();
+
+    return union_builder->Finish().ValueOrDie();
+}
+
 vector<string> SUPPORTED_TYPES = {"bool",
                                   "tinyint",
                                   "smallint",
@@ -209,7 +232,8 @@ vector<string> SUPPORTED_TYPES = {"bool",
                                   "dec_18_6",
                                   "dec38_10",
                                   "blob",
-                                  "bit"};
+                                  "bit",
+                                  "union"};
 
 vector<string> UNSUPPORTED_TYPES = {
     // Does not work full range as it overflows during multiplication
@@ -334,5 +358,6 @@ TEST(AllTypesTest, FullRangeTypes) {
     AssertArraysMatch(batch->GetColumnByName("struct_of_arrays"), GetExpectedStructOfArrayArray());
     AssertArraysMatch(batch->GetColumnByName("array_of_structs"), GetExpectedArrayOfStructsArray());
     AssertArraysMatch(batch->GetColumnByName("map"), GetExpectedMapArray());
+    AssertArraysMatch(batch->GetColumnByName("union"), GetExpectedUnionArray());
 }
 }  // namespace
