@@ -187,7 +187,7 @@ shared_ptr<arrow::Array> GetExpectedUnionArray() {
 
     auto i16_builder = std::make_shared<arrow::Int16Builder>();
     union_builder->AppendChild(i16_builder, "age");
-    
+
     (void)union_builder->Append(0);
     (void)str_builder->Append("Frank"s);
     (void)i16_builder->AppendNull();
