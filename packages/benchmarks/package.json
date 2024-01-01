@@ -7,7 +7,7 @@
         "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
         "apache-arrow": "^14.0.1",
         "apache-arrow-3": "npm:apache-arrow@^3.0.0",
-        "arquero": "^5.3.0",
+        "arquero": "^5.4.0",
         "buffalo-bench": "^2.0.0",
         "kleur": "^4.1.5",
         "lodash": "^4.17.21",
