@@ -1615,10 +1615,10 @@ anymatch@~3.1.2:
     text-encoding-utf-8 "^1.0.2"
     tslib "^1.12.0"
 
-apache-arrow@^14.0.1:
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/apache-arrow/-/apache-arrow-14.0.1.tgz#34fb09139b61e5cbb4cc8a3630c74774d660ec1b"
-  integrity sha512-UTpL70GJLu4L8lXPF8NH2XaGgm1/xTZGIljqmz0Yr4D4G4soO6Xa+WWWw0oqCmyr99UBmHC0sqSboPKBrpsVjA==
+apache-arrow@^14.0.1, apache-arrow@^14.0.2:
+  version "14.0.2"
+  resolved "https://registry.yarnpkg.com/apache-arrow/-/apache-arrow-14.0.2.tgz#737f7b8211ef99a2c137dcc9d2001b469efb0344"
+  integrity sha512-EBO2xJN36/XoY81nhLcwCJgFwkboDZeyNQ+OPsG7bCoQjc2BT0aTyH/MR6SrL+LirSNz+cYqjGRlupMMlP1aEg==
   dependencies:
     "@types/command-line-args" "5.2.0"
     "@types/command-line-usage" "5.0.2"
@@ -1673,13 +1673,13 @@ argv-tools@^0.1.1:
     array-back "^2.0.0"
     find-replace "^2.0.1"
 
-arquero@^5.3.0:
-  version "5.3.0"
-  resolved "https://registry.yarnpkg.com/arquero/-/arquero-5.3.0.tgz#8eebbc5b477e98809525a60edfb73a655bb8a4a7"
-  integrity sha512-yAQPTr5HskwsHlLTxht48lbW15QD2ynH6g6hYNHDyr18/Z7bO7ZVGkrCWAmUR5pk47AGBK+msXQDgpWoyJy1pg==
+arquero@^5.4.0:
+  version "5.4.0"
+  resolved "https://registry.yarnpkg.com/arquero/-/arquero-5.4.0.tgz#7c529f448c5642f1581f53f0f95d5815d5692c44"
+  integrity sha512-YiSueQY3md2/kOgltFeuqjxxASrhGjxUYXZsCWqKbfj70QiN1iuOL/lMfH6M5ZKIyiQCyGlm2NYpvf8t8DmVDg==
   dependencies:
     acorn "^8.11.2"
-    apache-arrow "^14.0.1"
+    apache-arrow "^14.0.2"
     node-fetch "^2.6.7"
 
 array-back@^2.0.0:
