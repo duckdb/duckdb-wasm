@@ -71,7 +71,7 @@
         "webpack-bundle-analyzer": "^4.10.1",
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^4.15.1",
-        "webpackbar": "^5.0.2"
+        "webpackbar": "^6.0.0"
     },
     "type": "module"
 }
