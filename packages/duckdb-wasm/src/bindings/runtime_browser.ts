@@ -397,6 +397,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     }
                 }
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
+            } else {
+                for (const [filePath] of BROWSER_RUNTIME._files!.entries() || []) {
+                    if (filePath.startsWith(path)) {
+                        mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [filePath]);
+                    }
+                }
             }
         } catch (e: any) {
             console.log(e);
