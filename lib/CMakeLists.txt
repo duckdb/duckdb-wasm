@@ -99,8 +99,14 @@ if(EMSCRIPTEN)
       set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Oz")
     else()
       # ... with max performance
-      set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-      set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
+      if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
+        # Emscripten prunes symbols too agressively symbols in O3...
+        set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+        set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O2")
+      else()
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+        set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -O3")
+      endif()
     endif()
   # Release build with debug symbols
   elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -158,9 +164,67 @@ else()
 endif()
 
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s  -s EXPORT_ALL=1 -s FILESYSTEM=1 -s ENVIRONMENT='web,node,worker' -s ALLOW_TABLE_GROWTH -lembind")
+  set(DEFAULT_LIBRARY_FUNCS_TO_INCLUDE
+    "_emval_take_value,_embind_register_function,_embind_register_bindings,emscripten_log,getTempRet0"
+  )
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} \
+    -sMAIN_MODULE=2 \
+    -sFILESYSTEM=1 \
+    -sEXPORTED_FUNCTIONS='@${CMAKE_SOURCE_DIR}/cmake/exported_functions' \
+    -sENVIRONMENT='web,node,worker' \
+    -sALLOW_TABLE_GROWTH \
+    -sINCLUDE_FULL_LIBRARY=1 \
+    -lembind \
+    -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=${DEFAULT_LIBRARY_FUNCS_TO_INCLUDE}")
 else()
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker'")
+  # We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our own imports.
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} \
+    -s FILESYSTEM=0 \
+    -s WARN_ON_UNDEFINED_SYMBOLS=0 \
+    -s ENVIRONMENT='web,node,worker' \
+    -s EXPORTED_FUNCTIONS='[ \
+        _main, \
+        _malloc, \
+        _free, \
+        _duckdb_web_clear_response, \
+        _duckdb_web_collect_file_stats, \
+        _duckdb_web_connect, \
+        _duckdb_web_copy_file_to_buffer, \
+        _duckdb_web_copy_file_to_path, \
+        _duckdb_web_disconnect, \
+        _duckdb_web_export_file_stats, \
+        _duckdb_web_fail_with, \
+        _duckdb_web_flush_file, \
+        _duckdb_web_flush_files, \
+        _duckdb_web_fs_drop_file, \
+        _duckdb_web_fs_drop_files, \
+        _duckdb_web_fs_get_file_info_by_id, \
+        _duckdb_web_fs_get_file_info_by_name, \
+        _duckdb_web_fs_glob_add_path, \
+        _duckdb_web_fs_glob_file_infos, \
+        _duckdb_web_fs_register_file_buffer, \
+        _duckdb_web_fs_register_file_url, \
+        _duckdb_web_get_feature_flags, \
+        _duckdb_web_get_global_file_info, \
+        _duckdb_web_get_tablenames, \
+        _duckdb_web_get_version, \
+        _duckdb_web_insert_arrow_from_ipc_stream, \
+        _duckdb_web_insert_csv_from_path, \
+        _duckdb_web_insert_json_from_path, \
+        _duckdb_web_open, \
+        _duckdb_web_pending_query_cancel, \
+        _duckdb_web_pending_query_poll, \
+        _duckdb_web_pending_query_start, \
+        _duckdb_web_prepared_close, \
+        _duckdb_web_prepared_create, \
+        _duckdb_web_prepared_run, \
+        _duckdb_web_prepared_send, \
+        _duckdb_web_query_fetch_results, \
+        _duckdb_web_query_run, \
+        _duckdb_web_reset, \
+        _duckdb_web_tokenize, \
+        _duckdb_web_udf_scalar_create \
+    ]'")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -285,8 +349,6 @@ target_link_libraries(duckdb_web_json duckdb duckdb_json)
 # ---------------------------------------------------------------------------
 # Emscripten
 
-# We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our
-# own imports.
 if(EMSCRIPTEN)
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
   target_link_libraries(duckdb_wasm duckdb_web ${THREAD_LIBS})
@@ -297,55 +359,11 @@ if(EMSCRIPTEN)
       LINK_FLAGS
       "${WASM_LINK_FLAGS} \
       -s ALLOW_BLOCKING_ON_MAIN_THREAD=1 \
-      -s WARN_ON_UNDEFINED_SYMBOLS=0 \
       -s ALLOW_MEMORY_GROWTH=1 \
       -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
       -s EXPORT_NAME='DuckDB' \
-      -s EXPORTED_FUNCTIONS='[ \
-          _main, \
-          _malloc, \
-          _free, \
-          _duckdb_web_clear_response, \
-          _duckdb_web_collect_file_stats, \
-          _duckdb_web_connect, \
-          _duckdb_web_copy_file_to_buffer, \
-          _duckdb_web_copy_file_to_path, \
-          _duckdb_web_disconnect, \
-          _duckdb_web_export_file_stats, \
-          _duckdb_web_fail_with, \
-          _duckdb_web_flush_file, \
-          _duckdb_web_flush_files, \
-          _duckdb_web_fs_drop_file, \
-          _duckdb_web_fs_drop_files, \
-          _duckdb_web_fs_get_file_info_by_id, \
-          _duckdb_web_fs_get_file_info_by_name, \
-          _duckdb_web_fs_glob_add_path, \
-          _duckdb_web_fs_glob_file_infos, \
-          _duckdb_web_fs_register_file_buffer, \
-          _duckdb_web_fs_register_file_url, \
-          _duckdb_web_get_feature_flags, \
-          _duckdb_web_get_global_file_info, \
-          _duckdb_web_get_tablenames, \
-          _duckdb_web_get_version, \
-          _duckdb_web_insert_arrow_from_ipc_stream, \
-          _duckdb_web_insert_csv_from_path, \
-          _duckdb_web_insert_json_from_path, \
-          _duckdb_web_open, \
-          _duckdb_web_pending_query_cancel, \
-          _duckdb_web_pending_query_poll, \
-          _duckdb_web_pending_query_start, \
-          _duckdb_web_prepared_close, \
-          _duckdb_web_prepared_create, \
-          _duckdb_web_prepared_run, \
-          _duckdb_web_prepared_send, \
-          _duckdb_web_query_fetch_results, \
-          _duckdb_web_query_run, \
-          _duckdb_web_reset, \
-          _duckdb_web_tokenize, \
-          _duckdb_web_udf_scalar_create \
-      ]' \
-      -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"stackSave\", \"stackAlloc\", \"stackRestore\"]' \
+      -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"stackSave\", \"stackAlloc\", \"stackRestore\", \"getTempRet0\"]' \
       --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")
 
 endif()
