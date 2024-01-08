@@ -25,8 +25,12 @@ export const DuckDBPlatform: React.FC<PlatformProps> = (props: PlatformProps) =>
         if (inFlight.current) return await inFlight.current;
         inFlight.current = (async () => {
             try {
+                const params = new URLSearchParams(window.location.search);
+                const bundleName = params.get('bundle') as keyof duckdb.DuckDBBundles | null;
                 setBundle(b => b.updateRunning());
-                const next = await duckdb.selectBundle(props.bundles);
+
+                const bundle = bundleName !== null ? props.bundles[bundleName] : null;
+                const next = (bundle || (await duckdb.selectBundle(props.bundles))) as duckdb.DuckDBBundle;
                 inFlight.current = null;
                 setBundle(b => b.completeWith(next));
                 return next;
