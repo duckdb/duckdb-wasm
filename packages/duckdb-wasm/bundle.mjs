@@ -360,6 +360,11 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
 
 function patchFile(fileName, moduleName) {
     // Patch file to make sure ESBuild doesn't statically analyse and attempt to load "moduleName"
-    const sedCommand = `s/require("${moduleName}")/["${moduleName}"].map(require)/g`;
+    // We replace both single and double-quoted module names. The character capture list complexity
+    // is due to the single quote:
+    // - the sed expression is executed within single quotes
+    // - we have to terminate the quotes
+    // - we have to escape the middle quote
+    const sedCommand = `s/require(["'\\'']${moduleName}["'\\''])/["${moduleName}"].map(require)/g`;
     execSync(`sed -i.bak '${sedCommand}' ${fileName} && rm ${fileName}.bak`);
 }
