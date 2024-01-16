@@ -213,7 +213,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb-browser-coi.pthread.worker.ts'],
         outfile: 'dist/duckdb-browser-coi.pthread.worker.js',
-        platform: 'browser',
+        platform: 'node',
         format: 'iife',
         target: TARGET_BROWSER,
         bundle: true,
