@@ -65,6 +65,10 @@ emmake make \
     -j${CORES} \
     duckdb_wasm
 
+npm install -g js-beautify
+js-beautify ${BUILD_DIR}/duckdb_wasm.js > ${BUILD_DIR}/beauty.js
+awk '!(/var .*wasmExports\[/) || /var _duckdb_web/ || /var _main/ || /var _malloc/ || /var _free/ || /stack/' ${BUILD_DIR}/beauty.js > ${BUILD_DIR}/duckdb_wasm.js
+
 cp ${BUILD_DIR}/duckdb_wasm.wasm ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.wasm
 sed \
   -e "s/duckdb_wasm\.wasm/.\/duckdb${SUFFIX}.wasm/g" \
