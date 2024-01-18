@@ -7,7 +7,6 @@ RUN apt-get update -qq \
         bison flex \
         brotli rsync \
         libpthread-stubs0-dev \
-        libboost-all-dev \
         chromium-browser \
         wget gnupg ca-certificates procps libxss1 \
         zip sqlite3 \
@@ -74,7 +73,6 @@ RUN source /opt/emsdk/emsdk_env.sh \
     && echo "export EM_CONFIG=/opt/emsdk/.emscripten" >> /opt/env.sh \
     && echo "export CARGO_HOME=/opt/rust" >> /opt/env.sh \
     && echo "export RUSTUP_HOME=/opt/rust" >> /opt/env.sh \
-    && echo "export BOOST_ARCHIVE=/opt/boost.tar.gz" >> /opt/env.sh \
     && echo "source /opt/nvm/nvm.sh" >> /opt/env.sh \
     && cat /opt/env.sh \
     && printf '#!/bin/bash\nsource /opt/env.sh\nexec env "$@"\n' > /opt/entrypoint.sh \
