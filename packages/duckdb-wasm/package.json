@@ -53,7 +53,7 @@
         "puppeteer": "^21.7.0",
         "rimraf": "^5.0.5",
         "s3rver": "^3.7.1",
-        "typedoc": "^0.25.4",
+        "typedoc": "^0.25.7",
         "typescript": "^5.3.3",
         "wasm-feature-detect": "^1.6.1",
         "web-worker": "^1.2.0"
