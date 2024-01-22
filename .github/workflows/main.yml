@@ -38,7 +38,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Cache node_modules
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./node_modules
@@ -82,7 +82,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Cache generator
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               id: cache-generator
               with:
                   path: ./submodules/tpch-dbgen/dbgen/dbgen
@@ -112,7 +112,7 @@ jobs:
                   submodules: 'recursive'
 
             - name: Cache rust build
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./.cargo/bin/
@@ -150,7 +150,7 @@ jobs:
                   git submodule status ./submodules/duckdb > git_submodule_status.txt
 
             - name: Cache ccache
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./.ccache
@@ -200,7 +200,7 @@ jobs:
                   git submodule status > git_submodule_status.txt
 
             - name: Cache native build
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./.cargo/bin/
@@ -296,7 +296,7 @@ jobs:
                   git submodule status > git_submodule_status.txt
 
             - name: Cache native build
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./.cargo/bin/
@@ -606,7 +606,7 @@ jobs:
                   git submodule status > git_submodule_status.txt
 
             - name: Cache rust build
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./.cargo/bin/
@@ -619,7 +619,7 @@ jobs:
                       ${{ runner.os }}-shell-
 
             - name: Cache node_modules
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./node_modules
@@ -926,7 +926,7 @@ jobs:
                   git submodule status > git_submodule_status.txt
 
             - name: Cache rust build
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./.cargo/bin/
@@ -939,7 +939,7 @@ jobs:
                       ${{ runner.os }}-shell-
 
             - name: Cache node_modules
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ./node_modules
