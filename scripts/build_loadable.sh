@@ -16,5 +16,5 @@ for ext_path in $(find "${INPUT_PATH}" -name '*.duckdb_extension')
 do
         ext_name=$(basename "$ext_path" .duckdb_extension)
         echo "Building '$ext_name'..."
-        emcc "$ext_path" -sSIDE_MODULE=1 -o "${OUTPUT_PATH}/$ext_name.duckdb_extension.wasm" -O3
+        emcc "$ext_path" -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS="_""$ext_name""_init,_""$ext_name""_version" -o "${OUTPUT_PATH}/$ext_name.duckdb_extension.wasm" -O3
 done
