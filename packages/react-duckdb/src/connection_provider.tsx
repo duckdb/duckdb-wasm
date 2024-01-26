@@ -2,7 +2,6 @@ import React from 'react';
 import * as imm from 'immutable';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { useDuckDB, useDuckDBResolver } from './database_provider';
-import { ResolvableStatus } from './resolvable';
 
 type DialerFn = (id?: number) => void;
 

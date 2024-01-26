@@ -1,7 +1,7 @@
 import React, { ReactElement } from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { useDuckDBLogger, useDuckDBBundle, useDuckDBBundleResolver } from './platform_provider';
-import { Resolvable, Resolver, ResolvableStatus } from './resolvable';
+import { useDuckDBLogger, useDuckDBBundleResolver } from './platform_provider';
+import { Resolvable, Resolver } from './resolvable';
 
 const setupCtx = React.createContext<Resolvable<duckdb.AsyncDuckDB, duckdb.InstantiationProgress> | null>(null);
 const resolverCtx = React.createContext<Resolver<duckdb.AsyncDuckDB> | null>(null);

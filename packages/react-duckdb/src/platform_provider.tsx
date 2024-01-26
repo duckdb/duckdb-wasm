@@ -1,6 +1,6 @@
 import React from 'react';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { Resolvable, Resolver, ResolvableStatus } from './resolvable';
+import { Resolvable, Resolver } from './resolvable';
 
 type PlatformProps = {
     children: React.ReactElement | React.ReactElement[];
