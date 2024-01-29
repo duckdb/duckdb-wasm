@@ -6963,10 +6963,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-sql.js@^1.9.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/sql.js/-/sql.js-1.9.0.tgz#f78e9b08cd42d6d29dbd842b8733d6c0be52f57a"
-  integrity sha512-+QMN8NU5KJxofT+lEaSLYdhh+Pdq7ZYS6X5bSbpmD+4SKFf+qBmr+coKT07LZ+keUNh1sf3Nz9dQwD8WNI2i/Q==
+sql.js@^1.10.2:
+  version "1.10.2"
+  resolved "https://registry.yarnpkg.com/sql.js/-/sql.js-1.10.2.tgz#3d0b5ddfecb37c1ea0ff9ae1250ca06af0e20e92"
+  integrity sha512-jnKFtdHxuVUNgu1vHwFoTjjwfTuVDVqzGpw7H05Zq3YMNMDOpLFyFGvpgTRIQGd/mqcYntuMy7iygYCytD62jQ==
 
 stack-trace@0.0.x:
   version "0.0.10"
