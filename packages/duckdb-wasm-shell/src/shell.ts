@@ -62,7 +62,7 @@ class ShellRuntime {
 		window.location.hash = "savequeries&" + this.hash;
         const a = document.getElementById("hashencoded");
 	if (a && a instanceof HTMLAnchorElement)
-		a.href= "/#" + this.hash;
+		a.href= window.location.pathname + "/#" + this.hash;
         this.history.push(value);
     }
 }
