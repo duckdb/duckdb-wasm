@@ -7,4 +7,4 @@ mkdir -p ./dist/img
 cp ${PROJECT_ROOT}/misc/duckdb_wasm.svg ./dist/img/duckdb_wasm.svg
 ${PROJECT_ROOT}/scripts/build_duckdb_badge.sh > ./dist/img/duckdb_version_badge.svg
 
-npm publish --ignore-scripts --access public ${TAG}
+npm publish --ignore-scripts --access public --tag ${TAG}

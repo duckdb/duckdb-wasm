@@ -6,7 +6,6 @@ PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 git describe --tags --long  
 export VERSION=`git describe --tags --abbrev=0 | tr -d "v"`
 export DEV=`git describe --tags --long | cut -f2 -d-`
-export TAG=''	
 echo "VERSION=${VERSION}"
 echo "DEV=${DEV}"
 
