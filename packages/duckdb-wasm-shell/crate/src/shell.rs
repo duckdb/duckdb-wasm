@@ -184,17 +184,23 @@ impl Shell {
             s.focus();
         });
 
-        for entry in &(*past_queries().lock().unwrap()) {
-            Shell::with_mut(|s| {
-                s.write(&format!(
-                    "{bold}{green}",
-                    bold = vt100::MODE_BOLD,
-                    green = vt100::COLOR_FG_BRIGHT_YELLOW
-                ));
-                s.write(entry);
-                s.write(&format!("{normal}", normal = vt100::MODES_OFF));
-            });
-            Self::on_sql(entry.to_string()).await;
+	let q = past_queries().lock().unwrap();
+
+        for entry in &(*q) {
+		let entry_str = entry.to_string();
+
+		Shell::with_mut(|s| {
+			s.input
+			.insert_text(&entry_str);
+			s.input.flush(&s.terminal);
+			});
+		Shell::highlight_input_async().await;
+
+		let input = Shell::with_mut(|s| {
+			s.input_clock += 1;
+			s.input.collect()
+		});
+		Shell::on_sql(entry_str).await;
         }
 
         Ok(())
@@ -882,6 +888,28 @@ impl Shell {
             });
         });
     }
+
+    /// Highlight input text (if sql)
+    async fn highlight_input_async() {
+        let (input, input_clock) = Shell::with_mut(|s| (s.input.collect(), s.input_clock));
+        if input.trim_start().starts_with('.') {
+            return;
+        }
+        let db_ptr = Shell::with(|s| s.db.clone()).unwrap();
+            let db = match db_ptr.read() {
+                Ok(guard) => guard,
+                Err(_) => return,
+            };
+            let tokens = match db.tokenize(&input).await {
+                Ok(t) => t,
+                Err(_) => return,
+            };
+            Shell::with_mut(|s| {
+                s.input.highlight_sql(tokens);
+                s.flush();
+            });
+    }
+
 
     /// Process on-key event
     fn on_key(keyboard_event: web_sys::KeyboardEvent) {
