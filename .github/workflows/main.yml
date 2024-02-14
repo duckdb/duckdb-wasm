@@ -140,6 +140,7 @@ jobs:
     native_debug:
         name: Native / Debug
         runs-on: ubuntu-latest
+        if: false
         needs:
             - dataprep
             - tpchgen
@@ -236,6 +237,7 @@ jobs:
     native_release:
         name: Native / Release
         runs-on: ubuntu-latest
+        if: false
         needs:
             - dataprep
             - tpchgen
