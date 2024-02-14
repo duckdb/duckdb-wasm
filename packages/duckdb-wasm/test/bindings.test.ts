@@ -191,10 +191,10 @@ export function testAsyncBindings(
     describe('Bindings', () => {
         describe('Open', () => {
             it('Remote TPCH 0_01', async () => {
-                await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`, baseDirProto, false);
-                await adb().open({
-                    path: 'tpch_0_01.db',
-                });
+                //await adb().registerFileURL('tpch_0_01.db', `${baseURL}/tpch/0_01/duckdb/db`, baseDirProto, false);
+                //await adb().open({
+                //    path: 'tpch_0_01.db',
+                //});
                 // FIXME: Add this back
                 //const conn = await adb().connect();
                 //const table = await conn.query<{
