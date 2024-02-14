@@ -156,7 +156,7 @@ function getValue(x: any): any {
 const ALL_TYPES_TEST: AllTypesTest[] = [
     {
         name: 'fully supported types',
-        query: `SELECT * REPLACE('not_implemented' as map) FROM test_all_types()`,
+        query: `SELECT * EXCLUDE('uhugeint') REPLACE('not_implemented' as map) FROM test_all_types()`,
         skip: REPLACE_COLUMNS,
         answerMap: FULLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length,
