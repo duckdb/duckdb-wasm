@@ -13,29 +13,20 @@ duckdb_extension_load(icu DONT_LINK)
 duckdb_extension_load(sqlsmith DONT_LINK)
 duckdb_extension_load(tpcds DONT_LINK)
 duckdb_extension_load(tpch DONT_LINK)
-duckdb_extension_load(visualizer DONT_LINK)
 
 #duckdb_extension_load(httpfs DONT_LINK)
 
-################# SQLITE_SCANNER
-# Static linking on windows does not properly work due to symbol collision
-if (WIN32)
-    set(STATIC_LINK_SQLITE "DONT_LINK")
-else ()
-    set(STATIC_LINK_SQLITE "")
-endif()
-
 duckdb_extension_load(sqlite_scanner
-        ${STATIC_LINK_SQLITE} LOAD_TESTS
-        GIT_URL https://github.com/duckdblabs/sqlite_scanner
-        GIT_TAG 3443b2999ae1e68a108568fd32145705237a5760
+        DONT_LINK LOAD_TESTS
+        GIT_URL https://github.com/duckdb/sqlite_scanner
+        GIT_TAG 078cd16fbd9a4ff96a71c6f5aafc27343e087cbb
         )
 
-################# SUBSTRAIT
+################ SUBSTRAIT
 if (NOT WIN32)
     duckdb_extension_load(substrait
             LOAD_TESTS DONT_LINK
-            GIT_URL https://github.com/duckdblabs/substrait
-            GIT_TAG 5d621b1d7d16fe86f8b1930870c8e6bf05bcb92a
+            GIT_URL https://github.com/duckdb/substrait
+            GIT_TAG e75ba6a9a43d75d8c72ecc38e6f751fd8e3474a0
             )
 endif()
