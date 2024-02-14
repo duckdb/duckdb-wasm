@@ -137,42 +137,6 @@ jobs:
                       ./target/release/dataprep
                   retention-days: 1
 
-    duckdb_shell:
-        name: DuckDB Shell
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  submodules: 'recursive'
-
-            - name: Git submodule status
-              run: |
-                  git submodule status ./submodules/duckdb > git_submodule_status.txt
-
-            - name: Cache ccache
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      ./.ccache
-                  key: ${{ runner.os }}-duckdb-${{ hashFiles('git_submodule_status.txt') }}
-                  restore-keys: |
-                      ${{ runner.os }}-duckdb-
-
-            - name: Build DuckDB shell
-              uses: duckdb/duckdb-wasm-ci-env@ae43fa250a6b6ba92fe3d825c6c34b6d68a258a0
-              with:
-                  script: |-
-                      ccache -z
-                      ./scripts/build_duckdb_shell.sh
-                      ccache -s
-
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: duckdb-shell
-                  path: ./submodules/duckdb/build/Release/duckdb
-                  retention-days: 1
-
     native_debug:
         name: Native / Debug
         runs-on: ubuntu-latest
@@ -587,7 +551,6 @@ jobs:
             - wasm_mvp
             - wasm_eh
             - wasm_coi
-            - duckdb_shell
             - clang_format
             - eslint
         steps:
@@ -639,11 +602,6 @@ jobs:
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
-
-            - uses: actions/download-artifact@v4
-              with:
-                  name: duckdb-shell
-                  path: ./submodules/duckdb/build/Release/
 
             - uses: actions/download-artifact@v4
               with:
@@ -907,7 +865,6 @@ jobs:
             - wasm_mvp_loadable
             - wasm_eh_loadable
             - wasm_coi
-            - duckdb_shell
             - clang_format
             - eslint
         steps:
@@ -959,11 +916,6 @@ jobs:
               with:
                   name: tpch-dbgen
                   path: ./submodules/tpch-dbgen/dbgen/
-
-            - uses: actions/download-artifact@v4
-              with:
-                  name: duckdb-shell
-                  path: ./submodules/duckdb/build/Release/
 
             - uses: actions/download-artifact@v4
               with:
