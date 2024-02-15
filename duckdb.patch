@@ -12,7 +12,7 @@ index 418a298db3..e7943a95e5 100644
  	string default_endpoint = "http://extensions.duckdb.org";
  	versioned_path = versioned_path + ".gz";
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index a001f2b997..9f663e9ed2 100644
+index a001f2b997..f72db6b5f0 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -110,6 +110,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -23,7 +23,7 @@ index a001f2b997..9f663e9ed2 100644
  	if (!fs.FileExists(filename)) {
  		string message;
  		bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
-@@ -119,6 +120,180 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -119,6 +120,181 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  		error = StringUtil::Format("Extension \"%s\" not found.\n%s", filename, message);
  		return false;
  	}
@@ -37,7 +37,8 @@ index a001f2b997..9f663e9ed2 100644
 +		    // TODO: move them out / have them configurable
 +
 +var url =(UTF8ToString($0));
-+    if (typeof XMLHttpRequest != 'function') {
++
++    if (typeof XMLHttpRequest === "undefined" ) {
 +        const os = require('os');
 +        const path = require('path');
 +        const fs = require('fs');
@@ -204,7 +205,7 @@ index a001f2b997..9f663e9ed2 100644
  	if (!config.options.allow_unsigned_extensions) {
  		auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
  
-@@ -179,8 +354,8 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -179,26 +355,9 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  			throw IOException(config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename));
  		}
  	}
@@ -212,12 +213,22 @@ index a001f2b997..9f663e9ed2 100644
  	auto filebase = fs.ExtractBaseName(filename);
 -
  #ifdef WASM_LOADABLE_EXTENSIONS
- 	EM_ASM(
- 	    {
-@@ -198,7 +373,6 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
- 		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
- 	    },
- 	    filename.c_str(), filebase.c_str());
+-	EM_ASM(
+-	    {
+-		    // Next few lines should argubly in separate JavaScript-land function call
+-		    // TODO: move them out / have them configurable
+-		    const xhr = new XMLHttpRequest();
+-		    xhr.open("GET", UTF8ToString($0), false);
+-		    xhr.responseType = "arraybuffer";
+-		    xhr.send(null);
+-		    var uInt8Array = xhr.response;
+-		    WebAssembly.validate(uInt8Array);
+-		    console.log('Loading extension ', UTF8ToString($1));
+-
+-		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
+-		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
+-	    },
+-	    filename.c_str(), filebase.c_str());
 -	auto dopen_from = filebase;
  #else
  	auto dopen_from = filename;
