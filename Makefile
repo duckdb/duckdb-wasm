@@ -411,9 +411,6 @@ examples: yarn_install
 # ---------------------------------------------------------------------------
 # Environment
 
-build/duckdb_shell:
-	${ROOT_DIR}/scripts/build_duckdb_shell.sh
-
 # Generate the compile commands for the language server
 .PHONY: compile_commands
 compile_commands:
