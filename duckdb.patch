@@ -37,7 +37,7 @@ index a001f2b997..9f663e9ed2 100644
 +		    // TODO: move them out / have them configurable
 +
 +var url =(UTF8ToString($0));
-+    if (typeof XMLHttpRequest === "undefined") {
++    if (typeof XMLHttpRequest != 'function') {
 +        const os = require('os');
 +        const path = require('path');
 +        const fs = require('fs');
