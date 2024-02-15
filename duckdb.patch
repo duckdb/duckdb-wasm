@@ -1,3 +1,16 @@
+diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
+index 418a298db3..e7943a95e5 100644
+--- a/src/main/extension/extension_install.cpp
++++ b/src/main/extension/extension_install.cpp
+@@ -171,7 +171,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DBConfig> db_con
+ 	string versioned_path = "/${REVISION}/${PLATFORM}/${NAME}.duckdb_extension";
+ #ifdef WASM_LOADABLE_EXTENSIONS
+ 	string default_endpoint = "https://extensions.duckdb.org";
+-	versioned_path = "/duckdb-wasm" + versioned_path + ".wasm";
++	versioned_path = versioned_path + ".wasm";
+ #else
+ 	string default_endpoint = "http://extensions.duckdb.org";
+ 	versioned_path = versioned_path + ".gz";
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
 index a001f2b997..9f663e9ed2 100644
 --- a/src/main/extension/extension_load.cpp
