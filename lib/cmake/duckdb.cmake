@@ -26,6 +26,7 @@ ExternalProject_Add(
   INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/duckdb/install"
   CMAKE_ARGS -G${CMAKE_GENERATOR}
              -DCMAKE_CXX_STANDARD=17
+             -DLOCAL_EXTENSION_REPO="../../build/extension_repository"
              -DCMAKE_CXX_FLAGS=${DUCKDB_CXX_FLAGS}
              -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
              -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
