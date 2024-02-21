@@ -79,6 +79,8 @@ struct WebDBConfig {
     std::optional<int8_t> access_mode = std::nullopt;
     /// The thread count
     uint32_t maximum_threads = 1;
+    /// The direct io flag
+    bool use_direct_io = false;
     /// The query config
     QueryConfig query = {
         .cast_bigint_to_double = std::nullopt,
