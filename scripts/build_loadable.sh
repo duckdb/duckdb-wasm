@@ -12,9 +12,9 @@ OUTPUT_PATH=loadable_extensions/${MODE}/${FEATURE}/
 mkdir -p "${OUTPUT_PATH}"
 shopt -s nullglob
 
-for ext_path in $(find "${INPUT_PATH}" -name '*.duckdb_extension')
+for ext_path in $(find "${INPUT_PATH}" -name '*.duckdb_extension.wasm.lib')
 do
-        ext_name=$(basename "$ext_path" .duckdb_extension)
+        ext_name=$(basename "$ext_path" .duckdb_extension.wasm.lib)
         echo "Building '$ext_name'..."
-        emcc "$ext_path" -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS="_""$ext_name""_init,_""$ext_name""_version" -o "${OUTPUT_PATH}/$ext_name.duckdb_extension.wasm" -O3
+        emcc "$ext_path" -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS="_""$ext_name""_init,_""$ext_name""_version" -o "${INPUT_PATH}/$ext_name.duckdb_extension.wasm" -O3 -sSHARED_MEMORY=1 -pthread
 done
