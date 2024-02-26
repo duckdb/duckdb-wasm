@@ -14,6 +14,7 @@ LIB_RELEASE_DIR="${ROOT_DIR}/build/Release"
 LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/build/RelWithDebInfo"
 LIB_XRAY_DIR="${ROOT_DIR}/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
+TARGET=eh
 
 DUCKDB_HASH=${shell cd submodules/duckdb && git reflog -n 1 | head -c 10}
 
@@ -361,13 +362,11 @@ app: wasm wasmpack shell docs js_tests_release
 
 build_loadable:
 	cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
-	DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
-	bash ./scripts/build_loadable.sh relsize eh
+	DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize ${TARGET}
 
 build_loadable_unsigned:
 	cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
-	DUCKDB_WASM_LOADABLE_EXTENSIONS="unsigned" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
-	bash ./scripts/build_loadable.sh relsize eh
+	DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS="unsigned" GEN=ninja ./scripts/wasm_build_lib.sh relsize ${TARGET}
 
 serve_loadable_base: wasmpack shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
