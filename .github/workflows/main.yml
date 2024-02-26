@@ -491,7 +491,6 @@ jobs:
               run: |
                   cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
                   DUCKDB_PLATFORM="wasm_mvp" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize mvp
-                  bash ./scripts/build_loadable.sh relsize mvp
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -535,7 +534,6 @@ jobs:
               run: |
                   cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
                   DUCKDB_PLATFORM="wasm_eh" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
-                  bash ./scripts/build_loadable.sh relsize eh
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -544,6 +542,50 @@ jobs:
                   path: |
                       ./packages/duckdb-wasm/src/bindings/duckdb-eh.js
                       ./packages/duckdb-wasm/src/bindings/duckdb-eh.wasm
+                  retention-days: 1
+
+    wasm_coi_loadable:
+        name: Wasm / coi (loadable version)
+        runs-on: ubuntu-latest
+        needs:
+            - dataprep
+            - tpchgen
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: 'recursive'
+                  fetch-depth: 0
+
+            - name: Prepare repository
+              run: |
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+
+            - uses: mymindstorm/setup-emsdk@v14
+              with:
+                  version: 'latest'
+
+            - name: Setup Ccache
+              uses: hendrikmuhs/ccache-action@main
+              with:
+                  key: ${{ github.job }}
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Build Wasm module
+              run: |
+                  cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
+                  DUCKDB_PLATFORM="wasm_threads" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize coi
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: wasm-coi-loadable
+                  path: |
+                      ./packages/duckdb-wasm/src/bindings/duckdb-coi.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-coi.pthread.js
+                      ./packages/duckdb-wasm/src/bindings/duckdb-coi.wasm
                   retention-days: 1
 
     js_libs:
@@ -866,7 +908,7 @@ jobs:
         needs:
             - wasm_mvp_loadable
             - wasm_eh_loadable
-            - wasm_coi
+            - wasm_coi_loadable
             - clang_format
             - eslint
         steps:
@@ -931,7 +973,7 @@ jobs:
 
             - uses: actions/download-artifact@v4
               with:
-                  name: wasm-coi
+                  name: wasm-coi-loadable
                   path: ./packages/duckdb-wasm/src/bindings/
 
             - name: Prepare repository
