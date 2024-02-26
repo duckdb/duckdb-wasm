@@ -1,3 +1,38 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ea74d55f86..db27a653b3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -83,6 +83,13 @@ if (EXTENSION_STATIC_BUILD AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+ endif()
+ 
+ option(DISABLE_UNITY "Disable unity builds." FALSE)
++option(USE_WASM_THREADS "Should threads be used" FALSE)
++if (${USE_WASM_THREADS})
++   set(WASM_THREAD_FLAGS
++       -pthread
++       -sSHARED_MEMORY=1
++   )
++endif()
+ 
+ option(FORCE_COLORED_OUTPUT
+        "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
+@@ -762,7 +769,6 @@ function(build_loadable_extension_directory NAME OUTPUT_DIRECTORY PARAMETERS)
+             ${TARGET_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE
+             "${CMAKE_BINARY_DIR}/${OUTPUT_DIRECTORY}")
+   endif()
+-
+   if(EMSCRIPTEN)
+     # Copy file.duckdb_extension.wasm to file.duckdb_extension.wasm.lib
+     add_custom_command(
+@@ -774,7 +780,7 @@ function(build_loadable_extension_directory NAME OUTPUT_DIRECTORY PARAMETERS)
+     add_custom_command(
+       TARGET ${TARGET_NAME}
+       POST_BUILD
+-      COMMAND emcc $<TARGET_FILE:${TARGET_NAME}>.lib -o $<TARGET_FILE:${TARGET_NAME}> -sSIDE_MODULE=1 -O3
++      COMMAND emcc $<TARGET_FILE:${TARGET_NAME}>.lib -o $<TARGET_FILE:${TARGET_NAME}> -O3 -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS="_${NAME}_init,_${NAME}_version" ${WASM_THREAD_FLAGS}
+       )
+   endif()
+ endfunction()
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
 index 418a298db3..e7943a95e5 100644
 --- a/src/main/extension/extension_install.cpp
@@ -12,7 +47,7 @@ index 418a298db3..e7943a95e5 100644
  	string default_endpoint = "http://extensions.duckdb.org";
  	versioned_path = versioned_path + ".gz";
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index a001f2b997..f72db6b5f0 100644
+index a001f2b997..c532db1b2d 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -110,6 +110,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
