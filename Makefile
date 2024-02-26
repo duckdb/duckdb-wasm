@@ -431,6 +431,7 @@ clean:
 	rm -rf build
 	cd packages/duckdb-wasm-shell && rm -rf node_modules
 	rm -rf packages/duckdb-wasm-app/build
+	rm -rf submodules/duckdb/build
 
 build/docker_ci_image:
 	command -v emcc &> /dev/null || docker compose build
