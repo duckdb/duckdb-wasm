@@ -19,6 +19,11 @@ set(DUCKDB_EXTENSIONS "fts;excel;json")
 # Escape semicolons in DUCKDB_EXTENSIONS before passing to ExternalProject_Add
 string(REPLACE ";" "$<SEMICOLON>" DUCKDB_EXTENSIONS_PACKED "${DUCKDB_EXTENSIONS}")
 
+set(USE_WASM_THREADS FALSE)
+if(DUCKDB_PLATFORM STREQUAL "wasm_threads")
+  set(USE_WASM_THREADS TRUE)
+endif()
+
 ExternalProject_Add(
   duckdb_ep
   SOURCE_DIR "${DUCKDB_CORE_DIR}"
@@ -39,6 +44,7 @@ ExternalProject_Add(
              -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
              -DDISABLE_BUILTIN_EXTENSIONS=TRUE
+             -DUSE_WASM_THREADS=${USE_WASM_THREADS}
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
     <INSTALL_DIR>/lib/libduckdb_static.a

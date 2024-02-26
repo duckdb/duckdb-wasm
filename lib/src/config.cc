@@ -38,7 +38,7 @@ uint32_t ResolveFeatureFlags() {
 WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
     auto config = WebDBConfig{.path = ":memory:",
                               .access_mode = std::nullopt,
-                              .maximum_threads = 1,
+                              .maximum_threads = (STATIC_WEBDB_FEATURES & (1 << WebDBFeature::THREADS)) ? 4 : 1,
                               .query =
                                   QueryConfig{
                                       .cast_bigint_to_double = std::nullopt,
