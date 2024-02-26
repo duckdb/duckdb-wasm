@@ -78,6 +78,7 @@
     },
     "files": [
         "dist",
+        "!dist/tests-*",
         "!dist/types/test"
     ],
     "main": "dist/duckdb-browser.cjs",
