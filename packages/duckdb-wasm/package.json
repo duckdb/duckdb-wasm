@@ -79,6 +79,7 @@
     "files": [
         "dist",
         "!dist/tests-*",
+        "!dist/duckdb-browser-mvp.worker.js.map",
         "!dist/types/test"
     ],
     "main": "dist/duckdb-browser.cjs",
