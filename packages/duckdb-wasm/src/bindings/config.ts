@@ -57,4 +57,8 @@ export interface DuckDBConfig {
      * The filesystem config
      */
     filesystem?: DuckDBFilesystemConfig;
+    /**
+     * Whether to allow unsigned extensions
+     */
+    allowUnsignedExtensions?: boolean;
 }
