@@ -44,13 +44,18 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             }
             const infoStr = readString(mod, d, n);
             dropResponseBuffers(mod);
-            const info = JSON.parse(infoStr);
-            if (info == null) {
+            try {
+                const info = JSON.parse(infoStr);
+                if (info == null) {
+                   return null;
+                }
+                const file = { ...info, blob: null } as DuckDBFileInfo;
+                BROWSER_RUNTIME._fileInfoCache.set(fileId, file);
+                return file;
+            } catch (error) {
+		console.warn(error);
                 return null;
             }
-            const file = { ...info, blob: null } as DuckDBFileInfo;
-            BROWSER_RUNTIME._fileInfoCache.set(fileId, file);
-            return file;
         } catch (e: any) {
             console.log(e);
             return null;
