@@ -50,13 +50,15 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                                   FileSystemConfig{
                                       .allow_full_http_reads = std::nullopt,
                                   },
-                              .duckdb_config_options = DuckDBConfigOptions{
-                                  .s3_region = "",
-                                  .s3_endpoint = "",
-                                  .s3_access_key_id = "",
-                                  .s3_secret_access_key = "",
-                                  .s3_session_token = "",
-                              }};
+                              .duckdb_config_options =
+                                  DuckDBConfigOptions{
+                                      .s3_region = "",
+                                      .s3_endpoint = "",
+                                      .s3_access_key_id = "",
+                                      .s3_secret_access_key = "",
+                                      .s3_session_token = "",
+                                  },
+                              .allow_unsigned_extensions = false};
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(args_json.begin(), args_json.size());
     if (ok) {
@@ -68,6 +70,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         }
         if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
             config.maximum_threads = doc["maximumThreads"].GetInt();
+        }
+        if (doc.HasMember("allowUnsignedExtensions") && doc["allowUnsignedExtensions"].IsBool()) {
+            config.allow_unsigned_extensions = doc["allowUnsignedExtensions"].GetBool();
         }
         if (doc.HasMember("query") && doc["query"].IsObject()) {
             auto q = doc["query"].GetObject();

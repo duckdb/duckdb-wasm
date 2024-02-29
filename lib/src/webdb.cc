@@ -812,9 +812,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(buffered_fs);
-#ifdef WASM_LOADABLE_EXTENSIONS_UNSIGNED
-        db_config.options.allow_unsigned_extensions = true;
-#endif
+        db_config.options.allow_unsigned_extensions = config_->allow_unsigned_extensions;
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;
         db_config.options.access_mode = access_mode;

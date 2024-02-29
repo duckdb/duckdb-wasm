@@ -98,6 +98,9 @@ struct WebDBConfig {
         .s3_session_token = "",
     };
 
+    /// Whether to allow unsigned extensions
+    bool allow_unsigned_extensions = false;
+
     /// Read from a document
     static WebDBConfig ReadFrom(std::string_view args_json);
 };
