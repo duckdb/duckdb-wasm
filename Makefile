@@ -370,11 +370,11 @@ serve_loadable_base: wasmpack shell docs
 
 .PHONY: serve_local
 serve_local: build_loadable_unsigned serve_loadable_base
-	http-server packages/duckdb-wasm-app/build/release -o "#queries=v0,SET-custom_extension_repository%3D'http%3A%2F%2F127.0.0.1%3A8080%2Fextension_repository'~" -a 127.0.0.1 -p 8080
+	node_modules/http-server/bin/http-server packages/duckdb-wasm-app/build/release -o "#queries=v0,SET-custom_extension_repository%3D'http%3A%2F%2F127.0.0.1%3A8080%2Fextension_repository'~" -a 127.0.0.1 -p 8080
 
 .PHONY: serve
 serve: build_loadable serve_loadable_base
-	http-server packages/duckdb-wasm-app/build/release -o
+	node_modules/http-server/bin/http-server packages/duckdb-wasm-app/build/release -o
 
 .PHONY: app_server
 app_server:
