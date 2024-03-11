@@ -4958,10 +4958,10 @@ jasmine-core@^4.1.0:
   resolved "https://registry.yarnpkg.com/jasmine-core/-/jasmine-core-4.5.0.tgz#1a6bd0bde3f60996164311c88a0995d67ceda7c3"
   integrity sha512-9PMzyvhtocxb3aXJVOPqBDswdgyAeSB81QnLop4npOpbqnheaTEwPc9ZloQeVswugPManznQBjD8kWDTjlnHuw==
 
-jasmine-core@^5.1.1, jasmine-core@~5.1.0:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/jasmine-core/-/jasmine-core-5.1.1.tgz#38b6ccfbe60aa2a863cf441751d9639b5a571edc"
-  integrity sha512-UrzO3fL7nnxlQXlvTynNAenL+21oUQRlzqQFsA2U11ryb4+NLOCOePZ70PTojEaUKhiFugh7dG0Q+I58xlPdWg==
+jasmine-core@^5.1.2, jasmine-core@~5.1.0:
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/jasmine-core/-/jasmine-core-5.1.2.tgz#8f2789faa79ef1ffad7abab6bff8d4bd661094f7"
+  integrity sha512-2oIUMGn00FdUiqz6epiiJr7xcFyNYj3rDcfmnzfkBnHyBQ3cBQUs4mmyGsOb7TTLb9kxk7dBcmEmqhDKkBoDyA==
 
 jasmine-spec-reporter@^7.0.0:
   version "7.0.0"
