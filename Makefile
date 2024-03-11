@@ -364,6 +364,9 @@ build_loadable:
 	cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
 	DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize ${TARGET}
 
+build_loadable_unsigned: build_loadable
+        # need to propagate the unsigned flag
+
 serve_loadable_base: wasmpack shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
