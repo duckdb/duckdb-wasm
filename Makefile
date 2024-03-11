@@ -50,7 +50,7 @@ check_format:
 set_environment:
 	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" && echo '\033[1m=== Using native mode ===\033[0m' && echo 'Emscripten from' && which emcc || (EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT} && echo '\033[1m === Using docker environment === \033[0m')
 
-build/data: build/duckdb_shell
+build/data:
 	${ROOT_DIR}/scripts/generate_uni.sh
 	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.01
 	${ROOT_DIR}/scripts/generate_tpch_tbl.sh 0.1
@@ -425,6 +425,7 @@ compile_commands:
 .PHONY: clean
 clean:
 	rm -rf build
+	rm -rf target
 	cd packages/duckdb-wasm-shell && rm -rf node_modules
 	rm -rf packages/duckdb-wasm-app/build
 	rm -rf submodules/duckdb/build
