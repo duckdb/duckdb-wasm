@@ -443,4 +443,5 @@ submodules:
 
 # Build infrastructure and packages required for development
 build/bootstrap: submodules yarn_install
+	mkdir -p build
 	touch build/bootstrap
