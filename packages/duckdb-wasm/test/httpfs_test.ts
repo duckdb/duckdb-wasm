@@ -312,5 +312,14 @@ export function testHTTPFSAsync(
                 ),
             ).toBeRejectedWithError('Invalid Error: File is not opened in write mode');
         });
+
+        it('avoid autoloading on not supported httpfs settings', async () => {
+            await setAwsConfig(conn!);
+            await expectAsync(
+                conn!.query(
+                    `set s3_url_style = 'path';`,
+                ),
+            ).toBeRejectedWithError(/Catalog Error: unrecognized configuration parameter "s3_url_style"/);
+        });
     });
 }
