@@ -33,6 +33,52 @@ index ea74d55f86..db27a653b3 100644
        )
    endif()
  endfunction()
+diff --git a/src/include/duckdb/main/extension_entries.hpp b/src/include/duckdb/main/extension_entries.hpp
+index 1c96337d7c..af86306bfe 100644
+--- a/src/include/duckdb/main/extension_entries.hpp
++++ b/src/include/duckdb/main/extension_entries.hpp
+@@ -209,12 +209,14 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
+     {"azure_storage_connection_string", "azure"},
+     {"binary_as_string", "parquet"},
+     {"calendar", "icu"},
++#ifndef EMSCRIPTEN
+     {"force_download", "httpfs"},
+     {"http_retries", "httpfs"},
+     {"http_retry_backoff", "httpfs"},
+     {"http_retry_wait_ms", "httpfs"},
+     {"http_timeout", "httpfs"},
+     {"http_keep_alive", "httpfs"},
++#endif
+     {"pg_debug_show_queries", "postgres_scanner"},
+     {"pg_use_binary_copy", "postgres_scanner"},
+     {"pg_experimental_filter_pushdown", "postgres_scanner"},
+@@ -222,6 +224,7 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
+     {"pg_connection_limit", "postgres_scanner"},
+     {"pg_pages_per_task", "postgres_scanner"},
+     {"pg_array_as_varchar", "postgres_scanner"},
++#ifndef EMSCRIPTEN
+     {"s3_access_key_id", "httpfs"},
+     {"s3_endpoint", "httpfs"},
+     {"s3_region", "httpfs"},
+@@ -233,6 +236,7 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
+     {"s3_url_compatibility_mode", "httpfs"},
+     {"s3_url_style", "httpfs"},
+     {"s3_use_ssl", "httpfs"},
++#endif
+     {"sqlite_all_varchar", "sqlite_scanner"},
+     {"timezone", "icu"},
+ }; // END_OF_EXTENSION_SETTINGS
+@@ -308,8 +312,8 @@ static constexpr ExtensionEntry EXTENSION_SECRET_PROVIDERS[] = {
+ static constexpr const char *AUTOLOADABLE_EXTENSIONS[] = {
+     //    "azure",
+     "arrow", "aws", "autocomplete", "excel", "fts", "httpfs",
+-    // "inet",
+-    // "icu",
++    "inet",
++    "icu",
+     "json", "parquet", "postgres_scanner",
+     // "spatial", TODO: table function isnt always autoloaded so test fails
+     "sqlsmith", "sqlite_scanner", "tpcds", "tpch"}; // END_OF_AUTOLOADABLE_EXTENSIONS
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
 index 418a298db3..e7943a95e5 100644
 --- a/src/main/extension/extension_install.cpp
