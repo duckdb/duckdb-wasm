@@ -39,7 +39,7 @@
         "jasmine-core": "^5.1.2",
         "jasmine-spec-reporter": "^7.0.0",
         "make-dir": "^4.0.0",
-        "prettier": "^3.2.4",
+        "prettier": "^3.2.5",
         "rimraf": "^5.0.5",
         "wasm-pack": "^0.12.1"
     },
