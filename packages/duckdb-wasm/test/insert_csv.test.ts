@@ -65,9 +65,9 @@ const CSV_INSERT_TESTS: CSVInsertTest[] = [
         },
         query: 'SELECT * FROM main.foo',
         expectedColumns: [
-            { name: 'column0', values: ['a'] },
-            { name: 'column1', values: ['b'] },
-            { name: 'column2', values: ['c'] },
+            { name: 'a', values: [] },
+            { name: 'b', values: [] },
+            { name: 'c', values: [] },
         ],
     },
     {
