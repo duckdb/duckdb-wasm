@@ -45,6 +45,7 @@ ExternalProject_Add(
              -DBUILD_UNITTESTS=FALSE
              -DDISABLE_BUILTIN_EXTENSIONS=TRUE
              -DUSE_WASM_THREADS=${USE_WASM_THREADS}
+             -DDUCKDB_EXPLICIT_PLATFORM=${DUCKDB_EXPLICIT_PLATFORM}
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
     <INSTALL_DIR>/lib/libduckdb_static.a
