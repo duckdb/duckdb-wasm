@@ -19,9 +19,10 @@ RUN apt-get update -qq \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
     && apt-get clean \
+    && export CHROME_BIN=/usr/bin/google-chrome \
     && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/google.list
 
-ARG EMSDK_VERSION="3.1.24"
+ARG EMSDK_VERSION="3.1.56"
 RUN mkdir -p /opt/emsdk \
     && cd /opt/emsdk \
     && curl -SL https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz | tar -xz --strip-components=1 \
@@ -46,8 +47,8 @@ RUN (id -g ${GID} &> /dev/null && id || groupadd -g ${GID} -o ${UNAME}) \
     && (id -u ${UID} || useradd -m -g ${GID} -u ${UID} -s /bin/bash ${UNAME})
 
 ENV NVM_DIR=/opt/nvm
-ARG NVM_VERSION="v0.39.2"
-ARG NODE_VERSION="v18.12.0"
+ARG NVM_VERSION="v0.39.7"
+ARG NODE_VERSION="v20.11.1"
 RUN mkdir -p /opt/nvm \
     && ls -lisah /opt/nvm \
     && curl https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash \
@@ -58,7 +59,7 @@ RUN mkdir -p /opt/nvm \
     && npm install --global yarn \
     && chown -R ${UID}:${GID} /opt/nvm
 
-ARG RUST_VERSION="1.64.0"
+ARG RUST_VERSION="1.77.0"
 RUN export RUSTUP_HOME=/opt/rust \
     && export CARGO_HOME=/opt/rust \
     && curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y \
