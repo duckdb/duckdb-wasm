@@ -1,0 +1,8 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="sym" viewBox="0 0 18 10" >
+        <g fill='currentcolor' fillRule="nonzero">
+            <polygon points="0 0 3.03703704 5 0 10 3 10 6 5 3 0" />
+            <polygon points="9 8 9 10 18 10 18 8" />
+        </g>
+    </symbol>
+</svg>
