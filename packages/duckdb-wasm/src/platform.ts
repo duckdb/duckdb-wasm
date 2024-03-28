@@ -19,6 +19,11 @@ const userAgent = () => (isNode() ? 'node' : navigator.userAgent);
 export const isFirefox = () => userAgent().includes('Firefox');
 export const isSafari = () => /^((?!chrome|android).)*safari/i.test(userAgent());
 
+/** Bundles have different characteristics:
+  * - MVP: minimum viable product (uses features from first stable version of WebAssembly standard)
+  * - EH: exception handling
+  * - COI: cross origin isolation
+  */
 export interface DuckDBBundles {
     mvp: {
         mainModule: string;
