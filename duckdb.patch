@@ -33,42 +33,6 @@ index aebc060c3b..12611048b0 100644
        )
    endif()
  endfunction()
-diff --git a/src/include/duckdb/main/extension_entries.hpp b/src/include/duckdb/main/extension_entries.hpp
-index 3b84b1544e..c1037aa7b6 100644
---- a/src/include/duckdb/main/extension_entries.hpp
-+++ b/src/include/duckdb/main/extension_entries.hpp
-@@ -243,6 +243,7 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
-     {"binary_as_string", "parquet"},
-     {"ca_cert_file", "httpfs"},
-     {"calendar", "icu"},
-+#ifndef EMSCRIPTEN
-     {"enable_server_cert_verification", "httpfs"},
-     {"force_download", "httpfs"},
-     {"http_keep_alive", "httpfs"},
-@@ -250,6 +251,7 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
-     {"http_retry_backoff", "httpfs"},
-     {"http_retry_wait_ms", "httpfs"},
-     {"http_timeout", "httpfs"},
-+#endif
-     {"pg_array_as_varchar", "postgres_scanner"},
-     {"pg_connection_cache", "postgres_scanner"},
-     {"pg_connection_limit", "postgres_scanner"},
-@@ -257,6 +259,7 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
-     {"pg_experimental_filter_pushdown", "postgres_scanner"},
-     {"pg_pages_per_task", "postgres_scanner"},
-     {"pg_use_binary_copy", "postgres_scanner"},
-+#ifndef EMSCRIPTEN
-     {"s3_access_key_id", "httpfs"},
-     {"s3_endpoint", "httpfs"},
-     {"s3_region", "httpfs"},
-@@ -268,6 +271,7 @@ static constexpr ExtensionEntry EXTENSION_SETTINGS[] = {
-     {"s3_url_compatibility_mode", "httpfs"},
-     {"s3_url_style", "httpfs"},
-     {"s3_use_ssl", "httpfs"},
-+#endif
-     {"sqlite_all_varchar", "sqlite_scanner"},
-     {"timezone", "icu"},
- }; // END_OF_EXTENSION_SETTINGS
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
 index a001f2b997..c532db1b2d 100644
 --- a/src/main/extension/extension_load.cpp
