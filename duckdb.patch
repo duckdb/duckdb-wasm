@@ -33,6 +33,45 @@ index aebc060c3b..12611048b0 100644
        )
    endif()
  endfunction()
+diff --git a/extension/httpfs/s3fs.cpp b/extension/httpfs/s3fs.cpp
+index aac3169c59..fbe59fc13c 100644
+--- a/extension/httpfs/s3fs.cpp
++++ b/extension/httpfs/s3fs.cpp
+@@ -203,7 +203,7 @@ unique_ptr<S3AuthParams> S3AuthParams::ReadFromStoredCredentials(FileOpener *ope
+ 
+ 	// Return the stored credentials
+ 	const auto &secret = secret_match.GetSecret();
+-	const auto &kv_secret = dynamic_cast<const KeyValueSecret &>(secret);
++	const auto &kv_secret = checked_dynamic_cast<const KeyValueSecret &>(secret);
+ 
+ 	return make_uniq<S3AuthParams>(S3SecretHelper::GetParams(kv_secret));
+ }
+diff --git a/src/include/duckdb/common/exception.hpp b/src/include/duckdb/common/exception.hpp
+index 2e45cb92af..46967277a7 100644
+--- a/src/include/duckdb/common/exception.hpp
++++ b/src/include/duckdb/common/exception.hpp
+@@ -16,6 +16,7 @@
+ 
+ #include <vector>
+ #include <stdexcept>
++#include <iostream>
+ 
+ namespace duckdb {
+ enum class PhysicalType : uint8_t;
+@@ -363,4 +364,13 @@ public:
+ 	DUCKDB_API explicit ParameterNotResolvedException();
+ };
+ 
++	template <typename A, typename B>
++	A&& checked_dynamic_cast (B&& target) {
++		if (dynamic_cast<typename std::remove_reference<A>::type*>(&target)) {
++			return dynamic_cast<A&>(target);
++		}
++		std::cout <<"\n"<< "checked_dynamic_cast between " << typeid(A).name() << "\tand " << typeid(B).name() << " ERRORRED\n";
++		throw FatalException("Failed checked_dynamic_cast");
++	}
++
+ } // namespace duckdb
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
 index a001f2b997..c532db1b2d 100644
 --- a/src/main/extension/extension_load.cpp
@@ -255,3 +294,57 @@ index a001f2b997..c532db1b2d 100644
  #else
  	auto dopen_from = filename;
  #endif
+diff --git a/src/planner/operator/logical_delete.cpp b/src/planner/operator/logical_delete.cpp
+index a028a1ea6f..d9322a4ac7 100644
+--- a/src/planner/operator/logical_delete.cpp
++++ b/src/planner/operator/logical_delete.cpp
+@@ -14,7 +14,7 @@ LogicalDelete::LogicalDelete(TableCatalogEntry &table, idx_t table_index)
+ LogicalDelete::LogicalDelete(ClientContext &context, const unique_ptr<CreateInfo> &table_info)
+     : LogicalOperator(LogicalOperatorType::LOGICAL_DELETE),
+       table(Catalog::GetEntry<TableCatalogEntry>(context, table_info->catalog, table_info->schema,
+-                                                 dynamic_cast<CreateTableInfo &>(*table_info).table)) {
++                                                 checked_dynamic_cast<CreateTableInfo &>(*table_info).table)) {
+ }
+ 
+ idx_t LogicalDelete::EstimateCardinality(ClientContext &context) {
+diff --git a/src/planner/operator/logical_insert.cpp b/src/planner/operator/logical_insert.cpp
+index 3846ed0097..830126809e 100644
+--- a/src/planner/operator/logical_insert.cpp
++++ b/src/planner/operator/logical_insert.cpp
+@@ -14,7 +14,7 @@ LogicalInsert::LogicalInsert(TableCatalogEntry &table, idx_t table_index)
+ LogicalInsert::LogicalInsert(ClientContext &context, const unique_ptr<CreateInfo> table_info)
+     : LogicalOperator(LogicalOperatorType::LOGICAL_INSERT),
+       table(Catalog::GetEntry<TableCatalogEntry>(context, table_info->catalog, table_info->schema,
+-                                                 dynamic_cast<CreateTableInfo &>(*table_info).table)) {
++                                                 checked_dynamic_cast<CreateTableInfo &>(*table_info).table)) {
+ }
+ 
+ idx_t LogicalInsert::EstimateCardinality(ClientContext &context) {
+diff --git a/src/planner/operator/logical_update.cpp b/src/planner/operator/logical_update.cpp
+index e66dd36d1a..7fe2e907e1 100644
+--- a/src/planner/operator/logical_update.cpp
++++ b/src/planner/operator/logical_update.cpp
+@@ -12,7 +12,7 @@ LogicalUpdate::LogicalUpdate(TableCatalogEntry &table)
+ LogicalUpdate::LogicalUpdate(ClientContext &context, const unique_ptr<CreateInfo> &table_info)
+     : LogicalOperator(LogicalOperatorType::LOGICAL_UPDATE),
+       table(Catalog::GetEntry<TableCatalogEntry>(context, table_info->catalog, table_info->schema,
+-                                                 dynamic_cast<CreateTableInfo &>(*table_info).table)) {
++                                                 checked_dynamic_cast<CreateTableInfo &>(*table_info).table)) {
+ }
+ 
+ idx_t LogicalUpdate::EstimateCardinality(ClientContext &context) {
+diff --git a/src/storage/checkpoint_manager.cpp b/src/storage/checkpoint_manager.cpp
+index 1f97b538ff..5e16d11840 100644
+--- a/src/storage/checkpoint_manager.cpp
++++ b/src/storage/checkpoint_manager.cpp
+@@ -576,8 +576,8 @@ void CheckpointReader::ReadTableData(ClientContext &context, Deserializer &deser
+ 	}
+ 
+ 	// FIXME: icky downcast to get the underlying MetadataReader
+-	auto &binary_deserializer = dynamic_cast<BinaryDeserializer &>(deserializer);
+-	auto &reader = dynamic_cast<MetadataReader &>(binary_deserializer.GetStream());
++	auto &binary_deserializer = checked_dynamic_cast<BinaryDeserializer &>(deserializer);
++	auto &reader = checked_dynamic_cast<MetadataReader &>(binary_deserializer.GetStream());
+ 
+ 	MetadataReader table_data_reader(reader.GetMetadataManager(), table_pointer);
+ 	TableDataReader data_reader(table_data_reader, bound_info);
