@@ -14,7 +14,7 @@ namespace io {
 /// Constructor
 ArrowInputFileStream::ArrowInputFileStream(std::shared_ptr<FilePageBuffer> file_page_buffer, std::string_view path)
     : file_page_buffer_(std::move(file_page_buffer)),
-      file_(file_page_buffer_->OpenFile(path, duckdb::FileFlags::FILE_FLAGS_READ, duckdb::FileLockType::NO_LOCK)) {}
+      file_(file_page_buffer_->OpenFile(path, duckdb::FileFlags::FILE_FLAGS_READ)) {}
 
 /// Destructor
 ArrowInputFileStream::~ArrowInputFileStream() {

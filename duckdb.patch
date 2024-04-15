@@ -1,11 +1,19 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index aebc060c3b..12611048b0 100644
+index 7b1eaa7adf..036a07a56a 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -83,6 +83,13 @@ if (EXTENSION_STATIC_BUILD AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
- endif()
+@@ -25,6 +25,7 @@ project(DuckDB)
+ find_package(Threads REQUIRED)
+ 
+ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
++set(DUCKDB_EXPLICIT_PLATFORM "nop")
+ 
+ set (CMAKE_CXX_STANDARD 11)
+ 
+@@ -84,6 +85,14 @@ endif()
  
  option(DISABLE_UNITY "Disable unity builds." FALSE)
+ 
 +option(USE_WASM_THREADS "Should threads be used" FALSE)
 +if (${USE_WASM_THREADS})
 +   set(WASM_THREAD_FLAGS
@@ -13,70 +21,66 @@ index aebc060c3b..12611048b0 100644
 +       -sSHARED_MEMORY=1
 +   )
 +endif()
- 
++
  option(FORCE_COLORED_OUTPUT
         "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
-@@ -805,7 +812,6 @@ function(build_loadable_extension_directory NAME OUTPUT_DIRECTORY PARAMETERS)
-             ${TARGET_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE
-             "${CMAKE_BINARY_DIR}/${OUTPUT_DIRECTORY}")
-   endif()
--
-   if(EMSCRIPTEN)
-     # Copy file.duckdb_extension.wasm to file.duckdb_extension.wasm.lib
-     add_custom_command(
-@@ -817,7 +823,7 @@ function(build_loadable_extension_directory NAME OUTPUT_DIRECTORY PARAMETERS)
+ if(${FORCE_COLORED_OUTPUT})
+@@ -711,6 +720,7 @@ if (NOT EXTENSION_CONFIG_BUILD AND NOT ${EXTENSION_TESTS_ONLY} AND NOT CLANG_TID
+   if (NOT Python3_FOUND)
+     MESSAGE(STATUS "Could not find python3, create extension directory step will be skipped")
+   else()
++    message(STATUS "hi from ${CMAKE_CURRENT_BINARY_DIR}")
+     add_custom_target(
+           duckdb_local_extension_repo ALL
+           COMMAND
+@@ -813,7 +823,7 @@ function(build_loadable_extension_directory NAME OUTPUT_DIRECTORY EXTENSION_VERS
      add_custom_command(
        TARGET ${TARGET_NAME}
        POST_BUILD
 -      COMMAND emcc $<TARGET_FILE:${TARGET_NAME}>.lib -o $<TARGET_FILE:${TARGET_NAME}> -sSIDE_MODULE=1 -O3
-+      COMMAND emcc $<TARGET_FILE:${TARGET_NAME}>.lib -o $<TARGET_FILE:${TARGET_NAME}> -O3 -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS="_${NAME}_init,_${NAME}_version" ${WASM_THREAD_FLAGS}
++      COMMAND emcc $<TARGET_FILE:${TARGET_NAME}>.lib -o $<TARGET_FILE:${TARGET_NAME}> -O3 -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS="_${NAME}_init" ${WASM_THREAD_FLAGS}
        )
    endif()
- endfunction()
-diff --git a/extension/httpfs/s3fs.cpp b/extension/httpfs/s3fs.cpp
-index aac3169c59..fbe59fc13c 100644
---- a/extension/httpfs/s3fs.cpp
-+++ b/extension/httpfs/s3fs.cpp
-@@ -203,7 +203,7 @@ unique_ptr<S3AuthParams> S3AuthParams::ReadFromStoredCredentials(FileOpener *ope
+   add_custom_command(
+@@ -1220,6 +1230,7 @@ if(BUILD_PYTHON)
+   add_extension_dependencies(duckdb_python)
+ endif()
  
- 	// Return the stored credentials
- 	const auto &secret = secret_match.GetSecret();
--	const auto &kv_secret = dynamic_cast<const KeyValueSecret &>(secret);
-+	const auto &kv_secret = checked_dynamic_cast<const KeyValueSecret &>(secret);
++message(STATUS "${DUCKDB_EXPLICIT_PLATFORM} is the platform")
+ if(NOT DUCKDB_EXPLICIT_PLATFORM)
+   set(VERSION_SOURCES tools/utils/test_platform.cpp)
  
- 	return make_uniq<S3AuthParams>(S3SecretHelper::GetParams(kv_secret));
- }
-diff --git a/src/include/duckdb/common/exception.hpp b/src/include/duckdb/common/exception.hpp
-index 2e45cb92af..46967277a7 100644
---- a/src/include/duckdb/common/exception.hpp
-+++ b/src/include/duckdb/common/exception.hpp
-@@ -16,6 +16,7 @@
+diff --git a/scripts/create_local_extension_repo.py b/scripts/create_local_extension_repo.py
+index 8cf71abec0..9875f5fa23 100644
+--- a/scripts/create_local_extension_repo.py
++++ b/scripts/create_local_extension_repo.py
+@@ -28,6 +28,7 @@ if os.name == 'nt':
  
- #include <vector>
- #include <stdexcept>
-+#include <iostream>
+ with open(duckdb_platform_out, 'r') as f:
+     lines = f.readlines()
++    print(lines)
+     duckdb_platform = lines[0]
  
- namespace duckdb {
- enum class PhysicalType : uint8_t;
-@@ -363,4 +364,13 @@ public:
- 	DUCKDB_API explicit ParameterNotResolvedException();
+ # Create destination path
+diff --git a/src/include/duckdb/common/file_open_flags.hpp b/src/include/duckdb/common/file_open_flags.hpp
+index d0509a214b..f1689b2975 100644
+--- a/src/include/duckdb/common/file_open_flags.hpp
++++ b/src/include/duckdb/common/file_open_flags.hpp
+@@ -100,8 +100,8 @@ public:
+ 		return flags & FILE_FLAGS_PARALLEL_ACCESS;
+ 	}
+ 
+-private:
+ 	idx_t flags = 0;
++private:
+ 	FileLockType lock = FileLockType::NO_LOCK;
+ 	FileCompressionType compression = FileCompressionType::UNCOMPRESSED;
  };
- 
-+	template <typename A, typename B>
-+	A&& checked_dynamic_cast (B&& target) {
-+		if (dynamic_cast<typename std::remove_reference<A>::type*>(&target)) {
-+			return dynamic_cast<A&>(target);
-+		}
-+		std::cout <<"\n"<< "checked_dynamic_cast between " << typeid(A).name() << "\tand " << typeid(B).name() << " ERRORRED\n";
-+		throw FatalException("Failed checked_dynamic_cast");
-+	}
-+
- } // namespace duckdb
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index a001f2b997..c532db1b2d 100644
+index 002cf4aefe..5ef4b667a9 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -110,6 +110,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -143,6 +143,7 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  	} else {
  		filename = fs.ExpandPath(filename);
  	}
@@ -84,11 +88,12 @@ index a001f2b997..c532db1b2d 100644
  	if (!fs.FileExists(filename)) {
  		string message;
  		bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
-@@ -119,6 +120,181 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -152,7 +153,183 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  		error = StringUtil::Format("Extension \"%s\" not found.\n%s", filename, message);
  		return false;
  	}
 +#endif
++
 +#ifdef WASM_LOADABLE_EXTENSIONS
 +	auto basename = fs.ExtractBaseName(filename);
 +	char *exe = NULL;
@@ -160,7 +165,7 @@ index a001f2b997..c532db1b2d 100644
 +    }
 +
 +		    var valid = WebAssembly.validate(uInt8Array);
-+		    var len = uInt8Array.byteLength;
++	    var len = uInt8Array.byteLength;
 +		    var fileOnWasmHeap = _malloc(len + 4);
 +
 +		var properArray = new Uint8Array(uInt8Array);
@@ -182,7 +187,7 @@ index a001f2b997..c532db1b2d 100644
 +		    len -= LEN123[3];
 +		    len /= 256;
 +		    Module.HEAPU8.set(LEN123, fileOnWasmHeap);
-+                //FIXME: found how to expose those to the logger interface
++               //FIXME: found how to expose those to the logger interface
 +		//console.log(LEN123);
 +		//console.log(properArray);
 +		//console.log(new Uint8Array(Module.HEAPU8, fileOnWasmHeap, len+4));
@@ -213,7 +218,7 @@ index a001f2b997..c532db1b2d 100644
 +		LEN *= 256;
 +		LEN += ((uint8_t *)exe)[1];
 +		LEN *= 256;
-+		LEN += ((uint8_t *)exe)[0];
++	LEN += ((uint8_t *)exe)[0];
 +		auto signature_offset = LEN - signature.size();
 +
 +		const idx_t maxLenChunks = 1024ULL * 1024ULL;
@@ -244,7 +249,7 @@ index a001f2b997..c532db1b2d 100644
 +
 +		string two_level_hash;
 +		ComputeSHA256String(hash_concatenation, &two_level_hash);
-+
+ 
 +		for (idx_t j = 0; j < signature.size(); j++) {
 +			signature[j] = ((uint8_t *)exe)[4 + signature_offset + j];
 +		}
@@ -262,17 +267,19 @@ index a001f2b997..c532db1b2d 100644
 +	if (exe) {
 +		free(exe);
 +	}
++std::string extension_version="";
 +#else
- 	if (!config.options.allow_unsigned_extensions) {
- 		auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
+ 	string metadata_segment;
+ 	metadata_segment.resize(512);
  
-@@ -179,26 +355,9 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
- 			throw IOException(config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename));
- 		}
- 	}
+@@ -279,27 +456,10 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+ 	auto number_metadata_fields = 3;
+ 	D_ASSERT(number_metadata_fields == 3); // Currently hardcoded value
+ 	metadata_field.resize(number_metadata_fields + 1);
+-
 +#endif
  	auto filebase = fs.ExtractBaseName(filename);
--
+ 
  #ifdef WASM_LOADABLE_EXTENSIONS
 -	EM_ASM(
 -	    {
@@ -294,57 +301,3 @@ index a001f2b997..c532db1b2d 100644
  #else
  	auto dopen_from = filename;
  #endif
-diff --git a/src/planner/operator/logical_delete.cpp b/src/planner/operator/logical_delete.cpp
-index a028a1ea6f..d9322a4ac7 100644
---- a/src/planner/operator/logical_delete.cpp
-+++ b/src/planner/operator/logical_delete.cpp
-@@ -14,7 +14,7 @@ LogicalDelete::LogicalDelete(TableCatalogEntry &table, idx_t table_index)
- LogicalDelete::LogicalDelete(ClientContext &context, const unique_ptr<CreateInfo> &table_info)
-     : LogicalOperator(LogicalOperatorType::LOGICAL_DELETE),
-       table(Catalog::GetEntry<TableCatalogEntry>(context, table_info->catalog, table_info->schema,
--                                                 dynamic_cast<CreateTableInfo &>(*table_info).table)) {
-+                                                 checked_dynamic_cast<CreateTableInfo &>(*table_info).table)) {
- }
- 
- idx_t LogicalDelete::EstimateCardinality(ClientContext &context) {
-diff --git a/src/planner/operator/logical_insert.cpp b/src/planner/operator/logical_insert.cpp
-index 3846ed0097..830126809e 100644
---- a/src/planner/operator/logical_insert.cpp
-+++ b/src/planner/operator/logical_insert.cpp
-@@ -14,7 +14,7 @@ LogicalInsert::LogicalInsert(TableCatalogEntry &table, idx_t table_index)
- LogicalInsert::LogicalInsert(ClientContext &context, const unique_ptr<CreateInfo> table_info)
-     : LogicalOperator(LogicalOperatorType::LOGICAL_INSERT),
-       table(Catalog::GetEntry<TableCatalogEntry>(context, table_info->catalog, table_info->schema,
--                                                 dynamic_cast<CreateTableInfo &>(*table_info).table)) {
-+                                                 checked_dynamic_cast<CreateTableInfo &>(*table_info).table)) {
- }
- 
- idx_t LogicalInsert::EstimateCardinality(ClientContext &context) {
-diff --git a/src/planner/operator/logical_update.cpp b/src/planner/operator/logical_update.cpp
-index e66dd36d1a..7fe2e907e1 100644
---- a/src/planner/operator/logical_update.cpp
-+++ b/src/planner/operator/logical_update.cpp
-@@ -12,7 +12,7 @@ LogicalUpdate::LogicalUpdate(TableCatalogEntry &table)
- LogicalUpdate::LogicalUpdate(ClientContext &context, const unique_ptr<CreateInfo> &table_info)
-     : LogicalOperator(LogicalOperatorType::LOGICAL_UPDATE),
-       table(Catalog::GetEntry<TableCatalogEntry>(context, table_info->catalog, table_info->schema,
--                                                 dynamic_cast<CreateTableInfo &>(*table_info).table)) {
-+                                                 checked_dynamic_cast<CreateTableInfo &>(*table_info).table)) {
- }
- 
- idx_t LogicalUpdate::EstimateCardinality(ClientContext &context) {
-diff --git a/src/storage/checkpoint_manager.cpp b/src/storage/checkpoint_manager.cpp
-index 1f97b538ff..5e16d11840 100644
---- a/src/storage/checkpoint_manager.cpp
-+++ b/src/storage/checkpoint_manager.cpp
-@@ -576,8 +576,8 @@ void CheckpointReader::ReadTableData(ClientContext &context, Deserializer &deser
- 	}
- 
- 	// FIXME: icky downcast to get the underlying MetadataReader
--	auto &binary_deserializer = dynamic_cast<BinaryDeserializer &>(deserializer);
--	auto &reader = dynamic_cast<MetadataReader &>(binary_deserializer.GetStream());
-+	auto &binary_deserializer = checked_dynamic_cast<BinaryDeserializer &>(deserializer);
-+	auto &reader = checked_dynamic_cast<MetadataReader &>(binary_deserializer.GetStream());
- 
- 	MetadataReader table_data_reader(reader.GetMetadataManager(), table_pointer);
- 	TableDataReader data_reader(table_data_reader, bound_info);

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <duckdb/common/exception.hpp>
+#include <duckdb/common/file_opener.hpp>
 #include <duckdb/common/file_system.hpp>
 #include <duckdb/parser/parser.hpp>
 #include <iostream>
@@ -65,7 +66,7 @@ FilePageBuffer::BufferRef::BufferRef(FileRef& file, SharedFileGuard&& file_guard
 
 /// Mark a buffer ref as dirty
 void FilePageBuffer::BufferRef::MarkAsDirty() {
-    if ((file_->file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+    if (!file_->file_->file_flags.OpenForWriting()) {
         throw std::runtime_error("File is not opened in write mode");
     }
     frame_->is_dirty = true;
@@ -133,7 +134,7 @@ bool FilePageBuffer::FileRef::Release(bool keep_dangling) {
 
     // ONLY allows for FILE_FLAGS_READ?
     // Leave buffered pages dangling and cleanup later.
-    if (keep_dangling && file_->file_flags == duckdb::FileFlags::FILE_FLAGS_READ) {
+    if (keep_dangling && file_->file_flags.OpenForReading()) {
         --file_->num_users;
         return false;
     }
@@ -212,8 +213,8 @@ FilePageBuffer::FilePageBuffer(std::shared_ptr<duckdb::FileSystem> filesystem, u
 /// Destructor
 FilePageBuffer::~FilePageBuffer() { FlushFiles(); }
 
-std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path, uint8_t flags,
-                                                                  duckdb::FileLockType lock_type) {
+std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_view path, duckdb::FileOpenFlags flags,
+                                                                  optional_ptr<duckdb::FileOpener> opener) {
     DEBUG_TRACE();
     auto dir_guard = Lock();
 
@@ -223,21 +224,21 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
         // Is locked exclusively?
         // We only allow one file ref with active WRITE_LOCK.
         // Otherwise we wouldn't know when to release the WRITE_LOCK.
-        if (file->file_lock == duckdb::FileLockType::WRITE_LOCK) {
+        if (file->file_flags.Lock() == duckdb::FileLockType::WRITE_LOCK) {
             std::string path_buf{path};
             throw duckdb::IOException("File %s is already locked exclusively", path_buf.c_str());
         }
 
         // User requested truncation of existing file?
-        if (flags == duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW) {
+        if (flags.OverwriteExistingFile()) {
             std::string path_buf{path};
             throw duckdb::IOException(
                 "File %s is already opened and cannot be truncated with FILE_FLAGS_FILE_CREATE_NEW", path_buf.c_str());
         }
 
         // Check if the user wants to write to the file
-        bool wants_writeable = (flags & duckdb::FileFlags::FILE_FLAGS_WRITE) != 0;
-        bool is_writeable = (file->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) != 0;
+        bool wants_writeable = flags.OpenForWriting();
+        bool is_writeable = file->file_flags.OpenForWriting();
 
         if (wants_writeable) {
             // Only opened readable before?
@@ -245,14 +246,14 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
                 // Reopen as writeable
                 auto ref = std::make_unique<FileRef>(*this, *files.at(it->second->file_id));
                 dir_guard.unlock();
-                ref->ReOpen(flags, lock_type);
+                ref->ReOpen(flags);
                 return ref;
 
             } else {
                 // Conflicting APPEND?
                 // Either a file is always appending or not.
-                bool wants_append = (flags & duckdb::FileFlags::FILE_FLAGS_APPEND) != 0;
-                bool is_append = (file->file_flags & duckdb::FileFlags::FILE_FLAGS_APPEND) != 0;
+                bool wants_append = flags.OpenForAppending();
+                bool is_append = file->file_flags.OpenForAppending();
                 if (wants_append && !is_append) {
                     std::string path_buf{path};
                     throw duckdb::IOException("File %s is already opened without APPEND", path_buf.c_str());
@@ -277,7 +278,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     }
 
     // Create file
-    auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags, lock_type);
+    auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags);
     auto& file = *file_ptr;
     file.handle = filesystem->OpenFile(file.path.c_str(), flags);
     assert(file.handle != nullptr);
@@ -538,13 +539,13 @@ uint64_t FilePageBuffer::FileRef::Write(void* in, uint64_t bytes, duckdb::idx_t 
     auto file_guard = Lock(Shared);
 
     // Is not opened in WRITE mode?
-    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+    if (!file_->file_flags.OpenForWriting()) {
         throw std::runtime_error("File is not opened in write mode");
     }
 
     // Append to file?
     // Otherwise a write will never write past the end!
-    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_APPEND) != 0 || (offset == file_->file_size)) {
+    if ((!file_->file_flags.OpenForAppending()) || (offset == file_->file_size)) {
         file_guard.unlock();
         auto file_guard = Lock(Exclusive);
         Append(in, bytes, file_guard);
@@ -579,7 +580,7 @@ void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGua
     DEBUG_TRACE();
 
     // Is not opened in WRITE mode?
-    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+    if (!file_->file_flags.OpenForWriting()) {
         throw std::runtime_error("file is not opened in write mode");
     }
 
@@ -622,14 +623,13 @@ void FilePageBuffer::FileRef::Append(void* buffer, uint64_t bytes, UniqueFileGua
 }
 
 /// Reopen a file
-void FilePageBuffer::FileRef::ReOpen(uint8_t flags, duckdb::FileLockType lock_type) {
+void FilePageBuffer::FileRef::ReOpen(FileOpenFlags flags) {
     DEBUG_TRACE();
     auto file_guard = Lock(Exclusive);
     // Open the file with the new flags first
-    auto new_handle = buffer_.filesystem->OpenFile(file_->path, flags, lock_type);
+    auto new_handle = buffer_.filesystem->OpenFile(file_->path, flags);
     // Swap the file handles
     std::swap(new_handle, file_->handle);
-    file_->file_lock = lock_type;
 }
 
 /// Buffers a file at a path.
@@ -747,7 +747,7 @@ void FilePageBuffer::FileRef::Truncate(uint64_t new_size) {
     auto file_lock = Lock(Exclusive);
 
     // Is not opened in WRITE mode?
-    if ((file_->file_flags & duckdb::FileFlags::FILE_FLAGS_WRITE) == 0) {
+    if (!file_->file_flags.OpenForWriting()) {
         throw std::runtime_error("file is not opened in write mode");
     }
 

@@ -84,9 +84,7 @@ class FilePageBuffer {
         /// This latch ensures that reads and writes are blocked during truncation.
         SharedMutex file_latch = {};
         /// The file flags
-        uint8_t file_flags = 0;
-        /// The file lock type
-        duckdb::FileLockType file_lock = duckdb::FileLockType::NO_LOCK;
+        duckdb::FileOpenFlags file_flags = 0;
         /// The file size
         uint64_t file_size = 0;
         /// The user references
@@ -98,8 +96,8 @@ class FilePageBuffer {
         std::shared_ptr<FileStatisticsCollector> file_stats = nullptr;
 
         /// Constructor
-        BufferedFile(uint16_t file_id, std::string_view path, uint8_t flags, duckdb::FileLockType lock)
-            : file_id(file_id), path(path), file_flags(flags), file_lock(lock) {}
+        BufferedFile(uint16_t file_id, std::string_view path, duckdb::FileOpenFlags flags)
+            : file_id(file_id), path(path), file_flags(flags) {}
         /// Get the number of references
         auto GetReferenceCount() const { return num_users; }
     };
@@ -242,7 +240,7 @@ class FilePageBuffer {
         /// Append n bytes
         void Append(void* buffer, uint64_t n, UniqueFileGuard& file_guard);
         /// Reopen as writeable
-        void ReOpen(uint8_t flags, duckdb::FileLockType lock_type);
+        void ReOpen(duckdb::FileOpenFlags flags);
 
        public:
         /// Constructor
@@ -356,8 +354,8 @@ class FilePageBuffer {
     void CollectFileStatistics(std::string_view path, std::shared_ptr<FileStatisticsCollector> collector);
 
     /// Open a file
-    std::unique_ptr<FileRef> OpenFile(std::string_view path, uint8_t flags,
-                                      duckdb::FileLockType lock_type = duckdb::FileLockType::NO_LOCK);
+    std::unique_ptr<FileRef> OpenFile(std::string_view path, FileOpenFlags flags,
+                                      optional_ptr<FileOpener> opener = nullptr);
     /// Is buffered
     bool BuffersFile(std::string_view path);
     /// Flush file matching name to disk
