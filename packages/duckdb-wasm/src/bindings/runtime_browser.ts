@@ -180,6 +180,30 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             mod.HEAPF64[(result >> 3) + 1] = 0;
                             return result;
                         }
+
+                        // Alternate range request check using GET, if HEAD is not available
+                        const xhrGet = new XMLHttpRequest();
+                        if (file.dataProtocol == DuckDBDataProtocol.S3) {
+                            xhrGet.open('GET', getHTTPUrl(file.s3Config, file.dataUrl!), false);
+                            addS3Headers(xhrGet, file.s3Config, file.dataUrl!, 'GET');
+                        } else {
+                            xhrGet.open('GET', file.dataUrl!, false);
+                        }
+
+                        xhrGet.responseType = 'arraybuffer';
+                        xhrGet.setRequestHeader('Range', `bytes=0-0`);
+                        xhrGet.send(null);
+                        // the content range header is used to determine the length of the entire file
+                        const contentRange = xhrGet.getResponseHeader('Content-Range')?.split('/')[1];
+                        const contentLength2 = xhrGet.getResponseHeader('Content-Length');
+
+                        // supports range requests
+                        if (xhrGet.status == 206 && contentLength2 !== null && +contentLength2 == 1 && contentRange !== undefined) {
+                            const result = mod._malloc(2 * 8);
+                            mod.HEAPF64[(result >> 3) + 0] = +contentRange;
+                            mod.HEAPF64[(result >> 3) + 1] = 0;
+                            return result;
+                        }
                     } catch (e: any) {
                         error = e;
                         console.warn(`HEAD request with range header failed: ${e}`);
