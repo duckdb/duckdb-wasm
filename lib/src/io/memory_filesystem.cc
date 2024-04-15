@@ -46,15 +46,15 @@ arrow::Status MemoryFileSystem::RegisterFileBuffer(std::string name, std::vector
 }
 
 /// Open a file
-duckdb::unique_ptr<duckdb::FileHandle> MemoryFileSystem::OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                                  FileCompressionType compression, FileOpener *opener) {
+duckdb::unique_ptr<duckdb::FileHandle> MemoryFileSystem::OpenFile(const string &path, duckdb::FileOpenFlags flags,
+                                                                  optional_ptr<FileOpener> opener) {
     // Resolve the file buffer
     auto file_iter = file_paths.find(path);
     if (file_iter == file_paths.end()) throw new std::logic_error{"File is not registered"};
     auto &file_buffer = *file_iter->second;
 
     // Can the buffer be locked exclusively?
-    if (lock == duckdb::FileLockType::WRITE_LOCK && !file_buffer.handles.empty()) {
+    if (flags.Lock() == duckdb::FileLockType::WRITE_LOCK && !file_buffer.handles.empty()) {
         throw new std::logic_error{"Cannot lock file exclusively"};
     }
 
@@ -125,11 +125,11 @@ void MemoryFileSystem::Truncate(duckdb::FileHandle &raw_handle, int64_t new_size
 }
 
 /// Check if a directory exists
-bool MemoryFileSystem::DirectoryExists(const std::string &directory) { return true; }
+bool MemoryFileSystem::DirectoryExists(const std::string &directory, optional_ptr<FileOpener> opener) { return true; }
 /// Create a directory if it does not exist
-void MemoryFileSystem::CreateDirectory(const std::string &directory) {}
+void MemoryFileSystem::CreateDirectory(const std::string &directory, optional_ptr<FileOpener> opener) {}
 /// Recursively remove a directory and all files in it
-void MemoryFileSystem::RemoveDirectory(const std::string &directory) {}
+void MemoryFileSystem::RemoveDirectory(const std::string &directory, optional_ptr<FileOpener> opener) {}
 
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
 bool MemoryFileSystem::ListFiles(const std::string &directory,
@@ -146,7 +146,7 @@ bool MemoryFileSystem::ListFiles(const std::string &directory,
 
 /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
 /// properties
-void MemoryFileSystem::MoveFile(const std::string &source, const std::string &target) {
+void MemoryFileSystem::MoveFile(const std::string &source, const std::string &target, optional_ptr<FileOpener> opener) {
     auto file_paths_iter = file_paths.find(source);
     if (file_paths_iter == file_paths.end()) throw new std::logic_error{"File does not exist"};
     auto file_id = file_paths_iter->second->file_id;
@@ -162,13 +162,13 @@ void MemoryFileSystem::MoveFile(const std::string &source, const std::string &ta
 }
 
 /// Check if a file exists
-bool MemoryFileSystem::FileExists(const std::string &filename) {
+bool MemoryFileSystem::FileExists(const std::string &filename, optional_ptr<FileOpener> opener) {
     auto file_paths_iter = file_paths.find(filename);
     return file_paths_iter != file_paths.end();
 }
 
 /// Remove a file from disk
-void MemoryFileSystem::RemoveFile(const std::string &filename) {
+void MemoryFileSystem::RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener) {
     auto file_paths_iter = file_paths.find(filename);
     if (file_paths_iter == file_paths.end()) throw new std::logic_error{"File does not exist"};
     if (!file_paths_iter->second->handles.empty()) throw new std::logic_error{"Cannot remove a file with open handles"};

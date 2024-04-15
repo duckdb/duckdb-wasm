@@ -60,7 +60,7 @@ class InputFileStreamBuffer : public std::streambuf {
     /// Constructor
     InputFileStreamBuffer(std::shared_ptr<FilePageBuffer> file_page_buffer, std::string_view path)
         : file_page_buffer_(std::move(file_page_buffer)),
-          file_(file_page_buffer_->OpenFile(path, duckdb::FileFlags::FILE_FLAGS_READ, duckdb::FileLockType::NO_LOCK)),
+          file_(file_page_buffer_->OpenFile(path, duckdb::FileFlags::FILE_FLAGS_READ)),
           buffer_(file_->FixPage(0, false)),
           data_end_(file_->GetSize()),
           next_page_id_(1) {
@@ -70,8 +70,7 @@ class InputFileStreamBuffer : public std::streambuf {
     /// Constructor
     InputFileStreamBuffer(const InputFileStreamBuffer& other)
         : file_page_buffer_(other.file_page_buffer_),
-          file_(other.file_page_buffer_->OpenFile(other.file_->GetPath(), duckdb::FileFlags::FILE_FLAGS_READ,
-                                                  duckdb::FileLockType::NO_LOCK)),
+          file_(other.file_page_buffer_->OpenFile(other.file_->GetPath(), duckdb::FileFlags::FILE_FLAGS_READ)),
           buffer_(other.file_->FixPage(other.next_page_id_ - 1, false)),
           data_end_(other.data_end_),
           next_page_id_(other.next_page_id_) {

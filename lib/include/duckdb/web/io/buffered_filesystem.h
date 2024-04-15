@@ -6,6 +6,7 @@
 
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/optional_ptr.hpp"
 #include "duckdb/common/vector.hpp"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/utils/parallel.h"
@@ -85,9 +86,8 @@ class BufferedFileSystem : public duckdb::FileSystem {
 
    public:
     /// Open a file
-    duckdb::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, uint8_t flags, FileLockType lock,
-                                                    FileCompressionType compression,
-                                                    FileOpener *opener = nullptr) override;
+    duckdb::unique_ptr<duckdb::FileHandle> OpenFile(const string &path, FileOpenFlags flags,
+                                                    optional_ptr<FileOpener> opener = nullptr) override;
     /// Read exactly nr_bytes from the specified location in the file. Fails if nr_bytes could not be read. This is
     /// equivalent to calling SetFilePointer(location) followed by calling Read().
     void Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) override;
@@ -111,11 +111,15 @@ class BufferedFileSystem : public duckdb::FileSystem {
     void Truncate(duckdb::FileHandle &handle, int64_t new_size) override;
 
     /// Check if a directory exists
-    bool DirectoryExists(const string &directory) override { return filesystem_.DirectoryExists(directory); }
+    bool DirectoryExists(const string &directory, optional_ptr<FileOpener> opener = nullptr) override {
+        return filesystem_.DirectoryExists(directory, opener);
+    }
     /// Create a directory if it does not exist
-    void CreateDirectory(const std::string &directory) override { return filesystem_.CreateDirectory(directory); }
+    void CreateDirectory(const std::string &directory, optional_ptr<FileOpener> opener = nullptr) override {
+        return filesystem_.CreateDirectory(directory, opener);
+    }
     /// Recursively remove a directory and all files in it
-    void RemoveDirectory(const std::string &directory) override;
+    void RemoveDirectory(const std::string &directory, optional_ptr<FileOpener> opener = nullptr) override;
     /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
     bool ListFiles(const std::string &directory, const std::function<void(const std::string &, bool)> &callback,
                    FileOpener *opener = nullptr) override {
@@ -123,13 +127,14 @@ class BufferedFileSystem : public duckdb::FileSystem {
     }
     /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
     /// properties
-    void MoveFile(const std::string &source, const std::string &target) override;
+    void MoveFile(const std::string &source, const std::string &target,
+                  optional_ptr<FileOpener> opener = nullptr) override;
     /// Check if a file exists
-    bool FileExists(const std::string &filename) override {
-        return filesystem_.FileExists(PatchFilenameOwned(filename));
+    bool FileExists(const std::string &filename, optional_ptr<FileOpener> opener = nullptr) override {
+        return filesystem_.FileExists(PatchFilenameOwned(filename), opener);
     }
     /// Remove a file from disk
-    void RemoveFile(const std::string &filename) override;
+    void RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener = nullptr) override;
 
     /// Runs a glob on the file system, returning a list of matching files
     vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override {

@@ -81,21 +81,19 @@ void BufferedFileSystem::DropFiles() {
 }
 
 /// Open a file
-duckdb::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &raw_path, uint8_t flags,
-                                                                    FileLockType lock, FileCompressionType compression,
-                                                                    FileOpener *opener) {
+duckdb::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string &raw_path, duckdb::FileOpenFlags flags,
+                                                                    optional_ptr<FileOpener> opener) {
     auto path = PatchFilenameOwned(raw_path);
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
 
     // Bypass the buffering?
     auto iter = file_configs_.find(path);
-    if ((flags & duckdb::FileFlags::FILE_FLAGS_DIRECT_IO) != 0 ||
-        (iter != file_configs_.end() && iter->second.force_direct_io)) {
-        return filesystem_.OpenFile(path, flags, lock, compression);
+    if (flags.DirectIO() || (iter != file_configs_.end() && iter->second.force_direct_io)) {
+        return filesystem_.OpenFile(path, flags, opener);
     }
 
     // Open in page buffer
-    auto file = file_page_buffer_->OpenFile(std::string_view{path}, flags, lock);  // XXX compression?
+    auto file = file_page_buffer_->OpenFile(std::string_view{path}, flags, opener);  // XXX compression?
     return std::make_unique<BufferedFileHandle>(*this, std::move(file));
 }
 
@@ -222,20 +220,21 @@ void BufferedFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) 
     return buffered_hdl.GetFile()->Truncate(new_size);
 }
 /// Recursively remove a directory and all files in it
-void BufferedFileSystem::RemoveDirectory(const std::string &directory) {
-    return filesystem_.RemoveDirectory(directory);
+void BufferedFileSystem::RemoveDirectory(const std::string &directory, optional_ptr<FileOpener> opener) {
+    return filesystem_.RemoveDirectory(directory, opener);
 }
 
 /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
 /// properties
-void BufferedFileSystem::MoveFile(const std::string &raw_source, const std::string &raw_target) {
+void BufferedFileSystem::MoveFile(const std::string &raw_source, const std::string &raw_target,
+                                  optional_ptr<FileOpener> opener) {
     auto source = PatchFilenameOwned(raw_source);
     auto target = PatchFilenameOwned(raw_target);
     // XXX Invalidate buffer manager!
-    return filesystem_.MoveFile(source, target);
+    return filesystem_.MoveFile(source, target, opener);
 }
 /// Remove a file from disk
-void BufferedFileSystem::RemoveFile(const std::string &raw_filename) {
+void BufferedFileSystem::RemoveFile(const std::string &raw_filename, optional_ptr<FileOpener> opener) {
     auto filename = PatchFilenameOwned(raw_filename);
     // XXX Invalidate buffer manager!
     return filesystem_.RemoveFile(filename);
