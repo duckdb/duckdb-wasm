@@ -180,6 +180,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             mod.HEAPF64[(result >> 3) + 1] = 0;
                             return result;
                         }
+
                     } catch (e: any) {
                         error = e;
                         console.warn(`HEAD request with range header failed: ${e}`);
@@ -187,7 +188,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Try to fallback to full read?
                     if (file.allowFullHttpReads) {
-                        if ((contentLength !== null) && (+contentLength > 1)) {
+                        if (((contentLength !== null) && (+contentLength > 1)) || file.dataProtocol == DuckDBDataProtocol.S3) {
                             // 2. Send a dummy GET range request querying the first byte of the file
                             //          -> good IFF status is 206 and contentLenght2 is 1
                             //          -> otherwise, iff 200 and contentLenght2 == contentLenght
@@ -202,15 +203,23 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             xhr.responseType = 'arraybuffer';
                             xhr.setRequestHeader('Range', `bytes=0-0`);
                             xhr.send(null);
+                            const contentRange = xhr.getResponseHeader('Content-Range')?.split('/')[1];
                             const contentLength2 = xhr.getResponseHeader('Content-Length');
 
-                            if (xhr.status == 206 && contentLength2 !== null && +contentLength2 == 1) {
+                            let presumedLength = null;
+                            if (contentRange !== undefined) {
+                                presumedLength = contentRange;
+                            } else if (contentLength !== null && +contentLength > 1) {
+                                presumedLength = contentLength;
+                            }
+
+                            if (xhr.status == 206 && contentLength2 !== null && +contentLength2 == 1 && presumedLength !== null) {
                                 const result = mod._malloc(2 * 8);
-                                mod.HEAPF64[(result >> 3) + 0] = +contentLength;
+                                mod.HEAPF64[(result >> 3) + 0] = +presumedLength;
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
                                 return result;
                             }
-                            if (xhr.status == 200 && contentLength2 !== null && +contentLength2 == +contentLength) {
+                            if (xhr.status == 200 && contentLength2 !== null && contentLength !== null && +contentLength2 == +contentLength) {
                                 console.warn(`fall back to full HTTP read for: ${file.dataUrl}`);
                                 const data = mod._malloc(xhr.response.byteLength);
                                 const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
