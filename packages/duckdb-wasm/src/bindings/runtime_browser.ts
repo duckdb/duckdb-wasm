@@ -152,7 +152,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         mod.HEAPF64[(result >> 3) + 0] = 1;
                         mod.HEAPF64[(result >> 3) + 1] = data;
                         return result;
-                    } else if (flags != FileFlags.FILE_FLAGS_READ) {
+                    } else if ((flags & FileFlags.FILE_FLAGS_READ) == 0) {
                         throw new Error(`Opening file ${file.fileName} failed: unsupported file flags: ${flags}`);
                     }
 
