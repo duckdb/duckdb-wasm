@@ -188,7 +188,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Try to fallback to full read?
                     if (file.allowFullHttpReads) {
-                        if (((contentLength !== null) && (+contentLength > 1)) || file.dataProtocol == DuckDBDataProtocol.S3) {
+                        {
                             // 2. Send a dummy GET range request querying the first byte of the file
                             //          -> good IFF status is 206 and contentLenght2 is 1
                             //          -> otherwise, iff 200 and contentLenght2 == contentLenght
