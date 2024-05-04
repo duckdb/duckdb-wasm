@@ -16,7 +16,7 @@ Wrap your application or the components that need access to the DuckDB database 
 
 ```ts
 import React from 'react';
-import { DuckDBProvider } from './duckdb_provider';
+import { DuckDBProvider } from '@duckdb/react-duckdb';
 
 const DUCKDB_BUNDLES: DuckDBBundles = {
     mvp: {
@@ -47,7 +47,7 @@ To access the DuckDB database instance and establish connections, use the `useDu
 
 ```ts
 import React from 'react';
-import { useDuckDB } from './duckdb_provider';
+import { useDuckDB } from '@duckdb/react-duckdb';
 
 function MyComponent() {
     const { database, connection, isConnecting } = useDuckDB();
