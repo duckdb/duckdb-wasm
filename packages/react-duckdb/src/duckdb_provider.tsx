@@ -29,13 +29,13 @@ function isDuckDBBundle(bundle: unknown): bundle is DuckDBBundle {
 
 type ConnectionPool = Record<number, AsyncDuckDBConnection>;
 
-type ConnectionContextValue = {
+type DuckDBContextValue = {
     database: AsyncDuckDB | null;
     connectionPool: ConnectionPool;
     establishConnection: (id?: number) => Promise<void>;
 };
 
-const ConnectionContext = createContext<ConnectionContextValue | null>(null);
+const DuckDBContext = createContext<DuckDBContextValue | null>(null);
 
 // TODO: consider adding support for passing in an existing AsyncDuckDB instance
 export type DuckDBProviderProps = {
@@ -124,7 +124,7 @@ export function DuckDBProvider({
     );
 
     return (
-        <ConnectionContext.Provider
+        <DuckDBContext.Provider
             value={{
                 database: database.value,
                 connectionPool,
@@ -132,7 +132,7 @@ export function DuckDBProvider({
             }}
         >
             {children}
-        </ConnectionContext.Provider>
+        </DuckDBContext.Provider>
     );
 }
 
@@ -155,25 +155,30 @@ export function DuckDBProvider({
  *   // Use the AsyncDuckDB instance
  * }
  */
-export function useDuckDB(connectionId?: number) {
-    const context = useContext(ConnectionContext);
-    if (!context) {
-        throw new Error('useDuckDB must be used within a DuckDBProvider');
-    }
+export function useDuckDB(connectionId?: number): {
+	database: AsyncDuckDB | null;
+	connection: AsyncDuckDBConnection | null;
+	isConnecting: boolean;
+} {
+	const context = useContext(DuckDBContext);
+	if (!context) {
+		throw new Error("useDuckDB must be used within a DuckDBProvider");
+	}
 
-    const { database, connectionPool, establishConnection } = context;
+	const { database, connectionPool, establishConnection } = context;
 
-    // Check if a connection exists in the pool for the given ID
-    const connection = connectionPool[connectionId || 0] || null;
+	// Check if a connection exists in the pool for the given ID
+	const connection: AsyncDuckDBConnection | null =
+		connectionPool[connectionId || 0] || null;
 
-    // Determine if a connection is currently being established
-    const isConnecting = !connection && !connectionPool[connectionId || 0];
+	// Determine if a connection is currently being established
+	const isConnecting = !connection && !connectionPool[connectionId || 0];
 
-    useEffect(() => {
-        // If no connection exists and it's not currently being established,
-        // trigger the establishConnection function to create a new connection
-        if (isConnecting) establishConnection(connectionId);
-    }, [connectionId, isConnecting, establishConnection]);
+	useEffect(() => {
+		// If no connection exists and it's not currently being established,
+		// trigger the establishConnection function to create a new connection
+		if (isConnecting) establishConnection(connectionId);
+	}, [connectionId, isConnecting, establishConnection]);
 
-    return { database, connection, isConnecting };
+	return { database, connection, isConnecting };
 }
