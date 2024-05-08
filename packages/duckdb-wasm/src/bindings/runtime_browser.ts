@@ -308,7 +308,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // so we need (if enabled) to bump to a ranged GET
                     if (!BROWSER_RUNTIME.getGlobalFileInfo(mod)?.allowFullHttpReads) {
                         failWith(mod, `HEAD request failed: ${path}, with full http reads are disabled`);
-                        return;
+                        return 0;
                     }
                     const xhr2 = new XMLHttpRequest();
                     if (path.startsWith('s3://')) {
@@ -322,7 +322,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     xhr2.send(null);
                     if (xhr2.status != 200 && xhr2.status !== 206) {
                         failWith(mod, `HEAD and GET requests failed: ${path}`);
-                        return;
+                        return 0;
                     }
                     const contentLength = xhr2.getResponseHeader('Content-Length');
                     if (contentLength && (+contentLength > 1)) {
