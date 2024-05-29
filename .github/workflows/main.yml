@@ -1045,10 +1045,6 @@ jobs:
                   name: duckdb-wasm-packages-loadable
                   path: duckdb-wasm-packages.zip
 
-            - name: Measure NPM stats
-              run: |
-                  ./scripts/npm_measure_lib.sh
-
             - name: Publish to NPM
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
