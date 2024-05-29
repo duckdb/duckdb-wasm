@@ -102,9 +102,6 @@
         "./dist/duckdb-browser": "./dist/duckdb-browser.mjs",
         "./dist/duckdb-browser.cjs": "./dist/duckdb-browser.cjs",
         "./dist/duckdb-browser.mjs": "./dist/duckdb-browser.mjs",
-        "./dist/duckdb-browser-blocking": "./dist/duckdb-browser-blocking.mjs",
-        "./dist/duckdb-browser-blocking.mjs": "./dist/duckdb-browser-blocking.mjs",
-        "./dist/duckdb-browser-blocking.cjs": "./dist/duckdb-browser-blocking.cjs",
         "./dist/duckdb-browser-coi.pthread.worker.js": "./dist/duckdb-browser-coi.pthread.worker.js",
         "./dist/duckdb-browser-coi.worker.js": "./dist/duckdb-browser-coi.worker.js",
         "./dist/duckdb-browser-eh.worker.js": "./dist/duckdb-browser-eh.worker.js",
@@ -116,19 +113,14 @@
         "./dist/duckdb-node-eh.worker.cjs": "./dist/duckdb-node-eh.worker.cjs",
         "./dist/duckdb-node-mvp.worker.cjs": "./dist/duckdb-node-mvp.worker.cjs",
         "./blocking": {
-            "browser": {
-                "types": "./dist/duckdb-browser-blocking.d.ts",
-                "import": "./dist/duckdb-browser-blocking.mjs",
-                "require": "./dist/duckdb-browser-blocking.cjs"
-            },
             "node": {
                 "types": "./dist/duckdb-node-blocking.d.ts",
                 "require": "./dist/duckdb-node-blocking.cjs",
                 "import": "./dist/duckdb-node-blocking.cjs"
             },
-            "types": "./dist/duckdb-browser-blocking.d.ts",
-            "import": "./dist/duckdb-browser-blocking.mjs",
-            "require": "./dist/duckdb-browser-blocking.cjs"
+            "types": "./dist/duckdb-node-blocking.d.ts",
+            "import": "./dist/duckdb-node-blocking.mjs",
+            "require": "./dist/duckdb-node-blocking.cjs"
         },
         ".": {
             "browser": {
