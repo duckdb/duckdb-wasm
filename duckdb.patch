@@ -573,7 +573,7 @@ index d188cb5dc3..d323fe9d7a 100644
  #else
  	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 65438aa8ec..13df98b6c2 100644
+index 65438aa8ec..1185bccbc7 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -175,7 +175,8 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -586,7 +586,7 @@ index 65438aa8ec..13df98b6c2 100644
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -215,68 +216,230 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -215,68 +216,223 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -659,7 +659,7 @@ index 65438aa8ec..13df98b6c2 100644
 -	auto metadata_mismatch_error = parsed_metadata.GetInvalidMetadataError();
 +		    var url = (UTF8ToString($0));
 +
-+		    if (typeof XMLHttpRequest == = "undefined") {
++		    if (typeof XMLHttpRequest === "undefined") {
 +			    const os = require('os');
 +			    const path = require('path');
 +			    const fs = require('fs');
@@ -679,16 +679,9 @@ index 65438aa8ec..13df98b6c2 100644
 +				    if (!fs.existsSync(filePath)) {
 +					    const int32 = new Int32Array(new SharedArrayBuffer(8));
 +					    var Worker = require('node:worker_threads').Worker;
-+					    var worker = new Worker(
-+					        "const {Worker,isMainThread,parentPort,workerData,} = require('node:worker_threads');var "
-+					        "times = 0;var SAB = 23;var Z = 0;async function ZZZ(e) {var x = await fetch(e);var res = "
-+					        "await x.arrayBuffer();Atomics.store(SAB, 1, res.byteLength);Atomics.store(SAB, 0, "
-+					        "1);Atomics.notify(SAB, 1);Atomics.notify(SAB, 0);Z = res;};parentPort.on('message', "
-+					        "function(event) {if (times == 0) {times++;SAB = event;} else if (times == 1) "
-+					        "{times++;ZZZ(event);} else {const a = new Uint8Array(Z);const b = new "
-+					        "Uint8Array(event.buffer);var K = Z.byteLength;for (var i = 0; i < K; i++) {b[i] = "
-+					        "a[i];}Atomics.notify(event, 0);Atomics.store(SAB, 0, 2);Atomics.notify(SAB, 0);}});",
-+					        {eval : true});
++                var worker = new Worker("const {Worker,isMainThread,parentPort,workerData,} = require('node:worker_threads');var times = 0;var SAB = 23;var Z = 0; async function ZZZ(e) {var x = await fetch(e);var res = await x.arrayBuffer();Atomics.store(SAB, 1, res.byteLength);Atomics.store(SAB, 0, 1);Atomics.notify(SAB, 1);Atomics.notify(SAB, 0);Z = res;};parentPort.on('message', function(event) {if (times == 0) {times++;SAB = event;} else if (times == 1) {times++; ZZZ(event);} else {const a = new Uint8Array(Z);const b = new Uint8Array(event.buffer);var K = Z.byteLength;for (var i = 0; i < K; i++) {b[i] = a[i];}Atomics.notify(event, 0);Atomics.store(SAB, 0, 2);Atomics.notify(SAB, 0);}});", {
++                    eval: true
++                });
 +					    var uInt8Array;
 +
 +					    int32[0] = 0;
@@ -867,7 +860,7 @@ index 65438aa8ec..13df98b6c2 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -294,25 +457,27 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -294,25 +450,27 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
  	result.lib_hdl = lib_hdl;
  
  	if (!direct_load) {
