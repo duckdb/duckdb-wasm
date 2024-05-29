@@ -74,17 +74,17 @@ namespace web {
 static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
 
 /// Create the default webdb database
-std::unique_ptr<WebDB> WebDB::Create() {
+duckdb::unique_ptr<WebDB> WebDB::Create() {
     if constexpr (ENVIRONMENT == Environment::WEB) {
-        return std::make_unique<WebDB>(WEB);
+        return duckdb::make_uniq<WebDB>(WEB);
     } else {
         auto fs = duckdb::FileSystem::CreateLocal();
-        return std::make_unique<WebDB>(NATIVE, std::move(fs));
+        return duckdb::make_uniq<WebDB>(NATIVE, std::move(fs));
     }
 }
 /// Get the static webdb instance
 arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
-    static std::unique_ptr<WebDB> db = nullptr;
+    static duckdb::unique_ptr<WebDB> db = nullptr;
     if (db == nullptr) {
         db = Create();
     }
@@ -98,7 +98,7 @@ WebDB::Connection::Connection(WebDB& webdb)
 WebDB::Connection::~Connection() = default;
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(
-    std::unique_ptr<duckdb::QueryResult> result) {
+    duckdb::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_.reset();
     current_schema_.reset();
     current_schema_patched_.reset();
@@ -133,7 +133,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 }
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(
-    std::unique_ptr<duckdb::QueryResult> result) {
+    duckdb::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_ = std::move(result);
     current_schema_.reset();
     current_schema_patched_.reset();
@@ -230,7 +230,7 @@ bool WebDB::Connection::CancelPendingQuery() {
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResults() {
     try {
         // Fetch data if a query is active
-        std::unique_ptr<duckdb::DataChunk> chunk;
+        duckdb::unique_ptr<duckdb::DataChunk> chunk;
         if (current_query_result_ == nullptr) {
             return nullptr;
         }
@@ -300,7 +300,7 @@ arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_vie
     }
 }
 
-arrow::Result<std::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(
+arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(
     size_t statement_id, std::string_view args_json) {
     try {
         auto stmt = prepared_statements_.find(statement_id);
@@ -363,7 +363,7 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
     // Read the function definiton
     rapidjson::Document def_doc;
     def_doc.Parse(def_json.begin(), def_json.size());
-    auto def = std::make_shared<UDFFunctionDeclaration>();
+    auto def = duckdb::make_shared_ptr<UDFFunctionDeclaration>();
     ARROW_RETURN_NOT_OK(def->ReadFrom(def_doc));
 
     // Read return type
@@ -481,7 +481,7 @@ arrow::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& f
 
     } else {
         auto res_buf = reinterpret_cast<char*>(static_cast<uintptr_t>(res_arr[0]));
-        auto shared_buffer = std::make_shared<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
+        auto shared_buffer = duckdb::make_shared_ptr<SharedVectorBuffer>(std::unique_ptr<char[]>{res_buf});
         out.SetAuxiliary(shared_buffer);
         duckdb::FlatVector::SetData(out, (data_ptr_t)res_buf);
     }
@@ -596,8 +596,8 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
         named_params.insert({"auto_detect", Value::BOOLEAN(options.auto_detect.value_or(true))});
 
         /// Execute the csv scan
-        auto func = std::make_shared<TableFunctionRelation>(connection_.context, "read_csv", std::move(unnamed_params),
-                                                            named_params);
+        auto func = duckdb::make_shared_ptr<TableFunctionRelation>(connection_.context, "read_csv",
+                                                                   std::move(unnamed_params), named_params);
 
         /// Create or insert
         if (options.create_new) {
@@ -626,7 +626,7 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
         if (options.table_name.empty()) return arrow::Status::Invalid("missing 'name' option");
 
         // Create the input file stream
-        auto ifs = std::make_unique<io::InputFileStream>(webdb_.file_page_buffer_, path);
+        auto ifs = duckdb::make_uniq<io::InputFileStream>(webdb_.file_page_buffer_, path);
         // Do we need to run the analyzer?
         json::TableType table_type;
         if (!options.table_shape || options.table_shape == json::JSONTableShape::UNRECOGNIZED ||
@@ -729,7 +729,7 @@ WebDB::WebDB(WebTag)
 }
 
 /// Constructor
-WebDB::WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs)
+WebDB::WebDB(NativeTag, duckdb::unique_ptr<duckdb::FileSystem> fs)
     : config_(std::make_shared<WebDBConfig>()),
       file_page_buffer_(std::make_shared<io::FilePageBuffer>(std::move(fs))),
       buffered_filesystem_(nullptr),
@@ -774,7 +774,7 @@ std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 
 /// Create a session
 WebDB::Connection* WebDB::Connect() {
-    auto conn = std::make_unique<WebDB::Connection>(*this);
+    auto conn = duckdb::make_uniq<WebDB::Connection>(*this);
     auto conn_ptr = conn.get();
     connections_.insert({conn_ptr, std::move(conn)});
     return conn_ptr;
@@ -806,8 +806,8 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     }
     try {
         // Setup new database
-        auto buffered_fs = buffered_filesystem_ ? std::make_unique<io::BufferedFileSystem>(*buffered_filesystem_)
-                                                : std::make_unique<io::BufferedFileSystem>(file_page_buffer_);
+        auto buffered_fs = buffered_filesystem_ ? duckdb::make_uniq<io::BufferedFileSystem>(*buffered_filesystem_)
+                                                : duckdb::make_uniq<io::BufferedFileSystem>(file_page_buffer_);
         auto buffered_fs_ptr = buffered_fs.get();
 
         duckdb::DBConfig db_config;
@@ -816,7 +816,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;
         db_config.options.access_mode = access_mode;
-        auto db = std::make_shared<duckdb::DuckDB>(config_->path, &db_config);
+        auto db = make_shared_ptr<duckdb::DuckDB>(config_->path, &db_config);
 #ifndef WASM_LOADABLE_EXTENSIONS
         duckdb_web_parquet_init(db.get());
         duckdb_web_fts_init(db.get());

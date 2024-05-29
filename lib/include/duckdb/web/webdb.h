@@ -40,18 +40,18 @@ class WebDB {
         duckdb::Connection connection_;
 
         /// The current pending query result (if any)
-        std::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
+        duckdb::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
         /// The current pending query was canceled
         bool current_pending_query_was_canceled_ = false;
         /// The current query result (if any)
-        std::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
+        duckdb::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
         /// The current arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
         /// The current patched arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_patched_ = nullptr;
 
         /// The currently active prepared statements
-        std::unordered_map<size_t, std::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
+        std::unordered_map<size_t, duckdb::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};
         /// The next prepared statement id
         size_t next_prepared_statement_id_ = 0;
         /// The current arrow ipc input stream
@@ -61,12 +61,12 @@ class WebDB {
 
         // Fully materialize a given result set and return it as an Arrow Buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(
-            std::unique_ptr<duckdb::QueryResult> result);
+            duckdb::unique_ptr<duckdb::QueryResult> result);
         // Setup streaming of a result set and return the schema as an Arrow Buffer
-        arrow::Result<std::shared_ptr<arrow::Buffer>> StreamQueryResult(std::unique_ptr<duckdb::QueryResult> result);
+        arrow::Result<std::shared_ptr<arrow::Buffer>> StreamQueryResult(duckdb::unique_ptr<duckdb::QueryResult> result);
         // Execute a prepared statement by setting up all arguments and returning the query result
-        arrow::Result<std::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
-                                                                                     std::string_view args_json);
+        arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
+                                                                                        std::string_view args_json);
         // Call scalar UDF function
         arrow::Status CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk, ExpressionState& state,
                                             Vector& vec);
@@ -125,9 +125,9 @@ class WebDB {
     /// The buffered filesystem
     io::BufferedFileSystem* buffered_filesystem_;
     /// The (shared) database
-    std::shared_ptr<duckdb::DuckDB> database_;
+    duckdb::shared_ptr<duckdb::DuckDB> database_;
     /// The connections
-    std::unordered_map<Connection*, std::unique_ptr<Connection>> connections_;
+    std::unordered_map<Connection*, duckdb::unique_ptr<Connection>> connections_;
 
     /// The file statistics (if any)
     std::shared_ptr<io::FileStatisticsRegistry> file_stats_ = {};
@@ -135,13 +135,13 @@ class WebDB {
     std::unordered_map<std::string_view, std::unique_ptr<io::WebFileSystem::WebFileHandle>> pinned_web_files_ = {};
 
     // Register custom extension options in DuckDB for options that are handled in DuckDB-WASM instead of DuckDB
-    void RegisterCustomExtensionOptions(std::shared_ptr<duckdb::DuckDB> database);
+    void RegisterCustomExtensionOptions(duckdb::shared_ptr<duckdb::DuckDB> database);
 
    public:
     /// Constructor
     WebDB(WebTag);
     /// Constructor
-    WebDB(NativeTag, std::unique_ptr<duckdb::FileSystem> fs = duckdb::FileSystem::CreateLocal());
+    WebDB(NativeTag, duckdb::unique_ptr<duckdb::FileSystem> fs = duckdb::FileSystem::CreateLocal());
     /// Destructor
     ~WebDB();
 
@@ -201,7 +201,7 @@ class WebDB {
     /// Get the static webdb instance
     static arrow::Result<std::reference_wrapper<WebDB>> Get();
     /// Create the default webdb database
-    static std::unique_ptr<WebDB> Create();
+    static duckdb::unique_ptr<WebDB> Create();
 };
 
 }  // namespace web
