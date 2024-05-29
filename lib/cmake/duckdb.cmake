@@ -15,7 +15,7 @@ endif()
 set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call -DDUCKDB_DEBUG_NO_SAFETY -DDUCKDB_FROM_DUCKDB_WASM")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
-set(DUCKDB_EXTENSIONS "fts;excel;json")
+set(DUCKDB_EXTENSIONS "fts;json")
 # Escape semicolons in DUCKDB_EXTENSIONS before passing to ExternalProject_Add
 string(REPLACE ";" "$<SEMICOLON>" DUCKDB_EXTENSIONS_PACKED "${DUCKDB_EXTENSIONS}")
 
@@ -60,7 +60,6 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libduckdb_fastpforlib.a
     <INSTALL_DIR>/lib/libparquet_extension.a
     <INSTALL_DIR>/lib/libfts_extension.a
-    <INSTALL_DIR>/lib/libexcel_extension.a
     <INSTALL_DIR>/lib/libjson_extension.a)
 
 ExternalProject_Get_Property(duckdb_ep install_dir)
@@ -114,10 +113,6 @@ add_library(duckdb_parquet STATIC IMPORTED)
 set_property(TARGET duckdb_parquet PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libparquet_extension.a)
 target_include_directories(duckdb_parquet INTERFACE ${DUCKDB_SOURCE_DIR}/extension/parquet/include)
 
-add_library(duckdb_excel STATIC IMPORTED)
-set_property(TARGET duckdb_excel PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexcel_extension.a)
-target_include_directories(duckdb_excel INTERFACE ${DUCKDB_SOURCE_DIR}/extension/excel/include)
-
 add_library(duckdb_json STATIC IMPORTED)
 set_property(TARGET duckdb_json PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjson_extension.a)
 target_include_directories(duckdb_json INTERFACE ${DUCKDB_SOURCE_DIR}/extension/json/include)
@@ -125,5 +120,4 @@ target_include_directories(duckdb_json INTERFACE ${DUCKDB_SOURCE_DIR}/extension/
 add_dependencies(duckdb duckdb_ep)
 add_dependencies(duckdb_fts duckdb_ep)
 add_dependencies(duckdb_parquet duckdb_ep)
-add_dependencies(duckdb_excel duckdb_ep)
 add_dependencies(duckdb_json duckdb_ep)

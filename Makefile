@@ -27,7 +27,6 @@ GTEST_FILTER=*
 JS_FILTER=
 
 EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
-EXCEL_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/excel"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
 
 cpp_lib: lib_tests
@@ -225,9 +224,6 @@ wasm_caches: $(DUCKDB_SOURCES)
 	mkdir -p ${EXTENSION_CACHE_DIR}
 	chown -R $(id -u):$(id -g) ${EXTENSION_CACHE_DIR}
 	mkdir -p ${CACHE_DIRS}
-ifeq (${DUCKDB_EXCEL}, 1)
-	touch ${EXCEL_EXTENSION_CACHE_FILE}
-endif
 ifeq (${DUCKDB_JSON}, 1)
 	touch ${JSON_EXTENSION_CACHE_FILE}
 endif

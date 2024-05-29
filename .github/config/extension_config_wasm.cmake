@@ -6,7 +6,6 @@ duckdb_extension_load(json DONT_LINK)
 duckdb_extension_load(parquet DONT_LINK)
 duckdb_extension_load(autocomplete DONT_LINK)
 
-duckdb_extension_load(excel DONT_LINK)
 duckdb_extension_load(fts DONT_LINK)
 duckdb_extension_load(inet DONT_LINK)
 duckdb_extension_load(icu DONT_LINK)
