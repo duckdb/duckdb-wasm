@@ -472,7 +472,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
