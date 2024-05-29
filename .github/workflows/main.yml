@@ -5,7 +5,22 @@ on:
     create:
         tags:
             - v*
+    workflow_call:
+      inputs:
+        override_git_describe:
+          type: string
+        git_ref:
+          type: string
+        skip_tests:
+          type: string
     workflow_dispatch:
+      inputs:
+        override_git_describe:
+          type: string
+        git_ref:
+          type: string
+        skip_tests:
+          type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
@@ -184,6 +199,7 @@ jobs:
               run: |
                   (cd ./submodules/duckdb && git fetch --all --tags)
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -281,6 +297,7 @@ jobs:
               run: |
                   (cd ./submodules/duckdb && git fetch --all --tags)
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -346,6 +363,7 @@ jobs:
             - name: Prepare repository
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -388,6 +406,7 @@ jobs:
             - name: Prepare repository
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -430,6 +449,7 @@ jobs:
             - name: Prepare repository
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -473,6 +493,7 @@ jobs:
             - name: Prepare repository
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -516,6 +537,7 @@ jobs:
             - name: Prepare repository
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -559,6 +581,7 @@ jobs:
             - name: Prepare repository
               run: |
                   [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
+                  git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
