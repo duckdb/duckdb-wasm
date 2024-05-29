@@ -183,7 +183,7 @@ jobs:
             - name: Prepare repository
               run: |
                   (cd ./submodules/duckdb && git fetch --all --tags)
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -280,7 +280,7 @@ jobs:
             - name: Prepare repository
               run: |
                   (cd ./submodules/duckdb && git fetch --all --tags)
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -345,7 +345,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -387,7 +387,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -429,7 +429,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -515,7 +515,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
@@ -558,7 +558,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply ../../duckdb.patch || echo "No patching needed"
+                  [ -f duckdb.patch ] && cd submodules/duckdb && git apply --3way ../../duckdb.patch || echo "No patching needed"
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
