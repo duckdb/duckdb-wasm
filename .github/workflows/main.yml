@@ -1,11 +1,20 @@
 name: 'Main'
 on:
-    push:
-    pull_request:
-    create:
+  push:
+    branches:
+      - '**'
+      - '!next'
+      - '!feature'
+  pull_request:
+    branches:
+      - '**'
+      - '!main'
+      - '!next'
+      - '!feature'
+  create:
         tags:
             - v*
-    workflow_call:
+  workflow_call:
       inputs:
         override_git_describe:
           type: string
@@ -13,7 +22,7 @@ on:
           type: string
         skip_tests:
           type: string
-    workflow_dispatch:
+  workflow_dispatch:
       inputs:
         override_git_describe:
           type: string
