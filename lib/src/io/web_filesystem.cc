@@ -635,6 +635,9 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
                 // Open the file
                 auto *opened = duckdb_web_fs_file_open(file->file_id_, flags.flags);
                 if (opened == nullptr) {
+                    if (flags.ReturnNullIfNotExists()) {
+                        return nullptr;
+                    }
                     std::string msg = std::string{"Failed to open file: "} + file->file_name_;
                     throw std::runtime_error(msg);
                 }
