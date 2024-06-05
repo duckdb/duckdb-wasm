@@ -49,7 +49,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                               .filesystem =
                                   FileSystemConfig{
                                       .allow_full_http_reads = std::nullopt,
-                                      .reliableHeadRequests = std::nullopt,
+                                      .reliable_head_requests = std::nullopt,
                                   },
                               .duckdb_config_options =
                                   DuckDBConfigOptions{
@@ -99,7 +99,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                 config.filesystem.allow_full_http_reads = fs["allowFullHTTPReads"].GetBool();
             }
             if (fs.HasMember("reliableHeadRequests") && fs["reliableHeadRequests"].IsBool()) {
-                config.filesystem.reliableHeadRequests = fs["reliableHeadRequests"].GetBool();
+                config.filesystem.reliable_head_requests = fs["reliableHeadRequests"].GetBool();
             }
         }
     }
