@@ -159,7 +159,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // Supports ranges?
                     let contentLength = null;
                     let error: any | null = null;
-                    if (!file.allowFullHttpReads) {
+                    if (file.reliableHeadRequests || !file.allowFullHttpReads) {
                     try {
                         // Send a dummy HEAD request with range protocol
                         //          -> good IFF status is 206 and contentLenght is present
@@ -211,7 +211,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             let presumedLength = null;
                             if (contentRange !== undefined) {
                                 presumedLength = contentRange;
-                            } else {
+                            } else if (!file.reliableHeadRequests) {
                                 // Send a dummy HEAD request with range protocol
                                 //          -> good IFF status is 206 and contentLenght is present
                                 const head = new XMLHttpRequest();

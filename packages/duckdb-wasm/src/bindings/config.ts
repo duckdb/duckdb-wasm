@@ -25,6 +25,7 @@ export interface DuckDBFilesystemConfig {
     /**
      * Allow falling back to full HTTP reads if the server does not support range requests.
      */
+    reliableHeadRequests?: boolean;
     allowFullHTTPReads?: boolean;
 }
 

@@ -22,6 +22,8 @@ pub struct WebFile {
     pub data_url: Option<String>,
     #[serde(rename = "dataNativeFd")]
     pub data_native_fd: Option<u64>,
+    #[serde(rename = "reliableHeadRequests")]
+    pub allow_full_http_reads: Option<bool>,
     #[serde(rename = "allowFullHttpReads")]
     pub allow_full_http_reads: Option<bool>,
     #[serde(rename = "collectStatistics")]

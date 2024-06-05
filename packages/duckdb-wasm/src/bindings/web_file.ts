@@ -8,5 +8,6 @@ export interface WebFile {
     dataUrl?: string;
     dataNativeFd?: number;
     collectStatistics?: boolean;
+    reliableHeadRequests?: boolean;
     allowFullHttpReads?: boolean;
 }
