@@ -70,6 +70,7 @@ struct DuckDBConfigOptions {
 struct FileSystemConfig {
     /// Allow falling back to full HTTP reads if the server does not support range requests
     std::optional<bool> allow_full_http_reads = std::nullopt;
+    std::optional<bool> reliableHeadRequests = std::nullopt;
 };
 
 struct WebDBConfig {
@@ -87,7 +88,7 @@ struct WebDBConfig {
         .cast_decimal_to_double = std::nullopt,
     };
     /// The filesystem
-    FileSystemConfig filesystem = {.allow_full_http_reads = std::nullopt};
+    FileSystemConfig filesystem = {.allow_full_http_reads = std::nullopt, .reliableHeadRequests = std::nullopt};
 
     /// These options are fetched from DuckDB
     DuckDBConfigOptions duckdb_config_options = {
