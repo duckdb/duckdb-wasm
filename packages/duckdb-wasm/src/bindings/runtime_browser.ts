@@ -159,6 +159,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // Supports ranges?
                     let contentLength = null;
                     let error: any | null = null;
+                    if (!file.allowFullHttpReads) {
                     try {
                         // Send a dummy HEAD request with range protocol
                         //          -> good IFF status is 206 and contentLenght is present
@@ -185,6 +186,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         error = e;
                         console.warn(`HEAD request with range header failed: ${e}`);
                     }
+                    }
 
                     // Try to fallback to full read?
                     if (file.allowFullHttpReads) {
@@ -209,8 +211,24 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             let presumedLength = null;
                             if (contentRange !== undefined) {
                                 presumedLength = contentRange;
-                            } else if (contentLength !== null && +contentLength > 1) {
-                                presumedLength = contentLength;
+                            } else {
+                                // Send a dummy HEAD request with range protocol
+                                //          -> good IFF status is 206 and contentLenght is present
+                                const head = new XMLHttpRequest();
+                                if (file.dataProtocol == DuckDBDataProtocol.S3) {
+                                    head.open('HEAD', getHTTPUrl(file.s3Config, file.dataUrl!), false);
+                                    addS3Headers(head, file.s3Config, file.dataUrl!, 'HEAD');
+                                } else {
+                                    head.open('HEAD', file.dataUrl!, false);
+                                }
+                                head.setRequestHeader('Range', `bytes=0-`);
+                                head.send(null);
+   
+                                // Supports range requests
+                                contentLength = head.getResponseHeader('Content-Length');
+                                if (contentLength !== null && +contentLength > 1) {
+                                    presumedLength = contentLength;
+                                }
                             }
 
                             if (xhr.status == 206 && contentLength2 !== null && +contentLength2 == 1 && presumedLength !== null) {
