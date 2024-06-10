@@ -694,6 +694,11 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
             webfs->Config()->duckdb_config_options.s3_endpoint = StringValue::Get(parameter);
             webfs->IncrementCacheEpoch();
         };
+        auto callback_reliable_head_requests = [](ClientContext& context, SetScope scope, Value& parameter) {
+            auto webfs = io::WebFileSystem::Get();
+            webfs->Config()->duckdb_config_options.reliable_head_requests = BooleanValue::Get(parameter);
+            webfs->IncrementCacheEpoch();
+        };
 
         config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, Value(), callback_s3_region);
         config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, Value(),
@@ -704,6 +709,8 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
                                   callback_s3_session_token);
         config.AddExtensionOption("s3_endpoint", "S3 Endpoint (default s3.amazonaws.com)", LogicalType::VARCHAR,
                                   Value(), callback_s3_endpoint);
+        config.AddExtensionOption("reliable_head_requests", "Set whether HEAD requests returns reliable content-length",
+                                  LogicalType::BOOLEAN, Value(true), callback_reliable_head_requests);
 
         webfs->IncrementCacheEpoch();
     }
