@@ -319,9 +319,12 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
         filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
     }
-    if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3) &&
-        filesystem_.config_->filesystem.reliable_head_requests.value_or(true)) {
-        value.AddMember("reliableHeadRequests", true, allocator);
+
+    if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3)) {
+        if (filesystem_.config_->duckdb_config_options.reliable_head_requests)
+            value.AddMember("reliableHeadRequests", true, allocator);
+        else
+            value.AddMember("reliableHeadRequests", false, allocator);
     }
     value.AddMember("collectStatistics", filesystem_.file_statistics_->TracksFile(file_name_), doc.GetAllocator());
 
@@ -499,6 +502,8 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
     }
     if (config_->filesystem.reliable_head_requests.value_or(true)) {
         value.AddMember("reliableHeadRequests", true, allocator);
+    } else {
+        value.AddMember("reliableHeadRequests", false, allocator);
     }
 
     value.AddMember("s3Config", writeS3Config(config_->duckdb_config_options, allocator), allocator);
@@ -1066,6 +1071,10 @@ rapidjson::Value WebFileSystem::writeS3Config(DuckDBConfigOptions &extension_opt
     s3_session_token = rapidjson::Value{extension_options.s3_session_token.c_str(),
                                         static_cast<rapidjson::SizeType>(extension_options.s3_session_token.size())};
     s3Config.AddMember("sessionToken", s3_session_token, allocator);
+
+    rapidjson::Value reliable_head_requests{rapidjson::kNullType};
+    reliable_head_requests = rapidjson::Value{extension_options.reliable_head_requests};
+    s3Config.AddMember("reliable_head_requests", s3_session_token, allocator);
 
     return s3Config;
 }
