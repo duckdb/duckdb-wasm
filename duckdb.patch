@@ -33,10 +33,10 @@ index 27160adc3f..f3dfc7441b 100644
  		}
  	}
 diff --git a/src/execution/operator/schema/physical_attach.cpp b/src/execution/operator/schema/physical_attach.cpp
-index 2c2b76a0fc..3444594b44 100644
+index 2c2b76a0fc..2d835441c2 100644
 --- a/src/execution/operator/schema/physical_attach.cpp
 +++ b/src/execution/operator/schema/physical_attach.cpp
-@@ -96,6 +96,20 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
+@@ -96,6 +96,25 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
  		}
  	}
  
@@ -51,6 +51,11 @@ index 2c2b76a0fc..3444594b44 100644
 +			// This is due to the fact that on most (all?) remote files writes to DB are not available
 +			// and having this raised later is not super helpful
 +			access_mode = AccessMode::READ_ONLY;
++		}
++		if (access_mode == AccessMode::READ_WRITE) {
++			auto attached_mode = EnumUtil::ToString(access_mode);
++			throw BinderException("Remote database \"%s\" can't be attached in %s mode",
++			                     name, attached_mode);
 +		}
 +	}
 +
