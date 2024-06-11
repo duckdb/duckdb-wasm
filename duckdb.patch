@@ -10,6 +10,53 @@ index 4101111df8..3e035e80d3 100644
  
  install(
    TARGETS json_extension
+diff --git a/src/common/file_system.cpp b/src/common/file_system.cpp
+index 27160adc3f..f3dfc7441b 100644
+--- a/src/common/file_system.cpp
++++ b/src/common/file_system.cpp
+@@ -623,9 +623,14 @@ FileType FileHandle::GetType() {
+ }
+ 
+ bool FileSystem::IsRemoteFile(const string &path) {
+-	const string prefixes[] = {"http://", "https://", "s3://", "s3a://", "s3n://", "gcs://", "gs://", "r2://", "hf://"};
+-	for (auto &prefix : prefixes) {
+-		if (StringUtil::StartsWith(path, prefix)) {
++	string extension = "";
++	return IsRemoteFile(path, extension);
++}
++
++bool FileSystem::IsRemoteFile(const string &path, string &extension) {
++	for (const auto &entry : EXTENSION_FILE_PREFIXES) {
++		if (StringUtil::StartsWith(path, entry.name)) {
++			extension = entry.extension;
+ 			return true;
+ 		}
+ 	}
+diff --git a/src/execution/operator/schema/physical_attach.cpp b/src/execution/operator/schema/physical_attach.cpp
+index 2c2b76a0fc..3444594b44 100644
+--- a/src/execution/operator/schema/physical_attach.cpp
++++ b/src/execution/operator/schema/physical_attach.cpp
+@@ -96,6 +96,20 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
+ 		}
+ 	}
+ 
++	string extension = "";
++	if (FileSystem::IsRemoteFile(path, extension)) {
++		if (!ExtensionHelper::TryAutoLoadExtension(context.client, extension)) {
++			throw MissingExtensionException("Attaching path '%s' requires extension '%s' to be loaded", path,
++			                                extension);
++		}
++		if (access_mode == AccessMode::AUTOMATIC) {
++			// Attaching of remote files gets bumped to READ_ONLY
++			// This is due to the fact that on most (all?) remote files writes to DB are not available
++			// and having this raised later is not super helpful
++			access_mode = AccessMode::READ_ONLY;
++		}
++	}
++
+ 	// get the database type and attach the database
+ 	db_manager.GetDatabaseType(context.client, db_type, *info, config, unrecognized_option);
+ 	auto attached_db = db_manager.AttachDatabase(context.client, *info, db_type, access_mode);
 diff --git a/src/include/duckdb/common/file_open_flags.hpp b/src/include/duckdb/common/file_open_flags.hpp
 index d0509a214b..1b5107e849 100644
 --- a/src/include/duckdb/common/file_open_flags.hpp
@@ -25,6 +72,18 @@ index d0509a214b..1b5107e849 100644
  	FileLockType lock = FileLockType::NO_LOCK;
  	FileCompressionType compression = FileCompressionType::UNCOMPRESSED;
  };
+diff --git a/src/include/duckdb/common/file_system.hpp b/src/include/duckdb/common/file_system.hpp
+index e0df2f70c2..fa2b938199 100644
+--- a/src/include/duckdb/common/file_system.hpp
++++ b/src/include/duckdb/common/file_system.hpp
+@@ -238,6 +238,7 @@ public:
+ 
+ 	//! Whether or not a file is remote or local, based only on file path
+ 	DUCKDB_API static bool IsRemoteFile(const string &path);
++	DUCKDB_API static bool IsRemoteFile(const string &path, string &extension);
+ 
+ 	DUCKDB_API virtual void SetDisabledFileSystems(const vector<string> &names);
+ 
 diff --git a/src/include/duckdb/main/extension_install_info.hpp b/src/include/duckdb/main/extension_install_info.hpp
 index 64b7b520a7..b03f64b3aa 100644
 --- a/src/include/duckdb/main/extension_install_info.hpp
