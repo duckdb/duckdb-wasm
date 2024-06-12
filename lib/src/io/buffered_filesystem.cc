@@ -94,6 +94,10 @@ duckdb::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string
 
     // Open in page buffer
     auto file = file_page_buffer_->OpenFile(std::string_view{path}, flags, opener);  // XXX compression?
+    if (!file) {
+        return nullptr;
+    }
+
     return std::make_unique<BufferedFileHandle>(*this, std::move(file));
 }
 
