@@ -264,6 +264,13 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
         }
         return std::make_unique<FileRef>(*this, *files.at(it->second->file_id));
     }
+
+    std::string path_buf{path};
+    auto X = filesystem->OpenFile(path_buf, flags);
+    if (!X) {
+        return nullptr;
+    }
+
     // Allocate file id
     uint16_t file_id;
     if (!free_file_ids.empty()) {
@@ -282,7 +289,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
     // Create file
     auto file_ptr = std::make_unique<BufferedFile>(file_id, path, flags);
     auto& file = *file_ptr;
-    file.handle = filesystem->OpenFile(file.path.c_str(), flags);
+    file.handle = std::move(X);
     assert(file.handle != nullptr);
     files_by_name.insert({file.path, file_ptr.get()});
     files.insert({file_id, std::move(file_ptr)});
