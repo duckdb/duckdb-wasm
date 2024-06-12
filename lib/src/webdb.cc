@@ -806,7 +806,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
     assert(config_ != nullptr);
     *config_ = WebDBConfig::ReadFrom(args_json);
     bool in_memory = config_->path == ":memory:" || config_->path == "";
-    AccessMode access_mode = in_memory ? AccessMode::UNDEFINED : AccessMode::READ_ONLY;
+    AccessMode access_mode = in_memory ? AccessMode::AUTOMATIC : AccessMode::READ_ONLY;
     if (config_->access_mode.has_value()) {
         access_mode = static_cast<AccessMode>(config_->access_mode.value());
     }
