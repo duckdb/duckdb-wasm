@@ -23,6 +23,7 @@ use arrow::datatypes::SchemaRef;
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 const CONTINUATION_MARKER: [u8; 4] = [0xff; 4];
 
@@ -47,6 +48,7 @@ impl<'buf> Reader<'buf> {
         if available < n {
             Err(arrow::error::ArrowError::IoError(
                 "insufficient bytes available".to_string(),
+                std::io::Error::new(std::io::ErrorKind::Other,"")
             ))
         } else {
             let result = &self.buffer[self.position..(self.position + n)];
@@ -65,7 +67,7 @@ pub struct ArrowStreamReader {
     /// Optional dictionaries for each schema field.
     ///
     /// Dictionaries may be appended to in the streaming format.
-    dictionaries_by_field: Vec<Option<ArrayRef>>,
+    dictionaries_by_field: HashMap<i64, ArrayRef>,
     /// An indicator of whether the stream is complete.
     ///
     /// This value is set to `true` the first time the reader's `next()` returns `None`.
@@ -95,16 +97,16 @@ impl ArrowStreamReader {
 
         let meta_buffer = reader.next(meta_len as usize)?;
         let message = arrow::ipc::root_as_message(meta_buffer).map_err(|err| {
-            ArrowError::IoError(format!("Unable to get root as message: {:?}", err))
+            ArrowError::IoError(format!("Unable to get root as message: {:?}", err),std::io::Error::new(std::io::ErrorKind::Other,""))
         })?;
         // message header is a Schema, so read it
         let ipc_schema: arrow::ipc::Schema = message.header_as_schema().ok_or_else(|| {
-            ArrowError::IoError("Unable to read IPC message as schema".to_string())
+            ArrowError::IoError("Unable to read IPC message as schema".to_string(),std::io::Error::new(std::io::ErrorKind::Other,""))
         })?;
         let schema = arrow::ipc::convert::fb_to_schema(ipc_schema);
 
         // Create an array of optional dictionary value arrays, one per field.
-        let dictionaries_by_field = vec![None; schema.fields().len()];
+        let dictionaries_by_field = HashMap::new();
 
         Ok(Self {
             schema: Arc::new(schema),
@@ -157,39 +159,45 @@ impl ArrowStreamReader {
 
         let meta_buffer = reader.next(meta_len as usize)?;
         let message = arrow::ipc::root_as_message(meta_buffer).map_err(|err| {
-            ArrowError::IoError(format!("Unable to get root as message: {:?}", err))
+            ArrowError::IoError(format!("Unable to get root as message: {:?}", err),std::io::Error::new(std::io::ErrorKind::Other,""))
         })?;
 
         match message.header_type() {
             arrow::ipc::MessageHeader::Schema => Err(ArrowError::IoError(
                 "Not expecting a schema when messages are read".to_string(),
-            )),
+            std::io::Error::new(std::io::ErrorKind::Other,""))),
             arrow::ipc::MessageHeader::RecordBatch => {
                 let batch = message.header_as_record_batch().ok_or_else(|| {
-                    ArrowError::IoError("Unable to read IPC message as record batch".to_string())
+                    ArrowError::IoError("Unable to read IPC message as record batch".to_string(),std::io::Error::new(std::io::ErrorKind::Other,""))
                 })?;
+                let metadata = arrow::ipc::gen::Schema::MetadataVersion(1);
                 let buf = reader.next(message.bodyLength() as usize)?;
+                let buf1 = arrow::buffer::Buffer::from_slice_ref(buf);
                 arrow::ipc::reader::read_record_batch(
-                    &buf,
+                    &buf1,
                     batch,
                     self.schema(),
                     &self.dictionaries_by_field,
                     None,
+                    &metadata
                 )
                 .map(Some)
             }
             arrow::ipc::MessageHeader::DictionaryBatch => {
                 let batch = message.header_as_dictionary_batch().ok_or_else(|| {
                     ArrowError::IoError(
-                        "Unable to read IPC message as dictionary batch".to_string(),
+                        "Unable to read IPC message as dictionary batch".to_string(),std::io::Error::new(std::io::ErrorKind::Other,"")
                     )
                 })?;
                 let buf = reader.next(message.bodyLength() as usize)?;
+                let buf1 = arrow::buffer::Buffer::from_slice_ref(buf);
+                let metadata = arrow::ipc::gen::Schema::MetadataVersion(1);
                 arrow::ipc::reader::read_dictionary(
-                    &buf,
+                    &buf1,
                     batch,
                     &self.schema,
                     &mut self.dictionaries_by_field,
+		    &metadata
                 )?;
 
                 // read the next message until we encounter a RecordBatch
@@ -199,7 +207,7 @@ impl ArrowStreamReader {
             t => Err(ArrowError::IoError(format!(
                 "Reading types other than record batches not yet supported, unable to read {:?} ",
                 t
-            ))),
+            ), std::io::Error::new(std::io::ErrorKind::Other,""))),
         }
     }
 }

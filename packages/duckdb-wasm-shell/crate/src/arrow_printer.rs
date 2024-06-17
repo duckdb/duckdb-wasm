@@ -57,7 +57,7 @@ fn get_column_alignment(column: &arrow::array::ArrayRef) -> comfy::CellAlignment
         | DataType::Float16
         | DataType::Float32
         | DataType::Float64
-        | DataType::Decimal(_, _) => comfy::CellAlignment::Right,
+        | DataType::Decimal128(_, _) => comfy::CellAlignment::Right,
         _ => comfy::CellAlignment::Left,
     }
 }

@@ -39,7 +39,7 @@ wasm-bindgen = { version = "0.2.74", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.24"
 chrono = "0.4.19"
 js-sys = "0.3.51"
-arrow = { version = "13.0.0", features = ["csv", "ipc"] }
+arrow = { version = "52.0.0", features = ["csv", "ipc"] }
 lazy_static = "1.4.0"
 encode_unicode = "0.3.6"
 unicode-width = "0.1.8"
