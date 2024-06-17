@@ -107,6 +107,7 @@ import { testTokenization, testTokenizationAsync } from './tokenizer.test';
 import { testTableNames, testTableNamesAsync } from './tablenames.test';
 import { testRegressionAsync } from './regression';
 import { testUDF } from './udf.test';
+import { longQueries } from './long_queries.test';
 //import { testEXCEL } from './excel.test';
 //import { testJSON } from './json.test';
 
@@ -116,6 +117,7 @@ const dataURL = `${baseURL}/data`;
 testHTTPFS(() => db!);
 testHTTPFSAsync(() => adb!, resolveData, dataURL);
 testUDF(() => db!);
+longQueries(() => adb!);
 testTableNames(() => db!);
 testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
