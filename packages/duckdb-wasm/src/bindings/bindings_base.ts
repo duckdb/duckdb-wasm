@@ -163,12 +163,17 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Send a query and return the full result */
     public runQuery(conn: number, text: string): Uint8Array {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_run', ['number', 'string'], [conn, text]);
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length );
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_run_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
+        this.mod._free(bufferPtr);
         return res;
     }
     /**
