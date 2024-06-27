@@ -140,7 +140,7 @@ index 8a278832b1..b9447440de 100644
  #else
  	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 65438aa8ec..97fce63d04 100644
+index 65438aa8ec..591c759a7f 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -175,7 +175,13 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
@@ -390,7 +390,7 @@ index 65438aa8ec..97fce63d04 100644
 +			signature[j] = ((uint8_t *)exe)[4 + signature_offset + j];
 +		}
 +		bool any_valid = false;
-+		for (auto &key : ExtensionHelper::GetPublicKeys(config.options.allow_unsigned_extensions)) {
++		for (auto &key : ExtensionHelper::GetPublicKeys(config.options.allow_community_extensions)) {
 +			if (duckdb_mbedtls::MbedTlsWrapper::IsValidSha256Signature(key, signature, two_level_hash)) {
 +				any_valid = true;
 +				break;
