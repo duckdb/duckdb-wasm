@@ -6,7 +6,7 @@ use ropey::Rope;
 use std::cmp::Ordering;
 use std::fmt::Write;
 
-const PROMPT_INIT: &str = "\x1b[1mduckdb\x1b[m> ";
+const PROMPT_INIT: &str = "\x1b[1mcoplane\x1b[m> ";
 const PROMPT_ENDL: &str = "   ...> ";
 const PROMPT_WRAP: &str = "   ..>> ";
 const PROMPT_WIDTH: usize = 8;

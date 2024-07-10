@@ -459,7 +459,7 @@
 "@duckdb/duckdb-wasm-shell@file:packages/duckdb-wasm-shell":
   version "1.11.0"
   dependencies:
-    "@duckdb/duckdb-wasm" "file:packages/duckdb-wasm"
+    "@duckdb/duckdb-wasm" "file:../../../Library/Caches/Yarn/v6/npm-@duckdb-duckdb-wasm-shell-1.11.0-61719e5e-b216-4d05-b6b1-3d90e23eaaff-1719610606703/node_modules/@duckdb/duckdb-wasm"
     xterm "^5.3.0"
     xterm-addon-fit "^0.8.0"
     xterm-addon-web-links "^0.9.0"
@@ -7929,11 +7929,6 @@ ua-parser-js@^0.7.30:
   version "0.7.30"
   resolved "https://registry.yarnpkg.com/ua-parser-js/-/ua-parser-js-0.7.30.tgz#4cf5170e8b55ac553fe8b38df3a82f0669671f0b"
   integrity sha512-uXEtSresNUlXQ1QL4/3dQORcGv7+J2ookOG2ybA/ga9+HYEXueT2o+8dUJQkpedsyTyCJ6jCCirRcKtdtx1kbg==
-
-uglify-js@^3.17.4:
-  version "3.17.4"
-  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.17.4.tgz#61678cf5fa3f5b7eb789bb345df29afb8257c22c"
-  integrity sha512-T9q82TJI9e/C1TAxYvfb16xO120tMVFZrGA3f9/P4424DNu6ypK103y0GPFVa17yotwSyZW5iYXgjYHkGrJW/g==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"
