@@ -50,3 +50,16 @@ index 2c2b76a0fc..2d835441c2 100644
  	// get the database type and attach the database
  	db_manager.GetDatabaseType(context.client, db_type, *info, config, unrecognized_option);
  	auto attached_db = db_manager.AttachDatabase(context.client, *info, db_type, access_mode);
+diff --git a/src/include/duckdb/common/file_system.hpp b/src/include/duckdb/common/file_system.hpp
+index e0df2f70c2..e1ec953917 100644
+--- a/src/include/duckdb/common/file_system.hpp
++++ b/src/include/duckdb/common/file_system.hpp
+@@ -238,6 +238,8 @@ public:
+ 
+ 	//! Whether or not a file is remote or local, based only on file path
+ 	DUCKDB_API static bool IsRemoteFile(const string &path);
++	DUCKDB_API static bool IsRemoteFile(const string &path, string &extension);
++
+ 
+ 	DUCKDB_API virtual void SetDisabledFileSystems(const vector<string> &names);
+ 
