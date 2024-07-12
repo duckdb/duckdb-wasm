@@ -1,0 +1,15 @@
+diff --git a/src/include/duckdb/common/file_open_flags.hpp b/src/include/duckdb/common/file_open_flags.hpp
+index d0509a214b..1b5107e849 100644
+--- a/src/include/duckdb/common/file_open_flags.hpp
++++ b/src/include/duckdb/common/file_open_flags.hpp
+@@ -100,8 +100,9 @@ public:
+ 		return flags & FILE_FLAGS_PARALLEL_ACCESS;
+ 	}
+ 
+-private:
+ 	idx_t flags = 0;
++
++private:
+ 	FileLockType lock = FileLockType::NO_LOCK;
+ 	FileCompressionType compression = FileCompressionType::UNCOMPRESSED;
+ };
