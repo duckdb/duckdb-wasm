@@ -434,7 +434,7 @@ build/docker_ci_image:
 	touch build/docker_ci_image
 
 patch_duckdb:
-	find duckdb_patches/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 -d submodules/duckdb
+	find duckdb_patches/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb
 
 submodules:
 	git submodule update --init --recursive
