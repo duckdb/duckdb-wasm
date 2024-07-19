@@ -61,6 +61,7 @@ emcmake cmake \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
     -DDUCKDB_LOCATION=${DUCKDB_LOCATION} \
     -DWASM_LINK_FLAGS_EXT="${LINK_FLAGS}" \
+    -DDUCKDB_EXTENSION_CONFIGS=extension_config_wasm.cmake \
     ${ADDITIONAL_FLAGS}
 
 emmake make \

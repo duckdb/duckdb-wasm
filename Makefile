@@ -357,7 +357,6 @@ app: wasm wasmpack shell docs js_tests_release
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 
 build_loadable:
-	cp .github/config/extension_config_wasm.cmake submodules/duckdb/extension/extension_config.cmake
 	DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize ${TARGET}
 
 build_loadable_unsigned: build_loadable
