@@ -197,8 +197,10 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
     auto polling_interval = webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL);
     do {
         switch (current_pending_query_result_->ExecuteTask()) {
+            case PendingExecutionResult::EXECUTION_FINISHED:
             case PendingExecutionResult::RESULT_READY:
                 return StreamQueryResult(current_pending_query_result_->Execute());
+            case PendingExecutionResult::BLOCKED:
             case PendingExecutionResult::NO_TASKS_AVAILABLE:
                 return nullptr;
             case PendingExecutionResult::RESULT_NOT_READY:
