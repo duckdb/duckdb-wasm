@@ -85,7 +85,7 @@ const logger = new duckdb.ConsoleLogger();
 const db = new duckdb.AsyncDuckDB(logger, worker);
 await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 ```
-static served(manually download the files from https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm/dist/)
+static served (manually download the files from https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm/dist/)
 ```ts
 import * as duckdb from '@duckdb/duckdb-wasm';
 
