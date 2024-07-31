@@ -1,0 +1,15 @@
+diff --git a/cpp/src/arrow/util/hashing.h b/cpp/src/arrow/util/hashing.h
+index 2de9f41532..1a7803d2d8 100644
+--- a/cpp/src/arrow/util/hashing.h
++++ b/cpp/src/arrow/util/hashing.h
+@@ -31,6 +31,10 @@
+ #include <utility>
+ #include <vector>
+ 
++#ifdef EMSCRIPTEN
++#include <emscripten.h>
++#endif
++
+ #include "arrow/array/builder_binary.h"
+ #include "arrow/buffer_builder.h"
+ #include "arrow/result.h"
