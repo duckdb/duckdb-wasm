@@ -1,4 +1,4 @@
-name: Create Internal issue when the "High Priority" label is applied
+name: Create or Label Mirror Issue
 on:
   issues:
     types:
@@ -6,19 +6,17 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.DUCKDBLABS_BOT_TOKEN }}
-  # an event triggering this workflow is either an issue or a pull request,
-  # hence only one of the numbers will be filled in the TITLE_PREFIX
   TITLE_PREFIX: "[duckdb-wasm/#${{ github.event.issue.number }}]"
   PUBLIC_ISSUE_TITLE: ${{ github.event.issue.title }}
 
 jobs:
   create_or_label_issue:
-    if: github.event.label.name == 'High Priority'
+    if: github.event.label.name == 'reproduced' || github.event.label.name == 'under review'
     runs-on: ubuntu-latest
     steps:
       - name: Get mirror issue number
         run: |
-          gh issue list --repo duckdblabs/duckdb-internal --search "${TITLE_PREFIX}" --json title,number --jq ".[] | select(.title | startswith(\"$TITLE_PREFIX\")).number" > mirror_issue_number.txt
+          gh issue list --repo duckdblabs/duckdb-internal --search "${TITLE_PREFIX}" --json title,number --state all --jq ".[] | select(.title | startswith(\"$TITLE_PREFIX\")).number" > mirror_issue_number.txt
           echo "MIRROR_ISSUE_NUMBER=$(cat mirror_issue_number.txt)" >> $GITHUB_ENV
 
       - name: Print whether mirror issue exists
@@ -31,6 +29,8 @@ jobs:
 
       - name: Create or label issue
         run: |
+          export LABEL="Wasm"
           if [ "$MIRROR_ISSUE_NUMBER" == "" ]; then
-            gh issue create --repo duckdblabs/duckdb-internal --label "Wasm" --title "$TITLE_PREFIX - $PUBLIC_ISSUE_TITLE" --body "See https://github.com/duckdb/duckdb-wasm/issues/${{ github.event.issue.number }}"
+            gh issue create --repo duckdblabs/duckdb-internal --label "$LABEL" --title "$TITLE_PREFIX - $PUBLIC_ISSUE_TITLE" --body "See https://github.com/duckdb/duckdb-wasm/issues/${{ github.event.issue.number }}"
           fi
+
