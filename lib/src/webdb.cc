@@ -317,7 +317,8 @@ arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::Execut
             if (v.IsLosslessDouble())
                 values.emplace_back(v.GetDouble());
             else if (v.IsString())
-                values.emplace_back(v.GetString());
+                // Use GetStringLenght otherwise null bytes will be counted as terminators
+                values.emplace_back(string_t(v.GetString(), v.GetStringLength()));
             else if (v.IsNull())
                 values.emplace_back(nullptr);
             else if (v.IsBool())
