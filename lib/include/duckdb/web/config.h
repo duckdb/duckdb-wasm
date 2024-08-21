@@ -104,6 +104,8 @@ struct WebDBConfig {
     /// Whether to allow unsigned extensions
     bool allow_unsigned_extensions = false;
 
+    std::string custom_user_agent = "";
+
     /// Read from a document
     static WebDBConfig ReadFrom(std::string_view args_json);
 };

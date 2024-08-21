@@ -59,7 +59,8 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                                       .s3_secret_access_key = "",
                                       .s3_session_token = "",
                                   },
-                              .allow_unsigned_extensions = false};
+                              .allow_unsigned_extensions = false,
+                              .custom_user_agent = ""};
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(args_json.begin(), args_json.size());
     if (ok) {
@@ -101,6 +102,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
             if (fs.HasMember("reliableHeadRequests") && fs["reliableHeadRequests"].IsBool()) {
                 config.filesystem.reliable_head_requests = fs["reliableHeadRequests"].GetBool();
             }
+        }
+        if (doc.HasMember("customUserAgent") && doc["customUserAgent"].IsString()) {
+            config.custom_user_agent = doc["customUserAgent"].GetString();
         }
     }
     if (!config.query.cast_bigint_to_double.has_value()) {
