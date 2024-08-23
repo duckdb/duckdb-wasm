@@ -368,11 +368,11 @@ serve_loadable_base: wasmpack shell docs
 
 .PHONY: serve_local
 serve_local: build_loadable_unsigned serve_loadable_base
-	http-server packages/duckdb-wasm-app/build/release -o "#queries=v0,SET-custom_extension_repository%3D'http%3A%2F%2F127.0.0.1%3A8080%2Fextension_repository'~" -a 127.0.0.1 -p 8080
+	npx http-server packages/duckdb-wasm-app/build/release -o "#queries=v0,SET-custom_extension_repository%3D'http%3A%2F%2F127.0.0.1%3A8080%2Fextension_repository'~" -a 127.0.0.1 -p 8080
 
 .PHONY: serve
 serve: build_loadable serve_loadable_base
-	http-server packages/duckdb-wasm-app/build/release -o
+	npx http-server packages/duckdb-wasm-app/build/release -o
 
 .PHONY: app_server
 app_server:
@@ -434,8 +434,10 @@ build/docker_ci_image:
 	touch build/docker_ci_image
 
 patch_duckdb:
-	find patches/duckdb/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb
-	find patches/arrow/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/arrow
+	(find patches/duckdb/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb) || true
+	(find patches/arrow/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/arrow) || true
+
+apply_patches: patch_duckdb
 
 submodules:
 	git submodule update --init --recursive

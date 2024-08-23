@@ -198,7 +198,7 @@ jobs:
             - name: Prepare repository
               run: |
                   (cd ./submodules/duckdb && git fetch --all --tags)
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - name: Prepare environment
@@ -296,7 +296,7 @@ jobs:
             - name: Prepare repository
               run: |
                   (cd ./submodules/duckdb && git fetch --all --tags)
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - name: Prepare environment
@@ -362,7 +362,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
@@ -405,7 +405,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
@@ -448,7 +448,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
@@ -492,7 +492,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
@@ -535,7 +535,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
@@ -578,7 +578,7 @@ jobs:
 
             - name: Prepare repository
               run: |
-                  make patch_duckdb
+                  make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
             - uses: mymindstorm/setup-emsdk@v14
