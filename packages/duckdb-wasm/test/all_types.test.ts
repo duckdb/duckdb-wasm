@@ -41,6 +41,7 @@ const NOT_IMPLEMENTED_TYPES = [
     'dec_18_6',
     'dec38_10',
     'uuid',
+    'varint',
     'map',
     'json',
     'date_array',
