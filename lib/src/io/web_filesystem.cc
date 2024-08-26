@@ -645,7 +645,7 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
         case DataProtocol::S3:
             try {
                 // Open the file
-                auto *opened = duckdb_web_fs_file_open(file->file_id_, flags.flags);
+                auto *opened = duckdb_web_fs_file_open(file->file_id_, flags.GetFlagsInternal());
                 if (opened == nullptr) {
                     if (flags.ReturnNullIfNotExists()) {
                         return nullptr;
