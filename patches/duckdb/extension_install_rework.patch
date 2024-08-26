@@ -1,8 +1,8 @@
 diff --git a/src/include/duckdb/main/extension_install_info.hpp b/src/include/duckdb/main/extension_install_info.hpp
-index 64b7b520a7..b03f64b3aa 100644
+index 6ccd1a1156..8040f537b6 100644
 --- a/src/include/duckdb/main/extension_install_info.hpp
 +++ b/src/include/duckdb/main/extension_install_info.hpp
-@@ -49,9 +49,9 @@ public:
+@@ -55,9 +55,9 @@ public:
  
  struct ExtensionRepository {
  	//! All currently available repositories
@@ -16,30 +16,30 @@ index 64b7b520a7..b03f64b3aa 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
-index 37b3cd1aa0..b91f0059b4 100644
+index c821caedea..aae791b786 100644
 --- a/src/main/extension/extension_helper.cpp
 +++ b/src/main/extension/extension_helper.cpp
-@@ -302,7 +302,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(DatabaseInstance
- 
- 	auto &config = DBConfig::GetConfig(db);
+@@ -319,7 +319,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+ 	vector<ExtensionUpdateResult> result;
+ 	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  
 -#ifndef WASM_LOADABLE_EXTENSIONS
  	case_insensitive_set_t seen_extensions;
  
  	// scan the install directory for installed extensions
-@@ -319,7 +318,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(DatabaseInstance
+@@ -336,7 +335,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  
- 		result.push_back(UpdateExtensionInternal(db, fs, fs.JoinPath(ext_directory, path), extension_name));
+ 		result.push_back(UpdateExtensionInternal(context, db, fs, fs.JoinPath(ext_directory, path), extension_name));
  	});
 -#endif
  
  	return result;
  }
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
-index 8a278832b1..b9447440de 100644
+index d190ea197c..157db58641 100644
 --- a/src/main/extension/extension_install.cpp
 +++ b/src/main/extension/extension_install.cpp
-@@ -197,7 +197,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DBConfig> db_con
+@@ -204,7 +204,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DatabaseInstance
  		versioned_path = "/${REVISION}/${PLATFORM}/${NAME}.duckdb_extension";
  	}
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -49,25 +49,25 @@ index 8a278832b1..b9447440de 100644
  #else
  	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 65438aa8ec..591c759a7f 100644
+index 7fe4fcb3db..3bdedd191c 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -175,7 +175,13 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -295,7 +295,13 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = false;
  		string extension_name = ApplyExtensionAlias(extension);
  #ifdef WASM_LOADABLE_EXTENSIONS
 -		string url_template = ExtensionUrlTemplate(&config, "");
 +		ExtensionRepository repository;
 +
-+		string custom_endpoint = config.options.custom_extension_repo;
++		string custom_endpoint = db.config.options.custom_extension_repo;
 +		if (!custom_endpoint.empty()) {
 +			repository = ExtensionRepository("custom", custom_endpoint);
 +		}
-+		string url_template = ExtensionUrlTemplate(&config, repository, "");
++		string url_template = ExtensionUrlTemplate(db, repository, "");
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -215,68 +221,223 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -336,73 +342,223 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -104,12 +104,12 @@ index 65438aa8ec..591c759a7f 100644
 +	        metadata_mismatch_error = StringUtil::Format("Failed to load '%s', %s", extension, metadata_mismatch_error);
 +	    }
 +
-+	    if (!config.options.allow_unsigned_extensions) {
++	    if (!db.config.options.allow_unsigned_extensions) {
 +	        bool signature_valid =
-+	            CheckExtensionSignature(*handle, parsed_metadata, config.options.allow_community_extensions);
++	            CheckExtensionSignature(*handle, parsed_metadata, db.config.options.allow_community_extensions);
 +
 +	        if (!signature_valid) {
-+	            throw IOException(config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename) +
++	            throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename) +
 +	                              metadata_mismatch_error);
 +	        }
 +
@@ -117,7 +117,7 @@ index 65438aa8ec..591c759a7f 100644
 +	            // Signed extensions perform the full check
 +	            throw InvalidInputException(metadata_mismatch_error);
 +	        }
-+	    } else if (!config.options.allow_extensions_metadata_mismatch) {
++	    } else if (!db.config.options.allow_extensions_metadata_mismatch) {
 +	        if (!metadata_mismatch_error.empty()) {
 +	            // Unsigned extensions AND configuration allowing n, loading allowed, mainly for
 +	            // debugging purposes
@@ -240,9 +240,13 @@ index 65438aa8ec..591c759a7f 100644
  	}
  
 +	auto dopen_from = basename;
- 	if (!config.options.allow_unsigned_extensions) {
--		bool signature_valid =
--		    CheckExtensionSignature(*handle, parsed_metadata, config.options.allow_community_extensions);
+ 	if (!db.config.options.allow_unsigned_extensions) {
+-		bool signature_valid;
+-		if (parsed_metadata.AppearsValid()) {
+-			signature_valid =
+-			    CheckExtensionSignature(*handle, parsed_metadata, db.config.options.allow_community_extensions);
+-		} else {
+-			signature_valid = false;
 +		// signature is the last 256 bytes of the file
 +
 +		string signature;
@@ -267,7 +271,7 @@ index 65438aa8ec..591c759a7f 100644
 +
 +		for (idx_t i = 0; i < numChunks; i++) {
 +			splits[i] = maxLenChunks * i;
-+		}
+ 		}
 +		splits.back() = signature_offset;
 +
 +		for (idx_t i = 0; i < numChunks; i++) {
@@ -283,7 +287,7 @@ index 65438aa8ec..591c759a7f 100644
 +		hash_concatenation.reserve(32 * numChunks); // 256 bits -> 32 bytes per chunk
  
 -		if (!signature_valid) {
--			throw IOException(config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename) +
+-			throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename) +
 -			                  metadata_mismatch_error);
 +		for (auto &hash_chunk : hash_chunks) {
 +			hash_concatenation += hash_chunk;
@@ -299,19 +303,19 @@ index 65438aa8ec..591c759a7f 100644
 +			signature[j] = ((uint8_t *)exe)[4 + signature_offset + j];
 +		}
 +		bool any_valid = false;
-+		for (auto &key : ExtensionHelper::GetPublicKeys(config.options.allow_community_extensions)) {
++		for (auto &key : ExtensionHelper::GetPublicKeys(db.config.options.allow_community_extensions)) {
 +			if (duckdb_mbedtls::MbedTlsWrapper::IsValidSha256Signature(key, signature, two_level_hash)) {
 +				any_valid = true;
 +				break;
 +			}
  		}
--	} else if (!config.options.allow_extensions_metadata_mismatch) {
+-	} else if (!db.config.options.allow_extensions_metadata_mismatch) {
 -		if (!metadata_mismatch_error.empty()) {
 -			// Unsigned extensions AND configuration allowing n, loading allowed, mainly for
 -			// debugging purposes
 -			throw InvalidInputException(metadata_mismatch_error);
 +		if (!any_valid) {
-+			throw IOException(config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename));
++			throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename));
  		}
  	}
 -
@@ -341,7 +345,7 @@ index 65438aa8ec..591c759a7f 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -294,25 +455,27 @@ bool ExtensionHelper::TryInitialLoad(DBConfig &config, FileSystem &fs, const str
+@@ -420,25 +576,27 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	result.lib_hdl = lib_hdl;
  
  	if (!direct_load) {
