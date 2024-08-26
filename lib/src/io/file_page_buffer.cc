@@ -230,7 +230,7 @@ std::unique_ptr<FilePageBuffer::FileRef> FilePageBuffer::OpenFile(std::string_vi
         }
 
         // User requested truncation of existing file?
-        if (flags.flags == idx_t(1 << 4)) {
+        if (flags.GetFlagsInternal() == idx_t(1 << 4)) {
             // FIXME/review
             // condition on flags.OverwriteExistingFile() triggers in test
             std::string path_buf{path};
