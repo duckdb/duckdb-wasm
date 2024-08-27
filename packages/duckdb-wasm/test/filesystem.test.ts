@@ -89,7 +89,7 @@ export function testFilesystem(
                     SELECT students.matrnr, vorlesungen.titel
                     FROM parquet_scan('studenten.parquet') students
                     INNER JOIN parquet_scan('hoeren.parquet') hoeren ON (students.matrnr = hoeren.matrnr)
-                    INNER JOIN parquet_scan('vorlesungen.parquet') vorlesungen ON (vorlesungen.vorlnr = hoeren.vorlnr);
+                    INNER JOIN parquet_scan('vorlesungen.parquet') vorlesungen ON (vorlesungen.vorlnr = hoeren.vorlnr) ORDER BY ALL;
                 `);
             const batches = [];
             for await (const batch of result) {
@@ -105,18 +105,18 @@ export function testFilesystem(
                 });
             }
             expect(flat).toEqual([
+                { matrnr: 25403, titel: 'Glaube und Wissen' },
                 { matrnr: 26120, titel: 'Grundzüge' },
                 { matrnr: 27550, titel: 'Grundzüge' },
                 { matrnr: 27550, titel: 'Logik' },
-                { matrnr: 28106, titel: 'Ethik' },
-                { matrnr: 28106, titel: 'Wissenschaftstheorie' },
                 { matrnr: 28106, titel: 'Bioethik' },
                 { matrnr: 28106, titel: 'Der Wiener Kreis' },
-                { matrnr: 29120, titel: 'Grundzüge' },
+                { matrnr: 28106, titel: 'Ethik' },
+                { matrnr: 28106, titel: 'Wissenschaftstheorie' },
                 { matrnr: 29120, titel: 'Ethik' },
+                { matrnr: 29120, titel: 'Grundzüge' },
                 { matrnr: 29120, titel: 'Mäeutik' },
                 { matrnr: 29555, titel: 'Glaube und Wissen' },
-                { matrnr: 25403, titel: 'Glaube und Wissen' },
             ]);
         });
     });
