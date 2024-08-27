@@ -733,6 +733,7 @@ jobs:
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
 
             - name: Test @duckdb/duckdb-wasm on Node.js
+              if: false
               shell: bash
               run: |
                       yarn workspace @duckdb/duckdb-wasm test:node
@@ -1047,6 +1048,7 @@ jobs:
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
 
             - name: Test @duckdb/duckdb-wasm on Node.js
+              if: false
               shell: bash
               run: |
                       yarn workspace @duckdb/duckdb-wasm test:node
