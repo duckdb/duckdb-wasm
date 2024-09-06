@@ -367,7 +367,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: '3.1.63'
+                  version: 'latest'
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -410,7 +410,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: '3.1.63'
+                  version: 'latest'
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -451,10 +451,9 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: '3.1.63'
+                  version: 'latest'
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -498,7 +497,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: '3.1.63'
+                  version: 'latest'
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -539,10 +538,9 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: '3.1.63'
+                  version: 'latest'
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -585,7 +583,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: '3.1.63'
+                  version: 'latest'
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
