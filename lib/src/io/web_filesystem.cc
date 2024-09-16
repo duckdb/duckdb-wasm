@@ -226,6 +226,8 @@ WebFileSystem::DataProtocol WebFileSystem::inferDataProtocol(std::string_view ur
         proto = WebFileSystem::DataProtocol::HTTP;
     } else if (hasPrefix(url, "s3://")) {
         proto = WebFileSystem::DataProtocol::S3;
+    } else if (hasPrefix(url, "opfs://")) {
+        proto = WebFileSystem::DataProtocol::BROWSER_FSACCESS;
     } else if (hasPrefix(url, "file://")) {
         data_url = std::string_view{url}.substr(7);
         proto = default_data_protocol_;
@@ -793,7 +795,7 @@ void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_b
     auto file_size = file_hdl.file_->file_size_;
     auto writer = static_cast<char *>(buffer);
     file_hdl.position_ = location;
-    while (nr_bytes > 0 && location < file_size) {
+    while (nr_bytes > 0) {
         auto n = Write(handle, writer, nr_bytes);
         writer += n;
         nr_bytes -= n;
@@ -1006,10 +1008,12 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     std::vector<std::string> results;
-    auto glob = glob_to_regex(path);
-    for (auto [name, file] : files_by_name_) {
-        if (std::regex_match(file->file_name_, glob)) {
-            results.push_back(std::string{name});
+    if (!FileSystem::IsRemoteFile(path)) {
+        auto glob = glob_to_regex(path);
+        for (auto [name, file] : files_by_name_) {
+            if (std::regex_match(file->file_name_, glob)) {
+                results.push_back(std::string{name});
+            }
         }
     }
     auto &state = GetLocalState();

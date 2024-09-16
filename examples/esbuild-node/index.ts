@@ -1,11 +1,11 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as arrow from 'apache-arrow';
 import path from 'path';
-import Worker from 'web-worker';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
+const Worker = require('web-worker');
 
 (async () => {
     try {

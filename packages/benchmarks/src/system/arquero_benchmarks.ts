@@ -84,12 +84,12 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             case 2: {
                 const tmp = this.tables['region']
                     .filter((d: any) => d.op.equal(d.r_name, 'EUROPE'))
-                    .join(this.tables['nation'], ['r_regionkey', 'n_regionkey'])
-                    .join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
-                const sub = tmp.join(this.tables['partsupp'], ['s_suppkey', 'ps_suppkey']);
+                    .join(this.tables['nation'], [['r_regionkey'], ['n_regionkey']])
+                    .join(this.tables['supplier'], [['n_nationkey'], ['s_nationkey']]);
+                const sub = tmp.join(this.tables['partsupp'], [['s_suppkey'], ['ps_suppkey']]);
                 const sub2 = this.tables['part']
                     .filter((d: any) => d.p_size == 15 && aq.op.match(d.p_type, /.*BRASS$/g, 0) != null)
-                    .join(sub, ['p_partkey', 'ps_partkey'])
+                    .join(sub, [['p_partkey'], ['ps_partkey']])
                     .groupby('p_partkey')
                     .rollup({
                         min_ps_supplycost: (d: any) => aq.op.min(d.ps_supplycost),
@@ -99,7 +99,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         (a: any, b: any) => a.p_partkey == b.ps_partkey && a.min_ps_supplycost == b.ps_supplycost,
                     );
                 const query = tmp
-                    .join(sub2, ['s_suppkey', 'ps_suppkey'])
+                    .join(sub2, [['s_suppkey'], ['ps_suppkey']])
                     .orderby(aq.desc('s_acctbal'), 'n_name', 's_name', 'p_partkey');
                 for (const v of query.objects()) {
                     noop(v);
@@ -111,8 +111,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 const o = this.tables['orders'].filter((d: any) => d.o_orderdate < aq.op.timestamp('1995-03-15'));
                 const l = this.tables['lineitem'].filter((d: any) => d.l_shipdate < aq.op.timestamp('1995-03-15'));
                 const query = c
-                    .join(o, ['c_custkey', 'o_custkey'])
-                    .join(l, ['o_orderkey', 'l_orderkey'])
+                    .join(o, [['c_custkey'], ['o_custkey']])
+                    .join(l, [['o_orderkey'], ['l_orderkey']])
                     .derive({
                         disc_price: (d: any) => d.l_extendedprice * (1 - d.l_discount),
                     })
@@ -133,7 +133,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 );
                 const l = this.tables['lineitem'].filter((d: any) => d.l_commitdate < d.l_receiptdate);
                 const query = o
-                    .join(l, ['o_orderkey', 'l_orderkey'])
+                    .join(l, [['o_orderkey'], ['l_orderkey']])
                     .groupby('o_orderpriority')
                     .rollup({
                         order_count: aq.op.count(),
@@ -156,10 +156,10 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 const n = this.tables['nation'];
 
                 const right = r
-                    .join(n, ['r_regionkey', 'n_regionkey'])
-                    .join(c, ['n_nationkey', 'c_nationkey'])
-                    .join(o, ['c_custkey', 'o_custkey'])
-                    .join(l, ['o_orderkey', 'l_orderkey']);
+                    .join(n, [['r_regionkey'], ['n_regionkey']])
+                    .join(c, [['n_nationkey'], ['c_nationkey']])
+                    .join(o, [['c_custkey'], ['o_custkey']])
+                    .join(l, [['o_orderkey'], ['l_orderkey']]);
                 const query = s
                     .join(
                         right,
@@ -232,11 +232,11 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         (a.n1_nationkey == 'GERMANY' && b.n2_nationkey == 'FRANCE'),
                 );
                 const right = nations
-                    .join(c, ['n2_nationkey', 'c_nationkey'])
-                    .join(o, ['c_custkey', 'o_custkey'])
-                    .join(l, ['o_orderkey', 'l_orderkey']);
+                    .join(c, [['n2_nationkey'], ['c_nationkey']])
+                    .join(o, [['c_custkey'], ['o_custkey']])
+                    .join(l, [['o_orderkey'], ['l_orderkey']]);
                 const query = s
-                    .join(right, ['s_suppkey', 'l_suppkey'])
+                    .join(right, [['s_suppkey'], ['l_suppkey']])
                     .groupby('n1_name', 'n2_name', 'l_year')
                     .rollup({
                         revenue: (d: any) => aq.op.sum(d.volume),
@@ -255,9 +255,9 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         d.o_orderdate <= aq.op.timestamp('1996-12-31'),
                 );
                 const sub = p
-                    .join(this.tables['lineitem'], ['p_partkey', 'l_partkey'])
-                    .join(o, ['l_orderkey', 'o_orderkey'])
-                    .join(this.tables['customer'], ['o_custkey', 'c_custkey']);
+                    .join(this.tables['lineitem'], [['p_partkey'], ['l_partkey']])
+                    .join(o, [['l_orderkey'], ['o_orderkey']])
+                    .join(this.tables['customer'], [['o_custkey'], ['c_custkey']]);
                 const r2 = this.tables['region']
                     .filter((d: any) => d.r_name == 'AMERICA')
                     .rename({
@@ -269,11 +269,11 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     n_name: 'n2_name',
                 });
                 const sub2 = r2
-                    .join(n2, ['r2_regionkey', 'n2_regionkey'])
-                    .join(sub, ['n2_nationkey', 'c_nationkey'])
-                    .join(this.tables['supplier'], ['l_suppkey', 's_suppkey']);
+                    .join(n2, [['r2_regionkey'], ['n2_regionkey']])
+                    .join(sub, [['n2_nationkey'], ['c_nationkey']])
+                    .join(this.tables['supplier'], [['l_suppkey'], ['s_suppkey']]);
                 const query = this.tables['nation']
-                    .join(sub2, ['n_nationkey', 's_nationkey'])
+                    .join(sub2, [['n_nationkey'], ['s_nationkey']])
                     .derive({
                         o_year: (d: any) => aq.op.year(d.o_orderdate),
                         volume: (d: any) => d.l_extendedprice * (1 - d.l_discount),
@@ -290,16 +290,16 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 break;
             }
             case 9: {
-                const sub = this.tables['nation'].join(this.tables['supplier'], ['n_nationkey', 's_nationkey']);
+                const sub = this.tables['nation'].join(this.tables['supplier'], [['n_nationkey'], ['s_nationkey']]);
                 const query = this.tables['part']
                     .filter((d: any) => aq.op.match(d.p_name, /.*green.*/g, 0) != null)
-                    .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
-                    .join(sub, ['ps_suppkey', 's_suppkey'])
+                    .join(this.tables['partsupp'], [['p_partkey'], ['ps_partkey']])
+                    .join(sub, [['ps_suppkey'], ['s_suppkey']])
                     .join(
                         this.tables['lineitem'],
                         (a: any, b: any) => a.p_partkey == b.l_partkey && a.s_suppkey == b.l_suppkey,
                     )
-                    .join(this.tables['orders'], ['l_orderkey', 'o_orderkey'])
+                    .join(this.tables['orders'], [['l_orderkey'], ['o_orderkey']])
                     .derive({
                         o_year: (d: any) => aq.op.year(d.o_orderdate),
                         amount: (d: any) => d.l_extendedprice * (1 - d.l_discount) - d.ps_supplycost * d.l_quantity,
@@ -323,10 +323,10 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     )
                     .join(
                         this.tables['lineitem'].filter((d: any) => d.l_returnflag == 'R'),
-                        ['o_orderkey', 'l_orderkey'],
+                        [['o_orderkey'], ['l_orderkey']],
                     )
-                    .join(this.tables['customer'], ['o_custkey', 'c_custkey'])
-                    .join(this.tables['nation'], ['c_nationkey', 'n_nationkey'])
+                    .join(this.tables['customer'], [['o_custkey'], ['c_custkey']])
+                    .join(this.tables['nation'], [['c_nationkey'], ['n_nationkey']])
                     .derive({
                         realprice: (d: any) => d.l_extendedprice * (1 - d.l_discount),
                     })
@@ -343,8 +343,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             case 11: {
                 const temp = this.tables['nation']
                     .filter((d: any) => d.n_name == 'GERMANY')
-                    .join(this.tables['supplier'], ['n_nationkey', 's_nationkey'])
-                    .join(this.tables['partsupp'], ['s_suppkey', 'ps_suppkey'])
+                    .join(this.tables['supplier'], [['n_nationkey'], ['s_nationkey']])
+                    .join(this.tables['partsupp'], [['s_suppkey'], ['ps_suppkey']])
                     .derive({
                         value: (d: any) => d.ps_supplycost * d.ps_availqty,
                     });
@@ -373,7 +373,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                             d.l_receiptdate >= aq.op.timestamp('1994-01-01') &&
                             d.l_receiptdate <= aq.op.timestamp('1994-12-31'),
                     )
-                    .join(this.tables['orders'], ['l_orderkey', 'o_orderkey'])
+                    .join(this.tables['orders'], [['l_orderkey'], ['o_orderkey']])
                     .derive({
                         high_line: (d: any) =>
                             d.o_orderpriority == '1-URGENT' || d.o_orderpriority == '2-HIGH' ? 1 : 0,
@@ -396,7 +396,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     (d: any) => aq.op.match(d.o_comment, /^.*special.*requests.*$/g, 0) == null,
                 );
                 const query = this.tables['customer']
-                    .join_left(o, ['c_custkey', 'o_custkey'])
+                    .join_left(o, [['c_custkey'], ['o_custkey']])
                     .derive({
                         o_orderkey_not_null: (d: any) => (d.o_orderkey != null ? 1 : 0),
                     })
@@ -421,7 +421,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                             d.l_receiptdate >= aq.op.timestamp('1995-09-01') &&
                             d.l_receiptdate <= aq.op.timestamp('1995-09-30'),
                     )
-                    .join(this.tables['part'], ['l_partkey', 'p_partkey'])
+                    .join(this.tables['part'], [['l_partkey'], ['p_partkey']])
                     .derive({
                         realprice: (d: any) => d.l_extendedprice * (1 - d.l_discount),
                         promoprice: (d: any) =>
@@ -458,7 +458,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         total_revenue: (d: any) => aq.op.max(d.revenue),
                     })
                     .join(temp, (a: any, b: any) => aq.op.equal(a.total_revenue, b.revenue))
-                    .join(this.tables['supplier'], ['l_suppkey', 's_suppkey'])
+                    .join(this.tables['supplier'], [['l_suppkey'], ['s_suppkey']])
                     .orderby('s_suppkey');
                 for (const v of query.objects({ grouped: true })) {
                     noop(v);
@@ -482,8 +482,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                                 d.p_size == 45 ||
                                 d.p_size == 19),
                     )
-                    .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
-                    .antijoin(supplier, ['ps_partkey', 's_suppkey'])
+                    .join(this.tables['partsupp'], [['p_partkey'], ['ps_partkey']])
+                    .antijoin(supplier, [['ps_partkey'], ['s_suppkey']])
                     .groupby('p_brand', 'p_type', 'p_size')
                     .rollup({
                         supplier_cnt: aq.op.distinct('ps_suppkey'),
@@ -497,7 +497,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
             case 17: {
                 const tmp = this.tables['part']
                     .filter((d: any) => d.p_brand == 'Brand#23' && d.p_container == 'MED BOX')
-                    .join(this.tables['lineitem'], ['p_partkey', 'l_partkey']);
+                    .join(this.tables['lineitem'], [['p_partkey'], ['l_partkey']]);
                 const agg = tmp.groupby('p_partkey').rollup({
                     avg_qty: aq.op.mean('l_quantity'),
                 });
@@ -518,9 +518,9 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                         quantity: aq.op.sum('l_quantity'),
                     })
                     .filter((d: any) => d.quantity > 300)
-                    .join(this.tables['orders'], ['l_orderkey', 'o_orderkey'])
-                    .join(this.tables['customer'], ['o_custkey', 'c_custkey'])
-                    .join(this.tables['lineitem'], ['o_orderkey', 'l_orderkey'])
+                    .join(this.tables['orders'], [['l_orderkey'], ['o_orderkey']])
+                    .join(this.tables['customer'], [['o_custkey'], ['c_custkey']])
+                    .join(this.tables['lineitem'], [['o_orderkey'], ['l_orderkey']])
                     .groupby('c_name', 'c_custkey', 'o_orderkey', 'o_orderdate', 'o_totalprice')
                     .rollup({
                         quantity: aq.op.sum('l_quantity'),
@@ -609,7 +609,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     });
                 const sub = this.tables['part']
                     .filter((d: any) => aq.op.match(d.p_name, /^forest.*$/, 0) != null)
-                    .join(this.tables['partsupp'], ['p_partkey', 'ps_partkey'])
+                    .join(this.tables['partsupp'], [['p_partkey'], ['ps_partkey']])
                     .join(
                         qty,
                         (a: any, b: any) =>
@@ -619,8 +619,8 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                     );
                 const query = this.tables['nation']
                     .filter((d: any) => d.n_name == 'CANADA')
-                    .join(this.tables['supplier'], ['n_nationkey', 's_nationkey'])
-                    .semijoin(sub, ['s_suppkey', 'ps_suppkey'])
+                    .join(this.tables['supplier'], [['n_nationkey'], ['s_nationkey']])
+                    .semijoin(sub, [['s_suppkey'], ['ps_suppkey']])
                     .orderby('s_name');
                 for (const v of query.objects({ grouped: true })) {
                     noop(v);
@@ -632,9 +632,9 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 const orders = this.tables['orders'].filter((d: any) => d.o_orderstatus == 'F');
                 const query = this.tables['nation']
                     .filter((d: any) => d.n_name == 'SAUDI ARABIA')
-                    .join(this.tables['supplier'], ['n_nationkey', 's_nationkey'])
-                    .join(lineitem, ['s_suppkey', 'l_suppkey'])
-                    .join(orders, ['l_orderkey', 'o_orderkey'])
+                    .join(this.tables['supplier'], [['n_nationkey'], ['s_nationkey']])
+                    .join(lineitem, [['s_suppkey'], ['l_suppkey']])
+                    .join(orders, [['l_orderkey'], ['o_orderkey']])
                     .antijoin(lineitem, (a: any, b: any) => a.l_suppkey != b.l_suppkey && a.l_orderkey == b.l_orderkey)
                     .semijoin(
                         this.tables['lineitem'],
@@ -661,7 +661,7 @@ export class ArqueroTPCHBenchmark implements SystemBenchmark {
                 });
                 const query = customers
                     .join(total_avg, (a: any, b: any) => a.c_acctbal > b.avg_c_acctbal)
-                    .antijoin(this.tables['orders'], ['c_custkey', 'o_custkey'])
+                    .antijoin(this.tables['orders'], [['c_custkey'], ['o_custkey']])
                     .derive({
                         cntrycode: (d: any) => aq.op.substring(d.c_phone, 0, 2),
                     })
@@ -979,7 +979,7 @@ export class ArqueroIntegerJoin2Benchmark implements SystemBenchmark {
             .params({ filter })
             .filter((row: any) => row.v0 < filter)
             .rename({ v0: 'a0' })
-            .join(this.tables['B'].rename({ v0: 'b0', v1: 'b1' }), ['a0', 'b1']);
+            .join(this.tables['B'].rename({ v0: 'b0', v1: 'b1' }), [['a0'], ['b1']]);
         let n = 0;
         for (const v of result) {
             noop(v);
@@ -1048,8 +1048,8 @@ export class ArqueroIntegerJoin3Benchmark implements SystemBenchmark {
             .params({ filter })
             .filter((row: any) => row.v0 < filter)
             .rename({ v0: 'a0' })
-            .join(this.tables['B'].rename({ v0: 'b0', v1: 'b1' }), ['a0', 'b1'])
-            .join(this.tables['C'].rename({ v0: 'c0', v1: 'c1' }), ['b0', 'c1']);
+            .join(this.tables['B'].rename({ v0: 'b0', v1: 'b1' }), [['a0'], ['b1']])
+            .join(this.tables['C'].rename({ v0: 'c0', v1: 'c1' }), [['b0'], ['c1']]);
         let n = 0;
         for (const v of result) {
             noop(v);

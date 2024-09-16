@@ -449,13 +449,32 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
     }
+    /** Prepare a file handle that could only be acquired aschronously */
+    public async prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void> {
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareDBFileHandle) {
+            const list = await this._runtime.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
+            for (const item of list) {
+                const { handle, path: filePath, fromCached } = item;
+                if (!fromCached && handle.getSize()) {
+                    await this.registerFileHandle(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
+                }
+            }
+            return;
+        }
+        throw new Error(`prepareDBFileHandle: unsupported protocol ${protocol}`);
+    }
     /** Register a file object URL */
-    public registerFileHandle<HandleType>(
+    public async registerFileHandle<HandleType>(
         name: string,
         handle: HandleType,
         protocol: DuckDBDataProtocol,
         directIO: boolean,
-    ): void {
+    ): Promise<void> {
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && handle instanceof FileSystemFileHandle) {
+            // handle is an async handle, should convert to sync handle
+            const fileHandle: FileSystemFileHandle = handle as any;
+            handle = (await fileHandle.createSyncAccessHandle()) as any;
+        }
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_fs_register_file_url',
@@ -467,6 +486,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
         globalThis.DUCKDB_RUNTIME._files = (globalThis.DUCKDB_RUNTIME._files || new Map()).set(name, handle);
+        if (globalThis.DUCKDB_RUNTIME._preparedHandles?.[name]) {
+            delete globalThis.DUCKDB_RUNTIME._preparedHandles[name];
+        }
         if (this.pthread) {
             for (const worker of this.pthread.runningWorkers) {
                 worker.postMessage({
