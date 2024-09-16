@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  EMSCRIPTEN_VERSION: '3.1.65'
+  EMSCRIPTEN_VERSION: 'latest'
 
 jobs:
     clang_format:
