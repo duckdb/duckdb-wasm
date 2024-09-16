@@ -248,7 +248,7 @@ template <typename Derived, typename BuilderType> class BaseArrayParser : public
     std::shared_ptr<arrow::ArrayBuilder> builder() override { return builder_; }
     /// Get the value type
     const std::shared_ptr<arrow::DataType>& value_type() {
-        if (type_->id() != arrow::Type::DICTIONARY) return type_;
+        if ((*type_).id() != arrow::Type::DICTIONARY) return type_;
         return arrow::internal::checked_cast<const arrow::DictionaryType&>(*type_).value_type();
     }
     /// Builder factory

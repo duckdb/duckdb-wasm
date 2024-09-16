@@ -1,0 +1,137 @@
+diff --git a/cpp/src/arrow/array/array_binary.h b/cpp/src/arrow/array/array_binary.h
+index 19fdee6124..37940e9cd3 100644
+--- a/cpp/src/arrow/array/array_binary.h
++++ b/cpp/src/arrow/array/array_binary.h
+@@ -58,7 +58,7 @@ class BaseBinaryArray : public FlatArray {
+   // XXX should GetValue(int64_t i) return a string_view?
+   const uint8_t* GetValue(int64_t i, offset_type* out_length) const {
+     // Account for base offset
+-    i += data_->offset;
++    i += (*data_).offset;
+     const offset_type pos = raw_value_offsets_[i];
+     *out_length = raw_value_offsets_[i + 1] - pos;
+     return raw_data_ + pos;
+@@ -70,7 +70,7 @@ class BaseBinaryArray : public FlatArray {
+   /// \return the view over the selected value
+   std::string_view GetView(int64_t i) const {
+     // Account for base offset
+-    i += data_->offset;
++    i += (*data_).offset;
+     const offset_type pos = raw_value_offsets_[i];
+     return std::string_view(reinterpret_cast<const char*>(raw_data_ + pos),
+                             raw_value_offsets_[i + 1] - pos);
+@@ -94,13 +94,13 @@ class BaseBinaryArray : public FlatArray {
+   std::string GetString(int64_t i) const { return std::string(GetView(i)); }
+ 
+   /// Note that this buffer does not account for any slice offset
+-  std::shared_ptr<Buffer> value_offsets() const { return data_->buffers[1]; }
++  std::shared_ptr<Buffer> value_offsets() const { return (*data_).buffers[1]; }
+ 
+   /// Note that this buffer does not account for any slice offset
+-  std::shared_ptr<Buffer> value_data() const { return data_->buffers[2]; }
++  std::shared_ptr<Buffer> value_data() const { return (*data_).buffers[2]; }
+ 
+   const offset_type* raw_value_offsets() const {
+-    return raw_value_offsets_ + data_->offset;
++    return raw_value_offsets_ + (*data_).offset;
+   }
+ 
+   const uint8_t* raw_data() const { return raw_data_; }
+@@ -110,24 +110,24 @@ class BaseBinaryArray : public FlatArray {
+   ///
+   /// Does not perform boundschecking
+   offset_type value_offset(int64_t i) const {
+-    return raw_value_offsets_[i + data_->offset];
++    return raw_value_offsets_[i + (*data_).offset];
+   }
+ 
+   /// \brief Return the length of the data for the value at the passed index.
+   ///
+   /// Does not perform boundschecking
+   offset_type value_length(int64_t i) const {
+-    i += data_->offset;
++    i += (*data_).offset;
+     return raw_value_offsets_[i + 1] - raw_value_offsets_[i];
+   }
+ 
+   /// \brief Return the total length of the memory in the data buffer
+   /// referenced by this array. If the array has been sliced then this may be
+-  /// less than the size of the data buffer (data_->buffers[2]).
++  /// less than the size of the data buffer ((*data_).buffers[2]).
+   offset_type total_values_length() const {
+-    if (data_->length > 0) {
+-      return raw_value_offsets_[data_->length + data_->offset] -
+-             raw_value_offsets_[data_->offset];
++    if ((*data_).length > 0) {
++      return raw_value_offsets_[(*data_).length + (*data_).offset] -
++             raw_value_offsets_[(*data_).offset];
+     } else {
+       return 0;
+     }
+@@ -240,7 +240,7 @@ class ARROW_EXPORT BinaryViewArray : public FlatArray {
+   std::string_view GetView(int64_t i) const;
+   std::string GetString(int64_t i) const { return std::string{GetView(i)}; }
+ 
+-  const auto& values() const { return data_->buffers[1]; }
++  const auto& values() const { return (*data_).buffers[1]; }
+   const c_type* raw_values() const { return raw_values_; }
+ 
+   std::optional<std::string_view> operator[](int64_t i) const {
+@@ -255,7 +255,7 @@ class ARROW_EXPORT BinaryViewArray : public FlatArray {
+ 
+   void SetData(std::shared_ptr<ArrayData> data) {
+     FlatArray::SetData(std::move(data));
+-    raw_values_ = data_->GetValuesSafe<c_type>(1);
++    raw_values_ = (*data_).GetValuesSafe<c_type>(1);
+   }
+ 
+   const c_type* raw_values_;
+@@ -308,7 +308,7 @@ class ARROW_EXPORT FixedSizeBinaryArray : public PrimitiveArray {
+ 
+   int32_t byte_width() const { return byte_width_; }
+ 
+-  const uint8_t* raw_values() const { return raw_values_ + data_->offset * byte_width_; }
++  const uint8_t* raw_values() const { return raw_values_ + (*data_).offset * byte_width_; }
+ 
+   IteratorType begin() const { return IteratorType(*this); }
+ 
+diff --git a/cpp/src/arrow/array/array_nested.h b/cpp/src/arrow/array/array_nested.h
+index a6d4977839..24eb834a78 100644
+--- a/cpp/src/arrow/array/array_nested.h
++++ b/cpp/src/arrow/array/array_nested.h
+@@ -89,19 +89,19 @@ class VarLengthListLikeArray : public Array {
+   const std::shared_ptr<Array>& values() const { return values_; }
+ 
+   /// Note that this buffer does not account for any slice offset or length.
+-  const std::shared_ptr<Buffer>& value_offsets() const { return data_->buffers[1]; }
++  const std::shared_ptr<Buffer>& value_offsets() const { return (*data_).buffers[1]; }
+ 
+   const std::shared_ptr<DataType>& value_type() const { return list_type_->value_type(); }
+ 
+   /// Return pointer to raw value offsets accounting for any slice offset
+   const offset_type* raw_value_offsets() const {
+-    return raw_value_offsets_ + data_->offset;
++    return raw_value_offsets_ + (*data_).offset;
+   }
+ 
+   // The following functions will not perform boundschecking
+ 
+   offset_type value_offset(int64_t i) const {
+-    return raw_value_offsets_[i + data_->offset];
++    return raw_value_offsets_[i + (*data_).offset];
+   }
+ 
+   /// \brief Return the size of the value at a particular index
+diff --git a/cpp/src/arrow/array/array_primitive.h b/cpp/src/arrow/array/array_primitive.h
+index e6df92e3b7..bf36fe7d9c 100644
+--- a/cpp/src/arrow/array/array_primitive.h
++++ b/cpp/src/arrow/array/array_primitive.h
+@@ -103,7 +103,7 @@ class NumericArray : public PrimitiveArray {
+                        null_count, offset) {}
+ 
+   const value_type* raw_values() const {
+-    return reinterpret_cast<const value_type*>(raw_values_) + data_->offset;
++    return reinterpret_cast<const value_type*>(raw_values_) + (*data_).offset;
+   }
+ 
+   value_type Value(int64_t i) const { return raw_values()[i]; }
