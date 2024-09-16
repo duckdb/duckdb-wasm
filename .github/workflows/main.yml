@@ -26,6 +26,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
   cancel-in-progress: true
 
+env:
+  EMSCRIPTEN_VERSION: '3.1.65'
+
 jobs:
     clang_format:
         name: Clang-Format
@@ -367,7 +370,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: 'latest'
+                  version: ${{ env.EMSCRIPTEN_VERSION }}
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -410,7 +413,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: 'latest'
+                  version: ${{ env.EMSCRIPTEN_VERSION }}
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -453,7 +456,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: 'latest'
+                  version: ${{ env.EMSCRIPTEN_VERSION }}
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -497,7 +500,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: 'latest'
+                  version: ${{ env.EMSCRIPTEN_VERSION }}
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -540,7 +543,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: 'latest'
+                  version: ${{ env.EMSCRIPTEN_VERSION }}
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
@@ -583,7 +586,7 @@ jobs:
 
             - uses: mymindstorm/setup-emsdk@v14
               with:
-                  version: 'latest'
+                  version: ${{ env.EMSCRIPTEN_VERSION }}
 
             - name: Setup Ccache
               uses: hendrikmuhs/ccache-action@main
