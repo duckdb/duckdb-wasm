@@ -7,6 +7,7 @@ const CORS_CONFIG = "<CORSConfiguration>\n" +
     "    <AllowedMethod>GET</AllowedMethod>\n" +
     "    <AllowedMethod>HEAD</AllowedMethod>\n" +
     "    <AllowedHeader>*</AllowedHeader>\n" +
+    "    <ExposeHeaders>Content-Range</ExposeHeaders>\n" +
     "  </CORSRule>\n" +
     "</CORSConfiguration>";
 
