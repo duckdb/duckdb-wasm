@@ -1070,7 +1070,7 @@ jobs:
 
             - name: Measure NPM stats
               run: |
-                  ./scripts/npm_measure_lib.sh
+                  ./scripts/npm_measure_lib.sh || true
 
             - name: Publish to NPM
               env:
