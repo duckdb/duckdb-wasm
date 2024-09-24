@@ -36,7 +36,8 @@ git clone https://github.com/duckdb/duckdb-wasm.git
 cd duckdb-wasm
 git submodule init
 git submodule update
-make
+make apply_patches
+make serve
 ```
 
 ## Repository Structure
