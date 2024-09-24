@@ -4,7 +4,6 @@ export function generateLongQueryString(): string {
     const ddd = repeatCharacter('D', 512);
     const eee = repeatCharacter('E', 256);
     const ggg = repeatCharacter('G', 128);
-    const hhh = repeatCharacter('H', 64);
 
     return `test=inline` +
         `&Test-Security-Token=${aaa}` +
