@@ -33,6 +33,12 @@ Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https
 ## DuckDB and DuckDB-Wasm
 DuckDB-Wasm is currently based on DuckDB v1.1.1.
 
+## DuckDB-Wasm with DuckDB Extension
+```sql
+LOAD json;
+LOAD parquet;
+```
+
 ## Build from source
 ```shell
 git clone https://github.com/duckdb/duckdb-wasm.git
