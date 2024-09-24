@@ -35,8 +35,12 @@ DuckDB-Wasm is currently based on DuckDB v1.1.1.
 
 ## DuckDB-Wasm with DuckDB Extension
 ```sql
-LOAD json;
-LOAD parquet;
+--- Excplicitly load extensions
+LOAD icu;
+
+
+--- Or have them autoloaded when using relevant functions or settings
+FROM read_json('https://some.url/file.json');
 ```
 
 ## Build from source
