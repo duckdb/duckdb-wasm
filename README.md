@@ -30,13 +30,27 @@ Duckdb-Wasm speaks Arrow fluently, reads Parquet, CSV and JSON files backed by F
 
 Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https://observablehq.com/@observablehq/duckdb), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.duckdb.org).
 
+## DuckDB and DuckDB-Wasm
+DuckDB-Wasm is currently based on DuckDB v1.1.1.
+
+## DuckDB-Wasm with DuckDB Extension
+```sql
+--- Excplicitly load extensions
+LOAD icu;
+
+
+--- Or have them autoloaded when using relevant functions or settings
+FROM read_json('https://some.url/file.json');
+```
+
 ## Build from source
 ```shell
 git clone https://github.com/duckdb/duckdb-wasm.git
 cd duckdb-wasm
 git submodule init
 git submodule update
-make
+make apply_patches
+make serve
 ```
 
 ## Repository Structure
