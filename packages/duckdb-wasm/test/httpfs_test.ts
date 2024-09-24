@@ -315,7 +315,12 @@ export function testHTTPFSAsync(
         });
 
         it('can read parquet file from URL with long query string', async () => {
+            // Create S3 file
+            let data = await resolveData('/uni/studenten.parquet');
+            await putTestFileToS3('correct_auth_test', 'parquet', data);
+            // Generate a long query string, similar to an S3 Presigned URL
             const queryString = generateLongQueryString();
+            // Execute the query
             const result = await conn!.query(
                 `SELECT * FROM "${S3_ENDPOINT}/${BUCKET_NAME}/correct_auth_test.parquet?${queryString}";`,
             );
@@ -323,7 +328,12 @@ export function testHTTPFSAsync(
         });
 
         it('can read csv file from URL with long query string', async () => {
+            // Create S3 file
+            let data = await resolveData('/uni/studenten.parquet');
+            await putTestFileToS3('correct_auth_test', 'csv', data);
+            // Generate a long query string, similar to an S3 Presigned URL
             const queryString = generateLongQueryString();
+            // Execute the query
             const result = await conn!.query(
                 `SELECT * FROM "${S3_ENDPOINT}/${BUCKET_NAME}/correct_auth_test.csv?${queryString}";`,
             );
