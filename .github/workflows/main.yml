@@ -1070,7 +1070,7 @@ jobs:
 
             - name: Measure NPM stats
               run: |
-                  ./scripts/npm_measure_lib.sh || true
+                  ./scripts/npm_measure_lib.sh
 
             - name: Deploy GitHub Page
               if: github.ref == 'refs/heads/main'
