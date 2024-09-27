@@ -1,3 +1,18 @@
+diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
+index 222a36c051..fb895920ef 100644
+--- a/src/include/duckdb/main/database.hpp
++++ b/src/include/duckdb/main/database.hpp
+@@ -91,6 +91,10 @@ private:
+ 	ValidChecker db_validity;
+ 	unique_ptr<DatabaseFileSystem> db_file_system;
+ 	shared_ptr<DatabaseCacheEntry> db_cache_entry;
++public:
++	static void SetPreferredRepository(const string& extension, const string &repository);
++	static string GetPreferredRepository(const string& extension);
++	static unordered_map<string, string> extensionsRepos;
+ };
+ 
+ //! The database object. This object holds the catalog and all the
 diff --git a/src/include/duckdb/main/extension_install_info.hpp b/src/include/duckdb/main/extension_install_info.hpp
 index 6ccd1a1156..8040f537b6 100644
 --- a/src/include/duckdb/main/extension_install_info.hpp
@@ -15,11 +30,44 @@ index 6ccd1a1156..8040f537b6 100644
  
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
+diff --git a/src/main/database.cpp b/src/main/database.cpp
+index 4308c4a016..fe23c36ead 100644
+--- a/src/main/database.cpp
++++ b/src/main/database.cpp
+@@ -328,6 +328,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+ DuckDB::~DuckDB() {
+ }
+ 
++unordered_map<string, string> DatabaseInstance::extensionsRepos = {};
++
++void DatabaseInstance::SetPreferredRepository(const string& extension, const string &repository) {
++	auto &x = extensionsRepos;
++	auto it = x.find(extension);
++	if (it != x.end()) {
++		it->second=repository;
++	} else {
++		x.emplace(extension, repository);
++	}
++}       
++
++string DatabaseInstance::GetPreferredRepository(const string& extension) {
++	const auto &x = extensionsRepos;
++	auto it = x.find(extension);
++	if (it != x.end()) {
++		return it->second;
++	}
++	return "";
++}
++
++
+ SecretManager &DatabaseInstance::GetSecretManager() {
+ 	return *config.secret_manager;
+ }
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
-index c821caedea..aae791b786 100644
+index 494832417e..17a39d04b4 100644
 --- a/src/main/extension/extension_helper.cpp
 +++ b/src/main/extension/extension_helper.cpp
-@@ -319,7 +319,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -328,7 +328,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  	vector<ExtensionUpdateResult> result;
  	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  
@@ -27,7 +75,7 @@ index c821caedea..aae791b786 100644
  	case_insensitive_set_t seen_extensions;
  
  	// scan the install directory for installed extensions
-@@ -336,7 +335,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -345,7 +344,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  
  		result.push_back(UpdateExtensionInternal(context, db, fs, fs.JoinPath(ext_directory, path), extension_name));
  	});
@@ -36,10 +84,30 @@ index c821caedea..aae791b786 100644
  	return result;
  }
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
-index d190ea197c..157db58641 100644
+index b0ca9fb775..67dfcdfb26 100644
 --- a/src/main/extension/extension_install.cpp
 +++ b/src/main/extension/extension_install.cpp
-@@ -204,7 +204,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DatabaseInstance
+@@ -144,6 +144,9 @@ bool ExtensionHelper::CreateSuggestions(const string &extension_name, string &me
+ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInstance &db, FileSystem &fs,
+                                                                    const string &extension,
+                                                                    ExtensionInstallOptions &options) {
++	if (options.repository) {
++		DatabaseInstance::SetPreferredRepository(extension, options.repository->path);
++	}
+ #ifdef WASM_LOADABLE_EXTENSIONS
+ 	// Install is currently a no-op
+ 	return nullptr;
+@@ -154,6 +157,9 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInsta
+ 
+ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(ClientContext &context, const string &extension,
+                                                                    ExtensionInstallOptions &options) {
++	if (options.repository) {
++		DatabaseInstance::SetPreferredRepository(extension, options.repository->path);
++	}
+ #ifdef WASM_LOADABLE_EXTENSIONS
+ 	// Install is currently a no-op
+ 	return nullptr;
+@@ -198,7 +204,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DatabaseInstance
  		versioned_path = "/${REVISION}/${PLATFORM}/${NAME}.duckdb_extension";
  	}
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -49,10 +117,10 @@ index d190ea197c..157db58641 100644
  #else
  	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 7fe4fcb3db..3bdedd191c 100644
+index c0a37ea97a..6410048fc1 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -295,7 +295,13 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -301,7 +301,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = false;
  		string extension_name = ApplyExtensionAlias(extension);
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -63,11 +131,18 @@ index 7fe4fcb3db..3bdedd191c 100644
 +		if (!custom_endpoint.empty()) {
 +			repository = ExtensionRepository("custom", custom_endpoint);
 +		}
++               {
++                       auto preferredRepo = DatabaseInstance::GetPreferredRepository(extension);
++                       if (!preferredRepo.empty()) {
++                               repository = ExtensionRepository("x", preferredRepo);
++                       }
++               }
++
 +		string url_template = ExtensionUrlTemplate(db, repository, "");
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -336,73 +342,223 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -342,73 +355,223 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -345,7 +420,7 @@ index 7fe4fcb3db..3bdedd191c 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -420,25 +576,27 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -426,25 +589,27 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	result.lib_hdl = lib_hdl;
  
  	if (!direct_load) {
