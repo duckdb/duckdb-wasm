@@ -1,5 +1,5 @@
-import { StatusCode } from '../status';
-import { addS3Headers, getHTTPUrl } from '../utils';
+import {StatusCode} from '../status';
+import {addS3Headers, getHTTPUrl} from '../utils';
 
 import {
     callSRet,
@@ -23,7 +23,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _files: Map<string, any>;
     _fileInfoCache: Map<number, DuckDBFileInfo>;
     _globalFileInfo: DuckDBGlobalFileInfo | null;
-    _preparedHandles: Record<string, any>;
+    _preparedHandles: Record<string, FileSystemSyncAccessHandle>;
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
     getGlobalFileInfo(mod: DuckDBModule): DuckDBGlobalFileInfo | null;
@@ -93,7 +93,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             if (info == null) {
                 return null;
             }
-            BROWSER_RUNTIME._globalFileInfo = { ...info, blob: null } as DuckDBGlobalFileInfo;
+            BROWSER_RUNTIME._globalFileInfo = { ...info, blob: null} as DuckDBGlobalFileInfo;
 
             return BROWSER_RUNTIME._globalFileInfo;
         } catch (e: any) {
@@ -137,13 +137,17 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     }
                     throw e;
                 });
-                const handle = await fileHandle.createSyncAccessHandle();
-                BROWSER_RUNTIME._preparedHandles[path] = handle;
-                return {
-                    path,
-                    handle,
-                    fromCached: false,
-                };
+                try {
+                    const handle = await fileHandle.createSyncAccessHandle();
+                    BROWSER_RUNTIME._preparedHandles[path] = handle;
+                    return {
+                        path,
+                        handle,
+                        fromCached: false,
+                    };
+                } catch (e: any) {
+                    throw new Error(e.message + ":" + name);
+                }
             };
             const result: PreparedDBFileHandle[] = [];
             for (const filePath of filePaths) {
@@ -485,9 +489,25 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 if (!handle) {
                     throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
                 }
-                handle.flush();
-                handle.close();
-                BROWSER_RUNTIME._files.delete(file.fileName);
+                return handle.flush();
+            }
+        }
+    },
+    dropFile: (mod: DuckDBModule, fileNamePtr: number, fileNameLen: number) => {
+        const fileName = readString(mod, fileNamePtr, fileNameLen);
+        const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(fileName);
+        if (handle) {
+            BROWSER_RUNTIME._files.delete(fileName);
+            if (handle instanceof FileSystemSyncAccessHandle) {
+                try {
+                    handle.flush();
+                    handle.close();
+                } catch (e: any) {
+                    throw new Error(`Cannot drop file with name: ${fileName}`);
+                }
+            }
+            if (handle instanceof Blob) {
+                // nothing
             }
         }
     },

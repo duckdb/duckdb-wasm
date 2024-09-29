@@ -117,6 +117,7 @@ RT_FN(void duckdb_web_fs_file_close(size_t file_id), {
     auto &infos = GetLocalState();
     infos.handles.erase(file_id);
 });
+RT_FN(void duckdb_web_fs_file_drop_file(const char *fileName, size_t pathLen), {});
 RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOrOpen(file_id).Truncate(new_size); });
 RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t file_id), {
     auto &file = GetOrOpen(file_id);
@@ -455,6 +456,7 @@ void WebFileSystem::DropDanglingFiles() {
     for (auto &[file_id, file] : files_by_id_) {
         if (file->handle_count_ == 0) {
             files_by_name_.erase(file->file_name_);
+            DropFile(file->file_name_);
             if (file->data_url_.has_value()) {
                 files_by_url_.erase(file->data_url_.value());
             }
@@ -481,6 +483,13 @@ bool WebFileSystem::TryDropFile(std::string_view file_name) {
         return true;
     }
     return false;
+}
+
+/// drop a file
+void WebFileSystem::DropFile(std::string_view file_name) {
+    DEBUG_TRACE();
+    std::string fileNameS = std::string{file_name};
+    duckdb_web_fs_file_drop_file(fileNameS.c_str(), fileNameS.size());
 }
 
 /// Write the global filesystem info

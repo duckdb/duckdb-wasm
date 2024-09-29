@@ -912,18 +912,29 @@ arrow::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_
 /// Drop all files
 arrow::Status WebDB::DropFiles() {
     file_page_buffer_->DropDanglingFiles();
-    pinned_web_files_.clear();
+    std::vector<std::string> files_to_drop;
+    for (const auto& [key, handle] : pinned_web_files_) {
+        files_to_drop.push_back(handle->GetName());
+    }
+    for (const auto& fileName : files_to_drop) {
+        arrow::Status status = DropFile(fileName);
+        if (!status.ok()) {
+            return arrow::Status::Invalid("Failed to drop file: " + fileName);
+        }
+    }
     if (auto fs = io::WebFileSystem::Get()) {
         fs->DropDanglingFiles();
     }
     return arrow::Status::OK();
 }
 /// Drop a file
-arrow::Status WebDB::DropFile(std::string_view file_name) {
-    file_page_buffer_->TryDropFile(file_name);
-    pinned_web_files_.erase(file_name);
+arrow::Status WebDB::DropFile(std::string_view fileName) {
+    file_page_buffer_->TryDropFile(fileName);
+    pinned_web_files_.erase(fileName);
     if (auto fs = io::WebFileSystem::Get()) {
-        if (!fs->TryDropFile(file_name)) {
+        if (fs->TryDropFile(fileName)) {
+            fs->DropFile(fileName);
+        } else {
             return arrow::Status::Invalid("file is in use");
         }
     }

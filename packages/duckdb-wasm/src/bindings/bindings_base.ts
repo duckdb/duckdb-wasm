@@ -473,7 +473,11 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && handle instanceof FileSystemFileHandle) {
             // handle is an async handle, should convert to sync handle
             const fileHandle: FileSystemFileHandle = handle as any;
-            handle = (await fileHandle.createSyncAccessHandle()) as any;
+            try {
+                handle = (await fileHandle.createSyncAccessHandle()) as any;
+            } catch (e: any) {
+                throw new Error( e.message + ":" + name );
+            }
         }
         const [s, d, n] = callSRet(
             this.mod,
