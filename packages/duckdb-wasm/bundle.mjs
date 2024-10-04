@@ -104,7 +104,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     patchFile('./src/bindings/duckdb-mvp.js', 'child_process');
     patchFile('./src/bindings/duckdb-eh.js', 'child_process');
     patchFile('./src/bindings/duckdb-coi.js', 'child_process');
-    patchFile('./src/bindings/duckdb-coi.pthread.js', 'vm');
+   // patchFile('./src/bindings/duckdb-coi.pthread.js', 'vm');
 
     // -------------------------------
     // Browser bundles
@@ -216,7 +216,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         external: EXTERNALS_WEBWORKER,
         define: { 'process.release.name': '"browser"' },
     });
-
+/*
     console.log('[ ESBUILD ] duckdb-browser-coi.pthread.worker.js');
     await esbuild.build({
         entryPoints: ['./src/targets/duckdb-browser-coi.pthread.worker.ts'],
@@ -230,7 +230,7 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
         external: EXTERNALS_WEBWORKER,
         define: { 'process.release.name': '"browser"' },
     });
-
+*/
     // -------------------------------
     // Node bundles
 
