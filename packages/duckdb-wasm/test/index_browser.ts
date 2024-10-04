@@ -15,7 +15,7 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     coi: {
         mainModule: new URL('/static/duckdb-coi.wasm', window.location.href).href,
         mainWorker: new URL('/static/duckdb-browser-coi.worker.js', window.location.href).href,
-        pthreadWorker: new URL('/static/duckdb-browser-coi.worker.js', window.location.href).href,
+        pthreadWorker: new URL('/static/duckdb-browser-coi.pthread.worker.js', window.location.href).href,
     },
 };
 let DUCKDB_BUNDLE: duckdb.DuckDBBundle | null = null;
