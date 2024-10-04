@@ -293,6 +293,7 @@ if(EMSCRIPTEN)
       -s EXPORTED_FUNCTIONS='[ \
           _main, \
           _malloc, \
+          _calloc, \
           _free, \
           _duckdb_web_clear_response, \
           _duckdb_web_collect_file_stats, \
