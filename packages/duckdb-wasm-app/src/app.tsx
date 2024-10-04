@@ -30,7 +30,7 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
         mainModule: duckdb_wasm_coi,
         mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-coi.worker.js', import.meta.url).toString(),
         pthreadWorker: new URL(
-            '@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js',
+            '@duckdb/duckdb-wasm/dist/duckdb-browser-coi.worker.js',
             import.meta.url,
         ).toString(),
     },
