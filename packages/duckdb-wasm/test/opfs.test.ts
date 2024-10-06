@@ -45,7 +45,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
     });
 
     describe('Load Data in OPFS', () => {
-        it('Imporet Small Parquet file', async () => {
+        it('Import Small Parquet file', async () => {
             await conn.send(`CREATE TABLE stu AS SELECT * FROM "${baseDir}/uni/studenten.parquet"`);
             await conn.send(`CHECKPOINT;`);
             const result = await conn.send(`SELECT matrnr FROM stu;`);
