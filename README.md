@@ -1,5 +1,9 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/duckdb/duckdb-wasm/main/misc/duckdb_wasm.svg" height="80">
+  <picture>
+         <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/duckdb/duckdb-wasm/main/misc/duckdb_wasm.svg">
+         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/duckdb/duckdb-wasm/main/misc/duckdb_wasm_light.svg">
+         <img alt="The DuckDB WASM logo." src="https://raw.githubusercontent.com/duckdb/duckdb-wasm/main/misc/duckdb_wasm.svg" height="80">
+      </picture>
   <h1>DuckDB-Wasm</h1>
 </div>
 
@@ -31,9 +35,11 @@ Duckdb-Wasm speaks Arrow fluently, reads Parquet, CSV and JSON files backed by F
 Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [Observable](https://observablehq.com/@observablehq/duckdb), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.duckdb.org).
 
 ## DuckDB and DuckDB-Wasm
+
 DuckDB-Wasm is currently based on DuckDB v1.1.1.
 
 ## DuckDB-Wasm with DuckDB Extension
+
 ```sql
 --- Excplicitly load extensions
 LOAD icu;
@@ -44,6 +50,7 @@ FROM read_json('https://some.url/file.json');
 ```
 
 ## Build from source
+
 ```shell
 git clone https://github.com/duckdb/duckdb-wasm.git
 cd duckdb-wasm
