@@ -18,6 +18,16 @@ jobs:
         name: Change tags
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: 'recursive'
+                  fetch-depth: 0
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '18.x'
+                  registry-url: 'https://registry.npmjs.org'
+
             - name: Change tags
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
