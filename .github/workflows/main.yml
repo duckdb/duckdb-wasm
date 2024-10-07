@@ -28,7 +28,7 @@ concurrency:
 
 env:
   EMSCRIPTEN_VERSION: 'latest'
-  EMSCRIPTEN_VERSION_COI: '3.1.67'
+  EMSCRIPTEN_VERSION_COI: '3.1.57'
 
 jobs:
     clang_format:
