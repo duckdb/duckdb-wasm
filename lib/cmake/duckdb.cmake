@@ -87,6 +87,7 @@ target_link_libraries(
   INTERFACE ${install_dir}/lib/libduckdb_miniz.a
   INTERFACE ${install_dir}/lib/libduckdb_mbedtls.a
   INTERFACE ${install_dir}/lib/libduckdb_yyjson.a
+  INTERFACE ${install_dir}/lib/libduckdb_skiplistlib.a
   INTERFACE ${install_dir}/lib/libduckdb_pg_query.a
   INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
   INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
