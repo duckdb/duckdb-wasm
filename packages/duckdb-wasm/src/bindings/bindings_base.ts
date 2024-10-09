@@ -472,7 +472,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     ): Promise<void> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
             if( handle instanceof FileSystemSyncAccessHandle ){
-                //already a handle is sync handle.
+                // already a handle is sync handle.
             } else if( handle instanceof FileSystemFileHandle ){
                 // handle is an async handle, should convert to sync handle
                 const fileHandle: FileSystemFileHandle = handle as any;
@@ -482,7 +482,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
                     throw new Error( e.message + ":" + name );
                 }
             } else if( name != null ){
-                //handler is not an async handle, should get sync handle from the file name.
+                // should get sync handle from the file name.
                 try {
                     const opfsRoot = await navigator.storage.getDirectory();
                     const fileHandle = await opfsRoot.getFileHandle(name);
