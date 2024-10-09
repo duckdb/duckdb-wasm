@@ -470,13 +470,26 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         protocol: DuckDBDataProtocol,
         directIO: boolean,
     ): Promise<void> {
-        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && handle instanceof FileSystemFileHandle) {
-            // handle is an async handle, should convert to sync handle
-            const fileHandle: FileSystemFileHandle = handle as any;
-            try {
-                handle = (await fileHandle.createSyncAccessHandle()) as any;
-            } catch (e: any) {
-                throw new Error( e.message + ":" + name );
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
+            if( handle instanceof FileSystemSyncAccessHandle ){
+                //already a handle is sync handle.
+            } else if( handle instanceof FileSystemFileHandle ){
+                // handle is an async handle, should convert to sync handle
+                const fileHandle: FileSystemFileHandle = handle as any;
+                try {
+                    handle = (await fileHandle.createSyncAccessHandle()) as any;
+                } catch (e: any) {
+                    throw new Error( e.message + ":" + name );
+                }
+            } else if( name != null ){
+                //handler is not an async handle, should get sync handle from the file name.
+                try {
+                    const opfsRoot = await navigator.storage.getDirectory();
+                    const fileHandle = await opfsRoot.getFileHandle(name);
+                    handle = (await fileHandle.createSyncAccessHandle()) as any;
+                } catch (e: any) {
+                    throw new Error( e.message + ":" + name );
+                }
             }
         }
         const [s, d, n] = callSRet(

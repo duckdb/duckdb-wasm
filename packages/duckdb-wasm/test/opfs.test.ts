@@ -96,6 +96,30 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             expect(table.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
         });
 
+        it('Load Parquet file that are already with empty handler', async () => {
+            //1. write to opfs
+            const parquetBuffer = await fetch(`${baseDir}/tpch/0_01/parquet/lineitem.parquet`).then(res =>
+                res.arrayBuffer(),
+            );
+            const opfsRoot = await navigator.storage.getDirectory();
+            const fileHandle = await opfsRoot.getFileHandle('test.parquet', {create: true});
+            const writable = await fileHandle.createWritable();
+            await writable.write(parquetBuffer);
+            await writable.close();
+            //2. handle is empty object, because worker gets a File Handle using the file name.
+            await db.registerFileHandle('test.parquet', {}, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
+            await conn.send(`CREATE TABLE lineitem1 AS SELECT * FROM read_parquet('test.parquet')`);
+            await conn.send(`CHECKPOINT;`);
+
+            const result1 = await conn.send(`SELECT count(*)::INTEGER as cnt FROM lineitem1;`);
+            const batches1 = [];
+            for await (const batch of result1) {
+                batches1.push(batch);
+            }
+            const table1 = await new arrow.Table<{ cnt: arrow.Int }>(batches1);
+            expect(table1.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
+        });
+
         it('Load Parquet file that are already', async () => {
             const parquetBuffer = await fetch(`${baseDir}/tpch/0_01/parquet/lineitem.parquet`).then(res =>
                 res.arrayBuffer(),
