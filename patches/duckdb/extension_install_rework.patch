@@ -1,11 +1,11 @@
 diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
-index 222a36c051..fb895920ef 100644
+index 2a6fffa994..f4ef687ddd 100644
 --- a/src/include/duckdb/main/database.hpp
 +++ b/src/include/duckdb/main/database.hpp
-@@ -91,6 +91,10 @@ private:
- 	ValidChecker db_validity;
- 	unique_ptr<DatabaseFileSystem> db_file_system;
+@@ -96,6 +96,10 @@ private:
  	shared_ptr<DatabaseCacheEntry> db_cache_entry;
+ 
+ 	duckdb_ext_api_v0 (*create_api_v0)();
 +public:
 +	static void SetPreferredRepository(const string& extension, const string &repository);
 +	static string GetPreferredRepository(const string& extension);
@@ -31,10 +31,10 @@ index 6ccd1a1156..8040f537b6 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index 4308c4a016..fe23c36ead 100644
+index 0a82e4598e..7ef5b96f7d 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
-@@ -328,6 +328,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+@@ -336,6 +336,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
  }
  
@@ -48,7 +48,7 @@ index 4308c4a016..fe23c36ead 100644
 +	} else {
 +		x.emplace(extension, repository);
 +	}
-+}       
++}
 +
 +string DatabaseInstance::GetPreferredRepository(const string& extension) {
 +	const auto &x = extensionsRepos;
@@ -117,10 +117,10 @@ index b0ca9fb775..67dfcdfb26 100644
  #else
  	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index c0a37ea97a..6410048fc1 100644
+index b0282a7103..b43d9c6684 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -301,7 +301,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -302,7 +302,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = false;
  		string extension_name = ApplyExtensionAlias(extension);
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -142,7 +142,7 @@ index c0a37ea97a..6410048fc1 100644
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -342,73 +355,223 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -343,73 +356,223 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -420,7 +420,7 @@ index c0a37ea97a..6410048fc1 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -426,25 +589,27 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -427,25 +590,27 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	result.lib_hdl = lib_hdl;
  
  	if (!direct_load) {
