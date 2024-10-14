@@ -1,4 +1,4 @@
-import { DuckDBBindings } from '../bindings';
+import { DuckDBBindings, DuckDBDataProtocol } from '../bindings';
 import { WorkerResponseVariant, WorkerRequestVariant, WorkerRequestType, WorkerResponseType } from './worker_request';
 import { Logger, LogEntryVariant } from '../log';
 import { InstantiationProgress } from '../bindings/progress';
@@ -134,10 +134,16 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.sendOK(request);
                     break;
 
-                case WorkerRequestType.OPEN:
+                case WorkerRequestType.OPEN: {
+                    const path = request.data.path;
+                    if (path?.startsWith('opfs://')) {
+                        await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
+                        request.data.useDirectIO = true;
+                    }
                     this._bindings.open(request.data);
                     this.sendOK(request);
                     break;
+                }
                 case WorkerRequestType.DROP_FILE:
                     this._bindings.dropFile(request.data);
                     this.sendOK(request);
@@ -322,7 +328,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
 
                 case WorkerRequestType.REGISTER_FILE_HANDLE:
-                    this._bindings.registerFileHandle(
+                    await this._bindings.registerFileHandle(
                         request.data[0],
                         request.data[1],
                         request.data[2],

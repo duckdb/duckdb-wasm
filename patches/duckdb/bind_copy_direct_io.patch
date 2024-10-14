@@ -1,0 +1,15 @@
+diff --git a/src/planner/binder/statement/bind_copy.cpp b/src/planner/binder/statement/bind_copy.cpp
+index 7db1db812d..60131d5916 100644
+--- a/src/planner/binder/statement/bind_copy.cpp
++++ b/src/planner/binder/statement/bind_copy.cpp
+@@ -137,7 +137,9 @@ BoundStatement Binder::BindCopyTo(CopyStatement &stmt) {
+ 		throw NotImplementedException("Can't combine FILE_SIZE_BYTES and PARTITION_BY for COPY");
+ 	}
+ 	bool is_remote_file = FileSystem::IsRemoteFile(stmt.info->file_path);
+-	if (is_remote_file) {
++	if ( is_remote_file ) {
++		use_tmp_file = false;
++	} else if( config.options.use_direct_io ) {
+ 		use_tmp_file = false;
+ 	} else {
+ 		auto &fs = FileSystem::GetFileSystem(context);
