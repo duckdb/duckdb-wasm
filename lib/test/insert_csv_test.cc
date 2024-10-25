@@ -314,7 +314,7 @@ TEST(CSVExportTest, TestExport) {
     auto path = duckdb::web::test::SOURCE_DIR / ".." / "data" / "test.csv";
 
     // Import csv
-    auto db = std::make_shared<WebDB>(NATIVE);
+    auto db = std::make_shared<WebDB>(WEB);
     WebDB::Connection conn{*db};
     auto maybe_ok = conn.InsertCSVFromPath(path.c_str(), R"JSON({
         "schema": "main",

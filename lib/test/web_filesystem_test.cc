@@ -53,7 +53,6 @@ namespace {
 
 TEST(WebFileSystemTest, LoadParquet) {
     auto db = std::make_shared<WebDB>(WEB);
-    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -68,7 +67,6 @@ TEST(WebFileSystemTest, LoadParquet) {
 
 TEST(WebFileSystemTest, TestTPCHScans) {
     auto db = std::make_shared<WebDB>(WEB);
-    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
     for (const auto& f : files) {
