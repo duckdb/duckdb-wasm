@@ -401,11 +401,16 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** Start a pending query */
-    public async startPendingQuery(conn: ConnectionID, text: string): Promise<Uint8Array | null> {
-        const task = new WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>(
+    public async startPendingQuery(
+        conn: ConnectionID,
+        text: string,
+        allowStreamResult: boolean = false,
+    ): Promise<Uint8Array | null> {
+        const task = new WorkerTask<
             WorkerRequestType.START_PENDING_QUERY,
-            [conn, text],
-        );
+            [ConnectionID, string, boolean],
+            Uint8Array | null
+        >(WorkerRequestType.START_PENDING_QUERY, [conn, text, allowStreamResult]);
         return await this.postTask(task);
     }
     /** Poll a pending query */

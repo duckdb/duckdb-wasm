@@ -37,8 +37,9 @@ export class DuckDBConnection {
     /** Send a query */
     public async send<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
+        allowStreamResult: boolean = false,
     ): Promise<arrow.RecordBatchStreamReader<T>> {
-        let header = this._bindings.startPendingQuery(this._conn, text);
+        let header = this._bindings.startPendingQuery(this._conn, text, allowStreamResult);
         while (header == null) {
             header = await new Promise((resolve, reject) => {
                 try {
@@ -79,7 +80,7 @@ export class DuckDBConnection {
 
     /** Insert an arrow table */
     public insertArrowTable(table: arrow.Table, options: ArrowInsertOptions): void {
-	const buffer = arrow.tableToIPC(table, 'stream');
+        const buffer = arrow.tableToIPC(table, 'stream');
         this.insertArrowFromIPCStream(buffer, options);
     }
     /** Insert an arrow table from an ipc stream */
