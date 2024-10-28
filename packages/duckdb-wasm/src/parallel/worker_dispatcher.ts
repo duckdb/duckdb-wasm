@@ -225,7 +225,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
                 }
                 case WorkerRequestType.START_PENDING_QUERY: {
-                    const result = this._bindings.startPendingQuery(request.data[0], request.data[1]);
+                    const result = this._bindings.startPendingQuery(request.data[0], request.data[1], request.data[2]);
                     const transfer = [];
                     if (result) {
                         transfer.push(result.buffer);

@@ -139,7 +139,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.RUN_PREPARED, [number, number, any[]]>
     | WorkerRequest<WorkerRequestType.RUN_QUERY, [number, string]>
     | WorkerRequest<WorkerRequestType.SEND_PREPARED, [number, number, any[]]>
-    | WorkerRequest<WorkerRequestType.START_PENDING_QUERY, [number, string]>
+    | WorkerRequest<WorkerRequestType.START_PENDING_QUERY, [number, string, boolean]>
     | WorkerRequest<WorkerRequestType.TOKENIZE, string>;
 
 export type WorkerResponseVariant =
@@ -198,7 +198,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.RUN_PREPARED, [number, number, any[]], Uint8Array>
     | WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>
     | WorkerTask<WorkerRequestType.SEND_PREPARED, [number, number, any[]], Uint8Array>
-    | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string], Uint8Array | null>
+    | WorkerTask<WorkerRequestType.START_PENDING_QUERY, [ConnectionID, string, boolean], Uint8Array | null>
     | WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>
     | WorkerTask<WorkerRequestType.CANCEL_PENDING_QUERY, ConnectionID, boolean>
     | WorkerTask<WorkerRequestType.TOKENIZE, string, ScriptTokens>;
