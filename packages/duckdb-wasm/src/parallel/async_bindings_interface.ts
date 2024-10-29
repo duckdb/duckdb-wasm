@@ -19,7 +19,7 @@ export interface AsyncDuckDBBindings {
 
     disconnect(conn: number): Promise<void>;
     runQuery(conn: number, text: string): Promise<Uint8Array>;
-    startPendingQuery(conn: number, text: string): Promise<Uint8Array | null>;
+    startPendingQuery(conn: number, text: string, allowStreamResult: boolean): Promise<Uint8Array | null>;
     pollPendingQuery(conn: number): Promise<Uint8Array | null>;
     cancelPendingQuery(conn: number): Promise<boolean>;
     fetchQueryResults(conn: number): Promise<Uint8Array>;

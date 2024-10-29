@@ -197,9 +197,10 @@ void duckdb_web_query_run_buffer(WASMResponse* packed, ConnectionHdl connHdl, co
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Start a pending query
-void duckdb_web_pending_query_start(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
+void duckdb_web_pending_query_start(WASMResponse* packed, ConnectionHdl connHdl, const char* script,
+                                    bool allow_stream_result) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->PendingQuery(script);
+    auto r = c->PendingQuery(script, allow_stream_result);
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Poll a pending query

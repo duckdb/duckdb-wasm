@@ -164,10 +164,11 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
     }
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(std::string_view text) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(std::string_view text,
+                                                                              bool allow_stream_result) {
     try {
         // Send the query
-        auto result = connection_.PendingQuery(std::string{text});
+        auto result = connection_.PendingQuery(std::string{text}, allow_stream_result);
         if (result->HasError()) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
         current_pending_query_result_ = std::move(result);
         current_pending_query_was_canceled_ = false;

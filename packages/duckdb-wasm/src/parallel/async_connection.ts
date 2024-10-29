@@ -50,6 +50,7 @@ export class AsyncDuckDBConnection {
     /** Send a query */
     public async send<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
+        allowStreamResult: boolean = false,
     ): Promise<arrow.AsyncRecordBatchStreamReader<T>> {
         this._bindings.logger.log({
             timestamp: new Date(),
@@ -59,7 +60,7 @@ export class AsyncDuckDBConnection {
             event: LogEvent.RUN,
             value: text,
         });
-        let header = await this._bindings.startPendingQuery(this._conn, text);
+        let header = await this._bindings.startPendingQuery(this._conn, text, allowStreamResult);
         while (header == null) {
             header = await this._bindings.pollPendingQuery(this._conn);
         }

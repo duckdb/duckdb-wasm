@@ -164,8 +164,8 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** Send a query and return the full result */
     public runQuery(conn: number, text: string): Uint8Array {
         const BUF = TEXT_ENCODER.encode(text);
-        const bufferPtr = this.mod._malloc(BUF.length );
-        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
+        const bufferPtr = this.mod._malloc(BUF.length);
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length);
         bufferOfs.set(BUF);
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_run_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
         if (s !== StatusCode.SUCCESS) {
@@ -182,8 +182,13 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
      *  On null, the query has to be executed using `pollPendingQuery` until that returns != null.
      *  Results can then be fetched using `fetchQueryResults`
      */
-    public startPendingQuery(conn: number, text: string): Uint8Array | null {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_start', ['number', 'string'], [conn, text]);
+    public startPendingQuery(conn: number, text: string, allowStreamResult: boolean = false): Uint8Array | null {
+        const [s, d, n] = callSRet(
+            this.mod,
+            'duckdb_web_pending_query_start',
+            ['number', 'string', 'boolean'],
+            [conn, text, allowStreamResult],
+        );
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
