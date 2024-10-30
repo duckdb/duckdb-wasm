@@ -151,6 +151,13 @@ void duckdb_web_tokenize(WASMResponse* packed, const char* query) {
     auto tokens = webdb.Tokenize(query);
     WASMResponseBuffer::Get().Store(*packed, arrow::Result(std::move(tokens)));
 }
+/// Tokenize a query
+void duckdb_web_tokenize_buffer(WASMResponse* packed, const uint8_t* buffer, size_t buffer_length) {
+    GET_WEBDB(*packed);
+    std::string_view query(reinterpret_cast<const char*>(buffer), buffer_length);
+    auto tokens = webdb.Tokenize(query);
+    WASMResponseBuffer::Get().Store(*packed, arrow::Result(std::move(tokens)));
+}
 /// Create scalar UDF queries
 void duckdb_web_udf_scalar_create(WASMResponse* packed, ConnectionHdl connHdl, const char* args) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
@@ -160,6 +167,14 @@ void duckdb_web_udf_scalar_create(WASMResponse* packed, ConnectionHdl connHdl, c
 /// Prepare a query statement
 void duckdb_web_prepared_create(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->CreatePreparedStatement(script);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
+/// Prepare a query statement
+void duckdb_web_prepared_create_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
+                                       size_t buffer_length) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    std::string_view script(reinterpret_cast<const char*>(buffer), buffer_length);
     auto r = c->CreatePreparedStatement(script);
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
@@ -203,6 +218,14 @@ void duckdb_web_pending_query_start(WASMResponse* packed, ConnectionHdl connHdl,
     auto r = c->PendingQuery(script, allow_stream_result);
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
+/// Start a pending query
+void duckdb_web_pending_query_start_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
+                                           size_t buffer_length, bool allow_stream_result) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    std::string_view S(reinterpret_cast<const char*>(buffer), buffer_length);
+    auto r = c->PendingQuery(S, allow_stream_result);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
 /// Poll a pending query
 void duckdb_web_pending_query_poll(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
@@ -223,6 +246,14 @@ void duckdb_web_query_fetch_results(WASMResponse* packed, ConnectionHdl connHdl)
 /// Get table names
 void duckdb_web_get_tablenames(WASMResponse* packed, ConnectionHdl connHdl, const char* query) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    auto r = c->GetTableNames(query);
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+}
+/// Get table names
+void duckdb_web_get_tablenames_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
+                                      size_t buffer_length) {
+    auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
+    std::string_view query(reinterpret_cast<const char*>(buffer), buffer_length);
     auto r = c->GetTableNames(query);
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }

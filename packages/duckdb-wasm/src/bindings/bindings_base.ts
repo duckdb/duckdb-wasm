@@ -134,7 +134,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Tokenize a script */
     public tokenize(text: string): ScriptTokens {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize', ['string'], [text]);
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length );
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize_buffer', ['number', 'number'], [bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -168,12 +173,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length);
         bufferOfs.set(BUF);
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_run_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
-        this.mod._free(bufferPtr);
         return res;
     }
     /**
@@ -183,12 +188,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
      *  Results can then be fetched using `fetchQueryResults`
      */
     public startPendingQuery(conn: number, text: string, allowStreamResult: boolean = false): Uint8Array | null {
-        const [s, d, n] = callSRet(
-            this.mod,
-            'duckdb_web_pending_query_start',
-            ['number', 'string', 'boolean'],
-            [conn, text, allowStreamResult],
-        );
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length );
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_start_buffer', ['number', 'number', 'number', 'boolean'], [conn, bufferPtr, BUF.length, allowStreamResult]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -228,7 +233,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     }
     /** Get table names */
     public getTableNames(conn: number, text: string): string[] {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_get_tablenames', ['number', 'string'], [conn, text]);
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length);
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length);
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_get_tablenames_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
@@ -283,7 +293,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Prepare a statement and return its identifier */
     public createPrepared(conn: number, text: string): number {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create', ['number', 'string'], [conn, text]);
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length);
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length);
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
