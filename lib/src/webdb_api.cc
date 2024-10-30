@@ -171,7 +171,8 @@ void duckdb_web_prepared_create(WASMResponse* packed, ConnectionHdl connHdl, con
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Prepare a query statement
-void duckdb_web_prepared_create_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer, size_t buffer_length) {
+void duckdb_web_prepared_create_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
+                                       size_t buffer_length) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     std::string_view script(reinterpret_cast<const char*>(buffer), buffer_length);
     auto r = c->CreatePreparedStatement(script);
@@ -249,7 +250,8 @@ void duckdb_web_get_tablenames(WASMResponse* packed, ConnectionHdl connHdl, cons
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Get table names
-void duckdb_web_get_tablenames_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer, size_t buffer_length) {
+void duckdb_web_get_tablenames_buffer(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
+                                      size_t buffer_length) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     std::string_view query(reinterpret_cast<const char*>(buffer), buffer_length);
     auto r = c->GetTableNames(query);
