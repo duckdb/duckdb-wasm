@@ -316,6 +316,7 @@ if(EMSCRIPTEN)
           _duckdb_web_get_feature_flags, \
           _duckdb_web_get_global_file_info, \
           _duckdb_web_get_tablenames, \
+          _duckdb_web_get_tablenames_buffer, \
           _duckdb_web_get_version, \
           _duckdb_web_insert_arrow_from_ipc_stream, \
           _duckdb_web_insert_csv_from_path, \
