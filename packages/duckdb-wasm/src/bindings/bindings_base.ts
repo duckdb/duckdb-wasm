@@ -190,19 +190,21 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
      *  Results can then be fetched using `fetchQueryResults`
      */
     public startPendingQuery(conn: number, text: string, allowStreamResult: boolean = false): Uint8Array | null {
-        const [s, d, n] = callSRet(
-            this.mod,
-            'duckdb_web_pending_query_start',
-            ['number', 'string', 'boolean'],
-            [conn, text, allowStreamResult],
-        );
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length );
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_start_buffer', ['number', 'number', 'number', 'boolean'], [conn, bufferPtr, BUF.length, allowStreamResult]);
         if (s !== StatusCode.SUCCESS) {
+            this.mod._free(bufferPtr);
             throw new Error(readString(this.mod, d, n));
         }
         if (d == 0) {
+            this.mod._free(bufferPtr);
             return null;
         }
         const res = copyBuffer(this.mod, d, n);
+        this.mod._free(bufferPtr);
         dropResponseBuffers(this.mod);
         return res;
     }
