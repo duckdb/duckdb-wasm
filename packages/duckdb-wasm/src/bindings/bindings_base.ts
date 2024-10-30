@@ -139,12 +139,11 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
         bufferOfs.set(BUF);
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize_buffer', ['number', 'number'], [bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
-            this.mod._free(bufferPtr);
             throw new Error(readString(this.mod, d, n));
         }
         const res = readString(this.mod, d, n);
-        this.mod._free(bufferPtr);
         dropResponseBuffers(this.mod);
         return JSON.parse(res) as ScriptTokens;
     }
@@ -174,13 +173,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length);
         bufferOfs.set(BUF);
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_run_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
-            this.mod._free(bufferPtr);
             throw new Error(readString(this.mod, d, n));
         }
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
-        this.mod._free(bufferPtr);
         return res;
     }
     /**
@@ -195,16 +193,14 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
         bufferOfs.set(BUF);
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_pending_query_start_buffer', ['number', 'number', 'number', 'boolean'], [conn, bufferPtr, BUF.length, allowStreamResult]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
-            this.mod._free(bufferPtr);
             throw new Error(readString(this.mod, d, n));
         }
         if (d == 0) {
-            this.mod._free(bufferPtr);
             return null;
         }
         const res = copyBuffer(this.mod, d, n);
-        this.mod._free(bufferPtr);
         dropResponseBuffers(this.mod);
         return res;
     }
