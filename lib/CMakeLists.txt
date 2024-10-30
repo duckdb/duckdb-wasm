@@ -324,6 +324,7 @@ if(EMSCRIPTEN)
           _duckdb_web_pending_query_cancel, \
           _duckdb_web_pending_query_poll, \
           _duckdb_web_pending_query_start, \
+          _duckdb_web_pending_query_start_buffer, \
           _duckdb_web_prepared_close, \
           _duckdb_web_prepared_create, \
           _duckdb_web_prepared_run, \
