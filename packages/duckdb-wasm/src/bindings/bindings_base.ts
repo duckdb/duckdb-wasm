@@ -288,7 +288,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Prepare a statement and return its identifier */
     public createPrepared(conn: number, text: string): number {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create', ['number', 'string'], [conn, text]);
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length);
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length);
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_prepared_create_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
+        this.mod._free(bufferPtr);
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
