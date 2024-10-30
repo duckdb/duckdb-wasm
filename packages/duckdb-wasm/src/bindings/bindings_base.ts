@@ -169,6 +169,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         bufferOfs.set(BUF);
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_run_buffer', ['number', 'number', 'number'], [conn, bufferPtr, BUF.length]);
         if (s !== StatusCode.SUCCESS) {
+            this.mod._free(bufferPtr);
             throw new Error(readString(this.mod, d, n));
         }
         const res = copyBuffer(this.mod, d, n);
