@@ -151,6 +151,13 @@ void duckdb_web_tokenize(WASMResponse* packed, const char* query) {
     auto tokens = webdb.Tokenize(query);
     WASMResponseBuffer::Get().Store(*packed, arrow::Result(std::move(tokens)));
 }
+/// Tokenize a query
+void duckdb_web_tokenize_buffer(WASMResponse* packed, const uint8_t* buffer, size_t buffer_length) {
+    GET_WEBDB(*packed);
+    std::string_view query(reinterpret_cast<const char*>(buffer), buffer_length);
+    auto tokens = webdb.Tokenize(query);
+    WASMResponseBuffer::Get().Store(*packed, arrow::Result(std::move(tokens)));
+}
 /// Create scalar UDF queries
 void duckdb_web_udf_scalar_create(WASMResponse* packed, ConnectionHdl connHdl, const char* args) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);

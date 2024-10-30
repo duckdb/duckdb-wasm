@@ -134,11 +134,17 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
     /** Tokenize a script */
     public tokenize(text: string): ScriptTokens {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize', ['string'], [text]);
+        const BUF = TEXT_ENCODER.encode(text);
+        const bufferPtr = this.mod._malloc(BUF.length );
+        const bufferOfs = this.mod.HEAPU8.subarray(bufferPtr, bufferPtr + BUF.length );
+        bufferOfs.set(BUF);
+        const [s, d, n] = callSRet(this.mod, 'duckdb_web_tokenize_buffer', ['number', 'number'], [bufferPtr, BUF.length]);
         if (s !== StatusCode.SUCCESS) {
+            this.mod._free(bufferPtr);
             throw new Error(readString(this.mod, d, n));
         }
         const res = readString(this.mod, d, n);
+        this.mod._free(bufferPtr);
         dropResponseBuffers(this.mod);
         return JSON.parse(res) as ScriptTokens;
     }
