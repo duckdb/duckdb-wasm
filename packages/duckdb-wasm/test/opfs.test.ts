@@ -107,7 +107,32 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await writable.write(parquetBuffer);
             await writable.close();
             //2. handle is empty object, because worker gets a File Handle using the file name.
-            await db.registerFileHandle('test.parquet', {}, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
+            await db.registerFileHandle('test.parquet', null, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
+            await conn.send(`CREATE TABLE lineitem1 AS SELECT * FROM read_parquet('test.parquet')`);
+            await conn.send(`CHECKPOINT;`);
+
+            const result1 = await conn.send(`SELECT count(*)::INTEGER as cnt FROM lineitem1;`);
+            const batches1 = [];
+            for await (const batch of result1) {
+                batches1.push(batch);
+            }
+            const table1 = await new arrow.Table<{ cnt: arrow.Int }>(batches1);
+            expect(table1.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
+        });
+
+        it('Load Parquet file that are already with opfs file handler in datadir', async () => {
+            //1. write to opfs
+            const parquetBuffer = await fetch(`${baseDir}/tpch/0_01/parquet/lineitem.parquet`).then(res =>
+                res.arrayBuffer(),
+            );
+            const opfsRoot = await navigator.storage.getDirectory();
+            const datadir = await opfsRoot.getDirectoryHandle("datadir", {create: true});
+            const fileHandle = await datadir.getFileHandle('test.parquet', {create: true});
+            const writable = await fileHandle.createWritable();
+            await writable.write(parquetBuffer);
+            await writable.close();
+            //2. handle is opfs file handler
+            await db.registerFileHandle('test.parquet', fileHandle, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
             await conn.send(`CREATE TABLE lineitem1 AS SELECT * FROM read_parquet('test.parquet')`);
             await conn.send(`CHECKPOINT;`);
 
@@ -267,6 +292,15 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
         await opfsRoot.removeEntry('test3.csv').catch(() => {
         });
         await opfsRoot.removeEntry('test.parquet').catch(() => {
+        });
+        try {
+            const datadir = await opfsRoot.getDirectoryHandle('datadir');
+            datadir.removeEntry('test.parquet').catch(() => {
+            });
+        } catch (e) {
+            //
+        }
+        await opfsRoot.removeEntry('datadir').catch(() => {
         });
     }
 }
