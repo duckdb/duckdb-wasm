@@ -84,7 +84,7 @@ export class AsyncDuckDBConnection {
     /** Create a prepared statement */
     public async prepare<T extends { [key: string]: arrow.DataType } = any>(
         text: string,
-    ): Promise<AsyncPreparedStatement> {
+    ): Promise<AsyncPreparedStatement<T>> {
         const stmt = await this._bindings.createPrepared(this._conn, text);
         return new AsyncPreparedStatement<T>(this._bindings, this._conn, stmt);
     }
