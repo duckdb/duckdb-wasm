@@ -365,6 +365,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/json_dataview_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/parquet_test.cc
+      ${CMAKE_SOURCE_DIR}/test/prepared_statement_test.cc
       ${CMAKE_SOURCE_DIR}/test/readahead_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/tablenames_test.cc
       ${CMAKE_SOURCE_DIR}/test/web_filesystem_test.cc

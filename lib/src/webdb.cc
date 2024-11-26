@@ -302,6 +302,39 @@ arrow::Result<size_t> WebDB::Connection::CreatePreparedStatement(std::string_vie
     }
 }
 
+static arrow::Result<duckdb::vector<duckdb::Value>> BuildParameters(const rapidjson::Document::ConstArray& source) {
+    duckdb::vector<duckdb::Value> values;
+    size_t index = 0;
+
+    for (const auto& v : source) {
+        if (v.IsLosslessDouble())
+            values.emplace_back(v.GetDouble());
+        else if (v.IsString())
+            // Use GetStringLenght otherwise null bytes will be counted as terminators
+            values.emplace_back(string_t(v.GetString(), v.GetStringLength()));
+        else if (v.IsNull())
+            values.emplace_back(nullptr);
+        else if (v.IsBool())
+            values.emplace_back(v.GetBool());
+        else if (v.IsArray()) {
+            auto item_values = BuildParameters(v.GetArray());
+            if (!item_values.ok()) {
+                return item_values;
+            }
+            values.emplace_back(duckdb::Value::LIST(std::move(*item_values)));
+        } else
+            return arrow::Status{arrow::StatusCode::Invalid,
+                                 "Invalid column type encountered for argument " + std::to_string(index)};
+        ++index;
+    }
+
+    return arrow::Result<duckdb::vector<duckdb::Value>>(std::move(values));
+}
+
+static arrow::Result<duckdb::vector<duckdb::Value>> BuildParameters(const rapidjson::Document& doc) {
+    return BuildParameters(doc.GetArray());
+}
+
 arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecutePreparedStatement(
     size_t statement_id, std::string_view args_json) {
     try {
@@ -314,25 +347,12 @@ arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::Execut
         if (!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
         if (!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array"};
 
-        duckdb::vector<duckdb::Value> values;
-        size_t index = 0;
-        for (const auto& v : args_doc.GetArray()) {
-            if (v.IsLosslessDouble())
-                values.emplace_back(v.GetDouble());
-            else if (v.IsString())
-                // Use GetStringLenght otherwise null bytes will be counted as terminators
-                values.emplace_back(string_t(v.GetString(), v.GetStringLength()));
-            else if (v.IsNull())
-                values.emplace_back(nullptr);
-            else if (v.IsBool())
-                values.emplace_back(v.GetBool());
-            else
-                return arrow::Status{arrow::StatusCode::Invalid,
-                                     "Invalid column type encountered for argument " + std::to_string(index)};
-            ++index;
+        auto values = BuildParameters(args_doc);
+        if (!values.ok()) {
+            return values.status();
         }
 
-        auto result = stmt->second->Execute(values);
+        auto result = stmt->second->Execute(*values);
         if (result->HasError()) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
         return result;
     } catch (std::exception& e) {
