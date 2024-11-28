@@ -19,7 +19,6 @@ namespace {
 
 TEST(ParquetLoadTest, LoadParquet) {
     auto db = make_shared<WebDB>(NATIVE);
-    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -34,7 +33,6 @@ TEST(ParquetLoadTest, LoadParquet) {
 
 TEST(ParquetLoadTest, LoadParquetTwice) {
     auto db = make_shared<WebDB>(NATIVE);
-    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::stringstream ss;
     auto data = test::SOURCE_DIR / ".." / "data" / "uni" / "studenten.parquet";
@@ -57,7 +55,6 @@ TEST(ParquetLoadTest, LoadParquetTwice) {
 
 TEST(FileSystemBufferTest, FlushFrameMemoryBugRegression) {
     auto db = make_shared<WebDB>(NATIVE);
-    duckdb_web_parquet_init(&db->database());
     WebDB::Connection conn{*db};
     std::string files[] = {"customer", "lineitem", "nation", "orders", "partsupp", "part", "region", "supplier"};
     for (const auto& f : files) {
