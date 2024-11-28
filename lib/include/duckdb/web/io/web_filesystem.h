@@ -209,6 +209,8 @@ class WebFileSystem : public duckdb::FileSystem {
                                                                      DataBuffer file_buffer);
     /// Try to drop a specific file
     bool TryDropFile(std::string_view file_name);
+    /// drop a specific file
+    void DropFile(std::string_view file_name);
     /// Drop all files without references (including buffers)
     void DropDanglingFiles();
     /// Configure file statistics

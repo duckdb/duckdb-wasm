@@ -117,6 +117,7 @@ RT_FN(void duckdb_web_fs_file_close(size_t file_id), {
     auto &infos = GetLocalState();
     infos.handles.erase(file_id);
 });
+RT_FN(void duckdb_web_fs_file_drop_file(const char *fileName, size_t pathLen), {});
 RT_FN(void duckdb_web_fs_file_truncate(size_t file_id, double new_size), { GetOrOpen(file_id).Truncate(new_size); });
 RT_FN(time_t duckdb_web_fs_file_get_last_modified_time(size_t file_id), {
     auto &file = GetOrOpen(file_id);
@@ -226,6 +227,8 @@ WebFileSystem::DataProtocol WebFileSystem::inferDataProtocol(std::string_view ur
         proto = WebFileSystem::DataProtocol::HTTP;
     } else if (hasPrefix(url, "s3://")) {
         proto = WebFileSystem::DataProtocol::S3;
+    } else if (hasPrefix(url, "opfs://")) {
+        proto = WebFileSystem::DataProtocol::BROWSER_FSACCESS;
     } else if (hasPrefix(url, "file://")) {
         data_url = std::string_view{url}.substr(7);
         proto = default_data_protocol_;
@@ -453,6 +456,7 @@ void WebFileSystem::DropDanglingFiles() {
     for (auto &[file_id, file] : files_by_id_) {
         if (file->handle_count_ == 0) {
             files_by_name_.erase(file->file_name_);
+            DropFile(file->file_name_);
             if (file->data_url_.has_value()) {
                 files_by_url_.erase(file->data_url_.value());
             }
@@ -479,6 +483,13 @@ bool WebFileSystem::TryDropFile(std::string_view file_name) {
         return true;
     }
     return false;
+}
+
+/// drop a file
+void WebFileSystem::DropFile(std::string_view file_name) {
+    DEBUG_TRACE();
+    std::string fileNameS = std::string{file_name};
+    duckdb_web_fs_file_drop_file(fileNameS.c_str(), fileNameS.size());
 }
 
 /// Write the global filesystem info
@@ -793,7 +804,7 @@ void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_b
     auto file_size = file_hdl.file_->file_size_;
     auto writer = static_cast<char *>(buffer);
     file_hdl.position_ = location;
-    while (nr_bytes > 0 && location < file_size) {
+    while (nr_bytes > 0) {
         auto n = Write(handle, writer, nr_bytes);
         writer += n;
         nr_bytes -= n;
@@ -1006,10 +1017,12 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     std::vector<std::string> results;
-    auto glob = glob_to_regex(path);
-    for (auto [name, file] : files_by_name_) {
-        if (std::regex_match(file->file_name_, glob)) {
-            results.push_back(std::string{name});
+    if (!FileSystem::IsRemoteFile(path)) {
+        auto glob = glob_to_regex(path);
+        for (auto [name, file] : files_by_name_) {
+            if (std::regex_match(file->file_name_, glob)) {
+                results.push_back(std::string{name});
+            }
         }
     }
     auto &state = GetLocalState();

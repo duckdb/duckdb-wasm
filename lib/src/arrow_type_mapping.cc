@@ -122,6 +122,10 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
         case arrow::Type::type::EXTENSION:
         case arrow::Type::type::SPARSE_UNION:
         case arrow::Type::type::DENSE_UNION:
+        case arrow::Type::type::STRING_VIEW:
+        case arrow::Type::type::BINARY_VIEW:
+        case arrow::Type::type::LIST_VIEW:
+        case arrow::Type::type::LARGE_LIST_VIEW:
             return arrow::Status::NotImplemented("DuckDB type mapping for: ", type.ToString());
     }
     return duckdb::LogicalTypeId::INVALID;
