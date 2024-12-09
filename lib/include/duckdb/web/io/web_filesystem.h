@@ -132,7 +132,7 @@ class WebFileSystem : public duckdb::FileSystem {
        public:
         /// Constructor
         WebFileHandle(std::shared_ptr<WebFile> file)
-            : duckdb::FileHandle(file->GetFileSystem(), file->GetFileName(), FileOpenFlags(1)),
+            : duckdb::FileHandle(file->GetFileSystem(), file->GetFileName(), FileOpenFlags::FILE_FLAGS_READ),
               file_(file),
               readahead_(nullptr),
               position_(0) {

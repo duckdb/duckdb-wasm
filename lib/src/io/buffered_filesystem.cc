@@ -42,7 +42,7 @@ void BufferedFileHandle::Close() { file_ref_->Release(); }
 /// Constructor
 BufferedFileHandle::BufferedFileHandle(duckdb::FileSystem &file_system,
                                        std::shared_ptr<FilePageBuffer::FileRef> file_buffers)
-    : duckdb::FileHandle(file_system, std::string{file_buffers->GetPath()}, FileOpenFlags(1)),
+    : duckdb::FileHandle(file_system, std::string{file_buffers->GetPath()}, FileOpenFlags::FILE_FLAGS_READ),
       file_ref_(std::move(file_buffers)),
       file_position_(0) {}
 
