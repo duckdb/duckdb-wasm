@@ -5,7 +5,7 @@ index 2a6fffa994..f4ef687ddd 100644
 @@ -96,6 +96,10 @@ private:
  	shared_ptr<DatabaseCacheEntry> db_cache_entry;
  
- 	duckdb_ext_api_v0 (*create_api_v0)();
+ 	duckdb_ext_api_v1 (*create_api_v1)();
 +public:
 +	static void SetPreferredRepository(const string& extension, const string &repository);
 +	static string GetPreferredRepository(const string& extension);
