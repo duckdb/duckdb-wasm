@@ -59,7 +59,7 @@ Supported DuckDB features:
 
 DuckDB is extensible and this allows to delegate functionality to [extensions](https://duckdb.org/docs/extensions/overview).
 
-Core extensions are available at https://extensions.duckdb.org, and community extensions are available at https://community-extensions.duckdb.org.
+Core extensions are available at https://duckdb.org/docs/extensions/core_extensions, and community extensions are available at https://community-extensions.duckdb.org.
 ```sql
 --- Excplicitly load extensions
 LOAD icu;
