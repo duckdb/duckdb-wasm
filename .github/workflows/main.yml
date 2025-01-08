@@ -1039,22 +1039,6 @@ jobs:
                       rm -rf ./packages/duckdb-wasm-app/build/
                       yarn workspace @duckdb/duckdb-wasm-app build:release
 
-            - name: Test @duckdb/duckdb-wasm on Chrome
-              shell: bash
-              run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
-            
-            #            - name: Test @duckdb/duckdb-wasm on Firefox
-            #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
-            #              with:
-            #                  script: |-
-            #                      yarn workspace @duckdb/duckdb-wasm test:firefox
-
-            - name: Test @duckdb/duckdb-wasm on Node.js
-              shell: bash
-              run: |
-                      yarn workspace @duckdb/duckdb-wasm test:node
-
             #- name: Coverage @duckdb/duckdb-wasm
             #  shell: bash
             #  run: |
@@ -1072,6 +1056,22 @@ jobs:
             - name: Measure NPM stats
               run: |
                   ./scripts/npm_measure_lib.sh
+
+            - name: Test @duckdb/duckdb-wasm on Chrome
+              shell: bash
+              run: |
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
+            
+            #            - name: Test @duckdb/duckdb-wasm on Firefox
+            #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
+            #              with:
+            #                  script: |-
+            #                      yarn workspace @duckdb/duckdb-wasm test:firefox
+
+            - name: Test @duckdb/duckdb-wasm on Node.js
+              shell: bash
+              run: |
+                      yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Deploy GitHub Page
               if: github.ref == 'refs/heads/main'
