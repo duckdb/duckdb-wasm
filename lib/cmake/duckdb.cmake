@@ -49,6 +49,7 @@ ExternalProject_Add(
              -DSMALLER_BINARY=1
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
+    <INSTALL_DIR>/lib/libduckdb_zstd.a
     <INSTALL_DIR>/lib/libduckdb_static.a
     <INSTALL_DIR>/lib/libduckdb_fmt.a
     <INSTALL_DIR>/lib/libduckdb_fsst.a
@@ -82,6 +83,7 @@ set_property(TARGET duckdb PROPERTY IMPORTED_LOCATION ${DUCKDB_LIBRARY_PATH})
 target_link_libraries(
   duckdb
   INTERFACE ${install_dir}/lib/libduckdb_re2.a
+  INTERFACE ${install_dir}/lib/libduckdb_zstd.a
   INTERFACE ${install_dir}/lib/libduckdb_fmt.a
   INTERFACE ${install_dir}/lib/libduckdb_fsst.a
   INTERFACE ${install_dir}/lib/libduckdb_hyperloglog.a
