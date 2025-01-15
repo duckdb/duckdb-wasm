@@ -475,6 +475,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
+	try {
         switch (file?.dataProtocol) {
             case DuckDBDataProtocol.BUFFER:
             case DuckDBDataProtocol.HTTP:
@@ -491,6 +492,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
                 return handle.flush();
             }
+        }
+        } catch (e: any) {
+            console.log(e);
+            failWith(mod, e.toString());
         }
     },
     dropFile: (mod: DuckDBModule, fileNamePtr: number, fileNameLen: number) => {

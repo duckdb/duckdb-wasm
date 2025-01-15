@@ -141,7 +141,13 @@ class WebFileSystem : public duckdb::FileSystem {
         /// Delete copy constructor
         WebFileHandle(const WebFileHandle &) = delete;
         /// Destructor
-        virtual ~WebFileHandle() { Close(); }
+        virtual ~WebFileHandle() {
+            try {
+                Close();
+            } catch (...) {
+                // Avoid crashes if Close happens to throw
+            }
+        }
         /// Get the file name
         auto &GetName() const { return file_->file_name_; }
         /// Resolve readahead

@@ -201,6 +201,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await db.registerFileHandle('test.csv', testHandle, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
             await conn.send(`CREATE TABLE zzz AS SELECT * FROM "${baseDir}/tpch/0_01/parquet/lineitem.parquet"`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'test.csv'`);
+            await conn.send(`COPY (SELECT * FROM zzz) TO 'non_existing.csv'`);
             await conn.close();
             await db.dropFile('test.csv');
             await db.reset();
