@@ -41,7 +41,19 @@ export interface DuckDBBindings {
         handle: HandleType,
         protocol: DuckDBDataProtocol,
         directIO: boolean,
+    ): void;
+    registerFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
     ): Promise<void>;
+    prepareFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<HandleType>;
     prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;

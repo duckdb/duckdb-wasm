@@ -476,20 +476,20 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             for (const item of list) {
                 const { handle, path: filePath, fromCached } = item;
                 if (!fromCached && handle.getSize()) {
-                    await this.registerFileHandle(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
+                    await this.registerFileHandleAsync(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
                 }
             }
             return;
         }
         throw new Error(`prepareDBFileHandle: unsupported protocol ${protocol}`);
     }
-    /** Register a file object URL */
-    public async registerFileHandle<HandleType>(
+    /** Prepare a file object URL */
+    public async prepareFileHandleAsync<HandleType>(
         name: string,
         handle: HandleType,
         protocol: DuckDBDataProtocol,
         directIO: boolean,
-    ): Promise<void> {
+    ): Promise<HandleType> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
             if( handle instanceof FileSystemSyncAccessHandle ){
                 // already a handle is sync handle.
@@ -512,6 +512,25 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
                 }
             }
         }
+	return handle;
+    }
+    /** Register a file object URL async */
+    public async registerFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<void> {
+        const handle_inner = await this.prepareFileHandleAsync(name, handle, protocol, directIO);
+        this.registerFileHandle(name, handle_inner, protocol, directIO);
+    }
+    /** Register a file object URL */
+    public registerFileHandle<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): void {
         const [s, d, n] = callSRet(
             this.mod,
             'duckdb_web_fs_register_file_url',

@@ -328,7 +328,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
 
                 case WorkerRequestType.REGISTER_FILE_HANDLE:
-                    await this._bindings.registerFileHandle(
+                    await this._bindings.registerFileHandleAsync(
                         request.data[0],
                         request.data[1],
                         request.data[2],
