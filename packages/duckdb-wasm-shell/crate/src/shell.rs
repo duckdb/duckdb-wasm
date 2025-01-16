@@ -377,6 +377,18 @@ impl Shell {
         Shell::with(|s| s.write(&buffer));
     }
 
+    pub fn register_opfs_file_name(name: &str) {
+        let db_ptr = Shell::with(|s| s.db.clone());
+        let name_copy = name.to_string();
+        spawn_local(async move {
+            let db = match db_ptr {
+                Some(ref db) => db.read().unwrap(),
+                None => return,
+            };
+            db.register_opfs_file_name(&name_copy).await.unwrap();
+        });
+    }
+
     pub fn collect_file_statistics(name: &str, enable: bool) {
         let db_ptr = Shell::with(|s| s.db.clone());
         let name_copy = name.to_string();
@@ -532,6 +544,13 @@ impl Shell {
                     }
                 }
             }
+            "register" => {
+                let filename = args[subcmd.len()..].trim();
+                db.register_opfs_file_name(filename).await.unwrap();
+                Shell::with_mut(|s| {
+                    s.writeln(&format!("Registering OPFS file handle for: {}", filename))
+                });
+            }
             "track" => {
                 let filename = args[subcmd.len()..].trim();
                 db.collect_file_statistics(filename, true).await.unwrap();
@@ -666,6 +685,7 @@ impl Shell {
                         ".files drop            Drop all files.\r\n",
                         ".files drop $FILE      Drop a single file.\r\n",
                         ".files track $FILE     Collect file statistics.\r\n",
+                        ".files register $FILE  Register OPFS file handle.\r\n",
                         ".files paging $FILE    Show file paging.\r\n",
                         ".files reads $FILE     Show file reads.\r\n",
                         ".open $FILE            Open database file.\r\n",

@@ -65,6 +65,11 @@ pub fn writeln(text: &str) {
     Shell::with(|s| s.writeln(text));
 }
 
+#[wasm_bindgen(js_name = "registerOPFSFileName")]
+pub fn register_opfs_file_name(name: &str) {
+    Shell::register_opfs_file_name(name);
+}
+
 #[wasm_bindgen(js_name = "collectFileStatistics")]
 pub fn collect_file_statistics(name: &str, enable: bool) {
     Shell::collect_file_statistics(name, enable);
