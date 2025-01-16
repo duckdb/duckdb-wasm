@@ -157,6 +157,8 @@ export interface DuckDBRuntime {
     removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
 
     // Prepare a file handle that could only be acquired aschronously
+    prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
     prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
 
     // Call a scalar UDF function
