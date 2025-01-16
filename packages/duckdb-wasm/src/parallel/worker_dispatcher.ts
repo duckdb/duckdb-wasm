@@ -360,6 +360,11 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.sendOK(request);
                     break;
 
+                case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
+                    this._bindings.registerOPFSFileName(request.data[0]);
+                    this.sendOK(request);
+                    break;
+
                 case WorkerRequestType.EXPORT_FILE_STATISTICS: {
                     this.postMessage(
                         {

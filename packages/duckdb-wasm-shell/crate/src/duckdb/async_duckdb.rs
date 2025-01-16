@@ -63,6 +63,11 @@ extern "C" {
         conn: ConnectionID,
     ) -> Result<JsValue, JsValue>;
 
+    #[wasm_bindgen(catch, method, js_name = "registerOPFSFileName")]
+    async fn register_opfs_file_name(
+        this: &JsAsyncDuckDB,
+        text: &str,
+    ) -> Result<JsValue, JsValue>;
     #[wasm_bindgen(catch, method, js_name = "collectFileStatistics")]
     async fn collect_file_statistics(
         this: &JsAsyncDuckDB,
@@ -155,6 +160,14 @@ impl AsyncDuckDB {
         enable: bool,
     ) -> Result<(), js_sys::Error> {
         self.bindings.collect_file_statistics(file, enable).await?;
+        Ok(())
+    }
+
+    pub async fn register_opfs_file_name(
+        &self,
+        file: &str,
+    ) -> Result<(), js_sys::Error> {
+        self.bindings.register_opfs_file_name(file).await?;
         Ok(())
     }
 
