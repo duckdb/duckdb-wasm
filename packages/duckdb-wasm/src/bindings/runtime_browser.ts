@@ -19,20 +19,24 @@ import * as udf from './udf_runtime';
 const OPFS_PREFIX_LEN = 'opfs://'.length;
 const PATH_SEP_REGEX = /\/|\\/;
 
+
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     _files: Map<string, any>;
     _fileInfoCache: Map<number, DuckDBFileInfo>;
     _globalFileInfo: DuckDBGlobalFileInfo | null;
     _preparedHandles: Record<string, FileSystemSyncAccessHandle>;
+    _opfsRoot: FileSystemDirectoryHandle | null;
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
     getGlobalFileInfo(mod: DuckDBModule): DuckDBGlobalFileInfo | null;
+    assignOPFSRoot(): Promise<void>;
 } = {
     _files: new Map<string, any>(),
     _fileInfoCache: new Map<number, DuckDBFileInfo>(),
     _udfFunctions: new Map(),
     _globalFileInfo: null,
     _preparedHandles: {} as any,
+    _opfsRoot: null,
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
@@ -101,11 +105,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             return null;
         }
     },
-
+    async assignOPFSRoot(): Promise<void> {
+        if (!BROWSER_RUNTIME._opfsRoot) {
+            BROWSER_RUNTIME._opfsRoot = await navigator.storage.getDirectory();
+	}
+    },
     /** Prepare a file handle that could only be acquired aschronously */
-    async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
+    async prepareFileHandles(filePaths: string[], protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
-            const filePaths = [dbPath, `${dbPath}.wal`];
+            await BROWSER_RUNTIME.assignOPFSRoot();
             const prepare = async (path: string): Promise<PreparedDBFileHandle> => {
                 if (BROWSER_RUNTIME._files.has(path)) {
                     return {
@@ -114,7 +122,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         fromCached: true,
                     };
                 }
-                const opfsRoot = await navigator.storage.getDirectory();
+                const opfsRoot = BROWSER_RUNTIME._opfsRoot!;
                 let dirHandle: FileSystemDirectoryHandle = opfsRoot;
                 // check if mkdir -p is needed
                 const opfsPath = path.slice(OPFS_PREFIX_LEN);
@@ -155,6 +163,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 result.push(res);
             }
             return result;
+        }
+        throw new Error(`Unsupported protocol ${protocol} for paths ${filePaths} with protocol ${protocol}`);
+    },
+    /** Prepare a file handle that could only be acquired aschronously */
+    async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this.prepareFileHandles) {
+            const filePaths = [dbPath, `${dbPath}.wal`];
+            return this.prepareFileHandles(filePaths, protocol);
         }
         throw new Error(`Unsupported protocol ${protocol} for path ${dbPath} with protocol ${protocol}`);
     },
