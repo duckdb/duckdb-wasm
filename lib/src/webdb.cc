@@ -783,11 +783,29 @@ std::string WebDB::Tokenize(std::string_view text) {
 /// Get the version
 std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 
+class ProgressBarCustom: public ProgressBarDisplay {
+public:
+        ProgressBarCustom() {
+        }
+        ~ProgressBarCustom() {}
+public:
+        void Update(double percentage)  {
+		std::cout << "ProgressBar::Update() called with " << percentage << "\n";
+	}
+        void Finish() {
+		std::cout << "Finish() called\n";
+	}
+	static unique_ptr<ProgressBarDisplay> GetProgressBar() {
+		return make_uniq<ProgressBarCustom>();
+	}
+};
+
 /// Create a session
 WebDB::Connection* WebDB::Connect() {
     auto conn = duckdb::make_uniq<WebDB::Connection>(*this);
     auto conn_ptr = conn.get();
     connections_.insert({conn_ptr, std::move(conn)});
+    ClientConfig::GetConfig(*conn_ptr->connection_.context).display_create_func = ProgressBarCustom::GetProgressBar;
     return conn_ptr;
 }
 
