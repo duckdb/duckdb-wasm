@@ -2,6 +2,8 @@
 
 #include "duckdb/web/webdb.h"
 
+#include <emscripten/val.h>
+
 #include <chrono>
 #include <cstddef>
 #include <cstdio>
@@ -783,21 +785,44 @@ std::string WebDB::Tokenize(std::string_view text) {
 /// Get the version
 std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 
-class ProgressBarCustom: public ProgressBarDisplay {
-public:
-        ProgressBarCustom() {
+class ProgressBarCustom : public ProgressBarDisplay {
+    double value{0.0};
+    double times{0.0};
+    double to_send{1.0};
+
+   public:
+    ProgressBarCustom() {
+        value = 0.0;
+        times = 0.0;
+        to_send = 1.0;
+    }
+    ~ProgressBarCustom() {}
+    static void SendMessage(bool end, double percentage, double times) {
+        emscripten::val::global("DUCKDB_RUNTIME").call<void>("progressUpdate", end, percentage, times);
+    }
+
+   public:
+    void Update(double percentage) {
+        if (percentage >= value + 1.0) {
+            value = percentage;
+            times = 1.0;
+            SendMessage(false, percentage, times);
+            to_send = 10.0;
+        } else {
+            times += 1.0;
+            if (times >= to_send) {
+                SendMessage(false, percentage, times);
+                to_send *= 10.0;
+            }
         }
-        ~ProgressBarCustom() {}
-public:
-        void Update(double percentage)  {
-		std::cout << "ProgressBar::Update() called with " << percentage << "\n";
-	}
-        void Finish() {
-		std::cout << "Finish() called\n";
-	}
-	static unique_ptr<ProgressBarDisplay> GetProgressBar() {
-		return make_uniq<ProgressBarCustom>();
-	}
+    }
+    void Finish() {
+        SendMessage(true, value, times);
+        value = 0.0;
+        times = 0.0;
+        to_send = 1.0;
+    }
+    static unique_ptr<ProgressBarDisplay> GetProgressBar() { return make_uniq<ProgressBarCustom>(); }
 };
 
 /// Create a session
@@ -805,6 +830,7 @@ WebDB::Connection* WebDB::Connect() {
     auto conn = duckdb::make_uniq<WebDB::Connection>(*this);
     auto conn_ptr = conn.get();
     connections_.insert({conn_ptr, std::move(conn)});
+    ClientConfig::GetConfig(*conn_ptr->connection_.context).wait_time = 1;
     ClientConfig::GetConfig(*conn_ptr->connection_.context).display_create_func = ProgressBarCustom::GetProgressBar;
     return conn_ptr;
 }

@@ -197,6 +197,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
+    progressUpdate: (_mod: DuckDBModule, _fileId: number, a: number, b: number): void => {
+        return;
+    },
     getLastFileModificationTime: (mod: DuckDBModule, fileId: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);

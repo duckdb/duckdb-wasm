@@ -687,6 +687,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
+    progressUpdate: (_mod: DuckDBModule, done: number, a: number, b: number): void => {
+       //postMessage("");
+	console.log("Update progress: ", done, a, b);
+    },
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         console.log(`checkDirectory: ${path}`);
