@@ -142,6 +142,7 @@ export interface DuckDBRuntime {
     closeFile(mod: DuckDBModule, fileId: number): void;
     dropFile(mod: DuckDBModule, fileNamePtr: number, fileNameLen:number): void;
     getLastFileModificationTime(mod: DuckDBModule, fileId: number): number;
+    progressUpdate(mod: DuckDBModule, final: number, a: number, b:number): void;
     truncateFile(mod: DuckDBModule, fileId: number, newSize: number): void;
     readFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
     writeFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
@@ -184,6 +185,9 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     dropFile: (_mod: DuckDBModule, _fileNamePtr: number, _fileNameLen:number): void => {},
     getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
+    },
+    progressUpdate: (_mod: DuckDBModule, _fileId: number, a: number, b: number): void => {
+        return;
     },
     truncateFile: (_mod: DuckDBModule, _fileId: number, _newSize: number): void => {},
     readFile: (_mod: DuckDBModule, _fileId: number, _buffer: number, _bytes: number, _location: number): number => {
