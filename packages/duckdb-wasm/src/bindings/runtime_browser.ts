@@ -692,7 +692,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     progressUpdate: (done: number, percentage: number, repeat: number): void => {
 	if (postMessage) {
-        	postMessage({requestId: 0,  type: WorkerResponseType.PROGRESS_UPDATE,  data: {status: done?"completed":"in-progress", percentage: percentage, repetitions: repeat}});
+            postMessage({requestId: 0,  type: WorkerResponseType.PROGRESS_UPDATE,  data: {status: done?"completed":"in-progress", percentage: percentage, repetitions: repeat}});
 	}
     },
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
