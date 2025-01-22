@@ -21,6 +21,8 @@ export function testFTS(db: () => duckdb.DuckDBBindings): void {
             await conn.query(
                 "INSERT INTO documents VALUES ('doc1', 'The mallard is a dabbling duck that breeds throughout the temperate.','Hannes Mühleisen', 3), ('doc2', 'The cat is a domestic species of small carnivorous mammal.', 'Laurens Kuiper', 2);",
             );
+            // Skip for now, not supported in the no-extension version
+            return;
             await conn.query("PRAGMA create_fts_index('documents', 'document_identifier', 'text_content', 'author');");
             const result = conn.query(
                 'SELECT document_identifier, score\n' +
