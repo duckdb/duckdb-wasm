@@ -18,6 +18,7 @@ import { InstantiationProgress } from '../bindings/progress';
 import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
 import { DuckDBDataProtocol } from '../bindings';
+import { ProgressEntry } from '../log';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -33,7 +34,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     protected _onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
 
     /** Progress callbacks */
-    //protected _onProgressCallback: ((p: InstantiationProgress) => void)[] = [];
+    protected _onExecutionProgress: ((p: ProgressEntry) => void)[] = [];
 
     /** The logger */
     protected readonly _logger: Logger;
@@ -126,7 +127,9 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         switch (response.type) {
             // Request failed?
             case WorkerResponseType.PROGRESS_UPDATE: {
-		console.log(response.data);
+                for (const p of this._onExecutionProgress) {
+		    p(response.data);
+		}
                 return;
 	    }
             case WorkerResponseType.LOG: {
