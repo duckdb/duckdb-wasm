@@ -47,6 +47,9 @@ export type ProgressEntry = {
     readonly repetitions: string;
 }
 
+/** An execution progress handler */
+export type ExecutionProgressHandler = (p: ProgressEntry) => void;
+
 export type LogEntryVariant =
     | LogEntry<LogOrigin.BINDINGS, LogTopic.INSTANTIATE, LogEvent.ERROR, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.START, void>
