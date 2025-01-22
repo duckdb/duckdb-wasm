@@ -128,10 +128,10 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             // Request failed?
             case WorkerResponseType.PROGRESS_UPDATE: {
                 for (const p of this._onExecutionProgress) {
-		    p(response.data);
+                    p(response.data);
 		}
                 return;
-	    }
+            }
             case WorkerResponseType.LOG: {
                 this._logger.log(response.data);
                 return;
