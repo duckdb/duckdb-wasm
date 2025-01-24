@@ -70,4 +70,8 @@ export interface DuckDBConfig {
      * Custom user agent string
      */
     customUserAgent?: string;
+    /**
+     * Auto Opfs File Registration
+     */
+    autoFileRegistration?: boolean;
 }

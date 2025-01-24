@@ -295,6 +295,9 @@ if(EMSCRIPTEN)
           _malloc, \
           _calloc, \
           _free, \
+          stringToUTF8, \
+          lengthBytesUTF8, \
+          stackAlloc, \
           _duckdb_web_clear_response, \
           _duckdb_web_collect_file_stats, \
           _duckdb_web_connect, \
