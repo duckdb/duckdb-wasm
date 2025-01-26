@@ -7,11 +7,11 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
     let conn: duckdb.AsyncDuckDBConnection;
 
     beforeAll(async () => {
-        removeFiles();
+        await removeFiles();
     });
 
     afterAll(async () => {
-        removeFiles();
+        await removeFiles();
     });
 
     beforeEach(async () => {
@@ -354,6 +354,22 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
                 await db.reset();
                 await db.dropFiles();
             }
+        });
+
+        it('Copy CSV to OPFS + Load CSV', async () => {
+            //1. data preparation
+            db.config.autoFileRegistration = true;
+            await conn.query(`COPY ( SELECT 32 AS value ) TO 'opfs://file.csv'`);
+            await conn.query(`COPY ( SELECT 42 AS value ) TO 'opfs://file.csv'`);
+            const result = await conn.send(`SELECT * FROM 'opfs://file.csv';`);
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const table = await new arrow.Table<{ cnt: arrow.Int }>(batches);
+            expect(table.getChildAt(0)?.toArray()).toEqual(
+                new BigInt64Array([42n]),
+            );
         });
     });
 
