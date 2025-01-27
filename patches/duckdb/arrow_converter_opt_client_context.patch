@@ -1,5 +1,5 @@
 diff --git a/src/common/arrow/arrow_converter.cpp b/src/common/arrow/arrow_converter.cpp
-index a693034a92..a7d4b78889 100644
+index 02b3999a06..54fb3009d1 100644
 --- a/src/common/arrow/arrow_converter.cpp
 +++ b/src/common/arrow/arrow_converter.cpp
 @@ -59,10 +59,10 @@ void InitializeChild(ArrowSchema &child, DuckDBArrowSchemaHolder &root_holder, c
@@ -15,7 +15,7 @@ index a693034a92..a7d4b78889 100644
  	child.format = "+m";
  	//! Map has one child which is a struct
  	child.n_children = 1;
-@@ -77,18 +77,21 @@ void SetArrowMapFormat(DuckDBArrowSchemaHolder &root_holder, ArrowSchema &child,
+@@ -78,18 +78,21 @@ void SetArrowMapFormat(DuckDBArrowSchemaHolder &root_holder, ArrowSchema &child,
  }
  
  bool SetArrowExtension(DuckDBArrowSchemaHolder &root_holder, ArrowSchema &child, const LogicalType &type,
@@ -26,8 +26,8 @@ index a693034a92..a7d4b78889 100644
 +		return false;
 +	}
 +	auto &config = DBConfig::GetConfig(*context);
- 	if (config.HasArrowExtension(type.id())) {
- 		auto arrow_extension = config.GetArrowExtension(type.id());
+ 	if (config.HasArrowExtension(type)) {
+ 		auto arrow_extension = config.GetArrowExtension(type);
 -		arrow_extension.PopulateArrowSchema(root_holder, child, type, context, arrow_extension);
 +		arrow_extension.PopulateArrowSchema(root_holder, child, type, *context, arrow_extension);
  		return true;
@@ -41,7 +41,7 @@ index a693034a92..a7d4b78889 100644
  	if (type.HasAlias()) {
  		// If it is a json type, we only export it as json if arrow_lossless_conversion = True
  		if (!(type.IsJSONType() && !options.arrow_lossless_conversion)) {
-@@ -402,7 +405,7 @@ void ArrowConverter::ToArrowSchema(ArrowSchema *out_schema, const vector<Logical
+@@ -403,7 +406,7 @@ void ArrowConverter::ToArrowSchema(ArrowSchema *out_schema, const vector<Logical
  		root_holder->owned_column_names.push_back(AddName(names[col_idx]));
  		auto &child = root_holder->children[col_idx];
  		InitializeChild(child, *root_holder, names[col_idx]);
