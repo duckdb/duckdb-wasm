@@ -1,11 +1,3 @@
-commit 0639b847a4d7361447b4e8b729dee2b6b2685f8c
-Author: Carlo Piovesan <piovesan.carlo@gmail.com>
-Date:   Sat Dec 14 03:53:32 2024 +0100
-
-    Adapt fmt to -Wdeprecated-literal-operator
-    
-    That's turned on in DuckDB-Wasm, and adds unnecessary noise
-
 diff --git a/third_party/fmt/include/fmt/format.h b/third_party/fmt/include/fmt/format.h
 index ad4fe83ab4..e92437a2ed 100644
 --- a/third_party/fmt/include/fmt/format.h
