@@ -15,7 +15,7 @@ index 7e22cb932d..2b5b604982 100644
  				    mask.SetInvalid(row_idx);
  			    }
 diff --git a/src/function/cast/string_cast.cpp b/src/function/cast/string_cast.cpp
-index 9f8b5ee298..5fd0d370fe 100644
+index f3a19c4273..187db70d93 100644
 --- a/src/function/cast/string_cast.cpp
 +++ b/src/function/cast/string_cast.cpp
 @@ -22,8 +22,10 @@ bool StringEnumCastLoop(const string_t *source_data, ValidityMask &source_mask,
@@ -31,7 +31,7 @@ index 9f8b5ee298..5fd0d370fe 100644
  				result_data[i] = UnsafeNumericCast<T>(pos);
  			}
 diff --git a/src/include/duckdb/common/operator/cast_operators.hpp b/src/include/duckdb/common/operator/cast_operators.hpp
-index 3e4cb35e92..2b157157e2 100644
+index d86b29d9c9..8a334fc0cd 100644
 --- a/src/include/duckdb/common/operator/cast_operators.hpp
 +++ b/src/include/duckdb/common/operator/cast_operators.hpp
 @@ -51,19 +51,31 @@ struct TryCastErrorMessageCommaSeparated {

@@ -1,9 +1,9 @@
 diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
-index 2a6fffa994..f4ef687ddd 100644
+index ed956daa64..d4774faac5 100644
 --- a/src/include/duckdb/main/database.hpp
 +++ b/src/include/duckdb/main/database.hpp
-@@ -96,6 +96,10 @@ private:
- 	shared_ptr<DatabaseCacheEntry> db_cache_entry;
+@@ -97,6 +97,10 @@ private:
+ 	shared_ptr<LogManager> log_manager;
  
  	duckdb_ext_api_v1 (*create_api_v1)();
 +public:
@@ -31,10 +31,10 @@ index 6ccd1a1156..8040f537b6 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index 0a82e4598e..7ef5b96f7d 100644
+index 084dab6f30..6e21356bd9 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
-@@ -336,6 +336,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+@@ -344,6 +344,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
  }
  
@@ -64,10 +64,10 @@ index 0a82e4598e..7ef5b96f7d 100644
  	return *config.secret_manager;
  }
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
-index 494832417e..17a39d04b4 100644
+index c7b613226a..00885ee6a4 100644
 --- a/src/main/extension/extension_helper.cpp
 +++ b/src/main/extension/extension_helper.cpp
-@@ -328,7 +328,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -326,7 +326,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  	vector<ExtensionUpdateResult> result;
  	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  
@@ -75,7 +75,7 @@ index 494832417e..17a39d04b4 100644
  	case_insensitive_set_t seen_extensions;
  
  	// scan the install directory for installed extensions
-@@ -345,7 +344,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -343,7 +342,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  
  		result.push_back(UpdateExtensionInternal(context, db, fs, fs.JoinPath(ext_directory, path), extension_name));
  	});
@@ -84,10 +84,10 @@ index 494832417e..17a39d04b4 100644
  	return result;
  }
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
-index b0ca9fb775..67dfcdfb26 100644
+index e8ab595ab0..fb3e6371a3 100644
 --- a/src/main/extension/extension_install.cpp
 +++ b/src/main/extension/extension_install.cpp
-@@ -144,6 +144,9 @@ bool ExtensionHelper::CreateSuggestions(const string &extension_name, string &me
+@@ -155,6 +155,9 @@ bool ExtensionHelper::CreateSuggestions(const string &extension_name, string &me
  unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInstance &db, FileSystem &fs,
                                                                     const string &extension,
                                                                     ExtensionInstallOptions &options) {
@@ -97,7 +97,7 @@ index b0ca9fb775..67dfcdfb26 100644
  #ifdef WASM_LOADABLE_EXTENSIONS
  	// Install is currently a no-op
  	return nullptr;
-@@ -154,6 +157,9 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInsta
+@@ -165,6 +168,9 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInsta
  
  unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(ClientContext &context, const string &extension,
                                                                     ExtensionInstallOptions &options) {
@@ -107,7 +107,7 @@ index b0ca9fb775..67dfcdfb26 100644
  #ifdef WASM_LOADABLE_EXTENSIONS
  	// Install is currently a no-op
  	return nullptr;
-@@ -198,7 +204,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DatabaseInstance
+@@ -209,7 +215,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DatabaseInstance
  		versioned_path = "/${REVISION}/${PLATFORM}/${NAME}.duckdb_extension";
  	}
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -117,10 +117,10 @@ index b0ca9fb775..67dfcdfb26 100644
  #else
  	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index b0282a7103..b43d9c6684 100644
+index 84b28fef09..ea2ebba1cd 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -302,7 +302,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -328,7 +328,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = false;
  		string extension_name = ApplyExtensionAlias(extension);
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -142,7 +142,7 @@ index b0282a7103..b43d9c6684 100644
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -343,73 +356,223 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -369,35 +382,31 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -155,8 +155,6 @@ index b0282a7103..b43d9c6684 100644
 -		error = StringUtil::Format("Extension \"%s\" not found.\n%s", filename, message);
 -		return false;
 -	}
--
--	auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
 +	/*	if (!fs.FileExists(filename)) {
 +	        string message;
 +	        bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
@@ -167,27 +165,43 @@ index b0282a7103..b43d9c6684 100644
 +	        return false;
 +	    }
 +	*/
-+
+ 
+-	auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
 +	/*	auto handle = fs.OpenFile(filename, FileFlags::FILE_FLAGS_READ);
-+
+ 
+-	// Parse the extension metadata from the extension binary
+-	auto parsed_metadata = ParseExtensionMetaData(*handle);
 +	    // Parse the extension metadata from the extension binary
 +	    auto parsed_metadata = ParseExtensionMetaData(*handle);
-+
+ 
+-	auto metadata_mismatch_error = parsed_metadata.GetInvalidMetadataError();
 +	    auto metadata_mismatch_error = parsed_metadata.GetInvalidMetadataError();
-+
+ 
+-	if (!metadata_mismatch_error.empty()) {
+-		metadata_mismatch_error = StringUtil::Format("Failed to load '%s', %s", extension, metadata_mismatch_error);
+-	}
 +	    if (!metadata_mismatch_error.empty()) {
 +	        metadata_mismatch_error = StringUtil::Format("Failed to load '%s', %s", extension, metadata_mismatch_error);
 +	    }
-+
+ 
+-	if (!db.config.options.allow_unsigned_extensions) {
+-		bool signature_valid;
+-		if (parsed_metadata.AppearsValid()) {
+-			signature_valid =
+-			    CheckExtensionSignature(*handle, parsed_metadata, db.config.options.allow_community_extensions);
+-		} else {
+-			signature_valid = false;
+-		}
 +	    if (!db.config.options.allow_unsigned_extensions) {
 +	        bool signature_valid =
 +	            CheckExtensionSignature(*handle, parsed_metadata, db.config.options.allow_community_extensions);
-+
-+	        if (!signature_valid) {
-+	            throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename) +
-+	                              metadata_mismatch_error);
-+	        }
-+
+ 
+ 		if (!metadata_mismatch_error.empty()) {
+ 			throw InvalidInputException(metadata_mismatch_error);
+@@ -414,26 +423,192 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+ 		}
+ 	}
+ 
 +	        if (!metadata_mismatch_error.empty()) {
 +	            // Signed extensions perform the full check
 +	            throw InvalidInputException(metadata_mismatch_error);
@@ -200,19 +214,24 @@ index b0282a7103..b43d9c6684 100644
 +	        }
 +	    }
 +	*/
-+	auto filebase = fs.ExtractBaseName(filename);
+ 	auto filebase = fs.ExtractBaseName(filename);
  
--	// Parse the extension metadata from the extension binary
--	auto parsed_metadata = ParseExtensionMetaData(*handle);
-+#ifdef WASM_LOADABLE_EXTENSIONS
+ #ifdef WASM_LOADABLE_EXTENSIONS
+-	EM_ASM(
 +	auto basename = fs.ExtractBaseName(filename);
 +	char *exe = NULL;
 +	exe = (char *)EM_ASM_PTR(
-+	    {
-+		    // Next few lines should argubly in separate JavaScript-land function call
-+		    // TODO: move them out / have them configurable
- 
--	auto metadata_mismatch_error = parsed_metadata.GetInvalidMetadataError();
+ 	    {
+ 		    // Next few lines should argubly in separate JavaScript-land function call
+ 		    // TODO: move them out / have them configurable
+-		    const xhr = new XMLHttpRequest();
+-		    xhr.open("GET", UTF8ToString($0), false);
+-		    xhr.responseType = "arraybuffer";
+-		    xhr.send(null);
+-		    var uInt8Array = xhr.response;
+-		    WebAssembly.validate(uInt8Array);
+-		    console.log('Loading extension ', UTF8ToString($1));
++
 +		    var url = (UTF8ToString($0));
 +
 +		    if (typeof XMLHttpRequest === "undefined") {
@@ -303,25 +322,19 @@ index b0282a7103..b43d9c6684 100644
 +		    // console.log(new Uint8Array(Module.HEAPU8, fileOnWasmHeap, len+4));
 +		    // console.log('Loading extension ', UTF8ToString($1));
  
--	if (!metadata_mismatch_error.empty()) {
--		metadata_mismatch_error = StringUtil::Format("Failed to load '%s', %s", extension, metadata_mismatch_error);
-+		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
-+		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
+ 		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
+ 		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
 +		    return fileOnWasmHeap;
-+	    },
+ 	    },
+-	    filename.c_str(), filebase.c_str());
+-	auto dopen_from = filebase;
 +	    filename.c_str(), basename.c_str());
 +	if (!exe) {
 +		throw IOException("Extension %s is not available", filename);
- 	}
- 
++	}
++
 +	auto dopen_from = basename;
- 	if (!db.config.options.allow_unsigned_extensions) {
--		bool signature_valid;
--		if (parsed_metadata.AppearsValid()) {
--			signature_valid =
--			    CheckExtensionSignature(*handle, parsed_metadata, db.config.options.allow_community_extensions);
--		} else {
--			signature_valid = false;
++	if (!db.config.options.allow_unsigned_extensions) {
 +		// signature is the last 256 bytes of the file
 +
 +		string signature;
@@ -346,7 +359,7 @@ index b0282a7103..b43d9c6684 100644
 +
 +		for (idx_t i = 0; i < numChunks; i++) {
 +			splits[i] = maxLenChunks * i;
- 		}
++		}
 +		splits.back() = signature_offset;
 +
 +		for (idx_t i = 0; i < numChunks; i++) {
@@ -360,17 +373,11 @@ index b0282a7103..b43d9c6684 100644
 +
 +		string hash_concatenation;
 +		hash_concatenation.reserve(32 * numChunks); // 256 bits -> 32 bytes per chunk
- 
--		if (!signature_valid) {
--			throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename) +
--			                  metadata_mismatch_error);
++
 +		for (auto &hash_chunk : hash_chunks) {
 +			hash_concatenation += hash_chunk;
- 		}
- 
--		if (!metadata_mismatch_error.empty()) {
--			// Signed extensions perform the full check
--			throw InvalidInputException(metadata_mismatch_error);
++		}
++
 +		string two_level_hash;
 +		ComputeSHA256String(hash_concatenation, &two_level_hash);
 +
@@ -383,45 +390,23 @@ index b0282a7103..b43d9c6684 100644
 +				any_valid = true;
 +				break;
 +			}
- 		}
--	} else if (!db.config.options.allow_extensions_metadata_mismatch) {
--		if (!metadata_mismatch_error.empty()) {
--			// Unsigned extensions AND configuration allowing n, loading allowed, mainly for
--			// debugging purposes
--			throw InvalidInputException(metadata_mismatch_error);
++		}
 +		if (!any_valid) {
 +			throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename));
- 		}
- 	}
--
--	auto filebase = fs.ExtractBaseName(filename);
--
--#ifdef WASM_LOADABLE_EXTENSIONS
--	EM_ASM(
--	    {
--		    // Next few lines should argubly in separate JavaScript-land function call
--		    // TODO: move them out / have them configurable
--		    const xhr = new XMLHttpRequest();
--		    xhr.open("GET", UTF8ToString($0), false);
--		    xhr.responseType = "arraybuffer";
--		    xhr.send(null);
--		    var uInt8Array = xhr.response;
--		    WebAssembly.validate(uInt8Array);
--		    console.log('Loading extension ', UTF8ToString($1));
--
--		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
--		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
--	    },
--	    filename.c_str(), filebase.c_str());
--	auto dopen_from = filebase;
++		}
++	}
 +	if (exe) {
 +		free(exe);
 +	}
  #else
  	auto dopen_from = filename;
  #endif
-@@ -427,25 +590,27 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -449,28 +624,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+ 	result.filebase = lowercase_extension_name;
+ 	result.filename = filename;
  	result.lib_hdl = lib_hdl;
+-	result.abi_type = parsed_metadata.abi_type;
++	result.abi_type = ExtensionABIType::CPP;
  
  	if (!direct_load) {
 -		auto info_file_name = filename + ".info";
