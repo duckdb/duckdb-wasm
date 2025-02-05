@@ -149,6 +149,9 @@ export interface DuckDBRuntime {
     checkFile(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
     removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
 
+    // Internal API - experimental
+    progressUpdate(final: number, percentage: number, iteration:number): void;
+
     // Call a scalar UDF function
     callScalarUDF(
         mod: DuckDBModule,
@@ -171,6 +174,9 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     closeFile: (_mod: DuckDBModule, _fileId: number): void => {},
     getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
+    },
+    progressUpdate: (_final: number, _percentage: number, _iteration: number): void => {
+        return;
     },
     truncateFile: (_mod: DuckDBModule, _fileId: number, _newSize: number): void => {},
     readFile: (_mod: DuckDBModule, _fileId: number, _buffer: number, _bytes: number, _location: number): number => {
