@@ -45,7 +45,6 @@
 #include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
 #include "duckdb/web/environment.h"
-#include "duckdb/web/extensions/fts_extension.h"
 #include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
@@ -104,7 +103,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    ClientProperties options;
+    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, false, connection_.context);
+    unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
@@ -119,7 +119,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
         // Import the data chunk as record batch
         ArrowArray array;
-        ArrowConverter::ToArrowArray(*chunk, &array, options);
+        ArrowConverter::ToArrowArray(*chunk, &array, options, extension_type_cast);
         // Import the record batch
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
         // Patch the record batch
@@ -139,7 +139,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Import the schema
     ArrowSchema raw_schema;
-    ClientProperties options;
+    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, false, connection_.context);
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names, options);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
@@ -251,9 +251,10 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
 
         // Serialize the record batch
         ArrowArray array;
-        ClientProperties arrow_options;
+        ClientProperties arrow_options("UTC", ArrowOffsetSize::REGULAR, false, false, false, connection_.context);
+        unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
         arrow_options.arrow_offset_size = ArrowOffsetSize::REGULAR;
-        ArrowConverter::ToArrowArray(*chunk, &array, arrow_options);
+        ArrowConverter::ToArrowArray(*chunk, &array, arrow_options, extension_type_cast);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
         // Patch the record batch
         ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_->query));
@@ -832,7 +833,6 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         auto db = make_shared_ptr<duckdb::DuckDB>(config_->path, &db_config);
 #ifndef WASM_LOADABLE_EXTENSIONS
         duckdb_web_parquet_init(db.get());
-        duckdb_web_fts_init(db.get());
 #if defined(DUCKDB_JSON_EXTENSION)
         duckdb_web_json_init(db.get());
 #endif
