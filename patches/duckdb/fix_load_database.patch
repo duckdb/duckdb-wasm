@@ -1,11 +1,11 @@
 diff --git a/src/storage/storage_manager.cpp b/src/storage/storage_manager.cpp
-index 456cd22614..c4777dd28e 100644
+index cb6c654e5f..a6b2af3b85 100644
 --- a/src/storage/storage_manager.cpp
 +++ b/src/storage/storage_manager.cpp
-@@ -163,9 +163,12 @@ void SingleFileStorageManager::LoadDatabase(const optional_idx block_alloc_size)
- 	options.use_direct_io = config.options.use_direct_io;
- 	options.debug_initialize = config.options.debug_initialize;
-
+@@ -160,9 +160,12 @@ void SingleFileStorageManager::LoadDatabase(StorageOptions storage_options) {
+ 			    row_group_size, STANDARD_VECTOR_SIZE);
+ 		}
+ 	}
 -	// Check if the database file already exists.
 -	// Note: a file can also exist if there was a ROLLBACK on a previous transaction creating that file.
 -	if (!read_only && !fs.FileExists(path)) {
