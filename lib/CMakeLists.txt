@@ -244,10 +244,6 @@ if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
 else()
   add_library(
-    duckdb_web_fts
-    ${CMAKE_SOURCE_DIR}/src/extensions/fts_extension.cc)
-
-  add_library(
     duckdb_web_parquet
     ${CMAKE_SOURCE_DIR}/src/extensions/parquet_extension.cc)
 
@@ -264,8 +260,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
   endif()
 
-  target_link_libraries(duckdb_web duckdb duckdb_web_fts duckdb_web_parquet ${DUCKDB_WEB_JSON} arrow rapidjson ${THREAD_LIBS})
-  target_link_libraries(duckdb_web_fts duckdb duckdb_fts)
+  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} arrow rapidjson ${THREAD_LIBS})
   target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
   target_link_libraries(duckdb_web_json duckdb duckdb_json)
 endif()
@@ -275,6 +270,8 @@ endif()
 
 # We need "-s WARN_ON_UNDEFINED_SYMBOLS=0" to instantiate the module with our
 # own imports.
+     # --pre-js "/Users/carlo/databricks/duckdb_delta/file_system_packager.js" \
+#
 if(EMSCRIPTEN)
   add_executable(duckdb_wasm ${CMAKE_SOURCE_DIR}/src/wasm_main.cc)
   target_link_libraries(duckdb_wasm duckdb_web ${THREAD_LIBS})
@@ -374,7 +371,7 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/webdb_test.cc
       ${CMAKE_SOURCE_DIR}/test/tester.cc)
 
-  set(TEST_LIBS duckdb_web duckdb_web_fts duckdb_web_parquet ${DUCKDB_WEB_JSON} gtest gmock gflags ${THREAD_LIBS})
+  set(TEST_LIBS duckdb_web duckdb_web_parquet ${DUCKDB_WEB_JSON} gtest gmock gflags ${THREAD_LIBS})
 
   add_executable(tester ${TEST_CC})
   target_link_libraries(tester ${TEST_LIBS})

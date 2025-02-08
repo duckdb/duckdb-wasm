@@ -15,7 +15,7 @@ endif()
 set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call -DDUCKDB_DEBUG_NO_SAFETY -DDUCKDB_FROM_DUCKDB_WASM")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
-set(DUCKDB_EXTENSIONS "fts;json")
+set(DUCKDB_EXTENSIONS "json;core_functions")
 # Escape semicolons in DUCKDB_EXTENSIONS before passing to ExternalProject_Add
 string(REPLACE ";" "$<SEMICOLON>" DUCKDB_EXTENSIONS_PACKED "${DUCKDB_EXTENSIONS}")
 
@@ -46,8 +46,10 @@ ExternalProject_Add(
              -DDISABLE_BUILTIN_EXTENSIONS=TRUE
              -DUSE_WASM_THREADS=${USE_WASM_THREADS}
              -DDUCKDB_EXPLICIT_PLATFORM=${DUCKDB_EXPLICIT_PLATFORM}
+             -DSMALLER_BINARY=1
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_re2.a
+    <INSTALL_DIR>/lib/libduckdb_zstd.a
     <INSTALL_DIR>/lib/libduckdb_static.a
     <INSTALL_DIR>/lib/libduckdb_fmt.a
     <INSTALL_DIR>/lib/libduckdb_fsst.a
@@ -59,7 +61,7 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libduckdb_utf8proc.a
     <INSTALL_DIR>/lib/libduckdb_fastpforlib.a
     <INSTALL_DIR>/lib/libparquet_extension.a
-    <INSTALL_DIR>/lib/libfts_extension.a
+    <INSTALL_DIR>/lib/libcore_functions_extension.a
     <INSTALL_DIR>/lib/libjson_extension.a)
 
 ExternalProject_Get_Property(duckdb_ep install_dir)
@@ -81,6 +83,7 @@ set_property(TARGET duckdb PROPERTY IMPORTED_LOCATION ${DUCKDB_LIBRARY_PATH})
 target_link_libraries(
   duckdb
   INTERFACE ${install_dir}/lib/libduckdb_re2.a
+  INTERFACE ${install_dir}/lib/libduckdb_zstd.a
   INTERFACE ${install_dir}/lib/libduckdb_fmt.a
   INTERFACE ${install_dir}/lib/libduckdb_fsst.a
   INTERFACE ${install_dir}/lib/libduckdb_hyperloglog.a
@@ -90,6 +93,7 @@ target_link_libraries(
   INTERFACE ${install_dir}/lib/libduckdb_pg_query.a
   INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
   INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
+  INTERFACE ${install_dir}/lib/libcore_functions_extension.a
   INTERFACE dl)
 
 target_include_directories(
@@ -105,10 +109,6 @@ target_include_directories(
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/thrift
   INTERFACE ${DUCKDB_SOURCE_DIR}/third_party/zstd)
 
-add_library(duckdb_fts STATIC IMPORTED)
-set_property(TARGET duckdb_fts PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libfts_extension.a)
-target_include_directories(duckdb_fts INTERFACE ${DUCKDB_SOURCE_DIR}/extension/fts/include)
-
 add_library(duckdb_parquet STATIC IMPORTED)
 set_property(TARGET duckdb_parquet PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libparquet_extension.a)
 target_include_directories(duckdb_parquet INTERFACE ${DUCKDB_SOURCE_DIR}/extension/parquet/include)
@@ -117,7 +117,10 @@ add_library(duckdb_json STATIC IMPORTED)
 set_property(TARGET duckdb_json PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjson_extension.a)
 target_include_directories(duckdb_json INTERFACE ${DUCKDB_SOURCE_DIR}/extension/json/include)
 
+add_library(duckdb_core_functions STATIC IMPORTED)
+set_property(TARGET duckdb_core_functions PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libcore_functions_extension.a)
+target_include_directories(duckdb_core_functions INTERFACE ${DUCKDB_SOURCE_DIR}/extension/json/include)
+
 add_dependencies(duckdb duckdb_ep)
-add_dependencies(duckdb_fts duckdb_ep)
 add_dependencies(duckdb_parquet duckdb_ep)
 add_dependencies(duckdb_json duckdb_ep)

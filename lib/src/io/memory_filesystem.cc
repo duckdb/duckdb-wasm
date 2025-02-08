@@ -17,7 +17,8 @@ MemoryFileSystem::FileBuffer::FileBuffer(size_t id, std::string path, std::vecto
     : file_id(id), file_path(std::move(path)), buffer(std::move(buffer)), handles() {}
 /// Constructor
 MemoryFileSystem::FileHandle::FileHandle(MemoryFileSystem &file_system, FileBuffer &buffer, size_t position)
-    : duckdb::FileHandle(file_system, buffer.file_path),
+    : duckdb::FileHandle(file_system, buffer.file_path,
+                         FileFlags::FILE_FLAGS_WRITE | FileFlags::FILE_FLAGS_FILE_CREATE),
       file_system_(file_system),
       buffer_(buffer),
       position_(position) {}
