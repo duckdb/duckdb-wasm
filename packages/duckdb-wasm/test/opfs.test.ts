@@ -283,7 +283,9 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await conn.close();
             await db.reset();
             await db.dropFile('test.parquet');
-            db.config.autoFileRegistration = true;
+            db.config.opfs = {
+                autoFileRegistration: true
+            };
             conn = await db.connect();
             //2. send query
             const result1 = await conn.send(`SELECT count(*)::INTEGER as cnt FROM 'opfs://test.parquet'`);
@@ -304,7 +306,9 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await conn.close();
             await db.reset();
             await db.dropFile('test.parquet');
-            db.config.autoFileRegistration = true;
+            db.config.opfs = {
+                autoFileRegistration: true
+            };
             conn = await db.connect();
             //2. send query
             const result = await conn.send(`SELECT * FROM read_parquet('opfs://test.parquet');`);
@@ -327,7 +331,9 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await conn.close();
             await db.reset();
             await db.dropFile('datadir/test.parquet');
-            db.config.autoFileRegistration = true;
+            db.config.opfs = {
+                autoFileRegistration: true
+            };
             conn = await db.connect();
             //2. send query
             const result1 = await conn.send(`SELECT count(*)::INTEGER as cnt FROM 'opfs://datadir/test.parquet'`);
@@ -358,7 +364,9 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
 
         it('Copy CSV to OPFS + Load CSV', async () => {
             //1. data preparation
-            db.config.autoFileRegistration = true;
+            db.config.opfs = {
+                autoFileRegistration: true
+            };
             await conn.query(`COPY ( SELECT 32 AS value ) TO 'opfs://file.csv'`);
             await conn.query(`COPY ( SELECT 42 AS value ) TO 'opfs://file.csv'`);
             const result = await conn.send(`SELECT * FROM 'opfs://file.csv';`);

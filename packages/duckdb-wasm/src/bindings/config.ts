@@ -29,6 +29,13 @@ export interface DuckDBFilesystemConfig {
     allowFullHTTPReads?: boolean;
 }
 
+export interface DuckDBOPFSConfig {
+    /**
+     * Auto Opfs File Registration
+     */
+    autoFileRegistration?: boolean;
+}
+
 export enum DuckDBAccessMode {
     UNDEFINED = 0,
     AUTOMATIC = 1,
@@ -71,7 +78,7 @@ export interface DuckDBConfig {
      */
     customUserAgent?: string;
     /**
-     * Auto Opfs File Registration
+     * opfs string
      */
-    autoFileRegistration?: boolean;
+    opfs?: DuckDBOPFSConfig;
 }

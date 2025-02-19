@@ -20,7 +20,8 @@ import { WebFile } from '../bindings/web_file';
 import { DuckDBDataProtocol } from '../bindings';
 
 const TEXT_ENCODER = new TextEncoder();
-const OPFS_PROTOCOL_REGEX = /'(opfs:\/\/\S*?)'/g;
+const REGEX_OPFS_FILE = /'(opfs:\/\/\S*?)'/g;
+const REGEX_OPFS_PROTOCOL = /(opfs:\/\/\S*?)/g;
 
 export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** The message handler */
@@ -368,7 +369,6 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
     /** Open a new database */
     public async open(config: DuckDBConfig): Promise<void> {
-        config.autoFileRegistration = config.autoFileRegistration ?? false;
         this._config = config;
         const task = new WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>(WorkerRequestType.OPEN, config);
         await this.postTask(task);
@@ -404,7 +404,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
     /** Run a query */
     public async runQuery(conn: ConnectionID, text: string): Promise<Uint8Array> {
-        if( this._config.autoFileRegistration ){
+        if( this.isOpenedOPFSAutoFileRegistration() ){
             const files = await this._preFileRegistration(text);
             try {
                 return await this._runQueryAsync(conn, text);
@@ -417,6 +417,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             return await this._runQueryAsync(conn, text);
         }
     }
+
     private async _runQueryAsync(conn: ConnectionID, text: string): Promise<Uint8Array> {
         const task = new WorkerTask<WorkerRequestType.RUN_QUERY, [ConnectionID, string], Uint8Array>(
             WorkerRequestType.RUN_QUERY,
@@ -424,13 +425,14 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         );
         return await this.postTask(task);
     }
+
     /** Start a pending query */
     public async startPendingQuery(
         conn: ConnectionID,
         text: string,
         allowStreamResult: boolean = false,
     ): Promise<Uint8Array | null> {
-        if( this._config.autoFileRegistration ){
+        if( this.isOpenedOPFSAutoFileRegistration() ){
             const files = await this._preFileRegistration(text);
             try {
                 return await this._startPendingQueryAsync(conn, text, allowStreamResult);
@@ -443,6 +445,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             return await this._startPendingQueryAsync(conn, text, allowStreamResult);
         }
     }
+
     private async _startPendingQueryAsync(
         conn: ConnectionID,
         text: string,
@@ -455,6 +458,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         >(WorkerRequestType.START_PENDING_QUERY, [conn, text, allowStreamResult]);
         return await this.postTask(task);
     }
+
     /** Poll a pending query */
     public async pollPendingQuery(conn: ConnectionID): Promise<Uint8Array | null> {
         const task = new WorkerTask<WorkerRequestType.POLL_PENDING_QUERY, ConnectionID, Uint8Array | null>(
@@ -689,8 +693,16 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         await this.postTask(task);
     }
 
+    private isOpenedOPFSAutoFileRegistration():boolean {
+        let path = this.config.path ?? "";
+        if( path.search(REGEX_OPFS_PROTOCOL) > -1){
+            return this.config.opfs?.autoFileRegistration ?? false;
+        }
+        return false;
+    }
+
     private async _preFileRegistration(text: string) {
-        const files = [...text.matchAll(OPFS_PROTOCOL_REGEX)].map(match => match[1]);
+        const files = [...text.matchAll(REGEX_OPFS_FILE)].map(match => match[1]);
         const result: string[] = [];
         for (const file of files) {
             try {
@@ -698,7 +710,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
                 result.push(file);
             } catch (e) {
                 console.error(e);
-                throw new Error("file Not found:" + file);
+                throw new Error("File Not found:" + file);
             }
         }
         return result;
