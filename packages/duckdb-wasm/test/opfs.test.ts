@@ -284,7 +284,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await db.reset();
             await db.dropFile('test.parquet');
             db.config.opfs = {
-                autoFileRegistration: true
+                fileHandling: "auto"
             };
             conn = await db.connect();
             //2. send query
@@ -307,7 +307,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await db.reset();
             await db.dropFile('test.parquet');
             db.config.opfs = {
-                autoFileRegistration: true
+                fileHandling: "auto"
             };
             conn = await db.connect();
             //2. send query
@@ -332,7 +332,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await db.reset();
             await db.dropFile('datadir/test.parquet');
             db.config.opfs = {
-                autoFileRegistration: true
+                fileHandling: "auto"
             };
             conn = await db.connect();
             //2. send query
@@ -365,7 +365,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
         it('Copy CSV to OPFS + Load CSV', async () => {
             //1. data preparation
             db.config.opfs = {
-                autoFileRegistration: true
+                fileHandling: "auto"
             };
             await conn.query(`COPY ( SELECT 32 AS value ) TO 'opfs://file.csv'`);
             await conn.query(`COPY ( SELECT 42 AS value ) TO 'opfs://file.csv'`);

@@ -31,9 +31,11 @@ export interface DuckDBFilesystemConfig {
 
 export interface DuckDBOPFSConfig {
     /**
-     * Auto Opfs File Registration
+     * Defines how `opfs://` files are handled during SQL execution.
+     * - "auto": Automatically register `opfs://` files and drop them after execution.
+     * - "manual": Files must be manually registered and dropped.
      */
-    autoFileRegistration?: boolean;
+    fileHandling?: "auto" | "manual";
 }
 
 export enum DuckDBAccessMode {

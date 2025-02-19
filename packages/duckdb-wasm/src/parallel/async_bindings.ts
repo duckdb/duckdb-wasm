@@ -18,10 +18,9 @@ import { InstantiationProgress } from '../bindings/progress';
 import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
 import { DuckDBDataProtocol } from '../bindings';
+import { searchOPFSFiles, isOPFSProtocol } from "../utils/opfs_util";
 
 const TEXT_ENCODER = new TextEncoder();
-const REGEX_OPFS_FILE = /'(opfs:\/\/\S*?)'/g;
-const REGEX_OPFS_PROTOCOL = /(opfs:\/\/\S*?)/g;
 
 export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** The message handler */
@@ -404,8 +403,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
     /** Run a query */
     public async runQuery(conn: ConnectionID, text: string): Promise<Uint8Array> {
-        if( this.isOpenedOPFSAutoFileRegistration() ){
-            const files = await this._preFileRegistration(text);
+        if( this.shouldOPFSFileHandling() ){
+            const files = await this.registerOPFSFileFromSQL(text);
             try {
                 return await this._runQueryAsync(conn, text);
             } finally {
@@ -432,8 +431,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         text: string,
         allowStreamResult: boolean = false,
     ): Promise<Uint8Array | null> {
-        if( this.isOpenedOPFSAutoFileRegistration() ){
-            const files = await this._preFileRegistration(text);
+        if( this.shouldOPFSFileHandling() ){
+            const files = await this.registerOPFSFileFromSQL(text);
             try {
                 return await this._startPendingQueryAsync(conn, text, allowStreamResult);
             } finally {
@@ -693,16 +692,15 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         await this.postTask(task);
     }
 
-    private isOpenedOPFSAutoFileRegistration():boolean {
-        let path = this.config.path ?? "";
-        if( path.search(REGEX_OPFS_PROTOCOL) > -1){
-            return this.config.opfs?.autoFileRegistration ?? false;
+    private shouldOPFSFileHandling():boolean {
+        if( isOPFSProtocol(this.config.path ?? "")){
+            return this.config.opfs?.fileHandling == "auto";
         }
         return false;
     }
 
-    private async _preFileRegistration(text: string) {
-        const files = [...text.matchAll(REGEX_OPFS_FILE)].map(match => match[1]);
+    private async registerOPFSFileFromSQL(text: string) {
+        const files = searchOPFSFiles(text);
         const result: string[] = [];
         for (const file of files) {
             try {
