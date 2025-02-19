@@ -1,6 +1,9 @@
+import { DuckDBAccessMode } from './config';
 import { DuckDBModule } from './duckdb_module';
 import { UDFFunction } from './udf_function';
 import * as udf_rt from './udf_runtime';
+
+export { DuckDBAccessMode };
 
 /** Wrapper for TextDecoder to support shared array buffers */
 function TextDecoderWrapper(): (input?: BufferSource) => string {
@@ -156,10 +159,10 @@ export interface DuckDBRuntime {
     checkFile(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
     removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
 
-    // Prepare a file handle that could only be acquired aschronously
-    prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
-    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
-    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+    // Prepare a file handle that could only be acquired asynchronously
+    prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
+    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
+    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
 
     // Call a scalar UDF function
     callScalarUDF(

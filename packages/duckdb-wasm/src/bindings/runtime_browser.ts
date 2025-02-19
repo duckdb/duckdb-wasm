@@ -4,6 +4,7 @@ import {addS3Headers, getHTTPUrl} from '../utils';
 import {
     callSRet,
     dropResponseBuffers,
+    DuckDBAccessMode,
     DuckDBDataProtocol,
     DuckDBFileInfo,
     DuckDBGlobalFileInfo,
@@ -110,8 +111,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             BROWSER_RUNTIME._opfsRoot = await navigator.storage.getDirectory();
 	}
     },
-    /** Prepare a file handle that could only be acquired aschronously */
-    async prepareFileHandles(filePaths: string[], protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
+    /** Prepare a file handle that could only be acquired asynchronously */
+    async prepareFileHandles(filePaths: string[], protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode): Promise<PreparedDBFileHandle[]> {
+        // DuckDBAccessMode.UNDEFINED will be treated as READ_WRITE
+        // See: https://github.com/duckdb/duckdb/blob/5f5512b827df6397afd31daedb4bbdee76520019/src/main/database.cpp#L442-L444
+        const isReadOnly = accessMode !== undefined && accessMode === DuckDBAccessMode.READ_ONLY;
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
             await BROWSER_RUNTIME.assignOPFSRoot();
             const prepare = async (path: string): Promise<PreparedDBFileHandle> => {
@@ -133,15 +137,21 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     if (!fileName) {
                         throw new Error(`Invalid path ${path}`);
                     }
-                    // mkdir -p
-                    for (const folder of folders) {
-                        dirHandle = await dirHandle.getDirectoryHandle(folder, { create: true });
+                    // Check read-only
+                    if (!isReadOnly) {
+                        // mkdir -p
+                        for (const folder of folders) {
+                            dirHandle = await dirHandle.getDirectoryHandle(folder, { create: true });
+                        }
                     }
                 }
                 const fileHandle = await dirHandle.getFileHandle(fileName, { create: false }).catch(e => {
                     if (e?.name === 'NotFoundError') {
-                        console.debug(`File ${path} does not exists yet, creating...`);
-                        return dirHandle.getFileHandle(fileName, { create: true });
+                        if (!isReadOnly) {
+                            console.debug(`File ${path} does not exists yet, creating...`);
+                            return dirHandle.getFileHandle(fileName, { create: true });
+                        }
+                        console.debug(`File ${path} does not exists, aborting as we are in read-only mode`);
                     }
                     throw e;
                 });
@@ -166,11 +176,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         throw new Error(`Unsupported protocol ${protocol} for paths ${filePaths} with protocol ${protocol}`);
     },
-    /** Prepare a file handle that could only be acquired aschronously */
-    async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
+    /** Prepare a file handle that could only be acquired asynchronously */
+    async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode): Promise<PreparedDBFileHandle[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this.prepareFileHandles) {
             const filePaths = [dbPath, `${dbPath}.wal`];
-            return this.prepareFileHandles(filePaths, protocol);
+            return this.prepareFileHandles(filePaths, protocol, accessMode);
         }
         throw new Error(`Unsupported protocol ${protocol} for path ${dbPath} with protocol ${protocol}`);
     },
