@@ -655,14 +655,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return copy;
     }
     /** Enable tracking of file statistics */
-    public registerOPFSFileName(file: string): Promise<void> {
-        if (file.startsWith("opfs://")) {
-            return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
-        } else {
-            throw new Error("Not an OPFS file name: " + file);
-        }
-    }
-    public async registerOPFSFileNameAsync(file: string): Promise<void> {
+    public async registerOPFSFileName(file: string): Promise<void> {
         if (file.startsWith("opfs://")) {
             return await this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
         } else {

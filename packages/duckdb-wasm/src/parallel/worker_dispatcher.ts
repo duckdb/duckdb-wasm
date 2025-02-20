@@ -361,7 +361,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
 
                 case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
-                    await this._bindings.registerOPFSFileNameAsync(request.data[0]);
+                    await this._bindings.registerOPFSFileName(request.data[0]);
                     this.sendOK(request);
                     break;
 
