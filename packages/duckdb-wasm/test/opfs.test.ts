@@ -14,8 +14,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 
     let db: AsyncDuckDB;
     let conn: AsyncDuckDBConnection;
-    const _ignore: () => void = () => {
-    };
 
     beforeAll(async () => {
         removeFiles();
@@ -305,3 +303,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         await opfsRoot.removeEntry('datadir').catch(_ignore);
     }
 }
+
+//ignore block
+const _ignore: () => void = () => {};
