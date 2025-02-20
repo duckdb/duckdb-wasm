@@ -525,7 +525,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
                 }
             }
         }
-	return handle;
+        return handle;
     }
     /** Register a file object URL async */
     public async registerFileHandleAsync<HandleType>(
@@ -656,10 +656,10 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     }
     /** Enable tracking of file statistics */
     public registerOPFSFileName(file: string): Promise<void> {
-	if (file.startsWith("opfs://")) {
-		return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
-	} else {
-                throw new Error("Not an OPFS file name: " + file);
+        if (file.startsWith("opfs://")) {
+            return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
+        } else {
+            throw new Error("Not an OPFS file name: " + file);
         }
     }
     public async registerOPFSFileNameAsync(file: string): Promise<void> {
