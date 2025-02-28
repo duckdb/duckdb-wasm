@@ -278,30 +278,106 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
         });
     });
 
+    describe('Open database in OPFS', () => {
+        it('should not open a non-existent DB file in read-only', async () => {
+            const logger = new duckdb.ConsoleLogger(LogLevel.ERROR);
+            const worker = new Worker(bundle().mainWorker!);
+            const db_ = new duckdb.AsyncDuckDB(logger, worker);
+            await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
+
+            await expectAsync(db_.open({
+                path: 'opfs://non_existent.db',
+                accessMode: duckdb.DuckDBAccessMode.READ_ONLY,
+            })).toBeRejectedWithError(Error, /file or directory could not be found/);
+
+            await db_.terminate();
+            await worker.terminate();
+
+            // Files should not be found with DuckDBAccessMode.READ_ONLY
+            const opfsRoot = await navigator.storage.getDirectory();
+            await expectAsync(opfsRoot.getFileHandle('non_existent.db', { create: false }))
+                .toBeRejectedWithError(Error, /file or directory could not be found/);
+        });
+
+        it('should not open a non-existent DB file and mkdir in read-only', async () => {
+            const logger = new duckdb.ConsoleLogger(LogLevel.ERROR);
+            const worker = new Worker(bundle().mainWorker!);
+            const db_ = new duckdb.AsyncDuckDB(logger, worker);
+            await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
+
+            await expectAsync(db_.open({
+                path: 'opfs://duckdb_test/path/to/non_existent.db',
+                accessMode: duckdb.DuckDBAccessMode.READ_ONLY,
+            })).toBeRejectedWithError(Error, /file or directory could not be found/);
+
+            await db_.terminate();
+            await worker.terminate();
+        });
+
+        it('should open a non-existent DB file and mkdir in read-write', async () => {
+            const logger = new duckdb.ConsoleLogger(LogLevel.ERROR);
+            const worker = new Worker(bundle().mainWorker!);
+            const db_ = new duckdb.AsyncDuckDB(logger, worker);
+            await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
+
+            await expectAsync(db_.open({
+                path: 'opfs://duckdb_test/path/to/duck.db',
+                accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
+            })).toBeResolved();
+
+            await db_.terminate();
+            await worker.terminate();
+        });
+
+        it('should open a non-existent DB file in read-write and create files', async () => {
+            const logger = new duckdb.ConsoleLogger(LogLevel.ERROR);
+            const worker = new Worker(bundle().mainWorker!);
+            const db_ = new duckdb.AsyncDuckDB(logger, worker);
+            await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
+
+            const opfsRoot = await navigator.storage.getDirectory();
+
+            // Ensure files do not exist
+            await expectAsync(opfsRoot.getFileHandle('non_existent_2.db', { create: false }))
+                .toBeRejectedWithError(Error, /file or directory could not be found/);
+            await expectAsync(opfsRoot.getFileHandle('non_existent_2.db.wal', { create: false }))
+                .toBeRejectedWithError(Error, /file or directory could not be found/);
+
+            await expectAsync(db_.open({
+                path: 'opfs://non_existent_2.db',
+                accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
+            })).toBeResolved();
+
+            await db_.terminate();
+            await worker.terminate();
+
+            // Files should be found with DuckDBAccessMode.READ_WRITE
+            await expectAsync(opfsRoot.getFileHandle('non_existent_2.db', { create: false })).toBeResolved();
+            await expectAsync(opfsRoot.getFileHandle('non_existent_2.db.wal', { create: false })).toBeResolved();
+        });
+    })
+
     async function removeFiles() {
         const opfsRoot = await navigator.storage.getDirectory();
-        await opfsRoot.removeEntry('test.db').catch(() => {
-        });
-        await opfsRoot.removeEntry('test.db.wal').catch(() => {
-        });
-        await opfsRoot.removeEntry('test.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test1.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test2.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test3.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test.parquet').catch(() => {
-        });
+        await opfsRoot.removeEntry('test.db').catch(() => {});
+        await opfsRoot.removeEntry('test.db.wal').catch(() => {});
+        await opfsRoot.removeEntry('test.csv').catch(() => {});
+        await opfsRoot.removeEntry('test1.csv').catch(() => {});
+        await opfsRoot.removeEntry('test2.csv').catch(() => {});
+        await opfsRoot.removeEntry('test3.csv').catch(() => {});
+        await opfsRoot.removeEntry('test.parquet').catch(() => {});
         try {
             const datadir = await opfsRoot.getDirectoryHandle('datadir');
-            datadir.removeEntry('test.parquet').catch(() => {
-            });
+            datadir.removeEntry('test.parquet').catch(() => {});
         } catch (e) {
             //
         }
-        await opfsRoot.removeEntry('datadir').catch(() => {
-        });
+        await opfsRoot.removeEntry('datadir').catch(() => {});
+        // In case of failure caused leftovers
+        await opfsRoot.removeEntry('non_existent.db').catch(() => {});
+        await opfsRoot.removeEntry('non_existent.db.wal').catch(() => {});
+        await opfsRoot.removeEntry('non_existent_2.db').catch(() => {});
+        await opfsRoot.removeEntry('non_existent_2.db.wal').catch(() => {});
+        await opfsRoot.removeEntry('duckdb_test', { recursive: true }).catch(() => {});
     }
 }

@@ -74,16 +74,32 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             switch (file?.dataProtocol) {
                 // Native file
                 case DuckDBDataProtocol.NODE_FS: {
-                    let fd = NODE_RUNTIME._files?.get(file.dataUrl!);
-                    if (fd === null || fd === undefined) {
-                        fd = fs.openSync(
-                            file.dataUrl!,
-                            fs.constants.O_CREAT | fs.constants.O_RDWR,
-                            fs.constants.S_IRUSR | fs.constants.S_IWUSR,
-                        );
-                        NODE_RUNTIME._filesById?.set(file.fileId!, fd);
+                    let openFlags = fs.constants.O_RDONLY;
+                    if (flags & FileFlags.FILE_FLAGS_WRITE) {
+                        openFlags = fs.constants.O_RDWR;
                     }
-                    const fileSize = fs.fstatSync(fd).size;
+                    if (flags & FileFlags.FILE_FLAGS_FILE_CREATE) {
+                        openFlags |= fs.constants.O_CREAT;
+                    } else if (flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW) {
+                        openFlags |= fs.constants.O_TRUNC;
+                    }
+                    let fd = NODE_RUNTIME._files?.get(file.dataUrl!);
+                    let fileSize = 0;
+                    try {
+                        if (fd === null || fd === undefined) {
+                            fd = fs.openSync(file.dataUrl!, openFlags, fs.constants.S_IRUSR | fs.constants.S_IWUSR);
+                            NODE_RUNTIME._filesById?.set(file.fileId!, fd);
+                        }
+                        fileSize = fs.fstatSync(fd).size;
+                    }
+                    catch (e: any) {
+                        if (e.code === 'ENOENT' && (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS)) {
+                            // No-op because we intend to ignore ENOENT while the file does not exist
+                            return 0; // nullptr
+                        } else {
+                            throw e;
+                        }
+                    }
                     const result = mod._malloc(2 * 8);
                     mod.HEAPF64[(result >> 3) + 0] = +fileSize;
                     mod.HEAPF64[(result >> 3) + 1] = 0;
