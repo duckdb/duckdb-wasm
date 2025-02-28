@@ -58,11 +58,11 @@ export interface DuckDBBindings {
     prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode): Promise<void>;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;
-    dropFiles(): void;
+    dropFiles(names?: string[]): void;
     flushFiles(): void;
     copyFileToPath(name: string, path: string): void;
     copyFileToBuffer(name: string): Uint8Array;
-    registerOPFSFileName(file: string): void;
+    registerOPFSFileName(file: string): Promise<void>;
     collectFileStatistics(file: string, enable: boolean): void;
     exportFileStatistics(file: string): FileStatistics;
 }
