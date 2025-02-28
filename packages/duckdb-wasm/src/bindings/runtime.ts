@@ -169,8 +169,8 @@ export interface DuckDBRuntime {
 
     // Prepare a file handle that could only be acquired aschronously
     prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
-    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
-    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
+    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol, accessMode: DuckDBAccessMode, multiWindowMode:boolean) => Promise<PreparedDBFileHandle[]>;
+    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol, accessMode: DuckDBAccessMode, multiWindowMode:boolean) => Promise<PreparedDBFileHandle[]>;
 
     // Call a scalar UDF function
     callScalarUDF(

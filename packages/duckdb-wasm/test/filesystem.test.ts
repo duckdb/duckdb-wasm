@@ -237,6 +237,8 @@ export function testFilesystem(
             //);
             //expect(schema_script.trim()).toEqual(`CREATE TABLE foo(v BIGINT);`);
             //expect(csv_buffer.trim()).toEqual(`1\n2\n3\n4\n5`);
+
+            await conn.query('DROP TABLE foo');
         });
 
         it('Generate Series as Parquet', async () => {
@@ -264,6 +266,8 @@ export function testFilesystem(
             expect(content.nullCount).toEqual(0);
             expect(content.numRows).toEqual(5);
             expect(content.getChildAt(0)?.toArray()).toEqual(new Int32Array([1, 2, 3, 4, 5]));
+            
+            await conn.query('DROP TABLE foo');
         });
     });
 

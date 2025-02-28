@@ -1,4 +1,4 @@
-import { DuckDBBindings, DuckDBDataProtocol } from '../bindings';
+import { DuckDBAccessMode, DuckDBBindings, DuckDBDataProtocol } from '../bindings';
 import { WorkerResponseVariant, WorkerRequestVariant, WorkerRequestType, WorkerResponseType } from './worker_request';
 import { Logger, LogEntryVariant } from '../log';
 import { InstantiationProgress } from '../bindings/progress';
@@ -136,9 +136,10 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
 
                 case WorkerRequestType.OPEN: {
                     const path = request.data.path;
-                    const accessMode = request.data.accessMode;
+                    const accessMode = request.data.accessMode
                     if (path?.startsWith('opfs://')) {
-                        await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS, accessMode);
+                        const multiWindowMode = request.data.opfs?.window == "multi";
+                        await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS, accessMode ?? DuckDBAccessMode.READ_ONLY, multiWindowMode);
                         request.data.useDirectIO = true;
                     }
                     this._bindings.open(request.data);
@@ -362,7 +363,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
 
                 case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
-                    await this._bindings.registerOPFSFileName(request.data[0]);
+                    await this._bindings.registerOPFSFileName(request.data[0], request.data[1], request.data[2]);
                     this.sendOK(request);
                     break;
 

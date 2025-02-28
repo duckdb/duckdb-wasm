@@ -5,7 +5,7 @@ import { FileStatistics } from '../bindings/file_stats';
 import { DuckDBConfig } from '../bindings/config';
 import { WebFile } from '../bindings/web_file';
 import { InstantiationProgress } from '../bindings/progress';
-import { DuckDBDataProtocol } from '../bindings';
+import { DuckDBDataProtocol, DuckDBAccessMode } from '../bindings';
 
 export type ConnectionID = number;
 export type StatementID = number;
@@ -109,7 +109,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CLOSE_PREPARED, [ConnectionID, StatementID]>
     | WorkerRequest<WorkerRequestType.CANCEL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
-    | WorkerRequest<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string]>
+    | WorkerRequest<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string, DuckDBAccessMode, boolean]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
@@ -168,7 +168,7 @@ export type WorkerResponseVariant =
 
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>
-    | WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string], null>
+    | WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string, DuckDBAccessMode, boolean], null>
     | WorkerTask<WorkerRequestType.CLOSE_PREPARED, [number, number], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>

@@ -142,18 +142,27 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         dirHandle = await dirHandle.getDirectoryHandle(folder, { create: isReadWrite });
                     }
                 }
-                const fileHandle = await dirHandle.getFileHandle(fileName, { create: false }).catch(e => {
+                let fileHandle:FileSystemFileHandle;
+                try {
+                    fileHandle = await dirHandle.getFileHandle(fileName, { create: false });
+                } catch (e:any) {
                     if (e?.name === 'NotFoundError') {
                         if (isReadWrite) {
-                            console.debug(`File ${path} does not exists yet, creating...`);
-                            return dirHandle.getFileHandle(fileName, { create: true });
+                            console.debug(`File ${ path } does not exists yet, creating...`);
+                            fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                        } else {
+                            console.debug(`File ${ path } does not exists, aborting as we are in read-only mode`);
+                            throw e;
                         }
-                        console.debug(`File ${path} does not exists, aborting as we are in read-only mode`);
+                    } else {
+                        throw e;
                     }
-                    throw e;
-                });
+                }
                 try {
-                    const handle = await fileHandle.createSyncAccessHandle();
+                    let syncAccessHandleMode:FileSystemSyncAccessHandleMode = isReadWrite ? "readwrite" : "readwrite-unsafe";
+                    const handle = await fileHandle.createSyncAccessHandle({
+                         mode : syncAccessHandleMode
+                    });
                     BROWSER_RUNTIME._preparedHandles[path] = handle;
                     return {
                         path,
@@ -174,10 +183,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         throw new Error(`Unsupported protocol ${protocol} for paths ${filePaths} with protocol ${protocol}`);
     },
     /** Prepare a file handle that could only be acquired asynchronously */
-    async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode): Promise<PreparedDBFileHandle[]> {
+    async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol, accessMode: DuckDBAccessMode, multiWindowMode:boolean): Promise<PreparedDBFileHandle[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this.prepareFileHandles) {
             const filePaths = [dbPath, `${dbPath}.wal`];
-            return this.prepareFileHandles(filePaths, protocol, accessMode);
+            return this.prepareFileHandles(filePaths, protocol, accessMode, multiWindowMode);
         }
         throw new Error(`Unsupported protocol ${protocol} for path ${dbPath} with protocol ${protocol}`);
     },

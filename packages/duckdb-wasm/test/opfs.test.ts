@@ -105,7 +105,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 
         it('Load Parquet file that are already with empty handler', async () => {
             //1. write to opfs
-            const fileHandler = await getOpfsFileHandlerFromUrl({
+            await getOpfsFileHandlerFromUrl({
                 url: `${ baseDir }/tpch/0_01/parquet/lineitem.parquet`,
                 path: 'test.parquet'
             });
@@ -363,8 +363,10 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 
         it('Copy CSV to OPFS + Load CSV', async () => {
             //1. data preparation
+            db.config.accessMode = DuckDBAccessMode.READ_WRITE;
             db.config.opfs = {
-                fileHandling: "auto"
+                fileHandling: "auto",
+                window:"multi"
             };
             await conn.query(`COPY ( SELECT 32 AS value ) TO 'opfs://file.csv'`);
             await conn.query(`COPY ( SELECT 42 AS value ) TO 'opfs://file.csv'`);
@@ -382,7 +384,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 
     describe('Open database in OPFS', () => {
         it('should not open a non-existent DB file in read-only', async () => {
-            const logger = new ConsoleLogger(LogLevel.ERROR);
             const worker = new Worker(bundle().mainWorker!);
             const db_ = new AsyncDuckDB(logger, worker);
             await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
@@ -402,7 +403,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         });
 
         it('should not open a non-existent DB file and mkdir in read-only', async () => {
-            const logger = new ConsoleLogger(LogLevel.ERROR);
             const worker = new Worker(bundle().mainWorker!);
             const db_ = new AsyncDuckDB(logger, worker);
             await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
@@ -417,7 +417,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         });
 
         it('should open a non-existent DB file and mkdir in read-write', async () => {
-            const logger = new ConsoleLogger(LogLevel.ERROR);
             const worker = new Worker(bundle().mainWorker!);
             const db_ = new AsyncDuckDB(logger, worker);
             await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);
@@ -432,7 +431,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         });
 
         it('should open a non-existent DB file in read-write and create files', async () => {
-            const logger = new ConsoleLogger(LogLevel.ERROR);
             const worker = new Worker(bundle().mainWorker!);
             const db_ = new AsyncDuckDB(logger, worker);
             await db_.instantiate(bundle().mainModule, bundle().pthreadWorker);

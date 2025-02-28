@@ -36,6 +36,7 @@ export interface DuckDBOPFSConfig {
      * - "manual": Files must be manually registered and dropped.
      */
     fileHandling?: "auto" | "manual";
+    window?: "single" | "multi";
 }
 
 export enum DuckDBAccessMode {

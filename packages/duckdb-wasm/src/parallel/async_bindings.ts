@@ -13,7 +13,7 @@ import { AsyncDuckDBConnection } from './async_connection';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from '../bindings/insert_options';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
-import { DuckDBConfig } from '../bindings/config';
+import { DuckDBAccessMode, DuckDBConfig } from '../bindings/config';
 import { InstantiationProgress } from '../bindings/progress';
 import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
@@ -592,10 +592,10 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** Enable file statistics */
-    public async registerOPFSFileName(name: string): Promise<void> {
-        const task = new WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string], null>(
+    public async registerOPFSFileName(name: string, accessMode?:DuckDBAccessMode, multiWindowMode?:boolean): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string, DuckDBAccessMode, boolean], null>(
             WorkerRequestType.REGISTER_OPFS_FILE_NAME,
-            [name],
+            [name, accessMode ?? DuckDBAccessMode.READ_ONLY, multiWindowMode ?? false],
         );
         await this.postTask(task, []);
     }
@@ -704,8 +704,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         const result: string[] = [];
         for (const file of files) {
             try {
-                await this.registerOPFSFileName(file);
-                result.push(file);
+                await this.registerOPFSFileName( file, this.config.accessMode ?? DuckDBAccessMode.READ_WRITE, this.config.opfs?.window == "multi");
+                result.push( file );
             } catch (e) {
                 console.error(e);
                 throw new Error("File Not found:" + file);
