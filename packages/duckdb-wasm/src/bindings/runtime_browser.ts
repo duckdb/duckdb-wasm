@@ -145,7 +145,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 let fileHandle:FileSystemFileHandle;
                 try {
                     fileHandle = await dirHandle.getFileHandle(fileName, { create: false });
-                } catch (e:any) {
+                } catch (e: any) {
                     if (e?.name === 'NotFoundError') {
                         if (isReadWrite) {
                             console.debug(`File ${ path } does not exists yet, creating...`);
@@ -159,9 +159,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     }
                 }
                 try {
-                    let syncAccessHandleMode:FileSystemSyncAccessHandleMode = isReadWrite ? "readwrite" : "readwrite-unsafe";
+                    let mode:FileSystemSyncAccessHandleMode = isReadWrite ? "readwrite" : "readwrite-unsafe";
                     const handle = await fileHandle.createSyncAccessHandle({
-                         mode : syncAccessHandleMode
+                         mode : mode
                     });
                     BROWSER_RUNTIME._preparedHandles[path] = handle;
                     return {
