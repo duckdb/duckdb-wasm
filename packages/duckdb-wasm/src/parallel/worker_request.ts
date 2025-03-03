@@ -14,6 +14,7 @@ export enum WorkerRequestType {
     CANCEL_PENDING_QUERY = 'CANCEL_PENDING_QUERY',
     CLOSE_PREPARED = 'CLOSE_PREPARED',
     COLLECT_FILE_STATISTICS = 'COLLECT_FILE_STATISTICS',
+    REGISTER_OPFS_FILE_NAME = 'REGISTER_OPFS_FILE_NAME',
     CONNECT = 'CONNECT',
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
@@ -108,6 +109,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CLOSE_PREPARED, [ConnectionID, StatementID]>
     | WorkerRequest<WorkerRequestType.CANCEL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
+    | WorkerRequest<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
@@ -166,6 +168,7 @@ export type WorkerResponseVariant =
 
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>
+    | WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string], null>
     | WorkerTask<WorkerRequestType.CLOSE_PREPARED, [number, number], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>

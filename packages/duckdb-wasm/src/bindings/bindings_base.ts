@@ -469,6 +469,74 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
     }
+    public async prepareFileHandle(fileName: string, protocol: DuckDBDataProtocol): Promise<void> {
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareFileHandles) {
+            const list = await this._runtime.prepareFileHandles([fileName], DuckDBDataProtocol.BROWSER_FSACCESS);
+            for (const item of list) {
+                const { handle, path: filePath, fromCached } = item;
+                if (!fromCached && handle.getSize()) {
+                    await this.registerFileHandleAsync(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
+                }
+            }
+            return;
+        }
+        throw new Error(`prepareFileHandle: unsupported protocol ${protocol}`);
+    }
+    /** Prepare a file handle that could only be acquired aschronously */
+    public async prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void> {
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareDBFileHandle) {
+            const list = await this._runtime.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
+            for (const item of list) {
+                const { handle, path: filePath, fromCached } = item;
+                if (!fromCached && handle.getSize()) {
+                    await this.registerFileHandleAsync(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
+                }
+            }
+            return;
+        }
+        throw new Error(`prepareDBFileHandle: unsupported protocol ${protocol}`);
+    }
+    /** Prepare a file object URL */
+    public async prepareFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<HandleType> {
+        if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
+            if( handle instanceof FileSystemSyncAccessHandle ){
+                // already a handle is sync handle.
+            } else if( handle instanceof FileSystemFileHandle ){
+                // handle is an async handle, should convert to sync handle
+                const fileHandle: FileSystemFileHandle = handle as any;
+                try {
+                    handle = (await fileHandle.createSyncAccessHandle()) as any;
+                } catch (e: any) {
+                    throw new Error( e.message + ":" + name );
+                }
+            } else if( name != null ){
+                // should get sync handle from the file name.
+                try {
+                    const opfsRoot = await navigator.storage.getDirectory();
+                    const fileHandle = await opfsRoot.getFileHandle(name);
+                    handle = (await fileHandle.createSyncAccessHandle()) as any;
+                } catch (e: any) {
+                    throw new Error( e.message + ":" + name );
+                }
+            }
+        }
+	return handle;
+    }
+    /** Register a file object URL async */
+    public async registerFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<void> {
+        const handle_inner = await this.prepareFileHandleAsync(name, handle, protocol, directIO);
+        this.registerFileHandle(name, handle_inner, protocol, directIO);
+    }
     /** Register a file object URL */
     public registerFileHandle<HandleType>(
         name: string,
@@ -487,6 +555,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
         globalThis.DUCKDB_RUNTIME._files = (globalThis.DUCKDB_RUNTIME._files || new Map()).set(name, handle);
+        if (globalThis.DUCKDB_RUNTIME._preparedHandles?.[name]) {
+            delete globalThis.DUCKDB_RUNTIME._preparedHandles[name];
+        }
         if (this.pthread) {
             for (const worker of this.pthread.runningWorkers) {
                 worker.postMessage({
@@ -543,8 +614,14 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         dropResponseBuffers(this.mod);
         return copy;
     }
-
     /** Enable tracking of file statistics */
+    public registerOPFSFileName(file: string): Promise<void> {
+	if (file.startsWith("opfs://")) {
+		return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
+	} else {
+                throw new Error("Not an OPFS file name: " + file);
+        }
+    }
     public collectFileStatistics(file: string, enable: boolean): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_collect_file_stats', ['string', 'boolean'], [file, enable]);
         if (s !== StatusCode.SUCCESS) {

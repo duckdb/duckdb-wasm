@@ -89,6 +89,12 @@ export interface DuckDBGlobalFileInfo {
     s3Config?: S3Config;
 }
 
+export interface PreparedDBFileHandle {
+    path: string;
+    handle: any;
+    fromCached: boolean;
+}
+
 /** Call a function with packed response buffer */
 export function callSRet(
     mod: DuckDBModule,
@@ -134,6 +140,7 @@ export interface DuckDBRuntime {
     openFile(mod: DuckDBModule, fileId: number, flags: FileFlags): void;
     syncFile(mod: DuckDBModule, fileId: number): void;
     closeFile(mod: DuckDBModule, fileId: number): void;
+    dropFile(mod: DuckDBModule, fileNamePtr: number, fileNameLen:number): void;
     getLastFileModificationTime(mod: DuckDBModule, fileId: number): number;
     truncateFile(mod: DuckDBModule, fileId: number, newSize: number): void;
     readFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
@@ -148,6 +155,11 @@ export interface DuckDBRuntime {
     moveFile(mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number): void;
     checkFile(mod: DuckDBModule, pathPtr: number, pathLen: number): boolean;
     removeFile(mod: DuckDBModule, pathPtr: number, pathLen: number): void;
+
+    // Prepare a file handle that could only be acquired aschronously
+    prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
 
     // Call a scalar UDF function
     callScalarUDF(
@@ -169,6 +181,7 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     openFile: (_mod: DuckDBModule, _fileId: number, flags: FileFlags): void => {},
     syncFile: (_mod: DuckDBModule, _fileId: number): void => {},
     closeFile: (_mod: DuckDBModule, _fileId: number): void => {},
+    dropFile: (_mod: DuckDBModule, _fileNamePtr: number, _fileNameLen:number): void => {},
     getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
     },

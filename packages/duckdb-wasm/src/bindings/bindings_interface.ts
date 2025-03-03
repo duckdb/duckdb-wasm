@@ -42,12 +42,27 @@ export interface DuckDBBindings {
         protocol: DuckDBDataProtocol,
         directIO: boolean,
     ): void;
+    registerFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<void>;
+    prepareFileHandleAsync<HandleType>(
+        name: string,
+        handle: HandleType,
+        protocol: DuckDBDataProtocol,
+        directIO: boolean,
+    ): Promise<HandleType>;
+    prepareFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
+    prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;
     dropFiles(): void;
     flushFiles(): void;
     copyFileToPath(name: string, path: string): void;
     copyFileToBuffer(name: string): Uint8Array;
+    registerOPFSFileName(file: string): void;
     collectFileStatistics(file: string, enable: boolean): void;
     exportFileStatistics(file: string): FileStatistics;
 }

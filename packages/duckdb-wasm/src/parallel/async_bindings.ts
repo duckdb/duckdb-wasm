@@ -160,6 +160,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         switch (task.type) {
             case WorkerRequestType.CLOSE_PREPARED:
             case WorkerRequestType.COLLECT_FILE_STATISTICS:
+            case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
             case WorkerRequestType.COPY_FILE_TO_PATH:
             case WorkerRequestType.DISCONNECT:
             case WorkerRequestType.DROP_FILE:
@@ -543,6 +544,15 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             [string, any, DuckDBDataProtocol, boolean],
             null
         >(WorkerRequestType.REGISTER_FILE_HANDLE, [name, handle, protocol, directIO]);
+        await this.postTask(task, []);
+    }
+
+    /** Enable file statistics */
+    public async registerOPFSFileName(name: string): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string], null>(
+            WorkerRequestType.REGISTER_OPFS_FILE_NAME,
+            [name],
+        );
         await this.postTask(task, []);
     }
 
