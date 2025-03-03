@@ -149,7 +149,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.DROP_FILES:
-                    this._bindings.dropFiles();
+                    this._bindings.dropFiles(request.data);
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.FLUSH_FILES:
@@ -361,7 +361,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
 
                 case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
-                    this._bindings.registerOPFSFileName(request.data[0]);
+                    await this._bindings.registerOPFSFileName(request.data[0]);
                     this.sendOK(request);
                     break;
 
