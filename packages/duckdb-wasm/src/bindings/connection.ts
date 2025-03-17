@@ -46,7 +46,14 @@ export class DuckDBConnection {
                     resolve(this._bindings.pollPendingQuery(this._conn));
                 } catch (e: any) {
                     console.log(e);
-                    reject(e);
+                    // If the worker is not set, the worker has been terminated
+                    if (e.message.includes('worker is not set!')) {
+                        reject(new Error('Worker has been terminated'));
+                    } else {
+                        //Otherwise, reject with the error
+                        reject(e);
+                    }
+                    
                 }
             });
         }
