@@ -142,7 +142,6 @@ export interface DuckDBRuntime {
     closeFile(mod: DuckDBModule, fileId: number): void;
     dropFile(mod: DuckDBModule, fileNamePtr: number, fileNameLen:number): void;
     getLastFileModificationTime(mod: DuckDBModule, fileId: number): number;
-    progressUpdate(mod: DuckDBModule, final: number, a: number, b:number): void;
     truncateFile(mod: DuckDBModule, fileId: number, newSize: number): void;
     readFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
     writeFile(mod: DuckDBModule, fileId: number, buffer: number, bytes: number, location: number): number;
@@ -161,6 +160,9 @@ export interface DuckDBRuntime {
     prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
     prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
     prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+
+    // Internal API - experimental
+    progressUpdate(final: number, percentage: number, iteration:number): void;
 
     // Call a scalar UDF function
     callScalarUDF(
@@ -186,7 +188,7 @@ export const DEFAULT_RUNTIME: DuckDBRuntime = {
     getLastFileModificationTime: (_mod: DuckDBModule, _fileId: number): number => {
         return 0;
     },
-    progressUpdate: (_mod: DuckDBModule, _fileId: number, a: number, b: number): void => {
+    progressUpdate: (_final: number, _percentage: number, _iteration: number): void => {
         return;
     },
     truncateFile: (_mod: DuckDBModule, _fileId: number, _newSize: number): void => {},
