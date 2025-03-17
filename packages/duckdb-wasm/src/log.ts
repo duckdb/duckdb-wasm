@@ -41,6 +41,12 @@ export type LogEntry<O, T, E, V> = {
     readonly value: V;
 };
 
+export type ProgressEntry = {
+    readonly status: string;
+    readonly percentage: string;
+    readonly repetitions: string;
+}
+
 export type LogEntryVariant =
     | LogEntry<LogOrigin.BINDINGS, LogTopic.INSTANTIATE, LogEvent.ERROR, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.START, void>

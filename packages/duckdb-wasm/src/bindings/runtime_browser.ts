@@ -1,4 +1,7 @@
 import {StatusCode} from '../status';
+import {
+    WorkerResponseType,
+} from '../parallel/worker_request';
 import {addS3Headers, getHTTPUrl} from '../utils';
 
 import {
@@ -687,9 +690,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    progressUpdate: (_mod: DuckDBModule, done: number, a: number, b: number): void => {
-       //postMessage("");
-	console.log("Update progress: ", done, a, b);
+    progressUpdate: (done: number, percentage: number, repeat: number): void => {
+	if (postMessage) {
+        	postMessage({requestId: 0,  type: WorkerResponseType.PROGRESS_UPDATE,  data: {status: done?"completed":"in-progress", percentage: percentage, repetitions: repeat}});
+	}
     },
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);

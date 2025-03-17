@@ -797,8 +797,8 @@ class ProgressBarCustom : public ProgressBarDisplay {
         to_send = 1.0;
     }
     ~ProgressBarCustom() {}
-    static void SendMessage(bool end, double percentage, double times) {
-        emscripten::val::global("DUCKDB_RUNTIME").call<void>("progressUpdate", end, percentage, times);
+    static void SendMessage(double end, double percentage, double times) {
+        emscripten::val::global("DUCKDB_RUNTIME").call<void>("progressUpdate", end ? 1.0 : 0.0, percentage, times);
     }
 
    public:

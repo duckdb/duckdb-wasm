@@ -32,6 +32,9 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** Instantiate the module */
     protected _onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
 
+    /** Progress callbacks */
+    //protected _onProgressCallback: ((p: InstantiationProgress) => void)[] = [];
+
     /** The logger */
     protected readonly _logger: Logger;
     /** The worker */
@@ -122,6 +125,10 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         const response = event.data as WorkerResponseVariant;
         switch (response.type) {
             // Request failed?
+            case WorkerResponseType.PROGRESS_UPDATE: {
+		console.log(response.data);
+                return;
+	    }
             case WorkerResponseType.LOG: {
                 this._logger.log(response.data);
                 return;
