@@ -33,6 +33,8 @@ class WebDB {
    public:
     /// A connection
     class Connection {
+        friend WebDB;
+
        protected:
         /// The webdb
         WebDB& webdb_;
