@@ -107,15 +107,6 @@ index e8ab595ab0..fb3e6371a3 100644
  #ifdef WASM_LOADABLE_EXTENSIONS
  	// Install is currently a no-op
  	return nullptr;
-@@ -209,7 +215,7 @@ string ExtensionHelper::ExtensionUrlTemplate(optional_ptr<const DatabaseInstance
- 		versioned_path = "/${REVISION}/${PLATFORM}/${NAME}.duckdb_extension";
- 	}
- #ifdef WASM_LOADABLE_EXTENSIONS
--	string default_endpoint = DEFAULT_REPOSITORY;
-+	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
- 	versioned_path = versioned_path + ".wasm";
- #else
- 	string default_endpoint = ExtensionRepository::DEFAULT_REPOSITORY_URL;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
 index 84b28fef09..ea2ebba1cd 100644
 --- a/src/main/extension/extension_load.cpp
