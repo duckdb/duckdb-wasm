@@ -1031,8 +1031,8 @@ vector<OpenFileInfo> WebFileSystem::Glob(const std::string &path, FileOpener *op
     for (auto &path : state.glob_results) {
         results.push_back(std::move(path));
     }
-    //std::sort(results.begin(), results.end());
-    //results.erase(std::unique(results.begin(), results.end()), results.end());
+    // std::sort(results.begin(), results.end());
+    // results.erase(std::unique(results.begin(), results.end()), results.end());
     return std::move(results);
 }
 
