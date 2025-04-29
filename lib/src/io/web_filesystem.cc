@@ -1014,9 +1014,9 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 }
 
 /// Runs a glob on the file system, returning a list of matching files
-vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
+vector<OpenFileInfo> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
-    std::vector<std::string> results;
+    std::vector<OpenFileInfo> results;
     if (!FileSystem::IsRemoteFile(path)) {
         auto glob = glob_to_regex(path);
         for (auto [name, file] : files_by_name_) {
@@ -1031,8 +1031,8 @@ vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *ope
     for (auto &path : state.glob_results) {
         results.push_back(std::move(path));
     }
-    std::sort(results.begin(), results.end());
-    results.erase(std::unique(results.begin(), results.end()), results.end());
+    //std::sort(results.begin(), results.end());
+    //results.erase(std::unique(results.begin(), results.end()), results.end());
     return std::move(results);
 }
 

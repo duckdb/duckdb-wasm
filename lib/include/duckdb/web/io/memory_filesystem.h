@@ -114,7 +114,7 @@ class MemoryFileSystem : public duckdb::FileSystem {
     void FileSync(duckdb::FileHandle &handle) override;
 
     /// Runs a glob on the file system, returning a list of matching files
-    vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override;
+    vector<OpenFileInfo> Glob(const std::string &path, FileOpener *opener = nullptr) override;
 
     /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
     void Seek(duckdb::FileHandle &handle, idx_t location) override;

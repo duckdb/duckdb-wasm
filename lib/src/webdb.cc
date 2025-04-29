@@ -996,7 +996,7 @@ arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
     doc.SetArray();
     auto& allocator = doc.GetAllocator();
     for (auto& file : files) {
-        auto value = web_fs->WriteFileInfo(doc, file, current_epoch - 1);
+        auto value = web_fs->WriteFileInfo(doc, file.path, current_epoch - 1);
         if (!value.IsNull()) doc.PushBack(value, allocator);
     }
     rapidjson::StringBuffer strbuf;

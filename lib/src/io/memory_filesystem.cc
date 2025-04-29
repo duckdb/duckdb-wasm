@@ -182,7 +182,7 @@ void MemoryFileSystem::RemoveFile(const std::string &filename, optional_ptr<File
 void MemoryFileSystem::FileSync(duckdb::FileHandle &handle) {}
 
 /// Runs a glob on the file system, returning a list of matching files
-vector<std::string> MemoryFileSystem::Glob(const std::string &path, FileOpener *opener) {
+vector<OpenFileInfo> MemoryFileSystem::Glob(const std::string &path, FileOpener *opener) {
     // For now, just do exact matches
     auto file_paths_iter = file_paths.find(path);
     if (file_paths_iter == file_paths.end()) return {};
