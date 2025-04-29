@@ -17,5 +17,8 @@
     },
     "devDependencies": {
         "badge-maker": "^3.3.1"
+    },
+    "dependencies": {
+        "js-beautify": "^1.15.4"
     }
 }
