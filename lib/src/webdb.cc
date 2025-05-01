@@ -74,6 +74,8 @@ namespace web {
 
 static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
 
+static uint8_t MAGIC_BYTE_RETRY = 84;
+
 /// Create the default webdb database
 duckdb::unique_ptr<WebDB> WebDB::Create() {
     if constexpr (ENVIRONMENT == Environment::WEB) {
@@ -239,6 +241,46 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
         if (current_query_result_ == nullptr) {
             return DuckDBWasmResultsWrapper{nullptr};
         }
+
+        if (current_query_result_->type == QueryResultType::STREAM_RESULT) {
+            auto& stream_result = current_query_result_->Cast<duckdb::StreamQueryResult>();
+
+            auto before = std::chrono::steady_clock::now();
+            uint64_t elapsed;
+            auto polling_interval =
+                webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL);
+            bool ready = false;
+            do {
+                switch (stream_result.ExecuteTask()) {
+                    case StreamExecutionResult::EXECUTION_ERROR:
+                        return arrow::Status{arrow::StatusCode::ExecutionError,
+                                             std::move(current_query_result_->GetError())};
+                    case StreamExecutionResult::EXECUTION_CANCELLED:
+                        return arrow::Status{arrow::StatusCode::ExecutionError,
+                                             "The execution of the query was cancelled before it could finish, likely "
+                                             "caused by executing a different query"};
+                    case StreamExecutionResult::CHUNK_READY:
+                    case StreamExecutionResult::EXECUTION_FINISHED:
+                        ready = true;
+                        break;
+                    case StreamExecutionResult::BLOCKED:
+                        stream_result.WaitForTask();
+                        return arrow::Buffer::Wrap<uint8_t>(&MAGIC_BYTE_RETRY, 1);
+                    case StreamExecutionResult::NO_TASKS_AVAILABLE:
+                        return arrow::Buffer::Wrap<uint8_t>(&MAGIC_BYTE_RETRY, 1);
+                    case StreamExecutionResult::CHUNK_NOT_READY:
+                        break;
+                }
+
+                auto after = std::chrono::steady_clock::now();
+                elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
+            } while (!ready && elapsed < polling_interval);
+
+            if (!ready) {
+                return arrow::Buffer::Wrap<uint8_t>(&MAGIC_BYTE_RETRY, 1);
+            }
+        }
+
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
         if (current_query_result_->HasError()) {

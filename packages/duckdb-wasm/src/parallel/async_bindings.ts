@@ -442,8 +442,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** Fetch query results */
-    public async fetchQueryResults(conn: ConnectionID): Promise<Uint8Array> {
-        const task = new WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>(
+    public async fetchQueryResults(conn: ConnectionID): Promise<Uint8Array | null> {
+        const task = new WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array | null>(
             WorkerRequestType.FETCH_QUERY_RESULTS,
             conn,
         );
