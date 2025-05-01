@@ -19,7 +19,7 @@ export interface DuckDBBindings {
     startPendingQuery(conn: number, text: string, allowStreamResult: boolean): Uint8Array | null;
     pollPendingQuery(conn: number): Uint8Array | null;
     cancelPendingQuery(conn: number): boolean;
-    fetchQueryResults(conn: number): Uint8Array;
+    fetchQueryResults(conn: number): Uint8Array | null;
     getTableNames(conn: number, text: string): string[];
 
     createPrepared(conn: number, text: string): number;

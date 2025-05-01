@@ -115,7 +115,7 @@ export class AsyncResultStreamIterator implements AsyncIterable<Uint8Array> {
     /** Reached end of stream? */
     protected _depleted: boolean;
     /** In-flight */
-    protected _inFlight: Promise<Uint8Array> | null;
+    protected _inFlight: Promise<Uint8Array | null> | null;
 
     constructor(
         protected readonly db: AsyncDuckDB,
@@ -135,17 +135,21 @@ export class AsyncResultStreamIterator implements AsyncIterable<Uint8Array> {
         if (this._depleted) {
             return { done: true, value: null };
         }
-        let buffer: Uint8Array;
+        let buffer: Uint8Array | null = null;
         if (this._inFlight != null) {
             buffer = await this._inFlight;
             this._inFlight = null;
-        } else {
+        }
+
+        while (buffer == null) {
             buffer = await this.db.fetchQueryResults(this.conn);
         }
+
         this._depleted = buffer.length == 0;
         if (!this._depleted) {
             this._inFlight = this.db.fetchQueryResults(this.conn);
         }
+
         return {
             done: this._depleted,
             value: buffer,

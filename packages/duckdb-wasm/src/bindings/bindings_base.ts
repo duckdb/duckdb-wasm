@@ -222,7 +222,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return this.mod.ccall('duckdb_web_pending_query_cancel', 'boolean', ['number'], [conn]);
     }
     /** Fetch query results */
-    public fetchQueryResults(conn: number): Uint8Array {
+    public fetchQueryResults(conn: number): Uint8Array | null {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_fetch_results', ['number'], [conn]);
         if (!IsArrowBuffer(s)) {
             throw new Error("Unexpected StatusCode from duckdb_web_query_fetch_results (" + s + ") and with self reported error as" + readString(this.mod, d, n));
@@ -230,8 +230,14 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
+
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
+
+        // Special case indicating to the caller they need to retry
+        if (res.length === 1 && res[0] == 84) {
+            return null;
+        }
         return res;
     }
     /** Get table names */

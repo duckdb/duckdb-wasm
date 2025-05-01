@@ -53,7 +53,6 @@ export class DuckDBConnection {
                         //Otherwise, reject with the error
                         reject(e);
                     }
-                    
                 }
             });
         }
@@ -125,7 +124,10 @@ export class ResultStreamIterator implements Iterable<Uint8Array> {
         if (this._depleted) {
             return { done: true, value: null };
         }
-        const bufferI8 = this.bindings.fetchQueryResults(this.conn);
+        let bufferI8 = null;
+        do {
+            bufferI8 = this.bindings.fetchQueryResults(this.conn);
+        } while (bufferI8 == null);
         this._depleted = bufferI8.length == 0;
         return {
             done: this._depleted,
