@@ -1,0 +1,77 @@
+diff --git a/src/common/virtual_file_system.cpp b/src/common/virtual_file_system.cpp
+index 74892a4e05..04454b8895 100644
+--- a/src/common/virtual_file_system.cpp
++++ b/src/common/virtual_file_system.cpp
+@@ -5,7 +5,7 @@
+ 
+ namespace duckdb {
+ 
+-VirtualFileSystem::VirtualFileSystem() : default_fs(FileSystem::CreateLocal()) {
++VirtualFileSystem::VirtualFileSystem(unique_ptr<FileSystem> default) : default_fs(std::move(default)) {
+ 	VirtualFileSystem::RegisterSubSystem(FileCompressionType::GZIP, make_uniq<GZipFileSystem>());
+ }
+ 
+diff --git a/src/include/duckdb/common/virtual_file_system.hpp b/src/include/duckdb/common/virtual_file_system.hpp
+index 110ad04877..1c2d4c91d5 100644
+--- a/src/include/duckdb/common/virtual_file_system.hpp
++++ b/src/include/duckdb/common/virtual_file_system.hpp
+@@ -17,7 +17,7 @@ namespace duckdb {
+ // bunch of wrappers to allow registering protocol handlers
+ class VirtualFileSystem : public FileSystem {
+ public:
+-	VirtualFileSystem();
++	explicit VirtualFileSystem(unique_ptr<FileSystem> inner_file_system);
+ 
+ 	unique_ptr<FileHandle> OpenFile(const string &path, FileOpenFlags flags,
+ 	                                optional_ptr<FileOpener> opener = nullptr) override;
+diff --git a/src/main/database.cpp b/src/main/database.cpp
+index f51caaaee6..33230b68ab 100644
+--- a/src/main/database.cpp
++++ b/src/main/database.cpp
+@@ -422,9 +422,9 @@ void DatabaseInstance::Configure(DBConfig &new_config, const char *database_path
+ 	}
+ 	config.extension_parameters = new_config.extension_parameters;
+ 	if (new_config.file_system) {
+-		config.file_system = std::move(new_config.file_system);
++		config.file_system = make_uniq<VirtualFileSystem>(std::move(new_config.file_system));
+ 	} else {
+-		config.file_system = make_uniq<VirtualFileSystem>();
++		config.file_system = make_uniq<VirtualFileSystem>(FileSystem::CreateLocal());
+ 	}
+ 	if (database_path && !config.options.enable_external_access) {
+ 		config.AddAllowedPath(database_path);
+diff --git a/test/api/test_threads.cpp b/test/api/test_threads.cpp
+index f63e36d41c..5effeb7963 100644
+--- a/test/api/test_threads.cpp
++++ b/test/api/test_threads.cpp
+@@ -61,7 +61,7 @@ TEST_CASE("Test database maximum_threads argument", "[api]") {
+ 	// FIXME: not yet
+ 	{
+ 		DuckDB db(nullptr);
+-		auto file_system = make_uniq<VirtualFileSystem>();
++		auto file_system = make_uniq<VirtualFileSystem>(FileSystem::CreateLocal());
+ 		REQUIRE(db.NumberOfThreads() == DBConfig().GetSystemMaxThreads(*file_system));
+ 	}
+ 	// but we can set another value
+@@ -114,7 +114,7 @@ TEST_CASE("Test external threads", "[api]") {
+ 	REQUIRE(db.NumberOfThreads() == 13);
+ 
+ 	con.Query("RESET threads");
+-	auto file_system = make_uniq<VirtualFileSystem>();
++	auto file_system = make_uniq<VirtualFileSystem>(FileSystem::CreateLocal());
+ 	REQUIRE(config.options.maximum_threads == DBConfig().GetSystemMaxThreads(*file_system));
+ 	REQUIRE(db.NumberOfThreads() == DBConfig().GetSystemMaxThreads(*file_system));
+ }
+diff --git a/test/sqlite/sqllogic_command.cpp b/test/sqlite/sqllogic_command.cpp
+index 6d4fcca0c8..eda4cb0794 100644
+--- a/test/sqlite/sqllogic_command.cpp
++++ b/test/sqlite/sqllogic_command.cpp
+@@ -482,7 +482,7 @@ void Statement::ExecuteInternal(ExecuteContext &context) const {
+ }
+ 
+ void UnzipCommand::ExecuteInternal(ExecuteContext &context) const {
+-	VirtualFileSystem vfs;
++	VirtualFileSystem vfs(FileSystem::CreateLocal());
+ 
+ 	// input
+ 	FileOpenFlags in_flags(FileFlags::FILE_FLAGS_READ);
