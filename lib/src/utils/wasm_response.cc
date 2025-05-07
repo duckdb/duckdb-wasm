@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "arrow/buffer.h"
+#include "duckdb/web/webdb.h"
 
 namespace duckdb {
 namespace web {
@@ -24,6 +25,15 @@ bool WASMResponseBuffer::Store(WASMResponse& response, arrow::Status status) {
         return false;
     }
     return true;
+}
+
+void WASMResponseBuffer::Store(WASMResponse& response, DuckDBWasmResultsWrapper& value) {
+    if (value.status == DuckDBWasmResultsWrapper::ResponseStatus::ARROW_BUFFER) {
+        Store(response, std::move(value.arrow_buffer));
+    } else {
+        Clear();
+        response.statusCode = value.status;
+    }
 }
 
 void WASMResponseBuffer::Store(WASMResponse& response, std::string value) {
