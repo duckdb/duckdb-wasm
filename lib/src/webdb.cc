@@ -231,12 +231,12 @@ bool WebDB::Connection::CancelPendingQuery() {
     }
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResults() {
+DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
     try {
         // Fetch data if a query is active
         duckdb::unique_ptr<duckdb::DataChunk> chunk;
         if (current_query_result_ == nullptr) {
-            return nullptr;
+            return DuckDBWasmResultsWrapper{nullptr};
         }
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
@@ -248,7 +248,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
             current_query_result_.reset();
             current_schema_.reset();
             current_schema_patched_.reset();
-            return nullptr;
+            return DuckDBWasmResultsWrapper{nullptr};
         }
 
         // Serialize the record batch
