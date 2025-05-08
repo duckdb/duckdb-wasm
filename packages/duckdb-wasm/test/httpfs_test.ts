@@ -257,6 +257,12 @@ export function testHTTPFSAsync(
             expect(BigInt(results.getChildAt(2)?.get(2))).toEqual(BigInt(9n));
         });
 
+        it('can fetch over https csv.gz', async () => {
+            await conn!.query(
+                `select * from "https://raw.githubusercontent.com/duckdb/duckdb/v1.2.2/data/csv/test_apple_financial.csv.gz";`,
+            );
+        });
+
         it('can read and write csv file from S3 with correct auth credentials', async () => {
             let data = await resolveData('/uni/studenten.parquet');
             await setAwsConfig(conn!);
