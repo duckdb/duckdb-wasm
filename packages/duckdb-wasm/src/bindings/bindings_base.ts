@@ -4,7 +4,7 @@ import { Logger } from '../log';
 import { InstantiationProgress } from './progress';
 import { DuckDBBindings } from './bindings_interface';
 import { DuckDBConnection } from './connection';
-import { StatusCode, IsArrowBuffer } from '../status';
+import { StatusCode, IsArrowBuffer, IsDuckDBWasmRetry } from '../status';
 import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer, DuckDBDataProtocol } from './runtime';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
@@ -224,6 +224,11 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** Fetch query results */
     public fetchQueryResults(conn: number): Uint8Array | null {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_query_fetch_results', ['number'], [conn]);
+        if (IsDuckDBWasmRetry(s)) {
+            dropResponseBuffers(this.mod);
+            return null; // Retry
+        }
+
         if (!IsArrowBuffer(s)) {
             throw new Error("Unexpected StatusCode from duckdb_web_query_fetch_results (" + s + ") and with self reported error as" + readString(this.mod, d, n));
         }
@@ -233,11 +238,6 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
 
         const res = copyBuffer(this.mod, d, n);
         dropResponseBuffers(this.mod);
-
-        // Special case indicating to the caller they need to retry
-        if (res.length === 1 && res[0] == 84) {
-            return null;
-        }
         return res;
     }
     /** Get table names */
