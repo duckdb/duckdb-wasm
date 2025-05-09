@@ -1,3 +1,5 @@
+#include <cstring>
+#include <exception>
 #include <iostream>
 #include <stdexcept>
 
@@ -93,10 +95,25 @@ void duckdb_web_fs_drop_file(WASMResponse* packed, const char* file_name) {
     GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.DropFile(file_name));
 }
-/// Drop a file
-void duckdb_web_fs_drop_files(WASMResponse* packed) {
+/// Drop a files
+void duckdb_web_fs_drop_files(WASMResponse* packed, const char** names, int name_count) {
     GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.DropFiles());
+    if (name_count == 0 || names == NULL) {
+        WASMResponseBuffer::Get().Store(*packed, webdb.DropFiles());
+    } else {
+        for (int i = 0; i < name_count; i++) {
+            const char* name = names[i];
+            if (name == NULL) {
+                std::cerr << "Error: NULL pointer detected at index " << i << std::endl;
+                continue;
+            }
+            if (std::strlen(name) == 0) {
+                std::cerr << "Error: Empty string detected at index " << i << std::endl;
+                continue;
+            }
+            WASMResponseBuffer::Get().Store(*packed, webdb.DropFile(name));
+        }
+    }
 }
 /// Glob file infos
 void duckdb_web_fs_glob_file_infos(WASMResponse* packed, const char* file_name) {
