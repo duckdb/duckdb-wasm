@@ -74,8 +74,6 @@ namespace web {
 
 static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
 
-static uint8_t MAGIC_BYTE_RETRY = 84;
-
 /// Create the default webdb database
 duckdb::unique_ptr<WebDB> WebDB::Create() {
     if constexpr (ENVIRONMENT == Environment::WEB) {
@@ -265,9 +263,9 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
                         break;
                     case StreamExecutionResult::BLOCKED:
                         stream_result.WaitForTask();
-                        return arrow::Buffer::Wrap<uint8_t>(&MAGIC_BYTE_RETRY, 1);
+                        return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
                     case StreamExecutionResult::NO_TASKS_AVAILABLE:
-                        return arrow::Buffer::Wrap<uint8_t>(&MAGIC_BYTE_RETRY, 1);
+                        return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
                     case StreamExecutionResult::CHUNK_NOT_READY:
                         break;
                 }
@@ -277,7 +275,7 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
             } while (!ready && elapsed < polling_interval);
 
             if (!ready) {
-                return arrow::Buffer::Wrap<uint8_t>(&MAGIC_BYTE_RETRY, 1);
+                return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
             }
         }
 
