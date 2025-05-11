@@ -117,7 +117,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CREATE_PREPARED, [ConnectionID, string]>
     | WorkerRequest<WorkerRequestType.DISCONNECT, number>
     | WorkerRequest<WorkerRequestType.DROP_FILE, string>
-    | WorkerRequest<WorkerRequestType.DROP_FILES, null>
+    | WorkerRequest<WorkerRequestType.DROP_FILES, string[] | undefined>
     | WorkerRequest<WorkerRequestType.EXPORT_FILE_STATISTICS, string>
     | WorkerRequest<WorkerRequestType.FETCH_QUERY_RESULTS, number>
     | WorkerRequest<WorkerRequestType.FLUSH_FILES, null>
@@ -178,7 +178,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.CREATE_PREPARED, [number, string], number>
     | WorkerTask<WorkerRequestType.DISCONNECT, ConnectionID, null>
     | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
-    | WorkerTask<WorkerRequestType.DROP_FILES, null, null>
+    | WorkerTask<WorkerRequestType.DROP_FILES, string[] | undefined, null>
     | WorkerTask<WorkerRequestType.EXPORT_FILE_STATISTICS, string, FileStatistics>
     | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array | null>
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
