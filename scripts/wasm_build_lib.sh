@@ -69,7 +69,7 @@ emmake make \
     -j${CORES} \
     duckdb_wasm
 
-TARGET=${FEATURES} make update_exported_list
+make TARGET=${FEATURES} update_exported_list
 
 if [ "${USE_GENERATED_EXPORTED_LIST:-no}" == "yes" ]; then
 emcmake cmake \
