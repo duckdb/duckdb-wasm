@@ -127,7 +127,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
         }
         return 0;
     },
-    dropFile: (mod: DuckDBModule, _fileNamePtr: number, _fileNameLen:number) => {},
+    dropFile: (mod: DuckDBModule, _fileNamePtr: number, _fileNameLen: number) => {},
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         try {
             const file = NODE_RUNTIME.resolveFileInfo(mod, fileId);

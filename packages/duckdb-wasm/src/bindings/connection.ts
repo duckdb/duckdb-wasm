@@ -111,7 +111,11 @@ export class ResultStreamIterator implements Iterable<Uint8Array> {
     /** Reached end of stream? */
     _depleted: boolean;
 
-    constructor(protected bindings: DuckDBBindings, protected conn: number, protected header: Uint8Array) {
+    constructor(
+        protected bindings: DuckDBBindings,
+        protected conn: number,
+        protected header: Uint8Array,
+    ) {
         this._first = true;
         this._depleted = false;
     }

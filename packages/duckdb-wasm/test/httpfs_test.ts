@@ -2,7 +2,7 @@ import * as duckdb from '../src/';
 import { getS3Params, S3Params, S3PayloadParams, createS3Headers, uriEncode, getHTTPUrl } from '../src/utils';
 import { AsyncDuckDBConnection, DuckDBBindings, DuckDBBindingsBase, DuckDBModule } from '../src/';
 import BROWSER_RUNTIME from '../src/bindings/runtime_browser';
-import {generateLongQueryString} from "./string_test_helper";
+import { generateLongQueryString } from './string_test_helper';
 
 // S3 config for tests
 const BUCKET_NAME = 'test-bucket';
@@ -312,7 +312,7 @@ export function testHTTPFSAsync(
                 `COPY (SELECT * FROM range(1000,1010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,
             );
             const result = await conn!.query(`SELECT * FROM "s3://${BUCKET_NAME}/test_written.csv";`);
-            expect(Number((result.getChildAt(0)?.get(6)))).toEqual(Number(1006));
+            expect(Number(result.getChildAt(0)?.get(6))).toEqual(Number(1006));
             await expectAsync(
                 conn!.query(
                     `COPY (SELECT * FROM range(2000,2010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,
@@ -330,7 +330,7 @@ export function testHTTPFSAsync(
             const result = await conn!.query(
                 `SELECT * FROM "${S3_ENDPOINT}/${BUCKET_NAME}/correct_auth_test.parquet?${queryString}";`,
             );
-            expect(Number((result.getChildAt(0)?.get(6)))).toEqual(Number(29120));
+            expect(Number(result.getChildAt(0)?.get(6))).toEqual(Number(29120));
         });
 
         it('can read csv file from URL with long query string', async () => {
@@ -343,7 +343,7 @@ export function testHTTPFSAsync(
             const result = await conn!.query(
                 `SELECT * FROM "${S3_ENDPOINT}/${BUCKET_NAME}/correct_auth_test.csv?${queryString}";`,
             );
-            expect(Number((result.getChildAt(0)?.get(6)))).toEqual(Number(29120));
+            expect(Number(result.getChildAt(0)?.get(6))).toEqual(Number(29120));
         });
     });
 }
