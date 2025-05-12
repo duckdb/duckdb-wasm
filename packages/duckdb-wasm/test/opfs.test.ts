@@ -1,5 +1,5 @@
 import * as duckdb from '../src/';
-import {LogLevel} from '../src/';
+import { LogLevel } from '../src/';
 import * as arrow from 'apache-arrow';
 
 export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): void {
@@ -29,7 +29,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
         await db.instantiate(bundle().mainModule, bundle().pthreadWorker);
         await db.open({
             path: 'opfs://test.db',
-            accessMode: duckdb.DuckDBAccessMode.READ_WRITE
+            accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
         });
         conn = await db.connect();
     });
@@ -83,7 +83,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await db.instantiate(bundle().mainModule, bundle().pthreadWorker);
             await db.open({
                 path: 'opfs://test.db',
-                accessMode: duckdb.DuckDBAccessMode.READ_WRITE
+                accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
             });
             conn = await db.connect();
 
@@ -102,7 +102,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
                 res.arrayBuffer(),
             );
             const opfsRoot = await navigator.storage.getDirectory();
-            const fileHandle = await opfsRoot.getFileHandle('test.parquet', {create: true});
+            const fileHandle = await opfsRoot.getFileHandle('test.parquet', { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(parquetBuffer);
             await writable.close();
@@ -126,8 +126,8 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
                 res.arrayBuffer(),
             );
             const opfsRoot = await navigator.storage.getDirectory();
-            const datadir = await opfsRoot.getDirectoryHandle("datadir", {create: true});
-            const fileHandle = await datadir.getFileHandle('test.parquet', {create: true});
+            const datadir = await opfsRoot.getDirectoryHandle('datadir', { create: true });
+            const fileHandle = await datadir.getFileHandle('test.parquet', { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(parquetBuffer);
             await writable.close();
@@ -150,7 +150,7 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
                 res.arrayBuffer(),
             );
             const opfsRoot = await navigator.storage.getDirectory();
-            const fileHandle = await opfsRoot.getFileHandle('test.parquet', {create: true});
+            const fileHandle = await opfsRoot.getFileHandle('test.parquet', { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(parquetBuffer);
             await writable.close();
@@ -192,12 +192,11 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
                 const table3 = await new arrow.Table<{ cnt: arrow.Int }>(batches3);
                 expect(table3.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
             }
-
         });
 
         it('Drop File + Export as CSV to OPFS + Load CSV', async () => {
             const opfsRoot = await navigator.storage.getDirectory();
-            const testHandle = await opfsRoot.getFileHandle('test.csv', {create: true});
+            const testHandle = await opfsRoot.getFileHandle('test.csv', { create: true });
             await db.registerFileHandle('test.csv', testHandle, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
             await conn.send(`CREATE TABLE zzz AS SELECT * FROM "${baseDir}/tpch/0_01/parquet/lineitem.parquet"`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'test.csv'`);
@@ -221,12 +220,11 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
             await db.dropFile('test.csv');
         });
 
-
         it('Drop Files + Export as CSV to OPFS + Load CSV', async () => {
             const opfsRoot = await navigator.storage.getDirectory();
-            const testHandle1 = await opfsRoot.getFileHandle('test1.csv', {create: true});
-            const testHandle2 = await opfsRoot.getFileHandle('test2.csv', {create: true});
-            const testHandle3 = await opfsRoot.getFileHandle('test3.csv', {create: true});
+            const testHandle1 = await opfsRoot.getFileHandle('test1.csv', { create: true });
+            const testHandle2 = await opfsRoot.getFileHandle('test2.csv', { create: true });
+            const testHandle3 = await opfsRoot.getFileHandle('test3.csv', { create: true });
             await db.registerFileHandle('test1.csv', testHandle1, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
             await db.registerFileHandle('test2.csv', testHandle2, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
             await db.registerFileHandle('test3.csv', testHandle3, duckdb.DuckDBDataProtocol.BROWSER_FSACCESS, true);
@@ -280,28 +278,19 @@ export function testOPFS(baseDir: string, bundle: () => duckdb.DuckDBBundle): vo
 
     async function removeFiles() {
         const opfsRoot = await navigator.storage.getDirectory();
-        await opfsRoot.removeEntry('test.db').catch(() => {
-        });
-        await opfsRoot.removeEntry('test.db.wal').catch(() => {
-        });
-        await opfsRoot.removeEntry('test.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test1.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test2.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test3.csv').catch(() => {
-        });
-        await opfsRoot.removeEntry('test.parquet').catch(() => {
-        });
+        await opfsRoot.removeEntry('test.db').catch(() => {});
+        await opfsRoot.removeEntry('test.db.wal').catch(() => {});
+        await opfsRoot.removeEntry('test.csv').catch(() => {});
+        await opfsRoot.removeEntry('test1.csv').catch(() => {});
+        await opfsRoot.removeEntry('test2.csv').catch(() => {});
+        await opfsRoot.removeEntry('test3.csv').catch(() => {});
+        await opfsRoot.removeEntry('test.parquet').catch(() => {});
         try {
             const datadir = await opfsRoot.getDirectoryHandle('datadir');
-            datadir.removeEntry('test.parquet').catch(() => {
-            });
+            datadir.removeEntry('test.parquet').catch(() => {});
         } catch (e) {
             //
         }
-        await opfsRoot.removeEntry('datadir').catch(() => {
-        });
+        await opfsRoot.removeEntry('datadir').catch(() => {});
     }
 }

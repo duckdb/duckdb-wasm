@@ -129,7 +129,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerResponseType.PROGRESS_UPDATE: {
                 for (const p of this._onExecutionProgress) {
                     p(response.data);
-		}
+                }
                 return;
             }
             case WorkerResponseType.LOG: {
@@ -524,7 +524,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
     /** Register an empty file buffer. */
     public async registerEmptyFileBuffer(name: string): Promise<void> {
-/*
+        /*
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(
             WorkerRequestType.REGISTER_FILE_BUFFER,
             [name, new Uint8Array()],

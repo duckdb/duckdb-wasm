@@ -5,14 +5,16 @@ export function generateLongQueryString(): string {
     const eee = repeatCharacter('E', 256);
     const ggg = repeatCharacter('G', 128);
 
-    return `test=inline` +
+    return (
+        `test=inline` +
         `&Test-Security-Token=${aaa}` +
         `&Test-Algorithm=${ccc}` +
         `&Test-Date=${ddd}` +
         `&Test-SignedHeaders=host` +
         `&Test-Expires=43200` +
         `&Test-Credential=${eee}` +
-        `&Test-Signature=${ggg}`;
+        `&Test-Signature=${ggg}`
+    );
 }
 
 export function repeatCharacter(char: string, length: number): string {
