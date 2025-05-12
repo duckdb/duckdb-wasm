@@ -151,14 +151,14 @@ endif()
 
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=1 -s ENVIRONMENT='web,node,worker' -s ALLOW_TABLE_GROWTH -lembind")
+
+  if (USE_GENERATED_EXPORTED_LIST)
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=2 -s EXPORTED_FUNCTIONS='@exported_list.txt'")
+  else()
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1")
+  endif()
 else()
   set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker'")
-endif()
-
-if (USE_GENERATED_EXPORTED_LIST)
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=2 -s EXPORTED_FUNCTIONS='@exported_list.txt'")
-else()
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1")
 endif()
 
 # ---------------------------------------------------------------------------
