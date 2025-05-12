@@ -71,7 +71,7 @@ emmake make \
 
 TARGET=${FEATURES} make update_exported_list
 
-if [ "$USE_GENERATED_EXPORTED_LIST" == "yes" ]; then
+if [ "${USE_GENERATED_EXPORTED_LIST}-no" == "yes" ]; then
 emcmake cmake \
     -S${CPP_SOURCE_DIR} \
     -B${BUILD_DIR} \
