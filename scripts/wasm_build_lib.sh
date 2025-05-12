@@ -69,7 +69,7 @@ emmake make \
     -j${CORES} \
     duckdb_wasm
 
-make update_exported_list
+TARGET=${FEATURES} make update_exported_list
 
 if [ "$USE_GENERATED_EXPORTED_LIST" == "yes" ]; then
 emcmake cmake \
@@ -90,7 +90,7 @@ emmake make \
     duckdb_wasm
 fi
 
-npm install -g js-beautify
+js-beautify -v || npm install -g js-beautify
 js-beautify ${BUILD_DIR}/duckdb_wasm.js > ${BUILD_DIR}/beauty.js
 awk '{gsub(/get\(stubs, prop\) \{/,"get(stubs,prop) { if (prop.startsWith(\"invoke_\")) {return createDyncallWrapper(prop.substring(7));}"); print}' ${BUILD_DIR}/beauty.js > ${BUILD_DIR}/beauty2.js
 awk '!(/var .*wasmExports\[/ || /var [_a-z0-9A-Z]+ = Module\[\"[_a-z0-9A-Z]+\"\] = [0-9]+;/) || /var _duckdb_web/ || /var _main/ || /var _calloc/ || /var _malloc/ || /var _free/ || /var stack/ || /var ___dl_seterr/ || /var __em/ || /var _em/ || /var _pthread/' ${BUILD_DIR}/beauty2.js > ${BUILD_DIR}/duckdb_wasm.js
