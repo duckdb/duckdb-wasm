@@ -436,6 +436,7 @@ build/docker_ci_image:
 patch_duckdb:
 	(find patches/duckdb/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb) || true
 	(find patches/arrow/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/arrow) || true
+	(find patches/rapidjson/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/rapidjson) || true
 
 apply_patches: patch_duckdb
 
