@@ -447,3 +447,14 @@ submodules:
 build/bootstrap: submodules yarn_install
 	mkdir -p build
 	touch build/bootstrap
+
+update_exported_list:
+	cd build/relsize/${TARGET} && wasm2wat duckdb_wasm.wasm --enable-all -o duckdb-wasm.wat
+	cd build/relsize/${TARGET} && grep export duckdb-wasm.wat | cut -d \" -f2 | sed '$d' | grep -v "^orig" | grep -v "^dynCall_" > export_list.txt
+        ## filter list of c++ symbols
+	cd build/relsize/${TARGET} && cat export_list.txt | grep "^_" | grep -v "_Unwind_" | grep -v "__syscall_shutdown" | grep -v "0\\00\\0" | grep -v "^_ZZN5arrow" | grep -v "^_ZGVZN5arrow" | grep -v "^_ZN5arrow" | sort > cpp_list
+	cd build/relsize/${TARGET} && sed 's/^/_/g' cpp_list > exported_list.txt
+        ## filter list of c symbols
+	cd build/relsize/${TARGET} && cat export_list.txt | grep -v "^_" | grep -v "getTempRet" | grep -v "^sched_yield" | grep -v "emscripten_wget" | grep -v "0\\00\\0" | sort > c_exported_list
+	# prepend '_'
+	cd build/relsize/${TARGET} && sed 's/^/_/g' c_exported_list >> exported_list.txt
