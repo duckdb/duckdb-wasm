@@ -15,10 +15,6 @@ endif()
 set(DUCKDB_CXX_FLAGS "${DUCKDB_CXX_FLAGS} -Wno-unqualified-std-cast-call -DDUCKDB_DEBUG_NO_SAFETY -DDUCKDB_FROM_DUCKDB_WASM")
 message("DUCKDB_CXX_FLAGS=${DUCKDB_CXX_FLAGS}")
 
-set(DUCKDB_EXTENSIONS "json;core_functions")
-# Escape semicolons in DUCKDB_EXTENSIONS before passing to ExternalProject_Add
-string(REPLACE ";" "$<SEMICOLON>" DUCKDB_EXTENSIONS_PACKED "${DUCKDB_EXTENSIONS}")
-
 set(USE_WASM_THREADS FALSE)
 if(DUCKDB_PLATFORM STREQUAL "wasm_threads")
   set(USE_WASM_THREADS TRUE)
@@ -39,7 +35,6 @@ ExternalProject_Add(
              -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
              -DCMAKE_BUILD_TYPE=${DUCKDB_BUILD_TYPE}
              -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-             -DBUILD_EXTENSIONS=${DUCKDB_EXTENSIONS_PACKED}
              -DSKIP_EXTENSIONS=jemalloc
              -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
@@ -93,8 +88,12 @@ target_link_libraries(
   INTERFACE ${install_dir}/lib/libduckdb_pg_query.a
   INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
   INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
-  INTERFACE ${install_dir}/lib/libcore_functions_extension.a
   INTERFACE dl)
+
+if(DEFINED ENV{DUCKDB_WASM_LOADABLE_EXTENSIONS})
+else()
+  target_link_libraries(duckdb INTERFACE ${install_dir}/lib/libcore_functions_extension.a)
+endif()
 
 target_include_directories(
   duckdb
