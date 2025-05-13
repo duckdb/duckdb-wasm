@@ -69,9 +69,9 @@ emmake make \
     -j${CORES} \
     duckdb_wasm
 
+if [ "${USE_GENERATED_EXPORTED_LIST:-no}" == "yes" ]; then
 make TARGET=${FEATURES} update_exported_list
 
-if [ "${USE_GENERATED_EXPORTED_LIST:-no}" == "yes" ]; then
 emcmake cmake \
     -S${CPP_SOURCE_DIR} \
     -B${BUILD_DIR} \
