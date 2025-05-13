@@ -364,10 +364,6 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - name: Install dependencies
-              run: |
-                  sudo apt install wabt
-
             - name: Prepare repository
               run: |
                   make apply_patches
@@ -411,10 +407,6 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
-            - name: Install dependencies
-              run: |
-                  sudo apt install wabt
-
             - name: Prepare repository
               run: |
                   make apply_patches
@@ -457,10 +449,6 @@ jobs:
               with:
                   submodules: 'recursive'
                   fetch-depth: 0
-
-            - name: Install dependencies
-              run: |
-                  sudo apt install wabt
 
             - name: Prepare repository
               run: |
