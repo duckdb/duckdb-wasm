@@ -458,3 +458,4 @@ update_exported_list:
 	cd build/relsize/${TARGET} && cat export_list.txt | grep -v "^_" | grep -v "getTempRet" | grep -v "^sched_yield" | grep -v "emscripten_wget" | grep -v "0\\00\\0" | sort > c_exported_list
 	# prepend '_'
 	cd build/relsize/${TARGET} && sed 's/^/_/g' c_exported_list >> exported_list.txt
+	cd build/relsize/${TARGET} && echo '__ZNSt3__26chrono12system_clock9to_time_tERKNS0_10time_pointIS1_NS0_8durationIxNS_5ratioILx1ELx1000000EEEEEEE' >> exported_list.txt
