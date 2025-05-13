@@ -158,7 +158,7 @@ if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1")
   endif()
 else()
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker'")
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker' -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")
 endif()
 
 # ---------------------------------------------------------------------------
