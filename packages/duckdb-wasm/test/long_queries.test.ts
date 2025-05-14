@@ -26,14 +26,13 @@ export function longQueries(db: () => duckdb.AsyncDuckDB): void {
 
             let str = `with big_expr as ( select `;
             let i = 1;
-                while (str.length < 1e6) {
+            while (str.length < 1e6) {
                 str += ` ` + i + ` as col_` + i + `,`;
                 i++;
             }
-            str += ` NULL as col_NULL) select 99;`
+            str += ` NULL as col_NULL) select 99;`;
 
             await conn.query(str);
         });
     });
 }
-

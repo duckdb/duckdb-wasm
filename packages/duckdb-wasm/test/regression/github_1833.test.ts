@@ -14,17 +14,17 @@ export function test1833(db: () => duckdb.AsyncDuckDB): void {
     });
     describe('GitHub issues', () => {
         it('1833', async () => {
-        await conn.query(`
+            await conn.query(`
           CREATE TABLE "Test" (value VARCHAR)
         `);
-        const stmt = await conn.prepare(`
+            const stmt = await conn.prepare(`
           INSERT INTO "Test" (value)
           VALUES (?)
         `);
-        await stmt.query('🦆🦆🦆🦆🦆');
-        await stmt.query('goo␀se');
-        await stmt.query('goo\u0000se');
-        const result = await conn.query(`
+            await stmt.query('🦆🦆🦆🦆🦆');
+            await stmt.query('goo␀se');
+            await stmt.query('goo\u0000se');
+            const result = await conn.query(`
           SELECT * FROM "Test"
         `);
             expect(result.schema.fields.length).toBe(1);

@@ -1,8 +1,6 @@
-import {StatusCode} from '../status';
-import {
-    WorkerResponseType,
-} from '../parallel/worker_request';
-import {addS3Headers, getHTTPUrl} from '../utils';
+import { StatusCode } from '../status';
+import { WorkerResponseType } from '../parallel/worker_request';
+import { addS3Headers, getHTTPUrl } from '../utils';
 
 import {
     callSRet,
@@ -21,7 +19,6 @@ import * as udf from './udf_runtime';
 
 const OPFS_PREFIX_LEN = 'opfs://'.length;
 const PATH_SEP_REGEX = /\/|\\/;
-
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     _files: Map<string, any>;
@@ -100,7 +97,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             if (info == null) {
                 return null;
             }
-            BROWSER_RUNTIME._globalFileInfo = { ...info, blob: null} as DuckDBGlobalFileInfo;
+            BROWSER_RUNTIME._globalFileInfo = { ...info, blob: null } as DuckDBGlobalFileInfo;
 
             return BROWSER_RUNTIME._globalFileInfo;
         } catch (e: any) {
@@ -111,7 +108,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     async assignOPFSRoot(): Promise<void> {
         if (!BROWSER_RUNTIME._opfsRoot) {
             BROWSER_RUNTIME._opfsRoot = await navigator.storage.getDirectory();
-	}
+        }
     },
     /** Prepare a file handle that could only be acquired aschronously */
     async prepareFileHandles(filePaths: string[], protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
@@ -157,7 +154,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         fromCached: false,
                     };
                 } catch (e: any) {
-                    throw new Error(e.message + ":" + name);
+                    throw new Error(e.message + ':' + name);
                 }
             };
             const result: PreparedDBFileHandle[] = [];
@@ -268,7 +265,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
                                 return result;
                             }
-
                         } catch (e: any) {
                             error = e;
                             console.warn(`HEAD request with range header failed: ${e}`);
@@ -318,13 +314,23 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 }
                             }
 
-                            if (xhr.status == 206 && contentLength2 !== null && +contentLength2 == 1 && presumedLength !== null) {
+                            if (
+                                xhr.status == 206 &&
+                                contentLength2 !== null &&
+                                +contentLength2 == 1 &&
+                                presumedLength !== null
+                            ) {
                                 const result = mod._malloc(2 * 8);
                                 mod.HEAPF64[(result >> 3) + 0] = +presumedLength;
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
                                 return result;
                             }
-                            if (xhr.status == 200 && contentLength2 !== null && contentLength !== null && +contentLength2 == +contentLength) {
+                            if (
+                                xhr.status == 200 &&
+                                contentLength2 !== null &&
+                                contentLength !== null &&
+                                +contentLength2 == +contentLength
+                            ) {
                                 console.warn(`fall back to full HTTP read for: ${file.dataUrl}`);
                                 const data = mod._malloc(xhr.response.byteLength);
                                 const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
@@ -494,24 +500,24 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
-	try {
-        switch (file?.dataProtocol) {
-            case DuckDBDataProtocol.BUFFER:
-            case DuckDBDataProtocol.HTTP:
-            case DuckDBDataProtocol.S3:
-                break;
-            case DuckDBDataProtocol.NODE_FS:
-            case DuckDBDataProtocol.BROWSER_FILEREADER:
-                // XXX Remove from registry
-                return;
-            case DuckDBDataProtocol.BROWSER_FSACCESS: {
-                const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
-                if (!handle) {
-                    throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+        try {
+            switch (file?.dataProtocol) {
+                case DuckDBDataProtocol.BUFFER:
+                case DuckDBDataProtocol.HTTP:
+                case DuckDBDataProtocol.S3:
+                    break;
+                case DuckDBDataProtocol.NODE_FS:
+                case DuckDBDataProtocol.BROWSER_FILEREADER:
+                    // XXX Remove from registry
+                    return;
+                case DuckDBDataProtocol.BROWSER_FSACCESS: {
+                    const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
+                    if (!handle) {
+                        throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+                    }
+                    return handle.flush();
                 }
-                return handle.flush();
             }
-        }
         } catch (e: any) {
             console.log(e);
             failWith(mod, e.toString());
@@ -691,9 +697,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         return 0;
     },
     progressUpdate: (done: number, percentage: number, repeat: number): void => {
-	if (postMessage) {
-            postMessage({requestId: 0,  type: WorkerResponseType.PROGRESS_UPDATE,  data: {status: done?"completed":"in-progress", percentage: percentage, repetitions: repeat}});
-	}
+        if (postMessage) {
+            postMessage({
+                requestId: 0,
+                type: WorkerResponseType.PROGRESS_UPDATE,
+                data: { status: done ? 'completed' : 'in-progress', percentage: percentage, repetitions: repeat },
+            });
+        }
     },
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);

@@ -62,6 +62,7 @@
         "build:debug": "node bundle.mjs debug && tsc --emitDeclarationOnly",
         "build:release": "node bundle.mjs release && tsc --emitDeclarationOnly",
         "docs": "typedoc",
+        "format": "prettier --write \"**/*.+(js|ts)\"",
         "report": "node ./coverage.mjs",
         "test:node": "node --enable-source-maps ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",
         "test:node:debug": "node --inspect-brk --enable-source-maps ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",

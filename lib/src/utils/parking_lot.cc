@@ -71,7 +71,7 @@ void ParkingLot::Park(const void* addr, std::function<bool()> check, std::chrono
             bucket.cv.wait(lock);
         }
     } else {
-        auto stop = std::chrono::system_clock::now() + timeout;
+        auto stop = std::chrono::high_resolution_clock::now() + timeout;
         while (!check()) {
             if (bucket.cv.wait_until(lock, stop) == std::cv_status::timeout) break;
         }

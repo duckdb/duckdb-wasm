@@ -8,6 +8,8 @@
 namespace duckdb {
 namespace web {
 
+struct DuckDBWasmResultsWrapper;
+
 struct WASMResponse {
     /// The status code
     double statusCode = 1;
@@ -35,6 +37,8 @@ class WASMResponseBuffer {
     /// Store the arrow status.
     /// Returns wheather the result was OK
     bool Store(WASMResponse& response, arrow::Status status);
+    /// Store a DuckDBWasmResultsWrapper
+    void Store(WASMResponse& response, DuckDBWasmResultsWrapper& value);
     /// Store a string
     void Store(WASMResponse& response, std::string value);
     /// Store a string view

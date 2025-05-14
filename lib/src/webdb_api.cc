@@ -241,7 +241,7 @@ bool duckdb_web_pending_query_cancel(ConnectionHdl connHdl, const char* script) 
 void duckdb_web_query_fetch_results(WASMResponse* packed, ConnectionHdl connHdl) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     auto r = c->FetchQueryResults();
-    WASMResponseBuffer::Get().Store(*packed, std::move(r));
+    WASMResponseBuffer::Get().Store(*packed, r);
 }
 /// Get table names
 void duckdb_web_get_tablenames(WASMResponse* packed, ConnectionHdl connHdl, const char* query) {

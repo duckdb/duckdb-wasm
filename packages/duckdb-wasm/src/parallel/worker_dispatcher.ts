@@ -279,6 +279,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.FETCH_QUERY_RESULTS: {
                     const result = this._bindings.fetchQueryResults(request.data);
+                    const transfer = result ? [result.buffer] : [];
                     this.postMessage(
                         {
                             messageId: this._nextMessageId++,
@@ -286,7 +287,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                             type: WorkerResponseType.QUERY_RESULT_CHUNK,
                             data: result,
                         },
-                        [result.buffer],
+                        transfer,
                     );
                     break;
                 }
