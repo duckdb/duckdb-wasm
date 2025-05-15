@@ -60,6 +60,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                                       .s3_session_token = "",
                                   },
                               .allow_unsigned_extensions = false,
+                              .arrow_lossless_conversion = false,
                               .custom_user_agent = ""};
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(args_json.begin(), args_json.size());
@@ -75,6 +76,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         }
         if (doc.HasMember("allowUnsignedExtensions") && doc["allowUnsignedExtensions"].IsBool()) {
             config.allow_unsigned_extensions = doc["allowUnsignedExtensions"].GetBool();
+        }
+        if (doc.HasMember("arrowLosslessConversion") && doc["arrowLosslessConversion"].IsBool()) {
+            config.arrow_lossless_conversion = doc["arrowLosslessConversion"].GetBool();
         }
         if (doc.HasMember("useDirectIO") && doc["useDirectIO"].IsBool()) {
             config.use_direct_io = doc["useDirectIO"].GetBool();
