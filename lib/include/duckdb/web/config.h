@@ -106,6 +106,9 @@ struct WebDBConfig {
     /// Whether to allow unsigned extensions
     bool allow_unsigned_extensions = false;
 
+    /// Whether to use alternate Arrow conversion that preserves full range and precision of data.
+    bool arrow_lossless_conversion = false;
+
     std::string custom_user_agent = "";
 
     /// Read from a document
