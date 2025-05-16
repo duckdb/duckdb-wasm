@@ -432,7 +432,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/s3-example-presigned-urls.html
                     // so we need (if enabled) to bump to a ranged GET
                     if (!BROWSER_RUNTIME.getGlobalFileInfo(mod)?.allowFullHttpReads) {
-                        failWith(mod, `HEAD request failed: ${path}, with full http reads are disabled`);
+                        console.log(`HEAD request failed: ${path}, with full http reads are disabled`);
                         return 0;
                     }
                     const xhr2 = new XMLHttpRequest();
@@ -446,7 +446,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     xhr2.setRequestHeader('Range', `bytes=0-0`);
                     xhr2.send(null);
                     if (xhr2.status != 200 && xhr2.status !== 206) {
-                        failWith(mod, `HEAD and GET requests failed: ${path}`);
+                        console.log(`HEAD and GET requests failed: ${path}`);
                         return 0;
                     }
                     const contentLength = xhr2.getResponseHeader('Content-Length');
