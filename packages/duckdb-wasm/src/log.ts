@@ -45,7 +45,7 @@ export type ProgressEntry = {
     readonly status: string;
     readonly percentage: string;
     readonly repetitions: string;
-}
+};
 
 /** An execution progress handler */
 export type ExecutionProgressHandler = (p: ProgressEntry) => void;

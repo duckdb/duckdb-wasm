@@ -36,6 +36,7 @@
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/types/vector_buffer.hpp"
+#include "duckdb/common/virtual_file_system.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
@@ -231,13 +232,53 @@ bool WebDB::Connection::CancelPendingQuery() {
     }
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResults() {
+DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
     try {
         // Fetch data if a query is active
         duckdb::unique_ptr<duckdb::DataChunk> chunk;
         if (current_query_result_ == nullptr) {
-            return nullptr;
+            return DuckDBWasmResultsWrapper{nullptr};
         }
+
+        if (current_query_result_->type == QueryResultType::STREAM_RESULT) {
+            auto& stream_result = current_query_result_->Cast<duckdb::StreamQueryResult>();
+
+            auto before = std::chrono::steady_clock::now();
+            uint64_t elapsed;
+            auto polling_interval =
+                webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL);
+            bool ready = false;
+            do {
+                switch (stream_result.ExecuteTask()) {
+                    case StreamExecutionResult::EXECUTION_ERROR:
+                        return arrow::Status{arrow::StatusCode::ExecutionError,
+                                             std::move(current_query_result_->GetError())};
+                    case StreamExecutionResult::EXECUTION_CANCELLED:
+                        return arrow::Status{arrow::StatusCode::ExecutionError,
+                                             "The execution of the query was cancelled before it could finish, likely "
+                                             "caused by executing a different query"};
+                    case StreamExecutionResult::CHUNK_READY:
+                    case StreamExecutionResult::EXECUTION_FINISHED:
+                        ready = true;
+                        break;
+                    case StreamExecutionResult::BLOCKED:
+                        stream_result.WaitForTask();
+                        return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
+                    case StreamExecutionResult::NO_TASKS_AVAILABLE:
+                        return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
+                    case StreamExecutionResult::CHUNK_NOT_READY:
+                        break;
+                }
+
+                auto after = std::chrono::steady_clock::now();
+                elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
+            } while (!ready && elapsed < polling_interval);
+
+            if (!ready) {
+                return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
+            }
+        }
+
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
         if (current_query_result_->HasError()) {
@@ -248,7 +289,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
             current_query_result_.reset();
             current_schema_.reset();
             current_schema_patched_.reset();
-            return nullptr;
+            return DuckDBWasmResultsWrapper{nullptr};
         }
 
         // Serialize the record batch
@@ -866,7 +907,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         auto buffered_fs_ptr = buffered_fs.get();
 
         duckdb::DBConfig db_config;
-        db_config.file_system = std::move(buffered_fs);
+        db_config.file_system = std::move(make_uniq<VirtualFileSystem>(std::move(buffered_fs)));
         db_config.options.allow_unsigned_extensions = config_->allow_unsigned_extensions;
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;

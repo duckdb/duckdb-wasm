@@ -494,6 +494,10 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - name: Install dependencies
+              run: |
+                  sudo apt install wabt
+
             - name: Prepare repository
               run: |
                   make apply_patches
@@ -514,7 +518,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  DUCKDB_PLATFORM="wasm_mvp" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize mvp
+                  USE_GENERATED_EXPORTED_LIST="yes" DUCKDB_PLATFORM="wasm_mvp" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize mvp
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -537,6 +541,10 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - name: Install dependencies
+              run: |
+                  sudo apt install wabt
+
             - name: Prepare repository
               run: |
                   make apply_patches
@@ -557,7 +565,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  DUCKDB_PLATFORM="wasm_eh" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
+                  USE_GENERATED_EXPORTED_LIST="yes" DUCKDB_PLATFORM="wasm_eh" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -580,6 +588,10 @@ jobs:
                   submodules: 'recursive'
                   fetch-depth: 0
 
+            - name: Install dependencies
+              run: |
+                  sudo apt install wabt
+
             - name: Prepare repository
               run: |
                   make apply_patches
@@ -600,7 +612,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  DUCKDB_PLATFORM="wasm_threads" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize coi
+                  USE_GENERATED_EXPORTED_LIST="yes" DUCKDB_PLATFORM="wasm_threads" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize coi
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -1084,7 +1096,7 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
                   TAG: ${{ startsWith(github.head_ref, 'v') && 'latest' || 'next' }}
-              if: env.NODE_AUTH_TOKEN != null
+              if: env.NODE_AUTH_TOKEN != null && github.ref == 'refs/heads/main'
               run: |
                   echo "${TAG}"
                   ./scripts/npm_publish_lib.sh

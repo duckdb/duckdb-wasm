@@ -150,9 +150,15 @@ else()
 endif()
 
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s FILESYSTEM=1 -s ENVIRONMENT='web,node,worker' -s ALLOW_TABLE_GROWTH -lembind")
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=1 -s ENVIRONMENT='web,node,worker' -s ALLOW_TABLE_GROWTH -lembind")
+
+  if (USE_GENERATED_EXPORTED_LIST)
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=2 -s EXPORTED_FUNCTIONS='@exported_list.txt'")
+  else()
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1")
+  endif()
 else()
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker'")
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker' -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -287,56 +293,7 @@ if(EMSCRIPTEN)
       -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
       -s EXPORT_NAME='DuckDB' \
-      -s EXPORTED_FUNCTIONS='[ \
-          _main, \
-          _malloc, \
-          _calloc, \
-          _free, \
-          _duckdb_web_clear_response, \
-          _duckdb_web_collect_file_stats, \
-          _duckdb_web_connect, \
-          _duckdb_web_copy_file_to_buffer, \
-          _duckdb_web_copy_file_to_path, \
-          _duckdb_web_disconnect, \
-          _duckdb_web_export_file_stats, \
-          _duckdb_web_fail_with, \
-          _duckdb_web_flush_file, \
-          _duckdb_web_flush_files, \
-          _duckdb_web_fs_drop_file, \
-          _duckdb_web_fs_drop_files, \
-          _duckdb_web_fs_get_file_info_by_id, \
-          _duckdb_web_fs_get_file_info_by_name, \
-          _duckdb_web_fs_glob_add_path, \
-          _duckdb_web_fs_glob_file_infos, \
-          _duckdb_web_fs_register_file_buffer, \
-          _duckdb_web_fs_register_file_url, \
-          _duckdb_web_get_feature_flags, \
-          _duckdb_web_get_global_file_info, \
-          _duckdb_web_get_tablenames, \
-          _duckdb_web_get_tablenames_buffer, \
-          _duckdb_web_get_version, \
-          _duckdb_web_insert_arrow_from_ipc_stream, \
-          _duckdb_web_insert_csv_from_path, \
-          _duckdb_web_insert_json_from_path, \
-          _duckdb_web_open, \
-          _duckdb_web_pending_query_cancel, \
-          _duckdb_web_pending_query_poll, \
-          _duckdb_web_pending_query_start, \
-          _duckdb_web_pending_query_start_buffer, \
-          _duckdb_web_prepared_close, \
-          _duckdb_web_prepared_create, \
-          _duckdb_web_prepared_create_buffer, \
-          _duckdb_web_prepared_run, \
-          _duckdb_web_prepared_send, \
-          _duckdb_web_query_fetch_results, \
-          _duckdb_web_query_run, \
-          _duckdb_web_query_run_buffer, \
-          _duckdb_web_reset, \
-          _duckdb_web_tokenize, \
-          _duckdb_web_tokenize_buffer, \
-          _duckdb_web_udf_scalar_create \
-      ]' \
-      -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"stackSave\", \"stackAlloc\", \"stackRestore\"]' \
+      -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"stackSave\", \"stackAlloc\", \"stackRestore\", \"createDyncallWrapper\", \"getTempRet0\", \"setTempRet0\"]' \
       --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")
 
 endif()

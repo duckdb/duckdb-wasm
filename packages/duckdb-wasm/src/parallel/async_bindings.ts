@@ -129,7 +129,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerResponseType.PROGRESS_UPDATE: {
                 for (const p of this._onExecutionProgress) {
                     p(response.data);
-		}
+                }
                 return;
             }
             case WorkerResponseType.LOG: {
@@ -442,8 +442,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** Fetch query results */
-    public async fetchQueryResults(conn: ConnectionID): Promise<Uint8Array> {
-        const task = new WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>(
+    public async fetchQueryResults(conn: ConnectionID): Promise<Uint8Array | null> {
+        const task = new WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array | null>(
             WorkerRequestType.FETCH_QUERY_RESULTS,
             conn,
         );
@@ -524,7 +524,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
     /** Register an empty file buffer. */
     public async registerEmptyFileBuffer(name: string): Promise<void> {
-/*
+        /*
         const task = new WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>(
             WorkerRequestType.REGISTER_FILE_BUFFER,
             [name, new Uint8Array()],
