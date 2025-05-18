@@ -63,7 +63,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
                               .arrow_lossless_conversion = false,
                               .custom_user_agent = ""};
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(args_json.begin(), args_json.size());
+    rapidjson::ParseResult ok = doc.Parse(args_json.data(), args_json.size());
     if (ok) {
         if (doc.HasMember("path") && doc["path"].IsString()) {
             config.path = doc["path"].GetString();
