@@ -354,7 +354,7 @@ arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::Execut
             return arrow::Status{arrow::StatusCode::KeyError, "No prepared statement found with ID"};
 
         rapidjson::Document args_doc;
-        rapidjson::ParseResult ok = args_doc.Parse(args_json.begin(), args_json.size());
+        rapidjson::ParseResult ok = args_doc.Parse(args_json.data(), args_json.size());
         if (!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
         if (!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array"};
 
@@ -409,7 +409,7 @@ arrow::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
 arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json) {
     // Read the function definiton
     rapidjson::Document def_doc;
-    def_doc.Parse(def_json.begin(), def_json.size());
+    def_doc.Parse(def_json.data(), def_json.size());
     auto def = duckdb::make_shared_ptr<UDFFunctionDeclaration>();
     ARROW_RETURN_NOT_OK(def->ReadFrom(def_doc));
 
@@ -550,7 +550,7 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
             /// We deliberately do this BEFORE creating the ipc stream.
             /// This ensures that we always have valid options.
             rapidjson::Document options_doc;
-            options_doc.Parse(options_json.begin(), options_json.size());
+            options_doc.Parse(options_json.data(), options_json.size());
             ArrowInsertOptions options;
             ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
             arrow_insert_options_ = options;
@@ -596,7 +596,7 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
     try {
         /// Read table options
         rapidjson::Document options_doc;
-        options_doc.Parse(options_json.begin(), options_json.size());
+        options_doc.Parse(options_json.data(), options_json.size());
         csv::CSVInsertOptions options;
         ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
 
@@ -664,7 +664,7 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
     try {
         /// Read table options
         rapidjson::Document options_doc;
-        options_doc.Parse(options_json.begin(), options_json.size());
+        options_doc.Parse(options_json.data(), options_json.size());
         json::JSONInsertOptions options;
         ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
 
