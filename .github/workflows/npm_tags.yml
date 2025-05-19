@@ -35,6 +35,6 @@ jobs:
                   VERSION: ${{ inputs.version }}
               if: env.NODE_AUTH_TOKEN != null
               run: |
-                  npm dist-tag ls @duckdb/duckdb-wasm@"${VERSION}"
-                  npm dist-tag add @duckdb/duckdb-wasm@"${VERSION}" "${TAG}"
-                  npm dist-tag ls @duckdb/duckdb-wasm@"${VERSION}"
+                  npm dist-tag ls @motherduck/duckdb-wasm@"${VERSION}"
+                  npm dist-tag add @motherduck/duckdb-wasm@"${VERSION}" "${TAG}"
+                  npm dist-tag ls @motherduck/duckdb-wasm@"${VERSION}"

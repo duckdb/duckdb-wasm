@@ -1,11 +1,11 @@
 {
     "private": true,
-    "name": "@duckdb/duckdb-wasm-examples-esbuild-node",
+    "name": "@motherduck/duckdb-wasm-examples-esbuild-node",
     "version": "0.0.1",
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
-        "@duckdb/duckdb-wasm": "file:../../packages/duckdb-wasm"
+        "@motherduck/duckdb-wasm": "file:../../packages/duckdb-wasm"
     },
     "devDependencies": {
         "esbuild": "^0.20.2",

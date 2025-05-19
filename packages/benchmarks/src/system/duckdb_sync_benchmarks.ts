@@ -1,4 +1,4 @@
-import * as duckdb from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
+import * as duckdb from '@motherduck/duckdb-wasm/dist/duckdb-node-blocking';
 import * as arrow from 'apache-arrow';
 import { SystemBenchmark, SystemBenchmarkMetadata, SystemBenchmarkContext, noop } from './system_benchmark';
 import {

@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
 const EXTERNALS_BROWSER = [
-    '@duckdb/duckdb-wasm',
+    '@motherduck/duckdb-wasm',
     'xterm',
     'xterm-addon-fit',
     'xterm-addon-web-links',

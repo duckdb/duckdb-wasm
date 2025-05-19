@@ -2,9 +2,9 @@
 
 [![Main](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml)
 [![Benchmarks](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/duckdb/duckdb-wasm/actions/workflows/benchmarks.yml)
-[![duckdb](https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
-[![npm](https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@duckdb/duckdb-wasm/v/latest)
-[![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@duckdb/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@duckdb/duckdb-wasm)
+[![duckdb](https://cdn.jsdelivr.net/npm/@motherduck/duckdb-wasm@latest/dist/img/duckdb_version_badge.svg)](https://github.com/duckdb/duckdb)
+[![npm](https://img.shields.io/npm/v/@motherduck/duckdb-wasm?logo=npm)](https://www.npmjs.com/package/@motherduck/duckdb-wasm/v/latest)
+[![JSDevlivr](https://data.jsdelivr.com/v1/package/npm/@motherduck/duckdb-wasm/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@motherduck/duckdb-wasm)
 
 **DuckDB-Wasm**
 
@@ -15,9 +15,9 @@ Try it out at [shell.duckdb.org](https://shell.duckdb.org) and on [Observable](h
 _DuckDB-Wasm is fast! If you're here for performance numbers, head over to [our benchmarks](https://shell.duckdb.org/versus)._
 
 ## Instantiation
-cdn(jsdelivr)  
+cdn(jsdelivr)
 ```ts
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@motherduck/duckdb-wasm';
 
 const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
@@ -36,19 +36,19 @@ await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 URL.revokeObjectURL(worker_url);
 ```
 
-webpack  
+webpack
 ```ts
-import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
-import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
+import * as duckdb from '@motherduck/duckdb-wasm';
+import duckdb_wasm from '@motherduck/duckdb-wasm/dist/duckdb-mvp.wasm';
+import duckdb_wasm_next from '@motherduck/duckdb-wasm/dist/duckdb-eh.wasm';
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@motherduck/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
     },
     eh: {
         mainModule: duckdb_wasm_next,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@motherduck/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
     },
 };
 // Select a bundle based on browser checks
@@ -59,13 +59,13 @@ const logger = new duckdb.ConsoleLogger();
 const db = new duckdb.AsyncDuckDB(logger, worker);
 await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 ```
-vite  
+vite
 ```ts
-import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
-import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
-import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
+import * as duckdb from '@motherduck/duckdb-wasm';
+import duckdb_wasm from '@motherduck/duckdb-wasm/dist/duckdb-mvp.wasm?url';
+import mvp_worker from '@motherduck/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdb_wasm_eh from '@motherduck/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import eh_worker from '@motherduck/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -85,9 +85,9 @@ const logger = new duckdb.ConsoleLogger();
 const db = new duckdb.AsyncDuckDB(logger, worker);
 await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 ```
-static served (manually download the files from https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm/dist/)
+static served (manually download the files from https://cdn.jsdelivr.net/npm/@motherduck/duckdb-wasm/dist/)
 ```ts
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@motherduck/duckdb-wasm';
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -106,7 +106,7 @@ const worker = new Worker(bundle.mainWorker!);
 const logger = new duckdb.ConsoleLogger();
 const db = new duckdb.AsyncDuckDB(logger, worker);
 await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-```  
+```
 
 ## Data Import
 

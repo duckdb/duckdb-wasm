@@ -19,7 +19,7 @@ git fetch origin gh-pages
 git reset --hard origin/gh-pages
 
 if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
-    echo "[ RUN ] Install @duckdb/duckdb-wasm-app to ${PAGES_DIR}/"
+    echo "[ RUN ] Install @motherduck/duckdb-wasm-app to ${PAGES_DIR}/"
     find ${PAGES_DIR} \
         -mindepth 1 \
         -maxdepth 1 \
@@ -29,7 +29,7 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
         -exec rm -rf '{}' \;
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-app/build/release/* ${PAGES_DIR}
 
-    echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
+    echo "[ RUN ] Install @motherduck/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
     rm -rf ${PAGES_DIR}/docs
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${PAGES_DIR}/docs
 
@@ -43,12 +43,12 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
     ${PROJECT_ROOT}/scripts/build_duckdb_badge.sh > ${PAGES_DIR}/misc/duckdb_version_badge.svg
 else
     TARGET_DIR="${PAGES_DIR}/branches/${CURRENT_BRANCH}"
-    echo "[ RUN ] Install @duckdb/duckdb-wasm-app to ${TARGET_DIR}/"
+    echo "[ RUN ] Install @motherduck/duckdb-wasm-app to ${TARGET_DIR}/"
     rm -rf ${TARGET_DIR}
     mkdir -p ${PAGES_DIR}/branches
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-app/build/release ${TARGET_DIR}
 
-    echo "[ RUN ] Install @duckdb/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
+    echo "[ RUN ] Install @motherduck/duckdb-wasm typedocs to ${TARGET_DIR}/docs"
     rm -rf ${TARGET_DIR}/docs
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm/docs ${TARGET_DIR}/docs
 fi

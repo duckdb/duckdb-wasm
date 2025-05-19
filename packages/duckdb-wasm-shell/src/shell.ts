@@ -1,8 +1,8 @@
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@motherduck/duckdb-wasm';
 import * as shell from '../crate/pkg';
 import { HistoryStore } from './utils/history_store';
 import { pickFiles } from './utils/files';
-import { InstantiationProgress } from '@duckdb/duckdb-wasm/dist/types/src/bindings';
+import { InstantiationProgress } from '@motherduck/duckdb-wasm/dist/types/src/bindings';
 
 const hasWebGL = (): boolean => {
     if (duckdb.isSafari()) {

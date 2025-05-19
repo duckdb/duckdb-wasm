@@ -283,78 +283,78 @@ wasm_star: wasm_relsize wasm_relperf wasm_dev wasm_debug
 # Build the duckdb library in debug mode
 .PHONY: js_debug
 js_debug: build/bootstrap yarn_install
-	yarn workspace @duckdb/duckdb-wasm build:debug
+	yarn workspace @motherduck/duckdb-wasm build:debug
 
 # Build the duckdb library in release mode
 .PHONY: js_release
 js_release: yarn_install
-	yarn workspace @duckdb/duckdb-wasm build:release
+	yarn workspace @motherduck/duckdb-wasm build:release
 
 # Build the duckdb docs
 .PHONY: docs
 docs: yarn_install
-	yarn workspace @duckdb/duckdb-wasm docs
+	yarn workspace @motherduck/duckdb-wasm docs
 
 # Run the duckdb javascript tests
 .PHONY: js_tests
 js_tests: js_debug build/data
 ifeq (${DUCKDB_WASM_LOADABLE_EXTENSIONS}, 1)
 	# FIXME: build also for node and restore those tests
-	yarn workspace @duckdb/duckdb-wasm test:chrome || echo "--- Parquet tests expected to fail!"
+	yarn workspace @motherduck/duckdb-wasm test:chrome || echo "--- Parquet tests expected to fail!"
 else
-	yarn workspace @duckdb/duckdb-wasm test
+	yarn workspace @motherduck/duckdb-wasm test
 endif
 
 .PHONY: js_tests_release
 js_tests_release: js_release
 ifeq (${DUCKDB_WASM_LOADABLE_EXTENSIONS}, 1)
 	# FIXME: build also for node and restore those tests
-	yarn workspace @duckdb/duckdb-wasm test:chrome || echo "--- Parquet tests expected to fail!"
+	yarn workspace @motherduck/duckdb-wasm test:chrome || echo "--- Parquet tests expected to fail!"
 else
-	yarn workspace @duckdb/duckdb-wasm test
+	yarn workspace @motherduck/duckdb-wasm test
 endif
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser
 js_tests_browser: js_debug build/data
-	yarn workspace @duckdb/duckdb-wasm test:chrome
+	yarn workspace @motherduck/duckdb-wasm test:chrome
 
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser_debug
 js_tests_browser_debug: js_debug build/data
-	yarn workspace @duckdb/duckdb-wasm test:browser:debug
+	yarn workspace @motherduck/duckdb-wasm test:browser:debug
 
 # Run the duckdb javascript tests on nodejs
 .PHONY: js_tests_node
 js_tests_node: js_debug build/data
-	yarn workspace @duckdb/duckdb-wasm test:node --filter=${JS_FILTER}
+	yarn workspace @motherduck/duckdb-wasm test:node --filter=${JS_FILTER}
 
 .PHONY: js_tests_node_debug
 js_tests_node_debug: js_debug build/data
-	yarn workspace @duckdb/duckdb-wasm test:node:debug --filter=${JS_FILTER}
+	yarn workspace @motherduck/duckdb-wasm test:node:debug --filter=${JS_FILTER}
 
 wasmpack: yarn_install
-	yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
+	yarn workspace @motherduck/duckdb-wasm-shell install:wasmpack
 
 .PHONY: shell
 shell: build/bootstrap js_debug
-	yarn workspace @duckdb/duckdb-wasm-shell build:debug
+	yarn workspace @motherduck/duckdb-wasm-shell build:debug
 
 .PHONY: shell_release
 shell_release: js_release
-	yarn workspace @duckdb/duckdb-wasm-shell build:release
+	yarn workspace @motherduck/duckdb-wasm-shell build:release
 
 .PHONY: app_start
 app_start: yarn_install
-	yarn workspace @duckdb/duckdb-wasm-app start
+	yarn workspace @motherduck/duckdb-wasm-app start
 
 .PHONY: app_start_corp
 app_start_corp:
-	yarn workspace @duckdb/duckdb-wasm-app start:corp
+	yarn workspace @motherduck/duckdb-wasm-app start:corp
 
 .PHONY: app
 app: wasm wasmpack shell docs js_tests_release
-	yarn workspace @duckdb/duckdb-wasm-app build:release
+	yarn workspace @motherduck/duckdb-wasm-app build:release
 
 build_loadable:
 	USE_GENERATED_EXPORTED_LIST=no DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize ${TARGET}
@@ -363,7 +363,7 @@ build_loadable_unsigned: build_loadable
         # need to propagate the unsigned flag
 
 serve_loadable_base: wasmpack shell docs
-	yarn workspace @duckdb/duckdb-wasm-app build:release
+	yarn workspace @motherduck/duckdb-wasm-app build:release
 	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
 
 .PHONY: serve_local
@@ -389,8 +389,8 @@ clang_format:
 # JS formatting
 .PHONY: eslint
 eslint:
-	yarn workspace @duckdb/duckdb-wasm run lint
-	yarn workspace @duckdb/duckdb-wasm-shell run lint
+	yarn workspace @motherduck/duckdb-wasm run lint
+	yarn workspace @motherduck/duckdb-wasm-shell run lint
 	yarn workspace @duckdb/benchmarks run lint
 
 # Install all yarn packages
@@ -401,11 +401,11 @@ yarn_install:
 
 .PHONY: examples
 examples: yarn_install
-	yarn workspace @duckdb/duckdb-wasm-examples-bare-node test
-	yarn workspace @duckdb/duckdb-wasm-examples-bare-browser build
-	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node build
-	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-node test
-	yarn workspace @duckdb/duckdb-wasm-examples-esbuild-browser build
+	yarn workspace @motherduck/duckdb-wasm-examples-bare-node test
+	yarn workspace @motherduck/duckdb-wasm-examples-bare-browser build
+	yarn workspace @motherduck/duckdb-wasm-examples-esbuild-node build
+	yarn workspace @motherduck/duckdb-wasm-examples-esbuild-node test
+	yarn workspace @motherduck/duckdb-wasm-examples-esbuild-browser build
 
 # ---------------------------------------------------------------------------
 # Environment

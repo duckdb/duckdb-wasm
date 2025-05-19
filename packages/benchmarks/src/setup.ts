@@ -1,5 +1,5 @@
-import * as duckdb_blocking from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb_blocking from '@motherduck/duckdb-wasm/dist/duckdb-node-blocking';
+import * as duckdb from '@motherduck/duckdb-wasm';
 import * as sqljs from 'sql.js';
 import initSQLJs from 'sql.js';
 import path from 'path';
@@ -40,7 +40,7 @@ export async function setupSqljs(): Promise<sqljs.SqlJsStatic> {
     return await initSQLJs();
 }
 
-// eslint-disable-eh-line @typescript-eslint/explicit-module-boundary-types
+// eslint-disable-eh-line qtypescript-eslint/explicit-module-boundary-types
 export async function writeReport(report: any, dst: string): Promise<void> {
     const reports = path.resolve(__dirname, '../../../reports');
     if (!fsSync.existsSync(reports)) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import * as imm from 'immutable';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@motherduck/duckdb-wasm';
 import { useDuckDB, useDuckDBResolver } from './database_provider';
 
 type DialerFn = (id?: number) => void;

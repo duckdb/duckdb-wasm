@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 
 const BLOCK_CHARS: [char; 4] = ['░', '▒', '▓', '█'];
 
-#[wasm_bindgen(module = "@duckdb/duckdb-wasm")]
+#[wasm_bindgen(module = "@motherduck/duckdb-wasm")]
 extern "C" {
     #[wasm_bindgen(js_name = "FileStatistics")]
     pub type JsFileStatistics;

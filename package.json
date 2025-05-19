@@ -9,8 +9,8 @@
         "examples/*"
     ],
     "scripts": {
-        "lint:fix": "yarn workspace @duckdb/duckdb-wasm lint --fix && yarn workspace @duckdb/benchmarks lint --fix && yarn workspace @duckdb/duckdb-wasm-shell lint --fix",
-        "docs": "yarn workspace @duckdb/duckdb-wasm docs",
+        "lint:fix": "yarn workspace @motherduck/duckdb-wasm lint --fix && yarn workspace @duckdb/benchmarks lint --fix && yarn workspace @motherduck/duckdb-wasm-shell lint --fix",
+        "docs": "yarn workspace @motherduck/duckdb-wasm docs",
         "benchmarks:build:browser": "yarn workspace @duckdb/benchmarks build:browser",
         "benchmarks:build:node": "yarn workspace @duckdb/benchmarks build:node",
         "benchmarks:build": "yarn workspace @duckdb/benchmarks build"

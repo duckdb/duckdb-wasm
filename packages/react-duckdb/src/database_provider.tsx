@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as duckdb from '@motherduck/duckdb-wasm';
 import { useDuckDBLogger, useDuckDBBundleResolver } from './platform_provider';
 import { Resolvable, Resolver } from './resolvable';
 

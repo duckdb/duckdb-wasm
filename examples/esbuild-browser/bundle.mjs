@@ -4,7 +4,7 @@ import path from 'path';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
+const DUCKDB_DIST = path.dirname(require.resolve('@motherduck/duckdb-wasm'));
 
 function printErr(err) {
     if (err) return console.log(err);

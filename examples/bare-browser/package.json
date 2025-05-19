@@ -1,11 +1,11 @@
 {
     "private": true,
-    "name": "@duckdb/duckdb-wasm-examples-bare-browser",
+    "name": "@motherduck/duckdb-wasm-examples-bare-browser",
     "version": "0.0.1",
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
-        "@duckdb/duckdb-wasm": "file:../../packages/duckdb-wasm"
+        "@motherduck/duckdb-wasm": "file:../../packages/duckdb-wasm"
     },
     "devDependencies": {
         "http-server": "^14.1.1"

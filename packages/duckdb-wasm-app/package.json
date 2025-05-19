@@ -1,5 +1,5 @@
 {
-    "name": "@duckdb/duckdb-wasm-app",
+    "name": "@motherduck/duckdb-wasm-app",
     "version": "1.11.0",
     "description": "",
     "author": "Andre Kohn <kohn.a@outlook.com>",
@@ -18,8 +18,8 @@
         "node": ">=14.13"
     },
     "dependencies": {
-        "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
-        "@duckdb/duckdb-wasm-shell": "file:../duckdb-wasm-shell",
+        "@motherduck/duckdb-wasm": "file:../duckdb-wasm",
+        "@motherduck/duckdb-wasm-shell": "file:../duckdb-wasm-shell",
         "apache-arrow": "^17.0.0",
         "bootstrap": "^5.3.3",
         "classnames": "^2.5.1",

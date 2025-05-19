@@ -8,8 +8,8 @@
 </div>
 
 <div align="center">
-  <a href="https://www.npmjs.com/package/@duckdb/duckdb-wasm/v/latest">
-    <img src="https://img.shields.io/npm/v/@duckdb/duckdb-wasm?logo=npm" alt="duckdb-wasm package on NPM">
+  <a href="https://www.npmjs.com/package/@motherduck/duckdb-wasm/v/latest">
+    <img src="https://img.shields.io/npm/v/@motherduck/duckdb-wasm?logo=npm" alt="duckdb-wasm package on NPM">
   </a>
   <a href="https://github.com/duckdb/duckdb-wasm/actions">
     <img src="https://github.com/duckdb/duckdb-wasm/actions/workflows/main.yml/badge.svg?branch=main" alt="Github Actions Badge">
@@ -20,8 +20,8 @@
   <a href="https://github.com/duckdb/duckdb/releases/">
     <img src="https://img.shields.io/github/v/release/duckdb/duckdb?color=brightgreen&display_name=tag&logo=duckdb&logoColor=white" alt="Latest DuckDB Release">
   </a>
-  <a href="https://www.jsdelivr.com/package/npm/@duckdb/duckdb-wasm">
-    <img src="https://data.jsdelivr.com/v1/package/npm/@duckdb/duckdb-wasm/badge?style=rounded" alt="jsdeliver stats">
+  <a href="https://www.jsdelivr.com/package/npm/@motherduck/duckdb-wasm">
+    <img src="https://data.jsdelivr.com/v1/package/npm/@motherduck/duckdb-wasm/badge?style=rounded" alt="jsdeliver stats">
   </a>
 </div>
 <h1></h1>
@@ -104,7 +104,7 @@ make serve
 | Subproject                                               | Description    | Language   |
 | -------------------------------------------------------- | :------------- | :--------- |
 | [duckdb_wasm](/lib)                                      | Wasm Library   | C++        |
-| [@duckdb/duckdb-wasm](/packages/duckdb-wasm)             | Typescript API | Typescript |
-| [@duckdb/duckdb-wasm-shell](/packages/duckdb-wasm-shell) | SQL Shell      | Rust       |
-| [@duckdb/duckdb-wasm-app](/packages/duckdb-wasm-app)     | GitHub Page    | Typescript |
+| [@motherduck/duckdb-wasm](/packages/duckdb-wasm)             | Typescript API | Typescript |
+| [@motherduck/duckdb-wasm-shell](/packages/duckdb-wasm-shell) | SQL Shell      | Rust       |
+| [@motherduck/duckdb-wasm-app](/packages/duckdb-wasm-app)     | GitHub Page    | Typescript |
 | [@duckdb/react-duckdb](/packages/react-duckdb)           | React Hooks    | Typescript |
