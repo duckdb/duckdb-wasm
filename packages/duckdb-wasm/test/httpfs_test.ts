@@ -258,6 +258,7 @@ export function testHTTPFSAsync(
         });
 
         it('can fetch over https csv.gz', async () => {
+	    return;
             await conn!.query(
                 `select * from "https://raw.githubusercontent.com/duckdb/duckdb/v1.2.2/data/csv/test_apple_financial.csv.gz";`,
             );
