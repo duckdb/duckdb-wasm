@@ -29,6 +29,7 @@ concurrency:
 env:
   EMSCRIPTEN_VERSION: '3.1.71'
   EMSCRIPTEN_VERSION_COI: '3.1.57'
+  DEFAULT_USE_GENERATED_EXPORTED_LIST: 'no'
 
 jobs:
     clang_format:
@@ -518,7 +519,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  USE_GENERATED_EXPORTED_LIST="yes" DUCKDB_PLATFORM="wasm_mvp" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize mvp
+                  USE_GENERATED_EXPORTED_LIST="$DEFAULT_USE_GENERATED_EXPORTED_LIST" DUCKDB_PLATFORM="wasm_mvp" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize mvp
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -565,7 +566,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  USE_GENERATED_EXPORTED_LIST="yes" DUCKDB_PLATFORM="wasm_eh" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
+                  USE_GENERATED_EXPORTED_LIST="$DEFAULT_USE_GENERATED_EXPORTED_LIST" DUCKDB_PLATFORM="wasm_eh" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize eh
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
@@ -612,7 +613,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  USE_GENERATED_EXPORTED_LIST="yes" DUCKDB_PLATFORM="wasm_threads" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize coi
+                  USE_GENERATED_EXPORTED_LIST="$DEFAULT_USE_GENERATED_EXPORTED_LIST" DUCKDB_PLATFORM="wasm_threads" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize coi
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4

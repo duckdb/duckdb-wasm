@@ -898,7 +898,7 @@ arrow::Result<std::shared_ptr<arrow::Array>> ArrayFromJSON(const std::shared_ptr
                                                            std::string_view json) {
     rapidjson::Document json_doc;
     try {
-        json_doc.Parse<rapidjson::kParseNanAndInfFlag>(json.begin(), json.size());
+        json_doc.Parse<rapidjson::kParseNanAndInfFlag>(json.data(), json.size());
     } catch (...) {
         return arrow::Status::Invalid("invalid json document: ", json);
     }
