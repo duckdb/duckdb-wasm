@@ -2,35 +2,6 @@ diff --git a/src/main/database.cpp b/src/main/database.cpp
 index db6e1ed445..17f845c75e 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
-@@ -356,6 +356,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
- DuckDB::~DuckDB() {
- }
- 
-+unordered_map<string, string> DatabaseInstance::extensionsRepos = {};
-+
-+void DatabaseInstance::SetPreferredRepository(const string& extension, const string &repository) {
-+	auto &x = extensionsRepos;
-+	auto it = x.find(extension);
-+	if (it != x.end()) {
-+		it->second=repository;
-+	} else {
-+		x.emplace(extension, repository);
-+	}
-+}
-+
-+string DatabaseInstance::GetPreferredRepository(const string& extension) {
-+	const auto &x = extensionsRepos;
-+	auto it = x.find(extension);
-+	if (it != x.end()) {
-+		return it->second;
-+	}
-+	return "";
-+}
-+
-+
- SecretManager &DatabaseInstance::GetSecretManager() {
- 	return *config.secret_manager;
- }
 @@ -506,6 +528,7 @@ idx_t DuckDB::NumberOfThreads() {
  }
  

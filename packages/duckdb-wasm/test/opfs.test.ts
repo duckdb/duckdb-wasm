@@ -445,5 +445,4 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 }
 
 //ignore block
-const _ignore: () => void = () => {
-};
+const _ignore: () => void = () => {};
