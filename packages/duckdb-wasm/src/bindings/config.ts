@@ -76,6 +76,10 @@ export interface DuckDBConfig {
      */
     allowUnsignedExtensions?: boolean;
     /**
+     * Whether to use alternate Arrow conversion that preserves full range and precision of data.
+     */
+    arrowLosslessConversion?: boolean;
+    /**
      * Custom user agent string
      */
     customUserAgent?: string;

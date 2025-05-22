@@ -60,13 +60,10 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
     describe('Load Data in OPFS', () => {
         it('Import Small Parquet file', async () => {
             //1. data preparation
-            await conn.send(`CREATE TABLE stu AS
-            SELECT *
-            FROM "${ baseDir }/uni/studenten.parquet"`);
+            await conn.send(`CREATE TABLE stu AS SELECT * FROM "${ baseDir }/uni/studenten.parquet"`);
             await conn.send(`CHECKPOINT;`);
 
-            const result = await conn.send(`SELECT matrnr
-                                            FROM stu;`);
+            const result = await conn.send(`SELECT matrnr ROM stu;`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);
@@ -78,13 +75,10 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         });
         it('Import Larget Parquet file', async () => {
             //1. data preparation
-            await conn.send(`CREATE TABLE lineitem AS
-            SELECT *
-            FROM "${ baseDir }/tpch/0_01/parquet/lineitem.parquet"`);
+            await conn.send(`CREATE TABLE lineitem AS SELECT * FROM "${ baseDir }/tpch/0_01/parquet/lineitem.parquet"`);
             await conn.send(`CHECKPOINT;`);
 
-            const result = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                            FROM lineitem;`);
+            const result = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM lineitem;`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);
@@ -95,9 +89,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 
         it('Load Existing DB File', async () => {
             //1. data preparation
-            await conn.send(`CREATE TABLE tmp AS
-            SELECT *
-            FROM "${ baseDir }/tpch/0_01/parquet/lineitem.parquet"`);
+            await conn.send(`CREATE TABLE tmp AS SELECT * FROM "${ baseDir }/tpch/0_01/parquet/lineitem.parquet"`);
             await conn.send(`CHECKPOINT;`);
 
             await conn.close();
@@ -114,8 +106,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             });
             conn = await db.connect();
 
-            const result = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                            FROM tmp;`);
+            const result = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM tmp;`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);
@@ -133,13 +124,10 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             //2. handle is empty object, because worker gets a File Handle using the file name.
             await db.registerFileHandle('test.parquet', fileHandler, DuckDBDataProtocol.BROWSER_FSACCESS, true);
             //3. data preparation
-            await conn.send(`CREATE TABLE lineitem1 AS
-            SELECT *
-            FROM read_parquet('test.parquet')`);
+            await conn.send(`CREATE TABLE lineitem1 AS SELECT * FROM read_parquet('test.parquet')`);
             await conn.send(`CHECKPOINT;`);
 
-            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                             FROM lineitem1;`);
+            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM lineitem1;`);
             const batches1 = [];
             for await (const batch of result1) {
                 batches1.push(batch);
@@ -157,13 +145,10 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             //2. handle is opfs file handler
             await db.registerFileHandle('datadir/test.parquet', fileHandler, DuckDBDataProtocol.BROWSER_FSACCESS, true);
             //3. data preparation
-            await conn.send(`CREATE TABLE lineitem1 AS
-            SELECT *
-            FROM read_parquet('datadir/test.parquet')`);
+            await conn.send(`CREATE TABLE lineitem1 AS SELECT * FROM read_parquet('datadir/test.parquet')`);
             await conn.send(`CHECKPOINT;`);
 
-            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                             FROM lineitem1;`);
+            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM lineitem1;`);
             const batches1 = [];
             for await (const batch of result1) {
                 batches1.push(batch);
@@ -181,22 +166,15 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             //2. handle is opfs file handler
             await db.registerFileHandle('test.parquet', fileHandle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
             //3. data preparation
-            await conn.send(`CREATE TABLE lineitem1 AS
-            SELECT *
-            FROM read_parquet('test.parquet')`);
+            await conn.send(`CREATE TABLE lineitem1 AS SELECT * FROM read_parquet('test.parquet')`);
             await conn.send(`CHECKPOINT;`);
-            await conn.send(`CREATE TABLE lineitem2 AS
-            SELECT *
-            FROM read_parquet('test.parquet')`);
+            await conn.send(`CREATE TABLE lineitem2 AS SELECT * FROM read_parquet('test.parquet')`);
             await conn.send(`CHECKPOINT;`);
-            await conn.send(`CREATE TABLE lineitem3 AS
-            SELECT *
-            FROM read_parquet('test.parquet')`);
+            await conn.send(`CREATE TABLE lineitem3 AS SELECT * FROM read_parquet('test.parquet')`);
             await conn.send(`CHECKPOINT;`);
 
             {
-                const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                                 FROM lineitem1;`);
+                const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM lineitem1;`);
                 const batches1 = [];
                 for await (const batch of result1) {
                     batches1.push(batch);
@@ -206,8 +184,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
 
             {
-                const result2 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                                 FROM lineitem2;`);
+                const result2 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM lineitem2;`);
                 const batches2 = [];
                 for await (const batch of result2) {
                     batches2.push(batch);
@@ -217,8 +194,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
 
             {
-                const result3 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                                 FROM lineitem3;`);
+                const result3 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM lineitem3;`);
                 const batches3 = [];
                 for await (const batch of result3) {
                     batches3.push(batch);
@@ -226,7 +202,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
                 const table3 = await new arrow.Table<{ cnt: arrow.Int }>(batches3);
                 expect(table3.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
             }
-
         });
 
         it('Drop File + Export as CSV to OPFS + Load CSV', async () => {
@@ -236,9 +211,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             //2. handle is opfs file handler
             await db.registerFileHandle('test.csv', fileHandler, DuckDBDataProtocol.BROWSER_FSACCESS, true);
             //3. data preparation
-            await conn.send(`CREATE TABLE zzz AS
-            SELECT *
-            FROM '${ baseDir }/tpch/0_01/parquet/lineitem.parquet'`);
+            await conn.send(`CREATE TABLE zzz AS SELECT * FROM '${ baseDir }/tpch/0_01/parquet/lineitem.parquet'`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'test.csv'`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'non_existing.csv'`);
             await conn.close();
@@ -248,8 +221,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             conn = await db.connect();
             await db.registerFileHandle('test.csv', fileHandler, DuckDBDataProtocol.BROWSER_FSACCESS, true);
 
-            const result = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                            FROM 'test.csv';`);
+            const result = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'test.csv';`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);
@@ -271,9 +243,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             await db.registerFileHandle('test2.csv', testHandle2, DuckDBDataProtocol.BROWSER_FSACCESS, true);
             await db.registerFileHandle('test3.csv', testHandle3, DuckDBDataProtocol.BROWSER_FSACCESS, true);
             //3. data preparation
-            await conn.send(`CREATE TABLE zzz AS
-            SELECT *
-            FROM "${ baseDir }/tpch/0_01/parquet/lineitem.parquet"`);
+            await conn.send(`CREATE TABLE zzz AS SELECT * FROM "${ baseDir }/tpch/0_01/parquet/lineitem.parquet"`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'test1.csv'`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'test2.csv'`);
             await conn.send(`COPY (SELECT * FROM zzz) TO 'test3.csv'`);
@@ -291,8 +261,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             await db.registerFileHandle('test3.csv', testHandle3, DuckDBDataProtocol.BROWSER_FSACCESS, true);
 
             {
-                const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                                 FROM 'test1.csv';`);
+                const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'test1.csv';`);
                 const batches1 = [];
                 for await (const batch of result1) {
                     batches1.push(batch);
@@ -301,8 +270,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
                 expect(table1.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
             }
             {
-                const result2 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                                 FROM 'test2.csv';`);
+                const result2 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'test2.csv';`);
                 const batches2 = [];
                 for await (const batch of result2) {
                     batches2.push(batch);
@@ -311,8 +279,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
                 expect(table2.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
             }
             {
-                const result3 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                                 FROM 'test3.csv';`);
+                const result3 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'test3.csv';`);
                 const batches3 = [];
                 for await (const batch of result3) {
                     batches3.push(batch);
@@ -336,8 +303,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             };
             conn = await db.connect();
             //2. send query
-            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                             FROM 'opfs://test.parquet'`);
+            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'opfs://test.parquet'`);
             const batches1 = [];
             for await (const batch of result1) {
                 batches1.push(batch);
@@ -360,8 +326,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             };
             conn = await db.connect();
             //2. send query
-            const result = await conn.send(`SELECT *
-                                            FROM read_parquet('opfs://test.parquet');`);
+            const result = await conn.send(`SELECT * FROM read_parquet('opfs://test.parquet');`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);
@@ -386,8 +351,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             };
             conn = await db.connect();
             //2. send query
-            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt
-                                             FROM 'opfs://datadir/test.parquet'`);
+            const result1 = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'opfs://datadir/test.parquet'`);
             const batches1 = [];
             for await (const batch of result1) {
                 batches1.push(batch);
@@ -405,8 +369,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             try {
                 //2. send query
                 await expectAsync(
-                    conn.send(`SELECT count(*) ::INTEGER as cnt
-                               FROM 'opfs://datadir/test.parquet'`)
+                    conn.send(`SELECT count(*) ::INTEGER as cnt FROM 'opfs://datadir/test.parquet'`)
                 ).toBeRejectedWithError("IO Error: No files found that match the pattern \"opfs://datadir/test.parquet\"");
             } finally {
                 await db.reset();
@@ -421,8 +384,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             };
             await conn.query(`COPY ( SELECT 32 AS value ) TO 'opfs://file.csv'`);
             await conn.query(`COPY ( SELECT 42 AS value ) TO 'opfs://file.csv'`);
-            const result = await conn.send(`SELECT *
-                                            FROM 'opfs://file.csv';`);
+            const result = await conn.send(`SELECT * FROM 'opfs://file.csv';`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);

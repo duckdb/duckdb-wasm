@@ -36,6 +36,7 @@
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/types/vector_buffer.hpp"
+#include "duckdb/common/virtual_file_system.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
@@ -231,13 +232,53 @@ bool WebDB::Connection::CancelPendingQuery() {
     }
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResults() {
+DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
     try {
         // Fetch data if a query is active
         duckdb::unique_ptr<duckdb::DataChunk> chunk;
         if (current_query_result_ == nullptr) {
-            return nullptr;
+            return DuckDBWasmResultsWrapper{nullptr};
         }
+
+        if (current_query_result_->type == QueryResultType::STREAM_RESULT) {
+            auto& stream_result = current_query_result_->Cast<duckdb::StreamQueryResult>();
+
+            auto before = std::chrono::steady_clock::now();
+            uint64_t elapsed;
+            auto polling_interval =
+                webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL);
+            bool ready = false;
+            do {
+                switch (stream_result.ExecuteTask()) {
+                    case StreamExecutionResult::EXECUTION_ERROR:
+                        return arrow::Status{arrow::StatusCode::ExecutionError,
+                                             std::move(current_query_result_->GetError())};
+                    case StreamExecutionResult::EXECUTION_CANCELLED:
+                        return arrow::Status{arrow::StatusCode::ExecutionError,
+                                             "The execution of the query was cancelled before it could finish, likely "
+                                             "caused by executing a different query"};
+                    case StreamExecutionResult::CHUNK_READY:
+                    case StreamExecutionResult::EXECUTION_FINISHED:
+                        ready = true;
+                        break;
+                    case StreamExecutionResult::BLOCKED:
+                        stream_result.WaitForTask();
+                        return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
+                    case StreamExecutionResult::NO_TASKS_AVAILABLE:
+                        return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
+                    case StreamExecutionResult::CHUNK_NOT_READY:
+                        break;
+                }
+
+                auto after = std::chrono::steady_clock::now();
+                elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
+            } while (!ready && elapsed < polling_interval);
+
+            if (!ready) {
+                return DuckDBWasmResultsWrapper::ResponseStatus::DUCKDB_WASM_RETRY;
+            }
+        }
+
         // Fetch next result chunk
         chunk = current_query_result_->Fetch();
         if (current_query_result_->HasError()) {
@@ -248,7 +289,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::FetchQueryResul
             current_query_result_.reset();
             current_schema_.reset();
             current_schema_patched_.reset();
-            return nullptr;
+            return DuckDBWasmResultsWrapper{nullptr};
         }
 
         // Serialize the record batch
@@ -313,7 +354,7 @@ arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::Execut
             return arrow::Status{arrow::StatusCode::KeyError, "No prepared statement found with ID"};
 
         rapidjson::Document args_doc;
-        rapidjson::ParseResult ok = args_doc.Parse(args_json.begin(), args_json.size());
+        rapidjson::ParseResult ok = args_doc.Parse(args_json.data(), args_json.size());
         if (!ok) return arrow::Status{arrow::StatusCode::Invalid, rapidjson::GetParseError_En(ok.Code())};
         if (!args_doc.IsArray()) return arrow::Status{arrow::StatusCode::Invalid, "Arguments must be given as array"};
 
@@ -368,7 +409,7 @@ arrow::Status WebDB::Connection::ClosePreparedStatement(size_t statement_id) {
 arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json) {
     // Read the function definiton
     rapidjson::Document def_doc;
-    def_doc.Parse(def_json.begin(), def_json.size());
+    def_doc.Parse(def_json.data(), def_json.size());
     auto def = duckdb::make_shared_ptr<UDFFunctionDeclaration>();
     ARROW_RETURN_NOT_OK(def->ReadFrom(def_doc));
 
@@ -509,7 +550,7 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
             /// We deliberately do this BEFORE creating the ipc stream.
             /// This ensures that we always have valid options.
             rapidjson::Document options_doc;
-            options_doc.Parse(options_json.begin(), options_json.size());
+            options_doc.Parse(options_json.data(), options_json.size());
             ArrowInsertOptions options;
             ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
             arrow_insert_options_ = options;
@@ -555,7 +596,7 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
     try {
         /// Read table options
         rapidjson::Document options_doc;
-        options_doc.Parse(options_json.begin(), options_json.size());
+        options_doc.Parse(options_json.data(), options_json.size());
         csv::CSVInsertOptions options;
         ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
 
@@ -623,7 +664,7 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
     try {
         /// Read table options
         rapidjson::Document options_doc;
-        options_doc.Parse(options_json.begin(), options_json.size());
+        options_doc.Parse(options_json.data(), options_json.size());
         json::JSONInsertOptions options;
         ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
 
@@ -866,8 +907,9 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         auto buffered_fs_ptr = buffered_fs.get();
 
         duckdb::DBConfig db_config;
-        db_config.file_system = std::move(buffered_fs);
+        db_config.file_system = std::move(make_uniq<VirtualFileSystem>(std::move(buffered_fs)));
         db_config.options.allow_unsigned_extensions = config_->allow_unsigned_extensions;
+        db_config.options.arrow_lossless_conversion = config_->arrow_lossless_conversion;
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;
         db_config.options.access_mode = access_mode;
@@ -996,7 +1038,7 @@ arrow::Result<std::string> WebDB::GlobFileInfos(std::string_view expression) {
     doc.SetArray();
     auto& allocator = doc.GetAllocator();
     for (auto& file : files) {
-        auto value = web_fs->WriteFileInfo(doc, file, current_epoch - 1);
+        auto value = web_fs->WriteFileInfo(doc, file.path, current_epoch - 1);
         if (!value.IsNull()) doc.PushBack(value, allocator);
     }
     rapidjson::StringBuffer strbuf;

@@ -160,7 +160,7 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.PREPARED_STATEMENT_ID, number>
     | WorkerResponse<WorkerResponseType.QUERY_PLAN, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT, Uint8Array>
-    | WorkerResponse<WorkerResponseType.QUERY_RESULT_CHUNK, Uint8Array>
+    | WorkerResponse<WorkerResponseType.QUERY_RESULT_CHUNK, Uint8Array | null>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT_HEADER, Uint8Array>
     | WorkerResponse<WorkerResponseType.QUERY_RESULT_HEADER_OR_NULL, Uint8Array | null>
     | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
@@ -180,7 +180,7 @@ export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.DROP_FILE, string, null>
     | WorkerTask<WorkerRequestType.DROP_FILES, string[] | undefined, null>
     | WorkerTask<WorkerRequestType.EXPORT_FILE_STATISTICS, string, FileStatistics>
-    | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array>
+    | WorkerTask<WorkerRequestType.FETCH_QUERY_RESULTS, ConnectionID, Uint8Array | null>
     | WorkerTask<WorkerRequestType.FLUSH_FILES, null, null>
     | WorkerTask<WorkerRequestType.GET_FEATURE_FLAGS, null, number>
     | WorkerTask<WorkerRequestType.GET_TABLE_NAMES, [number, string], string[]>

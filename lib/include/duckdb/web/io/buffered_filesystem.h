@@ -137,7 +137,7 @@ class BufferedFileSystem : public duckdb::FileSystem {
     void RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener = nullptr) override;
 
     /// Runs a glob on the file system, returning a list of matching files
-    vector<std::string> Glob(const std::string &path, FileOpener *opener = nullptr) override {
+    vector<OpenFileInfo> Glob(const std::string &path, FileOpener *opener = nullptr) override {
         return filesystem_.Glob(PatchFilenameOwned(path), opener);
     }
 

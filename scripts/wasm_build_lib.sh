@@ -69,8 +69,32 @@ emmake make \
     -j${CORES} \
     duckdb_wasm
 
-npm install -g js-beautify
+if [ "${USE_GENERATED_EXPORTED_LIST:-no}" == "yes" ]; then
+make TARGET=${FEATURES} update_exported_list
+
+emcmake cmake \
+    -S${CPP_SOURCE_DIR} \
+    -B${BUILD_DIR} \
+    -DDUCKDB_WASM_VERSION=${DUCKDB_WASM_VERSION_NAME} \
+    -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DDUCKDB_LOCATION=${DUCKDB_LOCATION} \
+    -DWASM_LINK_FLAGS_EXT="${LINK_FLAGS}" \
+    -DDUCKDB_EXTENSION_CONFIGS=extension_config_wasm.cmake \
+    -DUSE_GENERATED_EXPORTED_LIST=1 \
+    ${ADDITIONAL_FLAGS}
+
+emmake make \
+    -C${BUILD_DIR} \
+    -j${CORES} \
+    duckdb_wasm
+fi
+
+js-beautify -v || npm install -g js-beautify
 js-beautify ${BUILD_DIR}/duckdb_wasm.js > ${BUILD_DIR}/beauty.js
+sed 's/case \"__table_base\"/case \"getTempRet0\": return getTempRet0;   case \"__table_base\"/g' ${BUILD_DIR}/beauty.js > ${BUILD_DIR}/beauty_sed.js
+cp ${BUILD_DIR}/beauty_sed.js ${BUILD_DIR}/beauty.js
+cp ${BUILD_DIR}/beauty.js ${BUILD_DIR}/duckdb_wasm.js
 awk '{gsub(/get\(stubs, prop\) \{/,"get(stubs,prop) { if (prop.startsWith(\"invoke_\")) {return createDyncallWrapper(prop.substring(7));}"); print}' ${BUILD_DIR}/beauty.js > ${BUILD_DIR}/beauty2.js
 awk '!(/var .*wasmExports\[/ || /var [_a-z0-9A-Z]+ = Module\[\"[_a-z0-9A-Z]+\"\] = [0-9]+;/) || /var _duckdb_web/ || /var _main/ || /var _calloc/ || /var _malloc/ || /var _free/ || /var stack/ || /var ___dl_seterr/ || /var __em/ || /var _em/ || /var _pthread/' ${BUILD_DIR}/beauty2.js > ${BUILD_DIR}/duckdb_wasm.js
 

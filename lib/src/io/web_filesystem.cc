@@ -1014,9 +1014,9 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 }
 
 /// Runs a glob on the file system, returning a list of matching files
-vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
+vector<OpenFileInfo> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
-    std::vector<std::string> results;
+    std::vector<string> results;
     if (!FileSystem::IsRemoteFile(path)) {
         auto glob = glob_to_regex(path);
         for (auto [name, file] : files_by_name_) {
@@ -1033,7 +1033,11 @@ vector<std::string> WebFileSystem::Glob(const std::string &path, FileOpener *ope
     }
     std::sort(results.begin(), results.end());
     results.erase(std::unique(results.begin(), results.end()), results.end());
-    return std::move(results);
+    std::vector<OpenFileInfo> res;
+    for (auto &r : results) {
+        res.push_back(r);
+    }
+    return std::move(res);
 }
 
 /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location

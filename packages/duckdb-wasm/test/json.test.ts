@@ -14,8 +14,8 @@ export function testJSON(db: () => duckdb.DuckDBBindings): void {
 
     describe('JSON', () => {
         it('sample', async () => {
-            expect(conn.query("select to_json({n: 42})",).getChildAt(0)?.toArray()).toEqual(['{"n":42}']);
-            expect(conn.query("select json_object('duck', 42)",).getChildAt(0)?.toArray()).toEqual(['{"duck":42}']);
+            expect(conn.query('select to_json({n: 42})').getChildAt(0)?.toArray()).toEqual(['{"n":42}']);
+            expect(conn.query("select json_object('duck', 42)").getChildAt(0)?.toArray()).toEqual(['{"duck":42}']);
         });
     });
 }
