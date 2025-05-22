@@ -63,7 +63,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             await conn.send(`CREATE TABLE stu AS SELECT * FROM "${ baseDir }/uni/studenten.parquet"`);
             await conn.send(`CHECKPOINT;`);
 
-            const result = await conn.send(`SELECT matrnr ROM stu;`);
+            const result = await conn.send(`SELECT matrnr FROM stu;`);
             const batches = [];
             for await (const batch of result) {
                 batches.push(batch);
@@ -445,5 +445,4 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 }
 
 //ignore block
-const _ignore: () => void = () => {
-};
+const _ignore: () => void = () => {};
