@@ -1,5 +1,5 @@
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index db6e1ed445..17f845c75e 100644
+index db6e1ed445..d495aab058 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
 @@ -356,6 +356,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
@@ -31,11 +31,14 @@ index db6e1ed445..17f845c75e 100644
  SecretManager &DatabaseInstance::GetSecretManager() {
  	return *config.secret_manager;
  }
-@@ -506,6 +528,7 @@ idx_t DuckDB::NumberOfThreads() {
- }
+@@ -507,6 +529,10 @@ idx_t DuckDB::NumberOfThreads() {
  
  bool DatabaseInstance::ExtensionIsLoaded(const std::string &name) {
-+	if (name == "httpfs") return true;
  	auto extension_name = ExtensionHelper::GetExtensionName(name);
++	if (extension_name == "httpfs") {
++		ExtensionInstallInfo info;
++		SetExtensionLoaded(extension_name, info);
++	}
  	auto it = loaded_extensions_info.find(extension_name);
  	return it != loaded_extensions_info.end() && it->second.is_loaded;
+ }
