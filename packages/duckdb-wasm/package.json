@@ -38,7 +38,7 @@
         "jasmine": "^5.1.0",
         "jasmine-core": "^5.1.2",
         "jasmine-spec-reporter": "^7.0.0",
-        "js-sha256": "^0.11.0",
+        "js-sha256": "^0.11.1",
         "karma": "^6.4.2",
         "karma-chrome-launcher": "^3.2.0",
         "karma-coverage": "^2.2.1",
