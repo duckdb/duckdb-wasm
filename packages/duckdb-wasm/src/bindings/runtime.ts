@@ -1,3 +1,4 @@
+import { DuckDBAccessMode } from './config';
 import { DuckDBModule } from './duckdb_module';
 import { UDFFunction } from './udf_function';
 import * as udf_rt from './udf_runtime';
@@ -58,6 +59,16 @@ export enum FileFlags {
     FILE_FLAGS_FILE_CREATE_NEW = 1 << 4,
     //! Open file in append mode
     FILE_FLAGS_APPEND = 1 << 5,
+    //! Open file with restrictive permissions (600 on linux/mac) can only be used when creating, throws if file exists
+    FILE_FLAGS_PRIVATE = 1 << 6,
+    //! Return NULL if the file does not exist instead of throwing an error
+    FILE_FLAGS_NULL_IF_NOT_EXISTS = 1 << 7,
+    //! Multiple threads may perform reads and writes in parallel
+    FILE_FLAGS_PARALLEL_ACCESS = 1 << 8,
+    //! Ensure that this call creates the file, throw is file exists
+    FILE_FLAGS_EXCLUSIVE_CREATE = 1 << 9,
+    //!  Return NULL if the file exist instead of throwing an error
+    FILE_FLAGS_NULL_IF_EXISTS = 1 << 10,
 }
 
 /** Configuration for the AWS S3 Filesystem */
@@ -158,8 +169,8 @@ export interface DuckDBRuntime {
 
     // Prepare a file handle that could only be acquired aschronously
     prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
-    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
-    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
+    prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode) => Promise<PreparedDBFileHandle[]>;
 
     // Internal API - experimental
     progressUpdate(final: number, percentage: number, iteration: number): void;
