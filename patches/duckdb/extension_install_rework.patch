@@ -1,9 +1,9 @@
 diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
-index ed956daa64..d4774faac5 100644
+index d3c5fb9bd5..b3d0aaa09e 100644
 --- a/src/include/duckdb/main/database.hpp
 +++ b/src/include/duckdb/main/database.hpp
-@@ -97,6 +97,10 @@ private:
- 	shared_ptr<LogManager> log_manager;
+@@ -100,6 +100,10 @@ private:
+ 	unique_ptr<ExternalFileCache> external_file_cache;
  
  	duckdb_ext_api_v1 (*create_api_v1)();
 +public:
@@ -31,10 +31,10 @@ index 6ccd1a1156..8040f537b6 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index 084dab6f30..6e21356bd9 100644
+index db6e1ed445..d495aab058 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
-@@ -344,6 +344,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+@@ -356,6 +356,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
  }
  
@@ -63,11 +63,22 @@ index 084dab6f30..6e21356bd9 100644
  SecretManager &DatabaseInstance::GetSecretManager() {
  	return *config.secret_manager;
  }
+@@ -507,6 +529,10 @@ idx_t DuckDB::NumberOfThreads() {
+ 
+ bool DatabaseInstance::ExtensionIsLoaded(const std::string &name) {
+ 	auto extension_name = ExtensionHelper::GetExtensionName(name);
++	if (extension_name == "httpfs") {
++		ExtensionInstallInfo info;
++		SetExtensionLoaded(extension_name, info);
++	}
+ 	auto it = loaded_extensions_info.find(extension_name);
+ 	return it != loaded_extensions_info.end() && it->second.is_loaded;
+ }
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
-index c7b613226a..00885ee6a4 100644
+index 3aaf507faa..be084ef030 100644
 --- a/src/main/extension/extension_helper.cpp
 +++ b/src/main/extension/extension_helper.cpp
-@@ -326,7 +326,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -337,7 +337,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  	vector<ExtensionUpdateResult> result;
  	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  
@@ -75,7 +86,7 @@ index c7b613226a..00885ee6a4 100644
  	case_insensitive_set_t seen_extensions;
  
  	// scan the install directory for installed extensions
-@@ -343,7 +342,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -354,7 +353,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  
  		result.push_back(UpdateExtensionInternal(context, db, fs, fs.JoinPath(ext_directory, path), extension_name));
  	});
@@ -84,10 +95,10 @@ index c7b613226a..00885ee6a4 100644
  	return result;
  }
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
-index e8ab595ab0..fb3e6371a3 100644
+index 2ea03b8e49..d8c710f153 100644
 --- a/src/main/extension/extension_install.cpp
 +++ b/src/main/extension/extension_install.cpp
-@@ -155,6 +155,9 @@ bool ExtensionHelper::CreateSuggestions(const string &extension_name, string &me
+@@ -145,6 +145,9 @@ bool ExtensionHelper::CreateSuggestions(const string &extension_name, string &me
  unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInstance &db, FileSystem &fs,
                                                                     const string &extension,
                                                                     ExtensionInstallOptions &options) {
@@ -97,7 +108,7 @@ index e8ab595ab0..fb3e6371a3 100644
  #ifdef WASM_LOADABLE_EXTENSIONS
  	// Install is currently a no-op
  	return nullptr;
-@@ -165,6 +168,9 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInsta
+@@ -155,6 +158,9 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInsta
  
  unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(ClientContext &context, const string &extension,
                                                                     ExtensionInstallOptions &options) {
@@ -108,10 +119,10 @@ index e8ab595ab0..fb3e6371a3 100644
  	// Install is currently a no-op
  	return nullptr;
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 84b28fef09..ea2ebba1cd 100644
+index 6e4bb18796..188931a84d 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -328,7 +328,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -327,7 +327,20 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = false;
  		string extension_name = ApplyExtensionAlias(extension);
  #ifdef WASM_LOADABLE_EXTENSIONS
@@ -133,7 +144,7 @@ index 84b28fef09..ea2ebba1cd 100644
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -369,35 +382,31 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -368,35 +381,31 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -189,7 +200,7 @@ index 84b28fef09..ea2ebba1cd 100644
  
  		if (!metadata_mismatch_error.empty()) {
  			throw InvalidInputException(metadata_mismatch_error);
-@@ -414,26 +423,192 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -413,26 +422,192 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		}
  	}
  
@@ -392,7 +403,7 @@ index 84b28fef09..ea2ebba1cd 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -449,28 +624,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -448,28 +623,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	result.filebase = lowercase_extension_name;
  	result.filename = filename;
  	result.lib_hdl = lib_hdl;

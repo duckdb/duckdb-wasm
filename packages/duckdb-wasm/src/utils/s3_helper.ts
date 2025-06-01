@@ -143,23 +143,12 @@ export function createS3Headers(params: S3Params, payloadParams: S3PayloadParams
         '/aws4_request\n' +
         canonicalRequestHashStr;
 
-    // ts-ignore's because library can accept array buffer as key, but TS arg is incorrect
     const signKey = 'AWS4' + params.secretAccessKey;
     const kDate = sha256.hmac.arrayBuffer(signKey, params.dateNow);
 
-    // Note, js-sha256 has a bug in the TS interface that only supports strings as keys, while we need a bytearray
-    // as key. PR is open but unmerged: https://github.com/emn178/js-sha256/pull/25
-    // eslint-disable-next-line
-    // @ts-ignore
     const kRegion = sha256.hmac.arrayBuffer(kDate, params.region);
-    // eslint-disable-next-line
-    // @ts-ignore
     const kService = sha256.hmac.arrayBuffer(kRegion, params.service);
-    // eslint-disable-next-line
-    // @ts-ignore
     const signingKey = sha256.hmac.arrayBuffer(kService, 'aws4_request');
-    // eslint-disable-next-line
-    // @ts-ignore
     const signature = sha256.hmac(signingKey, stringToSign);
 
     res.set(
