@@ -1,8 +1,14 @@
 import * as duckdb from '../src/';
-import { tmpdir } from 'os';
 import { randomUUID } from 'crypto';
-import path from 'path';
 import { unlink } from 'fs/promises';
+import { mkdirSync } from 'fs';
+import path from 'path';
+
+const tmpdir = () => {
+    const tmp = path.resolve(__dirname, '../test_temp');
+    mkdirSync(tmp, { recursive: true });
+    return tmp;
+}
 
 export function testNodeFS(db: () => duckdb.AsyncDuckDB): void {
     const files: string[] = [];

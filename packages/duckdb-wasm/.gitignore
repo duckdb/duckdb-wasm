@@ -6,4 +6,5 @@
 /duckdb_webapi.*
 /dist
 /docs
+/test_temp
 *.d.ts.map
