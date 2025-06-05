@@ -106,7 +106,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
 
     // Configure the output writer
     ArrowSchema raw_schema;
-    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, false, connection_.context);
+    bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
+    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion, connection_.context);
     unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
@@ -142,7 +143,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
 
     // Import the schema
     ArrowSchema raw_schema;
-    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, false, connection_.context);
+    bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
+    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion, connection_.context);
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names, options);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
@@ -294,7 +296,9 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
 
         // Serialize the record batch
         ArrowArray array;
-        ClientProperties arrow_options("UTC", ArrowOffsetSize::REGULAR, false, false, false, connection_.context);
+        bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
+        ClientProperties arrow_options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
+                                       connection_.context);
         unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
         arrow_options.arrow_offset_size = ArrowOffsetSize::REGULAR;
         ArrowConverter::ToArrowArray(*chunk, &array, arrow_options, extension_type_cast);
