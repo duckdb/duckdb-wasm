@@ -16,6 +16,6 @@
         "benchmarks:build": "yarn workspace @duckdb/benchmarks build"
     },
     "devDependencies": {
-        "badge-maker": "^5.0.0"
+        "badge-maker": "^3.3.1"
     }
 }
