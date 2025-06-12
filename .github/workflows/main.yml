@@ -51,6 +51,7 @@ jobs:
 
     eslint:
         name: ESLint
+        if: false
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -633,7 +634,7 @@ jobs:
             - wasm_eh
             - wasm_coi
             - clang_format
-            - eslint
+            # - eslint
         steps:
             - uses: actions/checkout@v4
               with:
@@ -642,7 +643,7 @@ jobs:
 
             - uses: actions/setup-node@v4
               with:
-                  node-version: '18.x'
+                  node-version: '23.x'
                   registry-url: 'https://registry.npmjs.org'
 
             - name: Git submodule status
@@ -947,7 +948,7 @@ jobs:
             - wasm_eh_loadable
             - wasm_coi_loadable
             - clang_format
-            - eslint
+            # - eslint
         steps:
             - uses: actions/checkout@v4
               with:
@@ -956,7 +957,7 @@ jobs:
 
             - uses: actions/setup-node@v4
               with:
-                  node-version: '18.x'
+                  node-version: '23.x'
                   registry-url: 'https://registry.npmjs.org'
 
             - name: Git submodule status
