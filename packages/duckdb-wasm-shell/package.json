@@ -31,17 +31,17 @@
         "xterm-addon-webgl": "^0.16.0"
     },
     "devDependencies": {
-        "esbuild": "^0.25.5",
-        "eslint": "^9.28.0",
-        "eslint-plugin-jasmine": "^4.2.2",
-        "eslint-plugin-react": "^7.37.5",
-        "jasmine": "^5.8.0",
-        "jasmine-core": "^5.8.0",
+        "esbuild": "^0.20.2",
+        "eslint": "^8.57.0",
+        "eslint-plugin-jasmine": "^4.1.3",
+        "eslint-plugin-react": "^7.34.0",
+        "jasmine": "^5.1.0",
+        "jasmine-core": "^5.1.2",
         "jasmine-spec-reporter": "^7.0.0",
-        "make-dir": "^5.0.0",
-        "prettier": "^3.5.3",
-        "rimraf": "^6.0.1",
-        "wasm-pack": "^0.13.1"
+        "make-dir": "^4.0.0",
+        "prettier": "^3.2.5",
+        "rimraf": "^5.0.5",
+        "wasm-pack": "^0.12.1"
     },
     "scripts": {
         "install:wasmpack": "node ../../node_modules/wasm-pack/install.js",
