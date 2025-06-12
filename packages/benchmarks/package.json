@@ -5,27 +5,27 @@
     "private": true,
     "dependencies": {
         "@duckdb/duckdb-wasm": "file:../duckdb-wasm",
-        "apache-arrow": "^20.0.0",
-        "apache-arrow-3": "npm:apache-arrow@^20.0.0",
-        "arquero": "^8.0.3",
+        "apache-arrow": "^17.0.0",
+        "apache-arrow-3": "npm:apache-arrow@^3.0.0",
+        "arquero": "^5.4.0",
         "buffalo-bench": "^2.0.0",
         "kleur": "^4.1.5",
         "lodash": "^4.17.21",
         "lovefield-ts": "^0.7.0",
-        "sql.js": "^1.13.0",
-        "web-worker": "^1.5.0"
+        "sql.js": "^1.10.2",
+        "web-worker": "^1.2.0"
     },
     "devDependencies": {
-        "@types/lodash": "^4.17.17",
+        "@types/lodash": "^4.14.202",
         "@types/sql.js": "^1.4.9",
-        "@typescript-eslint/eslint-plugin": "^8.34.0",
-        "@typescript-eslint/parser": "^8.34.0",
+        "@typescript-eslint/eslint-plugin": "^6.21.0",
+        "@typescript-eslint/parser": "^6.21.0",
         "assert": "^2.1.0",
         "buffalo-bench": "^2.0.0",
-        "eslint": "^9.28.0",
-        "eslint-plugin-react": "^7.37.5",
-        "ts-loader": "^9.5.2",
-        "typescript": "^5.8.3"
+        "eslint": "^8.57.0",
+        "eslint-plugin-react": "^7.34.0",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.3.3"
     },
     "scripts": {
         "build": "node ./bundle.mjs && tsc --noEmit",
