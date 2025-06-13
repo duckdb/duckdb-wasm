@@ -36,9 +36,11 @@ INSERT INTO cities VALUES
             const batch = batches[0];
             expect(batch.numCols).toBe(5);
             expect(batch.numRows).toBe(3);
-            expect(batch.getChildAt(0)?.toArray()).toEqual(
-                '{"country":"NL","name":"Amsterdam","2000":1005,"2010":1065,"2020":1158}',
-            );
+            expect(batch.getChildAt(0)?.toArray()).toEqual(['NL', 'US', 'US']);
+            expect(batch.getChildAt(1)?.toArray()).toEqual(['Amsterdam', 'Seattle', 'New York City']);
+            expect(batch.getChildAt(2)?.toArray()).toEqual([1005, 564, 8015]);
+            expect(batch.getChildAt(3)?.toArray()).toEqual([1065, 608, 8175]);
+            expect(batch.getChildAt(4)?.toArray()).toEqual([1158, 738, 8772]);
         });
     });
 }
