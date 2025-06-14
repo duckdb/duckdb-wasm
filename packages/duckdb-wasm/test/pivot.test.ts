@@ -38,9 +38,16 @@ INSERT INTO cities VALUES
             expect(batch.numRows).toBe(3);
             expect(batch.getChildAt(0)?.toArray()).toEqual(['NL', 'US', 'US']);
             expect(batch.getChildAt(1)?.toArray()).toEqual(['Amsterdam', 'Seattle', 'New York City']);
-            expect(batch.getChildAt(2)?.toArray()).toEqual([1005, 564, 8015]);
-            expect(batch.getChildAt(3)?.toArray()).toEqual([1065, 608, 8175]);
-            expect(batch.getChildAt(4)?.toArray()).toEqual([1158, 738, 8772]);
+            // Pivoted columns are int128
+            expect(batch.getChildAt(2)?.toArray()).toEqual(
+                new Uint32Array([1005, 0, 0, 0, 564, 0, 0, 0, 8015, 0, 0, 0]),
+            );
+            expect(batch.getChildAt(3)?.toArray()).toEqual(
+                new Uint32Array([1065, 0, 0, 0, 608, 0, 0, 0, 8175, 0, 0, 0]),
+            );
+            expect(batch.getChildAt(4)?.toArray()).toEqual(
+                new Uint32Array([1158, 0, 0, 0, 738, 0, 0, 0, 8772, 0, 0, 0]),
+            );
         });
     });
 }
