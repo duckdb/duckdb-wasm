@@ -111,6 +111,7 @@ import { testUDF } from './udf.test';
 import { longQueries } from './long_queries.test';
 //import { testEXCEL } from './excel.test';
 //import { testJSON } from './json.test';
+import { testPivot } from './pivot.test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
@@ -140,3 +141,4 @@ testTokenization(() => db!);
 testTokenizationAsync(() => adb!);
 //testEXCEL(() => db!);
 //testJSON(() => db!);
+testPivot(() => db!);

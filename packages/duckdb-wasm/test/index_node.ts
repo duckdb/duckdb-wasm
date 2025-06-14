@@ -79,6 +79,7 @@ import { testUDF } from './udf.test';
 import { longQueries } from './long_queries.test';
 import { testRegressionAsync } from './regression';
 import { testFTS } from './fts.test';
+import { testPivot } from './pivot.test';
 
 testUDF(() => db!);
 longQueries(() => adb!);
@@ -101,3 +102,4 @@ testCSVInsertAsync(() => adb!);
 testTokenization(() => db!);
 testTokenizationAsync(() => adb!);
 testFTS(() => db!);
+testPivot(() => db!, { skipValuesCheck: true });
