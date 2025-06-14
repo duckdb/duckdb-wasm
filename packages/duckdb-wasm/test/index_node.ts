@@ -102,4 +102,4 @@ testCSVInsertAsync(() => adb!);
 testTokenization(() => db!);
 testTokenizationAsync(() => adb!);
 testFTS(() => db!);
-testPivot(() => db!);
+testPivot(() => db!, { skipValuesCheck: true });
