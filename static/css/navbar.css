@@ -1,0 +1,161 @@
+ html {
+     width: 100%;
+     height: 100%;
+     padding: 0;
+     margin: 0;
+}
+ body {
+     width: 100%;
+     height: 100%;
+     padding: 0;
+     margin: 0;
+}
+ #root {
+     width: 100%;
+     height: 100%;
+     padding: 0;
+     margin: 0;
+}
+ .root_div {
+     position: relative;
+     height: 100%;
+     width: 100%;
+     box-sizing: border-box;
+}
+ @media only screen and (min-width: 600px) {
+     .level1 {
+         position: relative;
+         display: grid;
+         grid-template-rows: 100%;
+         grid-template-columns: var(--nav_bar_width) calc(100% - var(--nav_bar_width));
+    }
+     .level2 {
+         background-color: var(--nav_bar_bg);
+         color: rgb(255, 255, 255);
+         line-height: 24px;
+         text-align: center;
+         display: grid;
+         grid-template-rows: 56px auto;
+         grid-template-columns: 100%;
+    }
+     .submenu {
+         display: grid;
+         grid-template-rows: repeat(6, 48px);
+         grid-template-columns: 100%;
+    }
+}
+ @media only screen and (max-width: 600px) {
+     .level1 {
+         position: relative;
+         display: grid;
+         grid-template-rows: var(--nav_bar_width) calc(100% - var(--nav_bar_width));
+         grid-template-columns: 100%;
+    }
+     .level2 {
+         background-color: var(--nav_bar_bg);
+         color: rgb(255, 255, 255);
+         line-height: 24px;
+         text-align: center;
+         display: grid;
+         grid-template-rows: 100%;
+         grid-template-columns: 64px auto;
+         justify-items: right;
+    }
+     .submenu {
+         display: grid;
+         grid-template-columns: 28px repeat(4, 56px) 28px;
+         grid-template-rows: 100%;
+    }
+}
+ .submenu_item {
+     position: relative;
+     font-weight: 400;
+     background-color: var(--nav_tab_bg);
+     color: var(--nav_tab_fg);
+     text-decoration: none;
+     box-sizing: border-box;
+}
+ .submenu_item > a {
+     width: 100%;
+     height: 100%;
+     display: grid;
+     text-decoration: none;
+     vertical-align: middle;
+}
+ .submenu_item > a svg {
+     justify-self: center;
+     align-self: center;
+     color: white;
+}
+ .submenu_item > a > div {
+     color: white;
+     display: grid;
+     justify-content: center;
+     align-items: center;
+}
+ .submenu_item:hover, .ducklogo:hover {
+     background-color: var(--nav_tab_bg_active);
+     color: var(--nav_tab_fg_active);
+}
+/* -------------------------------------------------------------------- */
+ @font-face {
+     font-family: 'Nunito';
+     font-style: normal;
+     font-weight: 299;
+     src: url(../../static/assets/Nunito-Light.544d04c96d939f25984c.ttf) format('truetype');
+}
+ @font-face {
+     font-family: 'Nunito';
+     font-style: normal;
+     font-weight: 399;
+     src: url(../../static/assets/Nunito-Regular.8b2f37e93bedfaa2976.ttf) format('truetype');
+}
+ @font-face {
+     font-family: 'Nunito';
+     font-style: normal;
+     font-weight: 499;
+     src: url(../../static/assets/Nunito-SemiBold.ttf) format('truetype');
+}
+ @font-face {
+     font-family: 'Nunito';
+     font-style: normal;
+     font-weight: 699;
+     src: url(../../static/assets/Nunito-Bold.4b67d635abb53cc261c5.ttf) format('truetype');
+}
+/* -------------------------------------------------------------------- */
+ :root {
+     --border_radius: -1px;
+     --border_color: rgb(219, 220, 220);
+     --nav_bar_bg: rgb(29, 30, 30);
+     --nav_bar_button_height: 47px;
+     --nav_bar_button_margin: 3px 8px;
+     --nav_bar_width: 63px;
+     --nav_logo_height: 55px;
+     --nav_tab_bg: transparent;
+     --nav_tab_bg_active: rgb(19, 20, 20);
+     --nav_tab_fg: rgb(254, 255, 255);
+     --nav_tab_fg_active: rgb(254, 255, 255);
+     --card_border_color: rgb(199, 200, 200);
+     --card_header_bg: hsl(209deg 12% 96%);
+     --card_header_border: 0px solid rgb(215, 215, 215);
+     font-family: 'Nunito';
+}
+ .xterm .xterm-viewport {
+     background-color: transparent;
+     overflow-y: scroll;
+     cursor: default;
+     position: absolute;
+     right: 0;
+     left: 0;
+     top: 0;
+     bottom: 0;
+     scrollbar-color: white #333;
+     scrollbar-width: thin;
+}
+ .xterm-viewport::-webkit-scrollbar {
+     background-color: #333;
+     width: 5px;
+}
+ .xterm-viewport::-webkit-scrollbar-thumb {
+     background: white;
+}
