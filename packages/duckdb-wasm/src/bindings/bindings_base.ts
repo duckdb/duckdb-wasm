@@ -622,12 +622,52 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         dropResponseBuffers(this.mod);
     }
     /** Drop files */
-    public dropFiles(): void {
-        const [s, d, n] = callSRet(this.mod, 'duckdb_web_fs_drop_files', [], []);
-        if (s !== StatusCode.SUCCESS) {
-            throw new Error(readString(this.mod, d, n));
+    public dropFiles(names?:string[]): void {
+        const pointers:number[] = [];
+        let pointerOfArray:number = -1;
+        try {
+            for (const str of (names ?? [])) {
+                if (str !== null && str !== undefined && str.length > 0) {
+                    const size = this.mod.lengthBytesUTF8(str) + 1;
+                    const ret = this.mod._malloc(size);
+                    if (!ret) {
+                        throw new Error(`Failed to allocate memory for string: ${str}`);
+                    }
+                    this.mod.stringToUTF8(str, ret, size);
+                    pointers.push(ret);
+                }
+            }
+            pointerOfArray = this.mod._malloc(pointers.length * 4);
+            if (!pointerOfArray) {
+                throw new Error(`Failed to allocate memory for pointers array`);
+            }
+            for (let i = 0; i < pointers.length; i++) {
+                this.mod.HEAP32[(pointerOfArray >> 2) + i] = pointers[i];
+            }
+            const [s, d, n] = callSRet(
+                this.mod,
+                'duckdb_web_fs_drop_files',
+                [
+                    'number',
+                    'number'
+                ],
+                [
+                    pointerOfArray,
+                    pointers.length
+                ]
+            );
+            if (s !== StatusCode.SUCCESS) {
+                throw new Error(readString(this.mod, d, n));
+            }
+            dropResponseBuffers(this.mod);
+        } finally {
+            for (const pointer of pointers) {
+                this.mod._free(pointer);
+            }
+            if( pointerOfArray > 0 ){
+                this.mod._free(pointerOfArray);
+            }
         }
-        dropResponseBuffers(this.mod);
     }
     /** Flush all files */
     public flushFiles(): void {
@@ -654,7 +694,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return copy;
     }
     /** Enable tracking of file statistics */
-    public registerOPFSFileName(file: string): Promise<void> {
+    public async registerOPFSFileName(file: string): Promise<void> {
         if (file.startsWith('opfs://')) {
             return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
         } else {
