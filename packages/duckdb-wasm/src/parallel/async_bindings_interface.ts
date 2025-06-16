@@ -32,4 +32,7 @@ export interface AsyncDuckDBBindings {
     insertArrowFromIPCStream(conn: number, buffer: Uint8Array, options?: CSVInsertOptions): Promise<void>;
     insertCSVFromPath(conn: number, path: string, options: CSVInsertOptions): Promise<void>;
     insertJSONFromPath(conn: number, path: string, options: JSONInsertOptions): Promise<void>;
+
+    dropFile(name: string):Promise<null>;
+    dropFiles(names?: string[]):Promise<null>;
 }
