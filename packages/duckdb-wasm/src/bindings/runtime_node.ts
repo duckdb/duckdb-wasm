@@ -76,6 +76,11 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.NODE_FS: {
                     let fd = NODE_RUNTIME._files?.get(file.dataUrl!);
                     if (fd === null || fd === undefined) {
+                        // Depending on file flags, return nullptr
+                        if (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS) {
+                            return 0;
+                        }
+
                         fd = fs.openSync(
                             file.dataUrl!,
                             fs.constants.O_CREAT | fs.constants.O_RDWR,
