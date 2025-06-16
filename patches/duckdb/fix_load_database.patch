@@ -1,20 +1,23 @@
 diff --git a/src/storage/storage_manager.cpp b/src/storage/storage_manager.cpp
-index cb6c654e5f..a6b2af3b85 100644
+index 45d42174f1..10b3ce47b1 100644
 --- a/src/storage/storage_manager.cpp
 +++ b/src/storage/storage_manager.cpp
-@@ -160,9 +160,12 @@ void SingleFileStorageManager::LoadDatabase(StorageOptions storage_options) {
+@@ -162,9 +162,15 @@ void SingleFileStorageManager::LoadDatabase(StorageOptions storage_options) {
  			    row_group_size, STANDARD_VECTOR_SIZE);
  		}
  	}
 -	// Check if the database file already exists.
 -	// Note: a file can also exist if there was a ROLLBACK on a previous transaction creating that file.
 -	if (!read_only && !fs.FileExists(path)) {
-+    auto db_file_handle = fs.OpenFile(path, FileFlags::FILE_FLAGS_READ | FileFlags::FILE_FLAGS_NULL_IF_NOT_EXISTS);
-+    bool is_empty_file = db_file_handle->GetFileSize() == 0;
-+    db_file_handle.reset();
++	bool is_empty_file = true;
++	auto db_file_handle = fs.OpenFile(path, FileFlags::FILE_FLAGS_READ | FileFlags::FILE_FLAGS_NULL_IF_NOT_EXISTS);
++	if (db_file_handle && db_file_handle->GetFileSize() != 0) {
++		is_empty_file = false;
++		db_file_handle.reset();
++	}
 +
-+ 	// first check if the database exists
-+	if (!read_only && ( !fs.FileExists(path) || ( options.use_direct_io && is_empty_file )) ) {
++	// first check if the database exists
++	if (!read_only && (!fs.FileExists(path) || (options.use_direct_io && is_empty_file))) {
  		// file does not exist and we are in read-write mode
  		// create a new file
  

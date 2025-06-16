@@ -57,6 +57,12 @@ class WebDB {
         /// The connection
         duckdb::Connection connection_;
 
+        /// The statements extracted from the text passed to PendingQuery
+        std::vector<duckdb::unique_ptr<duckdb::SQLStatement>> current_pending_statements_;
+        /// The index of the currently-running statement (in the above list)
+        size_t current_pending_statement_index_ = 0;
+        /// The value of allow_stream_result passed to PendingQuery
+        bool current_allow_stream_result_ = false;
         /// The current pending query result (if any)
         duckdb::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
         /// The current pending query was canceled

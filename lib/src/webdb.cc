@@ -107,7 +107,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     // Configure the output writer
     ArrowSchema raw_schema;
     bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
-    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion, connection_.context);
+    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
+                             ArrowFormatVersion::V1_0, connection_.context);
     unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
@@ -144,7 +145,8 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
     // Import the schema
     ArrowSchema raw_schema;
     bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
-    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion, connection_.context);
+    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
+                             ArrowFormatVersion::V1_0, connection_.context);
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, current_query_result_->types, current_query_result_->names, options);
     ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
@@ -172,9 +174,20 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::s
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(std::string_view text,
                                                                               bool allow_stream_result) {
     try {
-        // Send the query
-        auto result = connection_.PendingQuery(std::string{text}, allow_stream_result);
-        if (result->HasError()) return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
+        auto statements = connection_.ExtractStatements(std::string{text});
+        if (statements.size() == 0) {
+            return arrow::Status{arrow::StatusCode::ExecutionError, "no statements"};
+        }
+        current_pending_statements_ = std::move(statements);
+        current_pending_statement_index_ = 0;
+        current_allow_stream_result_ = allow_stream_result;
+        // Send the first query
+        auto result = connection_.PendingQuery(std::move(current_pending_statements_[current_pending_statement_index_]),
+                                               current_allow_stream_result_);
+        if (result->HasError()) {
+            current_pending_statements_.clear();
+            return arrow::Status{arrow::StatusCode::ExecutionError, std::move(result->GetError())};
+        }
         current_pending_query_result_ = std::move(result);
         current_pending_query_was_canceled_ = false;
         current_query_result_.reset();
@@ -204,8 +217,25 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
     do {
         switch (current_pending_query_result_->ExecuteTask()) {
             case PendingExecutionResult::EXECUTION_FINISHED:
-            case PendingExecutionResult::RESULT_READY:
-                return StreamQueryResult(current_pending_query_result_->Execute());
+            case PendingExecutionResult::RESULT_READY: {
+                auto result = current_pending_query_result_->Execute();
+                current_pending_statement_index_++;
+                // If this was the last statement, then return the result
+                if (current_pending_statement_index_ == current_pending_statements_.size()) {
+                    return StreamQueryResult(std::move(result));
+                }
+                // Otherwise, start the next statement
+                auto pending_result =
+                    connection_.PendingQuery(std::move(current_pending_statements_[current_pending_statement_index_]),
+                                             current_allow_stream_result_);
+                if (pending_result->HasError()) {
+                    current_pending_query_result_.reset();
+                    current_pending_statements_.clear();
+                    return arrow::Status{arrow::StatusCode::ExecutionError, std::move(pending_result->GetError())};
+                }
+                current_pending_query_result_ = std::move(pending_result);
+                break;
+            }
             case PendingExecutionResult::BLOCKED:
             case PendingExecutionResult::NO_TASKS_AVAILABLE:
                 return nullptr;
@@ -214,6 +244,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PollPendingQuer
             case PendingExecutionResult::EXECUTION_ERROR: {
                 auto err = current_pending_query_result_->GetError();
                 current_pending_query_result_.reset();
+                current_pending_statements_.clear();
                 return arrow::Status{arrow::StatusCode::ExecutionError, err};
             }
         }
@@ -228,6 +259,7 @@ bool WebDB::Connection::CancelPendingQuery() {
     if (current_pending_query_result_ != nullptr && current_query_result_ == nullptr) {
         current_pending_query_was_canceled_ = true;
         current_pending_query_result_.reset();
+        current_pending_statements_.clear();
         return true;
     } else {
         return false;
@@ -298,7 +330,7 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
         ArrowArray array;
         bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
         ClientProperties arrow_options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
-                                       connection_.context);
+                                       ArrowFormatVersion::V1_0, connection_.context);
         unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
         arrow_options.arrow_offset_size = ArrowOffsetSize::REGULAR;
         ArrowConverter::ToArrowArray(*chunk, &array, arrow_options, extension_type_cast);

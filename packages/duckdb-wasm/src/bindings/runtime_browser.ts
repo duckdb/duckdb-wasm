@@ -384,6 +384,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         return result;
                     }
 
+                    // Depending on file flags, return nullptr
+                    if (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS) {
+                       return 0;
+                    }
+
                     // Fall back to empty buffered file in the browser
                     console.warn(`Buffering missing file: ${file.fileName}`);
                     const result = mod._malloc(2 * 8);

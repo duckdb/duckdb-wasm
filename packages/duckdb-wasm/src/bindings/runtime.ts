@@ -58,6 +58,11 @@ export enum FileFlags {
     FILE_FLAGS_FILE_CREATE_NEW = 1 << 4,
     //! Open file in append mode
     FILE_FLAGS_APPEND = 1 << 5,
+    FILE_FLAGS_PRIVATE = 1 << 6,
+    FILE_FLAGS_NULL_IF_NOT_EXISTS = 1 << 7,
+    FILE_FLAGS_PARALLEL_ACCESS = 1 << 8,
+    FILE_FLAGS_EXCLUSIVE_CREATE = 1 << 9,
+    FILE_FLAGS_NULL_IF_EXISTS = 1 << 10
 }
 
 /** Configuration for the AWS S3 Filesystem */
