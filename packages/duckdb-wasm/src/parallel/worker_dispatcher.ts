@@ -136,8 +136,9 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
 
                 case WorkerRequestType.OPEN: {
                     const path = request.data.path;
+                    const accessMode = request.data.accessMode;
                     if (path?.startsWith('opfs://')) {
-                        await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
+                        await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS, accessMode);
                         request.data.useDirectIO = true;
                     }
                     this._bindings.open(request.data);

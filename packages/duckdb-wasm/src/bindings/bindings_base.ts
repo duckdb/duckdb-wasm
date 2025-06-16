@@ -1,5 +1,5 @@
 import { DuckDBModule, PThread } from './duckdb_module';
-import { DuckDBConfig } from './config';
+import { DuckDBAccessMode, DuckDBConfig } from './config';
 import { Logger } from '../log';
 import { InstantiationProgress } from './progress';
 import { DuckDBBindings } from './bindings_interface';
@@ -508,9 +508,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
     }
-    public async prepareFileHandle(fileName: string, protocol: DuckDBDataProtocol): Promise<void> {
+    public async prepareFileHandle(fileName: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode): Promise<void> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareFileHandles) {
-            const list = await this._runtime.prepareFileHandles([fileName], DuckDBDataProtocol.BROWSER_FSACCESS);
+            const list = await this._runtime.prepareFileHandles([fileName], DuckDBDataProtocol.BROWSER_FSACCESS, accessMode);
             for (const item of list) {
                 const { handle, path: filePath, fromCached } = item;
                 if (!fromCached && handle.getSize()) {
@@ -522,9 +522,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         throw new Error(`prepareFileHandle: unsupported protocol ${protocol}`);
     }
     /** Prepare a file handle that could only be acquired aschronously */
-    public async prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void> {
+    public async prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol, accessMode?: DuckDBAccessMode): Promise<void> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareDBFileHandle) {
-            const list = await this._runtime.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
+            const list = await this._runtime.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS, accessMode);
             for (const item of list) {
                 const { handle, path: filePath, fromCached } = item;
                 if (!fromCached && handle.getSize()) {
