@@ -1,15 +1,16 @@
 diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
-index d3c5fb9bd5..b3d0aaa09e 100644
+index d3c5fb9bd5..eace7b4af1 100644
 --- a/src/include/duckdb/main/database.hpp
 +++ b/src/include/duckdb/main/database.hpp
-@@ -100,6 +100,10 @@ private:
+@@ -100,6 +100,11 @@ private:
  	unique_ptr<ExternalFileCache> external_file_cache;
  
  	duckdb_ext_api_v1 (*create_api_v1)();
++
 +public:
-+	static void SetPreferredRepository(const string& extension, const string &repository);
-+	static string GetPreferredRepository(const string& extension);
-+	static unordered_map<string, string> extensionsRepos;
++       static void SetPreferredRepository(const string& extension, const string &repository);
++       static string GetPreferredRepository(const string& extension);
++       static unordered_map<string, string> extensionsRepos;
  };
  
  //! The database object. This object holds the catalog and all the
@@ -31,10 +32,24 @@ index 6ccd1a1156..8040f537b6 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index db6e1ed445..d495aab058 100644
+index 773f8d967a..fa089a47ee 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
-@@ -356,6 +356,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+@@ -1,5 +1,4 @@
+ #include "duckdb/main/database.hpp"
+-
+ #include "duckdb/catalog/catalog.hpp"
+ #include "duckdb/common/virtual_file_system.hpp"
+ #include "duckdb/execution/index/index_type_set.hpp"
+@@ -35,6 +34,7 @@
+ #include "duckdb/common/thread.hpp"
+ #endif
+ 
++
+ namespace duckdb {
+ 
+ DBConfig::DBConfig() {
+@@ -357,6 +357,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
  }
  
@@ -63,11 +78,11 @@ index db6e1ed445..d495aab058 100644
  SecretManager &DatabaseInstance::GetSecretManager() {
  	return *config.secret_manager;
  }
-@@ -507,6 +529,10 @@ idx_t DuckDB::NumberOfThreads() {
+@@ -508,6 +530,10 @@ idx_t DuckDB::NumberOfThreads() {
  
  bool DatabaseInstance::ExtensionIsLoaded(const std::string &name) {
  	auto extension_name = ExtensionHelper::GetExtensionName(name);
-+	if (extension_name == "httpfs") {
++	if (extension_name == "httpfs" && preloaded_httpfs) {
 +		ExtensionInstallInfo info;
 +		SetExtensionLoaded(extension_name, info);
 +	}

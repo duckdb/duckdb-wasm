@@ -32,6 +32,7 @@
 #include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/common/arrow/arrow_converter.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/http_util.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/common/types/vector.hpp"
@@ -70,6 +71,9 @@
 #include "rapidjson/writer.h"
 
 namespace duckdb {
+
+bool preloaded_httpfs{true};
+
 namespace web {
 
 static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
@@ -753,6 +757,9 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
 
     // Register S3 Config parameters
     if (webfs) {
+        auto callback_builtin_httpfs = [](ClientContext& context, SetScope scope, Value& parameter) {
+            preloaded_httpfs = BooleanValue::Get(parameter);
+        };
         auto callback_s3_region = [](ClientContext& context, SetScope scope, Value& parameter) {
             auto webfs = io::WebFileSystem::Get();
             webfs->Config()->duckdb_config_options.s3_region = StringValue::Get(parameter);
@@ -784,6 +791,8 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
             webfs->IncrementCacheEpoch();
         };
 
+        config.AddExtensionOption("builtin_httpfs", "Use built-in HTTPS support", LogicalType::BOOLEAN, true,
+                                  callback_builtin_httpfs);
         config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, Value(), callback_s3_region);
         config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, Value(),
                                   callback_s3_access_key_id);
