@@ -1,0 +1,14 @@
+diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
+index d3c5fb9bd5..adc2ac42e6 100644
+--- a/src/include/duckdb/main/database.hpp
++++ b/src/include/duckdb/main/database.hpp
+@@ -17,6 +17,9 @@
+ #include "duckdb/main/valid_checker.hpp"
+ 
+ namespace duckdb {
++
++extern bool preloaded_httpfs;
++
+ class BufferManager;
+ class DatabaseManager;
+ class StorageManager;
