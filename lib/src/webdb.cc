@@ -791,7 +791,7 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
             webfs->IncrementCacheEpoch();
         };
 
-        config.AddExtensionOption("builtin_httpfs", "Use built-in HTTPS support", LogicalType::BOOLEAN, true,
+        config.AddExtensionOption("builtin_httpfs", "Use built-in HTTPS support", LogicalType::BOOLEAN, false,
                                   callback_builtin_httpfs);
         config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, Value(), callback_s3_region);
         config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, Value(),
