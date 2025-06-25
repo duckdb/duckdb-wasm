@@ -1,7 +1,6 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "duckdb/web/webdb.h"
-#include "duckdb/web/http_wasm.h"
 
 #include <emscripten/val.h>
 
@@ -53,6 +52,7 @@
 #include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
+#include "duckdb/web/http_wasm.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"

@@ -46,7 +46,7 @@ class HTTPFSClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
-                if (typeof XMLHttpRequest == = "undefined") {
+                if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
                 const xhr = new XMLHttpRequest();
@@ -62,7 +62,7 @@ class HTTPFSClient : public HTTPClient {
                     try {
                         xhr.setRequestHeader(encodeURI(UTF8ToString(ptr1)), encodeURI(UTF8ToString(ptr2)));
                     } catch (error) {
-                console.warn("Error while performing XMLHttpRequest.setRequestHeader(), error);
+                console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
                     }
                     i += 2;
                 }
@@ -161,7 +161,7 @@ class HTTPFSClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
-                if (typeof XMLHttpRequest == = "undefined") {
+                if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
                 const xhr = new XMLHttpRequest();
@@ -177,7 +177,7 @@ class HTTPFSClient : public HTTPClient {
                     try {
                         xhr.setRequestHeader(encodeURI(UTF8ToString(ptr1)), encodeURI(UTF8ToString(ptr2)));
                     } catch (error) {
-                console.warn("Error while performing XMLHttpRequest.setRequestHeader(), error);
+                console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
                     }
                     i += 2;
                 }
