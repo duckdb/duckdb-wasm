@@ -26,7 +26,6 @@ class HTTPWasmUtil : public HTTPUtil {
    public:
     unique_ptr<HTTPParams> InitializeParameters(optional_ptr<FileOpener> opener,
                                                 optional_ptr<FileOpenerInfo> info) override {
-        std::cout << "InitializeParameters\n";
         return make_uniq<HTTPFSParams>(*this);
     }
     unique_ptr<HTTPClient> InitializeClient(HTTPParams &http_params, const string &proto_host_port) override;
