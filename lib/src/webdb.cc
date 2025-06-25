@@ -1,6 +1,7 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "duckdb/web/webdb.h"
+#include "duckdb/web/http_wasm.h"
 
 #include <emscripten/val.h>
 
@@ -969,6 +970,11 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 #endif
 #endif  // WASM_LOADABLE_EXTENSIONS
         RegisterCustomExtensionOptions(db);
+
+        auto& config = duckdb::DBConfig::GetConfig(*db->instance);
+        if (!config.http_util || config.http_util->GetName() != string("WasmHTTPUtils")) {
+            config.http_util = make_shared_ptr<HTTPWasmUtil>();
+        }
 
         // Reset state that is specific to the old database
         connections_.clear();
