@@ -36,12 +36,13 @@ class HTTPFSClient : public HTTPClient {
             memset(z[i], 0, h.first.size() * 4 + 1);
             memcpy(z[i], h.first.c_str(), h.first.size());
             i++;
-            z[i] = (char *)malloc(h.second.size() + 1);
-            memset(z[i], 0, h.first.size() + 1);
+            z[i] = (char *)malloc(h.second.size()*4 + 1);
+            memset(z[i], 0, h.first.size() *4+ 1);
             memcpy(z[i], h.second.c_str(), h.second.size());
             i++;
         }
 
+	// clang-format off
         char *exe = NULL;
         exe = (char *)EM_ASM_PTR(
             {
@@ -100,6 +101,7 @@ class HTTPFSClient : public HTTPClient {
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "GET");
+	// clang-format on
 
         i = 0;
         for (auto h : info.headers) {
@@ -157,6 +159,7 @@ class HTTPFSClient : public HTTPClient {
             i++;
         }
 
+	// clang-format off
         char *exe = NULL;
         exe = (char *)EM_ASM_PTR(
             {
@@ -244,6 +247,7 @@ class HTTPFSClient : public HTTPClient {
             res->body = string(exe + 4, LEN);
             free(exe);
         }
+	// clang-format on
 
         return res;
     }
