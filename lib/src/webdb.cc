@@ -32,6 +32,7 @@
 #include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/common/arrow/arrow_converter.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/http_util.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/common/types/vector.hpp"
@@ -51,6 +52,7 @@
 #include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
+#include "duckdb/web/http_wasm.h"
 #include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
@@ -70,6 +72,9 @@
 #include "rapidjson/writer.h"
 
 namespace duckdb {
+
+bool preloaded_httpfs{true};
+
 namespace web {
 
 static constexpr int64_t DEFAULT_QUERY_POLLING_INTERVAL = 100;
@@ -753,6 +758,9 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
 
     // Register S3 Config parameters
     if (webfs) {
+        auto callback_builtin_httpfs = [](ClientContext& context, SetScope scope, Value& parameter) {
+            preloaded_httpfs = BooleanValue::Get(parameter);
+        };
         auto callback_s3_region = [](ClientContext& context, SetScope scope, Value& parameter) {
             auto webfs = io::WebFileSystem::Get();
             webfs->Config()->duckdb_config_options.s3_region = StringValue::Get(parameter);
@@ -784,6 +792,8 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
             webfs->IncrementCacheEpoch();
         };
 
+        config.AddExtensionOption("builtin_httpfs", "Use built-in HTTPS support", LogicalType::BOOLEAN, false,
+                                  callback_builtin_httpfs);
         config.AddExtensionOption("s3_region", "S3 Region", LogicalType::VARCHAR, Value(), callback_s3_region);
         config.AddExtensionOption("s3_access_key_id", "S3 Access Key ID", LogicalType::VARCHAR, Value(),
                                   callback_s3_access_key_id);
@@ -960,6 +970,11 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 #endif
 #endif  // WASM_LOADABLE_EXTENSIONS
         RegisterCustomExtensionOptions(db);
+
+        auto& config = duckdb::DBConfig::GetConfig(*db->instance);
+        if (!config.http_util || config.http_util->GetName() != string("WasmHTTPUtils")) {
+            config.http_util = make_shared_ptr<HTTPWasmUtil>();
+        }
 
         // Reset state that is specific to the old database
         connections_.clear();
