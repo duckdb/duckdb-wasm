@@ -702,7 +702,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
             case DuckDBDataProtocol.HTTP:
             case DuckDBDataProtocol.S3:
-                return new Date().getTime();
+                // getTime() returns milliseconds, we need seconds
+                return new Date().getTime() / 1000;
         }
         return 0;
     },

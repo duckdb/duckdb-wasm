@@ -215,7 +215,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                         failWith(mod, `File ${fileId} is missing a file descriptor`);
                         return 0;
                     }
-                    return fs.fstatSync(fileHandle!).mtime.getTime();
+                    return fs.fstatSync(fileHandle!).mtime.getTime() / 1000;
                 }
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                 case DuckDBDataProtocol.BROWSER_FSACCESS:
