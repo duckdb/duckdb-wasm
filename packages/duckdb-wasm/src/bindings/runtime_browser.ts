@@ -258,7 +258,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             xhr.send(null);
 
                             // Supports range requests
-                            contentLength = xhr.getResponseHeader('Content-Length');
+                            contentLength = null;
+                            try { contentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                             if (contentLength !== null && xhr.status == 206) {
                                 const result = mod._malloc(2 * 8);
                                 mod.HEAPF64[(result >> 3) + 0] = +contentLength;
@@ -288,8 +289,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             xhr.responseType = 'arraybuffer';
                             xhr.setRequestHeader('Range', `bytes=0-0`);
                             xhr.send(null);
-                            const contentRange = xhr.getResponseHeader('Content-Range')?.split('/')[1];
-                            const contentLength2 = xhr.getResponseHeader('Content-Length');
+                            let actualContentLength = null;
+                            try { actualContentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
+                            const contentRange = actualContentLength?.split('/')[1];
+                            const contentLength2 = actualContentLength;
 
                             let presumedLength = null;
                             if (contentRange !== undefined) {
@@ -308,7 +311,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 head.send(null);
 
                                 // Supports range requests
-                                contentLength = head.getResponseHeader('Content-Length');
+                                contentLength = null;
+                                try { contentLength = head.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                                 if (contentLength !== null && +contentLength > 1) {
                                     presumedLength = contentLength;
                                 }
@@ -454,7 +458,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         console.log(`HEAD and GET requests failed: ${path}`);
                         return 0;
                     }
-                    const contentLength = xhr2.getResponseHeader('Content-Length');
+                    let contentLength = null;
+                    try { contentLength = xhr2.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                     if (contentLength && +contentLength > 1) {
                         console.warn(
                             `Range request for ${path} did not return a partial response: ${xhr2.status} "${xhr2.statusText}"`,
