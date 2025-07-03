@@ -244,7 +244,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // Supports ranges?
                     let contentLength = null;
                     let error: any | null = null;
-                    if (file.reliableHeadRequests || !file.allowFullHttpReads) {
+                    if (!file.forceFullHttpReads && (file.reliableHeadRequests || !file.allowFullHttpReads)) {
                         try {
                             // Send a dummy HEAD request with range protocol
                             //          -> good IFF status is 206 and contentLenght is present
@@ -278,7 +278,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Try to fallback to full read?
                     if (file.allowFullHttpReads) {
-                        {
+                        if (!file.forceFullHttpReads) {
                             // 2. Send a dummy GET range request querying the first byte of the file
                             //          -> good IFF status is 206 and contentLenght2 is 1
                             //          -> otherwise, iff 200 and contentLenght2 == contentLenght
@@ -354,8 +354,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
+                            console.warn(`falling back to full HTTP read for: ${file.dataUrl}`);
                         }
-                        console.warn(`falling back to full HTTP read for: ${file.dataUrl}`);
                         // 3. Send non-range request
                         const xhr = new XMLHttpRequest();
                         if (file.dataProtocol == DuckDBDataProtocol.S3) {
