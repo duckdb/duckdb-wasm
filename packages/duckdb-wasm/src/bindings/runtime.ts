@@ -83,6 +83,7 @@ export interface DuckDBFileInfo {
     dataUrl: string | null;
     reliableHeadRequests?: boolean;
     allowFullHttpReads?: boolean;
+    forceFullHttpReads?: boolean;
     s3Config?: S3Config;
 }
 
@@ -91,6 +92,7 @@ export interface DuckDBGlobalFileInfo {
     cacheEpoch: number;
     reliableHeadRequests?: boolean;
     allowFullHttpReads?: boolean;
+    forceFullHttpReads?: boolean;
     s3Config?: S3Config;
 }
 

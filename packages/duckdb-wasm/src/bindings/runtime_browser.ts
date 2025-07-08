@@ -235,9 +235,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         const data = mod._malloc(1);
                         const src = new Uint8Array();
                         mod.HEAPU8.set(src, data);
-                        const result = mod._malloc(2 * 8);
+                        const result = mod._malloc(3 * 8);
                         mod.HEAPF64[(result >> 3) + 0] = 1;
                         mod.HEAPF64[(result >> 3) + 1] = data;
+                        mod.HEAPF64[(result >> 3) + 2] = new Date().getTime() / 1000;
                         return result;
                     } else if ((flags & FileFlags.FILE_FLAGS_READ) == 0) {
                         throw new Error(`Opening file ${file.fileName} failed: unsupported file flags: ${flags}`);
@@ -246,7 +247,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // Supports ranges?
                     let contentLength = null;
                     let error: any | null = null;
-                    if (file.reliableHeadRequests || !file.allowFullHttpReads) {
+                    if (!file.forceFullHttpReads && (file.reliableHeadRequests || !file.allowFullHttpReads)) {
                         try {
                             // Send a dummy HEAD request with range protocol
                             //          -> good IFF status is 206 and contentLenght is present
@@ -261,11 +262,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             xhr.send(null);
 
                             // Supports range requests
-                            contentLength = xhr.getResponseHeader('Content-Length');
+                            contentLength = null;
+                            try { contentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                             if (contentLength !== null && xhr.status == 206) {
-                                const result = mod._malloc(2 * 8);
+                                const result = mod._malloc(3 * 8);
                                 mod.HEAPF64[(result >> 3) + 0] = +contentLength;
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
+                                let modification_time = 0;
+                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                                mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
                         } catch (e: any) {
@@ -276,7 +281,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Try to fallback to full read?
                     if (file.allowFullHttpReads) {
-                        {
+                        if (!file.forceFullHttpReads) {
                             // 2. Send a dummy GET range request querying the first byte of the file
                             //          -> good IFF status is 206 and contentLenght2 is 1
                             //          -> otherwise, iff 200 and contentLenght2 == contentLenght
@@ -291,8 +296,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             xhr.responseType = 'arraybuffer';
                             xhr.setRequestHeader('Range', `bytes=0-0`);
                             xhr.send(null);
-                            const contentRange = xhr.getResponseHeader('Content-Range')?.split('/')[1];
-                            const contentLength2 = xhr.getResponseHeader('Content-Length');
+                            let actualContentLength = null;
+                            try { actualContentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
+                            const contentRange = actualContentLength?.split('/')[1];
+                            const contentLength2 = actualContentLength;
 
                             let presumedLength = null;
                             if (contentRange !== undefined) {
@@ -311,7 +318,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 head.send(null);
 
                                 // Supports range requests
-                                contentLength = head.getResponseHeader('Content-Length');
+                                contentLength = null;
+                                try { contentLength = head.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                                 if (contentLength !== null && +contentLength > 1) {
                                     presumedLength = contentLength;
                                 }
@@ -323,9 +331,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 +contentLength2 == 1 &&
                                 presumedLength !== null
                             ) {
-                                const result = mod._malloc(2 * 8);
+                                const result = mod._malloc(3 * 8);
                                 mod.HEAPF64[(result >> 3) + 0] = +presumedLength;
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
+                                let modification_time = 0;
+                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                                mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
                             if (
@@ -338,13 +349,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 const data = mod._malloc(xhr.response.byteLength);
                                 const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
                                 mod.HEAPU8.set(src, data);
-                                const result = mod._malloc(2 * 8);
+                                const result = mod._malloc(3 * 8);
                                 mod.HEAPF64[(result >> 3) + 0] = xhr.response.byteLength;
                                 mod.HEAPF64[(result >> 3) + 1] = data;
+                                let modification_time = 0;
+                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                                mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
+                            console.warn(`falling back to full HTTP read for: ${file.dataUrl}`);
                         }
-                        console.warn(`falling back to full HTTP read for: ${file.dataUrl}`);
                         // 3. Send non-range request
                         const xhr = new XMLHttpRequest();
                         if (file.dataProtocol == DuckDBDataProtocol.S3) {
@@ -361,9 +375,12 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             const data = mod._malloc(xhr.response.byteLength);
                             const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
                             mod.HEAPU8.set(src, data);
-                            const result = mod._malloc(2 * 8);
+                            const result = mod._malloc(3 * 8);
                             mod.HEAPF64[(result >> 3) + 0] = xhr.response.byteLength;
                             mod.HEAPF64[(result >> 3) + 1] = data;
+                            let modification_time = 0;
+                            try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                            mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                             return result;
                         }
                     }
@@ -378,9 +395,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.BROWSER_FILEREADER: {
                     const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (handle) {
-                        const result = mod._malloc(2 * 8);
+                        const result = mod._malloc(3 * 8);
                         mod.HEAPF64[(result >> 3) + 0] = handle.size;
                         mod.HEAPF64[(result >> 3) + 1] = 0;
+                        mod.HEAPF64[(result >> 3) + 2] = 0;
                         return result;
                     }
 
@@ -391,10 +409,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Fall back to empty buffered file in the browser
                     console.warn(`Buffering missing file: ${file.fileName}`);
-                    const result = mod._malloc(2 * 8);
+                    const result = mod._malloc(3 * 8);
                     const buffer = mod._malloc(1); // malloc(0) is allowed to return a nullptr
                     mod.HEAPF64[(result >> 3) + 0] = 1;
                     mod.HEAPF64[(result >> 3) + 1] = buffer;
+                    mod.HEAPF64[(result >> 3) + 2] = 0;
                     return result;
                 }
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
@@ -405,10 +424,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     if (flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW) {
                         handle.truncate(0);
                     }
-                    const result = mod._malloc(2 * 8);
+                    const result = mod._malloc(3 * 8);
                     const fileSize = handle.getSize();
                     mod.HEAPF64[(result >> 3) + 0] = fileSize;
                     mod.HEAPF64[(result >> 3) + 1] = 0;
+                    mod.HEAPF64[(result >> 3) + 2] = 0;
                     return result;
                 }
             }
@@ -457,7 +477,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         console.log(`HEAD and GET requests failed: ${path}`);
                         return 0;
                     }
-                    const contentLength = xhr2.getResponseHeader('Content-Length');
+                    let contentLength = null;
+                    try { contentLength = xhr2.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                     if (contentLength && +contentLength > 1) {
                         console.warn(
                             `Range request for ${path} did not return a partial response: ${xhr2.status} "${xhr2.statusText}"`,
@@ -700,7 +721,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
             case DuckDBDataProtocol.HTTP:
             case DuckDBDataProtocol.S3:
-                return new Date().getTime();
+                // getTime() returns milliseconds, we need seconds
+                return new Date().getTime() / 1000;
         }
         return 0;
     },

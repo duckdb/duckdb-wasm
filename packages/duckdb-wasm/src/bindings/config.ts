@@ -22,11 +22,15 @@ export interface DuckDBQueryConfig {
 }
 
 export interface DuckDBFilesystemConfig {
+    reliableHeadRequests?: boolean;
     /**
      * Allow falling back to full HTTP reads if the server does not support range requests.
      */
-    reliableHeadRequests?: boolean;
     allowFullHTTPReads?: boolean;
+    /**
+     * Force use of full HTTP reads, suppressing range requests.
+     */
+    forceFullHTTPReads?: boolean;
 }
 
 export interface DuckDBOPFSConfig {

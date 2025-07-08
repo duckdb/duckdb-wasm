@@ -97,6 +97,8 @@ struct OpenedFile {
     double file_size;
     /// The file buffer
     double file_buffer;
+    /// The file time_t
+    double file_last_modification;
 };
 
 #ifdef EMSCRIPTEN
@@ -109,6 +111,7 @@ RT_FN(void *duckdb_web_fs_file_open(size_t file_id, uint8_t flags), {
     auto &file = GetOrOpen(file_id);
     auto result = std::make_unique<OpenedFile>();
     result->file_size = file.GetFileSize();
+    result->file_last_modification = std::nullopt;  // This should be 'new Date().getTime() / 1000;'
     result->file_buffer = 0;
     return result.release();
 });
@@ -322,7 +325,10 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
         filesystem_.config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
     }
-
+    if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3) &&
+        filesystem_.config_->filesystem.force_full_http_reads.value_or(true)) {
+        value.AddMember("forceFullHttpReads", true, allocator);
+    }
     if ((data_protocol_ == DataProtocol::HTTP || data_protocol_ == DataProtocol::S3)) {
         if (filesystem_.config_->duckdb_config_options.reliable_head_requests)
             value.AddMember("reliableHeadRequests", true, allocator);
@@ -389,6 +395,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto file = std::make_shared<WebFile>(*this, file_id, file_name, protocol);
     file->data_url_ = file_url;
     file->file_size_ = std::nullopt;
+    file->last_modification_time_ = std::nullopt;
 
     // Register the file
     files_by_id_.insert({file_id, file});
@@ -415,6 +422,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
             case DataProtocol::BROWSER_FSACCESS:
             case DataProtocol::BROWSER_FILEREADER: {
                 file->file_size_ = file_buffer.Size();
+                file->last_modification_time_ = std::nullopt;
                 file->data_buffer_ = std::move(file_buffer);
                 auto handle = std::make_unique<WebFileHandle>(file);
                 fs_guard.unlock();
@@ -428,6 +436,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
             case DataProtocol::BUFFER:
                 file->data_protocol_ = DataProtocol::BUFFER;
                 file->file_size_ = file_buffer.Size();
+                file->last_modification_time_ = std::nullopt;
                 file->data_buffer_ = std::move(file_buffer);
                 return std::make_unique<WebFileHandle>(file);
         }
@@ -437,6 +446,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto file_id = AllocateFileID();
     auto file = std::make_shared<WebFile>(*this, file_id, file_name, DataProtocol::BUFFER);
     file->file_size_ = file_buffer.Size();
+    file->last_modification_time_ = std::nullopt;
     file->data_buffer_ = std::move(file_buffer);
 
     // Register the file
@@ -510,6 +520,9 @@ rapidjson::Value WebFileSystem::WriteGlobalFileInfo(rapidjson::Document &doc, ui
 
     if (config_->filesystem.allow_full_http_reads.value_or(true)) {
         value.AddMember("allowFullHttpReads", true, allocator);
+    }
+    if (config_->filesystem.force_full_http_reads.value_or(true)) {
+        value.AddMember("forceFullHttpReads", true, allocator);
     }
     if (config_->filesystem.reliable_head_requests.value_or(true)) {
         value.AddMember("reliableHeadRequests", true, allocator);
@@ -645,6 +658,7 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
             if (flags.OverwriteExistingFile()) {
                 file->data_buffer_->Resize(0);
                 file->file_size_ = 0;
+                file->last_modification_time_ = std::nullopt;
             }
             break;
 
@@ -666,6 +680,7 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
                 }
                 auto owned = std::unique_ptr<OpenedFile>(static_cast<OpenedFile *>(opened));
                 file->file_size_ = owned->file_size;
+                file->last_modification_time_ = owned->file_last_modification;
                 auto *buffer_ptr = reinterpret_cast<char *>(static_cast<uintptr_t>(owned->file_buffer));
 
                 // A buffer was returned, this can happen for 3 reasons:
@@ -906,26 +921,10 @@ int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
 }
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
 time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
-    DEBUG_TRACE();
     // Get the file handle
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
-    auto &file = *file_hdl.file_;
-
-    // Acquire the file mutex to procted against a procotol switch
-    std::shared_lock<SharedMutex> file_guard{file.file_mutex_};
-    switch (file.data_protocol_) {
-        case DataProtocol::BUFFER:
-            return 0;
-        case DataProtocol::BROWSER_FILEREADER:
-        case DataProtocol::BROWSER_FSACCESS:
-        case DataProtocol::NODE_FS:
-        case DataProtocol::HTTP:
-        case DataProtocol::S3: {
-            return duckdb_web_fs_file_get_last_modified_time(file.file_id_);
-        }
-    }
-    return 0;
+    return file_hdl.file_->last_modification_time_.value_or(0);
 }
 /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
 /// the file
