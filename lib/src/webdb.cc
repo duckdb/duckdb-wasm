@@ -15,6 +15,7 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "../../third_party/mbedtls/include/mbedtls_wrapper.hpp"
 #include "arrow/array/array_dict.h"
 #include "arrow/array/array_nested.h"
 #include "arrow/array/builder_primitive.h"
@@ -974,6 +975,10 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         auto& config = duckdb::DBConfig::GetConfig(*db->instance);
         if (!config.http_util || config.http_util->GetName() != string("WasmHTTPUtils")) {
             config.http_util = make_shared_ptr<HTTPWasmUtil>();
+        }
+
+        if (!config.encryption_util) {
+            config.encryption_util = make_shared_ptr<duckdb_mbedtls::MbedTlsWrapper::AESStateMBEDTLSFactory>();
         }
 
         // Reset state that is specific to the old database
