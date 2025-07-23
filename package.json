@@ -15,7 +15,8 @@
         "benchmarks:build:node": "yarn workspace @duckdb/benchmarks build:node",
         "benchmarks:build": "yarn workspace @duckdb/benchmarks build"
     },
-    "devDependencies": {
-        "badge-maker": "^5.0.2"
+    "devDependencies": {},
+    "dependencies": {
+        "@types/emscripten": "1.39.10"
     }
 }
