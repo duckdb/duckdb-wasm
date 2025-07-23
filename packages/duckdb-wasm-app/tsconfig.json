@@ -14,7 +14,6 @@
         "strict": true,
         "jsx": "react",
         "types": ["emscripten", "node", "jasmine"],
-        "plugins": [{ "name": "typescript-plugin-css-modules" }],
         "lib": ["es6", "es2020", "dom"]
     },
     "exclude": ["./node_modules"],
