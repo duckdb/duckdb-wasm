@@ -33,6 +33,15 @@ export interface DuckDBFilesystemConfig {
     forceFullHTTPReads?: boolean;
 }
 
+export interface DuckDBOPFSConfig {
+    /**
+     * Defines how `opfs://` files are handled during SQL execution.
+     * - "auto": Automatically register `opfs://` files and drop them after execution.
+     * - "manual": Files must be manually registered and dropped.
+     */
+    fileHandling?: "auto" | "manual";
+}
+
 export enum DuckDBAccessMode {
     UNDEFINED = 0,
     AUTOMATIC = 1,
@@ -78,4 +87,8 @@ export interface DuckDBConfig {
      * Custom user agent string
      */
     customUserAgent?: string;
+    /**
+     * opfs string
+     */
+    opfs?: DuckDBOPFSConfig;
 }
