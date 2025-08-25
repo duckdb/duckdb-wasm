@@ -66,6 +66,7 @@ class HTTPWasmClient : public HTTPClient {
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
+			if (z === "User-Agent") z = "X-user-agent";
 			if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
@@ -125,8 +126,7 @@ class HTTPWasmClient : public HTTPClient {
         if (!exe) {
             res = make_uniq<HTTPResponse>(HTTPStatusCode::NotFound_404);
             res->reason =
-                "Unknown error, something went wrong in Wasm land! Please consult the console and consider reporting a "
-                "bug";
+                "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
             uint64_t LEN = 0;
@@ -257,8 +257,7 @@ class HTTPWasmClient : public HTTPClient {
         if (!exe) {
             res = make_uniq<HTTPResponse>(HTTPStatusCode::NotFound_404);
             res->reason =
-                "Unknown error, something went wrong in Wasm land! Please consult the console and consider reporting a "
-                "bug";
+                "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
             uint64_t LEN = 0;
@@ -343,8 +342,10 @@ class HTTPWasmClient : public HTTPClient {
                     i += 2;
                 }
 
+xhr.setRequestHeader("Content-Type", "application/octet-stream");
                 try {
-                    xhr.send(UTF8ToString($4));
+			xhr.send(new Uint8Array(0));
+                   // xhr.send(UTF8ToString($4));
                 } catch {
                     return 0;
                 }
@@ -390,8 +391,7 @@ class HTTPWasmClient : public HTTPClient {
         if (!exe) {
             res = make_uniq<HTTPResponse>(HTTPStatusCode::NotFound_404);
             res->reason =
-                "Unknown error, something went wrong in Wasm land! Please consult the console and consider reporting a "
-                "bug";
+                "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
             uint64_t LEN = 0;
@@ -404,12 +404,15 @@ class HTTPWasmClient : public HTTPClient {
             LEN *= 256;
             LEN += ((uint8_t *)exe)[0];
             res->body = string(exe + 4, LEN);
-            /*
+           /* 
                         if (info.content_handler) {
                             info.content_handler((const unsigned char *)exe + 4, LEN);
                         }
-            */
+            
+p
+*/
 
+	//		info.buffer_out += string(exe+4, LEN);
             free(exe);
         }
 
