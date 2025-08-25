@@ -15,6 +15,7 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "../../third_party/mbedtls/include/mbedtls_wrapper.hpp"
 #include "arrow/array/array_dict.h"
 #include "arrow/array/array_nested.h"
 #include "arrow/array/builder_primitive.h"
@@ -74,6 +75,7 @@
 namespace duckdb {
 
 bool preloaded_httpfs{true};
+string web::experimental_s3_tables_global_proxy{""};
 
 namespace web {
 
@@ -791,6 +793,10 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
             webfs->Config()->duckdb_config_options.reliable_head_requests = BooleanValue::Get(parameter);
             webfs->IncrementCacheEpoch();
         };
+        auto callback_experimental_s3_tables_global_proxy = [](ClientContext& context, SetScope scope,
+                                                               Value& parameter) {
+            experimental_s3_tables_global_proxy = StringValue::Get(parameter);
+        };
 
         config.AddExtensionOption("builtin_httpfs", "Use built-in HTTPS support", LogicalType::BOOLEAN, false,
                                   callback_builtin_httpfs);
@@ -805,6 +811,9 @@ void WebDB::RegisterCustomExtensionOptions(shared_ptr<duckdb::DuckDB> database) 
                                   Value(), callback_s3_endpoint);
         config.AddExtensionOption("reliable_head_requests", "Set whether HEAD requests returns reliable content-length",
                                   LogicalType::BOOLEAN, Value(true), callback_reliable_head_requests);
+        config.AddExtensionOption("experimental_s3_tables_global_proxy",
+                                  "Experimental - Global proxy to interact with S3 Tables", LogicalType::VARCHAR,
+                                  Value(""), callback_experimental_s3_tables_global_proxy);
 
         webfs->IncrementCacheEpoch();
     }
@@ -974,6 +983,10 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         auto& config = duckdb::DBConfig::GetConfig(*db->instance);
         if (!config.http_util || config.http_util->GetName() != string("WasmHTTPUtils")) {
             config.http_util = make_shared_ptr<HTTPWasmUtil>();
+        }
+
+        if (!config.encryption_util) {
+            config.encryption_util = make_shared_ptr<duckdb_mbedtls::MbedTlsWrapper::AESStateMBEDTLSFactory>();
         }
 
         // Reset state that is specific to the old database

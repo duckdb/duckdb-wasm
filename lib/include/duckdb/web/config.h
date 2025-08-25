@@ -11,6 +11,8 @@
 namespace duckdb {
 namespace web {
 
+extern std::string experimental_s3_tables_global_proxy;
+
 enum WebDBFeature : uint32_t {
     FAST_EXCEPTIONS = 0,
     THREADS = 1,
