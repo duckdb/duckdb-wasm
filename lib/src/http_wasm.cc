@@ -23,17 +23,17 @@ class HTTPWasmClient : public HTTPClient {
 
         string path = host_port + info.url;
         path = info.url;
-	if (!web::experimental_s3_tables_global_proxy.empty()) {
-	if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
-		auto id_table = path.find("--table-s3.s3.");
-		auto id_aws = path.find(".amazonaws.com/");
-		if (id_table != std::string::npos && id_aws != std::string::npos && id_table < id_aws) {
-			path = web::experimental_s3_tables_global_proxy + path.substr(8);
-		}
-	}
-	} else {
-		path = "https://" + path;
-	}
+        if (!web::experimental_s3_tables_global_proxy.empty()) {
+            if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
+                auto id_table = path.find("--table-s3.s3.");
+                auto id_aws = path.find(".amazonaws.com/");
+                if (id_table != std::string::npos && id_aws != std::string::npos && id_table < id_aws) {
+                    path = web::experimental_s3_tables_global_proxy + path.substr(8);
+                }
+            }
+        } else {
+            path = "https://" + path;
+        }
 
         int n = 0;
         for (auto h : info.headers) {
@@ -137,8 +137,7 @@ class HTTPWasmClient : public HTTPClient {
 
         if (!exe) {
             res = make_uniq<HTTPResponse>(HTTPStatusCode::NotFound_404);
-            res->reason =
-                "Please consult the browser console for details, might be potentially a CORS error";
+            res->reason = "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
             uint64_t LEN = 0;
@@ -268,8 +267,7 @@ class HTTPWasmClient : public HTTPClient {
 
         if (!exe) {
             res = make_uniq<HTTPResponse>(HTTPStatusCode::NotFound_404);
-            res->reason =
-                "Please consult the browser console for details, might be potentially a CORS error";
+            res->reason = "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
             uint64_t LEN = 0;
@@ -402,8 +400,7 @@ xhr.setRequestHeader("Content-Type", "application/octet-stream");
 
         if (!exe) {
             res = make_uniq<HTTPResponse>(HTTPStatusCode::NotFound_404);
-            res->reason =
-                "Please consult the browser console for details, might be potentially a CORS error";
+            res->reason = "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
             uint64_t LEN = 0;
@@ -416,15 +413,12 @@ xhr.setRequestHeader("Content-Type", "application/octet-stream");
             LEN *= 256;
             LEN += ((uint8_t *)exe)[0];
             res->body = string(exe + 4, LEN);
-           /* 
+            /*
                         if (info.content_handler) {
                             info.content_handler((const unsigned char *)exe + 4, LEN);
                         }
-            
-p
-*/
-
-	//		info.buffer_out += string(exe+4, LEN);
+            */
+            //		info.buffer_out += string(exe+4, LEN);
             free(exe);
         }
 
