@@ -31,7 +31,8 @@ class HTTPWasmClient : public HTTPClient {
                     path = web::experimental_s3_tables_global_proxy + path.substr(8);
                 }
             }
-        } else {
+        }
+        if (path.rfind("https://", 0 != 0)) {
             path = "https://" + path;
         }
 
