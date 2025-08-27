@@ -318,6 +318,10 @@ class HTTPWasmClient : public HTTPClient {
             i++;
         }
 
+	const int buffer_length = info.buffer_in_len;
+	char *payload = (char*)malloc(buffer_length);
+	memcpy(payload, info.buffer_in, buffer_length);
+
         // clang-format off
         char *exe = NULL;
         exe = (char *)EM_ASM_PTR(
@@ -355,10 +359,15 @@ class HTTPWasmClient : public HTTPClient {
                     i += 2;
                 }
 
-xhr.setRequestHeader("Content-Type", "application/octet-stream");
+//xhr.setRequestHeader("Content-Type", "application/octet-stream");
+//xhr.setRequestHeader("Content-Type", "text/json");
                 try {
-			xhr.send(new Uint8Array(0));
-                   // xhr.send(UTF8ToString($4));
+			var post_payload = new Uint8Array($5);
+
+			for (var iii = 0; iii < $5; iii++) {
+				post_payload[iii] = Module.HEAPU8[iii + $4];
+			}
+			xhr.send(post_payload);
                 } catch {
                     return 0;
                 }
@@ -389,8 +398,10 @@ xhr.setRequestHeader("Content-Type", "application/octet-stream");
                 Module.HEAPU8.set(LEN123, fileOnWasmHeap);
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "POST", info.buffer_in);
+            path.c_str(), n, z, "POST", payload, buffer_length);
         // clang-format on
+
+	free(payload);
 
         i = 0;
         for (auto h : info.headers) {
