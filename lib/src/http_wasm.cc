@@ -427,12 +427,13 @@ class HTTPWasmClient : public HTTPClient {
             LEN *= 256;
             LEN += ((uint8_t *)exe)[0];
             res->body = string(exe + 4, LEN);
-            /*
-                        if (info.content_handler) {
+            
+                       /*
+ if (info.content_handler) {
                             info.content_handler((const unsigned char *)exe + 4, LEN);
                         }
-            */
-            //		info.buffer_out += string(exe+4, LEN);
+*/
+            		info.buffer_out += string(exe+4, LEN);
             free(exe);
         }
 
