@@ -210,6 +210,7 @@ class HTTPWasmClient : public HTTPClient {
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
+			if (z === "User-Agent") z = "X-user-agent";
 			if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
@@ -341,6 +342,7 @@ class HTTPWasmClient : public HTTPClient {
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
+			if (z === "User-Agent") z = "X-user-agent";
 			if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
