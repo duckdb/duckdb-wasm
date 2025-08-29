@@ -166,6 +166,18 @@ class HTTPWasmClient : public HTTPClient {
 
         string path = host_port + info.url;
         path = info.url;
+        if (!web::experimental_s3_tables_global_proxy.empty()) {
+            if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
+                auto id_table = path.find("--table-s3.s3.");
+                auto id_aws = path.find(".amazonaws.com/");
+                if (id_table != std::string::npos && id_aws != std::string::npos && id_table < id_aws) {
+                    path = web::experimental_s3_tables_global_proxy + path.substr(8);
+                }
+            }
+        }
+        if (path.rfind("https://", 0 != 0)) {
+            path = "https://" + path;
+        }
 
         int n = 0;
         for (auto h : info.headers) {
@@ -298,6 +310,18 @@ class HTTPWasmClient : public HTTPClient {
 
         string path = host_port + info.url;
         path = info.url;
+        if (!web::experimental_s3_tables_global_proxy.empty()) {
+            if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
+                auto id_table = path.find("--table-s3.s3.");
+                auto id_aws = path.find(".amazonaws.com/");
+                if (id_table != std::string::npos && id_aws != std::string::npos && id_table < id_aws) {
+                    path = web::experimental_s3_tables_global_proxy + path.substr(8);
+                }
+            }
+        }
+        if (path.rfind("https://", 0 != 0)) {
+            path = "https://" + path;
+        }
 
         int n = 0;
         for (auto h : info.headers) {
@@ -440,6 +464,18 @@ class HTTPWasmClient : public HTTPClient {
 
         string path = host_port + info.url;
         path = info.url;
+        if (!web::experimental_s3_tables_global_proxy.empty()) {
+            if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
+                auto id_table = path.find("--table-s3.s3.");
+                auto id_aws = path.find(".amazonaws.com/");
+                if (id_table != std::string::npos && id_aws != std::string::npos && id_table < id_aws) {
+                    path = web::experimental_s3_tables_global_proxy + path.substr(8);
+                }
+            }
+        }
+        if (path.rfind("https://", 0 != 0)) {
+            path = "https://" + path;
+        }
 
         int n = 0;
         for (auto h : info.headers) {
