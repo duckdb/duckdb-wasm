@@ -720,7 +720,7 @@ class HTTPWasmClient : public HTTPClient {
                 Module.HEAPU8.set(LEN123, fileOnWasmHeap);
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "HEAD");
+            path.c_str(), n, z, "DELETE");
         // clang-format on
 
         i = 0;
