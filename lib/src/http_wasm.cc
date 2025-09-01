@@ -546,7 +546,6 @@ class HTTPWasmClient : public HTTPClient {
 				post_payload[iii] = Module.HEAPU8[iii + $4];
 			}
 			xhr.send(post_payload);
-console.log(xhr.getResponseHeader("ETAG"));
                 } catch {
                     return 0;
                 }
