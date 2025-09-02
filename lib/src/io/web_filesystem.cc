@@ -920,11 +920,11 @@ int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
     return file_hdl.file_->file_size_.value_or(0);
 }
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
-time_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
+timestamp_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
     // Get the file handle
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
-    return file_hdl.file_->last_modification_time_.value_or(0);
+    return timestamp_t(file_hdl.file_->last_modification_time_.value_or(0) * 1000);
 }
 /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
 /// the file

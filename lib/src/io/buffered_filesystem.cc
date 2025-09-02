@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/main/client_context.hpp"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/web_filesystem.h"
@@ -131,7 +132,8 @@ void BufferedFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t 
 void BufferedFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
     // Direct I/O?
     if (&handle.file_system != this) {
-        handle.Write(buffer, nr_bytes, location);
+        duckdb::QueryContext context;
+        handle.Write(context, buffer, nr_bytes, location);
         return;
     }
 
@@ -205,7 +207,7 @@ int64_t BufferedFileSystem::GetFileSize(duckdb::FileHandle &handle) {
 }
 
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
-time_t BufferedFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
+timestamp_t BufferedFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
     // Direct I/O?
     if (&handle.file_system != this) {
         return filesystem_.GetLastModifiedTime(handle);

@@ -105,7 +105,7 @@ class BufferedFileSystem : public duckdb::FileSystem {
     /// Returns the file size of a file handle, returns -1 on error
     int64_t GetFileSize(duckdb::FileHandle &handle) override;
     /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
-    time_t GetLastModifiedTime(duckdb::FileHandle &handle) override;
+    timestamp_t GetLastModifiedTime(duckdb::FileHandle &handle) override;
     /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
     /// the file
     void Truncate(duckdb::FileHandle &handle, int64_t new_size) override;
