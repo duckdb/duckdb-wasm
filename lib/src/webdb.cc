@@ -40,6 +40,7 @@
 #include "duckdb/common/types/vector_buffer.hpp"
 #include "duckdb/common/virtual_file_system.hpp"
 #include "duckdb/main/query_result.hpp"
+#include "duckdb/main/settings.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/arrow_bridge.h"
@@ -964,7 +965,7 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(make_uniq<VirtualFileSystem>(std::move(buffered_fs)));
         db_config.options.allow_unsigned_extensions = config_->allow_unsigned_extensions;
-        db_config.options.arrow_lossless_conversion = config_->arrow_lossless_conversion;
+	db_config.SetOption("arrow_lossless_conversion", config_->arrow_lossless_conversion);
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;
         db_config.options.access_mode = access_mode;

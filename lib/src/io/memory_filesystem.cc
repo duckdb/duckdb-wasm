@@ -116,7 +116,7 @@ int64_t MemoryFileSystem::GetFileSize(duckdb::FileHandle &raw_handle) {
 }
 
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
-time_t MemoryFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) { return 0; }
+timestamp_t MemoryFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) { return timestamp_t(0); }
 
 /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
 /// the file
