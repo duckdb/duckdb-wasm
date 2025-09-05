@@ -318,6 +318,11 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         this._pendingRequests.clear();
     }
 
+    /** Is in detached state, no worker defined */
+    public isDetached(): boolean {
+        return !this._worker;
+    }
+
     /** Reset the duckdb */
     public async reset(): Promise<null> {
         const task = new WorkerTask<WorkerRequestType.RESET, null, null>(WorkerRequestType.RESET, null);
