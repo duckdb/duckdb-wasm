@@ -156,7 +156,7 @@ function getValue(x: any): any {
 const ALL_TYPES_TEST: AllTypesTest[] = [
     {
         name: 'fully supported types',
-        query: `SELECT * EXCLUDE(varint, uhugeint, fixed_int_array, fixed_varchar_array, fixed_nested_int_array, fixed_nested_varchar_array, fixed_struct_array, struct_of_fixed_array, fixed_array_of_int_list, list_of_fixed_int_array) REPLACE('not_implemented' as map) FROM test_all_types()`,
+        query: `SELECT * EXCLUDE(bignum, variant, uhugeint, fixed_int_array, fixed_varchar_array, fixed_nested_int_array, fixed_nested_varchar_array, fixed_struct_array, struct_of_fixed_array, fixed_array_of_int_list, list_of_fixed_int_array) REPLACE('not_implemented' as map) FROM test_all_types()`,
         skip: REPLACE_COLUMNS,
         answerMap: FULLY_IMPLEMENTED_ANSWER_MAP,
         answerCount: REPLACE_COLUMNS.length + Object.keys(FULLY_IMPLEMENTED_ANSWER_MAP).length,

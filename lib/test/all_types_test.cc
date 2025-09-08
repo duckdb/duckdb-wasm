@@ -246,7 +246,7 @@ vector<string> UNSUPPORTED_TYPES = {
     "date_array", "timestamp_array", "timestamptz_array",
 
     // Currently does not work
-    "uuid", "varint"};
+    "uuid", "bignum", "variant"};
 
 TEST(AllTypesTest, FullRangeTypes) {
     auto db = std::make_shared<WebDB>(NATIVE);
