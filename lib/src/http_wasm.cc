@@ -32,7 +32,7 @@ class HTTPWasmClient : public HTTPClient {
                 }
             }
         }
-        if (path.rfind("https://", 0 != 0)) {
+        if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
 
@@ -175,10 +175,9 @@ class HTTPWasmClient : public HTTPClient {
                 }
             }
         }
-        if (path.rfind("https://", 0 != 0)) {
+        if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-
         int n = 0;
         for (auto h : info.headers) {
             n++;
@@ -319,7 +318,7 @@ class HTTPWasmClient : public HTTPClient {
                 }
             }
         }
-        if (path.rfind("https://", 0 != 0)) {
+        if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
 
@@ -473,7 +472,7 @@ class HTTPWasmClient : public HTTPClient {
                 }
             }
         }
-        if (path.rfind("https://", 0 != 0)) {
+        if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
 
@@ -628,7 +627,7 @@ class HTTPWasmClient : public HTTPClient {
                 }
             }
         }
-        if (path.rfind("https://", 0 != 0)) {
+        if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
 
