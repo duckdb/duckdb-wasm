@@ -152,7 +152,7 @@ class HTTPWasmClient : public HTTPClient {
             LEN += ((uint8_t *)exe)[0];
             res->body = string(exe + 4, LEN);
 
-idx_t LEN_X_T = LEN;
+            idx_t LEN_X_T = LEN;
             if (info.content_handler) {
                 info.content_handler(((const unsigned char *)exe) + 4, LEN_X_T);
             }
