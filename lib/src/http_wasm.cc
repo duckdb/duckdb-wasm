@@ -19,6 +19,7 @@ class HTTPWasmClient : public HTTPClient {
     string host_port;
 
     unique_ptr<HTTPResponse> Get(GetRequestInfo &info) override {
+        // clang-format off
         unique_ptr<HTTPResponse> res;
 
         string path = host_port + info.url;
@@ -55,7 +56,6 @@ class HTTPWasmClient : public HTTPClient {
             i++;
         }
 
-        // clang-format off
         char *exe = NULL;
         exe = (char *)EM_ASM_PTR(
             {
@@ -244,9 +244,7 @@ idx_t LEN_X_T = LEN;
 
                 var uInt8Array = xhr.response;
                 var len = uInt8Array.byteLength;
-console.log("Size fileOnWasmHeap", len);
                 var fileOnWasmHeap = _malloc(len + 8);
-console.log("Location fileOnWasmHeap", fileOnWasmHeap);
 
                 var properArray = new Uint8Array(uInt8Array);
 
@@ -270,11 +268,8 @@ console.log("Location fileOnWasmHeap", fileOnWasmHeap);
                 Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
 
 		var headers = Uint8Array.from(Array.from(xhr.getAllResponseHeaders()).map(letter => letter.charCodeAt(0)));
-	console.log(xhr.getAllResponseHeaders());
-console.log("Size headers", headers.byteLength);
 		len = headers.byteLength;
                 var headersOnWasmHeap = _malloc(len + 8);
-console.log("Location headers", headersOnWasmHeap);
                 for (var iii = 0; iii < len; iii++) {
                     Module.HEAPU8[iii + headersOnWasmHeap + 8] = headers[iii];
                 }
@@ -313,7 +308,6 @@ console.log("Location headers", headersOnWasmHeap);
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "HEAD");
-        // clang-format on
 
         i = 0;
         for (auto h : info.headers) {
@@ -330,8 +324,6 @@ console.log("Location headers", headersOnWasmHeap);
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
 
-std::cout << "location 1 "<< (uint64_t)(uint8_t*)exe << "\n";
-
 		uint64_t next = 0;
 	{
             uint64_t LEN = 0;	
@@ -345,7 +337,6 @@ std::cout << "location 1 "<< (uint64_t)(uint8_t*)exe << "\n";
             LEN += ((uint8_t *)exe)[0];
 		next = LEN;
 	}
-std::cout << "location 2 "<< next << "\n";
 		uint64_t len = 0;
 	{
             uint64_t LEN = 0;	
@@ -360,7 +351,6 @@ std::cout << "location 2 "<< next << "\n";
 		len = LEN;
 	}
 
-std::cout << "length 1 "<< len << "\n";
 		uint64_t len_headers = 0;
 	{
             uint64_t LEN = 0;	
@@ -375,10 +365,8 @@ std::cout << "length 1 "<< len << "\n";
 		len_headers = LEN;
 	}
 		
-std::cout << "length 2 "<< len_headers << "\n";
 	char * ptr = reinterpret_cast<char*>(next) ;
 
-	std::cout << string(ptr + 8, len_headers) << "\n";
 
 	string headers = string(ptr + 8, len_headers);
 
@@ -393,7 +381,6 @@ string head = string(h.c_str(), i);
 while (i < h.size() && h[i] != ' ') i++;
 string tail = string(h.c_str() + i+1);
 
-std::cout << "..." << head << "..." << tail << "...\n";
 res->headers.Insert(head, tail);	
 	}
 	
@@ -411,6 +398,7 @@ res->headers.Insert(head, tail);
             free(exe);
             free(ptr);
         }
+        // clang-format on
 
         return res;
     }
