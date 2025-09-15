@@ -152,8 +152,9 @@ class HTTPWasmClient : public HTTPClient {
             LEN += ((uint8_t *)exe)[0];
             res->body = string(exe + 4, LEN);
 
+idx_t LEN_X_T = LEN;
             if (info.content_handler) {
-                info.content_handler((const unsigned char *)exe + 4, LEN);
+                info.content_handler(((const unsigned char *)exe) + 4, LEN_X_T);
             }
 
             free(exe);
@@ -240,16 +241,19 @@ class HTTPWasmClient : public HTTPClient {
                     return 0;
                 }
                 if (xhr.status >= 400) return 0;
-                var uInt8Array = xhr.response;
 
+                var uInt8Array = xhr.response;
                 var len = uInt8Array.byteLength;
-                var fileOnWasmHeap = _malloc(len + 4);
+console.log("Size fileOnWasmHeap", len);
+                var fileOnWasmHeap = _malloc(len + 8);
+console.log("Location fileOnWasmHeap", fileOnWasmHeap);
 
                 var properArray = new Uint8Array(uInt8Array);
 
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + fileOnWasmHeap + 4] = properArray[iii];
+                    Module.HEAPU8[iii + fileOnWasmHeap + 8] = properArray[iii];
                 }
+
                 var LEN123 = new Uint8Array(4);
                 LEN123[0] = len % 256;
                 len -= LEN123[0];
@@ -263,7 +267,49 @@ class HTTPWasmClient : public HTTPClient {
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
+                Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+
+		var headers = Uint8Array.from(Array.from(xhr.getAllResponseHeaders()).map(letter => letter.charCodeAt(0)));
+	console.log(xhr.getAllResponseHeaders());
+console.log("Size headers", headers.byteLength);
+		len = headers.byteLength;
+                var headersOnWasmHeap = _malloc(len + 8);
+console.log("Location headers", headersOnWasmHeap);
+                for (var iii = 0; iii < len; iii++) {
+                    Module.HEAPU8[iii + headersOnWasmHeap + 8] = headers[iii];
+                }
+
+                LEN123 = new Uint8Array(4);
+                LEN123[0] = len % 256;
+                len -= LEN123[0];
+                len /= 256;
+                LEN123[1] = len % 256;
+                len -= LEN123[1];
+                len /= 256;
+                LEN123[2] = len % 256;
+                len -= LEN123[2];
+                len /= 256;
+                LEN123[3] = len % 256;
+                len -= LEN123[3];
+                len /= 256;
+                Module.HEAPU8.set(LEN123, headersOnWasmHeap + 4);
+
+		len = headersOnWasmHeap;
+                LEN123 = new Uint8Array(4);
+                LEN123[0] = len % 256;
+                len -= LEN123[0];
+                len /= 256;
+                LEN123[1] = len % 256;
+                len -= LEN123[1];
+                len /= 256;
+                LEN123[2] = len % 256;
+                len -= LEN123[2];
+                len /= 256;
+                LEN123[3] = len % 256;
+                len -= LEN123[3];
+                len /= 256;
                 Module.HEAPU8.set(LEN123, fileOnWasmHeap);
+
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "HEAD");
@@ -283,7 +329,12 @@ class HTTPWasmClient : public HTTPClient {
             res->reason = "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
-            uint64_t LEN = 0;
+
+std::cout << "location 1 "<< (uint64_t)(uint8_t*)exe << "\n";
+
+		uint64_t next = 0;
+	{
+            uint64_t LEN = 0;	
             LEN *= 256;
             LEN += ((uint8_t *)exe)[3];
             LEN *= 256;
@@ -292,7 +343,65 @@ class HTTPWasmClient : public HTTPClient {
             LEN += ((uint8_t *)exe)[1];
             LEN *= 256;
             LEN += ((uint8_t *)exe)[0];
-            res->body = string(exe + 4, LEN);
+		next = LEN;
+	}
+std::cout << "location 2 "<< next << "\n";
+		uint64_t len = 0;
+	{
+            uint64_t LEN = 0;	
+            LEN *= 256;
+            LEN += ((uint8_t *)exe)[3 + 4];
+            LEN *= 256;
+            LEN += ((uint8_t *)exe)[2 + 4];
+            LEN *= 256;
+            LEN += ((uint8_t *)exe)[1 + 4];
+            LEN *= 256;
+            LEN += ((uint8_t *)exe)[0 + 4];
+		len = LEN;
+	}
+
+std::cout << "length 1 "<< len << "\n";
+		uint64_t len_headers = 0;
+	{
+            uint64_t LEN = 0;	
+            LEN *= 256;
+            LEN += ((uint8_t *)next)[3 + 4];
+            LEN *= 256;
+            LEN += ((uint8_t *)next)[2 + 4];
+            LEN *= 256;
+            LEN += ((uint8_t *)next)[1 + 4];
+            LEN *= 256;
+            LEN += ((uint8_t *)next)[0 + 4];
+		len_headers = LEN;
+	}
+		
+std::cout << "length 2 "<< len_headers << "\n";
+	char * ptr = reinterpret_cast<char*>(next) ;
+
+	std::cout << string(ptr + 8, len_headers) << "\n";
+
+	string headers = string(ptr + 8, len_headers);
+
+vector<string> vec_headers = StringUtil::Split(headers, "\r\n");
+
+for (auto h : vec_headers) {
+int i = 0;
+while (i < h.size() && h[i] != ':') i++;
+
+string head = string(h.c_str(), i);
+
+while (i < h.size() && h[i] != ' ') i++;
+string tail = string(h.c_str() + i+1);
+
+std::cout << "..." << head << "..." << tail << "...\n";
+res->headers.Insert(head, tail);	
+	}
+	
+
+
+
+
+            res->body = string(exe + 8, len);
             /*
                         if (info.content_handler) {
                             info.content_handler((const unsigned char *)exe + 4, LEN);
@@ -300,6 +409,7 @@ class HTTPWasmClient : public HTTPClient {
             */
 
             free(exe);
+            free(ptr);
         }
 
         return res;
