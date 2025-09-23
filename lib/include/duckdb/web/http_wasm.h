@@ -33,7 +33,9 @@ class HTTPWasmUtil : public HTTPUtil {
    public:
     unique_ptr<HTTPParams> InitializeParameters(optional_ptr<FileOpener> opener,
                                                 optional_ptr<FileOpenerInfo> info) override {
-        return make_uniq<HTTPFSParams>(*this);
+        auto result = make_uniq<HTTPFSParams>(*this);
+        result->Initialize(opener);
+        return result;
     }
     unique_ptr<HTTPClient> InitializeClient(HTTPParams &http_params, const string &proto_host_port) override;
 
