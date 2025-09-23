@@ -24,6 +24,9 @@ struct HTTPFSParams : public HTTPParams {
     string bearer_token;
     bool unsafe_disable_etag_checks{false};
     shared_ptr<HTTPState> state;
+    string user_agent = {""};
+    // Additional fields needs to be appended at the end and need to be propagated from duckdb-httpfs
+    // TODO: make this unnecessary
 };
 
 class HTTPWasmUtil : public HTTPUtil {
