@@ -32,7 +32,7 @@ index 6ccd1a1156..8040f537b6 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index 773f8d967a..fa089a47ee 100644
+index 419d3304ba..0bc1c11961 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
 @@ -1,5 +1,4 @@
@@ -41,7 +41,7 @@ index 773f8d967a..fa089a47ee 100644
  #include "duckdb/catalog/catalog.hpp"
  #include "duckdb/common/virtual_file_system.hpp"
  #include "duckdb/execution/index/index_type_set.hpp"
-@@ -35,6 +34,7 @@
+@@ -37,6 +36,7 @@
  #include "duckdb/common/thread.hpp"
  #endif
  
@@ -49,7 +49,7 @@ index 773f8d967a..fa089a47ee 100644
  namespace duckdb {
  
  DBConfig::DBConfig() {
-@@ -357,6 +357,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+@@ -344,6 +344,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
  }
  
@@ -78,17 +78,17 @@ index 773f8d967a..fa089a47ee 100644
  SecretManager &DatabaseInstance::GetSecretManager() {
  	return *config.secret_manager;
  }
-@@ -508,6 +530,10 @@ idx_t DuckDB::NumberOfThreads() {
- 
- bool DatabaseInstance::ExtensionIsLoaded(const std::string &name) {
- 	auto extension_name = ExtensionHelper::GetExtensionName(name);
-+	if (extension_name == "httpfs" && preloaded_httpfs) {
-+		ExtensionInstallInfo info;
-+		SetExtensionLoaded(extension_name, info);
-+	}
- 	auto it = loaded_extensions_info.find(extension_name);
- 	return it != loaded_extensions_info.end() && it->second.is_loaded;
+@@ -494,6 +516,10 @@ idx_t DuckDB::NumberOfThreads() {
  }
+ 
+ bool DatabaseInstance::ExtensionIsLoaded(const string &name) {
++ 	auto extension_name = ExtensionHelper::GetExtensionName(name);
++	if (extension_name == "httpfs" && preloaded_httpfs) {
++		return true;
++	}
+ 	return extension_manager->ExtensionIsLoaded(name);
+ }
+ 
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
 index 3aaf507faa..be084ef030 100644
 --- a/src/main/extension/extension_helper.cpp
