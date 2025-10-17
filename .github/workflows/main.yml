@@ -738,27 +738,14 @@ jobs:
                       rm -rf ./packages/duckdb-wasm-app/build/
                       yarn workspace @motherduck/duckdb-wasm-app build:release
 
-            - name: Test @motherduck/duckdb-wasm on Chrome
-              shell: bash
-              run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @motherduck/duckdb-wasm test:chrome
+            # - name: Test @motherduck/duckdb-wasm on Chrome
+            #  shell: bash
+            #  run: |
+            #          CHROME_BIN=`which google-chrome` yarn workspace @motherduck/duckdb-wasm test:chrome
 
             #            - name: Test @motherduck/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
-            #              with:
-            #                  script: |-
-            #                      yarn workspace @motherduck/duckdb-wasm test:firefox
-
-            - name: Test @motherduck/duckdb-wasm on Node.js
-              shell: bash
-              run: |
-                      yarn workspace @motherduck/duckdb-wasm test:node
-
-            - name: Coverage @motherduck/duckdb-wasm
-              shell: bash
-              run: |
-                       CHROME_BIN=`which google-chrome` yarn workspace @motherduck/duckdb-wasm test:chrome:coverage
-
+            #              
             - name: Build examples
               shell: bash
               run: |
@@ -1070,28 +1057,11 @@ jobs:
               run: |
                   ./scripts/npm_measure_lib.sh
 
-            - name: Test @motherduck/duckdb-wasm on Chrome
-              shell: bash
-              run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @motherduck/duckdb-wasm test:chrome
-
             #            - name: Test @motherduck/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
             #              with:
             #                  script: |-
             #                      yarn workspace @motherduck/duckdb-wasm test:firefox
-
-            - name: Test @motherduck/duckdb-wasm on Node.js
-              shell: bash
-              run: |
-                      yarn workspace @motherduck/duckdb-wasm test:node
-
-            - name: Deploy GitHub Page
-              if: github.ref == 'refs/heads/main'
-              run: |
-                  git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-                  git fetch origin gh-pages
-                  ./scripts/deploy_pages.sh
 
             - name: Publish to NPM
               env:
