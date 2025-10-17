@@ -1,6 +1,6 @@
 [submodule "submodules/duckdb"]
 	path = submodules/duckdb
-	url = https://github.com/duckdb/duckdb
+	url = https://github.com/motherduckdb/public-duckdb
 	update = rebase
 [submodule "submodules/arrow"]
 	path = submodules/arrow
