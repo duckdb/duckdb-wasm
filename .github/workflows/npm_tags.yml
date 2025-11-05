@@ -30,10 +30,8 @@ jobs:
 
             - name: Change tags
               env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
                   TAG: ${{ inputs.tag }}
                   VERSION: ${{ inputs.version }}
-              if: env.NODE_AUTH_TOKEN != null
               run: |
                   npm dist-tag ls @duckdb/duckdb-wasm@"${VERSION}"
                   npm dist-tag add @duckdb/duckdb-wasm@"${VERSION}" "${TAG}"
