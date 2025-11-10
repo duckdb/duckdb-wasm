@@ -22,8 +22,9 @@ class HTTPWasmClient : public HTTPClient {
         // clang-format off
         unique_ptr<HTTPResponse> res;
 
-        string path = host_port + info.url;
-        path = info.url;
+        string path = info.url;
+        if (path[0] == '/') path = host_port + info.url;
+
         if (!web::experimental_s3_tables_global_proxy.empty()) {
             if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
                 auto id_table = path.find("--table-s3.s3.");
@@ -165,8 +166,9 @@ class HTTPWasmClient : public HTTPClient {
     unique_ptr<HTTPResponse> Head(HeadRequestInfo &info) override {
         unique_ptr<HTTPResponse> res;
 
-        string path = host_port + info.url;
-        path = info.url;
+        string path = info.url;
+        if (path[0] == '/') path = host_port + info.url;
+
         if (!web::experimental_s3_tables_global_proxy.empty()) {
             if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
                 auto id_table = path.find("--table-s3.s3.");
@@ -405,8 +407,9 @@ res->headers.Insert(head, tail);
     unique_ptr<HTTPResponse> Post(PostRequestInfo &info) override {
         unique_ptr<HTTPResponse> res;
 
-        string path = host_port + info.url;
-        path = info.url;
+        string path = info.url;
+        if (path[0] == '/') path = host_port + info.url;
+
         if (!web::experimental_s3_tables_global_proxy.empty()) {
             if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
                 auto id_table = path.find("--table-s3.s3.");
@@ -559,8 +562,9 @@ res->headers.Insert(head, tail);
     unique_ptr<HTTPResponse> Put(PutRequestInfo &info) override {
         unique_ptr<HTTPResponse> res;
 
-        string path = host_port + info.url;
-        path = info.url;
+        string path = info.url;
+        if (path[0] == '/') path = host_port + info.url;
+
         if (!web::experimental_s3_tables_global_proxy.empty()) {
             if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {
                 auto id_table = path.find("--table-s3.s3.");
@@ -713,8 +717,8 @@ res->headers.Insert(head, tail);
     unique_ptr<HTTPResponse> Delete(DeleteRequestInfo &info) override {
         unique_ptr<HTTPResponse> res;
 
-        string path = host_port + info.url;
-        path = info.url;
+        string path = info.url;
+        if (path[0] == '/') path = host_port + info.url;
 
         if (!web::experimental_s3_tables_global_proxy.empty()) {
             if (info.url.rfind(web::experimental_s3_tables_global_proxy, 0) != 0) {

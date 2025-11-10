@@ -62,6 +62,11 @@ export class AsyncDuckDBConnection {
         });
         let header = await this._bindings.startPendingQuery(this._conn, text, allowStreamResult);
         while (header == null) {
+            // Avoid infinite loop on detached state
+            if (this._bindings.isDetached()) {
+                console.error('cannot send a message since the worker is not set!');
+                return undefined as any;
+            }
             header = await this._bindings.pollPendingQuery(this._conn);
         }
         const iter = new AsyncResultStreamIterator(this._bindings, this._conn, header);

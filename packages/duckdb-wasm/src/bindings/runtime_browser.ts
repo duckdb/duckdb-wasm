@@ -129,11 +129,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 let fileName = opfsPath;
                 if (PATH_SEP_REGEX.test(opfsPath)) {
                     const folders = opfsPath.split(PATH_SEP_REGEX);
-                    fileName = folders.pop()!;
-                    if (!fileName) {
-                        throw new Error(`Invalid path ${path}`);
+                    if (folders.length === 0) {
+                        throw new Error(`Invalid path ${opfsPath}`);
                     }
-                    // mkdir -p
+                    fileName = folders[folders.length - 1];
+                    if (!fileName) {
+                        throw new Error(`Invalid path ${opfsPath}. File Not Found.`);
+                    }
+                    folders.pop();
                     for (const folder of folders) {
                         dirHandle = await dirHandle.getDirectoryHandle(folder, { create: true });
                     }

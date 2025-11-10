@@ -24,13 +24,18 @@ struct HTTPFSParams : public HTTPParams {
     string bearer_token;
     bool unsafe_disable_etag_checks{false};
     shared_ptr<HTTPState> state;
+    string user_agent = {""};
+    // Additional fields needs to be appended at the end and need to be propagated from duckdb-httpfs
+    // TODO: make this unnecessary
 };
 
 class HTTPWasmUtil : public HTTPUtil {
    public:
     unique_ptr<HTTPParams> InitializeParameters(optional_ptr<FileOpener> opener,
                                                 optional_ptr<FileOpenerInfo> info) override {
-        return make_uniq<HTTPFSParams>(*this);
+        auto result = make_uniq<HTTPFSParams>(*this);
+        result->Initialize(opener);
+        return result;
     }
     unique_ptr<HTTPClient> InitializeClient(HTTPParams &http_params, const string &proto_host_port) override;
 
