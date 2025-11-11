@@ -1214,11 +1214,6 @@ jobs:
               shell: bash
               run: zip -r duckdb-wasm-packages.zip ./packages
 
-            - uses: actions/upload-artifact@v4
-              with:
-                  name: duckdb-wasm-packages-loadable
-                  path: duckdb-wasm-packages.zip
-
             - name: Measure NPM stats
               run: |
                   ./scripts/npm_measure_lib.sh
