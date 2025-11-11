@@ -942,9 +942,6 @@ jobs:
     js_libs_loadable:
         name: Js / Libraries (loadable version)
         runs-on: ubuntu-latest
-        permissions: # only this job has permission to upload to npm using trusted publishing
-            id-token: write  # Required for OIDC
-            contents: read
         needs:
             - wasm_mvp_loadable
             - wasm_eh_loadable
@@ -1095,6 +1092,147 @@ jobs:
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
                   ./scripts/deploy_pages.sh
+
+    js_libs_loadable_deploy:
+        name: Js / Libraries (loadable version) - Deploy
+        runs-on: ubuntu-latest
+        permissions: # only this job has permission to upload to npm using trusted publishing
+            id-token: write  # Required for OIDC
+            contents: read
+        needs:
+            - js_libs_loadable
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: 'recursive'
+                  fetch-depth: 0
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '18.x'
+                  registry-url: 'https://registry.npmjs.org'
+
+            - name: Git submodule status
+              run: |
+                  git submodule status > git_submodule_status.txt
+
+            - name: Cache rust build
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ./.cargo/bin/
+                      ./.cargo/registry/index/
+                      ./.cargo/registry/cache/
+                      ./.cargo/git/db/
+                      ./target
+                  key: ${{ runner.os }}-shell-${{ hashFiles('./Cargo.lock') }}-${{ hashFiles('./packages/duckdb-wasm-shell/crate/src/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-shell-
+
+            - name: Cache node_modules
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ./node_modules
+                      ./packages/benchmarks/node_modules
+                      ./packages/duckdb-wasm/node_modules
+                      ./packages/duckdb-wasm-shell/node_modules
+                  key: ${{ runner.os }}-yarn-${{ hashFiles('./yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-yarn-
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: dataprep
+                  path: ./target/release/
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: tpch-dbgen
+                  path: ./submodules/tpch-dbgen/dbgen/
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: wasm-mvp-loadable
+                  path: ./packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: wasm-eh-loadable
+                  path: ./packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: wasm-coi-loadable
+                  path: ./packages/duckdb-wasm/src/bindings/
+
+            - name: Prepare repository
+              run: |
+                  git fetch --tags --no-recurse-submodules -f
+                  (cd ./submodules/duckdb && git fetch --all --tags)
+
+            - name: Prepare environment
+              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
+              with:
+                  script: |-
+                      git config --global --add safe.directory '*'
+                      mkdir -p ./lib/build/wasm/release ./reports
+                      yarn install --frozen-lockfile
+                      ./scripts/generate_tpch_tbl.sh 0.01
+                      ./scripts/generate_tpch_arrow.sh 0.01
+                      ./scripts/generate_tpch_duckdb.sh 0.01
+                      ./scripts/generate_tpch_sqlite.sh 0.01
+                      ./scripts/generate_uni.sh
+                      ./scripts/npm_version.sh
+
+            - name: Build @duckdb/duckdb-wasm
+              shell: bash
+              run: |
+                      rm -rf ./packages/duckdb-wasm/dist/
+                      yarn workspace @duckdb/duckdb-wasm build:release
+                      yarn workspace @duckdb/duckdb-wasm docs
+
+            - name: Build @duckdb/duckdb-wasm-shell
+              shell: bash
+              run: |
+                      rm -rf ./packages/duckdb-wasm-shell/dist/
+                      yarn workspace @duckdb/duckdb-wasm-shell install:wasmpack
+                      yarn workspace @duckdb/duckdb-wasm-shell build:release
+
+            - name: Build @duckdb/duckdb-wasm-app
+              shell: bash
+              run: |
+                      rm -rf ./packages/duckdb-wasm-app/build/
+                      yarn workspace @duckdb/duckdb-wasm-app build:release
+
+            #- name: Coverage @duckdb/duckdb-wasm
+            #  shell: bash
+            #  run: |
+            #           CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:coverage
+
+            - name: Package
+              shell: bash
+              run: zip -r duckdb-wasm-packages.zip ./packages
+
+            - name: Measure NPM stats
+              run: |
+                  ./scripts/npm_measure_lib.sh
+
+            - name: Test @duckdb/duckdb-wasm on Chrome
+              shell: bash
+              run: |
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
+            
+            #            - name: Test @duckdb/duckdb-wasm on Firefox
+            #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
+            #              with:
+            #                  script: |-
+            #                      yarn workspace @duckdb/duckdb-wasm test:firefox
+
+            - name: Test @duckdb/duckdb-wasm on Node.js
+              shell: bash
+              run: |
+                      yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Publish to NPM
               env:
