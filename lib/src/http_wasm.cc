@@ -16,6 +16,7 @@ class HTTPState;
 class HTTPWasmClient : public HTTPClient {
    public:
     HTTPWasmClient(HTTPFSParams &http_params, const string &proto_host_port) { host_port = proto_host_port; }
+    void Initialize(HTTPParams &params) override {}
     string host_port;
 
     unique_ptr<HTTPResponse> Get(GetRequestInfo &info) override {
