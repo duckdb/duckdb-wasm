@@ -402,6 +402,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             ['number', 'number', 'number', 'string'],
             [conn, bufferPtr, buffer.length, optJSON],
         );
+
+        this.mod._free(bufferPtr);
+
         if (s !== StatusCode.SUCCESS) {
             throw new Error(readString(this.mod, d, n));
         }
