@@ -454,7 +454,7 @@
 "@duckdb/duckdb-wasm-shell@file:packages/duckdb-wasm-shell":
   version "1.11.0"
   dependencies:
-    "@duckdb/duckdb-wasm" "file:../Library/Caches/Yarn/v6/npm-@duckdb-duckdb-wasm-shell-1.11.0-9242cb7c-20ae-418e-bef7-177b79e81dfb-1753266860392/node_modules/@duckdb/duckdb-wasm"
+    "@duckdb/duckdb-wasm" "file:../../Library/Caches/Yarn/v6/npm-@duckdb-duckdb-wasm-shell-1.11.0-1923ca51-9dc4-47e1-8374-ac69b5432d00-1757358349445/node_modules/@duckdb/duckdb-wasm"
     xterm "^5.3.0"
     xterm-addon-fit "^0.8.0"
     xterm-addon-web-links "^0.9.0"
@@ -463,7 +463,7 @@
 "@duckdb/duckdb-wasm@file:packages/duckdb-wasm":
   version "1.11.0"
   dependencies:
-    apache-arrow "^17.0.0"
+    apache-arrow "^21.0.0"
 
 "@emotion/is-prop-valid@^0.8.2":
   version "0.8.8"
@@ -1109,6 +1109,13 @@
   dependencies:
     undici-types "~5.26.4"
 
+"@types/node@^24.0.3":
+  version "24.3.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.3.1.tgz#b0a3fb2afed0ef98e8d7f06d46ef6349047709f3"
+  integrity sha512-3vXmQDXy+woz+gnrTvuvNrPzekOi+Ds0ReMxw0LzBiK3a+1k0kQn9f2NWk+lgD4rJehFUmYy2gMhJ2ZI+7YP9g==
+  dependencies:
+    undici-types "~7.10.0"
+
 "@types/pad-left@2.1.1":
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/@types/pad-left/-/pad-left-2.1.1.tgz#17d906fc75804e1cc722da73623f1d978f16a137"
@@ -1714,6 +1721,21 @@ apache-arrow@^17.0.0:
     command-line-args "^5.2.1"
     command-line-usage "^7.0.1"
     flatbuffers "^24.3.25"
+    json-bignum "^0.0.3"
+    tslib "^2.6.2"
+
+apache-arrow@^21.0.0:
+  version "21.0.0"
+  resolved "https://registry.yarnpkg.com/apache-arrow/-/apache-arrow-21.0.0.tgz#e73f0b731511273ab26b576cd4c661213c08d2b1"
+  integrity sha512-UueXr0y7S6SB6ToIEON0ZIwRln1EY05NIMXKfPu8fumASypkXXHEb6LRTZGh7vnYoQ9TgqNMNN1937wyY9lyFQ==
+  dependencies:
+    "@swc/helpers" "^0.5.11"
+    "@types/command-line-args" "^5.2.3"
+    "@types/command-line-usage" "^5.0.4"
+    "@types/node" "^24.0.3"
+    command-line-args "^6.0.1"
+    command-line-usage "^7.0.1"
+    flatbuffers "^25.1.24"
     json-bignum "^0.0.3"
     tslib "^2.6.2"
 
@@ -2460,6 +2482,16 @@ command-line-args@5.2.1, command-line-args@^5.2.1:
     find-replace "^3.0.0"
     lodash.camelcase "^4.3.0"
     typical "^4.0.0"
+
+command-line-args@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/command-line-args/-/command-line-args-6.0.1.tgz#cbd1efb4f72b285dbd54bde9a8585c2d9694b070"
+  integrity sha512-Jr3eByUjqyK0qd8W0SGFW1nZwqCaNCtbXjRo2cRJC1OYxWl3MZ5t1US3jq+cO4sPavqgw4l9BMGX0CBe+trepg==
+  dependencies:
+    array-back "^6.2.2"
+    find-replace "^5.0.2"
+    lodash.camelcase "^4.3.0"
+    typical "^7.2.0"
 
 command-line-usage@5.0.5:
   version "5.0.5"
@@ -3694,6 +3726,11 @@ find-replace@^3.0.0:
   dependencies:
     array-back "^3.0.1"
 
+find-replace@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/find-replace/-/find-replace-5.0.2.tgz#fe27ff0be05975aef6fc679c1139bbabea564e26"
+  integrity sha512-Y45BAiE3mz2QsrN2fb5QEtO4qb44NcS7en/0y9PEVsg351HsLeVclP8QPMH79Le9sH3rs5RSwJu99W0WPZO43Q==
+
 find-up@^4.0.0, find-up@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/find-up/-/find-up-4.1.0.tgz#97afe7d6cdc0bc5928584b7c8d7b16e8a9aa5d19"
@@ -3732,6 +3769,11 @@ flatbuffers@^24.3.25:
   version "24.3.25"
   resolved "https://registry.yarnpkg.com/flatbuffers/-/flatbuffers-24.3.25.tgz#e2f92259ba8aa53acd0af7844afb7c7eb95e7089"
   integrity sha512-3HDgPbgiwWMI9zVB7VYBHaMrbOO7Gm0v+yD2FV/sCKj+9NDeVL7BOBYUuhWAQGKWOzBo8S9WdMvV0eixO233XQ==
+
+flatbuffers@^25.1.24:
+  version "25.2.10"
+  resolved "https://registry.yarnpkg.com/flatbuffers/-/flatbuffers-25.2.10.tgz#308b750545f62db670ca4c9d7dbc66161420a95e"
+  integrity sha512-7JlN9ZvLDG1McO3kbX0k4v+SUAg48L1rIwEvN6ZQl/eCtgJz9UylTMzE9wrmYrcorgxm3CX/3T/w5VAub99UUw==
 
 flatted@^3.1.0:
   version "3.2.2"
@@ -7746,6 +7788,11 @@ typical@^7.1.1:
   resolved "https://registry.yarnpkg.com/typical/-/typical-7.1.1.tgz#ba177ab7ab103b78534463ffa4c0c9754523ac1f"
   integrity sha512-T+tKVNs6Wu7IWiAce5BgMd7OZfNYUndHwc5MknN+UHOudi7sGZzuHdCadllRuqJ3fPtgFtIH9+lt9qRv6lmpfA==
 
+typical@^7.2.0:
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/typical/-/typical-7.3.0.tgz#930376be344228709f134613911fa22aa09617a4"
+  integrity sha512-ya4mg/30vm+DOWfBg4YK3j2WD6TWtRkCbasOJr40CseYENzCUby/7rIvXA99JGsQHeNxLbnXdyLLxKSv3tauFw==
+
 ua-parser-js@^0.7.30:
   version "0.7.30"
   resolved "https://registry.yarnpkg.com/ua-parser-js/-/ua-parser-js-0.7.30.tgz#4cf5170e8b55ac553fe8b38df3a82f0669671f0b"
@@ -7798,6 +7845,11 @@ undici-types@~5.26.4:
   version "5.26.5"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-5.26.5.tgz#bcd539893d00b56e964fd2657a4866b221a65617"
   integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
+
+undici-types@~7.10.0:
+  version "7.10.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.10.0.tgz#4ac2e058ce56b462b056e629cc6a02393d3ff350"
+  integrity sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag==
 
 unicorn-magic@^0.1.0:
   version "0.1.0"
