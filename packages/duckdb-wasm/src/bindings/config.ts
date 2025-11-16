@@ -40,6 +40,37 @@ export interface DuckDBOPFSConfig {
      * - "manual": Files must be manually registered and dropped.
      */
     fileHandling?: "auto" | "manual";
+
+    /**
+     * OPFS path for temporary files (e.g., "opfs://tmp").
+     *
+     * When set, a "pool" of pre-allocated temp files is maintained for use by
+     * DuckDB when it opens a tempfile on-demand. Pre-allocation of tempfiles is
+     * required when using OPFS due to the OPFS API providing only asynchronous
+     * file creation, while DuckDB's temp file creation must be synchronous. By
+     * maintaining a pool of pre-created temp files, DuckDB can synchronously
+     * claim a temp file from the pool when needed.
+     *
+     * `SET temp_directory='opfs://...` can also be used to initialize or change
+     * the temp directory at runtime when using "auto" fileHandling.
+     */
+    tempPath?: string;
+
+    /**
+     * Maximum number of pre-allocated file handles in the temp pool beyond
+     * returned files will be deleted when closed.
+     */
+    tempPoolMax?: number;
+
+    /**
+     * Minimum number of unused pre-allocated handles to maintain in any temp
+     * file pools. When a tempfile is opened from the pool causing the remaining
+     * unused handles to drop below this number, new handles will be created
+     * asynchronously in the background to refill the pool up to tempPoolMax.
+     *
+     * Must be less than tempPoolMax.
+     */
+    tempPoolMin?: number;
 }
 
 export enum DuckDBAccessMode {
