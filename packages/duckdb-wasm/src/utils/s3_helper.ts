@@ -22,10 +22,9 @@ export interface S3PayloadParams {
 
 const getHTTPHost = function (config: S3Config | undefined, url: string, bucket: string): string {
     if (config?.endpoint?.startsWith('http')) {
-        // Endpoint is a full url, we append the bucket
-        const httpHost = `${config?.endpoint}`;
-        const offset = httpHost.indexOf('://') + 3;
-        return httpHost.substring(offset);
+        // Endpoint is a full url, extract just the host (no path)
+        const endpointUrl = new URL(config.endpoint);
+        return endpointUrl.host;
     } else if (config?.endpoint) {
         // Endpoint is not a full url and the https://{bucket}.{domain} format will be used
         return `${bucket}.${config?.endpoint}`;
@@ -38,12 +37,20 @@ const getHTTPHost = function (config: S3Config | undefined, url: string, bucket:
 export function getS3Params(config: S3Config | undefined, url: string, method: string): S3Params {
     const parsedS3Url = parseS3Url(url);
 
-    // when using S3 path-style access, the signed URL should also include the bucket name,
-    //  as it is present in the HTTP URL path.
+    // when using S3 path-style access, the signed URL should also include the endpoint's path + bucket name,
+    //  as they will both be present in the HTTP URL path.
     // See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html#path-style-url-ex
     let path = parsedS3Url.path;
     if (isPathStyleAccess(config)) {
-        path = `/${parsedS3Url.bucket}${path}`;
+        // Extract endpoint path if present (e.g., "/some/path" from "https://host/some/path")
+        let endpointPath = '';
+        if (config?.endpoint) {
+            const endpointUrl = new URL(config.endpoint);
+            if (endpointUrl.pathname !== '/') {
+                endpointPath = endpointUrl.pathname;
+            }
+        }
+        path = `${endpointPath}/${parsedS3Url.bucket}${path}`;
     }
     return {
         url: path,
