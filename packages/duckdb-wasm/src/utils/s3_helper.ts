@@ -20,18 +20,9 @@ export interface S3PayloadParams {
     contentType: string | null;
 }
 
-const getEndpointPathPrefix = function (config: S3Config | undefined): string {
-    if (config?.endpoint?.startsWith('http')) {
-        const endpointUrl = new URL(config.endpoint);
-        // Return the path prefix if present, otherwise empty string
-        return endpointUrl.pathname !== '/' ? endpointUrl.pathname : '';
-    }
-    return '';
-};
-
 const getHTTPHost = function (config: S3Config | undefined, url: string, bucket: string): string {
     if (config?.endpoint?.startsWith('http')) {
-        // Endpoint is a full url, extract just the hostname (no path)
+        // Endpoint is a full url, extract just the host (no path)
         const endpointUrl = new URL(config.endpoint);
         return endpointUrl.host;
     } else if (config?.endpoint) {
@@ -46,14 +37,20 @@ const getHTTPHost = function (config: S3Config | undefined, url: string, bucket:
 export function getS3Params(config: S3Config | undefined, url: string, method: string): S3Params {
     const parsedS3Url = parseS3Url(url);
 
-    // when using S3 path-style access, the signed URL should also include the bucket name,
-    //  as it is present in the HTTP URL path.
+    // when using S3 path-style access, the signed URL should also include the endpoint's path + bucket name,
+    //  as they will both be present in the HTTP URL path.
     // See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html#path-style-url-ex
     let path = parsedS3Url.path;
     if (isPathStyleAccess(config)) {
-        // Extract endpoint path prefix if present (e.g., "/some/path/prefix" from "https://host/some/path/prefix")
-        const endpointPathPrefix = getEndpointPathPrefix(config);
-        path = `${endpointPathPrefix}/${parsedS3Url.bucket}${path}`;
+        // Extract endpoint path if present (e.g., "/some/path" from "https://host/some/path")
+        let endpointPath = '';
+        if (config?.endpoint) {
+            const endpointUrl = new URL(config.endpoint);
+            if (endpointUrl.pathname !== '/') {
+                endpointPath = endpointUrl.pathname;
+            }
+        }
+        path = `${endpointPath}/${parsedS3Url.bucket}${path}`;
     }
     return {
         url: path,
