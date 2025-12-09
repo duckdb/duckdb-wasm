@@ -20,12 +20,20 @@ export interface S3PayloadParams {
     contentType: string | null;
 }
 
+const getEndpointPathPrefix = function (config: S3Config | undefined): string {
+    if (config?.endpoint?.startsWith('http')) {
+        const endpointUrl = new URL(config.endpoint);
+        // Return the path prefix if present, otherwise empty string
+        return endpointUrl.pathname !== '/' ? endpointUrl.pathname : '';
+    }
+    return '';
+};
+
 const getHTTPHost = function (config: S3Config | undefined, url: string, bucket: string): string {
     if (config?.endpoint?.startsWith('http')) {
-        // Endpoint is a full url, we append the bucket
-        const httpHost = `${config?.endpoint}`;
-        const offset = httpHost.indexOf('://') + 3;
-        return httpHost.substring(offset);
+        // Endpoint is a full url, extract just the hostname (no path)
+        const endpointUrl = new URL(config.endpoint);
+        return endpointUrl.host;
     } else if (config?.endpoint) {
         // Endpoint is not a full url and the https://{bucket}.{domain} format will be used
         return `${bucket}.${config?.endpoint}`;
@@ -43,7 +51,9 @@ export function getS3Params(config: S3Config | undefined, url: string, method: s
     // See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html#path-style-url-ex
     let path = parsedS3Url.path;
     if (isPathStyleAccess(config)) {
-        path = `/${parsedS3Url.bucket}${path}`;
+        // Extract endpoint path prefix if present (e.g., "/some/path/prefix" from "https://host/some/path/prefix")
+        const endpointPathPrefix = getEndpointPathPrefix(config);
+        path = `${endpointPathPrefix}/${parsedS3Url.bucket}${path}`;
     }
     return {
         url: path,
