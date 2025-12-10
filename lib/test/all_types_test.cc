@@ -211,6 +211,7 @@ vector<string> SUPPORTED_TYPES = {"bool",
                                   "uint",
                                   "ubigint",
                                   "hugeint",
+                                  "uhugeint",
                                   "time",
                                   "date",
                                   "float",
@@ -233,7 +234,15 @@ vector<string> SUPPORTED_TYPES = {"bool",
                                   "dec38_10",
                                   "blob",
                                   "bit",
-                                  "union"};
+                                  "union",
+                                  "fixed_int_array",
+                                  "fixed_varchar_array",
+                                  "fixed_nested_int_array",
+                                  "fixed_nested_varchar_array",
+                                  "fixed_struct_array",
+                                  "struct_of_fixed_array",
+                                  "fixed_array_of_int_list",
+                                  "list_of_fixed_int_array"};
 
 vector<string> UNSUPPORTED_TYPES = {
     // Does not work full range as it overflows during multiplication
@@ -306,7 +315,9 @@ TEST(AllTypesTest, FullRangeTypes) {
                                                        numeric_limits<uint64_t>::max(), batch);
 
     // Date/Time types
-    AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time", 0, 86399999999, batch,
+    // Maximum value for duckdb is 86400000000 ('24:00:00.000000') but apache arrow is 86399999999 ('23.59.59.999999')
+    // so this assertion tests with duckdb value
+    AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time", 0, 86400000000, batch,
                                                         arrow::time64(arrow::TimeUnit::MICRO));
     // AssertParamTypeCorrect<arrow::Time64Type, uint64_t>("time_tz", 0, 86399999999, batch,
     //                                                    arrow::time64(arrow::TimeUnit::MICRO));
@@ -327,7 +338,7 @@ TEST(AllTypesTest, FullRangeTypes) {
         arrow::Decimal128("9999999999999999999999999999.9999999999"), batch, arrow::decimal128(38, 10));
     // HugeInt from DuckDB is also emitted as a decimal
     AssertParamTypeCorrect<arrow::Decimal128Type>(
-        "hugeint", arrow::Decimal128("-170141183460469231731687303715884105727"),
+        "hugeint", arrow::Decimal128("-170141183460469231731687303715884105728"),
         arrow::Decimal128("170141183460469231731687303715884105727"), batch, arrow::decimal128(38, 0));
 
     // Enum types
