@@ -179,6 +179,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
             case WorkerRequestType.CLOSE_PREPARED:
             case WorkerRequestType.COLLECT_FILE_STATISTICS:
             case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
+            case WorkerRequestType.REGISTER_OPFS_TEMP_DIR:
             case WorkerRequestType.COPY_FILE_TO_PATH:
             case WorkerRequestType.DISCONNECT:
             case WorkerRequestType.DROP_FILE:
@@ -386,6 +387,19 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         this._config = config;
         const task = new WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>(WorkerRequestType.OPEN, config);
         await this.postTask(task);
+
+        // If OPFS temp path is configured, eagerly initialize the pool
+        if (config.opfs?.tempPath) {
+            await this.registerOPFSTempDir(config.opfs.tempPath, config.opfs.tempPoolMax, config.opfs.tempPoolMin);
+
+            // Configure DuckDB to use this temp directory
+            const conn = await this.connect();
+            try {
+                await conn.send(`SET temp_directory = '${config.opfs.tempPath}'`);
+            } finally {
+                await conn.close();
+            }
+        }
     }
 
     /** Tokenize a script text */
@@ -614,6 +628,13 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         );
         await this.postTask(task, []);
     }
+    public async registerOPFSTempDir(name?: string, maxPoolSize?: number, minPoolSize?: number): Promise<void> {
+        const task = new WorkerTask<WorkerRequestType.REGISTER_OPFS_TEMP_DIR, [string?, number?, number?], null>(
+            WorkerRequestType.REGISTER_OPFS_TEMP_DIR,
+            [name, maxPoolSize, minPoolSize],
+        );
+        await this.postTask(task, []);
+    }
 
     /** Enable file statistics */
     public async collectFileStatistics(name: string, enable: boolean): Promise<void> {
@@ -715,6 +736,18 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     private async registerOPFSFileFromSQL(text: string) {
+        const opfsTempDir = text.match(/(?:SET|PRAGMA)\s+temp_directory\s*=\s*['"]?(opfs:\/\/[^\s'";]+)['"]?/i);
+        if (opfsTempDir ) {
+            const newPath = opfsTempDir[1];
+
+            // Register the temp directory with the worker using config sizes if available
+            await this.registerOPFSTempDir(newPath, this._config?.opfs?.tempPoolMax, this._config?.opfs?.tempPoolMin);
+            // Remove the 'SET' or 'PRAGMA' temp_directory from the text that is
+            // searched for opfs urls to avoid detecting and attempting to
+            // register the temp *directory* as a file.
+            text = text.replace(opfsTempDir[0], "");
+        }
+
         const files = searchOPFSFiles(text);
         const result: string[] = [];
         for (const file of files) {
