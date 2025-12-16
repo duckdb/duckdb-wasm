@@ -1247,7 +1247,7 @@ jobs:
             - name: Publish to NPM on tag
               env:
                   TAG: 'latest'
-              if: ${{ startsWith(github.head_ref, 'v') }}
+              if: github.event_name == 'create'
               run: |
                   echo "${TAG}"
                   ./scripts/npm_publish_lib.sh
