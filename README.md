@@ -32,17 +32,19 @@ DuckDB-Wasm brings DuckDB to every browser thanks to WebAssembly.
 
 Duckdb-Wasm speaks Arrow fluently, reads Parquet, CSV and JSON files backed by Filesystem APIs or HTTP requests and has been tested with Chrome, Firefox, Safari and Node.js. Learn more about DuckDB-Wasm from our [VLDB publication](https://www.vldb.org/pvldb/vol15/p3574-kohn.pdf) or the [recorded talk](https://www.youtube.com/watch?v=wm82b7PlM6s).
 
-Try it out at [shell.duckdb.org](https://shell.duckdb.org) or [external third party embedding of DuckDB-Wasm](https://github.com/davidgasquez/awesome-duckdb?tab=readme-ov-file#web-clients), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.duckdb.org).
+Try it out at [shell.duckdb.org](https://shell.duckdb.org) or at [duckdb.org/visualizer](https://duckdb.org/visualizer).
+[External third party embedding of DuckDB-Wasm](https://github.com/davidgasquez/awesome-duckdb?tab=readme-ov-file#web-clients), read the [API documentation](https://shell.duckdb.org/docs/modules/index.html), check out the [web-app examples](https://github.com/duckdb-wasm-examples), and chat with us on [Discord](https://discord.duckdb.org).
 
 ## DuckDB and DuckDB-Wasm
 
 DuckDB-Wasm is currently based on DuckDB v1.4.3.
 
 Relevant differences:
-* HTTP stack is different between native and Wasm versions of DuckDB. Most relevant are:
+* Default HTTP stack is different between native and Wasm versions of DuckDB
+* `LOAD httpfs` will opt-in to using the same HTTP logic, but re-implemented in JavaScript
+* Notable differences in network interactions:
     * Requests are always upgraded to HTTPS
     * Requests needs server to allow Cross Origin access on a given resource
-    * File system implementation (eg. S3) is different and this might cause some differences
 * Extension install is lazy, meaning that `INSTALL extension_name FROM 'https://repository.endpoint.org';` defer fetching the extension to the first `LOAD extension_name;` instruction. `INSTALL x FROM community;` shorthands are also supported.
 * DuckDB-Wasm builds are optimized for download speed. Core extensions like autocomplete, JSON, Parquet and ICU are usually bundled DuckDB binaries, while in duckdb-wasm they are autoloaded (including fetching them) at runtime. In particular for ICU autoloading do not work corrently in all cases, explicit `LOAD icu;` might be needed to reproduce same behaviour.
 * DuckDB-Wasm is sandboxed and migth not have the same level of support for out-of-core operations and access to file system
