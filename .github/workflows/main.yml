@@ -1236,8 +1236,18 @@ jobs:
 
             - name: Publish to NPM
               env:
-                  TAG: ${{ startsWith(github.head_ref, 'v') && 'latest' || 'next' }}
+                  TAG: 'next'
               if: github.ref == 'refs/heads/main'
+              run: |
+                  echo "${TAG}"
+                  ./scripts/npm_publish_lib.sh
+                  ./scripts/npm_publish_shell.sh
+                  ./scripts/npm_publish_react.sh
+
+            - name: Publish to NPM on tag
+              env:
+                  TAG: 'latest'
+              if: ${{ startsWith(github.head_ref, 'v') }}
               run: |
                   echo "${TAG}"
                   ./scripts/npm_publish_lib.sh
