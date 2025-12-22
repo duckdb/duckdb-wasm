@@ -57,6 +57,75 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         await removeFiles();
     });
 
+
+    describe('OPFS Spilling', () => {
+        const spillQuery = `SELECT COUNT(*) FROM (SELECT i FROM range(0, 800_000) i ORDER BY hash(i) LIMIT 100_000)`;
+
+        it('via tempPath specified in db.open', async () => {
+            await conn.close(); await db.reset();
+
+            await db.open({
+                path: 'opfs://spilltest/duck.db',
+                accessMode: DuckDBAccessMode.READ_WRITE,
+                opfs: {tempPath: 'opfs://spilltest/tmp'},
+            });
+            conn = await db.connect();
+            await conn.send(`PRAGMA memory_limit='4MB'; SET max_temp_directory_size = '100MiB'`);
+
+            const res = await conn.send(spillQuery);
+            await res.next();
+        });
+
+        it('via SET temp_directory', async () => {
+            await conn.close(); await db.reset();
+
+            await db.open({
+                path: 'opfs://spilltest/duck.db',
+                accessMode: DuckDBAccessMode.READ_WRITE,
+                opfs: {
+                    // No tempPath here, but in "auto" mode an opfs URL in a SET
+                    // command is automatically detected to initialize the pool.
+                    fileHandling: "auto",
+                },
+            });
+            conn = await db.connect();
+            await conn.send(`PRAGMA memory_limit='4MB'; SET max_temp_directory_size = '100MiB'`);
+
+            // Set (and then just to exercise re-setting reset) the temp dir via
+            // SET. NB: the DB only allows changing temp prior to first usage.
+            await conn.send(`SET temp_directory = 'opfs://spilltest/other'`);
+            await conn.send(`SET temp_directory = 'opfs://spilltest/tmp'`);
+
+            const res = await conn.send(spillQuery);
+            await res.next();
+        });
+
+        it('via repeated concurrent spills', async () => {
+            await conn.close();
+            await db.reset();
+
+            await db.open({
+                path: 'opfs://spilltest/duck.db',
+                accessMode: DuckDBAccessMode.READ_WRITE,
+                opfs: { tempPath: 'opfs://spilltest/tmp', tempPoolMax: 6, tempPoolMin: 3, },
+            });
+            conn = await db.connect();
+            await conn.send(`PRAGMA memory_limit='12MB'; SET max_temp_directory_size = '100MiB'`);
+            await conn.close();
+
+            // Multiple rounds of running concurrent spilling queries, exercising
+            // the temp pool's refill and closed file return mechanics.
+            for (let i = 0; i < 5; i++) {
+                await Promise.all(Array.from({ length: 4 }, async () => {
+                    const c = await db.connect();
+                    const res = await c.send(spillQuery);
+                    await res.next();
+                    await c.close();
+                }));
+            }
+        });
+    });
+
     describe('Load Data in OPFS', () => {
         it('Import Small Parquet file', async () => {
             //1. data preparation
@@ -405,6 +474,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         await opfsRoot.removeEntry('test2.csv').catch(_ignore);
         await opfsRoot.removeEntry('test3.csv').catch(_ignore);
         await opfsRoot.removeEntry('test.parquet').catch(_ignore);
+        await opfsRoot.removeEntry('spilltest', { recursive: true }).catch(_ignore);
         try {
             const datadir = await opfsRoot.getDirectoryHandle('datadir');
             datadir.removeEntry('test.parquet').catch(_ignore);

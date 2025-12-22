@@ -13,6 +13,7 @@ import { arrowToSQLField, arrowToSQLType } from '../json_typedef';
 import { WebFile } from './web_file';
 import { UDFFunction, UDFFunctionDeclaration } from './udf_function';
 import * as arrow from 'apache-arrow';
+import { createOPFSTempPool } from '../utils/opfs_util';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -704,6 +705,21 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             throw new Error('Not an OPFS file name: ' + file);
         }
     }
+
+    public async registerOPFSTempDir(tempPath?: string, maxPoolSize?: number, minPoolSize?: number): Promise<void> {
+        // Access BROWSER_RUNTIME through the runtime field
+        const runtime = this._runtime as any;
+
+        if (runtime._opfsTmpPool) {
+            await runtime._opfsTmpPool.destroy();
+            runtime._opfsTmpPool = null;
+        }
+
+        if (tempPath) {
+            runtime._opfsTmpPool = await createOPFSTempPool(tempPath, { maxUnused: maxPoolSize, minUnused: minPoolSize });
+        }
+    }
+
     public collectFileStatistics(file: string, enable: boolean): void {
         const [s, d, n] = callSRet(this.mod, 'duckdb_web_collect_file_stats', ['string', 'boolean'], [file, enable]);
         if (s !== StatusCode.SUCCESS) {
