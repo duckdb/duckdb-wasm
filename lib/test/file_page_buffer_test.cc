@@ -90,7 +90,7 @@ TEST(FilePageBufferTest, FixSingle) {
 
     // Close the file.
     // Since there's no more ref, the buffer manager should evict all frames
-    file->Release();
+    file->Release(false);
     ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
@@ -206,7 +206,7 @@ TEST(FilePageBufferTest, FIFOEviction) {
     EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
     EXPECT_TRUE(buffer->GetLRUList().empty());
 
-    file->Release();
+    file->Release(false);
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
 }
@@ -282,7 +282,7 @@ TEST(FilePageBufferTest, LRUEviction) {
     EXPECT_EQ(expected_fifo, buffer->GetFIFOList());
     EXPECT_EQ(expected_lru, buffer->GetLRUList());
 
-    file->Release();
+    file->Release(false);
     ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
@@ -316,7 +316,7 @@ TEST(FilePageBufferTest, ParallelFix) {
     EXPECT_EQ(expected_fifo, fifo_list);
     EXPECT_TRUE(buffer->GetLRUList().empty());
 
-    file->Release();
+    file->Release(false);
     ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
@@ -362,7 +362,7 @@ TEST(FilePageBufferTest, ParallelExclusiveAccess) {
         uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
         EXPECT_EQ(4000, value);
     }
-    file->Release();
+    file->Release(false);
     ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
     ASSERT_EQ(buffer->GetFiles().size(), 0);
     ASSERT_EQ(buffer->GetFrames().size(), 0);
@@ -399,6 +399,8 @@ TEST(FilePageBufferTest, ParallelScans) {
                 std::memset(page_data.data(), 0, buffer->GetPageSize());
                 page.MarkAsDirty();
             }
+
+            file_ref->Release(false);
         }
         for (auto& file_path : test_files) {
             ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
@@ -439,6 +441,10 @@ TEST(FilePageBufferTest, ParallelScans) {
                     uint64_t value = *reinterpret_cast<uint64_t*>(page_data.data());
                     ASSERT_EQ(value, 0) << "j=" << j << " page=" << page_id;
                 }
+            }
+
+            for (auto& file : file_refs) {
+                file->Release(false);
             }
         });
     }
@@ -482,6 +488,8 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
                 std::memset(page_data.data(), 0, buffer->GetPageSize());
                 page.MarkAsDirty();
             }
+
+            file_ref->Release(false);
         }
         for (auto& file_path : test_files) {
             ASSERT_FALSE(buffer->BuffersFile(file_path.c_str()));
@@ -560,6 +568,8 @@ TEST(FilePageBufferTest, ParallelReaderWriter) {
                         page.MarkAsDirty();
                     }
                 }
+
+                file->Release(false);
             }
         });
     }
