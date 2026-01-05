@@ -23,7 +23,7 @@
         "assert": "^2.1.0",
         "buffalo-bench": "^2.0.0",
         "eslint": "^8.57.0",
-        "eslint-plugin-react": "^7.34.0",
+        "eslint-plugin-react": "^7.37.5",
         "ts-loader": "^9.5.1",
         "typescript": "^5.3.3"
     },
