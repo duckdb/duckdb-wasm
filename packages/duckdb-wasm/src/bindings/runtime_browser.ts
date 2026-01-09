@@ -16,6 +16,7 @@ import {
 } from './runtime';
 import { DuckDBModule } from './duckdb_module';
 import * as udf from './udf_runtime';
+import { TmpPool } from '../utils/opfs_util';
 
 const OPFS_PREFIX_LEN = 'opfs://'.length;
 const PATH_SEP_REGEX = /\/|\\/;
@@ -26,6 +27,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _globalFileInfo: DuckDBGlobalFileInfo | null;
     _preparedHandles: Record<string, FileSystemSyncAccessHandle>;
     _opfsRoot: FileSystemDirectoryHandle | null;
+    _opfsTmpPool: TmpPool | null;
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
     getGlobalFileInfo(mod: DuckDBModule): DuckDBGlobalFileInfo | null;
@@ -37,6 +39,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _globalFileInfo: null,
     _preparedHandles: {} as any,
     _opfsRoot: null,
+    _opfsTmpPool: null,
 
     getFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
@@ -417,7 +420,21 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     return result;
                 }
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
-                    const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
+                    let handle: FileSystemSyncAccessHandle | undefined = BROWSER_RUNTIME._files?.get(file.fileName);
+
+                    // Check if this file belongs to a registered temp directory.
+                    // DuckDB creates temp files on-the-fly during query execution (for spilling),
+                    // calling openFile() synchronously. Since OPFS file creation is async, we can't
+                    // create new files here. Instead, we use pre-allocated file handles from the
+                    // temp pool that was set up when the temp directory was registered.
+                    if (!handle && BROWSER_RUNTIME._opfsTmpPool) {
+                        const pool = BROWSER_RUNTIME._opfsTmpPool;
+                        if (pool.matches(file.fileName)) {
+                            handle = pool.openFile(file.fileName);
+                            BROWSER_RUNTIME._files.set(file.fileName, handle);
+                        }
+                    }
+
                     if (!handle) {
                         throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
                     }
@@ -529,6 +546,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
+
         try {
             switch (file?.dataProtocol) {
                 case DuckDBDataProtocol.BUFFER:
@@ -556,6 +574,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const fileName = readString(mod, fileNamePtr, fileNameLen);
         const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(fileName);
         if (handle) {
+            if (BROWSER_RUNTIME._opfsTmpPool && BROWSER_RUNTIME._opfsTmpPool.matches(fileName)) {
+                BROWSER_RUNTIME._opfsTmpPool.dropFile(fileName);
+                return
+            }
             BROWSER_RUNTIME._files.delete(fileName);
             if (handle instanceof FileSystemSyncAccessHandle) {
                 try {
@@ -769,7 +791,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return true;
     },
-    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    removeFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+
+        if (BROWSER_RUNTIME._opfsTmpPool && BROWSER_RUNTIME._opfsTmpPool.matches(path)) {
+            BROWSER_RUNTIME._opfsTmpPool.dropFile(path);
+        }
+    },
     callScalarUDF: (
         mod: DuckDBModule,
         response: number,

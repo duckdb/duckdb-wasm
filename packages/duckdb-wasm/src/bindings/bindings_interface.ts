@@ -63,6 +63,7 @@ export interface DuckDBBindings {
     copyFileToPath(name: string, path: string): void;
     copyFileToBuffer(name: string): Uint8Array;
     registerOPFSFileName(file: string): Promise<void>;
+    registerOPFSTempDir(tempPath?: string, maxPoolSize?: number, minPoolSize?: number): Promise<void>;
     collectFileStatistics(file: string, enable: boolean): void;
     exportFileStatistics(file: string): FileStatistics;
 }

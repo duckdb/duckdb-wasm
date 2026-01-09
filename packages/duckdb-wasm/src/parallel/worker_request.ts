@@ -15,6 +15,7 @@ export enum WorkerRequestType {
     CLOSE_PREPARED = 'CLOSE_PREPARED',
     COLLECT_FILE_STATISTICS = 'COLLECT_FILE_STATISTICS',
     REGISTER_OPFS_FILE_NAME = 'REGISTER_OPFS_FILE_NAME',
+    REGISTER_OPFS_TEMP_DIR = 'REGISTER_OPFS_TEMP_DIR',
     CONNECT = 'CONNECT',
     COPY_FILE_TO_BUFFER = 'COPY_FILE_TO_BUFFER',
     COPY_FILE_TO_PATH = 'COPY_FILE_TO_PATH',
@@ -111,6 +112,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CANCEL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
     | WorkerRequest<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string]>
+    | WorkerRequest<WorkerRequestType.REGISTER_OPFS_TEMP_DIR, [string?, number?, number?]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
@@ -171,6 +173,7 @@ export type WorkerResponseVariant =
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>
     | WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string], null>
+    | WorkerTask<WorkerRequestType.REGISTER_OPFS_TEMP_DIR, [string?, number?, number?], null>
     | WorkerTask<WorkerRequestType.CLOSE_PREPARED, [number, number], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>
