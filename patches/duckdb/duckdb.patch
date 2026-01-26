@@ -1,8 +1,203 @@
+diff --git a/src/execution/expression_executor.cpp b/src/execution/expression_executor.cpp
+index ec11c12890..3471cdb13f 100644
+--- a/src/execution/expression_executor.cpp
++++ b/src/execution/expression_executor.cpp
+@@ -290,7 +290,7 @@ idx_t ExpressionExecutor::Select(const Expression &expr, ExpressionState *state,
+ 	D_ASSERT(true_sel || false_sel);
+ 	D_ASSERT(expr.return_type.id() == LogicalTypeId::BOOLEAN);
+ 	switch (expr.GetExpressionClass()) {
+-#ifndef DUCKDB_SMALLER_BINARY
++#ifndef DUCKDB_SMALLER_BINARY_NO_SELECT
+ 	case ExpressionClass::BOUND_BETWEEN:
+ 		return Select(expr.Cast<BoundBetweenExpression>(), state, sel, count, true_sel, false_sel);
+ #endif
+diff --git a/src/execution/expression_executor/execute_between.cpp b/src/execution/expression_executor/execute_between.cpp
+index 3418351362..52cf454530 100644
+--- a/src/execution/expression_executor/execute_between.cpp
++++ b/src/execution/expression_executor/execute_between.cpp
+@@ -7,7 +7,7 @@
+ 
+ namespace duckdb {
+ 
+-#ifndef DUCKDB_SMALLER_BINARY
++#ifndef DUCKDB_SMALLER_BINARY_NO_SELECT
+ struct BothInclusiveBetweenOperator {
+ 	template <class T>
+ 	static inline bool Operation(T input, T lower, T upper) {
+@@ -133,8 +133,8 @@ void ExpressionExecutor::Execute(const BoundBetweenExpression &expr, ExpressionS
+ 
+ idx_t ExpressionExecutor::Select(const BoundBetweenExpression &expr, ExpressionState *state, const SelectionVector *sel,
+                                  idx_t count, SelectionVector *true_sel, SelectionVector *false_sel) {
+-#ifdef DUCKDB_SMALLER_BINARY
+-	throw InternalException("ExpressionExecutor::Select not available with DUCKDB_SMALLER_BINARY");
++#ifdef DUCKDB_SMALLER_BINARY_NO_SELECT
++	throw InternalException("ExpressionExecutor::Select not available with DUCKDB_SMALLER_BINARY_NO_SELECT");
+ #else
+ 	// resolve the children
+ 	Vector input(state->intermediate_chunk.data[0]);
+diff --git a/src/function/cast/enum_casts.cpp b/src/function/cast/enum_casts.cpp
+index fcf764baac..47d3abe925 100644
+--- a/src/function/cast/enum_casts.cpp
++++ b/src/function/cast/enum_casts.cpp
+@@ -17,8 +17,9 @@ static bool EnumEnumCast(Vector &source, Vector &result, idx_t count, CastParame
+ 		    auto key = EnumType::GetPos(res_enum_type, dictionary_data[value]);
+ 		    if (key == -1) {
+ 			    if (!parameters.error_message) {
+-				    return HandleVectorCastError::Operation<RES_TYPE>(CastExceptionText<SRC_TYPE, RES_TYPE>(value),
+-				                                                      mask, row_idx, vector_cast_data);
++				    return HandleVectorCastError::Operation<RES_TYPE>(
++				        CastExceptionText<SRC_TYPE>(value, TypeIdInfo::CreateObject<RES_TYPE>), mask, row_idx,
++				        vector_cast_data);
+ 			    } else {
+ 				    mask.SetInvalid(row_idx);
+ 			    }
+diff --git a/src/function/cast/string_cast.cpp b/src/function/cast/string_cast.cpp
+index 511d09a861..ab4e1395ab 100644
+--- a/src/function/cast/string_cast.cpp
++++ b/src/function/cast/string_cast.cpp
+@@ -21,8 +21,10 @@ static bool StringEnumCastLoop(const string_t *source_data, ValidityMask &source
+ 		if (source_mask.RowIsValid(source_idx)) {
+ 			auto pos = EnumType::GetPos(result_type, source_data[source_idx]);
+ 			if (pos == -1) {
++
+ 				result_data[i] = HandleVectorCastError::Operation<T>(
+-				    CastExceptionText<string_t, T>(source_data[source_idx]), result_mask, i, vector_cast_data);
++				    CastExceptionText<string_t>(source_data[source_idx], TypeIdInfo::CreateObject<T>), result_mask, i,
++				    vector_cast_data);
+ 			} else {
+ 				result_data[i] = UnsafeNumericCast<T>(pos);
+ 			}
+diff --git a/src/function/table/system/duckdb_extensions.cpp b/src/function/table/system/duckdb_extensions.cpp
+index 6a528c111a..8ba2511a20 100644
+--- a/src/function/table/system/duckdb_extensions.cpp
++++ b/src/function/table/system/duckdb_extensions.cpp
+@@ -99,7 +99,7 @@ unique_ptr<GlobalTableFunctionState> DuckDBExtensionsInit(ClientContext &context
+ #ifndef WASM_LOADABLE_EXTENSIONS
+ 	auto ext_directory = ExtensionHelper::GetExtensionDirectoryPath(context);
+ 	fs.ListFiles(ext_directory, [&](const string &path, bool is_directory) {
+-		if (!StringUtil::EndsWith(path, ".duckdb_extension")) {
++		if (!StringUtil::EndsWith(path, ".duckdb_extension.wasm")) {
+ 			return;
+ 		}
+ 		ExtensionInformation info;
+diff --git a/src/include/duckdb/common/operator/cast_operators.hpp b/src/include/duckdb/common/operator/cast_operators.hpp
+index ac55e5a69d..e469ca2b11 100644
+--- a/src/include/duckdb/common/operator/cast_operators.hpp
++++ b/src/include/duckdb/common/operator/cast_operators.hpp
+@@ -53,19 +53,31 @@ struct TryCastErrorMessageCommaSeparated {
+ 	}
+ };
+ 
+-template <class SRC, class DST>
+-static string CastExceptionText(SRC input) {
++struct TypeIdInfo {
++	explicit TypeIdInfo(string name, bool isNum) : name(name), isNum(isNum) {
++	}
++	template <typename TYPE>
++	__attribute__((noinline)) static TypeIdInfo CreateObject() {
++		return TypeIdInfo(TypeIdToString(GetTypeId<TYPE>()), TypeIsNumber<TYPE>());
++	}
++	string name;
++	bool isNum;
++};
++
++typedef TypeIdInfo (*callback_typeidinfo)(void);
++
++template <class SRC>
++static string CastExceptionText(SRC input, callback_typeidinfo func) {
++	auto info = func();
+ 	if (std::is_same<SRC, string_t>()) {
+-		return "Could not convert string '" + ConvertToString::Operation<SRC>(input) + "' to " +
+-		       TypeIdToString(GetTypeId<DST>());
++		return "Could not convert string '" + ConvertToString::Operation<SRC>(input) + "' to " + info.name;
+ 	}
+-	if (TypeIsNumber<SRC>() && TypeIsNumber<DST>()) {
++	if (TypeIsNumber<SRC>() && info.isNum) {
+ 		return "Type " + TypeIdToString(GetTypeId<SRC>()) + " with value " + ConvertToString::Operation<SRC>(input) +
+-		       " can't be cast because the value is out of range for the destination type " +
+-		       TypeIdToString(GetTypeId<DST>());
++		       " can't be cast because the value is out of range for the destination type " + info.name;
+ 	}
+ 	return "Type " + TypeIdToString(GetTypeId<SRC>()) + " with value " + ConvertToString::Operation<SRC>(input) +
+-	       " can't be cast to the destination type " + TypeIdToString(GetTypeId<DST>());
++	       " can't be cast to the destination type " + info.name;
+ }
+ 
+ struct Cast {
+@@ -73,7 +85,7 @@ struct Cast {
+ 	static inline DST Operation(SRC input) {
+ 		DST result;
+ 		if (!TryCast::Operation(input, result)) {
+-			throw InvalidInputException(CastExceptionText<SRC, DST>(input));
++			throw InvalidInputException(CastExceptionText<SRC>(input, TypeIdInfo::CreateObject<DST>));
+ 		}
+ 		return result;
+ 	}
+diff --git a/src/include/duckdb/function/cast/vector_cast_helpers.hpp b/src/include/duckdb/function/cast/vector_cast_helpers.hpp
+index 1c50c34140..eea11564d0 100644
+--- a/src/include/duckdb/function/cast/vector_cast_helpers.hpp
++++ b/src/include/duckdb/function/cast/vector_cast_helpers.hpp
+@@ -36,8 +36,8 @@ struct VectorTryCastOperator {
+ 			return output;
+ 		}
+ 		auto data = reinterpret_cast<VectorTryCastData *>(dataptr);
+-		return HandleVectorCastError::Operation<RESULT_TYPE>(CastExceptionText<INPUT_TYPE, RESULT_TYPE>(input), mask,
+-		                                                     idx, *data);
++		return HandleVectorCastError::Operation<RESULT_TYPE>(
++		    CastExceptionText<INPUT_TYPE>(input, TypeIdInfo::CreateObject<RESULT_TYPE>), mask, idx, *data);
+ 	}
+ };
+ 
+@@ -50,8 +50,9 @@ struct VectorTryCastStrictOperator {
+ 		if (DUCKDB_LIKELY(OP::template Operation<INPUT_TYPE, RESULT_TYPE>(input, output, data->parameters.strict))) {
+ 			return output;
+ 		}
+-		return HandleVectorCastError::Operation<RESULT_TYPE>(CastExceptionText<INPUT_TYPE, RESULT_TYPE>(input), mask,
+-		                                                     idx, *data);
++
++		return HandleVectorCastError::Operation<RESULT_TYPE>(
++		    CastExceptionText<INPUT_TYPE>(input, TypeIdInfo::CreateObject<RESULT_TYPE>), mask, idx, *data);
+ 	}
+ };
+ 
+@@ -66,8 +67,9 @@ struct VectorTryCastErrorOperator {
+ 		}
+ 		bool has_error = data->parameters.error_message && !data->parameters.error_message->empty();
+ 		return HandleVectorCastError::Operation<RESULT_TYPE>(
+-		    has_error ? *data->parameters.error_message : CastExceptionText<INPUT_TYPE, RESULT_TYPE>(input), mask, idx,
+-		    *data);
++		    has_error ? *data->parameters.error_message
++		              : CastExceptionText<INPUT_TYPE>(input, TypeIdInfo::CreateObject<RESULT_TYPE>),
++		    mask, idx, *data);
+ 	}
+ };
+ 
+@@ -81,8 +83,8 @@ struct VectorTryCastStringOperator {
+ 		        OP::template Operation<INPUT_TYPE, RESULT_TYPE>(input, output, data->result, data->parameters))) {
+ 			return output;
+ 		}
+-		return HandleVectorCastError::Operation<RESULT_TYPE>(CastExceptionText<INPUT_TYPE, RESULT_TYPE>(input), mask,
+-		                                                     idx, *data);
++		return HandleVectorCastError::Operation<RESULT_TYPE>(
++		    CastExceptionText<INPUT_TYPE>(input, TypeIdInfo::CreateObject<RESULT_TYPE>), mask, idx, *data);
+ 	}
+ };
+ 
 diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
-index d3c5fb9bd5..eace7b4af1 100644
+index 7e43de6005..094ee08815 100644
 --- a/src/include/duckdb/main/database.hpp
 +++ b/src/include/duckdb/main/database.hpp
-@@ -100,6 +100,11 @@ private:
+@@ -17,6 +17,9 @@
+ #include "duckdb/main/extension_manager.hpp"
+ 
+ namespace duckdb {
++
++extern bool preloaded_httpfs;
++
+ class BufferManager;
+ class DatabaseManager;
+ class StorageManager;
+@@ -94,6 +97,11 @@ private:
  	unique_ptr<ExternalFileCache> external_file_cache;
  
  	duckdb_ext_api_v1 (*create_api_v1)();
@@ -31,8 +226,21 @@ index 6ccd1a1156..8040f537b6 100644
  
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
+diff --git a/src/main/config.cpp b/src/main/config.cpp
+index d47418109f..0007c502bd 100644
+--- a/src/main/config.cpp
++++ b/src/main/config.cpp
+@@ -359,7 +359,7 @@ LogicalType DBConfig::ParseLogicalType(const string &type) {
+ 	if (StringUtil::EndsWith(type, "]")) {
+ 		// array - recurse
+ 		auto bracket_open_idx = type.rfind('[');
+-		if (bracket_open_idx == DConstants::INVALID_INDEX || bracket_open_idx == 0) {
++		if (bracket_open_idx == string::npos || bracket_open_idx == 0) {
+ 			throw InternalException("Ill formatted type: '%s'", type);
+ 		}
+ 		idx_t array_size = 0;
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index 419d3304ba..0bc1c11961 100644
+index 8d23656aab..72df3bba7d 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
 @@ -1,5 +1,4 @@
@@ -90,10 +298,10 @@ index 419d3304ba..0bc1c11961 100644
  }
  
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
-index 3aaf507faa..be084ef030 100644
+index 74add5379a..57871bbc4a 100644
 --- a/src/main/extension/extension_helper.cpp
 +++ b/src/main/extension/extension_helper.cpp
-@@ -337,7 +337,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -336,13 +336,12 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  	vector<ExtensionUpdateResult> result;
  	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  
@@ -101,7 +309,14 @@ index 3aaf507faa..be084ef030 100644
  	case_insensitive_set_t seen_extensions;
  
  	// scan the install directory for installed extensions
-@@ -354,7 +353,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+ 	auto ext_directory = ExtensionHelper::ExtensionDirectory(db, fs);
+ 	fs.ListFiles(ext_directory, [&](const string &path, bool is_directory) {
+-		if (!StringUtil::EndsWith(path, ".duckdb_extension")) {
++		if (!StringUtil::EndsWith(path, ".duckdb_extension.wasm")) {
+ 			return;
+ 		}
+ 
+@@ -353,7 +352,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  
  		result.push_back(UpdateExtensionInternal(context, db, fs, fs.JoinPath(ext_directory, path), extension_name));
  	});
@@ -109,8 +324,26 @@ index 3aaf507faa..be084ef030 100644
  
  	return result;
  }
+@@ -363,7 +361,7 @@ ExtensionUpdateResult ExtensionHelper::UpdateExtension(ClientContext &context, c
+ 	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
+ 	auto ext_directory = ExtensionHelper::ExtensionDirectory(db, fs);
+ 
+-	auto full_extension_path = fs.JoinPath(ext_directory, extension_name + ".duckdb_extension");
++	auto full_extension_path = fs.JoinPath(ext_directory, extension_name + ".duckdb_extension.wasm");
+ 
+ 	auto update_result = UpdateExtensionInternal(context, db, fs, full_extension_path, extension_name);
+ 
+@@ -436,7 +434,7 @@ ExtensionLoadResult ExtensionHelper::LoadExtensionInternal(DuckDB &db, const std
+ 	if (!initial_load && StringUtil::Contains(DUCKDB_EXTENSIONS_TEST_WITH_LOADABLE, "," + extension + ",")) {
+ 		Connection con(db);
+ 		auto result = con.Query((string) "LOAD '" + DUCKDB_EXTENSIONS_BUILD_PATH + "/" + extension + "/" + extension +
+-		                        ".duckdb_extension'");
++		                        ".duckdb_extension.wasm'");
+ 		if (result->HasError()) {
+ 			result->Print();
+ 			return ExtensionLoadResult::EXTENSION_UNKNOWN;
 diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
-index 2ea03b8e49..d8c710f153 100644
+index d0996d952b..4f82055911 100644
 --- a/src/main/extension/extension_install.cpp
 +++ b/src/main/extension/extension_install.cpp
 @@ -145,6 +145,9 @@ bool ExtensionHelper::CreateSuggestions(const string &extension_name, string &me
@@ -133,12 +366,41 @@ index 2ea03b8e49..d8c710f153 100644
  #ifdef WASM_LOADABLE_EXTENSIONS
  	// Install is currently a no-op
  	return nullptr;
+@@ -187,7 +193,7 @@ static void WriteExtensionFileToDisk(QueryContext &query_context, FileSystem &fs
+ 
+ 	// Now signature has been checked (if signature checking is enabled)
+ 
+-	// Open target_file, at this points ending with '.duckdb_extension'
++	// Open target_file, at this points ending with '.duckdb_extension.wasm'
+ 	auto target_file =
+ 	    fs.OpenFile(path, FileFlags::FILE_FLAGS_WRITE | FileFlags::FILE_FLAGS_READ | FileFlags::FILE_FLAGS_APPEND |
+ 	                          FileFlags::FILE_FLAGS_FILE_CREATE_NEW | FileFlags::FILE_FLAGS_ENABLE_EXTENSION_INSTALL);
+@@ -256,15 +262,15 @@ static void WriteExtensionFiles(QueryContext &query_context, FileSystem &fs, con
+                                 const string &local_extension_path, void *in_buffer, idx_t file_size,
+                                 ExtensionInstallInfo &info, DBConfig &config) {
+ 	// temp_path ends with '.duckdb_extension'
+-	if (!StringUtil::EndsWith(temp_path, ".duckdb_extension")) {
++	if (!StringUtil::EndsWith(temp_path, ".duckdb_extension.wasm")) {
+ 		throw InternalException("Extension install temp_path of '%s' is not valid, should end in '.duckdb_extension'",
+ 		                        temp_path);
+ 	}
+-	// local_extension_path ends with '.duckdb_extension', and given it will be written only after signature checks,
++	// local_extension_path ends with '.duckdb_extension.wasm', and given it will be written only after signature checks,
+ 	// it's now loadable
+-	if (!StringUtil::EndsWith(local_extension_path, ".duckdb_extension")) {
++	if (!StringUtil::EndsWith(local_extension_path, ".duckdb_extension.wasm")) {
+ 		throw InternalException("Extension install local_extension_path of '%s' is not valid, should end in "
+-		                        "'.duckdb_extension'",
++		                        "'.duckdb_extension.wasm'",
+ 		                        temp_path);
+ 	}
+ 
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 6e4bb18796..f05c13ab59 100644
+index 4f7f7d2b28..0c28ad3a4e 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
-@@ -9,6 +9,8 @@
- #include "duckdb/main/extension_helper.hpp"
+@@ -11,6 +11,8 @@
+ #include "duckdb/main/settings.hpp"
  #include "mbedtls_wrapper.hpp"
  
 +
@@ -146,7 +408,7 @@ index 6e4bb18796..f05c13ab59 100644
  #ifndef DUCKDB_NO_THREADS
  #include <thread>
  #endif // DUCKDB_NO_THREADS
-@@ -321,13 +323,29 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -371,13 +373,29 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	auto filename = fs.ConvertSeparators(extension);
  
  	bool direct_load;
@@ -177,10 +439,16 @@ index 6e4bb18796..f05c13ab59 100644
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -368,35 +386,32 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -418,41 +436,32 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
+-	if (!StringUtil::EndsWith(filename, ".duckdb_extension")) {
+-		throw PermissionException(
+-		    "DuckDB extensions are files ending with '.duckdb_extension', loading different "
+-		    "files is not possible, error while loading from '%s', consider 'INSTALL <path>; LOAD <name>;'",
+-		    filename);
+-	}
 -	if (!fs.FileExists(filename)) {
 -		string message;
 -		bool exact_match = ExtensionHelper::CreateSuggestions(extension, message);
@@ -234,7 +502,7 @@ index 6e4bb18796..f05c13ab59 100644
  
  		if (!metadata_mismatch_error.empty()) {
  			throw InvalidInputException(metadata_mismatch_error);
-@@ -413,26 +428,203 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -469,26 +478,203 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		}
  	}
  
@@ -448,7 +716,7 @@ index 6e4bb18796..f05c13ab59 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -449,27 +641,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -505,27 +691,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	result.filename = filename;
  	result.lib_hdl = lib_hdl;
  	result.abi_type = parsed_metadata.abi_type;
@@ -494,7 +762,7 @@ index 6e4bb18796..f05c13ab59 100644
  	}
  
  	return true;
-@@ -589,7 +784,7 @@ void ExtensionHelper::LoadExternalExtension(DatabaseInstance &db, FileSystem &fs
+@@ -660,7 +849,7 @@ void ExtensionHelper::LoadExternalExtensionInternal(DatabaseInstance &db, FileSy
  		return;
  	}
  
@@ -503,3 +771,41 @@ index 6e4bb18796..f05c13ab59 100644
  	                  static_cast<uint8_t>(extension_init_result.abi_type), extension);
  #endif
  }
+diff --git a/src/planner/binder/statement/bind_copy.cpp b/src/planner/binder/statement/bind_copy.cpp
+index 212817acb6..a7f49de754 100644
+--- a/src/planner/binder/statement/bind_copy.cpp
++++ b/src/planner/binder/statement/bind_copy.cpp
+@@ -223,7 +223,9 @@ BoundStatement Binder::BindCopyTo(CopyStatement &stmt, const CopyFunction &funct
+ 		}
+ 	}
+ 	bool is_remote_file = FileSystem::IsRemoteFile(stmt.info->file_path);
+-	if (is_remote_file) {
++	if ( is_remote_file ) {
++		use_tmp_file = false;
++	} else if( context.db->config.options.use_direct_io ) {
+ 		use_tmp_file = false;
+ 	} else {
+ 		auto &fs = FileSystem::GetFileSystem(context);
+diff --git a/src/storage/storage_manager.cpp b/src/storage/storage_manager.cpp
+index f0ce909c55..b1b8f781d1 100644
+--- a/src/storage/storage_manager.cpp
++++ b/src/storage/storage_manager.cpp
+@@ -235,9 +235,15 @@ void SingleFileStorageManager::LoadDatabase(QueryContext context) {
+ 			    row_group_size, STANDARD_VECTOR_SIZE);
+ 		}
+ 	}
+-	// Check if the database file already exists.
+-	// Note: a file can also exist if there was a ROLLBACK on a previous transaction creating that file.
+-	if (!read_only && !fs.FileExists(path)) {
++	bool is_empty_file = true;
++	auto db_file_handle = fs.OpenFile(path, FileFlags::FILE_FLAGS_READ | FileFlags::FILE_FLAGS_NULL_IF_NOT_EXISTS);
++	if (db_file_handle && db_file_handle->GetFileSize() != 0) {
++		is_empty_file = false;
++		db_file_handle.reset();
++	}
++
++	// first check if the database exists
++	if (!read_only && (!fs.FileExists(path) || (options.use_direct_io && is_empty_file))) {
+ 		// file does not exist and we are in read-write mode
+ 		// create a new file
+ 
