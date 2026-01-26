@@ -37,7 +37,7 @@ Try it out at [shell.duckdb.org](https://shell.duckdb.org) or at [duckdb.org/vis
 
 ## DuckDB and DuckDB-Wasm
 
-DuckDB-Wasm is currently based on DuckDB v1.4.3.
+DuckDB-Wasm is currently based on DuckDB v1.4.4
 
 Relevant differences:
 * Default HTTP stack is different between native and Wasm versions of DuckDB
