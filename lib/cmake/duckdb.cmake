@@ -48,20 +48,13 @@ ExternalProject_Add(
              -DDUCKDB_EXPLICIT_PLATFORM=${DUCKDB_EXPLICIT_PLATFORM}
              -DSMALLER_BINARY=1
   BUILD_BYPRODUCTS
-    <INSTALL_DIR>/lib/libduckdb_re2.a
-    <INSTALL_DIR>/lib/libduckdb_zstd.a
     <INSTALL_DIR>/lib/libduckdb_static.a
     <INSTALL_DIR>/lib/libduckdb_fmt.a
-    <INSTALL_DIR>/lib/libduckdb_fsst.a
-    <INSTALL_DIR>/lib/libduckdb_hyperloglog.a
-    <INSTALL_DIR>/lib/libduckdb_miniz.a
-    <INSTALL_DIR>/lib/libduckdb_mbedtls.a
-    <INSTALL_DIR>/lib/libduckdb_yyjson.a
-    <INSTALL_DIR>/lib/libduckdb_pg_query.a
     <INSTALL_DIR>/lib/libduckdb_utf8proc.a
     <INSTALL_DIR>/lib/libduckdb_fastpforlib.a
     <INSTALL_DIR>/lib/libparquet_extension.a
     <INSTALL_DIR>/lib/libcore_functions_extension.a
+    <INSTALL_DIR>/lib/libduckdb_generated_extension_loader.a
     <INSTALL_DIR>/lib/libjson_extension.a)
 
 ExternalProject_Get_Property(duckdb_ep install_dir)
@@ -82,18 +75,11 @@ set_property(TARGET duckdb PROPERTY IMPORTED_LOCATION ${DUCKDB_LIBRARY_PATH})
 
 target_link_libraries(
   duckdb
-  INTERFACE ${install_dir}/lib/libduckdb_re2.a
-  INTERFACE ${install_dir}/lib/libduckdb_zstd.a
-  INTERFACE ${install_dir}/lib/libduckdb_fmt.a
-  INTERFACE ${install_dir}/lib/libduckdb_fsst.a
-  INTERFACE ${install_dir}/lib/libduckdb_hyperloglog.a
-  INTERFACE ${install_dir}/lib/libduckdb_miniz.a
-  INTERFACE ${install_dir}/lib/libduckdb_mbedtls.a
-  INTERFACE ${install_dir}/lib/libduckdb_yyjson.a
-  INTERFACE ${install_dir}/lib/libduckdb_pg_query.a
-  INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
-  INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
+#  INTERFACE ${install_dir}/lib/libduckdb_fmt.a
+#  INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
+#  INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
   INTERFACE ${install_dir}/lib/libcore_functions_extension.a
+  INTERFACE ${install_dir}/lib/libduckdb_generated_extension_loader.a
   INTERFACE dl)
 
 target_include_directories(

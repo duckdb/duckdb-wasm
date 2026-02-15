@@ -306,9 +306,6 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
         case duckdb::LogicalTypeId::ANY:
             out.AddMember("sqlType", "any", alloc);
             break;
-        case duckdb::LogicalTypeId::USER:
-            out.AddMember("sqlType", "user", alloc);
-            break;
         case duckdb::LogicalTypeId::BOOLEAN:
             out.AddMember("sqlType", "bool", alloc);
             break;

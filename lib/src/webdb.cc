@@ -964,12 +964,12 @@ arrow::Status WebDB::Open(std::string_view args_json) {
 
         duckdb::DBConfig db_config;
         db_config.file_system = std::move(make_uniq<VirtualFileSystem>(std::move(buffered_fs)));
-        db_config.options.allow_unsigned_extensions = config_->allow_unsigned_extensions;
+        db_config.SetOptionByName("allow_unsigned_extensions", config_->allow_unsigned_extensions);
         db_config.SetOption("arrow_lossless_conversion", config_->arrow_lossless_conversion);
         db_config.options.maximum_threads = config_->maximum_threads;
         db_config.options.use_temporary_directory = false;
         db_config.options.access_mode = access_mode;
-        db_config.options.duckdb_api = "wasm";
+        db_config.SetOptionByName("duckdb_api", "wasm");
         db_config.options.custom_user_agent = config_->custom_user_agent;
         db_config.options.use_direct_io = config_->use_direct_io;
         auto db = make_shared_ptr<duckdb::DuckDB>(config_->path, &db_config);
