@@ -294,6 +294,10 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
     auto& alloc = doc.GetAllocator();
     rapidjson::Value out(rapidjson::kObjectType);
     switch (type.id()) {
+        case duckdb::LogicalTypeId::UNBOUND:
+        case duckdb::LogicalTypeId::GEOMETRY:
+        case duckdb::LogicalTypeId::TYPE:
+            throw "unsupported type";
         case duckdb::LogicalTypeId::INVALID:
             out.AddMember("sqlType", "invalid", alloc);
             break;
