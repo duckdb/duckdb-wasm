@@ -80,6 +80,7 @@ index 6a528c111a..8ba2511a20 100644
  			return;
  		}
  		ExtensionInformation info;
+<<<<<<<< HEAD:patches/duckdb/all_of_them.patch
 diff --git a/src/include/duckdb/common/file_open_flags.hpp b/src/include/duckdb/common/file_open_flags.hpp
 index acf4c1923d..84a36fa8bf 100644
 --- a/src/include/duckdb/common/file_open_flags.hpp
@@ -92,6 +93,8 @@ index acf4c1923d..84a36fa8bf 100644
  		return flags & FILE_FLAGS_ENABLE_EXTENSION_INSTALL;
  	}
  	inline idx_t GetFlagsInternal() const {
+========
+>>>>>>>> duckdb/main:patches/duckdb/duckdb.patch
 diff --git a/src/include/duckdb/common/operator/cast_operators.hpp b/src/include/duckdb/common/operator/cast_operators.hpp
 index ac55e5a69d..e469ca2b11 100644
 --- a/src/include/duckdb/common/operator/cast_operators.hpp
