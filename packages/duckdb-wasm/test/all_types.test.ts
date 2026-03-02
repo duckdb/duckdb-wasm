@@ -36,6 +36,7 @@ const NOT_IMPLEMENTED_TYPES = [
     'timestamp_ms',
     'timestamp_ns',
     'time_tz',
+    'time_ns',
     'timestamp_tz',
     'hugeint',
     'dec_18_6',
