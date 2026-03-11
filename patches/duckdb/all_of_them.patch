@@ -385,7 +385,7 @@ index 11b887670b..3b5186379d 100644
  	}
  
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 50f95a2bb4..7a2b6a56c6 100644
+index 50f95a2bb4..c6ecf80940 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -9,8 +9,11 @@
@@ -400,7 +400,7 @@ index 50f95a2bb4..7a2b6a56c6 100644
  #ifndef DUCKDB_NO_THREADS
  #include <thread>
  #endif // DUCKDB_NO_THREADS
-@@ -371,13 +374,26 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -371,13 +374,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	auto filename = fs.ConvertSeparators(extension);
  
  	bool direct_load;
@@ -415,7 +415,11 @@ index 50f95a2bb4..7a2b6a56c6 100644
 -		string url_template = ExtensionUrlTemplate(&config, "");
 +		ExtensionRepository repository;
 +
-+			repository = ExtensionRepository("custom", "https://extensions.duckdb.org");
++		repository = ExtensionRepository("custom", "https://extensions.duckdb.org");
++		string custom_endpoint = Settings::Get<CustomExtensionRepositorySetting>(db);
++		if (!custom_endpoint.empty()) {
++			repository = ExtensionRepository("custom", custom_endpoint);
++		}
 +               {
 +                       auto preferredRepo = DatabaseInstance::GetPreferredRepository(extension);
 +                       if (!preferredRepo.empty()) {
@@ -428,7 +432,7 @@ index 50f95a2bb4..7a2b6a56c6 100644
  		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
  
  		char *str = (char *)EM_ASM_PTR(
-@@ -453,77 +469,187 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -453,77 +473,194 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  		direct_load = true;
  		filename = fs.ExpandPath(filename);
  	}
@@ -573,7 +577,7 @@ index 50f95a2bb4..7a2b6a56c6 100644
 +	}
 +
 +	auto dopen_from = basename;
-+	if (true) {
++	if (Settings::Get<AllowUnsignedExtensionsSetting>(db)) {
 +		// signature is the last 256 bytes of the file
 +
 +		string signature;
@@ -647,7 +651,14 @@ index 50f95a2bb4..7a2b6a56c6 100644
 +		for (idx_t j = 0; j < signature.size(); j++) {
 +			signature[j] = ((uint8_t *)exe)[4 + signature_offset + j];
 +		}
-+		bool any_valid = true;
++		bool any_valid = false;
++		bool allow_community_extensions = Settings::Get<AllowUnsignedExtensionsSetting>(db);
++		for (auto &key : ExtensionHelper::GetPublicKeys(allow_community_extensions)) {
++			if (duckdb_mbedtls::MbedTlsWrapper::IsValidSha256Signature(key, signature, two_level_hash)) {
++				any_valid = true;
++				break;
++			}
++		}
 +		if (!any_valid) {
 +			throw IOException(db.config.error_manager->FormatException(ErrorType::UNSIGNED_EXTENSION, filename));
 +		}
@@ -674,7 +685,7 @@ index 50f95a2bb4..7a2b6a56c6 100644
  #else
  	auto dopen_from = filename;
  #endif
-@@ -540,27 +666,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+@@ -540,27 +677,30 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
  	result.filename = filename;
  	result.lib_hdl = lib_hdl;
  	result.abi_type = parsed_metadata.abi_type;
@@ -720,7 +731,7 @@ index 50f95a2bb4..7a2b6a56c6 100644
  	}
  
  	return true;
-@@ -694,7 +823,7 @@ void ExtensionHelper::LoadExternalExtensionInternal(DatabaseInstance &db, FileSy
+@@ -694,7 +834,7 @@ void ExtensionHelper::LoadExternalExtensionInternal(DatabaseInstance &db, FileSy
  		return;
  	}
  
