@@ -352,12 +352,12 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
 
     /** Open the database */
     public async instantiate(
-        mainModuleURL: string,
+        mainModuleURL: string | WebAssembly.Module,
         pthreadWorkerURL: string | null = null,
         progress: (progress: InstantiationProgress) => void = _p => {},
     ): Promise<null> {
         this._onInstantiationProgress.push(progress);
-        const task = new WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>(
+        const task = new WorkerTask<WorkerRequestType.INSTANTIATE, [string | WebAssembly.Module, string | null], null>(
             WorkerRequestType.INSTANTIATE,
             [mainModuleURL, pthreadWorkerURL],
         );
