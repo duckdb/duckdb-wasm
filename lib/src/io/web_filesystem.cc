@@ -150,6 +150,9 @@ RT_FN(bool duckdb_web_fs_directory_exists(const char *path, size_t pathLen), {
 RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {
     NATIVE_FS->CreateDirectory(std::string{path, pathLen});
 });
+RT_FN(void duckdb_web_fs_file_remove(const char *path, size_t pathLen), {
+    NATIVE_FS->RemoveFile(std::string{path, pathLen});
+});
 RT_FN(bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen), { return false; });
 RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {
     auto &state = GetLocalState();
@@ -1005,7 +1008,9 @@ bool WebFileSystem::FileExists(const std::string &filename, optional_ptr<FileOpe
     return duckdb_web_fs_file_exists(filename.c_str(), filename.size());
 }
 /// Remove a file from disk
-void WebFileSystem::RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener) {}
+void WebFileSystem::RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener) {
+    duckdb_web_fs_file_remove(filename.c_str(), filename.size());
+}
 
 /// Sync a file handle to disk
 void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
