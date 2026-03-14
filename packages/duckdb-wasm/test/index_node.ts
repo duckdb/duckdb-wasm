@@ -80,7 +80,9 @@ it('deletes the WAL after a checkpoint', async () => {
     await conn.query(`FORCE CHECKPOINT;`);
     await conn.query(`USE memory;`);
     await conn.query(`DETACH database;`);
-    expect(fs.statSync('testdb.duckdb.wal')).toThrow()
+    expect(() => {fs.statSync('testdb.duckdb.wal')}).toThrowError(
+        "ENOENT: no such file or directory, stat 'testdb.duckdb.wal'",
+    );
 });
 
 import { testAllTypes, testAllTypesAsync } from './all_types.test';
