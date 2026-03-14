@@ -65,6 +65,24 @@ afterAll(async () => {
     if (worker) worker.terminate();
 });
 
+it('deletes the WAL after a checkpoint', async () => {
+    const conn = db!.connect();
+
+    await conn.query(`ATTACH 'testdb.duckdb' AS database (STORAGE_VERSION 'v1.4.0');`);
+    await conn.query(`USE database;`);
+    await conn.query(`CREATE TABLE "Test" (value VARCHAR);`);
+    const stmt = await conn.prepare(`
+          INSERT INTO "Test" (value)
+          VALUES (?)
+        `);
+    await stmt.query('🦆🦆🦆🦆🦆');
+    expect(fs.statSync('testdb.duckdb.wal').size).toBeGreaterThan(0)
+    await conn.query(`FORCE CHECKPOINT;`);
+    await conn.query(`USE memory;`);
+    await conn.query(`DETACH database;`);
+    expect(fs.statSync('testdb.duckdb.wal')).toThrow()
+});
+
 import { testAllTypes, testAllTypesAsync } from './all_types.test';
 import { testBindings, testAsyncBindings } from './bindings.test';
 import { testBatchStream } from './batch_stream.test';
