@@ -36,7 +36,7 @@ index 3418351362..52cf454530 100644
  	// resolve the children
  	Vector input(state->intermediate_chunk.data[0]);
 diff --git a/src/function/cast/enum_casts.cpp b/src/function/cast/enum_casts.cpp
-index fcf764baac..47d3abe925 100644
+index b5b33de126..11ca26265b 100644
 --- a/src/function/cast/enum_casts.cpp
 +++ b/src/function/cast/enum_casts.cpp
 @@ -17,8 +17,9 @@ static bool EnumEnumCast(Vector &source, Vector &result, idx_t count, CastParame
@@ -195,6 +195,20 @@ index 1c50c34140..eea11564d0 100644
  	}
  };
  
+diff --git a/src/include/duckdb/main/config.hpp b/src/include/duckdb/main/config.hpp
+index 74fcbe6c7a..8e2a7f1ddf 100644
+--- a/src/include/duckdb/main/config.hpp
++++ b/src/include/duckdb/main/config.hpp
+@@ -323,7 +323,9 @@ private:
+ 	unique_ptr<ExtensionCallbackManager> callback_manager;
+ 	bool is_user_config = true;
+ 	//! HTTP Request utility functions
++public:
+ 	shared_ptr<HTTPUtil> http_util;
++private:
+ 	vector<shared_ptr<HTTPUtil>> old_http_utils;
+ 	mutex http_util_lock;
+ };
 diff --git a/src/include/duckdb/main/database.hpp b/src/include/duckdb/main/database.hpp
 index 83795046ad..a0de442312 100644
 --- a/src/include/duckdb/main/database.hpp
@@ -238,7 +252,7 @@ index 6ccd1a1156..8040f537b6 100644
  	//! Debugging repositories (target local, relative paths that are produced by DuckDB's build system)
  	static constexpr const char *BUILD_DEBUG_REPOSITORY_PATH = "./build/debug/repository";
 diff --git a/src/main/database.cpp b/src/main/database.cpp
-index 04673dd163..a6ce822a02 100644
+index 212250af13..702744c133 100644
 --- a/src/main/database.cpp
 +++ b/src/main/database.cpp
 @@ -1,5 +1,4 @@
@@ -255,7 +269,7 @@ index 04673dd163..a6ce822a02 100644
  namespace duckdb {
  
  DBConfig::DBConfig() {
-@@ -349,6 +349,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
+@@ -348,6 +348,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
  }
  
@@ -284,7 +298,7 @@ index 04673dd163..a6ce822a02 100644
  SecretManager &DatabaseInstance::GetSecretManager() {
  	return *config.secret_manager;
  }
-@@ -510,6 +532,10 @@ idx_t DuckDB::NumberOfThreads() {
+@@ -514,6 +536,10 @@ idx_t DuckDB::NumberOfThreads() {
  }
  
  bool DatabaseInstance::ExtensionIsLoaded(const string &name) {
@@ -296,10 +310,10 @@ index 04673dd163..a6ce822a02 100644
  }
  
 diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
-index c5a5d3072e..0c7aebd246 100644
+index 8907b833ed..8173dbd66a 100644
 --- a/src/main/extension/extension_helper.cpp
 +++ b/src/main/extension/extension_helper.cpp
-@@ -347,13 +347,12 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -350,13 +350,12 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  	vector<ExtensionUpdateResult> result;
  	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  
@@ -314,7 +328,7 @@ index c5a5d3072e..0c7aebd246 100644
  			return;
  		}
  
-@@ -364,7 +363,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+@@ -367,7 +366,6 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
  
  		result.push_back(UpdateExtensionInternal(context, db, fs, fs.JoinPath(ext_directory, path), extension_name));
  	});
@@ -322,7 +336,7 @@ index c5a5d3072e..0c7aebd246 100644
  
  	return result;
  }
-@@ -374,7 +372,7 @@ ExtensionUpdateResult ExtensionHelper::UpdateExtension(ClientContext &context, c
+@@ -377,7 +375,7 @@ ExtensionUpdateResult ExtensionHelper::UpdateExtension(ClientContext &context, c
  	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
  	auto ext_directory = ExtensionHelper::ExtensionDirectory(db, fs);
  
@@ -756,10 +770,10 @@ index b627e7fb1a..0179e19dc9 100644
  	} else {
  		auto &fs = FileSystem::GetFileSystem(context);
 diff --git a/src/storage/storage_manager.cpp b/src/storage/storage_manager.cpp
-index 0d3f9969b2..8127097eb1 100644
+index ea179bc1af..e5c1c07ca7 100644
 --- a/src/storage/storage_manager.cpp
 +++ b/src/storage/storage_manager.cpp
-@@ -413,9 +413,15 @@ void SingleFileStorageManager::LoadDatabase(QueryContext context) {
+@@ -410,9 +410,15 @@ void SingleFileStorageManager::LoadDatabase(QueryContext context) {
  			    row_group_size, STANDARD_VECTOR_SIZE);
  		}
  	}
