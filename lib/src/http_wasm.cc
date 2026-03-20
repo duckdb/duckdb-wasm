@@ -12,6 +12,20 @@ class HTTPLogger;
 class FileOpener;
 struct FileOpenerInfo;
 class HTTPState;
+HTTPHeaders TransformHeadersWasm(const HTTPHeaders &header_map, const HTTPParams &params) {
+    auto &httpfs_params = params.Cast<HTTPFSParams>();
+
+    HTTPHeaders res_headers;
+    for (auto &header : header_map) {
+        res_headers.Insert(header.first, header.second);
+    }
+    if (!httpfs_params.pre_merged_headers) {
+        for (auto &entry : params.extra_headers) {
+            res_headers.Insert(entry.first, entry.second);
+        }
+    }
+    return res_headers;
+}
 
 class HTTPWasmClient : public HTTPClient {
    public:
@@ -38,16 +52,16 @@ class HTTPWasmClient : public HTTPClient {
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
+        auto headers = TransformHeadersWasm(info.headers, info.params);
 
         int n = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             n++;
         }
-
         char **z = (char **)(void *)malloc(n * 4 * 2);
 
         int i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             z[i] = (char *)malloc(h.first.size() * 4 + 1);
             memset(z[i], 0, h.first.size() * 4 + 1);
             memcpy(z[i], h.first.c_str(), h.first.size());
@@ -130,7 +144,7 @@ class HTTPWasmClient : public HTTPClient {
         // clang-format on
 
         i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             free(z[i]);
             i++;
             free(z[i]);
@@ -182,15 +196,16 @@ class HTTPWasmClient : public HTTPClient {
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
+        auto headers = TransformHeadersWasm(info.headers, info.params);
         int n = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             n++;
         }
 
         char **z = (char **)(void *)malloc(n * 4 * 2);
 
         int i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             z[i] = (char *)malloc(h.first.size() * 4 + 1);
             memset(z[i], 0, h.first.size() * 4 + 1);
             memcpy(z[i], h.first.c_str(), h.first.size());
@@ -222,6 +237,7 @@ class HTTPWasmClient : public HTTPClient {
                     var ptr1 = HEAP32[($2)/4 + i ];
                     var ptr2 = HEAP32[($2)/4 + i + 1];
 
+console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
@@ -313,7 +329,8 @@ class HTTPWasmClient : public HTTPClient {
             path.c_str(), n, z, "HEAD");
 
         i = 0;
-        for (auto h : info.headers) {
+
+        for (auto h : headers) {
             free(z[i]);
             i++;
             free(z[i]);
@@ -423,16 +440,16 @@ res->headers.Insert(head, tail);
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-
+        auto headers = TransformHeadersWasm(info.headers, info.params);
         int n = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             n++;
         }
 
         char **z = (char **)(void *)malloc(n * 4 * 2);
 
         int i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             z[i] = (char *)malloc(h.first.size() * 4 + 1);
             memset(z[i], 0, h.first.size() * 4 + 1);
             memcpy(z[i], h.first.c_str(), h.first.size());
@@ -529,7 +546,7 @@ res->headers.Insert(head, tail);
         free(payload);
 
         i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             free(z[i]);
             i++;
             free(z[i]);
@@ -579,15 +596,16 @@ res->headers.Insert(head, tail);
             path = "https://" + path;
         }
 
+        auto headers = TransformHeadersWasm(info.headers, info.params);
         int n = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             n++;
         }
 
         char **z = (char **)(void *)malloc(n * 4 * 2);
 
         int i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             z[i] = (char *)malloc(h.first.size() * 4 + 1);
             memset(z[i], 0, h.first.size() * 4 + 1);
             memcpy(z[i], h.first.c_str(), h.first.size());
@@ -684,7 +702,7 @@ res->headers.Insert(head, tail);
         free(payload);
 
         i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             free(z[i]);
             i++;
             free(z[i]);
@@ -734,15 +752,16 @@ res->headers.Insert(head, tail);
             path = "https://" + path;
         }
 
+        auto headers = TransformHeadersWasm(info.headers, info.params);
         int n = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             n++;
         }
 
         char **z = (char **)(void *)malloc(n * 4 * 2);
 
         int i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             z[i] = (char *)malloc(h.first.size() * 4 + 1);
             memset(z[i], 0, h.first.size() * 4 + 1);
             memcpy(z[i], h.first.c_str(), h.first.size());
@@ -826,7 +845,7 @@ res->headers.Insert(head, tail);
         // clang-format on
 
         i = 0;
-        for (auto h : info.headers) {
+        for (auto h : headers) {
             free(z[i]);
             i++;
             free(z[i]);
