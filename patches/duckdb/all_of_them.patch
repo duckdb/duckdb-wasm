@@ -399,7 +399,7 @@ index 11b887670b..3b5186379d 100644
  	}
  
 diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
-index 50f95a2bb4..c6ecf80940 100644
+index 50f95a2bb4..8f5ef30624 100644
 --- a/src/main/extension/extension_load.cpp
 +++ b/src/main/extension/extension_load.cpp
 @@ -9,8 +9,11 @@
@@ -471,8 +471,7 @@ index 50f95a2bb4..c6ecf80940 100644
 -	// Parse the extension metadata from the extension binary
 -	auto parsed_metadata = ParseExtensionMetaData(*handle);
 +	auto filebase = fs.ExtractBaseName(filename);
- 
--	auto metadata_mismatch_error = parsed_metadata.GetInvalidMetadataError();
++
 +#ifdef WASM_LOADABLE_EXTENSIONS
 +	auto basename = fs.ExtractBaseName(filename);
 +	char *exe = NULL;
@@ -481,9 +480,7 @@ index 50f95a2bb4..c6ecf80940 100644
 +		    // Next few lines should argubly in separate JavaScript-land function call
 +		    // TODO: move them out / have them configurable
  
--	if (!metadata_mismatch_error.empty()) {
--		metadata_mismatch_error = StringUtil::Format("Failed to load '%s', %s", extension, metadata_mismatch_error);
--	}
+-	auto metadata_mismatch_error = parsed_metadata.GetInvalidMetadataError();
 +		    var url = (UTF8ToString($0));
 +
 +		    if (typeof XMLHttpRequest === "undefined") {
@@ -574,13 +571,8 @@ index 50f95a2bb4..c6ecf80940 100644
 +		    // console.log(new Uint8Array(Module.HEAPU8, fileOnWasmHeap, len+4));
 +		    // console.log('Loading extension ', UTF8ToString($1));
  
--	if (!Settings::Get<AllowUnsignedExtensionsSetting>(db)) {
--		bool signature_valid;
--		if (parsed_metadata.AppearsValid()) {
--			bool allow_community_extensions = Settings::Get<AllowCommunityExtensionsSetting>(db);
--			signature_valid = CheckExtensionSignature(*handle, parsed_metadata, allow_community_extensions);
--		} else {
--			signature_valid = false;
+-	if (!metadata_mismatch_error.empty()) {
+-		metadata_mismatch_error = StringUtil::Format("Failed to load '%s', %s", extension, metadata_mismatch_error);
 +		    // Here we add the uInt8Array to Emscripten's filesystem, for it to be found by dlopen
 +		    FS.writeFile(UTF8ToString($1), new Uint8Array(uInt8Array));
 +		    return fileOnWasmHeap;
@@ -588,10 +580,16 @@ index 50f95a2bb4..c6ecf80940 100644
 +	    filename.c_str(), basename.c_str());
 +	if (!exe) {
 +		throw IOException("Extension %s is not available", filename);
-+	}
-+
+ 	}
+ 
 +	auto dopen_from = basename;
-+	if (Settings::Get<AllowUnsignedExtensionsSetting>(db)) {
+ 	if (!Settings::Get<AllowUnsignedExtensionsSetting>(db)) {
+-		bool signature_valid;
+-		if (parsed_metadata.AppearsValid()) {
+-			bool allow_community_extensions = Settings::Get<AllowCommunityExtensionsSetting>(db);
+-			signature_valid = CheckExtensionSignature(*handle, parsed_metadata, allow_community_extensions);
+-		} else {
+-			signature_valid = false;
 +		// signature is the last 256 bytes of the file
 +
 +		string signature;
@@ -666,7 +664,7 @@ index 50f95a2bb4..c6ecf80940 100644
 +			signature[j] = ((uint8_t *)exe)[4 + signature_offset + j];
 +		}
 +		bool any_valid = false;
-+		bool allow_community_extensions = Settings::Get<AllowUnsignedExtensionsSetting>(db);
++		bool allow_community_extensions = Settings::Get<AllowCommunityExtensionsSetting>(db);
 +		for (auto &key : ExtensionHelper::GetPublicKeys(allow_community_extensions)) {
 +			if (duckdb_mbedtls::MbedTlsWrapper::IsValidSha256Signature(key, signature, two_level_hash)) {
 +				any_valid = true;
