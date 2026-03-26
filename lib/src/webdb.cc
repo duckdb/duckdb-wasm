@@ -39,6 +39,7 @@
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/types/vector_buffer.hpp"
 #include "duckdb/common/virtual_file_system.hpp"
+#include "duckdb/function/table/arrow/arrow_duck_schema.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/main/settings.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
@@ -117,7 +118,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
     ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
                              ArrowFormatVersion::V1_0, connection_.context);
-    unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
+    auto extension_type_cast = ArrowTypeExtensionData::GetExtensionTypes(*connection_.context, result->types);
     options.arrow_offset_size = ArrowOffsetSize::REGULAR;
     ArrowConverter::ToArrowSchema(&raw_schema, result->types, result->names, options);
     ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
@@ -339,7 +340,7 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
         bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
         ClientProperties arrow_options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
                                        ArrowFormatVersion::V1_0, connection_.context);
-        unordered_map<idx_t, const shared_ptr<ArrowTypeExtensionData>> extension_type_cast;
+        auto extension_type_cast = ArrowTypeExtensionData::GetExtensionTypes(*connection_.context, chunk->GetTypes());
         arrow_options.arrow_offset_size = ArrowOffsetSize::REGULAR;
         ArrowConverter::ToArrowArray(*chunk, &array, arrow_options, extension_type_cast);
         ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
