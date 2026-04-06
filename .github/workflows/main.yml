@@ -370,7 +370,7 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-            - uses: mymindstorm/setup-emsdk@v14
+            - uses: mymindstorm/setup-emsdk@v15
               with:
                   version: ${{ env.EMSCRIPTEN_VERSION }}
 
@@ -413,7 +413,7 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-            - uses: mymindstorm/setup-emsdk@v14
+            - uses: mymindstorm/setup-emsdk@v15
               with:
                   version: ${{ env.EMSCRIPTEN_VERSION }}
 
@@ -456,7 +456,7 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-            - uses: mymindstorm/setup-emsdk@v14
+            - uses: mymindstorm/setup-emsdk@v15
               with:
                   version: ${{ env.EMSCRIPTEN_VERSION_COI }}
 
@@ -504,7 +504,7 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-            - uses: mymindstorm/setup-emsdk@v14
+            - uses: mymindstorm/setup-emsdk@v15
               with:
                   version: ${{ env.EMSCRIPTEN_VERSION }}
 
@@ -551,7 +551,7 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-            - uses: mymindstorm/setup-emsdk@v14
+            - uses: mymindstorm/setup-emsdk@v15
               with:
                   version: ${{ env.EMSCRIPTEN_VERSION }}
 
@@ -598,7 +598,7 @@ jobs:
                   make apply_patches
                   cd submodules/duckdb && git tag ${{ inputs.override_git_describe }}
 
-            - uses: mymindstorm/setup-emsdk@v14
+            - uses: mymindstorm/setup-emsdk@v15
               with:
                   version: ${{ env.EMSCRIPTEN_VERSION_COI }}
 
