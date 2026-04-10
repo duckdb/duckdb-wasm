@@ -46,6 +46,7 @@ esac
 echo "MODE=${MODE}"
 echo "FEATURES=${FEATURES}"
 
+
 BUILD_DIR="${PROJECT_ROOT}/build/${MODE}/${FEATURES}"
 mkdir -p ${BUILD_DIR}
 
