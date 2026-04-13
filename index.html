@@ -834,7 +834,7 @@ function loadFrontendWasm() {
       initDone = true;
       // TODO: get version from the backend (DuckDB::LibraryVersion() is not available in frontend WASM).
       // TODO: figure out what to show while the backend is loading (the WASM binary is ~67MB).
-      term.write('\r\n\x1b[90mDuckDB Web Shell running. Original Web Shell available at \x1b]8;;https://shell.duckdb.org/original.html\x07https://shell.duckdb.org/original.html\x1b]8;;\x07\x1b[0m\r\n');
+      term.write('\r\n\x1b[90mDuckDB Web Shell running...\x1b[0m\r\n');
       term.write('DuckDB v1.5.2 (Variegata)\r\n');
       term.write('\x1b[90mEnter ".help" for usage hints.\x1b[0m\r\n');
       wasmModule._wasm_start_editing();
