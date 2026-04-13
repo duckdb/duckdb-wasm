@@ -26,6 +26,7 @@ if [ "${CURRENT_BRANCH}" = "${DEFAULT_BRANCH}" ]; then
         -type d \
         -not -name data \
         -not -name misc \
+        -not -name assets \
         -exec rm -rf '{}' \;
     cp -r ${PROJECT_ROOT}/packages/duckdb-wasm-app/build/release/* ${PAGES_DIR}
 
