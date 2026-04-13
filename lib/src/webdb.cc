@@ -76,7 +76,12 @@
 
 namespace duckdb {
 
-bool preloaded_httpfs{true};
+namespace {
+struct PreloadedHttpfsInit {
+    PreloadedHttpfsInit() { preloaded_httpfs = true; }
+} _preloaded_httpfs_init;
+}  // namespace
+
 string web::experimental_s3_tables_global_proxy{""};
 
 namespace web {
