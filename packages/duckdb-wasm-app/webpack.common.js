@@ -134,7 +134,7 @@ export function configure(params) {
         plugins: [
             new HtmlWebpackPlugin({
                 template: './static/index.html',
-                filename: './index.html',
+                filename: './original.html',
             }),
             new MiniCssExtractPlugin({
                 filename: './static/css/[id].[contenthash].css',
