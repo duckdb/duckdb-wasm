@@ -261,13 +261,15 @@ index 212250af13..702744c133 100644
  #include "duckdb/catalog/catalog.hpp"
  #include "duckdb/common/virtual_file_system.hpp"
  #include "duckdb/execution/index/index_type_set.hpp"
-@@ -41,6 +40,7 @@
+@@ -41,6 +40,9 @@
  #include "duckdb/common/thread.hpp"
  #endif
  
 +
  namespace duckdb {
  
++bool preloaded_httpfs = false;
++
  DBConfig::DBConfig() {
 @@ -348,6 +348,28 @@ DuckDB::DuckDB(DatabaseInstance &instance_p) : instance(instance_p.shared_from_t
  DuckDB::~DuckDB() {
