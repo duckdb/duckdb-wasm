@@ -204,61 +204,61 @@ class HTTPWasmClient : public HTTPClient {
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
 
-		uint64_t next = 0;
-	{
-            uint64_t LEN = 0;
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[3];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[2];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[1];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[0];
-		next = LEN;
-	}
-		uint64_t len = 0;
-	{
-            uint64_t LEN = 0;
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[3 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[2 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[1 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[0 + 4];
-		len = LEN;
-	}
+            uint64_t next = 0;
+            {
+                uint64_t LEN = 0;
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[3];
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[2];
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[1];
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[0];
+                next = LEN;
+            }
+            uint64_t len = 0;
+            {
+                uint64_t LEN = 0;
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[3 + 4];
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[2 + 4];
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[1 + 4];
+                LEN *= 256;
+                LEN += ((uint8_t *)exe)[0 + 4];
+                len = LEN;
+            }
 
-		uint64_t len_headers = 0;
-	{
-            uint64_t LEN = 0;
-            LEN *= 256;
-            LEN += ((uint8_t *)next)[3 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)next)[2 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)next)[1 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)next)[0 + 4];
-		len_headers = LEN;
-	}
+            uint64_t len_headers = 0;
+            {
+                uint64_t LEN = 0;
+                LEN *= 256;
+                LEN += ((uint8_t *)next)[3 + 4];
+                LEN *= 256;
+                LEN += ((uint8_t *)next)[2 + 4];
+                LEN *= 256;
+                LEN += ((uint8_t *)next)[1 + 4];
+                LEN *= 256;
+                LEN += ((uint8_t *)next)[0 + 4];
+                len_headers = LEN;
+            }
 
-	char * ptr = reinterpret_cast<char*>(next);
+            char *ptr = reinterpret_cast<char *>(next);
 
-	string headers = string(ptr + 8, len_headers);
+            string headers = string(ptr + 8, len_headers);
 
-	vector<string> vec_headers = StringUtil::Split(headers, "\r\n");
+            vector<string> vec_headers = StringUtil::Split(headers, "\r\n");
 
-	for (auto h : vec_headers) {
-		int j = 0;
-		while (j < h.size() && h[j] != ':') j++;
-		string head = string(h.c_str(), j);
-		while (j < h.size() && h[j] != ' ') j++;
-		string tail = string(h.c_str() + j + 1);
-		res->headers.Insert(head, tail);
-	}
+            for (auto h : vec_headers) {
+                int j = 0;
+                while (j < h.size() && h[j] != ':') j++;
+                string head = string(h.c_str(), j);
+                while (j < h.size() && h[j] != ' ') j++;
+                string tail = string(h.c_str() + j + 1);
+                res->headers.Insert(head, tail);
+            }
 
             res->body = string(exe + 8, len);
 
