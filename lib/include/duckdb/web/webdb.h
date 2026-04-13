@@ -21,6 +21,7 @@
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/experimental/wire_types.h"
 #include "duckdb/web/udf.h"
 #include "nonstd/span.h"
 
@@ -139,6 +140,46 @@ class WebDB {
         arrow::Status InsertCSVFromPath(std::string_view path, std::string_view options);
         /// Insert json data from a path
         arrow::Status InsertJSONFromPath(std::string_view path, std::string_view options);
+
+        // === Experimental wire-format API ===
+        // Returns results as varchar-cast binary blobs instead of Arrow IPC.
+
+        /// Run a query and return materialized result as wire metadata blob (blocking)
+        std::string ExperimentalQuery(std::string_view sql, uint8_t cast_mode);
+        /// Start a materializing query (non-blocking) — returns metadata if ready, empty if still executing
+        std::string ExperimentalQueryStart(std::string_view sql, uint8_t cast_mode);
+        /// Poll a pending materializing query — returns metadata with row_count/chunk_count when ready, empty if not
+        std::string ExperimentalQueryPoll();
+        /// Start a streaming query and return wire metadata blob (or empty if not ready)
+        std::string ExperimentalSendQuery(std::string_view sql, uint8_t cast_mode);
+        /// Poll a pending streaming query — returns metadata when ready, empty if still executing
+        std::string ExperimentalPollPendingQuery();
+        /// Fetch next batch of chunks as wire ChunksEnvelope blob
+        std::string ExperimentalFetch();
+        /// Fetch a specific chunk by index as wire ChunksEnvelope blob
+        std::string ExperimentalFetchChunkAt(uint64_t chunk_idx);
+
+       protected:
+        // --- Experimental state (independent from Arrow-based state) ---
+        struct ExperimentalState {
+            duckdb::unique_ptr<duckdb::QueryResult> active_result;
+            experimental::CastMode cast_mode = experimental::CastMode::TO_VARCHAR;
+            std::string next_chunk_blob;
+            bool has_lookahead = false;
+            // Pending query state for streaming
+            std::vector<duckdb::unique_ptr<duckdb::SQLStatement>> pending_statements;
+            size_t pending_statement_index = 0;
+            duckdb::unique_ptr<duckdb::PendingQueryResult> pending_query_result;
+            bool pending_query_was_canceled = false;
+        };
+        ExperimentalState experimental_;
+
+        // Helpers
+        std::string ExperimentalSerializeDataChunk(duckdb::DataChunk& chunk);
+        std::string ExperimentalSerializeChunk(duckdb::DataChunk& chunk);
+        std::string ExperimentalSerializeMetadata(duckdb::QueryResult& result, uint64_t row_count,
+                                                  uint64_t chunk_count, const std::string& first_chunk_blob,
+                                                  bool first_chunk_is_last);
     };
 
    protected:
