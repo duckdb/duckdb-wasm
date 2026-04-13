@@ -87,7 +87,7 @@ function respond(tag: number, status: number, data: Uint8Array | null, error?: s
 /** Call an experimental export — always measures duration */
 function callExperimental(funcName: string, argTypes: Emscripten.JSType[], args: any[]): { data: Uint8Array | null, duration: number } {
     const t0 = performance.now();
-    const [s, d, n] = callSRet(mod!, funcName, argTypes, args);
+    const [, d, n] = callSRet(mod!, funcName, argTypes, args);
     const data = (n > 0) ? copyBuffer(mod!, d, n) : null;
     dropResponseBuffers(mod!);
     return { data, duration: performance.now() - t0 };
@@ -232,7 +232,7 @@ async function handleMessage(req: WorkerRequest): Promise<void> {
             }
 
             case 'list_files': {
-                const [s, d, n] = callSRet(mod!, 'duckdb_web_fs_glob_file_infos', ['string'], ['*']);
+                const [, d, n] = callSRet(mod!, 'duckdb_web_fs_glob_file_infos', ['string'], ['*']);
                 const json = new TextDecoder().decode(mod!.HEAPU8.subarray(d, d + n));
                 dropResponseBuffers(mod!);
                 respond(tag, 0, new TextEncoder().encode(json));
