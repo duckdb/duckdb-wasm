@@ -7,7 +7,7 @@
 
 namespace duckdb {
 class LogicalType;
-} // namespace duckdb
+}  // namespace duckdb
 
 namespace duckdb {
 namespace web {
@@ -15,9 +15,9 @@ namespace experimental {
 
 //! How the server should cast result data before sending it over the wire.
 enum class CastMode : uint8_t {
-    TO_VARCHAR = 0,      //! Cast all columns to VARCHAR (default)
-    TO_VARCHAR_JSON = 1, //! Cast to VARCHAR, nested/complex types as JSON strings
-    NONE = 2,            //! No casting — send native types as-is
+    TO_VARCHAR = 0,       //! Cast all columns to VARCHAR (default)
+    TO_VARCHAR_JSON = 1,  //! Cast to VARCHAR, nested/complex types as JSON strings
+    NONE = 2,             //! No casting — send native types as-is
 };
 
 //! Options sent with Query/SendQuery to control server-side behavior.

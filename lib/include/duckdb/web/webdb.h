@@ -17,11 +17,11 @@
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/config.h"
 #include "duckdb/web/environment.h"
+#include "duckdb/web/experimental/wire_types.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/web_filesystem.h"
-#include "duckdb/web/experimental/wire_types.h"
 #include "duckdb/web/udf.h"
 #include "nonstd/span.h"
 
@@ -177,9 +177,8 @@ class WebDB {
         // Helpers
         std::string ExperimentalSerializeDataChunk(duckdb::DataChunk& chunk);
         std::string ExperimentalSerializeChunk(duckdb::DataChunk& chunk);
-        std::string ExperimentalSerializeMetadata(duckdb::QueryResult& result, uint64_t row_count,
-                                                  uint64_t chunk_count, const std::string& first_chunk_blob,
-                                                  bool first_chunk_is_last);
+        std::string ExperimentalSerializeMetadata(duckdb::QueryResult& result, uint64_t row_count, uint64_t chunk_count,
+                                                  const std::string& first_chunk_blob, bool first_chunk_is_last);
     };
 
    protected:

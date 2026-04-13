@@ -1,21 +1,20 @@
-#include "duckdb/web/webdb.h"
-#include "duckdb/web/experimental/wire_types.h"
-#include "duckdb/web/experimental/wire_serializer.h"
-#include "duckdb/web/utils/wasm_response.h"
+#include <cstring>
 
-#include "duckdb/common/types/data_chunk.hpp"
-#include "duckdb/common/types/vector.hpp"
+#include "duckdb/common/error_data.hpp"
 #include "duckdb/common/serializer/binary_serializer.hpp"
 #include "duckdb/common/serializer/memory_stream.hpp"
-#include "duckdb/main/materialized_query_result.hpp"
-#include "duckdb/main/stream_query_result.hpp"
-#include "duckdb/main/client_context.hpp"
-#include "duckdb/main/pending_query_result.hpp"
+#include "duckdb/common/types/data_chunk.hpp"
+#include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/cast/default_casts.hpp"
-#include "duckdb/common/error_data.hpp"
+#include "duckdb/main/client_context.hpp"
 #include "duckdb/main/database.hpp"
-
-#include <cstring>
+#include "duckdb/main/materialized_query_result.hpp"
+#include "duckdb/main/pending_query_result.hpp"
+#include "duckdb/main/stream_query_result.hpp"
+#include "duckdb/web/experimental/wire_serializer.h"
+#include "duckdb/web/experimental/wire_types.h"
+#include "duckdb/web/utils/wasm_response.h"
+#include "duckdb/web/webdb.h"
 
 using namespace duckdb::web;
 using namespace duckdb::web::experimental;
@@ -58,9 +57,8 @@ std::string WebDB::Connection::ExperimentalSerializeChunk(duckdb::DataChunk& chu
 }
 
 std::string WebDB::Connection::ExperimentalSerializeMetadata(duckdb::QueryResult& result, uint64_t row_count,
-                                                              uint64_t chunk_count,
-                                                              const std::string& first_chunk_blob,
-                                                              bool first_chunk_is_last) {
+                                                             uint64_t chunk_count, const std::string& first_chunk_blob,
+                                                             bool first_chunk_is_last) {
     WireResultMetadata meta;
     meta.has_error = result.HasError();
     if (meta.has_error) {
@@ -190,8 +188,8 @@ std::string WebDB::Connection::ExperimentalQueryPoll() {
                         }
                     }
                     bool first_chunk_is_last = (!first_chunk_blob.empty() && chunk_count <= 1);
-                    auto blob = ExperimentalSerializeMetadata(*result, row_count, chunk_count,
-                                                              first_chunk_blob, first_chunk_is_last);
+                    auto blob = ExperimentalSerializeMetadata(*result, row_count, chunk_count, first_chunk_blob,
+                                                              first_chunk_is_last);
                     if (!first_chunk_blob.empty()) {
                         result->Fetch();
                     }

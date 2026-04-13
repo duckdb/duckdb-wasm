@@ -1,8 +1,9 @@
 #ifndef INCLUDE_DUCKDB_WEB_EXPERIMENTAL_WIRE_SERIALIZER_H_
 #define INCLUDE_DUCKDB_WEB_EXPERIMENTAL_WIRE_SERIALIZER_H_
 
-#include "duckdb/web/experimental/wire_types.h"
 #include <string>
+
+#include "duckdb/web/experimental/wire_types.h"
 
 namespace duckdb {
 namespace web {

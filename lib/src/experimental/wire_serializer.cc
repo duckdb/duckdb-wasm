@@ -1,8 +1,9 @@
 #include "duckdb/web/experimental/wire_serializer.h"
-#include "duckdb/web/experimental/wire_types.h"
-#include "duckdb/common/types.hpp"
 
 #include <cstring>
+
+#include "duckdb/common/types.hpp"
+#include "duckdb/web/experimental/wire_types.h"
 
 namespace duckdb {
 namespace web {
