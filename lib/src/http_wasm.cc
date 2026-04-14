@@ -101,8 +101,8 @@ class HTTPWasmClient : public HTTPClient {
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") z = "X-user-agent";
-			if (z === "Authorization") {
+			if (z === "User-Agent") {}
+			else if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 
@@ -336,8 +336,8 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") z = "X-user-agent";
-			if (z === "Authorization") {
+			if (z === "User-Agent") {}
+			else if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
@@ -583,8 +583,8 @@ res->headers.Insert(head, tail);
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") z = "X-user-agent";
-			if (z === "Authorization") {
+			if (z === "User-Agent") {}
+			else if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
@@ -739,8 +739,8 @@ res->headers.Insert(head, tail);
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") z = "X-user-agent";
-			if (z === "Authorization") {
+			if (z === "User-Agent") {}
+			else if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
@@ -891,8 +891,8 @@ res->headers.Insert(head, tail);
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") z = "X-user-agent";
-			if (z === "Authorization") {
+			if (z === "User-Agent") {}
+			else if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
