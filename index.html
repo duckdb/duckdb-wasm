@@ -919,7 +919,10 @@ async function boot() {
 
     // 2. Open database and create connection
     setStatus('opening database...');
-    await sendToWorkerAsync('open');
+    const params = new URLSearchParams(location.search);
+    const allowUnsigned = params.get('allowUnsignedExtensions') === 'true';
+    const openConfig = allowUnsigned ? JSON.stringify({ allowUnsignedExtensions: true }) : '';
+    await sendToWorkerAsync('open', { config: openConfig });
     await sendToWorkerAsync('connect');
 
     // 3. Load the frontend shell WASM
