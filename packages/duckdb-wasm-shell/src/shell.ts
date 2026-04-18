@@ -116,6 +116,27 @@ export async function embed(props: ShellProps) {
     const TERM_BOLD = '\x1b[1m';
     const TERM_NORMAL = '\x1b[m';
     const TERM_CLEAR = '\x1b[2K\r';
+    const TERM_YELLOW = '\x1b[33m';
+    const TERM_RED = '\x1b[31m';
+
+    // Forward console.warn and console.error to the shell terminal so users
+    // can see errors (e.g. CORS, network failures) without opening DevTools.
+    const trueConsoleWarn = console.warn.bind(console);
+    const trueConsoleError = console.error.bind(console);
+    const formatLogArgs = (args: any[]): string => {
+        if (args.length === 1 && args[0] !== null && typeof args[0] === 'object' && 'value' in args[0]) {
+            return String(args[0].value);
+        }
+        return args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+    };
+    console.warn = function (...args: any[]) {
+        shell.writeln(`${TERM_YELLOW}${TERM_BOLD}[ WARN ]${TERM_NORMAL} ${formatLogArgs(args)}`);
+        trueConsoleWarn(...args);
+    };
+    console.error = function (...args: any[]) {
+        shell.writeln(`${TERM_RED}${TERM_BOLD}[ ERR  ]${TERM_NORMAL} ${formatLogArgs(args)}`);
+        trueConsoleError(...args);
+    };
 
     // Progress handler
     const progressHandler = (progress: InstantiationProgress) => {
