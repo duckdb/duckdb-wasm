@@ -155,6 +155,91 @@ document.querySelectorAll('.example-link').forEach(link => {
   });
 });
 
+// === .connect command ===
+// .connect <template>      — activate query wrapping (use $$QUERY$$ placeholder)
+// .connect <name>:<params> — read wrapper from variable, run init, activate
+// .connect off             — deactivate
+// .connect                 — show status
+window.shellExecutionWrapper = null;
+
+// Helper: query a variable via the worker and extract the string value
+async function getVariable(varName) {
+  const sql = "SELECT getvariable('" + varName.replace(/'/g, "''") + "')::VARCHAR;";
+  const data = await sendToWorkerAsync('query', { sql, castMode: 0 });
+  if (!data || data.length === 0) return null;
+  const ptr = wasmModule._malloc(data.length);
+  wasmModule.HEAPU8.set(data, ptr);
+  const resultPtr = wasmModule._wasm_extract_first_value(ptr, data.length);
+  wasmModule._free(ptr);
+  // Read null-terminated string from WASM heap
+  let end = resultPtr;
+  while (wasmModule.HEAPU8[end] !== 0) end++;
+  const value = new TextDecoder().decode(wasmModule.HEAPU8.subarray(resultPtr, end));
+  wasmModule._free(resultPtr);
+  return value || null;
+}
+
+window.shellConnect = (arg) => {
+  if (!arg || arg === '') {
+    if (window.shellExecutionWrapper) {
+      term.write('Active wrapper: ' + window.shellExecutionWrapper + '\r\n');
+    } else {
+      term.write('No active connection wrapper.\r\n');
+    }
+    return;
+  }
+  if (arg === 'off') {
+    window.shellExecutionWrapper = null;
+    term.write('Disconnected.\r\n');
+    return;
+  }
+
+  const colonPos = arg.indexOf(':');
+  if (colonPos === -1) {
+    // Raw template
+    window.shellExecutionWrapper = arg;
+    term.write('Connected: queries will be wrapped.\r\n');
+    return;
+  }
+
+  // name:params — read variables, run init, activate wrapper
+  const name = arg.substring(0, colonPos);
+  const params = arg.substring(colonPos + 1);
+  const initVar = 'shell_connect_wrapper_' + name + '_init';
+  const wrapperVar = 'shell_connect_wrapper_' + name;
+
+  window.asyncBusy = true;
+  (async () => {
+    try {
+      // Read wrapper template
+      const wrapperTpl = await getVariable(wrapperVar);
+      if (!wrapperTpl) {
+        term.write('Error: variable ' + wrapperVar + ' not set.\r\n');
+        return;
+      }
+
+      // Read and run init template (if exists)
+      const initTpl = await getVariable(initVar);
+      if (initTpl) {
+        const initSql = initTpl.replace(/\$\$PARAMS\$\$/g, params);
+        term.write('\x1b[90mConnect init: ' + initSql + '\x1b[0m\r\n');
+        await sendToWorkerAsync('query', { sql: initSql, castMode: 0 });
+      }
+
+      // Activate wrapper with params substituted
+      window.shellExecutionWrapper = wrapperTpl.replace(/\$\$PARAMS\$\$/g, params);
+      term.write('\x1b[90mConnected via: ' + window.shellExecutionWrapper.replace('$$QUERY$$', '...') + '\x1b[0m\r\n');
+      term.write('To restore local compute: .connect off\r\n');
+    } catch (e) {
+      term.write('Error connecting: ' + e.message + '\r\n');
+    } finally {
+      window.asyncBusy = false;
+      wasmModule._wasm_start_editing();
+      flushPending();
+    }
+  })();
+};
+
 // === Dark mode ===
 const LIGHT_THEME = {
   background: '#fafafa', foreground: '#1e1e1e', cursor: '#1e1e1e', cursorAccent: '#fafafa',
@@ -245,7 +330,7 @@ window.pendingFolders = new Set();
 
 // === .share: session URL encoding ===
 window.shareHistory = [];
-const SHARE_ALLOWED_DOT = ['.mode', '.timer', '.maxrows', '.maxwidth', '.nullvalue', '.separator', '.headers', '.changes',
+const SHARE_ALLOWED_DOT = ['.mode', '.timer', '.maxrows', '.maxwidth', '.nullvalue', '.separator', '.headers', '.changes', '.connect',
   '.tables', '.schema', '.indexes', '.columns', '.describe', '.functions', '.types'];
 
 function isShareable(line) {
@@ -764,7 +849,11 @@ function flushPending() {
         const connId = readU64(raw, 9);
         const castMode = raw[17];
         const sqlLen = readU32(raw, 18);
-        const sql = new TextDecoder().decode(raw.subarray(22, 22 + sqlLen));
+        let sql = new TextDecoder().decode(raw.subarray(22, 22 + sqlLen));
+        // Apply execution wrapper if active (.connect)
+        if (window.shellExecutionWrapper) {
+          sql = window.shellExecutionWrapper.replace(/\$\$QUERY\$\$/g, sql.replace(/'/g, "''"));
+        }
         worker.postMessage({
           op: opcode === 3 ? 'query' : 'send_query',
           tag, sql, castMode,
@@ -840,6 +929,10 @@ function loadFrontendWasm() {
       wasmModule._wasm_start_editing();
       flushPending();
 
+      // Set up default .connect wrappers (silently, via worker)
+      sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack_init = 'ATTACH OR REPLACE ''quack:$$PARAMS$$'' AS connect_backend;';", castMode: 0 });
+      sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack = 'CALL rpc_call_by_name(''connect_backend'', ''$$QUERY$$'');';", castMode: 0 });
+
       // Queue commands from URL hash (e.g. #queries=v0,SELECT-42,FROM-range(10))
       // They are drained one at a time as the shell returns to editing mode.
       const hash = window.location.hash;
@@ -849,8 +942,8 @@ function loadFrontendWasm() {
           const sql = extraswaps(decodeURIComponent(splits[i]));
           if (sql) startupQueue.push(sql);
         }
-        drainStartupQueue();
       }
+      drainStartupQueue();
     },
   };
 
