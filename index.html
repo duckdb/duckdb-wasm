@@ -46,6 +46,27 @@
     /* Override fixed positioning — we want the header in flow */
     header .headerline { position: relative; background: var(--menu-topmenu-background-color, rgba(250, 250, 250, 0.85)); }
     #terminal { height: calc(100vh - 70px); padding: 0 12px; }
+    .demo-btn {
+      border-radius: var(--border-radius-box);
+      border: 1px solid var(--menu-dropdown-border-color, #333);
+      background-color: var(--menu-topmenu-background-color, rgba(250, 250, 250, 0.6));
+      width: 40px; height: 40px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all .3s;
+      color: var(--main-text-secondary-color, #666);
+      cursor: pointer; padding: 0;
+      pointer-events: all;
+    }
+    .demo-btn:hover:not(:disabled) { border-color: var(--menu-topmenu-text-color-hover, #6A58DA); color: var(--menu-topmenu-text-color-hover, #6A58DA); }
+    .demo-btn { position: relative; }
+    .demo-btn[data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      margin-top: 8px; padding: 6px 10px;
+      background: var(--grey-10, #1a1a1a); color: var(--grey-95, #f2f2f2);
+      font: 12px monospace; white-space: pre; border-radius: 4px;
+      z-index: 100; pointer-events: none; max-width: 400px;
+    }
     /* Center the nav dropdown between logo and options */
     header .headercontent .landingmenu { position: static !important; width: auto !important; height: 100% !important; display: flex !important; align-items: center !important; flex: 1; justify-content: center; }
     header .headercontent .landingmenu nav,
@@ -63,6 +84,7 @@
     <symbol id="sun" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z"/></symbol>
     <symbol id="moon-01" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M22 15.8442C20.6866 16.4382 19.2286 16.7688 17.6935 16.7688C11.9153 16.7688 7.23116 12.0847 7.23116 6.30654C7.23116 4.77135 7.5618 3.3134 8.15577 2C4.52576 3.64163 2 7.2947 2 11.5377C2 17.3159 6.68414 22 12.4623 22C16.7053 22 20.3584 19.4742 22 15.8442Z"/></symbol>
     <symbol id="chevron-down" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M6 9L12 15L18 9"/></symbol>
+    <symbol id="play-circle" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M10 8L16 12L10 16V8Z"/></symbol>
   </svg>
 
   <header>
@@ -96,6 +118,9 @@
           </nav>
         </div>
         <div class="options">
+          <button id="nav-demo" class="demo-btn" style="visibility:hidden" disabled>
+            <svg class="icon" style="width:16px;height:16px"><use href="#play-circle"></use></svg>
+          </button>
           <button class="mode" data-mode="dark">
             <svg class="icon icon-sun"><use href="#sun"></use></svg>
             <svg class="icon icon-moon"><use href="#moon-01"></use></svg>
@@ -119,6 +144,35 @@ const WORKER_URL = './static/assets/worker.js';
 const DUCKDB_WASM_URL = './duckdb-eh.wasm';
 
 // === Nav actions ===
+// === Demo mode ===
+window.demoQueue = [];
+window.demoRunning = false;
+
+window.demoUpdateButton = () => {
+  const btn = document.getElementById('nav-demo');
+  if (window.demoQueue.length === 0) {
+    btn.style.visibility = 'hidden';
+  } else if (window.demoRunning) {
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.removeAttribute('data-tooltip');
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    if (window.demoQueue.length > 0) btn.setAttribute('data-tooltip', window.demoQueue[0]);
+    else btn.removeAttribute('data-tooltip');
+  }
+};
+
+document.getElementById('nav-demo').addEventListener('click', (e) => {
+  e.preventDefault();
+  if (window.demoQueue.length === 0 || window.demoRunning) return;
+  window.demoRunning = true;
+  window.demoUpdateButton();
+  const sql = window.demoQueue.shift();
+  injectCommand(sql);
+});
+
 document.getElementById('nav-new').addEventListener('click', (e) => {
   e.preventDefault();
   window.location.hash = '';
@@ -790,6 +844,12 @@ function deliverToFrontend(tag, status, data) {
   if (wasmModule._wasm_is_editing() && startupQueue.length > 0) {
     drainStartupQueue();
   }
+
+  // Demo mode: mark query as done when shell returns to editing
+  if (wasmModule._wasm_is_editing() && window.demoRunning) {
+    window.demoRunning = false;
+    window.demoUpdateButton();
+  }
 }
 
 // === Flush pending messages from frontend WASM to worker ===
@@ -934,16 +994,33 @@ function loadFrontendWasm() {
       sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack = 'CALL rpc_call_by_name(''connect_backend'', ''$$QUERY$$'');';", castMode: 0 });
 
       // Queue commands from URL hash (e.g. #queries=v0,SELECT-42,FROM-range(10))
-      // They are drained one at a time as the shell returns to editing mode.
       const hash = window.location.hash;
+      const isDemo = new URLSearchParams(location.search).has('demo');
+
       if (hash.includes('queries=v0')) {
         const splits = hash.replace(/^#(savequeries&)?/, '').replace(/%0A/gi, ',').split(',');
         for (let i = 1; i < splits.length; i++) {
           const sql = extraswaps(decodeURIComponent(splits[i]));
-          if (sql) startupQueue.push(sql);
+          if (sql) {
+            if (isDemo) {
+              window.demoQueue.push(sql);
+            } else {
+              startupQueue.push(sql);
+            }
+          }
         }
       }
-      drainStartupQueue();
+
+      if (isDemo && window.demoQueue.length > 0) {
+        // Show play button
+        const demoBtn = document.getElementById('nav-demo');
+        demoBtn.style.visibility = 'visible';
+        if (window.demoQueue.length > 0) demoBtn.setAttribute('data-tooltip', window.demoQueue[0]);
+        demoBtn.title = window.demoQueue.length > 0 ? window.demoQueue[0] : '';
+        window.demoUpdateButton();
+      } else {
+        drainStartupQueue();
+      }
     },
   };
 
