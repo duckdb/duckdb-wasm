@@ -929,7 +929,7 @@ function flushPending() {
     const tag = readU64(raw, 0);
     const opcode = raw[8];
     const opName = WIRE_OP[opcode];
-    console.log('[wire→worker]', opName, 'tag=' + tag, size + 'B');
+    // console.log('[wire→transport]', opName, 'tag=' + tag, size + 'B');
 
     // Translate wire message to worker postMessage
     switch (opcode) {
