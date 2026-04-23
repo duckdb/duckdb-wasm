@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DuckDB Web Shell</title>
   <meta name="description" content="DuckDB SQL Shell running entirely in your browser via WebAssembly.">
   <meta property="og:title" content="DuckDB Web Shell">
@@ -41,11 +42,6 @@
   })();
   </script>
   <style>
-    body { margin: 0; background: var(--main-body-background-color, #fafafa); }
-    html.darkmode body { background: var(--main-body-background-color, #0d0d0d); }
-    /* Override fixed positioning — we want the header in flow */
-    header .headerline { position: relative; background: var(--menu-topmenu-background-color, rgba(250, 250, 250, 0.85)); }
-    #terminal { height: calc(100vh - 70px); padding: 0 12px; }
     .demo-btn {
       border-radius: var(--border-radius-box);
       border: 1px solid var(--menu-dropdown-border-color, #333);
@@ -67,18 +63,9 @@
       font: 12px monospace; white-space: pre; border-radius: 4px;
       z-index: 100; pointer-events: none; max-width: 400px;
     }
-    /* Center the nav dropdown between logo and options */
-    header .headercontent .landingmenu { position: static !important; width: auto !important; height: 100% !important; display: flex !important; align-items: center !important; flex: 1; justify-content: center; }
-    header .headercontent .landingmenu nav,
-    header .headercontent .landingmenu nav:not(.mobile) {
-      display: flex !important; position: static !important; align-items: center; height: 100%;
-      opacity: 1 !important; visibility: visible !important; pointer-events: all !important;
-      background: none !important; border: none !important; backdrop-filter: none !important;
-      transform: none !important; padding: 0 !important; width: auto !important;
-    }
   </style>
 </head>
-<body class="layout_default nowrap">
+<body class="layout_webshell">
   <!-- SVG symbol defs for icons (from duckdb.org) -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
     <symbol id="sun" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z"/></symbol>
@@ -91,8 +78,8 @@
     <div class="headerline">
       <div class="headercontent">
         <div class="duckdbhome">
-          <a href="https://duckdb.org/"><img src="https://duckdb.org/images/logo-dl/DuckDB_Logo-horizontal.svg" alt="DuckDB Logo" class="downloadlogo"></a>
-          <div id="duckdb_logo"></div>
+          <a href="https://duckdb.org/"><img src="https://duckdb.org/images/logo-dl/DuckDB_Logo-horizontal.svg" alt="DuckDB Web Shell" class="downloadlogo"></a>
+          <div class="webshell-logo" aria-hidden="true"></div>
         </div>
         <div class="landingmenu">
           <nav>
@@ -125,6 +112,9 @@
             <svg class="icon icon-sun"><use href="#sun"></use></svg>
             <svg class="icon icon-moon"><use href="#moon-01"></use></svg>
           </button>
+          <button class="hamburger hamburger--squeeze" type="button" aria-label="Menu">
+            <span class="hamburger-box"><span class="hamburger-inner"></span></span>
+          </button>
         </div>
       </div>
     </div>
@@ -142,6 +132,23 @@ const SHELL_WASM_JS_URL = './static/assets/duckdb.js';
 const WORKER_URL = './static/assets/worker.js';
 // Path to the duckdb-wasm .wasm file (passed to worker for instantiation)
 const DUCKDB_WASM_URL = './duckdb-eh.wasm';
+
+// === Mobile hamburger toggle ===
+const hamburgerBtn = document.querySelector('.hamburger');
+const landingMenu = document.querySelector('.landingmenu');
+if (hamburgerBtn && landingMenu) {
+  hamburgerBtn.addEventListener('click', () => {
+    hamburgerBtn.classList.toggle('is-active');
+    landingMenu.classList.toggle('slidein');
+  });
+  // Close menu when a nav link is tapped
+  landingMenu.querySelectorAll('nav a').forEach(a => {
+    a.addEventListener('click', () => {
+      hamburgerBtn.classList.remove('is-active');
+      landingMenu.classList.remove('slidein');
+    });
+  });
+}
 
 // === Nav actions ===
 // === Demo mode ===
