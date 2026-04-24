@@ -141,14 +141,26 @@ if (hamburgerBtn && landingMenu) {
     hamburgerBtn.classList.toggle('is-active');
     landingMenu.classList.toggle('slidein');
   });
-  // Close menu when a nav link is tapped
+  // Close menu when a non-submenu nav link is tapped
   landingMenu.querySelectorAll('nav a').forEach(a => {
     a.addEventListener('click', () => {
+      if (a.closest('.hasSub')) return; // submenu trigger handled below
       hamburgerBtn.classList.remove('is-active');
       landingMenu.classList.remove('slidein');
     });
   });
 }
+
+// === Submenu (Datasets) open/close on mobile ===
+document.querySelectorAll('.landingmenu .hasSub').forEach(sub => {
+  sub.addEventListener('click', (e) => {
+    // Only intercept on mobile; desktop keeps native hover behavior.
+    if (window.matchMedia('(min-width: 901px)').matches) return;
+    e.preventDefault();
+    sub.classList.toggle('open');
+    sub.parentElement.classList.toggle('submenu-open');
+  });
+});
 
 // === Nav actions ===
 // === Demo mode ===
