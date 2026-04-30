@@ -296,7 +296,7 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     checkFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
-            return fs.existsSync(path);
+            return fs.existsSync(path) && !fs.statSync(path).isDirectory();
         } catch (e: any) {
             console.log(e);
             failWith(mod, e.toString());
