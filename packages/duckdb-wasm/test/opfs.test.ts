@@ -396,6 +396,61 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
                 new BigInt64Array([42n]),
             );
         });
+
+        describe('Enhanced OPFS Support', () => {
+            it('should auto-register opfs:// files with an in-memory database', async () => {
+                await getOpfsFileHandlerFromUrl({
+                    url: `${baseDir}/uni/studenten.parquet`,
+                    path: 'test_enhanced.parquet'
+                });
+
+                await conn.close();
+                await db.reset();
+                await db.open({
+                    path: ':memory:',
+                    opfs: { fileHandling: 'auto' }
+                });
+                conn = await db.connect();
+
+                const result = await conn.send(`SELECT COUNT(*)::INT as cnt FROM 'opfs://test_enhanced.parquet'`);
+                const table = await arrow.tableFromIPC(result);
+                expect(table.getChildAt(0)?.get(0)).toBe(8);
+            });
+
+            it('should support double quotes for opfs:// files', async () => {
+                await getOpfsFileHandlerFromUrl({
+                    url: `${baseDir}/uni/studenten.parquet`,
+                    path: 'test_enhanced.parquet'
+                });
+
+                await conn.close();
+                await db.reset();
+                await db.open({
+                    path: ':memory:',
+                    opfs: { fileHandling: 'auto' }
+                });
+                conn = await db.connect();
+
+                // Verification of double quote support
+                const result = await conn.send(`SELECT COUNT(*)::INT as cnt FROM "opfs://test_enhanced.parquet"`);
+                const table = await arrow.tableFromIPC(result);
+                expect(table.getChildAt(0)?.get(0)).toBe(8);
+            });
+
+            it('should fail gracefully if opfs:// file is missing with auto-registration', async () => {
+                await conn.close();
+                await db.reset();
+                await db.open({
+                    path: ':memory:',
+                    opfs: { fileHandling: 'auto' }
+                });
+                conn = await db.connect();
+
+                await expectAsync(
+                    conn.send(`SELECT * FROM 'opfs://missing.parquet'`)
+                ).toBeRejected();
+            });
+        });
     });
 
     async function removeFiles() {
@@ -407,6 +462,7 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         await opfsRoot.removeEntry('test2.csv').catch(_ignore);
         await opfsRoot.removeEntry('test3.csv').catch(_ignore);
         await opfsRoot.removeEntry('test.parquet').catch(_ignore);
+        await opfsRoot.removeEntry('test_enhanced.parquet').catch(_ignore);
         try {
             const datadir = await opfsRoot.getDirectoryHandle('datadir');
             datadir.removeEntry('test.parquet').catch(_ignore);

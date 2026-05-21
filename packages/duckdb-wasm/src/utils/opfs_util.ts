@@ -1,4 +1,4 @@
-export const REGEX_OPFS_FILE = /'(opfs:\/\/\S*?)'/g;
+export const REGEX_OPFS_FILE = /(['"])(opfs:\/\/\S*?)\1/g;
 export const REGEX_OPFS_PROTOCOL = /(opfs:\/\/\S*?)/g;
 
 export function isOPFSProtocol(path: string): boolean {
@@ -6,5 +6,5 @@ export function isOPFSProtocol(path: string): boolean {
 }
 
 export function searchOPFSFiles(text: string) {
-    return [...text.matchAll(REGEX_OPFS_FILE)].map(match => match[1]);
+    return [...text.matchAll(REGEX_OPFS_FILE)].map(match => match[2]);
 }
