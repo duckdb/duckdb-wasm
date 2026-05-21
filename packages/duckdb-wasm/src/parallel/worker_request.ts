@@ -131,7 +131,7 @@ export type WorkerRequestVariant =
       >
     | WorkerRequest<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions]>
     | WorkerRequest<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions]>
-    | WorkerRequest<WorkerRequestType.INSTANTIATE, [string, string | null]>
+    | WorkerRequest<WorkerRequestType.INSTANTIATE, [string | WebAssembly.Module, string | null]>
     | WorkerRequest<WorkerRequestType.OPEN, DuckDBConfig>
     | WorkerRequest<WorkerRequestType.PING, null>
     | WorkerRequest<WorkerRequestType.POLL_PENDING_QUERY, number>
@@ -192,7 +192,7 @@ export type WorkerTaskVariant =
       >
     | WorkerTask<WorkerRequestType.INSERT_CSV_FROM_PATH, [number, string, CSVInsertOptions], null>
     | WorkerTask<WorkerRequestType.INSERT_JSON_FROM_PATH, [number, string, JSONInsertOptions], null>
-    | WorkerTask<WorkerRequestType.INSTANTIATE, [string, string | null], null>
+    | WorkerTask<WorkerRequestType.INSTANTIATE, [string | WebAssembly.Module, string | null], null>
     | WorkerTask<WorkerRequestType.OPEN, DuckDBConfig, null>
     | WorkerTask<WorkerRequestType.PING, null, null>
     | WorkerTask<WorkerRequestType.REGISTER_FILE_BUFFER, [string, Uint8Array], null>

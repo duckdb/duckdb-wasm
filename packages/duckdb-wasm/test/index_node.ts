@@ -80,6 +80,9 @@ import { longQueries } from './long_queries.test';
 import { testRegressionAsync } from './regression';
 import { testFTS } from './fts.test';
 import { testPivot } from './pivot.test';
+import { testInstantiation } from './instantiation.test';
+
+testInstantiation(() => adb!);
 
 testUDF(() => db!);
 longQueries(() => adb!);
