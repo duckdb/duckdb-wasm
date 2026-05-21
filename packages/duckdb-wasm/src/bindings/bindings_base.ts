@@ -516,7 +516,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             const list = await this._runtime.prepareFileHandles([fileName], DuckDBDataProtocol.BROWSER_FSACCESS);
             for (const item of list) {
                 const { handle, path: filePath, fromCached } = item;
-                if (!fromCached && handle.getSize()) {
+                if (!fromCached) {
                     await this.registerFileHandleAsync(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
                 }
             }
@@ -530,7 +530,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             const list = await this._runtime.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
             for (const item of list) {
                 const { handle, path: filePath, fromCached } = item;
-                if (!fromCached && handle.getSize()) {
+                if (!fromCached) {
                     await this.registerFileHandleAsync(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
                 }
             }

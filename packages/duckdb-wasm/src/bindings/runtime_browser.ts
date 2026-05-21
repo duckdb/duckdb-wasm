@@ -525,7 +525,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return false;
     },
-    syncFile: (_mod: DuckDBModule, _fileId: number) => {},
+    syncFile: (mod: DuckDBModule, fileId: number) => {
+        const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
+        if (file?.dataProtocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
+            const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
+            if (handle) {
+                handle.flush();
+            }
+        }
+    },
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
@@ -541,10 +549,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     return;
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
                     const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
-                    if (!handle) {
-                        throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
+                    if (handle) {
+                        handle.flush();
                     }
-                    return handle.flush();
+                    return;
                 }
             }
         } catch (e: any) {
@@ -758,7 +766,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const to = readString(mod, toPtr, toLen);
         const handle = BROWSER_RUNTIME._files?.get(from);
         if (handle !== undefined) {
-            BROWSER_RUNTIME._files!.delete(handle);
+            BROWSER_RUNTIME._files!.delete(from);
             BROWSER_RUNTIME._files!.set(to, handle);
         }
         for (const [key, value] of BROWSER_RUNTIME._fileInfoCache?.entries() || []) {
@@ -769,7 +777,34 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return true;
     },
-    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    removeFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+        const handle = BROWSER_RUNTIME._files?.get(path);
+        if (handle) {
+            try {
+                handle.flush();
+                handle.close();
+            } catch (_e) {}
+            BROWSER_RUNTIME._files!.delete(path);
+        }
+        for (const [key, value] of BROWSER_RUNTIME._fileInfoCache?.entries() || []) {
+            if (value.dataUrl == path) {
+                BROWSER_RUNTIME._fileInfoCache.delete(key);
+                break;
+            }
+        }
+        if (globalThis.DUCKDB_RUNTIME._preparedHandles?.[path]) {
+            delete globalThis.DUCKDB_RUNTIME._preparedHandles[path];
+        }
+        try {
+            const opfsRoot = navigator.storage.getDirectory();
+            // SyncAccessHandle is sync but getDirectory is async — best-effort cleanup via _pendingDeletes
+            if (!globalThis.DUCKDB_RUNTIME._pendingDeletes) {
+                globalThis.DUCKDB_RUNTIME._pendingDeletes = [];
+            }
+            globalThis.DUCKDB_RUNTIME._pendingDeletes.push(path);
+        } catch (_e) {}
+    },
     callScalarUDF: (
         mod: DuckDBModule,
         response: number,
