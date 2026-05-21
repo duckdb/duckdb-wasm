@@ -1,6 +1,6 @@
 import { DuckDBBindings, DuckDBDataProtocol } from '../bindings';
 import { WorkerResponseVariant, WorkerRequestVariant, WorkerRequestType, WorkerResponseType } from './worker_request';
-import { Logger, LogEntryVariant } from '../log';
+import { Logger, LogEntryVariant, LogLevel, LogOrigin, LogTopic, LogEvent } from '../log';
 import { InstantiationProgress } from '../bindings/progress';
 
 export abstract class AsyncDuckDBDispatcher implements Logger {
@@ -29,6 +29,36 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
             },
             [],
         );
+    }
+
+    /** Intercept console.warn and console.error to forward them to the main thread.
+     *  Must be called once per worker, before any DuckDB operations. */
+    public interceptConsole(origin: LogOrigin.WEB_WORKER | LogOrigin.NODE_WORKER = LogOrigin.WEB_WORKER): void {
+        const trueWarn = console.warn.bind(console);
+        const trueError = console.error.bind(console);
+        const self = this;
+        console.warn = function (...args: any[]) {
+            self.log({
+                timestamp: new Date(),
+                level: LogLevel.WARNING,
+                origin,
+                topic: LogTopic.NONE,
+                event: LogEvent.CAPTURE,
+                value: args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '),
+            });
+            trueWarn(...args);
+        };
+        console.error = function (...args: any[]) {
+            self.log({
+                timestamp: new Date(),
+                level: LogLevel.ERROR,
+                origin,
+                topic: LogTopic.NONE,
+                event: LogEvent.CAPTURE,
+                value: args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '),
+            });
+            trueError(...args);
+        };
     }
 
     /** Send plain OK without further data */
@@ -90,7 +120,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     });
                     this.sendOK(request);
                 } catch (e: any) {
-                    console.log(e);
                     this._bindings = null;
                     this.failWith(request, e);
                 }
@@ -408,7 +437,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
             }
         } catch (e: any) {
-            console.log(e);
             return this.failWith(request, e);
         }
     }
