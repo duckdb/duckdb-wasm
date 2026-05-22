@@ -172,7 +172,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     /** Prepare a file handle that could only be acquired aschronously */
     async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this.prepareFileHandles) {
-            const filePaths = [dbPath, `${dbPath}.wal`];
+            // Prepare handles for the main database file, WAL file, and potential checkpoint files
+            // that DuckDB may create during WAL recovery
+            const filePaths = [
+                dbPath,
+                `${dbPath}.wal`,
+                `${dbPath}.wal.checkpoint`,
+                `${dbPath}.wal.recovery`,
+            ];
             return this.prepareFileHandles(filePaths, protocol);
         }
         throw new Error(`Unsupported protocol ${protocol} for path ${dbPath} with protocol ${protocol}`);
@@ -263,13 +270,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                             // Supports range requests
                             contentLength = null;
-                            try { contentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
+                            try { contentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) { console.warn(`Failed to get Content-Length on request`); }
                             if (contentLength !== null && xhr.status == 206) {
                                 const result = mod._malloc(3 * 8);
                                 mod.HEAPF64[(result >> 3) + 0] = +contentLength;
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
                                 let modification_time = 0;
-                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified') ?? "").getTime() / 1000; } catch (e: any) { console.warn(`Failed to get Last-Modified on request`); }
                                 mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
@@ -297,7 +304,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             xhr.setRequestHeader('Range', `bytes=0-0`);
                             xhr.send(null);
                             let actualContentLength = null;
-                            try { actualContentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
+                            try { actualContentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) { console.warn(`Failed to get Content-Length on request`); }
                             const contentRange = actualContentLength?.split('/')[1];
                             const contentLength2 = actualContentLength;
 
@@ -319,7 +326,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                                 // Supports range requests
                                 contentLength = null;
-                                try { contentLength = head.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
+                                try { contentLength = head.getResponseHeader('Content-Length'); } catch (e: any) { console.warn(`Failed to get Content-Length on request`); }
                                 if (contentLength !== null && +contentLength > 1) {
                                     presumedLength = contentLength;
                                 }
@@ -335,7 +342,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 mod.HEAPF64[(result >> 3) + 0] = +presumedLength;
                                 mod.HEAPF64[(result >> 3) + 1] = 0;
                                 let modification_time = 0;
-                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified') ?? "").getTime() / 1000; } catch (e: any) { console.warn(`Failed to get Last-Modified on request`); }
                                 mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
@@ -353,7 +360,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 mod.HEAPF64[(result >> 3) + 0] = xhr.response.byteLength;
                                 mod.HEAPF64[(result >> 3) + 1] = data;
                                 let modification_time = 0;
-                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                                try { modification_time = new Date(xhr.getResponseHeader('Last-Modified') ?? "").getTime() / 1000; } catch (e: any) { console.warn(`Failed to get Last-Modified on request`); }
                                 mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                                 return result;
                             }
@@ -379,7 +386,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             mod.HEAPF64[(result >> 3) + 0] = xhr.response.byteLength;
                             mod.HEAPF64[(result >> 3) + 1] = data;
                             let modification_time = 0;
-                            try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
+                            try { modification_time = new Date(xhr.getResponseHeader('Last-Modified') ?? "").getTime() / 1000; } catch (e: any) { console.warn(`Failed to get Last-Modified on request`); }
                             mod.HEAPF64[(result >> 3) + 2] = +modification_time;
                             return result;
                         }
@@ -404,7 +411,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                     // Depending on file flags, return nullptr
                     if (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS) {
-                       return 0;
+                        return 0;
                     }
 
                     // Fall back to empty buffered file in the browser
@@ -478,7 +485,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         return 0;
                     }
                     let contentLength = null;
-                    try { contentLength = xhr2.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
+                    try { contentLength = xhr2.getResponseHeader('Content-Length'); } catch (e: any) { console.warn(`Failed to get Content-Length on request`); }
                     if (contentLength && +contentLength > 1) {
                         console.warn(
                             `Range request for ${path} did not return a partial response: ${xhr2.status} "${xhr2.statusText}"`,
@@ -525,7 +532,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return false;
     },
-    syncFile: (_mod: DuckDBModule, _fileId: number) => {},
+    syncFile: (_mod: DuckDBModule, _fileId: number) => { },
     closeFile: (mod: DuckDBModule, fileId: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
         BROWSER_RUNTIME._fileInfoCache.delete(fileId);
@@ -769,7 +776,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
         return true;
     },
-    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {},
+    removeFile: (_mod: DuckDBModule, _pathPtr: number, _pathLen: number) => { },
     callScalarUDF: (
         mod: DuckDBModule,
         response: number,
