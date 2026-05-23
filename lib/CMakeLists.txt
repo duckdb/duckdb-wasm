@@ -154,7 +154,7 @@ endif()
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=1 -s ENVIRONMENT='web,node,worker' -s ALLOW_TABLE_GROWTH -lembind")
 
-  if ($ENV{USE_GENERATED_EXPORTED_LIST} STREQUAL "yes")
+  if ("$ENV{USE_GENERATED_EXPORTED_LIST}" STREQUAL "yes")
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=2 -s EXPORTED_FUNCTIONS='@exported_list.txt'")
   else()
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")
@@ -243,7 +243,9 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/utils/thread.cc
   ${CMAKE_SOURCE_DIR}/src/utils/wasm_response.cc
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
-  ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
+  ${CMAKE_SOURCE_DIR}/src/webdb_api.cc
+  ${CMAKE_SOURCE_DIR}/src/experimental/wire_serializer.cc
+  ${CMAKE_SOURCE_DIR}/src/experimental/experimental_api.cc)
 
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(EXTENSION_CACHE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.ccache/extension")
