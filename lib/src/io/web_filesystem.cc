@@ -1,5 +1,6 @@
 #include "duckdb/web/io/web_filesystem.h"
 
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <mutex>
@@ -410,6 +411,11 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(
     std::string_view file_name, DataBuffer file_buffer) {
     DEBUG_TRACE();
+
+    // Get current time for cache invalidation
+    auto now = std::chrono::system_clock::now();
+    auto now_seconds = std::chrono::duration<double>(now.time_since_epoch()).count();
+
     // Check if the file exists
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     auto iter = files_by_name_.find(std::string{file_name});
@@ -422,7 +428,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
             case DataProtocol::BROWSER_FSACCESS:
             case DataProtocol::BROWSER_FILEREADER: {
                 file->file_size_ = file_buffer.Size();
-                file->last_modification_time_ = std::nullopt;
+                file->last_modification_time_ = now_seconds;
                 file->data_buffer_ = std::move(file_buffer);
                 auto handle = std::make_unique<WebFileHandle>(file);
                 fs_guard.unlock();
@@ -436,7 +442,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
             case DataProtocol::BUFFER:
                 file->data_protocol_ = DataProtocol::BUFFER;
                 file->file_size_ = file_buffer.Size();
-                file->last_modification_time_ = std::nullopt;
+                file->last_modification_time_ = now_seconds;
                 file->data_buffer_ = std::move(file_buffer);
                 return std::make_unique<WebFileHandle>(file);
         }
@@ -446,7 +452,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
     auto file_id = AllocateFileID();
     auto file = std::make_shared<WebFile>(*this, file_id, file_name, DataProtocol::BUFFER);
     file->file_size_ = file_buffer.Size();
-    file->last_modification_time_ = std::nullopt;
+    file->last_modification_time_ = now_seconds;
     file->data_buffer_ = std::move(file_buffer);
 
     // Register the file
@@ -924,7 +930,8 @@ timestamp_t WebFileSystem::GetLastModifiedTime(duckdb::FileHandle &handle) {
     // Get the file handle
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
-    return timestamp_t(file_hdl.file_->last_modification_time_.value_or(0) * 1000);
+    // Convert seconds to microseconds (timestamp_t expects microseconds)
+    return timestamp_t(static_cast<int64_t>(file_hdl.file_->last_modification_time_.value_or(0) * 1000000));
 }
 /// Truncate a file to a maximum size of new_size, new_size should be smaller than or equal to the current size of
 /// the file
