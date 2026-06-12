@@ -307,20 +307,6 @@ export function testHTTPFSAsync(
             ).toBeRejected();
         });
 
-        it('write after read throws incorrect flag error without dropping files', async () => {
-            await setAwsConfig(conn!);
-            await conn!.query(
-                `COPY (SELECT * FROM range(1000,1010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,
-            );
-            const result = await conn!.query(`SELECT * FROM "s3://${BUCKET_NAME}/test_written.csv";`);
-            expect(Number(result.getChildAt(0)?.get(6))).toEqual(Number(1006));
-            await expectAsync(
-                conn!.query(
-                    `COPY (SELECT * FROM range(2000,2010) tbl(i)) TO 's3://${BUCKET_NAME}/test_written.csv' (FORMAT 'csv');`,
-                ),
-            ).toBeRejectedWithError('Invalid Error: File is not opened in write mode');
-        });
-
         it('can read parquet file from URL with long query string', async () => {
             // Create S3 file
             const data = await resolveData('/uni/studenten.parquet');

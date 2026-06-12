@@ -141,6 +141,9 @@ class BufferedFileSystem : public duckdb::FileSystem {
         return filesystem_.Glob(PatchFilenameOwned(path), opener);
     }
 
+    /// Overide canonicalize path to allow for OPFS:// path urls
+    string CanonicalizePath(const string &path_p, optional_ptr<FileOpener> opener = nullptr) override;
+
     /// Register subsystem
     void RegisterSubSystem(unique_ptr<FileSystem> sub_fs) override;
     /// Register subsystem

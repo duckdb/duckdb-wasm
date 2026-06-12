@@ -984,18 +984,28 @@ bool WebFileSystem::ListFiles(const std::string &directory,
 /// properties
 void WebFileSystem::MoveFile(const std::string &source, const std::string &target, optional_ptr<FileOpener> opener) {
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+
     if (auto iter = files_by_url_.find(source); iter != files_by_url_.end()) {
         auto file = std::move(iter->second);
-        file->data_url_ = target;
-        files_by_url_.erase(iter);
-        files_by_url_.insert({target, file});
+        // OPFS files are moved by the JS VFS
+        if (file->GetDataProtocol() != BROWSER_FSACCESS) {
+            file->data_url_ = target;
+            files_by_url_.erase(iter);
+            files_by_url_.insert({target, file});
+        }
+
     }
     if (auto iter = files_by_name_.find(source); iter != files_by_name_.end()) {
         auto file = std::move(iter->second);
-        file->file_name_ = target;
-        files_by_name_.erase(iter);
-        files_by_name_.insert({target, file});
+        // OPFS Files are moved by the JS VFS
+        if (file->GetDataProtocol() != BROWSER_FSACCESS) {
+            file->file_name_ = target;
+            files_by_name_.erase(iter);
+            files_by_name_.insert({target, file});
+        }
+
     }
+
     duckdb_web_fs_file_move(source.c_str(), source.size(), target.c_str(), target.size());
 }
 /// Check if a file exists

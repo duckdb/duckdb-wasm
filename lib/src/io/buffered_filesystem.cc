@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/common/string_util.hpp"
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
@@ -244,6 +245,16 @@ void BufferedFileSystem::RemoveFile(const std::string &raw_filename, optional_pt
     auto filename = PatchFilenameOwned(raw_filename);
     // XXX Invalidate buffer manager!
     return filesystem_.RemoveFile(filename);
+}
+
+/// Canonicalize a path - preserve opfs:// protocol prefix (double slash) which DuckDB's
+/// base CanonicalizePath would collapse to opfs:/ since opfs:// is not in EXTENSION_FILE_PREFIXES.
+/// opfs:// is a local file that looks like a remote file, so IsRemoteFile won't short-circuit it.
+string BufferedFileSystem::CanonicalizePath(const string &path_p, optional_ptr<FileOpener> opener) {
+    if (StringUtil::StartsWith(path_p, "opfs://")) {
+        return path_p;
+    }
+    return filesystem_.CanonicalizePath(path_p, opener);
 }
 
 /// Register subsystem

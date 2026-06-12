@@ -639,6 +639,7 @@ void FilePageBuffer::FileRef::ReOpen(FileOpenFlags flags) {
     auto new_handle = buffer_.filesystem->OpenFile(file_->path, flags);
     // Swap the file handles
     std::swap(new_handle, file_->handle);
+    file_->file_flags = flags;
 }
 
 /// Buffers a file at a path.

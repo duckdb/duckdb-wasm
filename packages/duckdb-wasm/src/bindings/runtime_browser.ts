@@ -115,13 +115,15 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
             await BROWSER_RUNTIME.assignOPFSRoot();
             const prepare = async (path: string): Promise<PreparedDBFileHandle> => {
-                if (BROWSER_RUNTIME._files.has(path)) {
+                const handle = BROWSER_RUNTIME._files.get(path) || BROWSER_RUNTIME._preparedHandles[path];
+                if (handle) {
                     return {
                         path,
-                        handle: BROWSER_RUNTIME._files.get(path),
+                        handle,
                         fromCached: true,
                     };
                 }
+
                 const opfsRoot = BROWSER_RUNTIME._opfsRoot!;
                 let dirHandle: FileSystemDirectoryHandle = opfsRoot;
                 // check if mkdir -p is needed
@@ -172,7 +174,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     /** Prepare a file handle that could only be acquired aschronously */
     async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this.prepareFileHandles) {
-            const filePaths = [dbPath, `${dbPath}.wal`];
+            const filePaths = [dbPath, `${dbPath}.wal`, `${dbPath}.wal.checkpoint`, `${dbPath}.wal.recovery`];
             return this.prepareFileHandles(filePaths, protocol);
         }
         throw new Error(`Unsupported protocol ${protocol} for path ${dbPath} with protocol ${protocol}`);
@@ -554,8 +556,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     },
     dropFile: (mod: DuckDBModule, fileNamePtr: number, fileNameLen: number) => {
         const fileName = readString(mod, fileNamePtr, fileNameLen);
-        const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(fileName);
-        if (handle) {
+        if (BROWSER_RUNTIME._files?.has(fileName)) {
+            const handle = BROWSER_RUNTIME._files?.get(fileName);
             BROWSER_RUNTIME._files.delete(fileName);
             if (handle instanceof FileSystemSyncAccessHandle) {
                 try {
@@ -568,7 +570,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             if (handle instanceof Blob) {
                 // nothing
             }
+        } else if (BROWSER_RUNTIME._preparedHandles[fileName]){
+            // File was prepared but not used.
+            const handle = BROWSER_RUNTIME._preparedHandles[fileName];
+            if (handle instanceof FileSystemSyncAccessHandle) {
+                delete BROWSER_RUNTIME._preparedHandles[fileName];
+                handle.flush();
+                handle.close();
+            }
         }
+
     },
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         const file = BROWSER_RUNTIME.getFileInfo(mod, fileId);
@@ -757,8 +768,37 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         const from = readString(mod, fromPtr, fromLen);
         const to = readString(mod, toPtr, toLen);
         const handle = BROWSER_RUNTIME._files?.get(from);
-        if (handle !== undefined) {
-            BROWSER_RUNTIME._files!.delete(handle);
+
+        // if we have a sync handle we need to reuse files
+        if (handle instanceof FileSystemSyncAccessHandle) {
+            const to_handle = BROWSER_RUNTIME._files?.get(to);
+            if (to_handle === undefined) {
+                throw new Error(`Not implemented error move from OPFS into non existent file`);
+            } else if (!(to_handle instanceof FileSystemSyncAccessHandle)) {
+                throw new Error(`Not implemented error move from OPFS into non OPFS file`);
+            }
+            // We have x -> y, y will be destroyed in this process.
+            // y is truncated so it is an empty file and stored as x.
+            to_handle.truncate(0);
+            const size = handle.getSize();
+            // Reads need to go somewhere copy data in one MB chunks.
+            const fileContents = new ArrayBuffer(Math.min(size, 1024 * 1024));
+            let bytes_read = 0;
+            for (let offset = 0; offset < size; offset += bytes_read) {
+                bytes_read = handle.read(fileContents, { at: offset });
+                to_handle.write(fileContents, { at: offset });
+            }
+            // Ensure that the from handle is empty again
+            handle.truncate(0);
+            // We do not remove files from the runtime as they would otherwise not
+            // be able to be dropped
+        } else if (handle !== undefined) {
+            const to_handle = BROWSER_RUNTIME._files?.get(to);
+            if (to_handle instanceof FileSystemSyncAccessHandle) {
+                throw new Error(`Not implemented move from arbitrary file into OPFS file`);
+            }
+
+            BROWSER_RUNTIME._files!.delete(from);
             BROWSER_RUNTIME._files!.set(to, handle);
         }
         for (const [key, value] of BROWSER_RUNTIME._fileInfoCache?.entries() || []) {

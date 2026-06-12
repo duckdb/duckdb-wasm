@@ -105,8 +105,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
                 accessMode: DuckDBAccessMode.READ_WRITE
             });
             conn = await db.connect();
-            
-            return; //FIXME
 
             const result = await conn.send(`SELECT count(*) ::INTEGER as cnt FROM tmp;`);
             const batches = [];
@@ -115,6 +113,66 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
             const table = await new arrow.Table<{ cnt: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
+        });
+
+        it('Create database and delete files without error', async () => {
+            const registerFiles = async (db: AsyncDuckDB) => {
+                await db.registerOPFSFileName('opfs://temp.db');
+                await db.registerOPFSFileName('opfs://temp.db.wal');
+                await db.registerOPFSFileName('opfs://temp.db.wal.checkpoint');
+                await db.registerOPFSFileName('opfs://temp.db.wal.recovery');
+            };
+
+            const dropFiles = async (db: AsyncDuckDB) => {
+                await db.dropFiles([
+                    'opfs://temp.db',
+                    'opfs://temp.db.wal',
+                    'opfs://temp.db.wal.checkpoint',
+                    'opfs://temp.db.wal.recovery',
+                ]);
+            }
+
+            await registerFiles(db);
+            await conn.query("ATTACH 'opfs://temp.db' as opfs_db;");
+            await conn.query("CREATE TABLE opfs_db.t (x VARCHAR)");
+            await conn.query("INSERT INTO opfs_db.t VALUES ('hello world')");
+            await conn.query('DETACH opfs_db;');
+            await dropFiles(db);
+
+            // A second instance should now be able to read the created files.
+            // Without error, as there should be no lingering OPFS handles.
+            const worker = new Worker(bundle().mainWorker!);
+            const db2 = new AsyncDuckDB(logger, worker);
+            await db2.instantiate(bundle().mainModule, bundle().pthreadWorker);
+            await db2.open({ });
+            const conn2 = await db2.connect();
+            await registerFiles(db2);
+
+            await conn2.query("ATTACH 'opfs://temp.db' as opfs_db;");
+            const result = await conn2.send("SELECT * FROM opfs_db.t");
+            const batches = [];
+            for await (const batch of result) {
+                batches.push(batch);
+            }
+            const content = await new arrow.Table<{ t: arrow.Utf8 }>(batches).toArray();
+            expect(content.length).toBe(1);
+            expect(content[0].x).toBe('hello world');
+
+            await conn2.query('DETACH opfs_db;');
+            await dropFiles(db2);
+
+            // Delete files, will error if there is still a handle open
+            const opfsRoot = await navigator.storage.getDirectory();
+            const handle = opfsRoot.getFileHandle('temp.db');
+            expect((await (await handle).getFile()).size).toBeGreaterThan(0);
+            expect(async () => {
+                await opfsRoot.removeEntry('temp.db');
+                await opfsRoot.removeEntry('temp.db.wal');
+                await opfsRoot.removeEntry('temp.db.wal.checkpoint');
+                await opfsRoot.removeEntry('temp.db.wal.recovery');
+            }).not.toThrow()
+            conn2.close();
+            db2.terminate();
         });
 
         it('Load Parquet file that are already with empty handler', async () => {
@@ -402,6 +460,8 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         const opfsRoot = await navigator.storage.getDirectory();
         await opfsRoot.removeEntry('test.db').catch(_ignore);
         await opfsRoot.removeEntry('test.db.wal').catch(_ignore);
+        await opfsRoot.removeEntry('test.db.wal.checkpoint').catch(_ignore);
+        await opfsRoot.removeEntry('test.db.wal.recovery').catch(_ignore);
         await opfsRoot.removeEntry('test.csv').catch(_ignore);
         await opfsRoot.removeEntry('test1.csv').catch(_ignore);
         await opfsRoot.removeEntry('test2.csv').catch(_ignore);
