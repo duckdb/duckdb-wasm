@@ -791,4 +791,17 @@ index ea179bc1af..e5c1c07ca7 100644
 +	if (!read_only && (!fs.FileExists(path) || (options.use_direct_io && is_empty_file))) {
  		// file does not exist and we are in read-write mode
  		// create a new file
+diff --git a/src/common/file_system.cpp b/src/common/file_system.cpp
+index 0705f6175d..d1314261a9 100644
+--- a/src/common/file_system.cpp
++++ b/src/common/file_system.cpp
+@@ -906,6 +906,9 @@ bool FileSystem::IsRemoteFile(const string &path) {
+ }
  
+ bool FileSystem::IsRemoteFile(const string &path, string &extension) {
++	if (StringUtil::StartsWith(path, "opfs://")) {
++		return true;
++	}
+ 	for (const auto &entry : EXTENSION_FILE_PREFIXES) {
+ 		if (StringUtil::StartsWith(path, entry.name)) {
+ 			extension = entry.extension;
