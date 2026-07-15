@@ -795,6 +795,7 @@ res->headers.Insert(head, tail);
 
                 var i = 0;
                 var len = $1;
+                var hasContentType = false;
                 while (i < len*2) {
                     var ptr1 = HEAP32[($2)/4 + i ];
                     var ptr2 = HEAP32[($2)/4 + i + 1];
@@ -802,6 +803,7 @@ res->headers.Insert(head, tail);
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
+			if (z.toLowerCase() === "content-type") hasContentType = true;
 			if (z === "User-Agent") {}
 			else if (z === "Authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
@@ -815,8 +817,15 @@ res->headers.Insert(head, tail);
                     i += 2;
                 }
 
-//xhr.setRequestHeader("Content-Type", "application/octet-stream");
-//xhr.setRequestHeader("Content-Type", "text/json");
+                // s3fs signs "Content-Type: application/octet-stream" into the SigV4
+                // canonical request but omits it from the header map for that default
+                // value; XHR will not add a Content-Type for a Uint8Array body, so the
+                // signed header would never be sent -> SignatureDoesNotMatch. Re-add it
+                // when the loop above did not already send one (keeps signed == sent,
+                // and stays correct once httpfs emits the header itself).
+                if (!hasContentType) {
+                    try { xhr.setRequestHeader("Content-Type", "application/octet-stream"); } catch (error) {}
+                }
                 try {
 			var post_payload = new Uint8Array($5);
 
