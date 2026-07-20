@@ -102,7 +102,7 @@ class HTTPWasmClient : public HTTPClient {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z === "Authorization") {
+			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 
@@ -362,7 +362,7 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z === "Authorization") {
+			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
@@ -628,7 +628,7 @@ res->headers.Insert(head, tail);
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z === "Authorization") {
+			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
@@ -805,7 +805,7 @@ res->headers.Insert(head, tail);
 			if (z === "Host") z = "X-Host-Override";
 			if (z.toLowerCase() === "content-type") hasContentType = true;
 			if (z === "User-Agent") {}
-			else if (z === "Authorization") {
+			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
@@ -991,7 +991,7 @@ res->headers.Insert(head, tail);
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z === "Authorization") {
+			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			} else {
 				
