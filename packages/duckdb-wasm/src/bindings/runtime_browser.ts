@@ -151,11 +151,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     throw e;
                 });
                 try {
-                    const handle = await fileHandle.createSyncAccessHandle();
-                    BROWSER_RUNTIME._preparedHandles[path] = handle;
+                    const syncHandle = await fileHandle.createSyncAccessHandle();
+                    BROWSER_RUNTIME._preparedHandles[path] = syncHandle;
                     return {
                         path,
-                        handle,
+                        handle: syncHandle,
                         fromCached: false,
                     };
                 } catch (e: any) {

@@ -116,15 +116,15 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         });
 
         it('Create database and delete files without error', async () => {
-            const registerFiles = async (db: AsyncDuckDB) => {
-                await db.registerOPFSFileName('opfs://temp.db');
-                await db.registerOPFSFileName('opfs://temp.db.wal');
-                await db.registerOPFSFileName('opfs://temp.db.wal.checkpoint');
-                await db.registerOPFSFileName('opfs://temp.db.wal.recovery');
+            const registerFiles = async (instance: AsyncDuckDB) => {
+                await instance.registerOPFSFileName('opfs://temp.db');
+                await instance.registerOPFSFileName('opfs://temp.db.wal');
+                await instance.registerOPFSFileName('opfs://temp.db.wal.checkpoint');
+                await instance.registerOPFSFileName('opfs://temp.db.wal.recovery');
             };
 
-            const dropFiles = async (db: AsyncDuckDB) => {
-                await db.dropFiles([
+            const dropFiles = async (instance: AsyncDuckDB) => {
+                await instance.dropFiles([
                     'opfs://temp.db',
                     'opfs://temp.db.wal',
                     'opfs://temp.db.wal.checkpoint',
