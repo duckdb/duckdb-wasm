@@ -1087,7 +1087,7 @@ jobs:
                       yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Deploy GitHub Page
-              if: github.ref == 'refs/heads/main'
+              if: false
               run: |
                   git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
                   git fetch origin gh-pages
