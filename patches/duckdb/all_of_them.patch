@@ -792,3 +792,50 @@ index ea179bc1af..e5c1c07ca7 100644
  		// file does not exist and we are in read-write mode
  		// create a new file
  
+diff --git a/src/common/types/interval.cpp b/src/common/types/interval.cpp
+index 5bc9c1aa2d..a38de438a9 100644
+--- a/src/common/types/interval.cpp
++++ b/src/common/types/interval.cpp
+@@ -45,7 +45,8 @@ bool IntervalTryAddition(T &target, int64_t input, int64_t multiplier, string *e
+ 	}
+ 	T addition_base;
+ 	if (!TryCast::Operation<int64_t, T>(addition, addition_base)) {
+-		AssignInvalidInputErrorOrThrow(CastExceptionText<int64_t, T>(addition), error_message);
++		AssignInvalidInputErrorOrThrow(CastExceptionText<int64_t>(addition, TypeIdInfo::CreateObject<T>),
++		                               error_message);
+ 		return false;
+ 	}
+ 	if (!TryAddOperator::Operation<T, T, T>(target, addition_base, target)) {
+@@ -57,7 +58,8 @@ bool IntervalTryAddition(T &target, int64_t input, int64_t multiplier, string *e
+ 		//	This is always in range
+ 		addition = (fraction * multiplier) / Interval::MICROS_PER_SEC;
+ 		if (!TryCast::Operation<int64_t, T>(addition, addition_base)) {
+-			AssignInvalidInputErrorOrThrow(CastExceptionText<int64_t, T>(addition), error_message);
++			AssignInvalidInputErrorOrThrow(CastExceptionText<int64_t>(addition, TypeIdInfo::CreateObject<T>),
++			                               error_message);
+ 			return false;
+ 		}
+ 		if (!TryAddOperator::Operation<T, T, T>(target, addition_base, target)) {
+@@ -142,7 +144,8 @@ interval_parse_number:
+ 		}
+ 		string_t nr_string(str + start_pos, UnsafeNumericCast<uint32_t>(pos - start_pos));
+ 		if (!TryCast::Operation<string_t, int64_t>(nr_string, number)) {
+-			AssignInvalidInputErrorOrThrow(CastExceptionText<string_t, int64_t>(nr_string), error_message);
++			AssignInvalidInputErrorOrThrow(CastExceptionText<string_t>(nr_string, TypeIdInfo::CreateObject<int64_t>),
++			                               error_message);
+ 			return false;
+ 		}
+ 		fraction = 0;
+diff --git a/src/include/duckdb/common/operator/numeric_cast.hpp b/src/include/duckdb/common/operator/numeric_cast.hpp
+index 34f9d935b8..c31a013360 100644
+--- a/src/include/duckdb/common/operator/numeric_cast.hpp
++++ b/src/include/duckdb/common/operator/numeric_cast.hpp
+@@ -605,7 +605,7 @@ struct NumericCast {
+ 	static DST Operation(SRC input) {
+ 		DST result;
+ 		if (!NumericTryCast::Operation(input, result)) {
+-			throw InvalidInputException(CastExceptionText<SRC, DST>(input));
++			throw InvalidInputException(CastExceptionText<SRC>(input, TypeIdInfo::CreateObject<DST>));
+ 		}
+ 		return result;
+ 	}
