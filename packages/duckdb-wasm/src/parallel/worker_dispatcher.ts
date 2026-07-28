@@ -11,7 +11,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
 
     /** Instantiate the wasm module */
     protected abstract instantiate(
-        mainModule: string,
+        mainModule: string | WebAssembly.Module,
         pthreadWorker: string | null,
         progress: (p: InstantiationProgress) => void,
     ): Promise<DuckDBBindings>;

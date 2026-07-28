@@ -12,8 +12,8 @@ declare global {
 
 /** DuckDB bindings for node.js */
 export class DuckDBNodeBindings extends DuckDBBindingsBase {
-    /** The path of the wasm module */
-    protected readonly mainModulePath: string;
+    /** The path or module of the wasm module */
+    protected readonly mainModule: string | WebAssembly.Module;
     /** The path of the pthread worker script */
     protected readonly pthreadWorkerPath: string | null;
 
@@ -21,18 +21,21 @@ export class DuckDBNodeBindings extends DuckDBBindingsBase {
     public constructor(
         logger: Logger,
         runtime: DuckDBRuntime,
-        mainModulePath: string,
+        mainModule: string | WebAssembly.Module,
         pthreadWorkerPath: string | null,
     ) {
         super(logger, runtime);
-        this.mainModulePath = mainModulePath;
+        this.mainModule = mainModule;
         this.pthreadWorkerPath = pthreadWorkerPath;
     }
 
     /** Locate a file */
     protected locateFile(path: string, prefix: string): string {
         if (path.endsWith('.wasm')) {
-            return this.mainModulePath;
+            if (typeof this.mainModule === 'string') {
+                return this.mainModule;
+            }
+            return ''; // Should not be needed if we override instantiateWasm
         }
         if (path.endsWith('.worker.js')) {
             if (!this.pthreadWorkerPath) {
@@ -54,10 +57,16 @@ export class DuckDBNodeBindings extends DuckDBBindingsBase {
             if (func == 'constructor') continue;
             globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(this._runtime, func)!.value;
         }
-        const buf = fs.readFileSync(this.mainModulePath);
-        WebAssembly.instantiate(buf, imports).then(output => {
-            success(output.instance, output.module);
-        });
+        if (typeof this.mainModule === 'string') {
+            const buf = fs.readFileSync(this.mainModule);
+            WebAssembly.instantiate(buf, imports).then(output => {
+                success(output.instance, output.module);
+            });
+        } else {
+            WebAssembly.instantiate(this.mainModule, imports).then(instance => {
+                success(instance, this.mainModule as WebAssembly.Module);
+            });
+        }
         return [];
     }
 
