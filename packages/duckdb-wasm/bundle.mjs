@@ -36,7 +36,7 @@ import { execSync } from 'child_process';
 // The lack of alternatives for Karma won't allow us to bundle workers and tests as ESM.
 // We should upgrade all CommonJS bundles to ESM as soon as the dynamic requires are resolved.
 
-const TARGET_BROWSER = ['chrome64', 'edge79', 'firefox62', 'safari11.1'];
+const TARGET_BROWSER = ['chrome90', 'edge90', 'firefox88', 'safari14'];
 const TARGET_BROWSER_TEST = ['es2020'];
 const TARGET_NODE = ['node14.6'];
 const EXTERNALS_NODE = ['apache-arrow'];
@@ -99,12 +99,24 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-eh.wasm'), path.resolve(dist, 
 fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist, 'duckdb-coi.wasm'), printErr);
 
 (async () => {
+    const nonBrowserModules = ['child_process', 'fs',
+        'crypto', 'node:crypto', 'node:fs', 'node:worker_threads', 'node:util', 'node:os'];
     // Don't attempt to bundle NodeJS modules in the browser build.
     console.log('[ ESBUILD ] Patch bindings');
-    patchFile('./src/bindings/duckdb-mvp.js', 'child_process');
-    patchFile('./src/bindings/duckdb-eh.js', 'child_process');
-    patchFile('./src/bindings/duckdb-coi.js', 'child_process');
-    patchFile('./src/bindings/duckdb-coi.pthread.js', 'vm');
+    patchFile('./src/bindings/duckdb-mvp.js', nonBrowserModules);
+    patchFile('./src/bindings/duckdb-eh.js', nonBrowserModules);
+    patchFile('./src/bindings/duckdb-coi.js', nonBrowserModules);
+
+    // Newer emscripten bundles the pthread worker
+    let coiWorkerExists = false;
+    try {
+        patchFile('./src/bindings/duckdb-coi.pthread.js', ['vm']);
+        coiWorkerExists = true;
+    }
+    catch(e) {
+
+    }
+    
 
     // -------------------------------
     // Browser bundles
@@ -358,13 +370,20 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-coi.wasm'), path.resolve(dist,
     }
 })();
 
-function patchFile(fileName, moduleName) {
+/**
+ * 
+ * @param {string} fileName 
+ * @param {string[]} moduleNames 
+ */
+function patchFile(fileName, moduleNames) {
     // Patch file to make sure ESBuild doesn't statically analyse and attempt to load "moduleName"
     // We replace both single and double-quoted module names. The character capture list complexity
     // is due to the single quote:
     // - the sed expression is executed within single quotes
     // - we have to terminate the quotes
     // - we have to escape the middle quote
-    const sedCommand = `s/require(["'\\'']${moduleName}["'\\''])/["${moduleName}"].map(require)/g`;
-    execSync(`sed -i.bak '${sedCommand}' ${fileName} && rm ${fileName}.bak`);
+    for(const moduleName of moduleNames) {
+        const sedCommand = `s/require(["'\\'']${moduleName}["'\\''])/["${moduleName}"].map(require)/g`;
+        execSync(`sed -i.bak '${sedCommand}' ${fileName} && rm ${fileName}.bak`);
+    }
 }
