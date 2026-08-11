@@ -1,4 +1,5 @@
 import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel/';
+import { LogOrigin } from '../log';
 import { DuckDBBindings } from '../bindings';
 import { DuckDB } from '../bindings/bindings_node_mvp';
 import { NODE_RUNTIME } from '../bindings/runtime_node';
@@ -25,6 +26,7 @@ class NodeWorker extends AsyncDuckDBDispatcher {
 /** Register the worker */
 export function registerWorker(): void {
     const api = new NodeWorker();
+    api.interceptConsole(LogOrigin.NODE_WORKER);
     globalThis.onmessage = async (event: MessageEvent<WorkerRequestVariant>) => {
         await api.onMessage(event.data);
     };
