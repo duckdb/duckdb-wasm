@@ -357,7 +357,6 @@ class HTTPWasmClient : public HTTPClient {
                     var ptr1 = HEAP32[($2)/4 + i ];
                     var ptr2 = HEAP32[($2)/4 + i + 1];
 
-console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
