@@ -18,7 +18,7 @@ import { InstantiationProgress } from '../bindings/progress';
 import { arrowToSQLField } from '../json_typedef';
 import { WebFile } from '../bindings/web_file';
 import { DuckDBDataProtocol } from '../bindings';
-import { searchOPFSFiles, isOPFSProtocol } from "../utils/opfs_util";
+import { searchOPFSFiles } from "../utils/opfs_util";
 import { ProgressEntry } from '../log';
 
 const TEXT_ENCODER = new TextEncoder();
@@ -707,11 +707,8 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         await this.postTask(task);
     }
 
-    private shouldOPFSFileHandling():boolean {
-        if( isOPFSProtocol(this.config.path ?? "")){
-            return this.config.opfs?.fileHandling == "auto";
-        }
-        return false;
+    private shouldOPFSFileHandling(): boolean {
+        return this.config.opfs?.fileHandling === 'auto';
     }
 
     private async registerOPFSFileFromSQL(text: string) {
