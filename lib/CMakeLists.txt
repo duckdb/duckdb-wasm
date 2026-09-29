@@ -224,6 +224,7 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/functions/table_function_relation.cc
   ${CMAKE_SOURCE_DIR}/src/insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
+  ${CMAKE_SOURCE_DIR}/src/io/azure_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_page_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc
@@ -309,6 +310,7 @@ if(NOT EMSCRIPTEN)
 #      ${CMAKE_SOURCE_DIR}/test/ast_test.cc
       ${CMAKE_SOURCE_DIR}/test/all_types_test.cc
       ${CMAKE_SOURCE_DIR}/test/arrow_casts_test.cc
+      ${CMAKE_SOURCE_DIR}/test/azure_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/bugs_test.cc
       ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/glob_test.cc

@@ -22,7 +22,11 @@ RUN apt-get update -qq \
     && export CHROME_BIN=/usr/bin/google-chrome \
     && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/google.list
 
-ARG EMSDK_VERSION="3.1.56"
+# Keep in sync with EMSCRIPTEN_VERSION in .github/workflows/main.yml. Older emsdk (e.g. 3.1.56)
+# emits per-export `var X = wasmExports["X"]` bindings — including getTempRet0/setTempRet0 — which
+# the export-slimming awk in scripts/wasm_build_lib.sh strips, breaking loadable (MAIN_MODULE)
+# builds (instantiation fails / i64 return values are truncated).
+ARG EMSDK_VERSION="3.1.71"
 RUN mkdir -p /opt/emsdk \
     && cd /opt/emsdk \
     && curl -SL https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz | tar -xz --strip-components=1 \

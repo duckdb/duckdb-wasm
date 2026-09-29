@@ -57,6 +57,7 @@
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/http_wasm.h"
 #include "duckdb/web/io/arrow_ifstream.h"
+#include "duckdb/web/io/azure_filesystem.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/ifstream.h"
@@ -995,6 +996,10 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         if (!config.encryption_util) {
             config.encryption_util = make_shared_ptr<duckdb_mbedtls::MbedTlsWrapper::AESStateMBEDTLSFactory>();
         }
+
+        // Make Azure Blob / ADLS Gen2 URLs (abfss://, az://, ...) readable over HTTPS without the
+        // native `azure` extension, which cannot be compiled to Wasm. See AzureFileSystem.
+        io::AzureFileSystem::Register(*db->instance);
 
         // Reset state that is specific to the old database
         connections_.clear();
