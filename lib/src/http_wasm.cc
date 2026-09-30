@@ -24,6 +24,12 @@ HTTPHeaders TransformHeadersWasm(const HTTPHeaders &header_map, const HTTPParams
             res_headers.Insert(entry.first, entry.second);
         }
     }
+    // Native clients turn a bearer_token secret into an Authorization header automatically;
+    // the WASM client never did, so authenticated requests (e.g. gated hf:// repos) went out
+    // unauthenticated. An explicit Authorization header already set still takes precedence.
+    if (!httpfs_params.bearer_token.empty() && !res_headers.HasHeader("Authorization")) {
+        res_headers.Insert("Authorization", "Bearer " + httpfs_params.bearer_token);
+    }
     return res_headers;
 }
 
