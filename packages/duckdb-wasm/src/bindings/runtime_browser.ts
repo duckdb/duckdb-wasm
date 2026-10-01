@@ -19,6 +19,24 @@ import * as udf from './udf_runtime';
 
 const OPFS_PREFIX_LEN = 'opfs://'.length;
 const PATH_SEP_REGEX = /\/|\\/;
+const COPY_CHUNK_SIZE = 1024 * 1024;
+
+/// Replace the contents of one sync access handle with the contents of another.
+export function copySyncAccessHandle(from: FileSystemSyncAccessHandle, to: FileSystemSyncAccessHandle): void {
+    const size = from.getSize();
+    const buffer = new ArrayBuffer(Math.min(size, COPY_CHUNK_SIZE));
+    to.truncate(size);
+    let count = 0;
+    for (let offset = 0; offset < size; offset += count) {
+        count = from.read(buffer, { at: offset });
+        if (count <= 0) {
+            // pretty sure this is not possible, but guard against it just in case
+            // (to ensure the loop definitely, positively always terminates)
+            throw new Error(`Read ${count} bytes at offset ${offset} of ${size} while copying file`);
+        }
+        to.write(new Uint8Array(buffer, 0, count), { at: offset });
+    }
+}
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     _files: Map<string, any>;
@@ -779,15 +797,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             }
             // We have x -> y, y will be destroyed in this process.
             // y is truncated so it is an empty file and stored as x.
-            to_handle.truncate(0);
-            const size = handle.getSize();
-            // Reads need to go somewhere copy data in one MB chunks.
-            const fileContents = new ArrayBuffer(Math.min(size, 1024 * 1024));
-            let bytes_read = 0;
-            for (let offset = 0; offset < size; offset += bytes_read) {
-                bytes_read = handle.read(fileContents, { at: offset });
-                to_handle.write(fileContents, { at: offset });
-            }
+            copySyncAccessHandle(handle, to_handle);
             // Ensure that the from handle is empty again
             handle.truncate(0);
             // We do not remove files from the runtime as they would otherwise not
