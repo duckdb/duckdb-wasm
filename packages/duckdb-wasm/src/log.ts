@@ -62,7 +62,9 @@ export type LogEntryVariant =
     | LogEntry<LogOrigin.BINDINGS, LogTopic.OPEN, LogEvent.START, void>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.OPEN, LogEvent.OK, void>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.OPEN, LogEvent.ERROR, void>
-    | LogEntry<LogOrigin.ASYNC_DUCKDB, LogTopic.QUERY, LogEvent.RUN, string>;
+    | LogEntry<LogOrigin.ASYNC_DUCKDB, LogTopic.QUERY, LogEvent.RUN, string>
+    | LogEntry<LogOrigin.WEB_WORKER, LogTopic.NONE, LogEvent.CAPTURE, string>
+    | LogEntry<LogOrigin.NODE_WORKER, LogTopic.NONE, LogEvent.CAPTURE, string>;
 
 export interface Logger {
     log(entry: LogEntryVariant): void;
@@ -76,7 +78,13 @@ export class ConsoleLogger implements Logger {
     constructor(protected level: LogLevel = LogLevel.INFO) {}
     public log(entry: LogEntryVariant): void {
         if (entry.level >= this.level) {
-            console.log(entry);
+            if (entry.level >= LogLevel.ERROR) {
+                console.error(entry);
+            } else if (entry.level >= LogLevel.WARNING) {
+                console.warn(entry);
+            } else {
+                console.log(entry);
+            }
         }
     }
 }
