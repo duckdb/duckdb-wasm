@@ -10,10 +10,10 @@ export class DuckDB extends DuckDBNodeBindings {
     public constructor(
         logger: Logger,
         runtime: DuckDBRuntime,
-        mainModulePath: string,
+        mainModule: string | WebAssembly.Module,
         pthreadWorkerPath: string | null = null,
     ) {
-        super(logger, runtime, mainModulePath, pthreadWorkerPath);
+        super(logger, runtime, mainModule, pthreadWorkerPath);
     }
 
     /** Instantiate the bindings */
