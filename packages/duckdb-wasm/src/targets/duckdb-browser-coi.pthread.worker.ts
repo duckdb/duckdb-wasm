@@ -1,47 +1,29 @@
-import * as pthread_api from '../bindings/duckdb-coi.pthread';
-import DuckDB from '../bindings/duckdb-coi';
+import { DuckDB } from '../bindings/bindings_browser_coi';
+import { AsyncDuckDBDispatcher, WorkerResponseVariant, WorkerRequestVariant } from '../parallel';
 import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
+import { InstantiationProgress } from '../bindings';
 
-// Register the global DuckDB runtime
-globalThis.DUCKDB_RUNTIME = {};
-for (const func of Object.getOwnPropertyNames(BROWSER_RUNTIME)) {
-    if (func == 'constructor') continue;
-    globalThis.DUCKDB_RUNTIME[func] = Object.getOwnPropertyDescriptor(BROWSER_RUNTIME, func)!.value;
+class WebWorker extends AsyncDuckDBDispatcher {
+    protected postMessage(response: WorkerResponseVariant, transfer: ArrayBuffer[]) {
+        globalThis.postMessage(response, transfer);
+    }
+
+    protected async instantiate(
+        mainModuleURL: string,
+        pthreadWorkerURL: string | null,
+        progress: (p: InstantiationProgress) => void,
+    ) {
+        // pthreadWorkerURL is ignored — Emscripten handles it internally
+        const bindings = new DuckDB(this, BROWSER_RUNTIME, mainModuleURL, null);
+        return await bindings.instantiate(progress);
+    }
 }
 
-// We just override the load handler of the pthread wrapper to bundle DuckDB with esbuild.
-globalThis.onmessage = (e: any) => {
-    if (e.data.cmd === 'load') {
-        let m = pthread_api.getModule();
+export function registerWorker() {
+    const api = new WebWorker();
+    globalThis.onmessage = async (event) => {
+        await api.onMessage(event.data);
+    };
+}
 
-        (globalThis as any).startWorker = (instance: any) => {
-            m = instance;
-            postMessage({ cmd: 'loaded' });
-        };
-        m['wasmModule'] = e.data.wasmModule;
-        m['wasmMemory'] = e.data.wasmMemory;
-        m['buffer'] = m['wasmMemory'].buffer;
-        m['ENVIRONMENT_IS_PTHREAD'] = true;
-        DuckDB(m).then((instance: any) => {
-            pthread_api.setModule(instance);
-        });
-    } else if (e.data.cmd === 'registerFileHandle') {
-        globalThis.DUCKDB_RUNTIME._files = globalThis.DUCKDB_RUNTIME._files || new Map();
-        globalThis.DUCKDB_RUNTIME._files.set(e.data.fileName, e.data.fileHandle);
-    } else if (e.data.cmd === 'dropFileHandle') {
-        globalThis.DUCKDB_RUNTIME._files = globalThis.DUCKDB_RUNTIME._files || new Map();
-        globalThis.DUCKDB_RUNTIME._files.delete(e.data.fileName);
-    } else if (e.data.cmd === 'registerUDFFunction') {
-        globalThis.DUCKDB_RUNTIME._udfFunctions = globalThis.DUCKDB_RUNTIME._files || new Map();
-        globalThis.DUCKDB_RUNTIME._udfFunctions.set(e.data.udf.name, e.data.udf);
-    } else if (e.data.cmd === 'dropUDFFunctions') {
-        globalThis.DUCKDB_RUNTIME._udfFunctions = globalThis.DUCKDB_RUNTIME._files || new Map();
-        for (const key of globalThis.DUCKDB_RUNTIME._udfFunctions.keys()) {
-            if (globalThis.DUCKDB_RUNTIME._udfFunctions.get(key).connection_id == e.data.connectionId) {
-                globalThis.DUCKDB_RUNTIME._udfFunctions.delete(key);
-            }
-        }
-    } else {
-        pthread_api.onmessage(e);
-    }
-};
+registerWorker();
