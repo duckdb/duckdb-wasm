@@ -37,27 +37,27 @@ unique_ptr<TableRef> TableFunctionRelation::GetTableRef() {
     vector<unique_ptr<ParsedExpression>> children;
     if (input_relation) {  // input relation becomes first parameter if present, always
         auto subquery = std::make_unique<duckdb::SubqueryExpression>();
-        subquery->subquery = duckdb::make_uniq<duckdb::SelectStatement>();
-        subquery->subquery->node = input_relation->GetQueryNode();
-        subquery->subquery_type = SubqueryType::SCALAR;
+        subquery->SubqueryMutable() = duckdb::make_uniq<duckdb::SelectStatement>();
+        subquery->SubqueryMutable()->node = input_relation->GetQueryNode();
+        subquery->GetSubqueryTypeMutable() = SubqueryType::SCALAR;
         children.push_back(std::move(subquery));
     }
     for (auto &parameter : unnamed_parameters) {
-        children.push_back(std::make_unique<ConstantExpression>(parameter));
+        children.push_back(ConstantExpression::FromValue(parameter));
     }
     for (auto &[k, v] : named_parameters) {
-        auto l = duckdb::make_uniq<ColumnRefExpression>(k);
-        auto r = duckdb::make_uniq<ConstantExpression>(v);
+        auto l = duckdb::make_uniq<ColumnRefExpression>(Identifier(k));
+        auto r = ConstantExpression::FromValue(v);
         auto eq = duckdb::make_uniq<ComparisonExpression>(ExpressionType::COMPARE_EQUAL, std::move(l), std::move(r));
         children.push_back(std::move(eq));
     }
     auto table_function = std::make_unique<TableFunctionRef>();
-    auto function = duckdb::make_uniq<FunctionExpression>(name, std::move(children));
+    auto function = duckdb::make_uniq<FunctionExpression>(Identifier(name), std::move(children));
     table_function->function = std::move(function);
     return std::move(table_function);
 }
 
-string TableFunctionRelation::GetAlias() { return name; }
+Identifier TableFunctionRelation::GetAlias() { return Identifier(name); }
 
 const vector<ColumnDefinition> &TableFunctionRelation::Columns() { return columns; }
 

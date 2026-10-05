@@ -83,7 +83,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
             child_list_t<LogicalType> children;
             for (auto& field : type.fields()) {
                 ARROW_ASSIGN_OR_RAISE(auto t, mapArrowTypeToDuckDB(*field->type()));
-                children.push_back({field->name(), t});
+                children.push_back({Identifier(field->name()), t});
             }
             return duckdb::LogicalType::STRUCT(children);
         }
@@ -91,7 +91,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
             child_list_t<LogicalType> children;
             for (auto& field : type.fields()) {
                 ARROW_ASSIGN_OR_RAISE(auto t, mapArrowTypeToDuckDB(*field->type()));
-                children.push_back({field->name(), t});
+                children.push_back({Identifier(field->name()), t});
             }
             return duckdb::LogicalType::STRUCT(children);
         }
@@ -99,7 +99,7 @@ arrow::Result<duckdb::LogicalType> mapArrowTypeToDuckDB(const arrow::DataType& t
             child_list_t<LogicalType> children;
             for (auto& field : type.fields()) {
                 ARROW_ASSIGN_OR_RAISE(auto t, mapArrowTypeToDuckDB(*field->type()));
-                children.push_back({field->name(), t});
+                children.push_back({Identifier(field->name()), t});
             }
             return duckdb::LogicalType::STRUCT(children);
         }
@@ -174,7 +174,7 @@ arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& 
     switch (in_type->id()) {
         // Map null
         case arrow::Type::type::NA:
-            out.Reference(Value());
+            out.Reference(Value(), count_t(in.length()));
             break;
 
         // Arrow bitpacks booleans
@@ -184,7 +184,7 @@ arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& 
                 return arrow::Status::ExecutionError("invalid boolean array");
             }
             for (size_t i = 0; i < a.length(); ++i) {
-                out.GetData()[i] = a.Value(i);
+                duckdb::FlatVector::GetDataMutable(out)[i] = a.Value(i);
             }
         }
 
@@ -204,7 +204,7 @@ arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& 
         case arrow::Type::type::TIME32:
         case arrow::Type::type::TIME64: {
             auto* data = reinterpret_cast<uint8_t*>(in.data()->buffers[1]->address());
-            duckdb::FlatVector::SetData(out, data);
+            duckdb::FlatVector::SetData(out, data, count_t(in.length()));
             break;
         }
 
@@ -212,7 +212,7 @@ arrow::Status convertArrowArrayToDuckDBVector(arrow::Array& in, duckdb::Vector& 
         case arrow::Type::type::LARGE_STRING:
         case arrow::Type::type::STRING: {
             auto& a = *dynamic_cast<const arrow::StringArray*>(&in);
-            auto strings = FlatVector::GetData<string_t>(out);
+            auto strings = FlatVector::GetDataMutable<string_t>(out);
             for (size_t i = 0; i < a.length(); ++i) {
                 auto s = a.GetView(i);
                 strings[i] = string_t(s.data(), s.length());
