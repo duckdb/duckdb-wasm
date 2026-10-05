@@ -17,7 +17,7 @@ enum PlatformFeature : uint32_t {
 };
 
 /// The runtime function to check runtime features
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 extern "C" bool duckdb_web_test_platform_feature(uint32_t feature);
 #else
 bool duckdb_web_test_platform_feature(uint32_t _feature) { return false; }

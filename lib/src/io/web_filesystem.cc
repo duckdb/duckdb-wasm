@@ -59,7 +59,7 @@ static void ClearLocalStates() {
 }
 
 /// Stub the filesystem for native tests
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 /// This is only used for tests.
 static std::unique_ptr<duckdb::FileSystem> NATIVE_FS = duckdb::FileSystem::CreateLocal();
 /// Get or open a file and throw if something is off
@@ -101,7 +101,7 @@ struct OpenedFile {
     double file_last_modification;
 };
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #define RT_FN(FUNC, IMPL) extern "C" FUNC;
 #else
 #define RT_FN(FUNC, IMPL) FUNC IMPL;
