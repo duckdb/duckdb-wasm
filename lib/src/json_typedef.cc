@@ -356,7 +356,7 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
             out.AddMember("sqlType", "struct", alloc);
             rapidjson::Value children(rapidjson::kArrayType);
             for (auto& child : duckdb::StructType::GetChildTypes(type)) {
-                ARROW_ASSIGN_OR_RAISE(auto field, WriteSQLField(doc, child.first, child.second, true));
+                ARROW_ASSIGN_OR_RAISE(auto field, WriteSQLField(doc, child.first.GetIdentifierName(), child.second, true));
                 children.PushBack(field, alloc);
             }
             out.AddMember("fields", children, alloc);
@@ -394,7 +394,6 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
         case duckdb::LogicalTypeId::BLOB:
         case duckdb::LogicalTypeId::CHAR:
         case duckdb::LogicalTypeId::TABLE:
-        case duckdb::LogicalTypeId::AGGREGATE_STATE:
         case duckdb::LogicalTypeId::BIT:
         case duckdb::LogicalTypeId::LAMBDA:
         case duckdb::LogicalTypeId::STRING_LITERAL:
@@ -406,6 +405,7 @@ arrow::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duc
         case duckdb::LogicalTypeId::VARIANT:
         case duckdb::LogicalTypeId::TEMPLATE:
         case duckdb::LogicalTypeId::TIME_NS:
+        default:
             break;
     }
     return out;

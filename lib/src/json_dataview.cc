@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <duckdb/common/types.hpp>
 #include <duckdb/common/types/vector.hpp>
+#include <duckdb/common/vector/flat_vector.hpp>
+#include <duckdb/common/vector/struct_vector.hpp>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -103,7 +105,7 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
             switch (vec_type.id()) {
                 case LogicalTypeId::INTEGER:
                 case LogicalTypeId::DOUBLE:
-                    data_ptrs.push_back(static_cast<double>(reinterpret_cast<uintptr_t>(vec->GetData())));
+                    data_ptrs.push_back(static_cast<double>(reinterpret_cast<uintptr_t>(FlatVector::GetData(*vec))));
                     desc.AddMember("dataBuffer", rapidjson::Value{static_cast<uint64_t>(data_ptrs.size() - 1)},
                                    allocator);
                     break;
@@ -133,8 +135,8 @@ arrow::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb:
                         auto& entry = entries[c];
                         rapidjson::Value desc{rapidjson::kObjectType};
                         auto name = StructType::GetChildName(vec_type, c);
-                        desc.AddMember("name", rapidjson::Value{name, allocator}, allocator);
-                        pending.push_back({false, entry.get(), std::move(desc), current_idx});
+                        desc.AddMember("name", rapidjson::Value{name.GetIdentifierName(), allocator}, allocator);
+                        pending.push_back({false, &entry, std::move(desc), current_idx});
                     }
                     break;
                 }

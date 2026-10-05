@@ -146,8 +146,8 @@ class BufferedFileSystem : public duckdb::FileSystem {
 
     /// Register subsystem
     void RegisterSubSystem(unique_ptr<FileSystem> sub_fs) override;
-    /// Register subsystem
-    void RegisterSubSystem(FileCompressionType compression_type, unique_ptr<FileSystem> sub_fs) override;
+    /// Register compression filesystem
+    void RegisterCompressionFilesystem(unique_ptr<CompressedFileSystem> fs) override;
 
     /// Set the file pointer of a file handle to a specified location. Reads and writes will happen from this location
     void Seek(duckdb::FileHandle &handle, idx_t location) override;

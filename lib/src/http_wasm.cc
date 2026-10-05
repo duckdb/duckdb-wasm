@@ -927,6 +927,10 @@ res->headers.Insert(head, tail);
 
         return res;
     }
+    unique_ptr<HTTPResponse> Options(OptionsRequestInfo &info) override {
+        // FIXME: implement OPTIONS requests
+        throw NotImplementedException("OPTIONS requests are not supported in DuckDB-Wasm");
+    }
     unique_ptr<HTTPResponse> Delete(DeleteRequestInfo &info) override {
         unique_ptr<HTTPResponse> res;
 

@@ -2,7 +2,8 @@
 #define INCLUDE_DUCKDB_WEB_WEBDB_H_
 
 #include <cstring>
-#include <duckdb/main/pending_query_result.hpp>
+#include <duckdb/main/query_result.hpp>
+#include <duckdb/main/query_result_stream.hpp>
 #include <duckdb/main/prepared_statement.hpp>
 #include <initializer_list>
 #include <stdexcept>
@@ -64,11 +65,13 @@ class WebDB {
         /// The value of allow_stream_result passed to PendingQuery
         bool current_allow_stream_result_ = false;
         /// The current pending query result (if any)
-        duckdb::unique_ptr<duckdb::PendingQueryResult> current_pending_query_result_ = nullptr;
+        duckdb::unique_ptr<duckdb::QueryResult> current_pending_query_result_ = nullptr;
         /// The current pending query was canceled
         bool current_pending_query_was_canceled_ = false;
-        /// The current query result (if any)
+        /// The current retained query result (if any)
         duckdb::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
+        /// The current streamed query result (if any)
+        duckdb::unique_ptr<duckdb::QueryResultStream<>> current_query_stream_ = nullptr;
         /// The current arrow schema (if any)
         std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
         /// The current patched arrow schema (if any)
@@ -90,7 +93,10 @@ class WebDB {
         arrow::Result<std::shared_ptr<arrow::Buffer>> StreamQueryResult(duckdb::unique_ptr<duckdb::QueryResult> result);
         // Execute a prepared statement by setting up all arguments and returning the query result
         arrow::Result<duckdb::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
-                                                                                        std::string_view args_json);
+                                                                                        std::string_view args_json,
+                                                                                        bool allow_stream_result);
+        // Submit the pending statement at current_pending_statement_index_
+        arrow::Status SubmitPendingStatement();
         // Call scalar UDF function
         arrow::Status CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk, ExpressionState& state,
                                             Vector& vec);

@@ -19,6 +19,11 @@ set(DUCKDB_EXTENSIONS "json;core_functions")
 # Escape semicolons in DUCKDB_EXTENSIONS before passing to ExternalProject_Add
 string(REPLACE ";" "$<SEMICOLON>" DUCKDB_EXTENSIONS_PACKED "${DUCKDB_EXTENSIONS}")
 
+# Version DuckDB reports and uses as extension folder, e.g. v2.0.0-alpha44357 (empty: derived by DuckDB)
+if(NOT DUCKDB_EXPLICIT_VERSION AND DEFINED ENV{OVERRIDE_GIT_DESCRIBE})
+  set(DUCKDB_EXPLICIT_VERSION "$ENV{OVERRIDE_GIT_DESCRIBE}")
+endif()
+
 set(USE_WASM_THREADS FALSE)
 if(DUCKDB_PLATFORM STREQUAL "wasm_threads")
   set(USE_WASM_THREADS TRUE)
@@ -31,7 +36,7 @@ ExternalProject_Add(
   INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/duckdb/install"
   CMAKE_ARGS -G${CMAKE_GENERATOR}
              -DCMAKE_CXX_STANDARD=17
-             -DLOCAL_EXTENSION_REPO="../../build/extension_repository"
+             -DLOCAL_EXTENSION_REPO=../../build/extension_repository
              -DCMAKE_CXX_FLAGS=${DUCKDB_CXX_FLAGS}
              -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
              -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -40,10 +45,13 @@ ExternalProject_Add(
              -DCMAKE_BUILD_TYPE=${DUCKDB_BUILD_TYPE}
              -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
              -DBUILD_EXTENSIONS=${DUCKDB_EXTENSIONS_PACKED}
-             -DSKIP_EXTENSIONS=jemalloc
+             -DENABLE_JEMALLOC=OFF
              -DBUILD_SHELL=FALSE
              -DBUILD_UNITTESTS=FALSE
-             -DDISABLE_BUILTIN_EXTENSIONS=TRUE
+             -DSTATICALLY_LINK_EXTENSIONS=core_functions
+             -DDUCKDB_CAPABILITIES=none
+             -DENABLE_BUILTIN_HTTPLIB=OFF
+             -DDUCKDB_EXPLICIT_VERSION=${DUCKDB_EXPLICIT_VERSION}
              -DUSE_WASM_THREADS=${USE_WASM_THREADS}
              -DDUCKDB_EXPLICIT_PLATFORM=${DUCKDB_EXPLICIT_PLATFORM}
              -DSMALLER_BINARY=1
@@ -54,7 +62,6 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libduckdb_fastpforlib.a
     <INSTALL_DIR>/lib/libparquet_extension.a
     <INSTALL_DIR>/lib/libcore_functions_extension.a
-    <INSTALL_DIR>/lib/libduckdb_generated_extension_loader.a
     <INSTALL_DIR>/lib/libjson_extension.a)
 
 ExternalProject_Get_Property(duckdb_ep install_dir)
@@ -79,7 +86,6 @@ target_link_libraries(
 #  INTERFACE ${install_dir}/lib/libduckdb_utf8proc.a
 #  INTERFACE ${install_dir}/lib/libduckdb_fastpforlib.a
   INTERFACE ${install_dir}/lib/libcore_functions_extension.a
-  INTERFACE ${install_dir}/lib/libduckdb_generated_extension_loader.a
   INTERFACE dl)
 
 target_include_directories(

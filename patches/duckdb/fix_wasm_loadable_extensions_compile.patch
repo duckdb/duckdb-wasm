@@ -1,0 +1,25 @@
+diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
+index e951fce32c..8d7de54e71 100644
+--- a/src/main/extension/extension_load.cpp
++++ b/src/main/extension/extension_load.cpp
+@@ -14,6 +14,10 @@
+ #include "duckdb/main/settings.hpp"
+ #include "mbedtls_wrapper.hpp"
+ 
++#ifdef WASM_LOADABLE_EXTENSIONS
++#include <emscripten.h>
++#endif
++
+ #ifndef DUCKDB_NO_THREADS
+ #include <thread>
+ #endif // DUCKDB_NO_THREADS
+@@ -509,7 +513,8 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+ 		direct_load = false;
+ 		string extension_name = ApplyExtensionAlias(extension);
+ #ifdef WASM_LOADABLE_EXTENSIONS
+-		string url_template = ExtensionUrlTemplate(&config, "");
++		auto repository = GetAutoinstallRepository(db);
++		string url_template = ExtensionUrlTemplate(&db, repository, "");
+ 		string url = ExtensionFinalizeUrlTemplate(url_template, extension_name);
+ 
+ 		char *str = (char *)EM_ASM_PTR(
