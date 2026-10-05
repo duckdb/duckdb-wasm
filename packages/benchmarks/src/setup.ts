@@ -8,13 +8,9 @@ import fsSync from 'fs';
 import Worker from 'web-worker';
 
 const DUCKDB_BUNDLES = {
-    mvp: {
-        mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb.wasm'),
-        mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node.worker.cjs'),
-    },
-    eh: {
-        mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-eh.wasm'),
-        mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-eh.worker.cjs'),
+    base: {
+        mainModule: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-base.wasm'),
+        mainWorker: path.resolve(__dirname, '../../duckdb-wasm/dist/duckdb-node-base.worker.cjs'),
     },
 };
 
@@ -40,7 +36,7 @@ export async function setupSqljs(): Promise<sqljs.SqlJsStatic> {
     return await initSQLJs();
 }
 
-// eslint-disable-eh-line @typescript-eslint/explicit-module-boundary-types
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export async function writeReport(report: any, dst: string): Promise<void> {
     const reports = path.resolve(__dirname, '../../../reports');
     if (!fsSync.existsSync(reports)) {

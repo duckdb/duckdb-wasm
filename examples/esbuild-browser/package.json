@@ -16,6 +16,6 @@
     "scripts": {
         "build": "node ./bundle.mjs && tsc --noEmit",
         "server": "http-server",
-        "server-coi": "serve"
+        "server-threads": "serve"
     }
 }

@@ -4,18 +4,14 @@ import * as arrow from 'apache-arrow';
 (async () => {
     try {
         const DUCKDB_CONFIG = await duckdb.selectBundle({
-            mvp: {
-                mainModule: './duckdb-mvp.wasm',
-                mainWorker: './duckdb-browser-mvp.worker.js',
+            base: {
+                mainModule: './duckdb-base.wasm',
+                mainWorker: './duckdb-browser-base.worker.js',
             },
-            eh: {
-                mainModule: './duckdb-eh.wasm',
-                mainWorker: './duckdb-browser-eh.worker.js',
-            },
-            coi: {
-                mainModule: './duckdb-coi.wasm',
-                mainWorker: './duckdb-browser-coi.worker.js',
-                pthreadWorker: './duckdb-browser-coi.pthread.worker.js',
+            threads: {
+                mainModule: './duckdb-threads.wasm',
+                mainWorker: './duckdb-browser-threads.worker.js',
+                pthreadWorker: './duckdb-browser-threads.pthread.worker.js',
             },
         });
 

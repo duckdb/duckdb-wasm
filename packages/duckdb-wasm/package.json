@@ -70,7 +70,6 @@
         "test:node:coverage": "nyc -r json --report-dir ./coverage/node node ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",
         "test:firefox": "karma start ./karma/tests-firefox.cjs",
         "test:chrome": "karma start ./karma/tests-chrome.cjs",
-        "test:chrome:eh": "karma start ./karma/tests-chrome-eh.cjs",
         "test:chrome:coverage": "karma start ./karma/tests-chrome-coverage.cjs",
         "test:browser": "karma start ./karma/tests-all.cjs",
         "test:browser:debug": "karma start ./karma/tests-debug.cjs",
@@ -81,7 +80,7 @@
     "files": [
         "dist",
         "!dist/tests-*",
-        "!dist/duckdb-browser-mvp.worker.js.map",
+        "!dist/duckdb-browser-base.worker.js.map",
         "!dist/types/test"
     ],
     "main": "dist/duckdb-browser.cjs",
@@ -98,22 +97,19 @@
         "worker_threads": false
     },
     "exports": {
-        "./dist/duckdb-mvp.wasm": "./dist/duckdb-mvp.wasm",
-        "./dist/duckdb-eh.wasm": "./dist/duckdb-eh.wasm",
-        "./dist/duckdb-coi.wasm": "./dist/duckdb-coi.wasm",
+        "./dist/duckdb-base.wasm": "./dist/duckdb-base.wasm",
+        "./dist/duckdb-threads.wasm": "./dist/duckdb-threads.wasm",
         "./dist/duckdb-browser": "./dist/duckdb-browser.mjs",
         "./dist/duckdb-browser.cjs": "./dist/duckdb-browser.cjs",
         "./dist/duckdb-browser.mjs": "./dist/duckdb-browser.mjs",
-        "./dist/duckdb-browser-coi.pthread.worker.js": "./dist/duckdb-browser-coi.pthread.worker.js",
-        "./dist/duckdb-browser-coi.worker.js": "./dist/duckdb-browser-coi.worker.js",
-        "./dist/duckdb-browser-eh.worker.js": "./dist/duckdb-browser-eh.worker.js",
-        "./dist/duckdb-browser-mvp.worker.js": "./dist/duckdb-browser-mvp.worker.js",
+        "./dist/duckdb-browser-threads.pthread.worker.js": "./dist/duckdb-browser-threads.pthread.worker.js",
+        "./dist/duckdb-browser-threads.worker.js": "./dist/duckdb-browser-threads.worker.js",
+        "./dist/duckdb-browser-base.worker.js": "./dist/duckdb-browser-base.worker.js",
         "./dist/duckdb-node": "./dist/duckdb-node.cjs",
         "./dist/duckdb-node.cjs": "./dist/duckdb-node.cjs",
         "./dist/duckdb-node-blocking": "./dist/duckdb-node-blocking.cjs",
         "./dist/duckdb-node-blocking.cjs": "./dist/duckdb-node-blocking.cjs",
-        "./dist/duckdb-node-eh.worker.cjs": "./dist/duckdb-node-eh.worker.cjs",
-        "./dist/duckdb-node-mvp.worker.cjs": "./dist/duckdb-node-mvp.worker.cjs",
+        "./dist/duckdb-node-base.worker.cjs": "./dist/duckdb-node-base.worker.cjs",
         "./blocking": {
             "node": {
                 "types": "./dist/duckdb-node-blocking.d.ts",

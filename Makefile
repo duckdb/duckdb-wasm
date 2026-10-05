@@ -14,7 +14,7 @@ LIB_RELEASE_DIR="${ROOT_DIR}/build/Release"
 LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/build/RelWithDebInfo"
 LIB_XRAY_DIR="${ROOT_DIR}/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
-TARGET=eh
+TARGET=base
 
 DUCKDB_HASH=${shell cd submodules/duckdb && git reflog -n 1 | head -c 10}
 
@@ -234,18 +234,14 @@ wrapped_wasm_caches:
 	touch build/wrapped_wasm_caches
 
 check_duckdb: $(DUCKDB_SOURCES)
-	(cd ${ROOT_DIR}/build/dev/mvp && make clean) || true
-	(cd ${ROOT_DIR}/build/dev/eh && make clean) || true
-	(cd ${ROOT_DIR}/build/dev/coi && make clean) || true
-	(cd ${ROOT_DIR}/build/relsize/mvp && make clean) || true
-	(cd ${ROOT_DIR}/build/relsize/eh && make clean) || true
-	(cd ${ROOT_DIR}/build/relsize/coi && make clean) || true
-	(cd ${ROOT_DIR}/build/relperf/mvp && make clean) || true
-	(cd ${ROOT_DIR}/build/relperf/eh && make clean) || true
-	(cd ${ROOT_DIR}/build/relperf/coi && make clean) || true
-	(cd ${ROOT_DIR}/build/debug/mvp && make clean) || true
-	(cd ${ROOT_DIR}/build/debug/eh && make clean) || true
-	(cd ${ROOT_DIR}/build/debug/coi && make clean) || true
+	(cd ${ROOT_DIR}/build/dev/base && make clean) || true
+	(cd ${ROOT_DIR}/build/dev/threads && make clean) || true
+	(cd ${ROOT_DIR}/build/relsize/base && make clean) || true
+	(cd ${ROOT_DIR}/build/relsize/threads && make clean) || true
+	(cd ${ROOT_DIR}/build/relperf/base && make clean) || true
+	(cd ${ROOT_DIR}/build/relperf/threads && make clean) || true
+	(cd ${ROOT_DIR}/build/debug/base && make clean) || true
+	(cd ${ROOT_DIR}/build/debug/threads && make clean) || true
 	touch check_duckdb
 
 wasm_setup: set_environment check_duckdb wrapped_wasm_caches
@@ -253,27 +249,23 @@ wasm_setup: set_environment check_duckdb wrapped_wasm_caches
 
 .PHONY: wasm_dev
 wasm_dev: wasm_setup
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev mvp
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev base
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh dev threads
 
 .PHONY: wasm_relperf
 wasm_relperf: wasm_setup
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf mvp
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf base
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relperf threads
 
 .PHONY: wasm_relsize
 wasm_relsize: wasm_setup
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize mvp
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize base
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh relsize threads
 
 .PHONY: wasm_debug
 wasm_debug: wasm_setup
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug mvp
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug eh
-	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug coi
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug base
+	${EXEC_ENVIRONMENT} ${ROOT_DIR}/scripts/wasm_build_lib.sh debug threads
 
 wasm: wasm_relperf
 

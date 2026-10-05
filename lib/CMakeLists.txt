@@ -79,7 +79,7 @@ endif ()
 # -Os shrinks the module by 600KB but slows down TPC-H by a factor of 2!
 # Dedicated module?
 
-set(DUCKDB_PLATFORM "wasm_mvp")
+set(DUCKDB_PLATFORM "wasm_base")
 
 if(EMSCRIPTEN)
   # Bump stack size from default 64KB to 1MB
@@ -115,13 +115,9 @@ if(EMSCRIPTEN)
     endif()
   endif()
 
-  if(WITH_WASM_EXCEPTIONS)
-    set(DUCKDB_PLATFORM "wasm_eh")
-    set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -fwasm-exceptions -DWEBDB_FAST_EXCEPTIONS=1")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sDISABLE_EXCEPTION_CATCHING=0")
-  endif()
+  # All builds use WebAssembly exception handling
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -fwasm-exceptions -DWEBDB_FAST_EXCEPTIONS=1")
 
   if(WITH_WASM_SIMD)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128 -DWEBDB_SIMD=1")

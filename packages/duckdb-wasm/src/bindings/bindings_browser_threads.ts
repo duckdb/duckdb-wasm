@@ -1,5 +1,5 @@
-import DuckDBWasm from './duckdb-coi.js';
-import { DuckDBBrowserBindings } from './bindings_browser_base';
+import DuckDBWasm from './duckdb-threads.js';
+import { DuckDBBrowserBindings } from './bindings_browser_common';
 import { DuckDBModule } from './duckdb_module';
 import { DuckDBRuntime } from './runtime';
 import { Logger } from '../log';

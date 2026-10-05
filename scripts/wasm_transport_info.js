@@ -72,7 +72,7 @@ async function compare() {
   const sizeTable = {}
   const timeTable = {}
   for(const mode of ['relperf', 'relsize', 'dev']){
-    for(const feature of ['coi', 'eh', 'mvp']){
+    for(const feature of ['threads', 'base']){
       const key = `${mode}-${feature}`;
       sizeTable[key] = {}
       timeTable[key] = {}
@@ -130,23 +130,23 @@ if(process.argv.includes('--serve')){
   }).listen(port);
 
   // To test the serve you could do something like
-  // curl -H --compressed 'Accept-Encoding: gzip' 127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm | wc -c
-  // curl -H 'Accept-Encoding: gzip' 127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm | wc -c
-  // curl -H 'Accept-Encoding: br' 127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm | wc -c
+  // curl -H --compressed 'Accept-Encoding: gzip' 127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm | wc -c
+  // curl -H 'Accept-Encoding: gzip' 127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm | wc -c
+  // curl -H 'Accept-Encoding: br' 127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm | wc -c
   // 
   // You could also test it from a browser
   async function _checkIntegrity(){
-    const ref = await (await fetch('http://127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm?identity')).text()
+    const ref = await (await fetch('http://127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm?identity')).text()
     
-    if(ref !== await (await fetch('http://127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm?br')).text()){
+    if(ref !== await (await fetch('http://127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm?br')).text()){
       console.log('Brotli encoding failed')
     }
   
-    if(ref !== await (await fetch('http://127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm?deflate')).text()){
+    if(ref !== await (await fetch('http://127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm?deflate')).text()){
       console.log('Deflate failed')
     }
   
-    if(ref !== await (await fetch('http://127.0.0.1:1337/relperf-coi/duckdb_wasm.wasm?gzip')).text()){
+    if(ref !== await (await fetch('http://127.0.0.1:1337/relperf-threads/duckdb_wasm.wasm?gzip')).text()){
       console.log('gzip failed')
     }
   }
