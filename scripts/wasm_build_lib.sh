@@ -7,7 +7,7 @@ trap exit SIGINT
 PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 
 MODE=${1:-Fast}
-FEATURES=${2:-mvp}
+FEATURES=${2:-base}
 DUCKDB_LOCATION=${3:-"$PROJECT_ROOT/submodules/duckdb"}
 echo "MODE=${MODE}"
 echo "${DUCKDB_LOCATION}"
@@ -28,20 +28,16 @@ case $MODE in
    *) ;;
 esac
 case $FEATURES in
-  "mvp")
-    ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DDUCKDB_CUSTOM_PLATFORM=wasm_mvp -DDUCKDB_EXPLICIT_PLATFORM=wasm_mvp"
-    SUFFIX="-mvp"
+  "base")
+    ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DDUCKDB_CUSTOM_PLATFORM=wasm_base -DDUCKDB_EXPLICIT_PLATFORM=wasm_base"
+    SUFFIX="-base"
     ;;
-  "eh")
-    ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DDUCKDB_CUSTOM_PLATFORM=wasm_eh -DDUCKDB_EXPLICIT_PLATFORM=wasm_eh"
-    SUFFIX="-eh"
-    ;;
-  "coi")
-    ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_EXCEPTIONS=1 -DWITH_WASM_THREADS=1 -DWITH_WASM_SIMD=1 -DWITH_WASM_BULK_MEMORY=1 -DDUCKDB_CUSTOM_PLATFORM=wasm_threads -DDUCKDB_EXPLICIT_PLATFORM=wasm_threads"
-    SUFFIX="-coi"
+  "threads")
+    ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DWITH_WASM_THREADS=1 -DWITH_WASM_SIMD=1 -DWITH_WASM_BULK_MEMORY=1 -DDUCKDB_CUSTOM_PLATFORM=wasm_threads -DDUCKDB_EXPLICIT_PLATFORM=wasm_threads"
+    SUFFIX="-threads"
     LINK_FLAGS="-pthread -sSHARED_MEMORY=1"
     ;;
-   *) ;;
+   *) echo "unknown features '${FEATURES}', expected base or threads"; exit 1 ;;
 esac
 echo "MODE=${MODE}"
 echo "FEATURES=${FEATURES}"
@@ -108,7 +104,7 @@ if [ -f ${BUILD_DIR}/duckdb_wasm.worker.js ]; then
 
   # Expose the module.
   # This will allow us to reuse the generated pthread handler and only overwrite the loading.
-  # More info: duckdb-browser-async-coi.pthread.worker.ts
+  # More info: duckdb-browser-threads.pthread.worker.ts
   printf "\nexport const onmessage = self.onmessage;\nexport function getModule() { return Module; }\nexport function setModule(m) { Module = m; }\n" \
     >> ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.pthread.js
 fi

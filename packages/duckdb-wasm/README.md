@@ -39,16 +39,11 @@ URL.revokeObjectURL(worker_url);
 webpack  
 ```ts
 import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm';
-import duckdb_wasm_next from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-base.wasm';
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-    mvp: {
+    base: {
         mainModule: duckdb_wasm,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js', import.meta.url).toString(),
-    },
-    eh: {
-        mainModule: duckdb_wasm_next,
-        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', import.meta.url).toString(),
+        mainWorker: new URL('@duckdb/duckdb-wasm/dist/duckdb-browser-base.worker.js', import.meta.url).toString(),
     },
 };
 // Select a bundle based on browser checks
@@ -62,19 +57,13 @@ await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 vite  
 ```ts
 import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
-import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
-import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-base.wasm?url';
+import duckdb_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-base.worker.js?url';
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-    mvp: {
+    base: {
         mainModule: duckdb_wasm,
-        mainWorker: mvp_worker,
-    },
-    eh: {
-        mainModule: duckdb_wasm_eh,
-        mainWorker: eh_worker,
+        mainWorker: duckdb_worker,
     },
 };
 // Select a bundle based on browser checks
@@ -90,13 +79,9 @@ static served (manually download the files from https://cdn.jsdelivr.net/npm/@du
 import * as duckdb from '@duckdb/duckdb-wasm';
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-    mvp: {
-        mainModule: 'change/me/../duckdb-mvp.wasm',
-        mainWorker: 'change/me/../duckdb-browser-mvp.worker.js',
-    },
-    eh: {
-        mainModule: 'change/m/../duckdb-eh.wasm',
-        mainWorker: 'change/m/../duckdb-browser-eh.worker.js',
+    base: {
+        mainModule: 'change/me/../duckdb-base.wasm',
+        mainWorker: 'change/me/../duckdb-browser-base.worker.js',
     },
 };
 // Select a bundle based on browser checks

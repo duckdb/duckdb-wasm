@@ -7,13 +7,9 @@
             (async () => {
                 try {
                     const DUCKDB_CONFIG = await duckdb.selectBundle({
-                        mvp: {
-                            mainModule: './duckdb.wasm',
-                            mainWorker: './duckdb-browser.worker.js',
-                        },
-                        eh: {
-                            mainModule: './duckdb-eh.wasm',
-                            mainWorker: './duckdb-browser-eh.worker.js',
+                        base: {
+                            mainModule: './duckdb-base.wasm',
+                            mainWorker: './duckdb-browser-base.worker.js',
                         },
                     });
 

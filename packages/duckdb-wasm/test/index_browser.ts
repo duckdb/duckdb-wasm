@@ -4,18 +4,14 @@ import * as check from 'wasm-feature-detect';
 
 // Configure the worker
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
-    mvp: {
-        mainModule: new URL('/static/duckdb-mvp.wasm', window.location.href).href,
-        mainWorker: new URL('/static/duckdb-browser-mvp.worker.js', window.location.href).href,
+    base: {
+        mainModule: new URL('/static/duckdb-base.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-base.worker.js', window.location.href).href,
     },
-    eh: {
-        mainModule: new URL('/static/duckdb-eh.wasm', window.location.href).href,
-        mainWorker: new URL('/static/duckdb-browser-eh.worker.js', window.location.href).href,
-    },
-    coi: {
-        mainModule: new URL('/static/duckdb-coi.wasm', window.location.href).href,
-        mainWorker: new URL('/static/duckdb-browser-coi.worker.js', window.location.href).href,
-        pthreadWorker: new URL('/static/duckdb-browser-coi.pthread.worker.js', window.location.href).href,
+    threads: {
+        mainModule: new URL('/static/duckdb-threads.wasm', window.location.href).href,
+        mainWorker: new URL('/static/duckdb-browser-threads.worker.js', window.location.href).href,
+        pthreadWorker: new URL('/static/duckdb-browser-threads.pthread.worker.js', window.location.href).href,
     },
 };
 let DUCKDB_BUNDLE: duckdb.DuckDBBundle | null = null;
@@ -27,18 +23,13 @@ describe('wasm check', () => {
             (await check.exceptions()) &&
             (await check.threads())
         ) {
-            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.coi!.mainModule);
-            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.coi!.mainWorker);
-            expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(DUCKDB_BUNDLES.coi!.pthreadWorker);
+            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.threads!.mainModule);
+            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.threads!.mainWorker);
+            expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(DUCKDB_BUNDLES.threads!.pthreadWorker);
         }
         if ((await check.exceptions()) && !(await check.threads())) {
-            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.eh!.mainModule);
-            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.eh!.mainWorker);
-            expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(null);
-        }
-        if (!(await check.exceptions())) {
-            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.mvp!.mainModule);
-            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.mvp!.mainWorker);
+            expect(DUCKDB_BUNDLE!.mainModule).toEqual(DUCKDB_BUNDLES.base.mainModule);
+            expect(DUCKDB_BUNDLE!.mainWorker).toEqual(DUCKDB_BUNDLES.base.mainWorker);
             expect(DUCKDB_BUNDLE!.pthreadWorker).toEqual(null);
         }
     });

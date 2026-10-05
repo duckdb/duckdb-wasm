@@ -20,20 +20,15 @@ export const isFirefox = () => userAgent().includes('Firefox');
 export const isSafari = () => /^((?!chrome|android).)*safari/i.test(userAgent());
 
 /** Bundles have different characteristics:
- * - MVP: minimum viable product (uses features from first stable version of WebAssembly standard)
- * - EH: exception handling
- * - COI: cross origin isolation
+ * - base: single-threaded, requires WebAssembly exception handling
+ * - threads: multi-threaded, additionally requires SIMD, threads and cross origin isolation
  */
 export interface DuckDBBundles {
-    mvp: {
+    base: {
         mainModule: string;
         mainWorker: string;
     };
-    eh?: {
-        mainModule: string;
-        mainWorker: string;
-    };
-    coi?: {
+    threads?: {
         mainModule: string;
         mainWorker: string;
         pthreadWorker: string;
@@ -43,15 +38,11 @@ export interface DuckDBBundles {
 export function getJsDelivrBundles(): DuckDBBundles {
     const jsdelivr_dist_url = `https://cdn.jsdelivr.net/npm/${PACKAGE_NAME}@${PACKAGE_VERSION}/dist/`;
     return {
-        mvp: {
-            mainModule: `${jsdelivr_dist_url}duckdb-mvp.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser-mvp.worker.js`,
+        base: {
+            mainModule: `${jsdelivr_dist_url}duckdb-base.wasm`,
+            mainWorker: `${jsdelivr_dist_url}duckdb-browser-base.worker.js`,
         },
-        eh: {
-            mainModule: `${jsdelivr_dist_url}duckdb-eh.wasm`,
-            mainWorker: `${jsdelivr_dist_url}duckdb-browser-eh.worker.js`,
-        },
-        // COI is still experimental, let the user opt in explicitly
+        // threads is still experimental, let the user opt in explicitly
     };
 }
 
@@ -107,27 +98,27 @@ export async function getPlatformFeatures(): Promise<PlatformFeatures> {
     };
 }
 
-export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
+/** Every bundle requires WebAssembly exception handling, throws if the platform does not support it */
+export async function checkPlatformSupport(): Promise<PlatformFeatures> {
     const platform = await getPlatformFeatures();
-    if (platform.wasmExceptions) {
-        if (platform.wasmSIMD && platform.wasmThreads && platform.crossOriginIsolated && bundles.coi) {
-            return {
-                mainModule: bundles.coi.mainModule,
-                mainWorker: bundles.coi.mainWorker,
-                pthreadWorker: bundles.coi.pthreadWorker,
-            };
-        }
-        if (bundles.eh) {
-            return {
-                mainModule: bundles.eh.mainModule,
-                mainWorker: bundles.eh.mainWorker,
-                pthreadWorker: null,
-            };
-        }
+    if (!platform.wasmExceptions) {
+        throw new Error('DuckDB-Wasm requires WebAssembly exception handling, which this platform does not support');
+    }
+    return platform;
+}
+
+export async function selectBundle(bundles: DuckDBBundles): Promise<DuckDBBundle> {
+    const platform = await checkPlatformSupport();
+    if (platform.wasmSIMD && platform.wasmThreads && platform.crossOriginIsolated && bundles.threads) {
+        return {
+            mainModule: bundles.threads.mainModule,
+            mainWorker: bundles.threads.mainWorker,
+            pthreadWorker: bundles.threads.pthreadWorker,
+        };
     }
     return {
-        mainModule: bundles.mvp.mainModule,
-        mainWorker: bundles.mvp.mainWorker,
+        mainModule: bundles.base.mainModule,
+        mainWorker: bundles.base.mainWorker,
         pthreadWorker: null,
     };
 }

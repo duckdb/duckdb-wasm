@@ -10,35 +10,28 @@ function printErr(err) {
     if (err) return console.log(err);
 }
 
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-mvp.wasm'), './duckdb-mvp.wasm', printErr);
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-eh.wasm'), './duckdb-eh.wasm', printErr);
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-coi.wasm'), './duckdb-coi.wasm', printErr);
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-mvp.worker.js'), './duckdb-browser-mvp.worker.js', printErr);
+fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-base.wasm'), './duckdb-base.wasm', printErr);
+fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-threads.wasm'), './duckdb-threads.wasm', printErr);
+fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-base.worker.js'), './duckdb-browser-base.worker.js', printErr);
 fs.copyFile(
-    path.resolve(DUCKDB_DIST, 'duckdb-browser-mvp.worker.js.map'),
-    './duckdb-browser-mvp.worker.js.map',
+    path.resolve(DUCKDB_DIST, 'duckdb-browser-base.worker.js.map'),
+    './duckdb-browser-base.worker.js.map',
     printErr,
 );
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-eh.worker.js'), './duckdb-browser-eh.worker.js', printErr);
+fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-threads.worker.js'), './duckdb-browser-threads.worker.js', printErr);
 fs.copyFile(
-    path.resolve(DUCKDB_DIST, 'duckdb-browser-eh.worker.js.map'),
-    './duckdb-browser-eh.worker.js.map',
-    printErr,
-);
-fs.copyFile(path.resolve(DUCKDB_DIST, 'duckdb-browser-coi.worker.js'), './duckdb-browser-coi.worker.js', printErr);
-fs.copyFile(
-    path.resolve(DUCKDB_DIST, 'duckdb-browser-coi.worker.js.map'),
-    './duckdb-browser-coi.worker.js.map',
+    path.resolve(DUCKDB_DIST, 'duckdb-browser-threads.worker.js.map'),
+    './duckdb-browser-threads.worker.js.map',
     printErr,
 );
 fs.copyFile(
-    path.resolve(DUCKDB_DIST, 'duckdb-browser-coi.pthread.worker.js'),
-    './duckdb-browser-coi.pthread.worker.js',
+    path.resolve(DUCKDB_DIST, 'duckdb-browser-threads.pthread.worker.js'),
+    './duckdb-browser-threads.pthread.worker.js',
     printErr,
 );
 fs.copyFile(
-    path.resolve(DUCKDB_DIST, 'duckdb-browser-coi.pthread.worker.js.map'),
-    './duckdb-browser-coi.pthread.worker.js.map',
+    path.resolve(DUCKDB_DIST, 'duckdb-browser-threads.pthread.worker.js.map'),
+    './duckdb-browser-threads.pthread.worker.js.map',
     printErr,
 );
 
