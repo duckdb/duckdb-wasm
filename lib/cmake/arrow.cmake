@@ -1,6 +1,11 @@
 include(ExternalProject)
 
 set(ARROW_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+if(EMSCRIPTEN)
+  # Arrow's vendored xxhash includes emscripten's NEON compatibility header within extern "C" when SIMD is
+  # enabled, which no longer compiles with recent emscripten. Force the scalar implementation.
+  set(ARROW_CXX_FLAGS "${ARROW_CXX_FLAGS} -DXXH_VECTOR=0")
+endif()
 
 set(ARROW_FLAGS
     -G${CMAKE_GENERATOR}

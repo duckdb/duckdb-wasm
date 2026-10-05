@@ -27,8 +27,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  EMSCRIPTEN_VERSION: '3.1.71'
-  EMSCRIPTEN_VERSION_COI: '3.1.57'
+  EMSCRIPTEN_VERSION: '6.0.9'
+  EMSCRIPTEN_VERSION_COI: '6.0.9'
   DEFAULT_USE_GENERATED_EXPORTED_LIST: 'no'
   # DuckDB >= v2.0 no longer derives its version from git tags, the wasm builds pick this up instead
   OVERRIDE_GIT_DESCRIBE: ${{ inputs.override_git_describe }}

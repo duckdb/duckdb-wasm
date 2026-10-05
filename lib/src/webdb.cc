@@ -578,7 +578,7 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
     return arrow::Status::OK();
 }
 
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 void duckdb_web_udf_scalar_call(WASMResponse*, size_t, const void*, size_t, const void*, size_t) {}
 #else
 extern "C" void duckdb_web_udf_scalar_call(WASMResponse* response, size_t function_id, const void* desc_buf,

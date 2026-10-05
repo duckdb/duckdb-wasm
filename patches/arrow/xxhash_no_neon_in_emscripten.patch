@@ -1,0 +1,13 @@
+diff --git a/cpp/src/arrow/vendored/xxhash/xxhash.h b/cpp/src/arrow/vendored/xxhash/xxhash.h
+index a18e8c762..a82888618 100644
+--- a/cpp/src/arrow/vendored/xxhash/xxhash.h
++++ b/cpp/src/arrow/vendored/xxhash/xxhash.h
+@@ -3429,7 +3429,7 @@ XXH_PUBLIC_API XXH64_hash_t XXH64_hashFromCanonical(XXH_NOESCAPE const XXH64_can
+ #  if defined(__ARM_NEON__) || defined(__ARM_NEON) \
+    || (defined(_M_ARM) && _M_ARM >= 7) \
+    || defined(_M_ARM64) || defined(_M_ARM64EC) \
+-   || (defined(__wasm_simd128__) && XXH_HAS_INCLUDE(<arm_neon.h>)) /* WASM SIMD128 via SIMDe */
++   || (defined(__wasm_simd128__) && !defined(__EMSCRIPTEN__) && XXH_HAS_INCLUDE(<arm_neon.h>)) /* WASM SIMD128 via SIMDe */
+ #    define inline __inline__  /* circumvent a clang bug */
+ #    include <arm_neon.h>
+ #    undef inline

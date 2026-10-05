@@ -6,7 +6,7 @@ namespace web {
 
 enum class Environment { WEB, NATIVE };
 
-#if EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 constexpr auto ENVIRONMENT = Environment::WEB;
 #else
 constexpr auto ENVIRONMENT = Environment::NATIVE;
