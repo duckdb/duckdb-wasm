@@ -21,7 +21,7 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -DDUCKDB_WASM=1 -DFSST_MUST_ALIGN")
 
 if(DUCKDB_WASM_LOADABLE_EXTENSIONS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWASM_LOADABLE_EXTENSIONS=1 -DDUCKDB_EXTENSION_AUTOLOAD_DEFAULT=1 -fPIC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_EXTENSION_AUTOLOAD_DEFAULT=1 -fPIC")
 else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_EXTENSION_LOAD=1")
 endif()
@@ -182,6 +182,12 @@ include("${CMAKE_SOURCE_DIR}/cmake/gflags.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/googletest.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
 
+# Only DuckDB-Wasm itself needs to know whether extensions are loadable, for DuckDB it is a matter of which
+# external extension provider is registered
+if(DUCKDB_WASM_LOADABLE_EXTENSIONS)
+  add_compile_definitions(WASM_LOADABLE_EXTENSIONS=1)
+endif()
+
 # ---------------------------------------------------------------------------
 # Code coverage
 
@@ -250,6 +256,7 @@ if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(JSON_EXTENSION_CACHE_FILE "${EXTENSION_CACHE_DIR}/json")
   set(DUCKDB_WEB_JSON "")
 
+  target_sources(duckdb_web PRIVATE ${CMAKE_SOURCE_DIR}/src/extension_provider.cc)
   target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
 else()
   add_library(

@@ -1,0 +1,141 @@
+diff --git a/src/function/table/system/duckdb_extensions.cpp b/src/function/table/system/duckdb_extensions.cpp
+index 0c660e7841..7eeda36e7b 100644
+--- a/src/function/table/system/duckdb_extensions.cpp
++++ b/src/function/table/system/duckdb_extensions.cpp
+@@ -6,6 +6,7 @@
+ #include "duckdb/function/function_set.hpp"
+ #include "duckdb/main/client_context.hpp"
+ #include "duckdb/main/database.hpp"
++#include "duckdb/main/extension/external_extension_provider.hpp"
+ #include "duckdb/main/extension_helper.hpp"
+ 
+ #include "duckdb/common/serializer/buffered_file_reader.hpp"
+@@ -111,7 +112,10 @@ unique_ptr<GlobalTableFunctionState> DuckDBExtensionsInit(ClientContext &context
+ 
+ 	// Secondly we scan all installed extensions and their install info
+ #ifndef WASM_LOADABLE_EXTENSIONS
+-	auto ext_directories = ExtensionHelper::GetExtensionDirectoryPath(context);
++	vector<string> ext_directories;
++	if (DBConfig::GetConfig(context).GetExternalExtensionProvider().UsesExtensionDirectory()) {
++		ext_directories = ExtensionHelper::GetExtensionDirectoryPath(context);
++	}
+ 	for (const auto &ext_directory : ext_directories) {
+ 		fs.ListFiles(ext_directory, [&](const string &path, bool is_directory) {
+ 			if (!StringUtil::EndsWith(path, ".duckdb_extension")) {
+diff --git a/src/include/duckdb/main/extension/external_extension_provider.hpp b/src/include/duckdb/main/extension/external_extension_provider.hpp
+index 7aadf00763..218b09a981 100644
+--- a/src/include/duckdb/main/extension/external_extension_provider.hpp
++++ b/src/include/duckdb/main/extension/external_extension_provider.hpp
+@@ -18,6 +18,7 @@ class DatabaseInstance;
+ class FileSystem;
+ class ExtensionInstallInfo;
+ struct ExtensionInstallOptions;
++struct ExtensionInitResult;
+ 
+ //! Installs external extensions and opens their libraries. The base class is the "none" provider, which refuses both;
+ //! a linked loadable_extensions library replaces it for every database opened.
+@@ -32,6 +33,14 @@ public:
+ 	virtual unique_ptr<ExtensionInstallInfo> Install(DatabaseInstance &db, FileSystem &fs, const string &local_path,
+ 	                                                 const string &extension, ExtensionInstallOptions &options,
+ 	                                                 optional_ptr<ClientContext> context);
++	//! Whether installed extensions are kept in the local extension directory. A provider that has none is not handed
++	//! a local path on Install, and locates, verifies and opens extensions by itself in TryInitialLoad
++	virtual bool UsesExtensionDirectory() const;
++	//! Only called when UsesExtensionDirectory() is false, in place of the load from the local extension directory.
++	//! Returns false and sets error when the extension could not be found
++	virtual bool TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const string &extension,
++	                            const string &repository_name, bool core_only, ExtensionInitResult &result,
++	                            string &error);
+ 	//! Open the library of an external extension, throws if it cannot be opened
+ 	virtual void *OpenLibrary(const string &filename, const string &filebase);
+ 	//! Look up a function in an opened library, returns nullptr if it is not there
+diff --git a/src/main/extension/extension_helper.cpp b/src/main/extension/extension_helper.cpp
+index 7ab8b93030..3fc0b3e500 100644
+--- a/src/main/extension/extension_helper.cpp
++++ b/src/main/extension/extension_helper.cpp
+@@ -332,6 +332,10 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+ 	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
+ 
+ #ifndef WASM_LOADABLE_EXTENSIONS
++	if (!DBConfig::GetConfig(db).GetExternalExtensionProvider().UsesExtensionDirectory()) {
++		// nothing is installed locally, so there is nothing to update
++		return result;
++	}
+ 	identifier_set_t seen_extensions;
+ 
+ 	// scan the install directory for installed extensions
+@@ -356,6 +360,10 @@ vector<ExtensionUpdateResult> ExtensionHelper::UpdateExtensions(ClientContext &c
+ ExtensionUpdateResult ExtensionHelper::UpdateExtension(ClientContext &context, const string &extension_name) {
+ 	auto &fs = FileSystem::GetFileSystem(context);
+ 	DatabaseInstance &db = DatabaseInstance::GetDatabase(context);
++	if (!DBConfig::GetConfig(db).GetExternalExtensionProvider().UsesExtensionDirectory()) {
++		throw InvalidInputException("Failed to update the extension '%s', extensions are not installed locally",
++		                            extension_name);
++	}
+ 	auto ext_directory = ExtensionHelper::ExtensionDirectory(db, fs);
+ 
+ 	auto full_extension_path = fs.JoinPath(ext_directory, extension_name + ".duckdb_extension");
+diff --git a/src/main/extension/extension_install.cpp b/src/main/extension/extension_install.cpp
+index e07474b21c..7e8f804745 100644
+--- a/src/main/extension/extension_install.cpp
++++ b/src/main/extension/extension_install.cpp
+@@ -199,7 +199,10 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(DatabaseInsta
+ 	// Install is currently a no-op
+ 	return nullptr;
+ #endif
+-	string local_path = ExtensionDirectory(db, fs);
++	string local_path;
++	if (DBConfig::GetConfig(db).GetExternalExtensionProvider().UsesExtensionDirectory()) {
++		local_path = ExtensionDirectory(db, fs);
++	}
+ 	return InstallExtensionInternal(db, fs, local_path, extension, options);
+ }
+ 
+@@ -211,7 +214,10 @@ unique_ptr<ExtensionInstallInfo> ExtensionHelper::InstallExtension(ClientContext
+ #endif
+ 	auto &db = DatabaseInstance::GetDatabase(context);
+ 	auto &fs = FileSystem::GetFileSystem(context);
+-	string local_path = ExtensionDirectory(context);
++	string local_path;
++	if (DBConfig::GetConfig(db).GetExternalExtensionProvider().UsesExtensionDirectory()) {
++		local_path = ExtensionDirectory(context);
++	}
+ 	return InstallExtensionInternal(db, fs, local_path, extension, options, context);
+ }
+ 
+diff --git a/src/main/extension/extension_load.cpp b/src/main/extension/extension_load.cpp
+index e951fce32c..779cfbb416 100644
+--- a/src/main/extension/extension_load.cpp
++++ b/src/main/extension/extension_load.cpp
+@@ -478,6 +478,9 @@ bool ExtensionHelper::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const
+ 	if (!Settings::Get<EnableExternalAccessSetting>(db)) {
+ 		throw PermissionException("Loading external extensions is disabled through configuration");
+ 	}
++	if (!provider.UsesExtensionDirectory()) {
++		return provider.TryInitialLoad(db, fs, extension, repository_name, core_only, result, error);
++	}
+ 	auto filename = fs.ConvertSeparators(extension);
+ 
+ 	bool direct_load;
+diff --git a/src/main/extension/external_extension_provider.cpp b/src/main/extension/external_extension_provider.cpp
+index 280791fa75..e9a4356683 100644
+--- a/src/main/extension/external_extension_provider.cpp
++++ b/src/main/extension/external_extension_provider.cpp
+@@ -22,6 +22,17 @@ unique_ptr<ExtensionInstallInfo> ExternalExtensionProvider::Install(DatabaseInst
+ 	throw PermissionException("Installing external extensions is not supported: %s", NO_LOADER_HINT);
+ }
+ 
++bool ExternalExtensionProvider::UsesExtensionDirectory() const {
++	return true;
++}
++
++bool ExternalExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const string &extension,
++                                               const string &repository_name, bool core_only,
++                                               ExtensionInitResult &result, string &error) {
++	throw InternalException("External extension provider \"%s\" loads extensions from the extension directory",
++	                        GetName());
++}
++
+ void *ExternalExtensionProvider::OpenLibrary(const string &filename, const string &filebase) {
+ 	throw PermissionException("Loading external extensions is not supported: %s", NO_LOADER_HINT);
+ }

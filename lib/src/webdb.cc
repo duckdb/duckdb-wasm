@@ -56,6 +56,7 @@
 #include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
 #include "duckdb/web/environment.h"
+#include "duckdb/web/extension_provider.h"
 #include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
@@ -1074,6 +1075,10 @@ arrow::Status WebDB::Open(std::string_view args_json) {
         if (config.GetHTTPUtil().GetName() != string("WasmHTTPUtils")) {
             config.SetHTTPUtil(make_shared_ptr<HTTPWasmUtil>());
         }
+
+#ifdef WASM_LOADABLE_EXTENSIONS
+        config.SetExternalExtensionProvider(make_shared_ptr<WasmExtensionProvider>());
+#endif
 
         if (!config.encryption_util) {
             config.encryption_util = make_shared_ptr<duckdb_mbedtls::MbedTlsWrapper::AESStateMBEDTLSFactory>();
