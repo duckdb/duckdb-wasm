@@ -12,3 +12,4 @@ duckdb_extension_load(tpcds)
 duckdb_extension_load(tpch)
 
 #duckdb_extension_load(httpfs)
+
