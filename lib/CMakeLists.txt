@@ -220,7 +220,6 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/arrow_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/arrow_stream_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/http_wasm.cc
-  ${CMAKE_SOURCE_DIR}/src/arrow_type_mapping.cc
   ${CMAKE_SOURCE_DIR}/src/config.cc
   ${CMAKE_SOURCE_DIR}/src/csv_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/functions/table_function_relation.cc
@@ -233,11 +232,8 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/io/ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/memory_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/web_filesystem.cc
-  ${CMAKE_SOURCE_DIR}/src/json_analyzer.cc
   ${CMAKE_SOURCE_DIR}/src/json_dataview.cc
   ${CMAKE_SOURCE_DIR}/src/json_insert_options.cc
-  ${CMAKE_SOURCE_DIR}/src/json_parser.cc
-  ${CMAKE_SOURCE_DIR}/src/json_table.cc
   ${CMAKE_SOURCE_DIR}/src/json_typedef.cc
   ${CMAKE_SOURCE_DIR}/src/udf.cc
   ${CMAKE_SOURCE_DIR}/src/utils/parking_lot.cc
@@ -263,14 +259,9 @@ else()
     duckdb_web_json
     ${CMAKE_SOURCE_DIR}/src/extensions/json_extension.cc)
 
-  set(EXTENSION_CACHE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.ccache/extension")
-  set(JSON_EXTENSION_CACHE_FILE "${EXTENSION_CACHE_DIR}/json")
-
-  set(DUCKDB_WEB_JSON "")
-  if(EXISTS "${JSON_EXTENSION_CACHE_FILE}")
-    set(DUCKDB_WEB_JSON "duckdb_web_json")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
-  endif()
+  # Without loadable extensions parquet and json are linked statically, json is needed by insertJSONFromPath
+  set(DUCKDB_WEB_JSON "duckdb_web_json")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
 
   target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} arrow rapidjson ${THREAD_LIBS})
   target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
@@ -319,9 +310,6 @@ if(NOT EMSCRIPTEN)
       ${CMAKE_SOURCE_DIR}/test/insert_arrow_test.cc
       ${CMAKE_SOURCE_DIR}/test/insert_csv_test.cc
       ${CMAKE_SOURCE_DIR}/test/insert_json_test.cc
-      ${CMAKE_SOURCE_DIR}/test/json_analyzer_test.cc
-      ${CMAKE_SOURCE_DIR}/test/json_table_test.cc
-#      ${CMAKE_SOURCE_DIR}/test/json_typedef_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_dataview_test.cc
       ${CMAKE_SOURCE_DIR}/test/memory_filesystem_test.cc
       ${CMAKE_SOURCE_DIR}/test/parquet_test.cc

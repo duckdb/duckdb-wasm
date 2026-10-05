@@ -52,7 +52,6 @@
 #include "duckdb/web/arrow_casts.h"
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/arrow_stream_buffer.h"
-#include "duckdb/web/arrow_type_mapping.h"
 #include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
 #include "duckdb/web/environment.h"
@@ -66,10 +65,9 @@
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/web_filesystem.h"
-#include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_dataview.h"
+#include "duckdb/parser/keyword_helper.hpp"
 #include "duckdb/web/json_insert_options.h"
-#include "duckdb/web/json_table.h"
 #include "duckdb/web/udf.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/wasm_response.h"
@@ -139,6 +137,15 @@ vector<string> ColumnNames(const vector<Identifier>& identifiers) {
         names.push_back(identifier.GetIdentifierName());
     }
     return names;
+}
+/// Encode column types as the struct value the columns parameter of read_csv / read_json expects
+Value ColumnTypesValue(const child_list_t<LogicalType>& columns) {
+    child_list_t<Value> values;
+    values.reserve(columns.size());
+    for (auto& col : columns) {
+        values.emplace_back(col.first, Value(col.second.ToString()));
+    }
+    return Value::STRUCT(std::move(values));
 }
 /// Can a stream be opened on a submitted query result?
 bool CanStream(const QueryResult& result) {
@@ -560,7 +567,7 @@ arrow::Status WebDB::Connection::CreateScalarFunction(std::string_view def_json)
 
     // Read return type
     auto name = def->name;
-    ARROW_ASSIGN_OR_RAISE(auto ret_type, mapArrowTypeToDuckDB(*def->return_type));
+    auto ret_type = def->return_type;
 
     // UDF lambda
     auto udf = [&, udf = std::move(def)](DataChunk& chunk, ExpressionState& state, Vector& vec) {
@@ -767,13 +774,7 @@ arrow::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::s
             named_params.insert({"timestampformat", Value(*options.timestampformat)});
         }
         if (options.columns.has_value()) {
-            child_list_t<Value> columns;
-            columns.reserve(options.columns.value().size());
-            for (auto& col : options.columns.value()) {
-                ARROW_ASSIGN_OR_RAISE(auto type, mapArrowTypeToDuckDB(*col->type()));
-                columns.push_back(make_pair(Identifier(col->name()), Value(type.ToString())));
-            }
-            named_params.insert({"columns", Value::STRUCT(std::move(columns))});
+            named_params.insert({"columns", ColumnTypesValue(*options.columns)});
         }
         named_params.insert({"auto_detect", Value::BOOLEAN(options.auto_detect.value_or(true))});
 
@@ -807,32 +808,63 @@ arrow::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::
         auto schema_name = options.schema_name.empty() ? "main" : options.schema_name;
         if (options.table_name.empty()) return arrow::Status::Invalid("missing 'name' option");
 
-        // Create the input file stream
-        auto ifs = duckdb::make_uniq<io::InputFileStream>(webdb_.file_page_buffer_, path);
-        // Do we need to run the analyzer?
-        json::TableType table_type;
-        if (!options.table_shape || options.table_shape == json::JSONTableShape::UNRECOGNIZED ||
-            options.auto_detect.value_or(false)) {
-            io::InputFileStream ifs_copy{*ifs};
-            ARROW_RETURN_NOT_OK(json::InferTableType(ifs_copy, table_type));
-
-        } else {
-            table_type.shape = *options.table_shape;
-            table_type.type = arrow::struct_(options.columns.value_or(std::vector<std::shared_ptr<arrow::Field>>{}));
+        /// Detect the table shape from the first character unless it is given
+        auto shape = options.table_shape.value_or(json::JSONTableShape::UNRECOGNIZED);
+        if (shape == json::JSONTableShape::UNRECOGNIZED || options.auto_detect.value_or(false)) {
+            io::InputFileStream ifs{webdb_.file_page_buffer_, path};
+            char c;
+            while (ifs.get(c) && std::isspace(static_cast<unsigned char>(c))) {
+            }
+            if (!ifs) return arrow::Status::Invalid("JSON document is empty");
+            if (c == '[') {
+                shape = json::JSONTableShape::ROW_ARRAY;
+            } else if (c == '{') {
+                shape = json::JSONTableShape::COLUMN_OBJECT;
+            } else {
+                return arrow::Status::Invalid("JSON document is neither an array of rows nor an object of columns");
+            }
         }
-        // Resolve the table reader
-        ARROW_ASSIGN_OR_RAISE(auto table_reader, json::TableReader::Resolve(std::move(ifs), table_type));
 
-        /// Execute the arrow scan
-        auto factory = duckdb::make_shared_ptr<PointerArrowScanFactory>(
-            reinterpret_cast<uintptr_t>(&table_reader), json::TableReader::CreateStream, json::TableReader::GetSchema);
-        auto func = connection_.TableFunction("arrow_scan", vector<Value>{}, named_parameter_map_t{}, factory);
+        /// Read the document with read_json
+        std::vector<Value> unnamed_params;
+        unnamed_params.emplace_back(std::string{path});
+        std::unordered_map<std::string, Value> named_params;
+        shared_ptr<Relation> rel;
+        if (shape == json::JSONTableShape::ROW_ARRAY) {
+            // [{"a":1,"b":2}, {"a":3,"b":4}]
+            named_params.insert({"format", Value("array")});
+            if (options.columns.has_value()) {
+                named_params.insert({"columns", ColumnTypesValue(*options.columns)});
+            }
+            rel = duckdb::make_shared_ptr<TableFunctionRelation>(connection_.context, "read_json",
+                                                                 std::move(unnamed_params), named_params);
+        } else {
+            // {"a":[1,3],"b":[2,4]}: a single record of lists that is unnested into rows
+            named_params.insert({"format", Value("unstructured")});
+            named_params.insert({"records", Value("true")});
+            named_params.insert({"maximum_depth", Value::BIGINT(-1)});
+            if (options.columns.has_value()) {
+                child_list_t<LogicalType> list_columns;
+                for (auto& col : *options.columns) {
+                    list_columns.emplace_back(col.first, LogicalType::LIST(col.second));
+                }
+                named_params.insert({"columns", ColumnTypesValue(list_columns)});
+            }
+            rel = duckdb::make_shared_ptr<TableFunctionRelation>(connection_.context, "read_json",
+                                                                 std::move(unnamed_params), named_params);
+            vector<string> unnest_columns;
+            for (auto& column : rel->Columns()) {
+                unnest_columns.push_back("unnest(" + KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"') +
+                                         ") AS " + KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"'));
+            }
+            rel = rel->Project(unnest_columns);
+        }
 
         /// Create or insert
         if (options.create_new) {
-            func->Create(Identifier(schema_name), Identifier(options.table_name));
+            rel->Create(Identifier(schema_name), Identifier(options.table_name));
         } else {
-            func->Insert(Identifier(schema_name), Identifier(options.table_name));
+            rel->Insert(Identifier(schema_name), Identifier(options.table_name));
         }
 
     } catch (const std::exception& e) {

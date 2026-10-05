@@ -23,7 +23,6 @@
 #include "arrow/type_traits.h"
 #include "arrow/util/value_parsing.h"
 #include "duckdb/common/string_util.hpp"
-#include "duckdb/web/json_parser.h"
 #include "duckdb/web/json_typedef.h"
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"

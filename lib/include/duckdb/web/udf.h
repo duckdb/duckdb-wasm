@@ -6,7 +6,8 @@
 #include <string>
 #include <string_view>
 
-#include "arrow/type_fwd.h"
+#include "arrow/status.h"
+#include "duckdb/common/types.hpp"
 #include "rapidjson/document.h"
 
 namespace duckdb {
@@ -20,7 +21,7 @@ struct UDFFunctionDeclaration {
     /// The argument count
     size_t argument_count = 0;
     /// The return type
-    std::shared_ptr<arrow::DataType> return_type = {};
+    duckdb::LogicalType return_type = duckdb::LogicalType::INVALID;
 
     /// Read from a document
     arrow::Status ReadFrom(const rapidjson::Document& doc);

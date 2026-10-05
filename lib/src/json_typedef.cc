@@ -1,5 +1,7 @@
 #include "duckdb/web/json_typedef.h"
 
+#include "duckdb/common/optional_idx.hpp"
+
 #include <arrow/result.h>
 
 #include <algorithm>
@@ -18,7 +20,6 @@
 #include "arrow/type_fwd.h"
 #include "arrow/type_traits.h"
 #include "arrow/util/value_parsing.h"
-#include "duckdb/web/json_parser.h"
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
 #include "rapidjson/rapidjson.h"
@@ -287,6 +288,150 @@ Result<std::vector<std::shared_ptr<arrow::Field>>> SQLToArrowFields(const rapidj
         ARROW_ASSIGN_OR_RAISE(out[i], SQLToArrowField(fields[i]));
     }
     return std::move(out);
+}
+
+namespace {
+
+Result<LogicalType> ReadDuckDBDecimalType(const rapidjson::Value::ConstObject& obj, int32_t default_precision,
+                                          int32_t default_scale) {
+    ARROW_ASSIGN_OR_RAISE(const int32_t precision, GetIntField<int32_t>(obj, "precision", default_precision));
+    ARROW_ASSIGN_OR_RAISE(const int32_t scale, GetIntField<int32_t>(obj, "scale", default_scale));
+    if (precision <= 0) return Status::Invalid("Decimal precision must be > 0");
+    if (scale < 0) return Status::Invalid("Decimal scale must be >= 0");
+    return LogicalType::DECIMAL(precision, scale);
+}
+
+Result<LogicalType> ReadDuckDBTimestampType(const rapidjson::Value::ConstObject& obj) {
+    const auto& it_tz = obj.FindMember("timezone");
+    if (it_tz == obj.MemberEnd()) return LogicalType::TIMESTAMP;
+    if (!it_tz->value.IsString()) return Status::Invalid("timezone is not a string");
+    return LogicalType::TIMESTAMP_TZ;
+}
+
+Result<LogicalType> ReadDuckDBListType(const rapidjson::Value::ConstObject& obj) {
+    ARROW_ASSIGN_OR_RAISE(const auto value, GetMemberObject(obj, "valueType"));
+    ARROW_ASSIGN_OR_RAISE(const auto value_type, SQLToDuckDBType(value));
+    return LogicalType::LIST(value_type);
+}
+
+Result<LogicalType> ReadDuckDBArrayType(const rapidjson::Value::ConstObject& obj) {
+    ARROW_ASSIGN_OR_RAISE(const auto value, GetMemberObject(obj, "valueType"));
+    ARROW_ASSIGN_OR_RAISE(const auto value_type, SQLToDuckDBType(value));
+    ARROW_ASSIGN_OR_RAISE(const int32_t list_size, GetIntField<int32_t>(obj, "listSize"));
+    if (list_size <= 0) return Status::Invalid("FixedSizeList listSize must be > 0");
+    return LogicalType::ARRAY(value_type, list_size);
+}
+
+Result<LogicalType> ReadDuckDBMapType(const rapidjson::Value::ConstObject& obj) {
+    ARROW_ASSIGN_OR_RAISE(const auto key, GetMemberObject(obj, "keyType"));
+    ARROW_ASSIGN_OR_RAISE(const auto value, GetMemberObject(obj, "valueType"));
+    ARROW_ASSIGN_OR_RAISE(const auto key_type, SQLToDuckDBType(key));
+    ARROW_ASSIGN_OR_RAISE(const auto value_type, SQLToDuckDBType(value));
+    return LogicalType::MAP(key_type, value_type);
+}
+
+Result<LogicalType> ReadDuckDBStructType(const rapidjson::Value::ConstObject& obj) {
+    ARROW_ASSIGN_OR_RAISE(const auto children, GetArrayField(obj, "fields"));
+    ARROW_ASSIGN_OR_RAISE(auto children_fields, SQLToDuckDBFields(children));
+    return LogicalType::STRUCT(std::move(children_fields));
+}
+
+Result<LogicalType> ReadDuckDBUnionType(const rapidjson::Value::ConstObject& obj) {
+    ARROW_ASSIGN_OR_RAISE(const auto children, GetArrayField(obj, "fields"));
+    ARROW_ASSIGN_OR_RAISE(auto children_fields, SQLToDuckDBFields(children));
+    return LogicalType::UNION(std::move(children_fields));
+}
+
+}  // namespace
+
+/// Read a DuckDB type, the type names are the ones arrowToSQLType produces on the JavaScript side
+arrow::Result<duckdb::LogicalType> SQLToDuckDBType(const rapidjson::Value::ConstObject& type) {
+    ARROW_ASSIGN_OR_RAISE(const auto obj, GetStringField(type, "sqlType", ""));
+
+    using TypeResolver = std::function<Result<LogicalType>(const rapidjson::Value::ConstObject&)>;
+    static std::unordered_map<std::string_view, TypeResolver> DUCKDB_TYPE_MAPPING{
+        {"binary", [](auto&) { return LogicalType::BLOB; }},
+        {"bool", [](auto&) { return LogicalType::BOOLEAN; }},
+        {"boolean", [](auto&) { return LogicalType::BOOLEAN; }},
+        {"date", [](auto&) { return LogicalType::DATE; }},
+        {"date32", [](auto&) { return LogicalType::DATE; }},
+        {"date32[d]", [](auto&) { return LogicalType::DATE; }},
+        {"date64", [](auto&) { return LogicalType::DATE; }},
+        {"date64[ms]", [](auto&) { return LogicalType::DATE; }},
+        {"daytimeinterval", [](auto&) { return LogicalType::INTERVAL; }},
+        {"decimal", [](auto& o) { return ReadDuckDBDecimalType(o, 0, 0); }},
+        {"decimal128", [](auto& o) { return ReadDuckDBDecimalType(o, 0, 0); }},
+        {"decimal256", [](auto& o) { return ReadDuckDBDecimalType(o, 12, 2); }},
+        {"double", [](auto&) { return LogicalType::DOUBLE; }},
+        {"duration", [](auto&) { return LogicalType::INTERVAL; }},
+        {"duration[ms]", [](auto&) { return LogicalType::INTERVAL; }},
+        {"duration[ns]", [](auto&) { return LogicalType::INTERVAL; }},
+        {"duration[s]", [](auto&) { return LogicalType::INTERVAL; }},
+        {"duration[us]", [](auto&) { return LogicalType::INTERVAL; }},
+        {"fixedsizebinary", [](auto&) { return LogicalType::BLOB; }},
+        {"fixedsizelist", &ReadDuckDBArrayType},
+        {"float", [](auto&) { return LogicalType::FLOAT; }},
+        {"float16", [](auto&) { return LogicalType::FLOAT; }},
+        {"float32", [](auto&) { return LogicalType::FLOAT; }},
+        {"float64", [](auto&) { return LogicalType::DOUBLE; }},
+        {"halffloat", [](auto&) { return LogicalType::FLOAT; }},
+        {"int16", [](auto&) { return LogicalType::SMALLINT; }},
+        {"int32", [](auto&) { return LogicalType::INTEGER; }},
+        {"int64", [](auto&) { return LogicalType::BIGINT; }},
+        {"int8", [](auto&) { return LogicalType::TINYINT; }},
+        {"interval[dt]", [](auto&) { return LogicalType::INTERVAL; }},
+        {"interval[m]", [](auto&) { return LogicalType::INTERVAL; }},
+        {"largebinary", [](auto&) { return LogicalType::BLOB; }},
+        {"largeutf8", [](auto&) { return LogicalType::VARCHAR; }},
+        {"list", &ReadDuckDBListType},
+        {"map", &ReadDuckDBMapType},
+        {"monthinterval", [](auto&) { return LogicalType::INTERVAL; }},
+        {"null", [](auto&) { return LogicalType::SQLNULL; }},
+        {"string", [](auto&) { return LogicalType::VARCHAR; }},
+        {"struct", &ReadDuckDBStructType},
+        {"time", [](auto&) { return LogicalType::TIME; }},
+        {"time32[ms]", [](auto&) { return LogicalType::TIME; }},
+        {"time32[s]", [](auto&) { return LogicalType::TIME; }},
+        {"time64[ns]", [](auto&) { return LogicalType::TIME; }},
+        {"time64[us]", [](auto&) { return LogicalType::TIME; }},
+        {"time[ms]", [](auto&) { return LogicalType::TIME; }},
+        {"time[ns]", [](auto&) { return LogicalType::TIME; }},
+        {"time[s]", [](auto&) { return LogicalType::TIME; }},
+        {"time[us]", [](auto&) { return LogicalType::TIME; }},
+        // All timestamp units map to microseconds, as the Arrow types did before
+        {"timestamp", &ReadDuckDBTimestampType},
+        {"timestamp[s]", &ReadDuckDBTimestampType},
+        {"timestamp[ms]", &ReadDuckDBTimestampType},
+        {"timestamp[us]", &ReadDuckDBTimestampType},
+        {"timestamp[ns]", &ReadDuckDBTimestampType},
+        {"uint16", [](auto&) { return LogicalType::USMALLINT; }},
+        {"uint32", [](auto&) { return LogicalType::UINTEGER; }},
+        {"uint64", [](auto&) { return LogicalType::UBIGINT; }},
+        {"uint8", [](auto&) { return LogicalType::UTINYINT; }},
+        {"union", &ReadDuckDBUnionType},
+        {"utf8", [](auto&) { return LogicalType::VARCHAR; }},
+    };
+
+    std::string objLower{obj.data(), obj.length()};
+    std::transform(objLower.begin(), objLower.end(), objLower.begin(), [](unsigned char c) { return std::tolower(c); });
+    auto iter = DUCKDB_TYPE_MAPPING.find(objLower);
+    if (iter == DUCKDB_TYPE_MAPPING.end()) return Status::Invalid("Unrecognized type name: ", obj);
+    return iter->second(type);
+}
+
+/// Read DuckDB fields from an array
+arrow::Result<duckdb::child_list_t<duckdb::LogicalType>> SQLToDuckDBFields(const rapidjson::Value::ConstArray& fields) {
+    child_list_t<LogicalType> out;
+    out.reserve(fields.Size());
+    for (const rapidjson::Value& field : fields) {
+        if (!field.IsObject()) return Status::Invalid("Field was not a JSON object");
+        const auto& field_obj = field.GetObject();
+        ARROW_ASSIGN_OR_RAISE(auto name, GetStringField(field_obj, "name", ""));
+        if (name == "") return Status::Invalid("invalid field name");
+        ARROW_ASSIGN_OR_RAISE(auto type, SQLToDuckDBType(field_obj));
+        out.emplace_back(Identifier(std::string{name}), std::move(type));
+    }
+    return out;
 }
 
 /// Serialize a SQL type as string
