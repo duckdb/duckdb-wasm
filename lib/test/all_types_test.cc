@@ -17,7 +17,6 @@
 #include "arrow/util/decimal.h"
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/web/environment.h"
-#include "duckdb/web/json_parser.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"
 

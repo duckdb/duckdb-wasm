@@ -15,7 +15,6 @@
 #include "duckdb/common/types/timestamp.hpp"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/memory_filesystem.h"
-#include "duckdb/web/json_parser.h"
 #include "duckdb/web/test/config.h"
 #include "duckdb/web/webdb.h"
 #include "gtest/gtest.h"

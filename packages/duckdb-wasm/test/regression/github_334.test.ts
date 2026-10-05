@@ -28,7 +28,7 @@ export function test334(adb: () => duckdb.AsyncDuckDB): void {
                     'rows.json',
                     `[
                     { "col1": 1, "col2": "foo" },
-                    { "col1": 2, "col2": "bar" },
+                    { "col1": 2, "col2": "bar" }
                 ]`,
                 );
                 const conn = await adb().connect();

@@ -10,7 +10,6 @@
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
 #include "duckdb/web/insert_options.h"
-#include "duckdb/web/json_analyzer.h"
 #include "duckdb/web/json_typedef.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
@@ -50,7 +49,7 @@ arrow::Status UDFFunctionDeclaration::ReadFrom(const rapidjson::Document& doc) {
             case FieldTag::RETURN_TYPE: {
                 ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kObjectType, name));
                 const auto& type_obj = iter->value.GetObject();
-                ARROW_ASSIGN_OR_RAISE(return_type, json::SQLToArrowType(type_obj));
+                ARROW_ASSIGN_OR_RAISE(return_type, json::SQLToDuckDBType(type_obj));
                 break;
             }
 

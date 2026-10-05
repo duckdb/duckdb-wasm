@@ -9,8 +9,6 @@
 
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
-#include "duckdb/web/json_analyzer.h"
-#include "duckdb/web/json_parser.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {
