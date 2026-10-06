@@ -16,6 +16,7 @@
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/arrow_insert_options.h"
+#include "duckdb/web/arrow_ipc_writer.h"
 #include "duckdb/web/config.h"
 #include "duckdb/web/environment.h"
 #include "duckdb/web/io/buffered_filesystem.h"
@@ -72,10 +73,8 @@ class WebDB {
         duckdb::unique_ptr<duckdb::QueryResult> current_query_result_ = nullptr;
         /// The current streamed query result (if any)
         duckdb::unique_ptr<duckdb::QueryResultStream<>> current_query_stream_ = nullptr;
-        /// The current arrow schema (if any)
-        std::shared_ptr<arrow::Schema> current_schema_ = nullptr;
-        /// The current patched arrow schema (if any)
-        std::shared_ptr<arrow::Schema> current_schema_patched_ = nullptr;
+        /// The IPC writer of the current streamed result (if any)
+        std::unique_ptr<ArrowIPCWriter> current_ipc_writer_ = nullptr;
 
         /// The currently active prepared statements
         std::unordered_map<size_t, duckdb::unique_ptr<duckdb::PreparedStatement>> prepared_statements_ = {};

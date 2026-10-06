@@ -216,8 +216,8 @@ include_directories("${CMAKE_SOURCE_DIR}/include" "${DUCKDB_UTF8PROC_INCLUDE_DIR
 
 add_library(
   duckdb_web
-  ${CMAKE_SOURCE_DIR}/src/arrow_casts.cc
   ${CMAKE_SOURCE_DIR}/src/arrow_insert_options.cc
+  ${CMAKE_SOURCE_DIR}/src/arrow_ipc_writer.cc
   ${CMAKE_SOURCE_DIR}/src/arrow_stream_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/http_wasm.cc
   ${CMAKE_SOURCE_DIR}/src/config.cc
@@ -249,7 +249,7 @@ if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(DUCKDB_WEB_JSON "")
 
   target_sources(duckdb_web PRIVATE ${CMAKE_SOURCE_DIR}/src/extension_provider.cc)
-  target_link_libraries(duckdb_web duckdb arrow rapidjson ${THREAD_LIBS})
+  target_link_libraries(duckdb_web duckdb duckdb_nanoarrow arrow rapidjson ${THREAD_LIBS})
 else()
   add_library(
     duckdb_web_parquet
@@ -263,7 +263,7 @@ else()
   set(DUCKDB_WEB_JSON "duckdb_web_json")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
 
-  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} arrow rapidjson ${THREAD_LIBS})
+  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} duckdb_nanoarrow arrow rapidjson ${THREAD_LIBS})
   target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
   target_link_libraries(duckdb_web_json duckdb duckdb_json)
 endif()
@@ -302,7 +302,6 @@ if(NOT EMSCRIPTEN)
   set(TEST_CC
 #      ${CMAKE_SOURCE_DIR}/test/ast_test.cc
       ${CMAKE_SOURCE_DIR}/test/all_types_test.cc
-      ${CMAKE_SOURCE_DIR}/test/arrow_casts_test.cc
       ${CMAKE_SOURCE_DIR}/test/bugs_test.cc
       ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/glob_test.cc
