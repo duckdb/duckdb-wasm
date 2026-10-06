@@ -1,4 +1,5 @@
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from '../bindings/insert_options';
+import { OPFSAccessMode } from '../bindings/opfs_scratch';
 import { LogEntryVariant, ProgressEntry } from '../log';
 import { ScriptTokens } from '../bindings/tokens';
 import { FileStatistics } from '../bindings/file_stats';
@@ -69,6 +70,7 @@ export enum WorkerResponseType {
     SCRIPT_TOKENS = 'SCRIPT_TOKENS',
     SUCCESS = 'SUCCESS',
     TABLE_NAMES = 'TABLE_NAMES',
+    OPFS_FILE_NAMES = 'OPFS_FILE_NAMES',
     VERSION_STRING = 'VERSION_STRING',
 }
 
@@ -110,7 +112,7 @@ export type WorkerRequestVariant =
     | WorkerRequest<WorkerRequestType.CLOSE_PREPARED, [ConnectionID, StatementID]>
     | WorkerRequest<WorkerRequestType.CANCEL_PENDING_QUERY, number>
     | WorkerRequest<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean]>
-    | WorkerRequest<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string]>
+    | WorkerRequest<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string, OPFSAccessMode]>
     | WorkerRequest<WorkerRequestType.CONNECT, null>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_BUFFER, string>
     | WorkerRequest<WorkerRequestType.COPY_FILE_TO_PATH, [string, string]>
@@ -166,11 +168,12 @@ export type WorkerResponseVariant =
     | WorkerResponse<WorkerResponseType.SCRIPT_TOKENS, ScriptTokens>
     | WorkerResponse<WorkerResponseType.SUCCESS, boolean>
     | WorkerResponse<WorkerResponseType.TABLE_NAMES, string[]>
+    | WorkerResponse<WorkerResponseType.OPFS_FILE_NAMES, string[]>
     | WorkerResponse<WorkerResponseType.VERSION_STRING, string>;
 
 export type WorkerTaskVariant =
     | WorkerTask<WorkerRequestType.COLLECT_FILE_STATISTICS, [string, boolean], null>
-    | WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string], null>
+    | WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string, OPFSAccessMode], string[]>
     | WorkerTask<WorkerRequestType.CLOSE_PREPARED, [number, number], null>
     | WorkerTask<WorkerRequestType.CONNECT, null, ConnectionID>
     | WorkerTask<WorkerRequestType.COPY_FILE_TO_BUFFER, string, Uint8Array>

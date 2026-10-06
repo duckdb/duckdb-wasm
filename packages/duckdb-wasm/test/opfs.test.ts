@@ -437,6 +437,39 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
         });
 
+        it('Partitioned COPY creates directories, glob and a second instance see them', async () => {
+            db.config.opfs = { fileHandling: 'auto' };
+            await conn.query(`
+                COPY (SELECT i % 3 AS part, i FROM range(30) t(i)) TO 'opfs://out' (FORMAT PARQUET, PARTITION_BY (part))
+            `);
+            // Globbing and hive partitioning over the directories of this instance
+            const count = await conn.query(`
+                SELECT count(*)::INTEGER AS cnt, count(DISTINCT part)::INTEGER AS parts
+                FROM read_parquet('opfs://out/*/*.parquet', hive_partitioning = true)
+            `);
+            expect(count.getChildAt(0)?.get(0)).toEqual(30);
+            expect(count.getChildAt(1)?.get(0)).toEqual(3);
+            const files = await conn.query(`SELECT file FROM glob('opfs://out/**/*.parquet') ORDER BY file`);
+            expect(files.numRows).toEqual(3);
+            expect(files.getChildAt(0)?.get(0)).toMatch(/^opfs:\/\/out\/part=0\//);
+
+            // Another instance opens the directory tree as it is in OPFS
+            const worker = new Worker(bundle().mainWorker!);
+            const db2 = new AsyncDuckDB(logger, worker);
+            await db2.instantiate(bundle().mainModule, bundle().pthreadWorker);
+            await db2.open({ opfs: { fileHandling: 'auto' } });
+            const conn2 = await db2.connect();
+            try {
+                const count2 = await conn2.query(`
+                    SELECT count(*)::INTEGER AS cnt FROM read_parquet('opfs://out/**/*.parquet')
+                `);
+                expect(count2.getChildAt(0)?.get(0)).toEqual(30);
+            } finally {
+                await conn2.close();
+                await db2.terminate();
+            }
+        });
+
         it('Copy CSV to OPFS + Load CSV', async () => {
             //1. data preparation
             db.config.opfs = {

@@ -2,6 +2,7 @@ import { DuckDBConfig, DuckDBConnection, DuckDBDataProtocol, FileStatistics, Ins
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { WebFile } from './web_file';
+import { OPFSAccessMode } from './opfs_scratch';
 import * as arrow from 'apache-arrow';
 
 export interface DuckDBBindings {
@@ -54,7 +55,7 @@ export interface DuckDBBindings {
         protocol: DuckDBDataProtocol,
         directIO: boolean,
     ): Promise<HandleType>;
-    prepareFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
+    prepareFileHandle(path: string, protocol: DuckDBDataProtocol, mode?: OPFSAccessMode): Promise<string[]>;
     prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     checkpointFiles(): Promise<void>;
     globFiles(path: string): WebFile[];
@@ -63,7 +64,7 @@ export interface DuckDBBindings {
     flushFiles(): void;
     copyFileToPath(name: string, path: string): void;
     copyFileToBuffer(name: string): Uint8Array;
-    registerOPFSFileName(file: string): Promise<void>;
+    registerOPFSFileName(file: string, mode?: OPFSAccessMode): Promise<string[]>;
     collectFileStatistics(file: string, enable: boolean): void;
     exportFileStatistics(file: string): FileStatistics;
 }

@@ -381,10 +381,19 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.sendOK(request);
                     break;
 
-                case WorkerRequestType.REGISTER_OPFS_FILE_NAME:
-                    await this._bindings.registerOPFSFileName(request.data[0]);
-                    this.sendOK(request);
+                case WorkerRequestType.REGISTER_OPFS_FILE_NAME: {
+                    const files = await this._bindings.registerOPFSFileName(request.data[0], request.data[1]);
+                    this.postMessage(
+                        {
+                            messageId: this._nextMessageId++,
+                            requestId: request.messageId,
+                            type: WorkerResponseType.OPFS_FILE_NAMES,
+                            data: files,
+                        },
+                        [],
+                    );
                     break;
+                }
 
                 case WorkerRequestType.EXPORT_FILE_STATISTICS: {
                     this.postMessage(

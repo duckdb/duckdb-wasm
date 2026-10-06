@@ -1,5 +1,6 @@
 import { DuckDBModule } from './duckdb_module';
 import { Logger } from '../log';
+import { OPFSAccessMode } from './opfs_scratch';
 import { UDFFunction } from './udf_function';
 import * as udf_rt from './udf_runtime';
 
@@ -171,7 +172,11 @@ export interface DuckDBRuntime {
 
     // Prepare a file handle that could only be acquired aschronously
     prepareFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
-    prepareFileHandles?: (path: string[], protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
+    prepareFileHandles?: (
+        path: string[],
+        protocol: DuckDBDataProtocol,
+        mode?: OPFSAccessMode,
+    ) => Promise<PreparedDBFileHandle[]>;
     prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
     /** Finish file operations that could only be completed asynchronously, called between queries */
     checkpointFiles?: () => Promise<void>;

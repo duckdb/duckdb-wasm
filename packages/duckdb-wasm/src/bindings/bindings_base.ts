@@ -1,4 +1,5 @@
 import { DuckDBModule, PThread } from './duckdb_module';
+import { OPFSAccessMode } from './opfs_scratch';
 import { DuckDBConfig } from './config';
 import { Logger } from '../log';
 import { InstantiationProgress } from './progress';
@@ -512,16 +513,23 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         dropResponseBuffers(this.mod);
     }
-    public async prepareFileHandle(fileName: string, protocol: DuckDBDataProtocol): Promise<void> {
+    /** Prepare a file (or the files a glob pattern matches) for the next query, returns the names prepared */
+    public async prepareFileHandle(
+        fileName: string,
+        protocol: DuckDBDataProtocol,
+        mode: OPFSAccessMode = 'read',
+    ): Promise<string[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareFileHandles) {
-            const list = await this._runtime.prepareFileHandles([fileName], DuckDBDataProtocol.BROWSER_FSACCESS);
+            const list = await this._runtime.prepareFileHandles([fileName], DuckDBDataProtocol.BROWSER_FSACCESS, mode);
+            const prepared: string[] = [];
             for (const item of list) {
                 const { handle, path: filePath, fromCached } = item;
                 if (!fromCached && handle.getSize()) {
                     await this.registerFileHandleAsync(filePath, handle, DuckDBDataProtocol.BROWSER_FSACCESS, true);
                 }
+                prepared.push(filePath);
             }
-            return;
+            return prepared;
         }
         throw new Error(`prepareFileHandle: unsupported protocol ${protocol}`);
     }
@@ -704,9 +712,9 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         return copy;
     }
     /** Enable tracking of file statistics */
-    public async registerOPFSFileName(file: string): Promise<void> {
+    public async registerOPFSFileName(file: string, mode: OPFSAccessMode = 'write'): Promise<string[]> {
         if (file.startsWith('opfs://')) {
-            return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS);
+            return this.prepareFileHandle(file, DuckDBDataProtocol.BROWSER_FSACCESS, mode);
         } else {
             throw new Error('Not an OPFS file name: ' + file);
         }
