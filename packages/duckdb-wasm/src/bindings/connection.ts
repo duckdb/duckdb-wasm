@@ -30,7 +30,6 @@ export class DuckDBConnection {
         const buffer = this._bindings.runQuery(this._conn, text);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
-        console.assert(reader.isFile());
         return new arrow.Table(reader);
     }
 
@@ -170,7 +169,6 @@ export class PreparedStatement<T extends { [key: string]: arrow.DataType } = any
         const buffer = this.bindings.runPrepared(this.connectionId, this.statementId, params);
         const reader = arrow.RecordBatchReader.from<T>(buffer);
         console.assert(reader.isSync());
-        console.assert(reader.isFile());
         return new arrow.Table(reader as arrow.RecordBatchFileReader);
     }
 
