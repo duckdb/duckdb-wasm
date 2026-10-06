@@ -49,9 +49,10 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
         if (db) {
             await db.reset().catch(() => {
             });
-            await db.terminate().catch(() => {
-            });
+            // Release the OPFS handles before the worker goes away
             await db.dropFiles().catch(() => {
+            });
+            await db.terminate().catch(() => {
             });
         }
         await removeFiles();
@@ -161,16 +162,15 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             await conn2.query('DETACH opfs_db;');
             await dropFiles(db2);
 
-            // Delete files, will error if there is still a handle open
+            // Delete files, will error if there is still a handle open. opfs:// files live in /duckdb/fs
             const opfsRoot = await navigator.storage.getDirectory();
-            const handle = opfsRoot.getFileHandle('temp.db');
-            expect((await (await handle).getFile()).size).toBeGreaterThan(0);
-            expect(async () => {
-                await opfsRoot.removeEntry('temp.db');
-                await opfsRoot.removeEntry('temp.db.wal');
-                await opfsRoot.removeEntry('temp.db.wal.checkpoint');
-                await opfsRoot.removeEntry('temp.db.wal.recovery');
-            }).not.toThrow()
+            const fsDir = await (await opfsRoot.getDirectoryHandle('duckdb')).getDirectoryHandle('fs');
+            const handle = await fsDir.getFileHandle('temp.db');
+            expect((await handle.getFile()).size).toBeGreaterThan(0);
+            await fsDir.removeEntry('temp.db');
+            for (const name of ['temp.db.wal', 'temp.db.wal.checkpoint', 'temp.db.wal.recovery']) {
+                await fsDir.removeEntry(name).catch(_ignore);
+            }
             conn2.close();
             db2.terminate();
         });
@@ -458,6 +458,18 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
 
     async function removeFiles() {
         const opfsRoot = await navigator.storage.getDirectory();
+        // opfs:// files live under /duckdb/fs, files in flight under /duckdb/scratch/<instance>. A terminated
+        // worker releases its access handles asynchronously, the removal is retried until they are gone
+        for (let attempt = 0; ; ++attempt) {
+            try {
+                await opfsRoot.removeEntry('duckdb', { recursive: true });
+                break;
+            } catch (e: any) {
+                if (e?.name === 'NotFoundError') break;
+                if (attempt >= 50) throw e;
+                await new Promise(resolve => setTimeout(resolve, 20));
+            }
+        }
         await opfsRoot.removeEntry('test.db').catch(_ignore);
         await opfsRoot.removeEntry('test.db.wal').catch(_ignore);
         await opfsRoot.removeEntry('test.db.wal.checkpoint').catch(_ignore);

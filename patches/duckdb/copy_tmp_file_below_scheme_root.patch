@@ -1,0 +1,91 @@
+diff --git a/src/common/string_util.cpp b/src/common/string_util.cpp
+index 4c5b5c8f13..e560b5e654 100644
+--- a/src/common/string_util.cpp
++++ b/src/common/string_util.cpp
+@@ -942,6 +942,14 @@ string StringUtil::GetFilePath(const string &file_path) {
+ 	return file_path.substr(0, pos + 1);
+ }
+ 
++string StringUtil::ReplaceFileName(const string &file_path, const string &file_name) {
++	auto pos = file_path.find_last_of("/\\");
++	if (pos == string::npos) {
++		return file_name;
++	}
++	return file_path.substr(0, pos + 1) + file_name;
++}
++
+ struct URLEncodeLength {
+ 	using RESULT_TYPE = idx_t;
+ 
+diff --git a/src/execution/operator/persistent/physical_copy_to_file.cpp b/src/execution/operator/persistent/physical_copy_to_file.cpp
+index f82edf4626..c65723267a 100644
+--- a/src/execution/operator/persistent/physical_copy_to_file.cpp
++++ b/src/execution/operator/persistent/physical_copy_to_file.cpp
+@@ -3742,9 +3742,6 @@ void PhysicalCopyToFile::MoveTmpFile(ClientContext &context, const string &tmp_f
+ }
+ 
+ string PhysicalCopyToFile::GetNonTmpFile(ClientContext &context, const string &tmp_file_path) {
+-	auto &fs = FileSystem::GetFileSystem(context);
+-
+-	auto path = StringUtil::GetFilePath(tmp_file_path);
+ 	auto base = StringUtil::GetFileName(tmp_file_path);
+ 
+ 	auto prefix = base.find("tmp_");
+@@ -3752,7 +3749,7 @@ string PhysicalCopyToFile::GetNonTmpFile(ClientContext &context, const string &t
+ 		base = base.substr(4);
+ 	}
+ 
+-	return fs.JoinPath(path, base);
++	return StringUtil::ReplaceFileName(tmp_file_path, base);
+ }
+ 
+ void PhysicalCopyToFile::ReturnStatistics(DataChunk &chunk, CopyToFileInfo &info) {
+diff --git a/src/execution/physical_plan/plan_copy_to_file.cpp b/src/execution/physical_plan/plan_copy_to_file.cpp
+index 53f3449ff5..9f84753746 100644
+--- a/src/execution/physical_plan/plan_copy_to_file.cpp
++++ b/src/execution/physical_plan/plan_copy_to_file.cpp
+@@ -14,10 +14,8 @@ PhysicalOperator &PhysicalPlanGenerator::CreatePlan(LogicalCopyToFile &op) {
+ 
+ PhysicalOperator &PhysicalPlanGenerator::CreatePlan(LogicalCopyToFile &op, PhysicalOperator &plan) {
+ 	if (op.use_tmp_file) {
+-		auto &fs = FileSystem::GetFileSystem(context);
+-		auto path = StringUtil::GetFilePath(op.file_path);
+ 		auto base = StringUtil::GetFileName(op.file_path);
+-		op.file_path = fs.JoinPath(path, "tmp_" + base);
++		op.file_path = StringUtil::ReplaceFileName(op.file_path, "tmp_" + base);
+ 	}
+ 	bool preserve_insertion_order = PhysicalPlanGenerator::PreserveInsertionOrder(context, plan);
+ 	bool supports_batch_index = PhysicalPlanGenerator::UseBatchIndex(context, plan);
+diff --git a/src/include/duckdb/common/string_util.hpp b/src/include/duckdb/common/string_util.hpp
+index c42d51bc50..4e44d6a5b5 100644
+--- a/src/include/duckdb/common/string_util.hpp
++++ b/src/include/duckdb/common/string_util.hpp
+@@ -364,6 +364,9 @@ public:
+ 	DUCKDB_API static string GetFileExtension(const string &file_name);
+ 	DUCKDB_API static string GetFileStem(const string &file_name);
+ 	DUCKDB_API static string GetFilePath(const string &file_path);
++	//! Replace the file name of a path, keeping its directory part as written (also for files directly below a
++	//! scheme root, where splitting into GetFilePath and JoinPath would not round-trip: "opfs://a" -> "opfs://b")
++	DUCKDB_API static string ReplaceFileName(const string &file_path, const string &file_name);
+ 
+ 	struct EnumStringLiteral {
+ 		uint32_t number;
+diff --git a/test/common/test_string_util.cpp b/test/common/test_string_util.cpp
+index cd27cbb94d..06e868864e 100644
+--- a/test/common/test_string_util.cpp
++++ b/test/common/test_string_util.cpp
+@@ -432,6 +432,14 @@ TEST_CASE("Test path utilities", "[string_util]") {
+ 		REQUIRE("/tmp" == StringUtil::GetFilePath("/tmp//test.txt"));
+ 		REQUIRE("\\tmp" == StringUtil::GetFilePath("\\tmp\\\\test.txt"));
+ 	}
++
++	SECTION("Replace file name") {
++		REQUIRE("/usr/local/bin/other.cpp" == StringUtil::ReplaceFileName("/usr/local/bin/test.cpp", "other.cpp"));
++		REQUIRE("tmp\\other.txt" == StringUtil::ReplaceFileName("tmp\\test.txt", "other.txt"));
++		REQUIRE("other.txt" == StringUtil::ReplaceFileName("test.txt", "other.txt"));
++		REQUIRE("s3://bucket/other.csv" == StringUtil::ReplaceFileName("s3://bucket/test.csv", "other.csv"));
++		REQUIRE("opfs://other.csv" == StringUtil::ReplaceFileName("opfs://test.csv", "other.csv"));
++	}
+ }
+ 
+ TEST_CASE("Test JSON Parsing", "[string_util]") {

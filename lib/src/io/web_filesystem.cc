@@ -159,6 +159,9 @@ RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char 
 RT_FN(bool duckdb_web_fs_file_exists(const char *path, size_t pathLen), {
     return NATIVE_FS->FileExists(std::string{path, pathLen});
 });
+RT_FN(void duckdb_web_fs_file_remove(const char *path, size_t pathLen), {
+    NATIVE_FS->RemoveFile(std::string{path, pathLen});
+});
 #undef RT_FN
 
 extern "C" void duckdb_web_fs_glob_add_path(const char *path) {
@@ -253,12 +256,21 @@ void WebFileSystem::WebFileHandle::Close() {
     auto have_file_lock = file_guard.try_lock();
     // Additionally acquire the filesystem lock
     std::unique_lock<LightMutex> fs_guard{fs.fs_mutex_};
+    if (pin_) {
+        --file.pin_count_;
+    }
     // More than one handle left?
     if (--file.handle_count_ > 0) {
         return;
     }
     // Failed to lock exclusively?
     if (!have_file_lock) return;
+    // Dropped while it was still open?
+    if (file.drop_when_closed_) {
+        fs.Unregister(file);
+        duckdb_web_fs_file_drop_file(file.file_name_.c_str(), file.file_name_.size());
+        return;
+    }
     // Is buffered file?
     if (file.data_protocol_ == DataProtocol::BUFFER) {
         if (file.buffered_http_file_) {
@@ -282,19 +294,32 @@ void WebFileSystem::WebFileHandle::Close() {
     fs_guard.lock();
 
     // Erase the file from the file system
-    auto file_id = file.file_id_;
-    auto file_proto = file.data_protocol_;
-    fs.files_by_name_.erase(file.file_name_);
-    if (file.data_url_.has_value()) {
-        fs.files_by_url_.erase(file.data_url_.value());
-    }
-    auto iter = fs.files_by_id_.find(file.file_id_);
-    auto tmp = std::move(iter->second);
-    fs.files_by_id_.erase(iter);
+    fs.Unregister(file);
 
     // Release lock guards
     fs_guard.unlock();
     file_guard.unlock();
+}
+
+/// Erase a file from the registry. Only the entries that still refer to this file are removed: a name is
+/// reassigned by MoveFile while a pinned handle of the previous file is still around, and a failed open erases
+/// the entries before the handle closes.
+void WebFileSystem::Unregister(WebFile &file) {
+    if (auto iter = files_by_name_.find(file.file_name_);
+        iter != files_by_name_.end() && iter->second.get() == &file) {
+        files_by_name_.erase(iter);
+    }
+    if (file.data_url_.has_value()) {
+        if (auto iter = files_by_url_.find(file.data_url_.value());
+            iter != files_by_url_.end() && iter->second.get() == &file) {
+            files_by_url_.erase(iter);
+        }
+    }
+    // Last, the file may be owned by this entry alone
+    if (auto iter = files_by_id_.find(file.file_id_); iter != files_by_id_.end() && iter->second.get() == &file) {
+        auto tmp = std::move(iter->second);
+        files_by_id_.erase(iter);
+    }
 }
 /// Get the info
 rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) const {
@@ -383,7 +408,9 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
     if (iter != files_by_name_.end()) {
         auto file = iter->second;
         if (file->data_url_ == file_url) {
-            return std::make_unique<WebFileHandle>(std::move(file));
+            auto handle = std::make_unique<WebFileHandle>(std::move(file));
+            handle->Pin();
+            return handle;
         }
         return web::Status::Invalid("File already registered: ", file_name);
     }
@@ -401,7 +428,9 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
     files_by_url_.insert({std::string{file_url}, file});
 
     // Build the file handle
-    return std::make_unique<WebFileHandle>(file);
+    auto handle = std::make_unique<WebFileHandle>(file);
+    handle->Pin();
+    return handle;
 }
 
 /// Register a file buffer
@@ -423,6 +452,7 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
                 file->last_modification_time_ = std::nullopt;
                 file->data_buffer_ = std::move(file_buffer);
                 auto handle = std::make_unique<WebFileHandle>(file);
+                handle->Pin();
                 fs_guard.unlock();
                 duckdb_web_fs_file_close(file->file_id_);
                 fs_guard.lock();
@@ -436,7 +466,9 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
                 file->file_size_ = file_buffer.Size();
                 file->last_modification_time_ = std::nullopt;
                 file->data_buffer_ = std::move(file_buffer);
-                return std::make_unique<WebFileHandle>(file);
+                auto handle = std::make_unique<WebFileHandle>(file);
+                handle->Pin();
+                return handle;
         }
     }
 
@@ -452,7 +484,9 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
     files_by_name_.insert({file->file_name_, file});
 
     // Build the file handle
-    return std::make_unique<WebFileHandle>(file);
+    auto handle = std::make_unique<WebFileHandle>(file);
+    handle->Pin();
+    return handle;
 }
 
 /// Drop dangling files
@@ -981,29 +1015,82 @@ bool WebFileSystem::ListFiles(const std::string &directory,
 /// Move a file from source path to the target, StorageManager relies on this being an atomic action for ACID
 /// properties
 void WebFileSystem::MoveFile(const std::string &source, const std::string &target, optional_ptr<FileOpener> opener) {
+    {
+        // A move onto a file the user registered as access handle copies the content into that handle, the handle
+        // is what the user holds on to
+        std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+        auto target_iter = files_by_name_.find(target);
+        auto source_iter = files_by_name_.find(source);
+        bool target_is_handle = target_iter != files_by_name_.end() &&
+                                target_iter->second->GetDataProtocol() == BROWSER_FSACCESS &&
+                                !hasPrefix(target, "opfs://");
+        bool source_is_handle = source_iter != files_by_name_.end() &&
+                                source_iter->second->GetDataProtocol() == BROWSER_FSACCESS;
+        if (target_is_handle && !source_is_handle) {
+            // Open handles on the target keep working, they see the new content
+            fs_guard.unlock();
+            CopyFileContent(source, target);
+            RemoveFile(source, opener);
+            return;
+        }
+    }
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
 
+    // Whatever was registered under the target name is replaced
+    if (auto iter = files_by_name_.find(target); iter != files_by_name_.end()) {
+        auto file = iter->second;
+        // Pinned registrations are not users of the file, the pin is released when the file is dropped
+        if (file->handle_count_ > file->pin_count_) {
+            throw duckdb::IOException("Cannot move %s to %s: the target file is in use", source, target);
+        }
+        Unregister(*file);
+    }
+    // The registry follows the rename, the runtime moves the data
     if (auto iter = files_by_url_.find(source); iter != files_by_url_.end()) {
         auto file = std::move(iter->second);
-        // OPFS files are moved by the JS VFS
-        if (file->GetDataProtocol() != BROWSER_FSACCESS) {
-            file->data_url_ = target;
-            files_by_url_.erase(iter);
-            files_by_url_.insert({target, file});
-        }
+        files_by_url_.erase(iter);
+        file->data_url_ = target;
+        files_by_url_.insert({target, file});
     }
     if (auto iter = files_by_name_.find(source); iter != files_by_name_.end()) {
         auto file = std::move(iter->second);
-        // OPFS Files are moved by the JS VFS
-        if (file->GetDataProtocol() != BROWSER_FSACCESS) {
-            file->file_name_ = target;
-            files_by_name_.erase(iter);
-            files_by_name_.insert({target, file});
-        }
+        files_by_name_.erase(iter);
+        file->file_name_ = target;
+        files_by_name_.insert({target, file});
     }
 
     duckdb_web_fs_file_move(source.c_str(), source.size(), target.c_str(), target.size());
 }
+/// Drop a file now if it has no open handles, otherwise when its last handle closes
+void WebFileSystem::DropFileWhenClosed(std::string_view file_name) {
+    if (TryDropFile(file_name)) {
+        DropFile(file_name);
+        return;
+    }
+    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    auto iter = files_by_name_.find(std::string{file_name});
+    if (iter != files_by_name_.end()) {
+        iter->second->drop_when_closed_ = true;
+    }
+}
+
+/// Copy the content of a file into another one, both go through this file system
+void WebFileSystem::CopyFileContent(const std::string &source, const std::string &target) {
+    auto in = OpenFile(source, duckdb::FileFlags::FILE_FLAGS_READ);
+    auto out = OpenFile(target, duckdb::FileFlags::FILE_FLAGS_WRITE | duckdb::FileFlags::FILE_FLAGS_FILE_CREATE_NEW);
+    auto size = GetFileSize(*in);
+    Truncate(*out, 0);
+    constexpr int64_t CHUNK = 1 << 20;
+    std::vector<char> buffer(static_cast<size_t>(std::min<int64_t>(size, CHUNK)));
+    for (int64_t offset = 0; offset < size;) {
+        auto n = std::min<int64_t>(CHUNK, size - offset);
+        Read(*in, buffer.data(), n, offset);
+        Write(*out, buffer.data(), n, offset);
+        offset += n;
+    }
+    FileSync(*out);
+}
+
 /// Check if a file exists
 bool WebFileSystem::FileExists(const std::string &filename, optional_ptr<FileOpener> opener) {
     auto iter = files_by_name_.find(filename);
@@ -1011,7 +1098,11 @@ bool WebFileSystem::FileExists(const std::string &filename, optional_ptr<FileOpe
     return duckdb_web_fs_file_exists(filename.c_str(), filename.size());
 }
 /// Remove a file from disk
-void WebFileSystem::RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener) {}
+void WebFileSystem::RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener) {
+    duckdb_web_fs_file_remove(filename.c_str(), filename.size());
+    // The registration goes with the file, unless it is still open
+    TryDropFile(filename);
+}
 
 /// Sync a file handle to disk
 void WebFileSystem::FileSync(duckdb::FileHandle &handle) {

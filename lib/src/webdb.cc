@@ -1165,11 +1165,9 @@ web::Status WebDB::DropFile(std::string_view fileName) {
     file_page_buffer_->TryDropFile(fileName);
     pinned_web_files_.erase(fileName);
     if (auto fs = io::WebFileSystem::Get()) {
-        if (fs->TryDropFile(fileName)) {
-            fs->DropFile(fileName);
-        } else {
-            return web::Status::Invalid("file is in use");
-        }
+        // A file DuckDB still holds open (the sink of a finished COPY keeps its handle until the next query) is
+        // dropped once its last handle closes
+        fs->DropFileWhenClosed(fileName);
     }
     return web::Status::OK();
 }
