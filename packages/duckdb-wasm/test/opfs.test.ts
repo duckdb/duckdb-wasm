@@ -437,18 +437,6 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
         });
 
-        it('Spill to the OPFS scratch', async () => {
-            const setting = await conn.query(`SELECT current_setting('temp_directory') AS dir`);
-            expect(setting.getChildAt(0)?.get(0)).toEqual('opfs://.scratch');
-            await conn.query(`SET memory_limit = '64MB'`);
-            // A sort of ~110MB of strings cannot complete within the limit without spilling
-            const result = await conn.query(`
-                SELECT count(*)::INTEGER AS cnt, min(s) AS first
-                FROM (SELECT i, repeat('x', 100) || i::VARCHAR AS s FROM range(1000000) t(i) ORDER BY s)
-            `);
-            expect(result.getChildAt(0)?.get(0)).toEqual(1000000);
-        });
-
         it('Copy CSV to OPFS + Load CSV', async () => {
             //1. data preparation
             db.config.opfs = {

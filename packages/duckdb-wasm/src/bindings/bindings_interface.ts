@@ -2,7 +2,6 @@ import { DuckDBConfig, DuckDBConnection, DuckDBDataProtocol, FileStatistics, Ins
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { WebFile } from './web_file';
-import { TemporaryDirectory } from './runtime';
 import * as arrow from 'apache-arrow';
 
 export interface DuckDBBindings {
@@ -58,7 +57,6 @@ export interface DuckDBBindings {
     prepareFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     checkpointFiles(): Promise<void>;
-    prepareTemporaryDirectory(): Promise<TemporaryDirectory | null>;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;
     dropFiles(names?: string[]): void;

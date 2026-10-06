@@ -14,17 +14,31 @@ import { StatusCode } from '../status';
 import { DuckDBModule } from './duckdb_module';
 import * as fg from 'fast-glob';
 import * as udf from './udf_runtime';
+import { JsBufferFile, JsBufferFileSystem } from './js_buffer_file';
 
 export const NODE_RUNTIME: DuckDBRuntime & {
     _filesById: Map<number, any>;
     _fileInfoCache: Map<number, DuckDBFileInfo>;
+    /** js_buffer:// files, DuckDB's temporary directory among them */
+    _jsBuffers: JsBufferFileSystem;
 
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null;
+    jsBuffer(path: string): JsBufferFile;
 } = {
     _files: new Map<string, any>(),
     _filesById: new Map<number, any>(),
     _fileInfoCache: new Map<number, DuckDBFileInfo>(),
     _udfFunctions: new Map(),
+    _jsBuffers: new JsBufferFileSystem(),
+
+    /** The buffer of an open js_buffer:// file */
+    jsBuffer(path: string): JsBufferFile {
+        const buffer = NODE_RUNTIME._jsBuffers.get(path);
+        if (!buffer) {
+            throw new Error(`No js_buffer file with name: ${path}`);
+        }
+        return buffer;
+    },
 
     resolveFileInfo(mod: DuckDBModule, fileId: number): DuckDBFileInfo | null {
         try {
@@ -94,6 +108,21 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     mod.HEAPF64[(result >> 3) + 1] = 0;
                     return result;
                 }
+                case DuckDBDataProtocol.JS_BUFFER: {
+                    const create = flags & (FileFlags.FILE_FLAGS_FILE_CREATE | FileFlags.FILE_FLAGS_FILE_CREATE_NEW);
+                    const buffer = NODE_RUNTIME._jsBuffers.open(file.fileName, create !== 0);
+                    if (!buffer) {
+                        return 0;
+                    }
+                    if (flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW) {
+                        buffer.truncate(0);
+                    }
+                    const result = mod._malloc(3 * 8);
+                    mod.HEAPF64[(result >> 3) + 0] = buffer.getSize();
+                    mod.HEAPF64[(result >> 3) + 1] = 0;
+                    mod.HEAPF64[(result >> 3) + 2] = 0;
+                    return result;
+                }
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                 case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
@@ -120,6 +149,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     }
                     break;
                 }
+                case DuckDBDataProtocol.JS_BUFFER:
+                    // The buffer lives until the file is removed
+                    break;
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                 case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
@@ -141,6 +173,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     fs.truncateSync(file.dataUrl!, newSize);
                     break;
                 }
+                case DuckDBDataProtocol.JS_BUFFER:
+                    NODE_RUNTIME.jsBuffer(file.fileName).truncate(newSize);
+                    break;
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                 case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
@@ -165,6 +200,10 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     }
                     return fs.readSync(fileHandle, mod.HEAPU8, buf, bytes, location);
                 }
+                case DuckDBDataProtocol.JS_BUFFER:
+                    return NODE_RUNTIME.jsBuffer(file.fileName).read(mod.HEAPU8.subarray(buf, buf + bytes), {
+                        at: location,
+                    });
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                 case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
@@ -190,6 +229,10 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     const src = mod.HEAPU8.subarray(buf, buf + bytes);
                     return fs.writeSync(fileHandle, src, 0, src.length, location);
                 }
+                case DuckDBDataProtocol.JS_BUFFER:
+                    return NODE_RUNTIME.jsBuffer(file.fileName).write(mod.HEAPU8.subarray(buf, buf + bytes), {
+                        at: location,
+                    });
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                 case DuckDBDataProtocol.BROWSER_FSACCESS:
                 case DuckDBDataProtocol.HTTP:
@@ -233,6 +276,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
+            if (JsBufferFileSystem.isPath(path)) {
+                return NODE_RUNTIME._jsBuffers.directoryExists(path);
+            }
             return fs.existsSync(path);
         } catch (e: any) {
             console.log(e);
@@ -243,6 +289,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     createDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
+            if (JsBufferFileSystem.isPath(path)) {
+                return;
+            }
             return fs.mkdirSync(path);
         } catch (e: any) {
             console.log(e);
@@ -253,6 +302,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     removeDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
+            if (JsBufferFileSystem.isPath(path)) {
+                return NODE_RUNTIME._jsBuffers.removeDirectory(path);
+            }
             return fs.rmdirSync(path);
         } catch (e: any) {
             console.log(e);
@@ -260,9 +312,16 @@ export const NODE_RUNTIME: DuckDBRuntime & {
             return 0;
         }
     },
-    listDirectoryEntries: (mod: DuckDBModule, _pathPtr: number, _pathLen: number) => {
-        failWith(mod, 'Not Implemented');
-        return false;
+    listDirectoryEntries: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
+        const path = readString(mod, pathPtr, pathLen);
+        if (!JsBufferFileSystem.isPath(path)) {
+            failWith(mod, 'Not Implemented');
+            return false;
+        }
+        for (const name of NODE_RUNTIME._jsBuffers.list(path)) {
+            mod.ccall('duckdb_web_fs_directory_add_entry', null, ['string', 'boolean'], [name, false]);
+        }
+        return true;
     },
     glob: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
@@ -280,6 +339,10 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     moveFile: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
         const from = readString(mod, fromPtr, fromLen);
         const to = readString(mod, toPtr, toLen);
+        if (JsBufferFileSystem.isPath(from)) {
+            NODE_RUNTIME._jsBuffers.move(from, to);
+            return true;
+        }
         const handle = NODE_RUNTIME._files?.get(from);
         if (handle !== undefined) {
             NODE_RUNTIME._files!.delete(handle);
@@ -296,6 +359,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     checkFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
+            if (JsBufferFileSystem.isPath(path)) {
+                return NODE_RUNTIME._jsBuffers.exists(path);
+            }
             return fs.existsSync(path);
         } catch (e: any) {
             console.log(e);
@@ -306,6 +372,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
     removeFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         try {
             const path = decodeText(mod.HEAPU8.subarray(pathPtr, pathPtr + pathLen));
+            if (JsBufferFileSystem.isPath(path)) {
+                return NODE_RUNTIME._jsBuffers.remove(path);
+            }
             return fs.rmSync(path);
         } catch (e: any) {
             console.log(e);

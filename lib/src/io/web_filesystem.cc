@@ -239,6 +239,8 @@ WebFileSystem::DataProtocol WebFileSystem::inferDataProtocol(std::string_view ur
         proto = WebFileSystem::DataProtocol::S3;
     } else if (hasPrefix(url, "opfs://")) {
         proto = WebFileSystem::DataProtocol::BROWSER_FSACCESS;
+    } else if (hasPrefix(url, "js_buffer://")) {
+        proto = WebFileSystem::DataProtocol::JS_BUFFER;
     } else if (hasPrefix(url, "file://")) {
         data_url = std::string_view{url}.substr(7);
         proto = default_data_protocol_;
@@ -453,6 +455,7 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
             // Close file handle and register as buffer
             case DataProtocol::NODE_FS:
             case DataProtocol::BROWSER_FSACCESS:
+            case DataProtocol::JS_BUFFER:
             case DataProtocol::BROWSER_FILEREADER: {
                 file->file_size_ = file_buffer.Size();
                 file->last_modification_time_ = std::nullopt;
@@ -704,6 +707,7 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
         case DataProtocol::NODE_FS:
         case DataProtocol::BROWSER_FILEREADER:
         case DataProtocol::BROWSER_FSACCESS:
+        case DataProtocol::JS_BUFFER:
         case DataProtocol::HTTP:
         case DataProtocol::S3:
             try {
@@ -815,7 +819,8 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         // Just read with the filesystem api
         case DataProtocol::NODE_FS:
         case DataProtocol::BROWSER_FILEREADER:
-        case DataProtocol::BROWSER_FSACCESS: {
+        case DataProtocol::BROWSER_FSACCESS:
+        case DataProtocol::JS_BUFFER: {
             auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
             // Register read
             if (file.file_stats_) {
@@ -903,7 +908,8 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
             break;
         }
         case DataProtocol::NODE_FS:
-        case DataProtocol::BROWSER_FSACCESS: {
+        case DataProtocol::BROWSER_FSACCESS:
+        case DataProtocol::JS_BUFFER: {
             auto end = file_hdl.position_ + nr_bytes;
             size_t n;
 
@@ -981,6 +987,7 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
             break;
         case DataProtocol::BROWSER_FILEREADER:
         case DataProtocol::BROWSER_FSACCESS:
+        case DataProtocol::JS_BUFFER:
         case DataProtocol::NODE_FS:
         case DataProtocol::HTTP:
         case DataProtocol::S3: {

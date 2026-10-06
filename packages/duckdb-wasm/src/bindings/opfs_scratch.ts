@@ -15,15 +15,9 @@
  *   /duckdb/scratch/<uuid>/manifest   one JSON line per mapping {"v": virtual path, "p": pool file}
  *   /duckdb/scratch/<uuid>/pool-<k>   pre-opened files, mapped ones are in flight to /duckdb/fs, the rest are free
  * Files that exist at the root (the layout before /duckdb/fs) are read in place.
- *
- * Files below `opfs://.scratch/` are ephemeral: they live in a pool file for as long as they are open and are never
- * moved to /duckdb/fs. DuckDB's temporary directory (spilling) points there.
  */
 
 export const OPFS_PREFIX = 'opfs://';
-/** Virtual directory of ephemeral files, DuckDB's temporary directory */
-export const OPFS_SCRATCH_DIR = 'opfs://.scratch';
-const OPFS_SCRATCH_PREFIX = OPFS_SCRATCH_DIR + '/';
 const ROOT_DIR = 'duckdb';
 const FS_DIR = 'fs';
 const SCRATCH_DIR = 'scratch';
@@ -78,8 +72,6 @@ export class OPFSScratch {
     private mapped = new Map<string, PoolFile>();
     /** Virtual paths served from a real file */
     private real = new Map<string, RealFile>();
-    /** Ephemeral files below opfs://.scratch/, pool files that are never moved into place */
-    private ephemeral = new Map<string, PoolFile>();
     /** Real files removed or replaced, deleted at the next checkpoint */
     private pendingDelete = new Map<string, RealFile>();
 
@@ -141,28 +133,17 @@ export class OPFSScratch {
         const out = new Map<string, FileSystemSyncAccessHandle>();
         for (const [path, file] of this.real) out.set(path, file.handle);
         for (const [path, file] of this.mapped) out.set(path, file.handle);
-        for (const [path, file] of this.ephemeral) out.set(path, file.handle);
         return out;
     }
 
     /** Get the sync access handle of a virtual path, if it is open */
     getHandle(path: string): FileSystemSyncAccessHandle | undefined {
-        return this.mapped.get(path)?.handle ?? this.real.get(path)?.handle ?? this.ephemeral.get(path)?.handle;
+        return this.mapped.get(path)?.handle ?? this.real.get(path)?.handle;
     }
 
     /** Does the file exist? */
     exists(path: string): boolean {
-        return this.mapped.has(path) || this.real.has(path) || this.ephemeral.has(path);
-    }
-
-    /** Is the path the ephemeral directory or a file in it? */
-    static isEphemeral(path: string): boolean {
-        return path === OPFS_SCRATCH_DIR || path.startsWith(OPFS_SCRATCH_PREFIX);
-    }
-
-    /** The names of the ephemeral files, DuckDB lists its temporary directory */
-    listEphemeral(): string[] {
-        return [...this.ephemeral.keys()].map(path => path.slice(OPFS_SCRATCH_PREFIX.length));
+        return this.mapped.has(path) || this.real.has(path);
     }
 
     /** Is there anything for a checkpoint to do? */
@@ -176,9 +157,7 @@ export class OPFSScratch {
     /** Prepare a real file ahead of a query. Returns false if the file does not exist, it is then created in the
      * scratch when first opened */
     async prepare(path: string): Promise<boolean> {
-        if (this.exists(path) || this.pendingDelete.has(path) || OPFSScratch.isEphemeral(path)) {
-            return this.exists(path);
-        }
+        if (this.exists(path) || this.pendingDelete.has(path)) return this.exists(path);
         let located;
         try {
             located = await this.locate(path, false);
@@ -235,10 +214,8 @@ export class OPFSScratch {
         await this.checkpoint();
         for (const file of this.real.values()) file.handle.close();
         for (const file of this.pool) file.handle.close();
-        for (const file of this.ephemeral.values()) file.handle.close();
         this.real.clear();
         this.pool = [];
-        this.ephemeral.clear();
         this.manifest.close();
         const scratchRoot = await (await this.root.getDirectoryHandle(ROOT_DIR)).getDirectoryHandle(SCRATCH_DIR);
         await scratchRoot.removeEntry(this.scratchDir.name, { recursive: true }).catch(() => {});
@@ -258,11 +235,6 @@ export class OPFSScratch {
                 `Cannot create ${path}: the OPFS scratch pool of ${this.poolSize} files is exhausted, ` +
                     `a single query created more files than that`,
             );
-        }
-        if (OPFSScratch.isEphemeral(path)) {
-            // Lives in the pool file until it is removed, nothing to record
-            this.ephemeral.set(path, poolFile);
-            return poolFile.handle;
         }
         this.pendingDelete.delete(path);
         this.mapped.set(path, poolFile);
@@ -286,22 +258,15 @@ export class OPFSScratch {
     move(from: string, to: string): void {
         if (from === to) return;
         this.debug('scratch move', from, to);
-        const source = this.mapped.get(from) ?? this.ephemeral.get(from);
+        const source = this.mapped.get(from);
         const realSource = this.real.get(from);
         if (!source && !realSource) {
             throw new Error(`Cannot move ${from}: the file is not open`);
         }
         // Whatever was at the target is removed
         this.removeInternal(to);
-        if (source && OPFSScratch.isEphemeral(to)) {
-            this.mapped.delete(from);
-            this.ephemeral.delete(from);
-            this.ephemeral.set(to, source);
-            return;
-        }
         if (source) {
             this.mapped.delete(from);
-            this.ephemeral.delete(from);
             this.mapped.set(to, source);
         } else {
             // A real file moves through the scratch: it keeps its handle and is moved into place at the checkpoint
@@ -325,13 +290,6 @@ export class OPFSScratch {
     }
 
     private removeInternal(path: string): void {
-        const ephemeral = this.ephemeral.get(path);
-        if (ephemeral) {
-            this.ephemeral.delete(path);
-            ephemeral.handle.truncate(0);
-            this.pool.push(ephemeral);
-            return;
-        }
         const poolFile = this.mapped.get(path);
         if (poolFile) {
             this.mapped.delete(path);

@@ -103,6 +103,7 @@ import { longQueries } from './long_queries.test';
 //import { testEXCEL } from './excel.test';
 //import { testJSON } from './json.test';
 import { testPivot } from './pivot.test';
+import { testSpill } from './spill.test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
@@ -116,6 +117,7 @@ testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
 testAllTypes(() => db!);
 testAllTypesAsync(() => adb!);
+testSpill(() => adb!);
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL, duckdb.DuckDBDataProtocol.HTTP);
 testBatchStream(() => db!);
