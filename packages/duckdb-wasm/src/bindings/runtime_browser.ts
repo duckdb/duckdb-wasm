@@ -1,6 +1,6 @@
 import { StatusCode } from '../status';
 import { LogEvent, LogLevel, LogOrigin, LogTopic, Logger } from '../log';
-import { OPFSScratch, OPFS_PREFIX } from './opfs_scratch';
+import { OPFSScratch, OPFS_PREFIX, OPFSAccessMode } from './opfs_scratch';
 import { JsBufferFile, JsBufferFileSystem } from './js_buffer_file';
 import { WorkerResponseType } from '../parallel/worker_request';
 import { addS3Headers, getHTTPUrl } from '../utils';
@@ -30,6 +30,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _opfsScratch: OPFSScratch | null;
     _opfsScratchMount: Promise<OPFSScratch> | null;
     _logger: Logger | null;
+    /** OPFS files prepared ahead of queries, held open until dropped */
+    _opfsPinned: Set<string>;
+    /** DuckDB's open handles per OPFS file, files it does not hold are released after a checkpoint */
+    _opfsOpen: Map<string, number>;
     /** js_buffer:// files, DuckDB's temporary directory among them */
     _jsBuffers: JsBufferFileSystem;
     jsBuffer(path: string): JsBufferFile;
@@ -51,6 +55,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _opfsScratch: null,
     _opfsScratchMount: null,
     _logger: null,
+    _opfsPinned: new Set<string>(),
+    _opfsOpen: new Map<string, number>(),
     _jsBuffers: new JsBufferFileSystem(),
     setLogger(logger: Logger): void {
         BROWSER_RUNTIME._logger = logger;
@@ -165,11 +171,24 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         if (BROWSER_RUNTIME._opfsCheckpoint) {
             await BROWSER_RUNTIME._opfsCheckpoint;
         }
-        if (!scratch.dirty) return;
+        let releasable = false;
+        for (const path of scratch.handles.keys()) {
+            if (!BROWSER_RUNTIME._opfsPinned.has(path) && !(BROWSER_RUNTIME._opfsOpen.get(path) ?? 0)) {
+                releasable = true;
+                break;
+            }
+        }
+        if (!scratch.dirty && !releasable) return;
         BROWSER_RUNTIME._opfsCheckpoint = (async () => {
             await scratch.checkpoint();
-            // The handles of moved files changed
+            // The handles of moved files changed; files neither registered nor open in DuckDB are released, an
+            // access handle held here is unavailable to other tabs
             for (const [path, handle] of scratch.handles) {
+                if (!BROWSER_RUNTIME._opfsPinned.has(path) && !(BROWSER_RUNTIME._opfsOpen.get(path) ?? 0)) {
+                    scratch.release(path);
+                    BROWSER_RUNTIME._files.delete(path);
+                    continue;
+                }
                 BROWSER_RUNTIME._files.set(path, handle);
             }
         })();
@@ -180,23 +199,38 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
     },
     /** Prepare a file handle that could only be acquired aschronously */
-    async prepareFileHandles(filePaths: string[], protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
-        BROWSER_RUNTIME.debug('prepare', filePaths);
+    async prepareFileHandles(
+        filePaths: string[],
+        protocol: DuckDBDataProtocol,
+        mode: OPFSAccessMode = 'read',
+    ): Promise<PreparedDBFileHandle[]> {
+        BROWSER_RUNTIME.debug('prepare', filePaths, mode);
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS) {
             await BROWSER_RUNTIME.assignOPFSRoot();
             const scratch = BROWSER_RUNTIME._opfsScratch!;
-            const result: PreparedDBFileHandle[] = [];
+            // Glob patterns stand for the files they match
+            const paths: string[] = [];
             for (const path of filePaths) {
+                if (/[*?[]/.test(path)) {
+                    paths.push(...(await scratch.expand(path)));
+                } else {
+                    paths.push(path);
+                }
+            }
+            const result: PreparedDBFileHandle[] = [];
+            for (const path of paths) {
                 const cached = BROWSER_RUNTIME._files.get(path);
-                if (cached) {
+                if (cached && (mode === 'read' || !scratch.isReadOnly(path))) {
+                    BROWSER_RUNTIME._opfsPinned.add(path);
                     result.push({ path, handle: cached, fromCached: true });
                     continue;
                 }
                 // Existing files are opened ahead of the query, files that do not exist yet are created in the
                 // scratch when DuckDB opens them
-                if (await scratch.prepare(path)) {
+                if (await scratch.prepare(path, mode)) {
                     const handle = scratch.getHandle(path)!;
                     BROWSER_RUNTIME._files.set(path, handle);
+                    BROWSER_RUNTIME._opfsPinned.add(path);
                     result.push({ path, handle, fromCached: false });
                 }
             }
@@ -208,7 +242,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     async prepareDBFileHandle(dbPath: string, protocol: DuckDBDataProtocol): Promise<PreparedDBFileHandle[]> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this.prepareFileHandles) {
             const filePaths = [dbPath, `${dbPath}.wal`, `${dbPath}.wal.checkpoint`, `${dbPath}.wal.recovery`];
-            return this.prepareFileHandles(filePaths, protocol);
+            return this.prepareFileHandles(filePaths, protocol, 'write');
         }
         throw new Error(`Unsupported protocol ${protocol} for path ${dbPath} with protocol ${protocol}`);
     },
@@ -469,8 +503,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 }
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
                     let handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
+                    const scratch = BROWSER_RUNTIME._opfsScratch;
                     if (!handle) {
-                        const scratch = BROWSER_RUNTIME._opfsScratch;
                         if (!scratch) {
                             throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
                         }
@@ -484,9 +518,16 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         handle = scratch.open(file.fileName);
                         BROWSER_RUNTIME._files.set(file.fileName, handle);
                     }
+                    if (flags & FileFlags.FILE_FLAGS_WRITE && scratch?.isReadOnly(file.fileName)) {
+                        throw new Error(
+                            `${file.fileName} is open read-only, it was prepared for reading (other tabs may read it ` +
+                                `too); attach it or register it for writing`,
+                        );
+                    }
                     if (flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW) {
                         handle.truncate(0);
                     }
+                    BROWSER_RUNTIME._opfsOpen.set(file.fileName, (BROWSER_RUNTIME._opfsOpen.get(file.fileName) ?? 0) + 1);
                     const result = mod._malloc(3 * 8);
                     const fileSize = handle.getSize();
                     mod.HEAPF64[(result >> 3) + 0] = fileSize;
@@ -549,6 +590,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     }
                 }
                 mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [path]);
+            } else if (path.startsWith(OPFS_PREFIX) && BROWSER_RUNTIME._opfsScratch) {
+                for (const filePath of BROWSER_RUNTIME._opfsScratch.glob(path)) {
+                    mod.ccall('duckdb_web_fs_glob_add_path', null, ['string'], [filePath]);
+                }
             } else {
                 for (const [filePath] of BROWSER_RUNTIME._files!.entries() || []) {
                     if (filePath.startsWith(path)) {
@@ -617,6 +662,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (handle) {
                         handle.flush();
+                        const open = BROWSER_RUNTIME._opfsOpen.get(file.fileName) ?? 0;
+                        if (open > 0) BROWSER_RUNTIME._opfsOpen.set(file.fileName, open - 1);
                     }
                     return;
                 }
@@ -629,6 +676,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     dropFile: (mod: DuckDBModule, fileNamePtr: number, fileNameLen: number) => {
         const fileName = readString(mod, fileNamePtr, fileNameLen);
         BROWSER_RUNTIME.debug('drop', fileName);
+        BROWSER_RUNTIME._opfsPinned.delete(fileName);
         if (BROWSER_RUNTIME._files?.has(fileName)) {
             const handle = BROWSER_RUNTIME._files?.get(fileName);
             BROWSER_RUNTIME._files.delete(fileName);
@@ -835,26 +883,55 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             });
         }
     },
-    // Directories: js_buffer:// has them (DuckDB's temporary directory lives there)
+    // Directories: opfs:// has real ones (the tree below /duckdb/fs), js_buffer:// a flat namespace
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('check directory', path);
+        if (path.startsWith(OPFS_PREFIX)) {
+            return BROWSER_RUNTIME._opfsScratch?.directoryExists(path) ?? false;
+        }
         return BROWSER_RUNTIME._jsBuffers.directoryExists(path);
     },
     createDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('create directory', path);
+        if (path.startsWith(OPFS_PREFIX)) {
+            if (!BROWSER_RUNTIME._opfsScratch) {
+                throw new Error(`Cannot create directory ${path}: OPFS is not mounted`);
+            }
+            BROWSER_RUNTIME._opfsScratch.createDirectory(path);
+        }
     },
     removeDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('remove directory', path);
-        if (JsBufferFileSystem.isPath(path)) {
+        if (path.startsWith(OPFS_PREFIX)) {
+            BROWSER_RUNTIME._opfsScratch?.removeDirectory(path);
+            for (const file of [...BROWSER_RUNTIME._files.keys()]) {
+                if (file.startsWith(path.endsWith('/') ? path : path + '/')) {
+                    BROWSER_RUNTIME._files.delete(file);
+                }
+            }
+        } else if (JsBufferFileSystem.isPath(path)) {
             BROWSER_RUNTIME._jsBuffers.removeDirectory(path);
         }
     },
     listDirectoryEntries: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('list directory', path);
+        if (path.startsWith(OPFS_PREFIX)) {
+            const scratch = BROWSER_RUNTIME._opfsScratch;
+            if (!scratch) return false;
+            for (const entry of scratch.list(path)) {
+                mod.ccall(
+                    'duckdb_web_fs_directory_add_entry',
+                    null,
+                    ['string', 'boolean'],
+                    [entry.name, entry.isDirectory],
+                );
+            }
+            return true;
+        }
         if (!JsBufferFileSystem.isPath(path)) {
             return false;
         }
@@ -876,6 +953,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             BROWSER_RUNTIME._opfsScratch.move(from, to);
             BROWSER_RUNTIME._files.delete(from);
             BROWSER_RUNTIME._files.set(to, BROWSER_RUNTIME._opfsScratch.getHandle(to)!);
+            BROWSER_RUNTIME._opfsOpen.set(to, BROWSER_RUNTIME._opfsOpen.get(from) ?? 0);
+            BROWSER_RUNTIME._opfsOpen.delete(from);
+            if (BROWSER_RUNTIME._opfsPinned.delete(from)) BROWSER_RUNTIME._opfsPinned.add(to);
         } else if (handle !== undefined) {
             const to_handle = BROWSER_RUNTIME._files?.get(to);
             if (to_handle instanceof FileSystemSyncAccessHandle) {
