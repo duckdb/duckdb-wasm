@@ -49,6 +49,7 @@
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/http_wasm.h"
 #include "duckdb/web/io/buffered_filesystem.h"
+#include "duckdb/web/io/remote_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/ifstream.h"
 #include "duckdb/web/io/web_filesystem.h"
@@ -66,15 +67,18 @@
 
 extern "C" int32_t duckdb_extension_core_functions_describe(duckdb_extension_descriptor* descriptor);
 extern "C" int32_t duckdb_extension_nanoarrow_describe(duckdb_extension_descriptor* descriptor);
+extern "C" int32_t duckdb_extension_httplib_describe(duckdb_extension_descriptor* descriptor);
 
 namespace duckdb {
 
 namespace {
-// core_functions and nanoarrow are linked statically, register them for every database opened afterwards
+// core_functions and nanoarrow are linked statically, the HTTP client is the httplib capability of this build:
+// register them for every database opened afterwards
 struct StaticExtensionsInit {
     StaticExtensionsInit() {
         duckdb_register_static_extension(duckdb_extension_core_functions_describe);
         duckdb_register_static_extension(duckdb_extension_nanoarrow_describe);
+        duckdb_register_static_extension(duckdb_extension_httplib_describe);
     }
 } _static_extensions_init;
 }  // namespace
@@ -1035,7 +1039,10 @@ web::Status WebDB::Open(std::string_view args_json) {
         auto buffered_fs_ptr = buffered_fs.get();
 
         duckdb::DBConfig db_config;
-        db_config.file_system = std::move(make_uniq<VirtualFileSystem>(std::move(buffered_fs)));
+        auto virtual_fs = make_uniq<VirtualFileSystem>(std::move(buffered_fs));
+        // Remote files are read by the web file system too, DuckDB needs a sub file system to claim them
+        virtual_fs->RegisterSubSystem(make_uniq<io::RemoteWebFileSystem>(*buffered_fs_ptr));
+        db_config.file_system = std::move(virtual_fs);
         db_config.SetOptionByName("allow_unsigned_extensions", config_->allow_unsigned_extensions);
         db_config.SetOption("arrow_lossless_conversion", config_->arrow_lossless_conversion);
         db_config.options.maximum_threads = config_->maximum_threads;
@@ -1055,9 +1062,6 @@ web::Status WebDB::Open(std::string_view args_json) {
         RegisterCustomExtensionOptions(db);
 
         auto& config = duckdb::DBConfig::GetConfig(*db->instance);
-        if (config.GetHTTPUtil().GetName() != string("WasmHTTPUtils")) {
-            config.SetHTTPUtil(make_shared_ptr<HTTPWasmUtil>());
-        }
 
 #ifdef WASM_LOADABLE_EXTENSIONS
         config.SetExternalExtensionProvider(make_shared_ptr<WasmExtensionProvider>());

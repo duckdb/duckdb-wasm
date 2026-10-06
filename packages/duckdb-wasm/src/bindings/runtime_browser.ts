@@ -519,6 +519,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 xhr.send(null);
                 return xhr.status == 206 || xhr.status == 200;
             } else {
+                const handle = BROWSER_RUNTIME._files.get(path);
+                if (handle instanceof FileSystemSyncAccessHandle) {
+                    // OPFS files are created when their handle is prepared, before anything is written to them.
+                    // An empty one does not exist yet as far as DuckDB is concerned: a database is created in it
+                    // and a COPY writes it directly instead of through a temporary file it cannot rename.
+                    return handle.getSize() > 0;
+                }
                 return BROWSER_RUNTIME._files.has(path);
             }
         } catch (e: any) {

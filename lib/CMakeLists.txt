@@ -217,7 +217,6 @@ add_library(
   duckdb_web
   ${CMAKE_SOURCE_DIR}/src/arrow_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/arrow_ipc_writer.cc
-  ${CMAKE_SOURCE_DIR}/src/http_wasm.cc
   ${CMAKE_SOURCE_DIR}/src/config.cc
   ${CMAKE_SOURCE_DIR}/src/csv_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/functions/table_function_relation.cc
@@ -239,6 +238,11 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/utils/wasm_response.cc
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
+
+# The HTTP client is its own archive, registered like duckdb's httplib capability, which is not linked
+add_library(duckdb_web_httplib STATIC ${CMAKE_SOURCE_DIR}/src/http_wasm.cc)
+target_link_libraries(duckdb_web_httplib duckdb rapidjson)
+target_link_libraries(duckdb_web duckdb_web_httplib)
 
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(EXTENSION_CACHE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.ccache/extension")
