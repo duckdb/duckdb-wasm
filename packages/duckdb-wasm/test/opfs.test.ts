@@ -470,6 +470,36 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
         });
 
+        it('Persistent secrets live in opfs://home and are shared between instances', async () => {
+            const home = await conn.query(`SELECT current_setting('home_directory') AS home`);
+            expect(home.getChildAt(0)?.get(0)).toEqual('opfs://home');
+            await conn.query(`CREATE PERSISTENT SECRET opfs_secret (TYPE http, BEARER_TOKEN 'token')`);
+
+            const another = async (check: (conn: AsyncDuckDBConnection) => Promise<void>) => {
+                const worker = new Worker(bundle().mainWorker!);
+                const db2 = new AsyncDuckDB(logger, worker);
+                await db2.instantiate(bundle().mainModule, bundle().pthreadWorker);
+                await db2.open({});
+                const conn2 = await db2.connect();
+                try {
+                    await check(conn2);
+                } finally {
+                    await conn2.close();
+                    await db2.terminate();
+                }
+            };
+            // An in-memory instance reads the secret the first one stored, and drops it
+            await another(async conn2 => {
+                const secrets = await conn2.query(`SELECT name FROM duckdb_secrets() WHERE persistent`);
+                expect(secrets.getChildAt(0)?.toArray()).toEqual(['opfs_secret']);
+                await conn2.query(`DROP PERSISTENT SECRET opfs_secret`);
+            });
+            await another(async conn3 => {
+                const secrets = await conn3.query(`SELECT count(*)::INTEGER AS cnt FROM duckdb_secrets() WHERE persistent`);
+                expect(secrets.getChildAt(0)?.get(0)).toEqual(0);
+            });
+        });
+
         it('Copy CSV to OPFS + Load CSV', async () => {
             //1. data preparation
             db.config.opfs = {

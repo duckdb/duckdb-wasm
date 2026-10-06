@@ -157,6 +157,9 @@ class BufferedFileSystem : public duckdb::FileSystem {
     idx_t SeekPosition(duckdb::FileHandle &handle) override;
     /// Whether or not we can seek into the file
     bool CanSeek() override;
+    /// The web file system is the local file system of the platform: DuckDB routes what it writes next to the
+    /// user (secrets, extension installs) to the local file system
+    bool IsLocalFileSystem() const override { return true; }
     /// Whether or not the FS handles plain files on disk. This is relevant for certain optimizations, as random reads
     /// in a file on-disk are much cheaper than e.g. random reads in a file over the network
     bool OnDiskFile(duckdb::FileHandle &handle) override;

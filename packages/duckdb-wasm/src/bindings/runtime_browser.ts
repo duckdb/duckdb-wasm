@@ -163,6 +163,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             BROWSER_RUNTIME._opfsScratch = await BROWSER_RUNTIME._opfsScratchMount;
         }
     },
+    /** Mount OPFS where the browser has it, DuckDB's home directory lives there */
+    async mountOPFS(): Promise<void> {
+        if (typeof navigator === 'undefined' || typeof navigator.storage?.getDirectory !== 'function') {
+            return;
+        }
+        await BROWSER_RUNTIME.assignOPFSRoot();
+    },
     /** Move files created during queries to their real paths, refill the scratch pool. Called between queries. */
     async checkpointFiles(): Promise<void> {
         const scratch = BROWSER_RUNTIME._opfsScratch;
@@ -251,6 +258,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         switch (feature) {
             case 1:
                 return typeof BigInt64Array !== 'undefined';
+            case 2:
+                return typeof navigator !== 'undefined' && typeof navigator.storage?.getDirectory === 'function';
             default:
                 console.warn(`test for unknown feature: ${feature}`);
                 return false;
@@ -729,6 +738,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 if (!handle) {
                     throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
                 }
+                BROWSER_RUNTIME._opfsScratch?.markWritten(file.fileName);
                 return handle.truncate(newSize);
             }
         }
@@ -850,6 +860,7 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 if (!handle) {
                     throw new Error(`No OPFS access handle registered with name: ${file.fileName}`);
                 }
+                BROWSER_RUNTIME._opfsScratch?.markWritten(file.fileName);
                 const input = mod.HEAPU8.subarray(buf, buf + bytes);
                 return handle.write(input, { at: location });
             }

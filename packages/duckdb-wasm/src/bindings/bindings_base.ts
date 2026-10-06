@@ -533,6 +533,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         throw new Error(`prepareFileHandle: unsupported protocol ${protocol}`);
     }
+    /** Mount the origin private file system, where the runtime has one */
+    public async mountOPFS(): Promise<void> {
+        if (this._runtime.mountOPFS) {
+            await this._runtime.mountOPFS();
+        }
+    }
     /** Finish file operations that could only be completed asynchronously, called between queries */
     public async checkpointFiles(): Promise<void> {
         if (this._runtime.checkpointFiles) {

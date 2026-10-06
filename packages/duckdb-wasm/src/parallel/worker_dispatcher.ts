@@ -154,6 +154,8 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                         await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
                         request.data.useDirectIO = true;
                     }
+                    // DuckDB's home directory is opfs://home where OPFS exists, it is in use from the start
+                    await this._bindings.mountOPFS();
                     this._bindings.open(request.data);
                     this.sendOK(request);
                     break;
@@ -226,6 +228,8 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.RUN_QUERY: {
                     const result = this._bindings.runQuery(request.data[0], request.data[1]);
+                    // Files the query wrote are in place when its result is acknowledged
+                    await this._bindings.checkpointFiles();
                     this.postMessage(
                         {
                             messageId: this._nextMessageId++,
@@ -252,6 +256,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.START_PENDING_QUERY: {
                     const result = this._bindings.startPendingQuery(request.data[0], request.data[1], request.data[2]);
+                    await this._bindings.checkpointFiles();
                     const transfer = [];
                     if (result) {
                         transfer.push(result.buffer);
@@ -269,6 +274,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.POLL_PENDING_QUERY: {
                     const result = this._bindings.pollPendingQuery(request.data);
+                    await this._bindings.checkpointFiles();
                     const transfer = [];
                     if (result) {
                         transfer.push(result.buffer);

@@ -25,6 +25,10 @@
  */
 
 export const OPFS_PREFIX = 'opfs://';
+/** DuckDB's home directory: small files below it are cached at mount, DuckDB opens them (persistent secrets)
+ * without naming them in SQL, so they cannot be prepared ahead of a query */
+export const OPFS_HOME = 'opfs://home';
+const CACHED_FILE_LIMIT = 1 << 20;
 const ROOT_DIR = 'duckdb';
 const FS_DIR = 'fs';
 const SCRATCH_DIR = 'scratch';
@@ -44,6 +48,8 @@ interface PoolFile {
     fileHandle: FileSystemFileHandle;
     handle: FileSystemSyncAccessHandle;
     origin?: { directory: FileSystemDirectoryHandle; name: string };
+    /** A copy of a cached file: discarded at the checkpoint unless it was written to */
+    copy?: boolean;
 }
 
 /** A real file: its directory and name under /duckdb/fs, or at the root for the legacy layout */
@@ -102,6 +108,10 @@ export class OPFSScratch {
     private real = new Map<string, RealFile>();
     /** Files below /duckdb/fs, known from the walk; open or not */
     private tree = new Set<string>();
+    /** The content of small files below the home directory, served copy-on-open */
+    private cached = new Map<string, Uint8Array>();
+    /** Virtual paths written to since the last checkpoint */
+    private written = new Set<string>();
     /** Real files removed or replaced, deleted at the next checkpoint */
     private pendingDelete = new Map<string, RealFile>();
     /** Files removed that were not open, deleted by path at the next checkpoint */
@@ -157,6 +167,12 @@ export class OPFSScratch {
                 await this.scan(entry as FileSystemDirectoryHandle, path + '/');
             } else {
                 this.tree.add(path);
+                if (path.startsWith(OPFS_HOME + '/') && !this.real.has(path) && !this.mapped.has(path)) {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    if (file.size <= CACHED_FILE_LIMIT) {
+                        this.cached.set(path, new Uint8Array(await file.arrayBuffer()));
+                    }
+                }
             }
         }
     }
@@ -165,14 +181,16 @@ export class OPFSScratch {
     async rescan(): Promise<void> {
         const files = new Set<string>();
         const directories = new Set<string>();
-        const previous = { tree: this.tree, directories: this.directories };
+        const previous = { tree: this.tree, directories: this.directories, cached: this.cached };
         this.tree = files;
         this.directories = directories;
+        this.cached = new Map();
         try {
             await this.scan(this.fsDir, OPFS_PREFIX);
         } catch (e: any) {
             this.tree = previous.tree;
             this.directories = previous.directories;
+            this.cached = previous.cached;
             throw e;
         }
         // What this instance holds or changed stays as it knows it
@@ -289,6 +307,24 @@ export class OPFSScratch {
             this.pendingCreateDirs.delete(path);
         }
         for (const [path, poolFile] of this.mapped) {
+            if (poolFile.copy && !this.written.has(path)) {
+                // Read through the copy, the real file is untouched
+                poolFile.handle.truncate(0);
+                poolFile.copy = undefined;
+                this.pool.push(poolFile);
+                this.mapped.delete(path);
+                continue;
+            }
+            if (poolFile.copy && path.startsWith(OPFS_HOME + '/')) {
+                const size = poolFile.handle.getSize();
+                if (size <= CACHED_FILE_LIMIT) {
+                    const bytes = new Uint8Array(size);
+                    poolFile.handle.read(bytes, { at: 0 });
+                    this.cached.set(path, bytes);
+                } else {
+                    this.cached.delete(path);
+                }
+            }
             const target = await this.locate(path, true);
             if (!target) continue;
             // A real file of that name is replaced
@@ -308,6 +344,7 @@ export class OPFSScratch {
             this.tree.add(path);
             this.mapped.delete(path);
         }
+        this.written.clear();
         this.rewriteManifest();
         await this.replenish();
     }
@@ -332,7 +369,8 @@ export class OPFSScratch {
         const handle = this.getHandle(path);
         this.debug('scratch open', path, handle ? 'existing' : 'new');
         if (handle) return handle;
-        if (this.tree.has(path)) {
+        const cached = this.cached.get(path);
+        if (this.tree.has(path) && !cached) {
             throw new Error(`Cannot open ${path} during a query: the file exists but was not prepared before it`);
         }
         const poolFile = this.pool.pop();
@@ -343,9 +381,19 @@ export class OPFSScratch {
             );
         }
         this.pendingDelete.delete(path);
+        if (cached) {
+            // The copy stands in for the real file, the checkpoint keeps it only if it was written to
+            poolFile.handle.write(cached, { at: 0 });
+            poolFile.copy = true;
+        }
         this.mapped.set(path, poolFile);
         this.appendManifest(path, poolFile.name);
         return poolFile.handle;
+    }
+
+    /** Note a write, the checkpoint moves written copies into place */
+    markWritten(path: string): void {
+        if (this.mapped.get(path)?.copy) this.written.add(path);
     }
 
     /** Release a real file's handle without removing the file (DuckDB dropped it from its registry) */
@@ -373,9 +421,11 @@ export class OPFSScratch {
         // Whatever was at the target is removed
         this.removeInternal(to);
         this.tree.delete(from);
+        this.cached.delete(from);
         if (source) {
             this.mapped.delete(from);
             this.mapped.set(to, source);
+            if (this.written.delete(from)) this.written.add(to);
         } else {
             // A real file moves through the scratch: it keeps its handle and is moved into place at the checkpoint
             this.real.delete(from);
@@ -512,10 +562,12 @@ export class OPFSScratch {
     }
 
     private removeInternal(path: string): void {
+        this.cached.delete(path);
         const poolFile = this.mapped.get(path);
         if (poolFile) {
             this.mapped.delete(path);
             poolFile.handle.truncate(0);
+            poolFile.copy = undefined;
             if (poolFile.origin) {
                 // Was a real file that moved through the scratch, it is deleted at the checkpoint
                 poolFile.handle.close();

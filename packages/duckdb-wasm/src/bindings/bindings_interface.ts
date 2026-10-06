@@ -58,6 +58,7 @@ export interface DuckDBBindings {
     prepareFileHandle(path: string, protocol: DuckDBDataProtocol, mode?: OPFSAccessMode): Promise<string[]>;
     prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     checkpointFiles(): Promise<void>;
+    mountOPFS(): Promise<void>;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;
     dropFiles(names?: string[]): void;

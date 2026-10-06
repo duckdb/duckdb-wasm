@@ -180,6 +180,8 @@ export interface DuckDBRuntime {
     prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
     /** Finish file operations that could only be completed asynchronously, called between queries */
     checkpointFiles?: () => Promise<void>;
+    /** Mount the origin private file system, a no-op where there is none */
+    mountOPFS?: () => Promise<void>;
 
     // Internal API - experimental
     progressUpdate(final: number, percentage: number, iteration: number): void;
