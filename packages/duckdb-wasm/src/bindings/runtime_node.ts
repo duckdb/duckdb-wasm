@@ -103,9 +103,9 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                         NODE_RUNTIME._filesById?.set(file.fileId!, fd);
                     }
                     const fileSize = fs.fstatSync(fd).size;
-                    const result = mod._malloc(2 * 8);
-                    mod.HEAPF64[(result >> 3) + 0] = +fileSize;
-                    mod.HEAPF64[(result >> 3) + 1] = 0;
+                    const result = (mod._malloc(2 * 8) >>> 0);
+                    mod.HEAPF64[(result >>> 3) + 0] = +fileSize;
+                    mod.HEAPF64[(result >>> 3) + 1] = 0;
                     return result;
                 }
                 case DuckDBDataProtocol.JS_BUFFER: {
@@ -117,10 +117,10 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                     if (flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW) {
                         buffer.truncate(0);
                     }
-                    const result = mod._malloc(3 * 8);
-                    mod.HEAPF64[(result >> 3) + 0] = buffer.getSize();
-                    mod.HEAPF64[(result >> 3) + 1] = 0;
-                    mod.HEAPF64[(result >> 3) + 2] = 0;
+                    const result = (mod._malloc(3 * 8) >>> 0);
+                    mod.HEAPF64[(result >>> 3) + 0] = buffer.getSize();
+                    mod.HEAPF64[(result >>> 3) + 1] = 0;
+                    mod.HEAPF64[(result >>> 3) + 2] = 0;
                     return result;
                 }
                 case DuckDBDataProtocol.BROWSER_FILEREADER:

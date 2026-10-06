@@ -273,6 +273,19 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-threads.wasm'), path.resolve(d
         external: EXTERNALS_TEST_BROWSER,
     });
 
+    console.log('[ ESBUILD ] tests-tpch-scale.js');
+    await esbuild.build({
+        entryPoints: ['./test/index_tpch_scale.ts'],
+        outfile: 'dist/tests-tpch-scale.js',
+        platform: 'browser',
+        format: 'iife',
+        globalName: 'duckdb',
+        target: TARGET_BROWSER_TEST,
+        bundle: true,
+        sourcemap: is_debug ? 'inline' : true,
+        external: EXTERNALS_TEST_BROWSER,
+    });
+
     console.log('[ ESBUILD ] tests-node.cjs');
     await esbuild.build({
         entryPoints: ['./test/index_node.ts'],
