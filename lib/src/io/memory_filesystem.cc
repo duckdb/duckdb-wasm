@@ -1,4 +1,5 @@
 #include "duckdb/web/io/memory_filesystem.h"
+#include "duckdb/web/status.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -35,15 +36,15 @@ void MemoryFileSystem::FileHandle::Close() {
 }
 
 /// Register a file buffer
-arrow::Status MemoryFileSystem::RegisterFileBuffer(std::string name, std::vector<char> buffer) {
-    if (file_paths.count(name)) return arrow::Status::Invalid("file already registered");
+web::Status MemoryFileSystem::RegisterFileBuffer(std::string name, std::vector<char> buffer) {
+    if (file_paths.count(name)) return web::Status::Invalid("file already registered");
     auto file_buffer = std::make_unique<FileBuffer>(next_file_id++, std::move(name), std::move(buffer));
     auto file_buffer_ptr = file_buffer.get();
     auto file_id = file_buffer->file_id;
     std::string_view file_path = file_buffer->file_path;
     files.insert({file_id, std::move(file_buffer)});
     file_paths.insert({file_path, file_buffer_ptr});
-    return arrow::Status::OK();
+    return web::Status::OK();
 }
 
 /// Open a file

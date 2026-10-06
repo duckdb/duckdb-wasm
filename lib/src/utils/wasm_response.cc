@@ -1,8 +1,8 @@
 #include "duckdb/web/utils/wasm_response.h"
+#include "duckdb/web/status.h"
 
 #include <cstdint>
 
-#include "arrow/buffer.h"
 #include "duckdb/web/webdb.h"
 
 namespace duckdb {
@@ -15,7 +15,7 @@ void WASMResponseBuffer::Clear() {
     result_arrow_.reset();
 }
 
-bool WASMResponseBuffer::Store(WASMResponse& response, arrow::Status status) {
+bool WASMResponseBuffer::Store(WASMResponse& response, web::Status status) {
     Clear();
     response.statusCode = static_cast<uint64_t>(status.code());
     if (!status.ok()) {
@@ -49,7 +49,7 @@ void WASMResponseBuffer::Store(WASMResponse& response, std::string_view value) {
     response.dataSize = value.size();
 }
 
-void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<std::shared_ptr<arrow::Buffer>> result) {
+void WASMResponseBuffer::Store(WASMResponse& response, web::Result<std::shared_ptr<web::Buffer>> result) {
     if (!Store(response, result.status())) return;
     result_arrow_ = std::move(result.ValueUnsafe());
     if (result_arrow_ == nullptr) {
@@ -61,20 +61,20 @@ void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<std::shared
     response.dataSize = result_arrow_->size();
 }
 
-void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<std::string> result) {
+void WASMResponseBuffer::Store(WASMResponse& response, web::Result<std::string> result) {
     if (!Store(response, result.status())) return;
     result_str_ = std::move(result.ValueUnsafe());
     response.dataOrValue = reinterpret_cast<uintptr_t>(result_str_.data());
     response.dataSize = reinterpret_cast<uintptr_t>(result_str_.size());
 }
 
-void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<double> result) {
+void WASMResponseBuffer::Store(WASMResponse& response, web::Result<double> result) {
     if (!Store(response, result.status())) return;
     response.dataOrValue = result.ValueUnsafe();
     response.dataSize = 0;
 }
 
-void WASMResponseBuffer::Store(WASMResponse& response, arrow::Result<size_t> result) {
+void WASMResponseBuffer::Store(WASMResponse& response, web::Result<size_t> result) {
     if (!Store(response, result.status())) return;
     response.dataOrValue = result.ValueUnsafe();
     response.dataSize = 0;

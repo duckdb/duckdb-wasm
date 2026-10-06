@@ -2,11 +2,11 @@
 #define INCLUDE_DUCKDB_WEB_UDF_H_
 
 #include <cstdint>
+#include "duckdb/web/status.h"
 #include <optional>
 #include <string>
 #include <string_view>
 
-#include "arrow/status.h"
 #include "duckdb/common/types.hpp"
 #include "rapidjson/document.h"
 
@@ -24,7 +24,7 @@ struct UDFFunctionDeclaration {
     duckdb::LogicalType return_type = duckdb::LogicalType::INVALID;
 
     /// Read from a document
-    arrow::Status ReadFrom(const rapidjson::Document& doc);
+    web::Status ReadFrom(const rapidjson::Document& doc);
 };
 
 }  // namespace web

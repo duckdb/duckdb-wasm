@@ -172,7 +172,6 @@ set(CMAKE_BUILD_PARALLEL_LEVEL ${NPROCS})
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 
 include("${CMAKE_SOURCE_DIR}/cmake/duckdb.cmake")
-include("${CMAKE_SOURCE_DIR}/cmake/arrow.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/benchmark.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/gflags.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/googletest.cmake")
@@ -247,7 +246,7 @@ if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(DUCKDB_WEB_JSON "")
 
   target_sources(duckdb_web PRIVATE ${CMAKE_SOURCE_DIR}/src/extension_provider.cc)
-  target_link_libraries(duckdb_web duckdb duckdb_nanoarrow arrow rapidjson ${THREAD_LIBS})
+  target_link_libraries(duckdb_web duckdb duckdb_nanoarrow rapidjson ${THREAD_LIBS})
 else()
   add_library(
     duckdb_web_parquet
@@ -261,7 +260,7 @@ else()
   set(DUCKDB_WEB_JSON "duckdb_web_json")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
 
-  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} duckdb_nanoarrow arrow rapidjson ${THREAD_LIBS})
+  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} duckdb_nanoarrow rapidjson ${THREAD_LIBS})
   target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
   target_link_libraries(duckdb_web_json duckdb duckdb_json)
 endif()
@@ -299,12 +298,10 @@ endif()
 if(NOT EMSCRIPTEN)
   set(TEST_CC
 #      ${CMAKE_SOURCE_DIR}/test/ast_test.cc
-      ${CMAKE_SOURCE_DIR}/test/all_types_test.cc
       ${CMAKE_SOURCE_DIR}/test/bugs_test.cc
       ${CMAKE_SOURCE_DIR}/test/file_page_buffer_test.cc
       ${CMAKE_SOURCE_DIR}/test/glob_test.cc
       ${CMAKE_SOURCE_DIR}/test/ifstream_test.cc
-      ${CMAKE_SOURCE_DIR}/test/insert_arrow_test.cc
       ${CMAKE_SOURCE_DIR}/test/insert_csv_test.cc
       ${CMAKE_SOURCE_DIR}/test/insert_json_test.cc
       ${CMAKE_SOURCE_DIR}/test/json_dataview_test.cc

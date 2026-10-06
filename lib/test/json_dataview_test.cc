@@ -8,7 +8,6 @@
 #include <initializer_list>
 #include <optional>
 
-#include "arrow/record_batch.h"
 #include "duckdb/web/environment.h"
 #include "duckdb/web/io/memory_filesystem.h"
 #include "duckdb/web/json_insert_options.h"

@@ -1,14 +1,11 @@
 #include "duckdb/web/json_insert_options.h"
+#include "duckdb/web/status.h"
 
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 
-#include "arrow/result.h"
-#include "arrow/status.h"
-#include "arrow/type.h"
-#include "arrow/type_fwd.h"
 #include "duckdb/web/insert_options.h"
 #include "duckdb/web/json_typedef.h"
 #include "rapidjson/document.h"
@@ -44,8 +41,8 @@ static std::unordered_map<std::string_view, JSONTableShape> SHAPES{
 }  // namespace
 
 /// Read from document
-arrow::Status JSONInsertOptions::ReadFrom(const rapidjson::Document& doc) {
-    if (!doc.IsObject()) return arrow::Status::OK();
+web::Status JSONInsertOptions::ReadFrom(const rapidjson::Document& doc) {
+    if (!doc.IsObject()) return web::Status::OK();
     for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
         std::string_view name{iter->name.GetString(), iter->name.GetStringLength()};
 
@@ -54,46 +51,46 @@ arrow::Status JSONInsertOptions::ReadFrom(const rapidjson::Document& doc) {
 
         switch (tag_iter->second) {
             case FieldTag::CREATE: {
-                ARROW_RETURN_NOT_OK(RequireBoolField(iter->value, name));
+                WEB_RETURN_NOT_OK(RequireBoolField(iter->value, name));
                 create_new = iter->value.GetBool();
                 break;
             }
 
             case FieldTag::SCHEMA:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
+                WEB_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 schema_name = {iter->value.GetString(), iter->value.GetStringLength()};
                 break;
 
             case FieldTag::NAME:
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
+                WEB_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 table_name = {iter->value.GetString(), iter->value.GetStringLength()};
                 break;
 
             case FieldTag::DETECT:
-                ARROW_RETURN_NOT_OK(RequireBoolField(iter->value, name));
+                WEB_RETURN_NOT_OK(RequireBoolField(iter->value, name));
                 auto_detect = iter->value.GetBool();
                 break;
 
             case FieldTag::SHAPE: {
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
+                WEB_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kStringType, name));
                 auto format_iter =
                     SHAPES.find(std::string_view{iter->value.GetString(), iter->value.GetStringLength()});
                 if (format_iter == SHAPES.end()) {
-                    return arrow::Status::Invalid("unknown table format: ", iter->value.GetString());
+                    return web::Status::Invalid("unknown table format: ", iter->value.GetString());
                 }
                 table_shape = format_iter->second;
                 continue;
             }
 
             case FieldTag::COLUMNS: {
-                ARROW_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kArrayType, name));
+                WEB_RETURN_NOT_OK(RequireFieldType(iter->value, rapidjson::Type::kArrayType, name));
                 const auto columns_array = iter->value.GetArray();
-                ARROW_ASSIGN_OR_RAISE(columns, SQLToDuckDBFields(columns_array));
+                WEB_ASSIGN_OR_RAISE(columns, SQLToDuckDBFields(columns_array));
                 continue;
             }
         }
     }
-    return arrow::Status::OK();
+    return web::Status::OK();
 }
 
 }  // namespace json

@@ -2,6 +2,7 @@
 #define INCLUDE_DUCKDB_WEB_IO_FILE_STATS_H_
 
 #include <atomic>
+#include "duckdb/web/status.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -10,8 +11,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "arrow/buffer.h"
-#include "arrow/status.h"
 #include "duckdb/web/io/file_page_defaults.h"
 #include "duckdb/web/utils/parallel.h"
 
@@ -142,7 +141,7 @@ class FileStatisticsCollector {
     /// fwrite fcold | fahead fcached | paccess pload
     ///
     /// Encoding: at least ((1 << nibble) - 1) times
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportStatistics() const;
+    web::Result<std::shared_ptr<web::Buffer>> ExportStatistics() const;
 };
 
 class FileStatisticsRegistry {
@@ -159,7 +158,7 @@ class FileStatisticsRegistry {
     /// Enable a collector (if exists)
     std::shared_ptr<FileStatisticsCollector> EnableCollector(std::string_view file_name, bool enable = true);
     /// Export statistics
-    arrow::Result<std::shared_ptr<arrow::Buffer>> ExportStatistics(std::string_view path);
+    web::Result<std::shared_ptr<web::Buffer>> ExportStatistics(std::string_view path);
 };
 
 }  // namespace io
