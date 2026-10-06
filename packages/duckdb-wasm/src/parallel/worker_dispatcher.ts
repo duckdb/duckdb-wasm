@@ -106,6 +106,8 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
 
         // Catch every exception and forward it as error message to the main thread
         try {
+            // Files created by the previous request are moved into place before the next one runs
+            await this._bindings.checkpointFiles();
             switch (request.type) {
                 case WorkerRequestType.GET_VERSION:
                     this.postMessage(
@@ -131,6 +133,8 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     break;
                 case WorkerRequestType.RESET:
                     this._bindings.reset();
+                    // Files written by this request are in place when it is acknowledged
+                    await this._bindings.checkpointFiles();
                     this.sendOK(request);
                     break;
 
@@ -146,14 +150,20 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.DROP_FILE:
                     this._bindings.dropFile(request.data);
+                    // Files written by this request are in place when it is acknowledged
+                    await this._bindings.checkpointFiles();
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.DROP_FILES:
                     this._bindings.dropFiles(request.data);
+                    // Files written by this request are in place when it is acknowledged
+                    await this._bindings.checkpointFiles();
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.FLUSH_FILES:
                     this._bindings.flushFiles();
+                    // Files written by this request are in place when it is acknowledged
+                    await this._bindings.checkpointFiles();
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.CONNECT: {

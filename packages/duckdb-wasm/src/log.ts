@@ -13,6 +13,7 @@ export enum LogTopic {
     OPEN = 3,
     QUERY = 4,
     INSTANTIATE = 5,
+    FILESYSTEM = 6,
 }
 
 export enum LogEvent {
@@ -52,6 +53,7 @@ export type ExecutionProgressHandler = (p: ProgressEntry) => void;
 
 export type LogEntryVariant =
     | LogEntry<LogOrigin.BINDINGS, LogTopic.INSTANTIATE, LogEvent.ERROR, string>
+    | LogEntry<LogOrigin.BINDINGS, LogTopic.FILESYSTEM, LogEvent.RUN, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.START, void>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.OK, void>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.ERROR, void>
@@ -129,6 +131,8 @@ export function getLogTopicLabel(topic: LogTopic): string {
             return 'OPEN';
         case LogTopic.QUERY:
             return 'QUERY';
+        case LogTopic.FILESYSTEM:
+            return 'FILESYSTEM';
         default:
             return '?';
     }

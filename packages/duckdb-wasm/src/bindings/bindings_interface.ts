@@ -56,6 +56,7 @@ export interface DuckDBBindings {
     ): Promise<HandleType>;
     prepareFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
     prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void>;
+    checkpointFiles(): Promise<void>;
     globFiles(path: string): WebFile[];
     dropFile(name: string): void;
     dropFiles(names?: string[]): void;

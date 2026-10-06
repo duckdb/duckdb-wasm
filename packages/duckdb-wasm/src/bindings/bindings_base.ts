@@ -49,6 +49,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         this._logger = logger;
         this._runtime = runtime;
         this._nextUDFId = 1;
+        this._runtime.setLogger?.(logger);
     }
 
     /** Get the logger */
@@ -523,6 +524,12 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             return;
         }
         throw new Error(`prepareFileHandle: unsupported protocol ${protocol}`);
+    }
+    /** Finish file operations that could only be completed asynchronously, called between queries */
+    public async checkpointFiles(): Promise<void> {
+        if (this._runtime.checkpointFiles) {
+            await this._runtime.checkpointFiles();
+        }
     }
     /** Prepare a file handle that could only be acquired aschronously */
     public async prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void> {
