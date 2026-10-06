@@ -20,11 +20,6 @@
 #include "arrow/array/array_nested.h"
 #include "arrow/array/builder_primitive.h"
 #include "arrow/buffer.h"
-#include "arrow/io/memory.h"
-#include "arrow/ipc/options.h"
-#include "arrow/ipc/reader.h"
-#include "arrow/ipc/type_fwd.h"
-#include "arrow/ipc/writer.h"
 #include "arrow/record_batch.h"
 #include "arrow/result.h"
 #include "arrow/status.h"
@@ -49,8 +44,8 @@
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/web/arrow_bridge.h"
-#include "duckdb/web/arrow_casts.h"
 #include "duckdb/web/arrow_insert_options.h"
+#include "duckdb/web/arrow_ipc_writer.h"
 #include "duckdb/web/arrow_stream_buffer.h"
 #include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
@@ -78,14 +73,18 @@
 #include "rapidjson/writer.h"
 
 extern "C" int32_t duckdb_extension_core_functions_describe(duckdb_extension_descriptor* descriptor);
+extern "C" int32_t duckdb_extension_nanoarrow_describe(duckdb_extension_descriptor* descriptor);
 
 namespace duckdb {
 
 namespace {
-// core_functions is linked statically, register it for every database opened afterwards
-struct CoreFunctionsInit {
-    CoreFunctionsInit() { duckdb_register_static_extension(duckdb_extension_core_functions_describe); }
-} _core_functions_init;
+// core_functions and nanoarrow are linked statically, register them for every database opened afterwards
+struct StaticExtensionsInit {
+    StaticExtensionsInit() {
+        duckdb_register_static_extension(duckdb_extension_core_functions_describe);
+        duckdb_register_static_extension(duckdb_extension_nanoarrow_describe);
+    }
+} _static_extensions_init;
 }  // namespace
 
 // FIXME: DuckDB used to be patched to consult this in DatabaseInstance::ExtensionIsLoaded("httpfs"),
@@ -183,50 +182,18 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQuer
     duckdb::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_.reset();
     current_query_stream_.reset();
-    current_schema_.reset();
-    current_schema_patched_.reset();
+    current_ipc_writer_.reset();
 
-    // Configure the output writer
-    ArrowSchema raw_schema;
-    bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
-    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
-                             ArrowFormatVersion::V1_0, connection_.context);
-    auto extension_type_cast = ArrowTypeExtensionData::GetExtensionTypes(*connection_.context, result->GetTypes());
-    options.arrow_offset_size = ArrowOffsetSize::REGULAR;
-    ArrowConverter::ToArrowSchema(&raw_schema, result->GetTypes(), ColumnNames(result->GetNames()), options);
-    ARROW_ASSIGN_OR_RAISE(auto schema, arrow::ImportSchema(&raw_schema));
-
-    // Patch the schema (if necessary)
-    std::shared_ptr<arrow::Schema> patched_schema = patchSchema(schema, webdb_.config_->query);
-    // Create the file writer
-    ARROW_ASSIGN_OR_RAISE(auto out, arrow::io::BufferOutputStream::Create());
-    ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeFileWriter(out, patched_schema));
-
-    // Write chunk stream
-    for (auto chunk = result->Fetch(); !!chunk && chunk->size() > 0; chunk = result->Fetch()) {
-        if (result->HasError()) {
-            return arrow::Status{arrow::StatusCode::ExecutionError, result->GetError()};
-        }
-        // Import the data chunk as record batch
-        ArrowArray array;
-        ArrowConverter::ToArrowArray(*chunk, &array, options, extension_type_cast);
-        // Import the record batch
-        ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, schema));
-        // Patch the record batch
-        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, patched_schema, webdb_.config_->query));
-        // Write the record batch
-        ARROW_RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
-    }
-    ARROW_RETURN_NOT_OK(writer->Close());
-    return out->Finish();
+    ArrowIPCWriter writer{*connection_.context, result->GetTypes(), ColumnNames(result->GetNames()),
+                          webdb_.config_->query, webdb_.config_->arrow_lossless_conversion};
+    return writer.SerializeResult(*result);
 }
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResult(
     duckdb::unique_ptr<duckdb::QueryResult> result) {
     current_query_result_.reset();
     current_query_stream_.reset();
-    current_schema_.reset();
-    current_schema_patched_.reset();
+    current_ipc_writer_.reset();
     auto types = result->GetTypes();
     auto names = ColumnNames(result->GetNames());
     // Stream the result if possible, otherwise chunks are fetched from the retained result
@@ -236,18 +203,11 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::StreamQueryResu
         current_query_result_ = std::move(result);
     }
 
-    // Import the schema
-    ArrowSchema raw_schema;
-    bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
-    ClientProperties options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
-                             ArrowFormatVersion::V1_0, connection_.context);
-    options.arrow_offset_size = ArrowOffsetSize::REGULAR;
-    ArrowConverter::ToArrowSchema(&raw_schema, types, names, options);
-    ARROW_ASSIGN_OR_RAISE(current_schema_, arrow::ImportSchema(&raw_schema));
-    current_schema_patched_ = patchSchema(current_schema_, webdb_.config_->query);
-
-    // Serialize the schema
-    return arrow::ipc::SerializeSchema(*current_schema_patched_);
+    // Serialize the schema, the record batches follow in FetchQueryResults
+    current_ipc_writer_ = std::make_unique<ArrowIPCWriter>(*connection_.context, std::move(types), std::move(names),
+                                                           webdb_.config_->query,
+                                                           webdb_.config_->arrow_lossless_conversion);
+    return current_ipc_writer_->SerializeSchema();
 }
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::RunQuery(std::string_view text) {
@@ -284,11 +244,10 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::PendingQuery(st
         current_pending_query_result_.reset();
         current_query_result_.reset();
         current_query_stream_.reset();
+        current_ipc_writer_.reset();
         // Send the first query
         ARROW_RETURN_NOT_OK(SubmitPendingStatement());
         current_pending_query_was_canceled_ = false;
-        current_schema_.reset();
-        current_schema_patched_.reset();
         if (webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL) > 0) {
             return PollPendingQuery();
         } else {
@@ -437,26 +396,12 @@ DuckDBWasmResultsWrapper WebDB::Connection::FetchQueryResults() {
         if (!chunk) {
             current_query_result_.reset();
             current_query_stream_.reset();
-            current_schema_.reset();
-            current_schema_patched_.reset();
+            current_ipc_writer_.reset();
             return DuckDBWasmResultsWrapper{nullptr};
         }
 
         // Serialize the record batch
-        ArrowArray array;
-        bool lossless_conversion = webdb_.config_->arrow_lossless_conversion;
-        ClientProperties arrow_options("UTC", ArrowOffsetSize::REGULAR, false, false, lossless_conversion,
-                                       ArrowFormatVersion::V1_0, connection_.context);
-        auto extension_type_cast = ArrowTypeExtensionData::GetExtensionTypes(*connection_.context, chunk->GetTypes());
-        arrow_options.arrow_offset_size = ArrowOffsetSize::REGULAR;
-        ArrowConverter::ToArrowArray(*chunk, &array, arrow_options, extension_type_cast);
-        ARROW_ASSIGN_OR_RAISE(auto batch, arrow::ImportRecordBatch(&array, current_schema_));
-        // Patch the record batch
-        ARROW_ASSIGN_OR_RAISE(batch, patchRecordBatch(batch, current_schema_patched_, webdb_.config_->query));
-        // Serialize the record batch
-        auto options = arrow::ipc::IpcWriteOptions::Defaults();
-        options.use_threads = false;
-        return arrow::ipc::SerializeRecordBatch(*batch, options);
+        return current_ipc_writer_->SerializeChunk(*chunk);
     } catch (std::exception& e) {
         return arrow::Status{arrow::StatusCode::ExecutionError, e.what()};
     }

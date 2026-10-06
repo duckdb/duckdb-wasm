@@ -13,3 +13,8 @@ duckdb_extension_load(tpch)
 
 #duckdb_extension_load(httpfs)
 
+
+# Arrow IPC reading and writing, linked statically into DuckDB-Wasm
+duckdb_extension_load(nanoarrow
+                      SOURCE_DIR ${DUCKDB_NANOARROW_DIR}
+                      LINKED_LIBS "../../_deps/nanoarrow-build/lib*.a")

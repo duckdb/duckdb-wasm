@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "duckdb/web/arrow_casts.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/webdb.h"
 
