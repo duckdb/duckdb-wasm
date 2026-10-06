@@ -1055,6 +1055,12 @@ web::Status WebDB::Open(std::string_view args_json) {
         }
         db_config.options.access_mode = access_mode;
         db_config.SetOptionByName("duckdb_api", "wasm");
+        if (config_->home_directory.has_value()) {
+            auto& home = config_->home_directory.value();
+            db_config.SetOptionByName("home_directory", duckdb::Value(home));
+            // The secret manager derives its directory from the environment, not from the setting
+            db_config.SetOptionByName("secret_directory", duckdb::Value(home + "/.duckdb/stored_secrets"));
+        }
         db_config.options.custom_user_agent = config_->custom_user_agent;
         // FIXME: use_direct_io is no longer a database-wide option in DuckDB v2.0 (now ATTACH ... (IO_MODE)),
         // config_->use_direct_io is currently ignored

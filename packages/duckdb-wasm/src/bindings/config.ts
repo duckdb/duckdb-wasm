@@ -68,6 +68,11 @@ export interface DuckDBConfig {
      */
     temporaryDirectory?: string;
     /**
+     * The home directory of DuckDB, opfs://home where the browser has an origin private file system: what DuckDB
+     * stores next to the user (persistent secrets) persists across sessions
+     */
+    homeDirectory?: string;
+    /**
      * The maximum number of threads.
      * Note that this will only work with cross-origin isolated sites since it requires SharedArrayBuffers.
      */
