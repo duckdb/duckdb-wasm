@@ -29,7 +29,6 @@
 namespace duckdb {
 namespace web {
 
-struct BufferingArrowIPCStreamDecoder;
 
 struct DuckDBWasmResultsWrapper {
     // Additional ResponseStatuses to be >= 256, and mirrored to packages/duckdb-wasm/src/status.ts
@@ -82,8 +81,10 @@ class WebDB {
         size_t next_prepared_statement_id_ = 0;
         /// The current arrow ipc input stream
         std::optional<ArrowInsertOptions> arrow_insert_options_ = std::nullopt;
-        /// The current arrow ipc input stream
-        std::unique_ptr<BufferingArrowIPCStreamDecoder> arrow_ipc_stream_;
+        /// The buffered arrow ipc input stream, until its end
+        std::vector<uint8_t> arrow_ipc_stream_;
+        /// The number of buffered bytes already known to hold complete messages
+        size_t arrow_ipc_stream_scanned_ = 0;
 
         // Fully materialize a given result set and return it as an Arrow Buffer
         arrow::Result<std::shared_ptr<arrow::Buffer>> MaterializeQueryResult(

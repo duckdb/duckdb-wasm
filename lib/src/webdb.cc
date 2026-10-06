@@ -33,6 +33,8 @@
 #include "duckdb/function/table/arrow.hpp"
 #include "duckdb/main/buffered_data/buffered_data.hpp"
 #include "duckdb_static_extension.h"
+#include "nanoarrow/nanoarrow.hpp"
+#include "nanoarrow/nanoarrow_ipc.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/common/types/vector.hpp"
@@ -46,7 +48,6 @@
 #include "duckdb/web/arrow_bridge.h"
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/arrow_ipc_writer.h"
-#include "duckdb/web/arrow_stream_buffer.h"
 #include "duckdb/web/config.h"
 #include "duckdb/web/csv_insert_options.h"
 #include "duckdb/web/environment.h"
@@ -55,7 +56,6 @@
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/http_wasm.h"
-#include "duckdb/web/io/arrow_ifstream.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/ifstream.h"
@@ -123,7 +123,7 @@ arrow::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
 
 /// Constructor
 WebDB::Connection::Connection(WebDB& webdb)
-    : webdb_(webdb), connection_(*webdb.database_), arrow_ipc_stream_(nullptr) {}
+    : webdb_(webdb), connection_(*webdb.database_) {}
 /// Constructor
 WebDB::Connection::~Connection() = default;
 
@@ -146,36 +146,51 @@ Value ColumnTypesValue(const child_list_t<LogicalType>& columns) {
     }
     return Value::STRUCT(std::move(values));
 }
+/// Does the buffered Arrow IPC stream end with its end-of-stream marker? Messages are scanned from the given
+/// offset, which is advanced past every complete message.
+arrow::Result<bool> ArrowIPCStreamComplete(const std::vector<uint8_t>& stream, size_t& scanned) {
+    nanoarrow::ipc::UniqueDecoder decoder;
+    ArrowIpcDecoderInit(decoder.get());
+    while (scanned < stream.size()) {
+        ArrowBufferView data{{stream.data() + scanned}, static_cast<int64_t>(stream.size() - scanned)};
+        int32_t prefix_size = 0;
+        ArrowError error{};
+        auto code = ArrowIpcDecoderPeekHeader(decoder.get(), data, &prefix_size, &error);
+        if (code == ESPIPE) {
+            // The header is not complete yet
+            return false;
+        }
+        if (code == ENODATA) {
+            // The end of the stream
+            return true;
+        }
+        if (code != NANOARROW_OK) {
+            return arrow::Status::Invalid("Invalid Arrow IPC stream: ", ArrowErrorMessage(&error));
+        }
+        code = ArrowIpcDecoderVerifyHeader(decoder.get(), data, &error);
+        if (code == ESPIPE) {
+            return false;
+        }
+        if (code != NANOARROW_OK) {
+            return arrow::Status::Invalid("Invalid Arrow IPC stream: ", ArrowErrorMessage(&error));
+        }
+        // The header size includes the prefix
+        auto message_size = decoder->header_size_bytes + decoder->body_size_bytes;
+        if (scanned + message_size > stream.size()) {
+            // The body is not complete yet
+            return false;
+        }
+        scanned += message_size;
+    }
+    return false;
+}
+
 /// Can a stream be opened on a submitted query result?
 bool CanStream(const QueryResult& result) {
     return !result.HasError() && result.HasBufferedData() &&
            result.GetStatementProperties().result_eagerness != ResultEagerness::FORCED &&
            result.GetBufferedData().Lifetime() != ResultLifetime::RETAINED;
 }
-/// Adapts the (pointer, produce stream, get schema) triple that used to be passed to arrow_scan as POINTER
-/// values to the scan factory arrow_scan expects as bind input
-struct PointerArrowScanFactory : public ArrowScanFactory {
-    using produce_stream_t = duckdb::unique_ptr<ArrowArrayStreamWrapper> (*)(uintptr_t, ArrowStreamParameters&);
-    using get_schema_t = void (*)(uintptr_t, ArrowSchemaWrapper&);
-
-    PointerArrowScanFactory(uintptr_t ptr, produce_stream_t produce_stream, get_schema_t get_schema)
-        : ptr(ptr), produce_stream(produce_stream), get_schema(get_schema) {}
-
-    void GetSchema(ArrowSchema& schema) override {
-        ArrowSchemaWrapper wrapper;
-        get_schema(ptr, wrapper);
-        // Hand over ownership of the schema
-        schema = wrapper.arrow_schema;
-        wrapper.arrow_schema.release = nullptr;
-    }
-    duckdb::unique_ptr<ArrowArrayStreamWrapper> ProduceStream(ArrowStreamParameters& parameters) override {
-        return produce_stream(ptr, parameters);
-    }
-
-    uintptr_t ptr;
-    produce_stream_t produce_stream;
-    get_schema_t get_schema;
-};
 }  // namespace
 
 arrow::Result<std::shared_ptr<arrow::Buffer>> WebDB::Connection::MaterializeQueryResult(
@@ -632,34 +647,33 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
                                                           std::string_view options_json) {
     try {
         // First call?
-        if (!arrow_ipc_stream_) {
-            arrow_insert_options_.reset();
-
+        if (!arrow_insert_options_) {
             /// Read table options.
-            /// We deliberately do this BEFORE creating the ipc stream.
+            /// We deliberately do this BEFORE buffering the ipc stream.
             /// This ensures that we always have valid options.
             rapidjson::Document options_doc;
             options_doc.Parse(options_json.data(), options_json.size());
             ArrowInsertOptions options;
             ARROW_RETURN_NOT_OK(options.ReadFrom(options_doc));
             arrow_insert_options_ = options;
-
-            // Create the IPC stream
-            arrow_ipc_stream_ = std::make_unique<BufferingArrowIPCStreamDecoder>();
+            arrow_ipc_stream_.clear();
+            arrow_ipc_stream_scanned_ = 0;
         }
 
-        /// Consume stream bytes
-        ARROW_RETURN_NOT_OK(arrow_ipc_stream_->Consume(stream.data(), stream.size()));
-        if (!arrow_ipc_stream_->buffer()->is_eos()) {
+        /// Buffer the stream bytes until the end of the stream, which may take several calls
+        arrow_ipc_stream_.insert(arrow_ipc_stream_.end(), stream.begin(), stream.end());
+        ARROW_ASSIGN_OR_RAISE(auto complete, ArrowIPCStreamComplete(arrow_ipc_stream_, arrow_ipc_stream_scanned_));
+        if (!complete) {
             return arrow::Status::OK();
         }
-        assert(arrow_insert_options_);
 
-        /// Execute the arrow scan
-        auto factory = duckdb::make_shared_ptr<PointerArrowScanFactory>(
-            reinterpret_cast<uintptr_t>(&arrow_ipc_stream_->buffer()), &ArrowIPCStreamBufferReader::CreateStream,
-            &ArrowIPCStreamBufferReader::GetSchema);
-        auto func = connection_.TableFunction("arrow_scan", vector<Value>{}, named_parameter_map_t{}, factory);
+        /// Scan the buffered stream with duckdb-nanoarrow
+        child_list_t<Value> buffer_struct;
+        buffer_struct.emplace_back("ptr", Value::POINTER(reinterpret_cast<uintptr_t>(arrow_ipc_stream_.data())));
+        buffer_struct.emplace_back("size", Value::UBIGINT(arrow_ipc_stream_.size()));
+        auto buffer_value = Value::STRUCT(std::move(buffer_struct));
+        auto buffers = Value::LIST(buffer_value.type(), {buffer_value});
+        auto func = connection_.TableFunction("scan_arrow_ipc", vector<Value>{std::move(buffers)});
 
         /// Create or insert
         if (arrow_insert_options_->create_new) {
@@ -670,10 +684,10 @@ arrow::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uin
 
         // Reset the ipc stream
         arrow_insert_options_.reset();
-        arrow_ipc_stream_.reset();
+        arrow_ipc_stream_.clear();
     } catch (const std::exception& e) {
         arrow_insert_options_.reset();
-        arrow_ipc_stream_.reset();
+        arrow_ipc_stream_.clear();
         return arrow::Status::UnknownError(e.what());
     }
     return arrow::Status::OK();
