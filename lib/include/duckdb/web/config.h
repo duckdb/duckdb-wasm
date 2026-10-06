@@ -87,6 +87,10 @@ struct WebDBConfig {
     uint32_t maximum_threads = (STATIC_WEBDB_FEATURES & (1 << WebDBFeature::THREADS)) ? 4 : 1;
     /// The direct io flag
     bool use_direct_io = false;
+    /// The temporary directory, spilling is disabled without one
+    std::optional<std::string> temporary_directory = std::nullopt;
+    /// The space available in the temporary directory, unlimited if unknown
+    std::optional<uint64_t> temporary_directory_size = std::nullopt;
     /// The query config
     QueryConfig query = {
         .cast_bigint_to_double = std::nullopt,

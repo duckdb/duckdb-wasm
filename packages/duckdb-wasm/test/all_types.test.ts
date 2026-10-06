@@ -259,7 +259,7 @@ export function testAllTypesAsync(db: () => duckdb.AsyncDuckDB): void {
     describe('Test All Types Async', () => {
         for (const test of ALL_TYPES_TEST) {
             it(test.name, async () => {
-                if (test.queryConfig) db().open({ query: test.queryConfig });
+                if (test.queryConfig) await db().open({ query: test.queryConfig });
 
                 conn = await db().connect();
                 const results = await conn.query(test.query);

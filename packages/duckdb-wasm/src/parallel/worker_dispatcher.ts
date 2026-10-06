@@ -65,8 +65,18 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
         return;
     }
 
+    /** The requests are processed in the order they arrive, even if a request has to wait for asynchronous work */
+    private _requests: Promise<void> = Promise.resolve();
+
     /** Process a request from the main thread */
-    public async onMessage(request: WorkerRequestVariant): Promise<void> {
+    public onMessage(request: WorkerRequestVariant): Promise<void> {
+        const run = this._requests.then(() => this.processRequest(request));
+        this._requests = run.catch(() => {});
+        return run;
+    }
+
+    /** Process a single request */
+    private async processRequest(request: WorkerRequestVariant): Promise<void> {
         // First process those requests that don't need bindings
         switch (request.type) {
             case WorkerRequestType.PING:
@@ -143,6 +153,14 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     if (path?.startsWith('opfs://')) {
                         await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
                         request.data.useDirectIO = true;
+                    }
+                    // Spilling goes to the runtime's temporary directory, where it has one
+                    if (request.data.opfs?.spill !== false && !request.data.temporaryDirectory) {
+                        const directory = await this._bindings.prepareTemporaryDirectory();
+                        if (directory) {
+                            request.data.temporaryDirectory = directory.path;
+                            request.data.temporaryDirectorySize = directory.availableBytes;
+                        }
                     }
                     this._bindings.open(request.data);
                     this.sendOK(request);

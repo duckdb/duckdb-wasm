@@ -21,6 +21,7 @@
 #include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/common/arrow/arrow_converter.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/common/http_util.hpp"
 #include "duckdb/parser/parsed_data/create_scalar_function_info.hpp"
 #include "duckdb/function/table/arrow.hpp"
@@ -1046,7 +1047,12 @@ web::Status WebDB::Open(std::string_view args_json) {
         db_config.SetOptionByName("allow_unsigned_extensions", config_->allow_unsigned_extensions);
         db_config.SetOption("arrow_lossless_conversion", config_->arrow_lossless_conversion);
         db_config.options.maximum_threads = config_->maximum_threads;
-        db_config.options.use_temporary_directory = false;
+        // Spilling needs a file system that can create files during a query, the runtime passes a directory
+        // when it has one
+        db_config.options.use_temporary_directory = config_->temporary_directory.has_value();
+        if (config_->temporary_directory.has_value()) {
+            db_config.options.temporary_directory = config_->temporary_directory.value();
+        }
         db_config.options.access_mode = access_mode;
         db_config.SetOptionByName("duckdb_api", "wasm");
         db_config.options.custom_user_agent = config_->custom_user_agent;
@@ -1062,6 +1068,14 @@ web::Status WebDB::Open(std::string_view args_json) {
         RegisterCustomExtensionOptions(db);
 
         auto& config = duckdb::DBConfig::GetConfig(*db->instance);
+        if (config_->temporary_directory.has_value()) {
+            // DuckDB cannot measure the free space of the web file system (it reads 0 and would refuse to spill),
+            // the runtime reports the storage quota where it knows it. The limit only reaches the buffer manager
+            // through the setting once the database exists.
+            auto swap_space = config_->temporary_directory_size.value_or(duckdb::DConstants::INVALID_INDEX - 1);
+            duckdb::BufferManager::GetBufferManager(*db->instance).SetSwapLimit(swap_space);
+            config.options.maximum_swap_space = swap_space;
+        }
 
 #ifdef WASM_LOADABLE_EXTENSIONS
         config.SetExternalExtensionProvider(make_shared_ptr<WasmExtensionProvider>());

@@ -40,6 +40,11 @@ export interface DuckDBOPFSConfig {
      * - "manual": Files must be manually registered and dropped.
      */
     fileHandling?: "auto" | "manual";
+    /**
+     * Spill data that does not fit in memory to OPFS (DuckDB's temporary directory).
+     * Enabled where OPFS is available, unless set to false.
+     */
+    spill?: boolean;
 }
 
 export enum DuckDBAccessMode {
@@ -58,6 +63,14 @@ export interface DuckDBConfig {
      * The access mode
      */
     accessMode?: DuckDBAccessMode;
+    /**
+     * The temporary directory of DuckDB, set by the worker when spilling is enabled
+     */
+    temporaryDirectory?: string;
+    /**
+     * The space available in the temporary directory in bytes, unlimited if not set
+     */
+    temporaryDirectorySize?: number;
     /**
      * The maximum number of threads.
      * Note that this will only work with cross-origin isolated sites since it requires SharedArrayBuffers.

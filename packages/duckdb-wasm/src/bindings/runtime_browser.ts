@@ -1,6 +1,6 @@
 import { StatusCode } from '../status';
 import { LogEvent, LogLevel, LogOrigin, LogTopic, Logger } from '../log';
-import { OPFSScratch, OPFS_PREFIX } from './opfs_scratch';
+import { OPFSScratch, OPFS_PREFIX, OPFS_SCRATCH_DIR } from './opfs_scratch';
 import { WorkerResponseType } from '../parallel/worker_request';
 import { addS3Headers, getHTTPUrl } from '../utils';
 
@@ -15,6 +15,7 @@ import {
     FileFlags,
     readString,
     PreparedDBFileHandle,
+    TemporaryDirectory,
 } from './runtime';
 import { DuckDBModule } from './duckdb_module';
 import * as udf from './udf_runtime';
@@ -143,6 +144,29 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             }
             BROWSER_RUNTIME._opfsScratch = await BROWSER_RUNTIME._opfsScratchMount;
         }
+    },
+    /** DuckDB spills to the ephemeral directory of the OPFS scratch, where OPFS is available */
+    async prepareTemporaryDirectory(): Promise<TemporaryDirectory | null> {
+        if (typeof navigator === 'undefined' || !navigator.storage?.getDirectory) {
+            return null;
+        }
+        try {
+            await BROWSER_RUNTIME.assignOPFSRoot();
+        } catch (e: any) {
+            BROWSER_RUNTIME.debug('no temporary directory', `${e?.message ?? e}`);
+            return null;
+        }
+        // The storage quota of the origin bounds the spilled data
+        let availableBytes: number | undefined = undefined;
+        try {
+            const estimate = await navigator.storage.estimate();
+            if (estimate.quota !== undefined) {
+                availableBytes = Math.max(0, estimate.quota - (estimate.usage ?? 0));
+            }
+        } catch (e: any) {
+            // unknown, unlimited
+        }
+        return { path: OPFS_SCRATCH_DIR, availableBytes };
     },
     /** Move files created during queries to their real paths, refill the scratch pool. Called between queries. */
     async checkpointFiles(): Promise<void> {
@@ -792,23 +816,31 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             });
         }
     },
+    // Directories: only the ephemeral directory of the OPFS scratch exists, it holds DuckDB's temporary files
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
-        console.log(`checkDirectory: ${path}`);
-        return false;
+        BROWSER_RUNTIME.debug('check directory', path);
+        return OPFSScratch.isEphemeral(path) && BROWSER_RUNTIME._opfsScratch !== null;
     },
     createDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
-        console.log(`createDirectory: ${path}`);
+        BROWSER_RUNTIME.debug('create directory', path);
     },
     removeDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
-        console.log(`removeDirectory: ${path}`);
+        BROWSER_RUNTIME.debug('remove directory', path);
     },
     listDirectoryEntries: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
-        console.log(`listDirectoryEntries: ${path}`);
-        return false;
+        BROWSER_RUNTIME.debug('list directory', path);
+        const scratch = BROWSER_RUNTIME._opfsScratch;
+        if (!OPFSScratch.isEphemeral(path) || !scratch) {
+            return false;
+        }
+        for (const name of scratch.listEphemeral()) {
+            mod.ccall('duckdb_web_fs_directory_add_entry', null, ['string', 'boolean'], [name, false]);
+        }
+        return true;
     },
     moveFile: (mod: DuckDBModule, fromPtr: number, fromLen: number, toPtr: number, toLen: number) => {
         const from = readString(mod, fromPtr, fromLen);

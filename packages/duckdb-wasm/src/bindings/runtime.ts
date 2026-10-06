@@ -136,6 +136,13 @@ export function dropResponseBuffers(mod: DuckDBModule): void {
 }
 
 /** The duckdb runtime */
+/** A directory DuckDB can spill to */
+export interface TemporaryDirectory {
+    path: string;
+    /** The space available in bytes, if known */
+    availableBytes?: number;
+}
+
 export interface DuckDBRuntime {
     _files?: Map<string, any>;
     _udfFunctions: Map<number, UDFFunction>;
@@ -173,6 +180,8 @@ export interface DuckDBRuntime {
     prepareDBFileHandle?: (path: string, protocol: DuckDBDataProtocol) => Promise<PreparedDBFileHandle[]>;
     /** Finish file operations that could only be completed asynchronously, called between queries */
     checkpointFiles?: () => Promise<void>;
+    /** Prepare a directory DuckDB can spill to, null if the runtime has none */
+    prepareTemporaryDirectory?: () => Promise<TemporaryDirectory | null>;
 
     // Internal API - experimental
     progressUpdate(final: number, percentage: number, iteration: number): void;
