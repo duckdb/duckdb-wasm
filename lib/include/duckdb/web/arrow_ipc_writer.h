@@ -2,11 +2,10 @@
 #define INCLUDE_DUCKDB_WEB_ARROW_IPC_WRITER_H_
 
 #include <memory>
+#include "duckdb/web/status.h"
 #include <string>
 #include <vector>
 
-#include "arrow/buffer.h"
-#include "arrow/result.h"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/main/client_context.hpp"
@@ -27,11 +26,11 @@ class ArrowIPCWriter {
     ~ArrowIPCWriter();
 
     /// Serialize the schema as IPC stream message
-    arrow::Result<std::shared_ptr<arrow::Buffer>> SerializeSchema();
+    web::Result<std::shared_ptr<web::Buffer>> SerializeSchema();
     /// Serialize a chunk as IPC record batch message, following the schema message
-    arrow::Result<std::shared_ptr<arrow::Buffer>> SerializeChunk(DataChunk& chunk);
+    web::Result<std::shared_ptr<web::Buffer>> SerializeChunk(DataChunk& chunk);
     /// Serialize a whole result as IPC stream
-    arrow::Result<std::shared_ptr<arrow::Buffer>> SerializeResult(QueryResult& result);
+    web::Result<std::shared_ptr<web::Buffer>> SerializeResult(QueryResult& result);
 
    private:
     struct Impl;

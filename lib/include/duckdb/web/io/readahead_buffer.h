@@ -8,7 +8,6 @@
 #include <memory>
 #include <unordered_set>
 
-#include "arrow/status.h"
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/file_stats.h"

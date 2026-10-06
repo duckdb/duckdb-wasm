@@ -2,11 +2,11 @@
 #define INCLUDE_DUCKDB_WEB_CSV_TABLE_OPTIONS_H_
 
 #include <iostream>
+#include "duckdb/web/status.h"
 #include <memory>
 #include <optional>
 #include <string>
 
-#include "arrow/status.h"
 #include "duckdb/common/types.hpp"
 #include "rapidjson/document.h"
 
@@ -42,7 +42,7 @@ struct CSVInsertOptions {
     std::optional<duckdb::child_list_t<duckdb::LogicalType>> columns = std::nullopt;
 
     /// Read from input stream
-    arrow::Status ReadFrom(const rapidjson::Document& doc);
+    web::Status ReadFrom(const rapidjson::Document& doc);
 };
 
 }  // namespace csv

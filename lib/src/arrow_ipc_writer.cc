@@ -1,4 +1,5 @@
 #include "duckdb/web/arrow_ipc_writer.h"
+#include "duckdb/web/status.h"
 
 #include <cmath>
 #include <cstring>
@@ -19,15 +20,15 @@ namespace web {
 namespace {
 
 /// Raise a nanoarrow error as arrow status
-arrow::Status NanoarrowStatus(ArrowErrorCode code, ArrowError& error, const char* what) {
-    if (code == NANOARROW_OK) return arrow::Status::OK();
-    return arrow::Status::ExecutionError(std::string{what} + ": " + ArrowErrorMessage(&error));
+web::Status NanoarrowStatus(ArrowErrorCode code, ArrowError& error, const char* what) {
+    if (code == NANOARROW_OK) return web::Status::OK();
+    return web::Status::ExecutionError(std::string{what} + ": " + ArrowErrorMessage(&error));
 }
 
 #define RETURN_NOT_OK_NANOARROW(EXPR, WHAT)                             \
     do {                                                                \
         ArrowError nanoarrow_error__{};                                 \
-        ARROW_RETURN_NOT_OK(NanoarrowStatus(EXPR, nanoarrow_error__, WHAT)); \
+        WEB_RETURN_NOT_OK(NanoarrowStatus(EXPR, nanoarrow_error__, WHAT)); \
     } while (0)
 
 /// The DuckDB type a column is cast to before the Arrow conversion, so that the query config casts
@@ -101,7 +102,7 @@ struct ArrowIPCWriter::Impl {
     }
 
     /// Initialize the writer, appending to the buffer
-    arrow::Status InitWriter() {
+    web::Status InitWriter() {
         buffer.reset();
         ArrowBufferInit(buffer.get());
         nanoarrow::ipc::UniqueOutputStream output;
@@ -109,26 +110,26 @@ struct ArrowIPCWriter::Impl {
         writer.reset();
         RETURN_NOT_OK_NANOARROW(ArrowIpcWriterInit(writer.get(), output.get()), "writer");
         schema_written = false;
-        return arrow::Status::OK();
+        return web::Status::OK();
     }
 
     /// Take the bytes written so far
-    std::shared_ptr<arrow::Buffer> TakeBuffer() {
-        auto out = arrow::Buffer::FromString(
+    std::shared_ptr<web::Buffer> TakeBuffer() {
+        auto out = web::Buffer::FromString(
             std::string{reinterpret_cast<const char*>(buffer->data), static_cast<size_t>(buffer->size_bytes)});
         buffer->size_bytes = 0;
         return out;
     }
 
-    arrow::Status WriteSchema() {
+    web::Status WriteSchema() {
         ArrowError error{};
-        ARROW_RETURN_NOT_OK(
+        WEB_RETURN_NOT_OK(
             NanoarrowStatus(ArrowIpcWriterWriteSchema(writer.get(), schema.get(), &error), error, "schema"));
         schema_written = true;
-        return arrow::Status::OK();
+        return web::Status::OK();
     }
 
-    arrow::Status WriteChunk(DataChunk& chunk) {
+    web::Status WriteChunk(DataChunk& chunk) {
         // Apply the casts of the query config
         DataChunk casted;
         DataChunk* to_convert = &chunk;
@@ -151,14 +152,14 @@ struct ArrowIPCWriter::Impl {
         ArrowConverter::ToArrowArray(*to_convert, array.get(), arrow_options, extension_type_cast);
         nanoarrow::UniqueArrayView view;
         ArrowError error{};
-        ARROW_RETURN_NOT_OK(NanoarrowStatus(ArrowArrayViewInitFromSchema(view.get(), schema.get(), &error), error,
+        WEB_RETURN_NOT_OK(NanoarrowStatus(ArrowArrayViewInitFromSchema(view.get(), schema.get(), &error), error,
                                             "array view"));
-        ARROW_RETURN_NOT_OK(
+        WEB_RETURN_NOT_OK(
             NanoarrowStatus(ArrowArrayViewSetArray(view.get(), array.get(), &error), error, "array view"));
         // Dictionaries precede the batch that uses them and are repeated for every batch, as each array carries
         // its own (nanoarrow does the same in ArrowIpcWriterWriteArrayStream)
         int64_t next_dictionary_id = 0;
-        ARROW_RETURN_NOT_OK(WriteDictionaries(*view.get(), next_dictionary_id));
+        WEB_RETURN_NOT_OK(WriteDictionaries(*view.get(), next_dictionary_id));
         return NanoarrowStatus(ArrowIpcWriterWriteArrayView(writer.get(), view.get(), &error), error,
                                "record batch");
     }
@@ -197,21 +198,21 @@ struct ArrowIPCWriter::Impl {
     }
 
     /// Write the dictionary batches of an array view, assigning ids in the order of the schema
-    arrow::Status WriteDictionaries(const ArrowArrayView& view, int64_t& next_dictionary_id) {
+    web::Status WriteDictionaries(const ArrowArrayView& view, int64_t& next_dictionary_id) {
         if (view.dictionary) {
             ArrowError error{};
             auto dictionary_id = next_dictionary_id++;
-            ARROW_RETURN_NOT_OK(NanoarrowStatus(
+            WEB_RETURN_NOT_OK(NanoarrowStatus(
                 ArrowIpcWriterWriteDictionaryBatch(writer.get(), dictionary_id, 0, view.dictionary, &error), error,
                 "dictionary batch"));
         }
         for (int64_t i = 0; i < view.n_children; i++) {
-            ARROW_RETURN_NOT_OK(WriteDictionaries(*view.children[i], next_dictionary_id));
+            WEB_RETURN_NOT_OK(WriteDictionaries(*view.children[i], next_dictionary_id));
         }
         if (view.dictionary) {
-            ARROW_RETURN_NOT_OK(WriteDictionaries(*view.dictionary, next_dictionary_id));
+            WEB_RETURN_NOT_OK(WriteDictionaries(*view.dictionary, next_dictionary_id));
         }
-        return arrow::Status::OK();
+        return web::Status::OK();
     }
 };
 
@@ -221,33 +222,33 @@ ArrowIPCWriter::ArrowIPCWriter(ClientContext& context, vector<LogicalType> types
 
 ArrowIPCWriter::~ArrowIPCWriter() = default;
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowIPCWriter::SerializeSchema() {
-    ARROW_RETURN_NOT_OK(impl_->InitWriter());
-    ARROW_RETURN_NOT_OK(impl_->WriteSchema());
+web::Result<std::shared_ptr<web::Buffer>> ArrowIPCWriter::SerializeSchema() {
+    WEB_RETURN_NOT_OK(impl_->InitWriter());
+    WEB_RETURN_NOT_OK(impl_->WriteSchema());
     return impl_->TakeBuffer();
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowIPCWriter::SerializeChunk(DataChunk& chunk) {
+web::Result<std::shared_ptr<web::Buffer>> ArrowIPCWriter::SerializeChunk(DataChunk& chunk) {
     if (!impl_->schema_written) {
-        return arrow::Status::Invalid("The schema has to be serialized before the record batches");
+        return web::Status::Invalid("The schema has to be serialized before the record batches");
     }
-    ARROW_RETURN_NOT_OK(impl_->WriteChunk(chunk));
+    WEB_RETURN_NOT_OK(impl_->WriteChunk(chunk));
     return impl_->TakeBuffer();
 }
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowIPCWriter::SerializeResult(QueryResult& result) {
+web::Result<std::shared_ptr<web::Buffer>> ArrowIPCWriter::SerializeResult(QueryResult& result) {
     // The IPC stream format: nanoarrow's file format holds a single dictionary batch, enums need one each
-    ARROW_RETURN_NOT_OK(impl_->InitWriter());
+    WEB_RETURN_NOT_OK(impl_->InitWriter());
     ArrowError error{};
-    ARROW_RETURN_NOT_OK(impl_->WriteSchema());
+    WEB_RETURN_NOT_OK(impl_->WriteSchema());
     for (auto chunk = result.Fetch(); !!chunk && chunk->size() > 0; chunk = result.Fetch()) {
         if (result.HasError()) {
-            return arrow::Status::ExecutionError(result.GetError());
+            return web::Status::ExecutionError(result.GetError());
         }
-        ARROW_RETURN_NOT_OK(impl_->WriteChunk(*chunk));
+        WEB_RETURN_NOT_OK(impl_->WriteChunk(*chunk));
     }
     // End of stream
-    ARROW_RETURN_NOT_OK(
+    WEB_RETURN_NOT_OK(
         NanoarrowStatus(ArrowIpcWriterWriteArrayView(impl_->writer.get(), nullptr, &error), error, "end of stream"));
     return impl_->TakeBuffer();
 }

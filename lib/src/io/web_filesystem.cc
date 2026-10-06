@@ -1,4 +1,5 @@
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/status.h"
 
 #include <cstdint>
 #include <iostream>
@@ -9,9 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "arrow/buffer.h"
-#include "arrow/status.h"
-#include "arrow/type_fwd.h"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/glob.h"
 #include "duckdb/web/io/web_filesystem.h"
@@ -375,7 +373,7 @@ void WebFileSystem::InvalidateReadAheads(size_t file_id, std::unique_lock<Shared
 }
 
 /// Register a file URL
-arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
+web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
                                                                                             std::string_view file_url,
                                                                                             DataProtocol protocol) {
     DEBUG_TRACE();
@@ -387,7 +385,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
         if (file->data_url_ == file_url) {
             return std::make_unique<WebFileHandle>(std::move(file));
         }
-        return arrow::Status::Invalid("File already registered: ", file_name);
+        return web::Status::Invalid("File already registered: ", file_name);
     }
 
     // Allocate a new web file
@@ -407,7 +405,7 @@ arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regi
 }
 
 /// Register a file buffer
-arrow::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(
+web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(
     std::string_view file_name, DataBuffer file_buffer) {
     DEBUG_TRACE();
     // Check if the file exists

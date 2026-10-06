@@ -2,11 +2,11 @@
 #define INCLUDE_DUCKDB_WEB_ARROW_INSERT_OPTIONS_H_
 
 #include <iostream>
+#include "duckdb/web/status.h"
 #include <memory>
 #include <optional>
 #include <string>
 
-#include "arrow/type_fwd.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {
@@ -22,7 +22,7 @@ struct ArrowInsertOptions {
     bool create_new = true;
 
     /// Read from input stream
-    arrow::Status ReadFrom(const rapidjson::Document& doc);
+    web::Status ReadFrom(const rapidjson::Document& doc);
 };
 
 }  // namespace web
