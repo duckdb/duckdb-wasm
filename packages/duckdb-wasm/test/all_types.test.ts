@@ -38,12 +38,13 @@ const NOT_IMPLEMENTED_TYPES = [
     'time_tz',
     'time_ns',
     'timestamp_tz',
+    'timestamp_tz_ns',
+    'bit',
     'hugeint',
     'dec_18_6',
     'dec38_10',
     'uuid',
     'map',
-    'json',
     'date_array',
     'timestamp_array',
     'timestamptz_array',
@@ -116,6 +117,8 @@ const FULLY_IMPLEMENTED_ANSWER_MAP: AnswerObjectType = {
     ],
 
     union: ['Frank', 5, null],
+    empty_struct: ['{}', '{}', null],
+    tuple: ['{"element1":null,"element2":null}', '{"element1":42,"element2":"🦆🦆🦆🦆🦆🦆"}', null],
 };
 
 // Replacements for the values we knowingly don't support from the test_all_types query
