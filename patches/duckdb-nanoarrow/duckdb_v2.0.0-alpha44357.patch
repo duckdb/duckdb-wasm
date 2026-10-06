@@ -1,0 +1,318 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6a6e212440..6eb312178b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -11,7 +11,11 @@ fetchcontent_declare(nanoarrow
+                      URL "https://github.com/apache/arrow-nanoarrow/archive/665794510011c07d4a6932b248608c2c02113796.zip"
+                      URL_HASH SHA256=a81178c68929c74e97cff6b02f9a9f77fc656966ad7dbc4ae858cb45496d6b6f
+ )
+-# nanoarrow compresses and decompresses itself with liblz4 and libzstd, from vcpkg in CI
++# nanoarrow compresses and decompresses itself with liblz4 and libzstd, from vcpkg in CI.
++# Builds without vcpkg, such as DuckDB-Wasm, can opt out of the codecs: compressed IPC
++# bodies are then rejected when read and never written
++option(NANOARROW_IPC_COMPRESSION "Read and write zstd and lz4 compressed IPC bodies" ON)
++if(NANOARROW_IPC_COMPRESSION)
+ set(NANOARROW_IPC_WITH_ZSTD ON)
+ # DuckDB's bundled zstd is namespaced C++ that nanoarrow's C sources cannot link against
+ find_path(ZSTD_INCLUDE_DIR zstd.h REQUIRED)
+@@ -23,6 +27,10 @@ set(NANOARROW_IPC_WITH_LZ4 ON)
+ set(LZ4_INCLUDE_DIRS "${LZ4_INCLUDE_DIR}")
+ set(LZ4_LIBRARY_DIRS "${LZ4_LIBRARY_DIR}")
+ set(LZ4_LIBRARIES "${LZ4_LIBRARY}")
++else()
++set(NANOARROW_IPC_WITH_ZSTD OFF)
++set(NANOARROW_IPC_WITH_LZ4 OFF)
++endif()
+ # DuckDB instruments only its C++ flags, so nanoarrow's C sources take the same sanitizer
+ if(ENABLE_THREAD_SANITIZER)
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
+diff --git a/src/file_scanner/arrow_file_scan.cpp b/src/file_scanner/arrow_file_scan.cpp
+index 8ce3499e34..bb827c6c1a 100644
+--- a/src/file_scanner/arrow_file_scan.cpp
++++ b/src/file_scanner/arrow_file_scan.cpp
+@@ -39,7 +39,7 @@ void DeduplicateChildNames(ArrowSchema& schema) {
+ 
+ ArrowFileScan::ArrowFileScan(ClientContext& context, const OpenFileInfo& file)
+     : BaseFileReader(file), scan_id(next_scan_id++) {
+-  factory = make_uniq<FileIPCStreamFactory>(context, file);
++  factory = make_shared_ptr<FileIPCStreamFactory>(context, file);
+ 
+   factory->InitReader();
+   auto& reader = static_cast<IPCFileStreamReader&>(*factory->reader);
+@@ -118,11 +118,33 @@ bool ArrowFileScan::TryInitializeScan(ClientContext& context,
+   return true;
+ }
+ 
++//! The scan factory of the blocks a local state claimed. The state owns the scan data that
++//! holds this factory, so the state outlives it
++class ArrowFileScan::BlockScanFactory : public ArrowScanFactory {
++ public:
++  BlockScanFactory(ArrowFileScan& scan, ArrowFileLocalState& lstate)
++      : scan(scan), lstate(lstate) {}
++
++  void GetSchema(ArrowSchema& schema) override {
++    NANOARROW_THROW_NOT_OK(ArrowSchemaDeepCopy(&scan.schema_root.arrow_schema, &schema));
++  }
++
++  unique_ptr<ArrowArrayStreamWrapper> ProduceStream(ArrowStreamParameters&) override {
++    // PrepareScan already gave the reader the projection these parameters carry
++    auto out = make_uniq<ArrowArrayStreamWrapper>();
++    IpcArrayStream(*lstate.block_reader).ToArrayStream(&out->arrow_array_stream);
++    return out;
++  }
++
++ private:
++  ArrowFileScan& scan;
++  ArrowFileLocalState& lstate;
++};
++
+ void ArrowFileScan::InitializeScanData(ArrowFileLocalState& lstate,
+-                                       stream_factory_produce_t producer,
+-                                       uintptr_t producer_data) {
++                                       shared_ptr<ArrowScanFactory> producer) {
+   lstate.local_arrow_function_data =
+-      make_uniq<ArrowScanFunctionData>(producer, producer_data);
++      make_uniq<ArrowScanFunctionData>(std::move(producer));
+   // A memberwise copy shares the release pointer, so a second scan would free it twice
+   NANOARROW_THROW_NOT_OK(
+       ArrowSchemaDeepCopy(&schema_root.arrow_schema,
+@@ -150,15 +172,6 @@ void ArrowFileScan::StartScan(ClientContext& context, ArrowFileLocalState& lstat
+       lstate.local_arrow_global_state.get());
+ }
+ 
+-unique_ptr<ArrowArrayStreamWrapper> ArrowFileScan::ProduceBlocks(
+-    uintptr_t local_state, ArrowStreamParameters& parameters) {
+-  // PrepareScan already gave the reader the projection these parameters carry
+-  auto& lstate = *reinterpret_cast<ArrowFileLocalState*>(local_state);
+-  auto out = make_uniq<ArrowArrayStreamWrapper>();
+-  IpcArrayStream(*lstate.block_reader).ToArrayStream(&out->arrow_array_stream);
+-  return out;
+-}
+-
+ void ArrowFileScan::PrepareScan(ClientContext& context,
+                                 GlobalTableFunctionState& gstate_p,
+                                 LocalTableFunctionState& lstate_p) {
+@@ -181,8 +194,7 @@ void ArrowFileScan::PrepareScan(ClientContext& context,
+       lstate.count_reader = lstate.count_owned_reader.get();
+       return;
+     }
+-    InitializeScanData(lstate, &FileIPCStreamFactory::Produce,
+-                       reinterpret_cast<uintptr_t>(factory.get()));
++    InitializeScanData(lstate, factory);
+     return;
+   }
+   // A state keeps its reader for the next claim of the same file
+@@ -196,8 +208,7 @@ void ArrowFileScan::PrepareScan(ClientContext& context,
+     // The schema comes from the footer copy, so a claim costs no read of the file start
+     lstate.block_reader->LoadFooter(ArrowBufferView{
+         {footer_window.get()}, static_cast<int64_t>(footer_window.GetSize())});
+-    InitializeScanData(lstate, &ArrowFileScan::ProduceBlocks,
+-                       reinterpret_cast<uintptr_t>(&lstate));
++    InitializeScanData(lstate, make_shared_ptr<BlockScanFactory>(*this, lstate));
+     // The fetch needs the projection before the scan that would push it starts
+     if (!count_only) {
+       vector<idx_t> projection;
+diff --git a/src/include/file_scanner/arrow_file_scan.hpp b/src/include/file_scanner/arrow_file_scan.hpp
+index d9ad497278..4d8d708cbc 100644
+--- a/src/include/file_scanner/arrow_file_scan.hpp
++++ b/src/include/file_scanner/arrow_file_scan.hpp
+@@ -26,8 +26,8 @@ class ArrowFileScan : public BaseFileReader {
+   //! Each scan takes a deep copy of the schema, so this one releases its own
+   ~ArrowFileScan() override = default;
+ 
+-  //! Factory of this stream
+-  unique_ptr<FileIPCStreamFactory> factory;
++  //! Factory of this stream, shared with the scan data that reads the whole file
++  shared_ptr<FileIPCStreamFactory> factory;
+ 
+   string GetReaderType() const override;
+ 
+@@ -63,12 +63,11 @@ class ArrowFileScan : public BaseFileReader {
+ 
+   //! Groups the footer blocks into claims of at least this many body bytes
+   void PlanClaims(const vector<ArrowIpcFileBlock>& file_blocks, idx_t min_claim_bytes);
+-  void InitializeScanData(ArrowFileLocalState& lstate, stream_factory_produce_t producer,
+-                          uintptr_t producer_data);
++  void InitializeScanData(ArrowFileLocalState& lstate, shared_ptr<ArrowScanFactory> producer);
+   void StartScan(ClientContext& context, ArrowFileLocalState& lstate);
+   static void FinishClaim(ArrowFileLocalState& lstate);
+-  static unique_ptr<ArrowArrayStreamWrapper> ProduceBlocks(
+-      uintptr_t local_state, ArrowStreamParameters& parameters);
++  //! Produces the stream of the blocks a local state claimed, from its block reader
++  class BlockScanFactory;
+ 
+   vector<string> names;
+   vector<LogicalType> types;
+diff --git a/src/include/ipc/stream_factory.hpp b/src/include/ipc/stream_factory.hpp
+index 773e9289f6..a92fb3a00c 100644
+--- a/src/include/ipc/stream_factory.hpp
++++ b/src/include/ipc/stream_factory.hpp
+@@ -19,20 +19,18 @@ namespace ext_nanoarrow {
+ 
+ class IPCFileStreamReader;
+ 
+-class ArrowStreamFactory {
+-  ArrowStreamFactory() {};
+-};
+-//! This Factory is a type invented by DuckDB. Notably, the Produce()
+-//! function pointer is passed to the constructor of the ArrowScanFunctionData
+-//! constructor (which we wrap).
+-class ArrowIPCStreamFactory {
++//! The scan factory arrow_scan takes as bind input: it produces the schema and the
++//! array stream of an IPC stream through its reader
++class ArrowIPCStreamFactory : public ArrowScanFactory {
+  public:
+-  virtual ~ArrowIPCStreamFactory() = default;
++  ~ArrowIPCStreamFactory() override = default;
+   explicit ArrowIPCStreamFactory(Allocator& allocator);
+ 
+-  //! Called once when initializing Scan States
+-  static unique_ptr<ArrowArrayStreamWrapper> Produce(uintptr_t factory_ptr,
+-                                                     ArrowStreamParameters& parameters);
++  //! The schema of the arrow object, as a fresh copy the caller releases
++  void GetSchema(ArrowSchema& schema) override;
++  //! Called once when initializing Scan States, moves the reader into the stream
++  unique_ptr<ArrowArrayStreamWrapper> ProduceStream(
++      ArrowStreamParameters& parameters) override;
+   //! The projected top level columns in output order, empty when nothing is projected
+   static vector<idx_t> ProjectedColumnIndexes(const ArrowStreamParameters& parameters);
+ 
+diff --git a/src/include/table_function/arrow_ipc_function_data.hpp b/src/include/table_function/arrow_ipc_function_data.hpp
+index 5c93db1266..a79f88c408 100644
+--- a/src/include/table_function/arrow_ipc_function_data.hpp
++++ b/src/include/table_function/arrow_ipc_function_data.hpp
+@@ -13,14 +13,15 @@
+ 
+ namespace duckdb {
+ namespace ext_nanoarrow {
+-//! Our FunctionData is the same as the ArrowScanFunctionData except we extend it
+-//! to keep the ArrowIpcArrowArrayStreamFactory alive.
++//! Our FunctionData is the same as the ArrowScanFunctionData, which keeps the
++//! ArrowIPCStreamFactory alive, with typed access to it
+ struct ArrowIPCFunctionData : public ArrowScanFunctionData {
+-  explicit ArrowIPCFunctionData(std::unique_ptr<ArrowIPCStreamFactory> factory)
+-      : ArrowScanFunctionData(ArrowIPCStreamFactory::Produce,
+-                              reinterpret_cast<uintptr_t>(factory.get())),
+-        factory(std::move(factory)) {}
+-  std::unique_ptr<ArrowIPCStreamFactory> factory;
++  explicit ArrowIPCFunctionData(shared_ptr<ArrowIPCStreamFactory> factory)
++      : ArrowScanFunctionData(std::move(factory)) {}
++
++  ArrowIPCStreamFactory& IPCFactory() const {
++    return factory->Cast<ArrowIPCStreamFactory>();
++  }
+ };
+ }  // namespace ext_nanoarrow
+ }  // namespace duckdb
+diff --git a/src/ipc/stream_factory.cpp b/src/ipc/stream_factory.cpp
+index eed030478d..922fb20b85 100644
+--- a/src/ipc/stream_factory.cpp
++++ b/src/ipc/stream_factory.cpp
+@@ -12,25 +12,30 @@ namespace ext_nanoarrow {
+ ArrowIPCStreamFactory::ArrowIPCStreamFactory(Allocator& allocator_p)
+     : allocator(allocator_p) {}
+ 
+-unique_ptr<ArrowArrayStreamWrapper> ArrowIPCStreamFactory::Produce(
+-    uintptr_t factory_ptr, ArrowStreamParameters& parameters) {
+-  auto factory =
+-      static_cast<ArrowIPCStreamFactory*>(reinterpret_cast<void*>(factory_ptr));
+-
+-  if (!factory->reader) {
++unique_ptr<ArrowArrayStreamWrapper> ArrowIPCStreamFactory::ProduceStream(
++    ArrowStreamParameters& parameters) {
++  if (!reader) {
+     throw InternalException("IpcStreamReader was not initialized or was already moved");
+   }
+ 
+   const auto column_indexes = ProjectedColumnIndexes(parameters);
+   if (!column_indexes.empty()) {
+-    factory->reader->SetColumnProjection(column_indexes);
++    reader->SetColumnProjection(column_indexes);
+   }
+ 
+   auto out = make_uniq<ArrowArrayStreamWrapper>();
+-  IpcArrayStream(std::move(factory->reader)).ToArrayStream(&out->arrow_array_stream);
++  IpcArrayStream(std::move(reader)).ToArrayStream(&out->arrow_array_stream);
+   return out;
+ }
+ 
++void ArrowIPCStreamFactory::GetSchema(ArrowSchema& schema) {
++  ArrowSchemaWrapper wrapper;
++  GetFileSchema(wrapper);
++  // Hand the copy over to the caller
++  schema = wrapper.arrow_schema;
++  wrapper.arrow_schema.release = nullptr;
++}
++
+ vector<idx_t> ArrowIPCStreamFactory::ProjectedColumnIndexes(
+     const ArrowStreamParameters& parameters) {
+   vector<idx_t> column_indexes;
+diff --git a/src/scanner/read_arrow.cpp b/src/scanner/read_arrow.cpp
+index a1c9109a65..0a67734cf0 100644
+--- a/src/scanner/read_arrow.cpp
++++ b/src/scanner/read_arrow.cpp
+@@ -76,11 +76,8 @@ struct ReadArrowStream : ArrowTableFunction {
+ TableFunction ReadArrowStreamFunction() { return ReadArrowStream::Function(); }
+ 
+ void RegisterReadArrowStream(ExtensionLoader& loader) {
+-  auto function = ReadArrowStream::Function();
+-  loader.RegisterFunction(function);
+-  // So we can accept a list of paths as well e.g., ['file_1.arrow','file_2.arrow']
+-  function.arguments = {LogicalType::LIST(LogicalType::VARCHAR)};
+-  loader.RegisterFunction(function);
++  // Registers the path overload and the list of paths overload, e.g. ['file_1.arrow','file_2.arrow']
++  loader.RegisterFunction(MultiFileReader::CreateFunctionSet(ReadArrowStream::Function()));
+   auto& config = DBConfig::GetConfig(loader.GetDatabaseInstance());
+   config.replacement_scans.emplace_back(ReadArrowStream::ScanReplacement);
+ }
+diff --git a/src/scanner/scan_arrow_ipc.cpp b/src/scanner/scan_arrow_ipc.cpp
+index 8a5a450fd4..dab872e13a 100644
+--- a/src/scanner/scan_arrow_ipc.cpp
++++ b/src/scanner/scan_arrow_ipc.cpp
+@@ -31,10 +31,10 @@ struct ScanArrowIPCFunction : ArrowTableFunction {
+       buffers.emplace_back(unpacked[0].GetPointer(), unpacked[1].GetValue<uint64_t>());
+     }
+ 
+-    auto stream_factory = make_uniq<BufferIPCStreamFactory>(context, buffers);
++    auto stream_factory = make_shared_ptr<BufferIPCStreamFactory>(context, buffers);
+     auto res = make_uniq<ArrowIPCFunctionData>(std::move(stream_factory));
+-    res->factory->InitReader();
+-    res->factory->GetFileSchema(res->schema_root);
++    res->IPCFactory().InitReader();
++    res->IPCFactory().GetFileSchema(res->schema_root);
+ 
+     PopulateArrowTableSchema(context, res->arrow_table, res->schema_root.arrow_schema);
+     names = StringsToIdentifiers(res->arrow_table.GetNames());
+diff --git a/src/writer/to_arrow_ipc.cpp b/src/writer/to_arrow_ipc.cpp
+index 4d9dc2e5ea..dae28ac55b 100644
+--- a/src/writer/to_arrow_ipc.cpp
++++ b/src/writer/to_arrow_ipc.cpp
+@@ -176,8 +176,10 @@ TableFunction ToArrowIPCFunction::GetFunction() {
+                     InitLocal);
+   fun.in_out_function = Function;
+   fun.in_out_function_final = FunctionFinal;
+-  fun.named_parameters["compression"] = LogicalType::VARCHAR;
+-  fun.named_parameters["compression_level"] = LogicalType::BIGINT;
++  fun.GetSignature().WithTypedKwargs("options", [](TypedKwargs& options) {
++    options.Add("compression", LogicalType::VARCHAR)
++        .Add("compression_level", LogicalType::BIGINT);
++  });
+   return fun;
+ }
+ 
+diff --git a/src/writer/write_arrow_stream.cpp b/src/writer/write_arrow_stream.cpp
+index 4436c1cb45..f0aad57406 100644
+--- a/src/writer/write_arrow_stream.cpp
++++ b/src/writer/write_arrow_stream.cpp
+@@ -228,9 +228,9 @@ CopyFunctionExecutionMode ArrowWriteExecutionMode(bool preserve_insertion_order,
+   return CopyFunctionExecutionMode::REGULAR_COPY_TO_FILE;
+ }
+ 
+-idx_t ArrowWriteDesiredBatchSize(ClientContext& context, FunctionData& bind_data_p) {
++optional_idx ArrowWriteDesiredBatchSize(ClientContext& context, FunctionData& bind_data_p) {
+   auto& bind_data = bind_data_p.Cast<ArrowWriteBindData>();
+-  return bind_data.row_group_size;
++  return optional_idx(bind_data.row_group_size);
+ }
+ 
+ idx_t ArrowWriteFileSizeBytes(GlobalFunctionData& gstate) {
