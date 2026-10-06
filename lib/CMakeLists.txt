@@ -218,13 +218,11 @@ add_library(
   duckdb_web
   ${CMAKE_SOURCE_DIR}/src/arrow_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/arrow_ipc_writer.cc
-  ${CMAKE_SOURCE_DIR}/src/arrow_stream_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/http_wasm.cc
   ${CMAKE_SOURCE_DIR}/src/config.cc
   ${CMAKE_SOURCE_DIR}/src/csv_insert_options.cc
   ${CMAKE_SOURCE_DIR}/src/functions/table_function_relation.cc
   ${CMAKE_SOURCE_DIR}/src/insert_options.cc
-  ${CMAKE_SOURCE_DIR}/src/io/arrow_ifstream.cc
   ${CMAKE_SOURCE_DIR}/src/io/buffered_filesystem.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_page_buffer.cc
   ${CMAKE_SOURCE_DIR}/src/io/file_stats.cc

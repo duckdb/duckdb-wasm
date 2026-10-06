@@ -3,7 +3,6 @@
 #include "arrow/ipc/reader.h"
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
-#include "duckdb/web/arrow_stream_buffer.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {
