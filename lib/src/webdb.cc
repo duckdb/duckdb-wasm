@@ -46,6 +46,7 @@
 #include "duckdb/web/environment.h"
 #include "duckdb/web/extension_provider.h"
 #include "duckdb/web/extensions/json_extension.h"
+#include "duckdb/web/extensions/tpch_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/http_wasm.h"
@@ -1069,6 +1070,9 @@ web::Status WebDB::Open(std::string_view args_json) {
         duckdb_web_parquet_init(db.get());
 #if defined(DUCKDB_JSON_EXTENSION)
         duckdb_web_json_init(db.get());
+#endif
+#if defined(DUCKDB_TPCH_EXTENSION)
+        duckdb_web_tpch_init(db.get());
 #endif
 #endif  // WASM_LOADABLE_EXTENSIONS
         RegisterCustomExtensionOptions(db);

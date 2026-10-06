@@ -264,7 +264,16 @@ else()
   set(DUCKDB_WEB_JSON "duckdb_web_json")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_JSON_EXTENSION")
 
-  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} duckdb_nanoarrow rapidjson ${THREAD_LIBS})
+  # TPC-H data generator and queries, for benchmarks
+  set(DUCKDB_WEB_TPCH "")
+  if(DUCKDB_WASM_STATIC_TPCH)
+    add_library(duckdb_web_tpch ${CMAKE_SOURCE_DIR}/src/extensions/tpch_extension.cc)
+    target_link_libraries(duckdb_web_tpch duckdb duckdb_tpch)
+    set(DUCKDB_WEB_TPCH "duckdb_web_tpch")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDUCKDB_TPCH_EXTENSION")
+  endif()
+
+  target_link_libraries(duckdb_web duckdb duckdb_web_parquet ${DUCKDB_WEB_JSON} ${DUCKDB_WEB_TPCH} duckdb_nanoarrow rapidjson ${THREAD_LIBS})
   target_link_libraries(duckdb_web_parquet duckdb duckdb_parquet)
   target_link_libraries(duckdb_web_json duckdb duckdb_json)
 endif()

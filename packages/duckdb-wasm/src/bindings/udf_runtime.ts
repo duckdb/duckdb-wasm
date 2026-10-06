@@ -6,12 +6,12 @@ const TEXT_DECODER = new TextDecoder('utf-8');
 
 function storeError(mod: DuckDBModule, response: number, message: string) {
     const msgBuffer = TEXT_ENCODER.encode(message);
-    const heapAddr = mod._malloc(msgBuffer.byteLength);
+    const heapAddr = (mod._malloc(msgBuffer.byteLength) >>> 0);
     const heapArray = mod.HEAPU8.subarray(heapAddr, heapAddr + msgBuffer.byteLength);
     heapArray.set(msgBuffer);
-    mod.HEAPF64[(response >> 3) + 0] = 1;
-    mod.HEAPF64[(response >> 3) + 1] = heapAddr;
-    mod.HEAPF64[(response >> 3) + 2] = heapArray.byteLength;
+    mod.HEAPF64[(response >>> 3) + 0] = 1;
+    mod.HEAPF64[(response >>> 3) + 1] = heapAddr;
+    mod.HEAPF64[(response >>> 3) + 2] = heapArray.byteLength;
 }
 
 function getTypeSize(ptype: string) {
@@ -189,9 +189,9 @@ export function callScalarUDF(
         // Prepare result buffers
         // TODO: we probably do not want to recreate those every time
         const resultDataLen = desc.rows * getTypeSize(desc.ret.physicalType);
-        const resultDataPtr = mod._malloc(resultDataLen);
+        const resultDataPtr = (mod._malloc(resultDataLen) >>> 0);
         const resultData = ptrToArray(mod, resultDataPtr, desc.ret.physicalType, desc.rows);
-        const resultValidityPtr = mod._malloc(desc.rows);
+        const resultValidityPtr = (mod._malloc(desc.rows) >>> 0);
         const resultValidity = ptrToUint8Array(mod, resultValidityPtr, desc.rows);
         if (resultData.length == 0 || resultValidity.length == 0) {
             storeError(mod, response, "Can't create physical arrays for result");
@@ -222,7 +222,7 @@ export function callScalarUDF(
             case 'VARCHAR': {
                 // Allocate result buffers
                 const resultDataUTF8 = new Array<Uint8Array>(0); // cough
-                resultLengthsPtr = mod._malloc(desc.rows * getTypeSize('DOUBLE'));
+                resultLengthsPtr = (mod._malloc(desc.rows * getTypeSize('DOUBLE')) >>> 0);
                 const resultLengths = ptrToFloat64Array(mod, resultLengthsPtr, desc.rows);
 
                 // TODO: We need two loops to figure out the total length but maybe we can avoid the double allocation
@@ -235,7 +235,7 @@ export function callScalarUDF(
                 }
 
                 // We malloc a buffer for the strings to live in for now
-                const resultStringPtr = mod._malloc(totalLength);
+                const resultStringPtr = (mod._malloc(totalLength) >>> 0);
                 const resultStringBuf = mod.HEAPU8.subarray(resultStringPtr, resultStringPtr + totalLength);
 
                 // Now copy all the strings to the new buffer back to back
@@ -252,16 +252,16 @@ export function callScalarUDF(
 
         // Need to store three pointers, data, validity and length
         const retLen = 3 * 8;
-        const retPtr = mod._malloc(retLen);
+        const retPtr = (mod._malloc(retLen) >>> 0);
         const retBuffer = ptrToFloat64Array(mod, retPtr, 3);
         retBuffer[0] = resultDataPtr;
         retBuffer[1] = resultValidityPtr;
         retBuffer[2] = resultLengthsPtr;
 
         // Pack response
-        mod.HEAPF64[(response >> 3) + 0] = 0;
-        mod.HEAPF64[(response >> 3) + 1] = retPtr;
-        mod.HEAPF64[(response >> 3) + 2] = 0;
+        mod.HEAPF64[(response >>> 3) + 0] = 0;
+        mod.HEAPF64[(response >>> 3) + 1] = retPtr;
+        mod.HEAPF64[(response >>> 3) + 2] = 0;
     } catch (e: any) {
         storeError(mod, response, e.toString());
     }

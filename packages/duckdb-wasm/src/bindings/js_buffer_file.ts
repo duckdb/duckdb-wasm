@@ -19,8 +19,12 @@ function normalize(path: string): string {
     return JS_BUFFER_PREFIX + rest;
 }
 
+/** Files are stored in chunks: no single large allocation (a spill file can exceed what one ArrayBuffer may
+ * hold), and growth never copies */
+const CHUNK_SIZE = 32 * 1024 * 1024;
+
 export class JsBufferFile {
-    private data: Uint8Array = new Uint8Array(0);
+    private chunks: Uint8Array[] = [];
     private size = 0;
 
     getSize(): number {
@@ -31,22 +35,42 @@ export class JsBufferFile {
         const at = options.at;
         if (at >= this.size) return 0;
         const n = Math.min(out.byteLength, this.size - at);
-        out.set(this.data.subarray(at, at + n));
+        let done = 0;
+        while (done < n) {
+            const position = at + done;
+            const chunk = this.chunks[Math.floor(position / CHUNK_SIZE)];
+            const offset = position % CHUNK_SIZE;
+            const take = Math.min(n - done, CHUNK_SIZE - offset);
+            out.set(chunk.subarray(offset, offset + take), done);
+            done += take;
+        }
         return n;
     }
 
     write(input: Uint8Array, options: { at: number }): number {
         const end = options.at + input.byteLength;
         this.reserve(end);
-        this.data.set(input, options.at);
+        let done = 0;
+        while (done < input.byteLength) {
+            const position = options.at + done;
+            const chunk = this.chunks[Math.floor(position / CHUNK_SIZE)];
+            const offset = position % CHUNK_SIZE;
+            const take = Math.min(input.byteLength - done, CHUNK_SIZE - offset);
+            chunk.set(input.subarray(done, done + take), offset);
+            done += take;
+        }
         if (end > this.size) this.size = end;
         return input.byteLength;
     }
 
     truncate(size: number): void {
         if (size < this.size) {
-            // Zero the tail so a later growth reads as zeros
-            this.data.fill(0, size, this.size);
+            // Drop whole chunks past the new end, zero the tail of the last one so a later growth reads as zeros
+            const keep = Math.ceil(size / CHUNK_SIZE);
+            this.chunks.length = keep;
+            if (keep > 0) {
+                this.chunks[keep - 1].fill(0, size - (keep - 1) * CHUNK_SIZE);
+            }
         } else {
             this.reserve(size);
         }
@@ -56,18 +80,16 @@ export class JsBufferFile {
     flush(): void {}
 
     close(): void {
-        this.data = new Uint8Array(0);
+        this.chunks = [];
         this.size = 0;
     }
 
-    /** Grow the backing buffer geometrically, writes come in blocks */
+    /** Chunks come into existence as the file grows, zero-filled */
     private reserve(capacity: number): void {
-        if (capacity <= this.data.byteLength) return;
-        let next = Math.max(this.data.byteLength * 2, 1 << 20);
-        while (next < capacity) next *= 2;
-        const grown = new Uint8Array(next);
-        grown.set(this.data.subarray(0, this.size));
-        this.data = grown;
+        const needed = Math.ceil(capacity / CHUNK_SIZE);
+        while (this.chunks.length < needed) {
+            this.chunks.push(new Uint8Array(CHUNK_SIZE));
+        }
     }
 }
 

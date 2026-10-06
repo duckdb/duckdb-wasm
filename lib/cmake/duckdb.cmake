@@ -75,6 +75,7 @@ ExternalProject_Add(
     <INSTALL_DIR>/lib/libparquet_extension.a
     <INSTALL_DIR>/lib/libcore_functions_extension.a
     <INSTALL_DIR>/lib/libjson_extension.a
+    <INSTALL_DIR>/lib/libtpch_extension.a
     <INSTALL_DIR>/lib/libnanoarrow_extension.a
     <INSTALL_DIR>/lib/libnanoarrow_ipc_static.a
     <INSTALL_DIR>/lib/libnanoarrow_static.a
@@ -124,6 +125,11 @@ target_include_directories(duckdb_parquet INTERFACE ${DUCKDB_SOURCE_DIR}/extensi
 add_library(duckdb_json STATIC IMPORTED)
 set_property(TARGET duckdb_json PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjson_extension.a)
 target_include_directories(duckdb_json INTERFACE ${DUCKDB_SOURCE_DIR}/extension/json/include)
+
+# TPC-H, linked statically for benchmarks (DUCKDB_WASM_STATIC_TPCH)
+add_library(duckdb_tpch STATIC IMPORTED)
+set_property(TARGET duckdb_tpch PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtpch_extension.a)
+target_include_directories(duckdb_tpch INTERFACE ${DUCKDB_SOURCE_DIR}/extension/tpch/include)
 
 # duckdb-nanoarrow with the nanoarrow C libraries it builds, also used directly for Arrow IPC
 add_library(duckdb_nanoarrow STATIC IMPORTED)

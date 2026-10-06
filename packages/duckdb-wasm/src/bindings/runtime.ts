@@ -124,9 +124,9 @@ export function callSRet(
     mod.ccall(funcName, null, argTypes, args);
 
     // Read the response
-    const status = mod.HEAPF64[(response >> 3) + 0];
-    const data = mod.HEAPF64[(response >> 3) + 1];
-    const dataSize = mod.HEAPF64[(response >> 3) + 2];
+    const status = mod.HEAPF64[(response >>> 3) + 0];
+    const data = mod.HEAPF64[(response >>> 3) + 1];
+    const dataSize = mod.HEAPF64[(response >>> 3) + 2];
 
     // Restore the stack
     mod.stackRestore(stackPointer);
