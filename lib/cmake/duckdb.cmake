@@ -24,7 +24,7 @@ if(NOT DUCKDB_EXPLICIT_VERSION AND DEFINED ENV{OVERRIDE_GIT_DESCRIBE})
   set(DUCKDB_EXPLICIT_VERSION "$ENV{OVERRIDE_GIT_DESCRIBE}")
 endif()
 
-# The duckdb-nanoarrow checkout that is built and linked statically (FIXME: make it a submodule)
+# The duckdb-nanoarrow checkout that is built and linked statically, the submodule unless given otherwise
 if(NOT DUCKDB_NANOARROW_DIR AND DEFINED ENV{DUCKDB_NANOARROW_DIR})
   set(DUCKDB_NANOARROW_DIR "$ENV{DUCKDB_NANOARROW_DIR}")
 endif()

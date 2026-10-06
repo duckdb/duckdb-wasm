@@ -428,11 +428,13 @@ build/docker_ci_image:
 patch_duckdb:
 	(find patches/duckdb/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb) || true
 	(find patches/rapidjson/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/rapidjson) || true
+	(find patches/duckdb-nanoarrow/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb-nanoarrow) || true
 
 apply_patches: patch_duckdb
 
 submodules:
-	git submodule update --init --recursive
+	# not recursive: duckdb-nanoarrow has its own duckdb submodule, which is not needed
+	git submodule update --init
 	touch submodules
 
 # Build infrastructure and packages required for development

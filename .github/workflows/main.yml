@@ -40,7 +40,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
 
             - name: Lint ./lib
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -57,7 +57,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
 
             - name: Cache node_modules
               uses: actions/cache@v5
@@ -101,7 +101,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
 
             - name: Cache generator
               uses: actions/cache@v5
@@ -131,7 +131,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
 
             - name: Cache rust build
               uses: actions/cache@v5
@@ -169,7 +169,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - uses: actions/download-artifact@v8
@@ -267,7 +267,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - uses: actions/download-artifact@v8
@@ -364,7 +364,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - name: Prepare repository
@@ -407,7 +407,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - name: Prepare repository
@@ -451,7 +451,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - name: Install dependencies
@@ -498,7 +498,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - name: Install dependencies
@@ -548,7 +548,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - uses: actions/setup-node@v6
@@ -856,7 +856,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - uses: actions/setup-node@v6
@@ -1004,7 +1004,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
                   fetch-depth: 0
 
             - uses: actions/setup-node@v6
@@ -1158,7 +1158,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: 'recursive'
+                  submodules: true
 
             - uses: actions/download-artifact@v8
               with:
