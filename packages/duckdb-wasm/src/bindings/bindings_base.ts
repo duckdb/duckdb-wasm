@@ -5,7 +5,7 @@ import { InstantiationProgress } from './progress';
 import { DuckDBBindings } from './bindings_interface';
 import { DuckDBConnection } from './connection';
 import { StatusCode, IsArrowBuffer, IsDuckDBWasmRetry } from '../status';
-import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer, DuckDBDataProtocol, TemporaryDirectory } from './runtime';
+import { dropResponseBuffers, DuckDBRuntime, readString, callSRet, copyBuffer, DuckDBDataProtocol } from './runtime';
 import { CSVInsertOptions, JSONInsertOptions, ArrowInsertOptions } from './insert_options';
 import { ScriptTokens } from './tokens';
 import { FileStatistics } from './file_stats';
@@ -532,13 +532,6 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
     }
     /** Prepare a file handle that could only be acquired aschronously */
-    /** Prepare the directory DuckDB spills to */
-    public async prepareTemporaryDirectory(): Promise<TemporaryDirectory | null> {
-        if (this._runtime.prepareTemporaryDirectory) {
-            return await this._runtime.prepareTemporaryDirectory();
-        }
-        return null;
-    }
     public async prepareDBFileHandle(path: string, protocol: DuckDBDataProtocol): Promise<void> {
         if (protocol === DuckDBDataProtocol.BROWSER_FSACCESS && this._runtime.prepareDBFileHandle) {
             const list = await this._runtime.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);

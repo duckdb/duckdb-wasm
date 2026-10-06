@@ -1,6 +1,7 @@
 import { StatusCode } from '../status';
 import { LogEvent, LogLevel, LogOrigin, LogTopic, Logger } from '../log';
-import { OPFSScratch, OPFS_PREFIX, OPFS_SCRATCH_DIR } from './opfs_scratch';
+import { OPFSScratch, OPFS_PREFIX } from './opfs_scratch';
+import { JsBufferFile, JsBufferFileSystem } from './js_buffer_file';
 import { WorkerResponseType } from '../parallel/worker_request';
 import { addS3Headers, getHTTPUrl } from '../utils';
 
@@ -15,7 +16,6 @@ import {
     FileFlags,
     readString,
     PreparedDBFileHandle,
-    TemporaryDirectory,
 } from './runtime';
 import { DuckDBModule } from './duckdb_module';
 import * as udf from './udf_runtime';
@@ -30,6 +30,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _opfsScratch: OPFSScratch | null;
     _opfsScratchMount: Promise<OPFSScratch> | null;
     _logger: Logger | null;
+    /** js_buffer:// files, DuckDB's temporary directory among them */
+    _jsBuffers: JsBufferFileSystem;
+    jsBuffer(path: string): JsBufferFile;
     /** Log a file operation at debug level */
     debug(event: string, ...args: any[]): void;
     _opfsCheckpoint: Promise<void> | null;
@@ -48,8 +51,17 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _opfsScratch: null,
     _opfsScratchMount: null,
     _logger: null,
+    _jsBuffers: new JsBufferFileSystem(),
     setLogger(logger: Logger): void {
         BROWSER_RUNTIME._logger = logger;
+    },
+    /** The buffer of an open js_buffer:// file */
+    jsBuffer(path: string): JsBufferFile {
+        const buffer = BROWSER_RUNTIME._jsBuffers.get(path);
+        if (!buffer) {
+            throw new Error(`No js_buffer file with name: ${path}`);
+        }
+        return buffer;
     },
     debug(event: string, ...args: any[]): void {
         BROWSER_RUNTIME._logger?.log({
@@ -144,29 +156,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             }
             BROWSER_RUNTIME._opfsScratch = await BROWSER_RUNTIME._opfsScratchMount;
         }
-    },
-    /** DuckDB spills to the ephemeral directory of the OPFS scratch, where OPFS is available */
-    async prepareTemporaryDirectory(): Promise<TemporaryDirectory | null> {
-        if (typeof navigator === 'undefined' || !navigator.storage?.getDirectory) {
-            return null;
-        }
-        try {
-            await BROWSER_RUNTIME.assignOPFSRoot();
-        } catch (e: any) {
-            BROWSER_RUNTIME.debug('no temporary directory', `${e?.message ?? e}`);
-            return null;
-        }
-        // The storage quota of the origin bounds the spilled data
-        let availableBytes: number | undefined = undefined;
-        try {
-            const estimate = await navigator.storage.estimate();
-            if (estimate.quota !== undefined) {
-                availableBytes = Math.max(0, estimate.quota - (estimate.usage ?? 0));
-            }
-        } catch (e: any) {
-            // unknown, unlimited
-        }
-        return { path: OPFS_SCRATCH_DIR, availableBytes };
     },
     /** Move files created during queries to their real paths, refill the scratch pool. Called between queries. */
     async checkpointFiles(): Promise<void> {
@@ -463,6 +452,21 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     mod.HEAPF64[(result >> 3) + 2] = 0;
                     return result;
                 }
+                case DuckDBDataProtocol.JS_BUFFER: {
+                    const create = flags & (FileFlags.FILE_FLAGS_FILE_CREATE | FileFlags.FILE_FLAGS_FILE_CREATE_NEW);
+                    const buffer = BROWSER_RUNTIME._jsBuffers.open(file.fileName, create !== 0);
+                    if (!buffer) {
+                        return 0;
+                    }
+                    if (flags & FileFlags.FILE_FLAGS_FILE_CREATE_NEW) {
+                        buffer.truncate(0);
+                    }
+                    const result = mod._malloc(3 * 8);
+                    mod.HEAPF64[(result >> 3) + 0] = buffer.getSize();
+                    mod.HEAPF64[(result >> 3) + 1] = 0;
+                    mod.HEAPF64[(result >> 3) + 2] = 0;
+                    return result;
+                }
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
                     let handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (!handle) {
@@ -578,6 +582,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 return xhr.status == 206 || xhr.status == 200;
             } else if (path.startsWith(OPFS_PREFIX) && BROWSER_RUNTIME._opfsScratch) {
                 return BROWSER_RUNTIME._opfsScratch.exists(path);
+            } else if (JsBufferFileSystem.isPath(path)) {
+                return BROWSER_RUNTIME._jsBuffers.exists(path);
             } else {
                 return BROWSER_RUNTIME._files.has(path);
             }
@@ -601,6 +607,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.NODE_FS:
                 case DuckDBDataProtocol.BROWSER_FILEREADER:
                     // XXX Remove from registry
+                    return;
+                case DuckDBDataProtocol.JS_BUFFER:
+                    // The buffer lives until the file is removed
                     return;
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
                     // A file that was never opened (a probe for a missing file) or whose handle was released
@@ -665,6 +674,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.BROWSER_FILEREADER:
                 failWith(mod, `truncateFile not implemented`);
                 return;
+            case DuckDBDataProtocol.JS_BUFFER:
+                return BROWSER_RUNTIME.jsBuffer(file.fileName).truncate(newSize);
             case DuckDBDataProtocol.BROWSER_FSACCESS: {
                 const handle = BROWSER_RUNTIME._files?.get(file.fileName);
                 if (!handle) {
@@ -741,6 +752,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     mod.HEAPU8.set(data, buf);
                     return data.byteLength;
                 }
+                case DuckDBDataProtocol.JS_BUFFER: {
+                    const out = mod.HEAPU8.subarray(buf, buf + bytes);
+                    return BROWSER_RUNTIME.jsBuffer(file.fileName).read(out, { at: location });
+                }
                 case DuckDBDataProtocol.BROWSER_FSACCESS: {
                     const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files.get(file.fileName);
                     if (!handle) {
@@ -778,6 +793,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case DuckDBDataProtocol.BROWSER_FILEREADER:
                 failWith(mod, 'cannot write using the html5 file reader api');
                 return 0;
+            case DuckDBDataProtocol.JS_BUFFER: {
+                const input = mod.HEAPU8.subarray(buf, buf + bytes);
+                return BROWSER_RUNTIME.jsBuffer(file.fileName).write(input, { at: location });
+            }
             case DuckDBDataProtocol.BROWSER_FSACCESS: {
                 const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
                 if (!handle) {
@@ -816,11 +835,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             });
         }
     },
-    // Directories: only the ephemeral directory of the OPFS scratch exists, it holds DuckDB's temporary files
+    // Directories: js_buffer:// has them (DuckDB's temporary directory lives there)
     checkDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('check directory', path);
-        return OPFSScratch.isEphemeral(path) && BROWSER_RUNTIME._opfsScratch !== null;
+        return BROWSER_RUNTIME._jsBuffers.directoryExists(path);
     },
     createDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
@@ -829,15 +848,17 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     removeDirectory: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('remove directory', path);
+        if (JsBufferFileSystem.isPath(path)) {
+            BROWSER_RUNTIME._jsBuffers.removeDirectory(path);
+        }
     },
     listDirectoryEntries: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('list directory', path);
-        const scratch = BROWSER_RUNTIME._opfsScratch;
-        if (!OPFSScratch.isEphemeral(path) || !scratch) {
+        if (!JsBufferFileSystem.isPath(path)) {
             return false;
         }
-        for (const name of scratch.listEphemeral()) {
+        for (const name of BROWSER_RUNTIME._jsBuffers.list(path)) {
             mod.ccall('duckdb_web_fs_directory_add_entry', null, ['string', 'boolean'], [name, false]);
         }
         return true;
@@ -848,7 +869,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         BROWSER_RUNTIME.debug('move', from, to);
         const handle = BROWSER_RUNTIME._files?.get(from);
 
-        if (from.startsWith(OPFS_PREFIX) && BROWSER_RUNTIME._opfsScratch) {
+        if (JsBufferFileSystem.isPath(from)) {
+            BROWSER_RUNTIME._jsBuffers.move(from, to);
+        } else if (from.startsWith(OPFS_PREFIX) && BROWSER_RUNTIME._opfsScratch) {
             // A manifest edit, the checkpoint moves the file into place
             BROWSER_RUNTIME._opfsScratch.move(from, to);
             BROWSER_RUNTIME._files.delete(from);
@@ -873,7 +896,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     removeFile: (mod: DuckDBModule, pathPtr: number, pathLen: number) => {
         const path = readString(mod, pathPtr, pathLen);
         BROWSER_RUNTIME.debug('remove', path);
-        if (path.startsWith(OPFS_PREFIX) && BROWSER_RUNTIME._opfsScratch) {
+        if (JsBufferFileSystem.isPath(path)) {
+            BROWSER_RUNTIME._jsBuffers.remove(path);
+        } else if (path.startsWith(OPFS_PREFIX) && BROWSER_RUNTIME._opfsScratch) {
             BROWSER_RUNTIME._opfsScratch.remove(path);
             BROWSER_RUNTIME._files.delete(path);
         }

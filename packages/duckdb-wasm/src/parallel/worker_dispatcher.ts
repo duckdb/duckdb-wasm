@@ -154,14 +154,6 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                         await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
                         request.data.useDirectIO = true;
                     }
-                    // Spilling goes to the runtime's temporary directory, where it has one
-                    if (request.data.opfs?.spill !== false && !request.data.temporaryDirectory) {
-                        const directory = await this._bindings.prepareTemporaryDirectory();
-                        if (directory) {
-                            request.data.temporaryDirectory = directory.path;
-                            request.data.temporaryDirectorySize = directory.availableBytes;
-                        }
-                    }
                     this._bindings.open(request.data);
                     this.sendOK(request);
                     break;

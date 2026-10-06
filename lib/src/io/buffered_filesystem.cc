@@ -91,10 +91,10 @@ duckdb::unique_ptr<duckdb::FileHandle> BufferedFileSystem::OpenFile(const string
     std::unique_lock<LightMutex> fs_guard{directory_mutex_};
 
     // Bypass the buffering? OPFS files always do: their access handles write through, and the file may be
-    // moved into place between queries
+    // moved into place between queries. js_buffer:// files are memory already, DuckDB's spilled blocks among them
     auto iter = file_configs_.find(path);
     if (flags.DirectIO() || (iter != file_configs_.end() && iter->second.force_direct_io) ||
-        path.rfind("opfs://", 0) == 0) {
+        path.rfind("opfs://", 0) == 0 || path.rfind("js_buffer://", 0) == 0) {
         return filesystem_.OpenFile(path, flags, opener);
     }
 

@@ -76,6 +76,7 @@ import { longQueries } from './long_queries.test';
 import { testRegressionAsync } from './regression';
 import { testFTS } from './fts.test';
 import { testPivot } from './pivot.test';
+import { testSpill } from './spill.test';
 
 testUDF(() => db!);
 longQueries(() => adb!);
@@ -84,6 +85,7 @@ testTableNamesAsync(() => adb!);
 testRegressionAsync(() => adb!);
 testAllTypes(() => db!);
 testAllTypesAsync(() => adb!);
+testSpill(() => adb!);
 testBindings(() => db!, dataDir);
 testAsyncBindings(() => adb!, dataDir, duckdb.DuckDBDataProtocol.NODE_FS);
 testBatchStream(() => db!);

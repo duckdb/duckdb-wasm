@@ -31,7 +31,9 @@ class WebFileSystem : public duckdb::FileSystem {
         BROWSER_FILEREADER = 2,
         BROWSER_FSACCESS = 3,
         HTTP = 4,
-        S3 = 5
+        S3 = 5,
+        /// Files held by the runtime outside the WASM heap (js_buffer://), DuckDB's temporary directory
+        JS_BUFFER = 6
     };
 
     /// A simple buffer.

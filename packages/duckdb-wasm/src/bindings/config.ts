@@ -40,11 +40,6 @@ export interface DuckDBOPFSConfig {
      * - "manual": Files must be manually registered and dropped.
      */
     fileHandling?: "auto" | "manual";
-    /**
-     * Spill data that does not fit in memory to OPFS (DuckDB's temporary directory).
-     * Enabled where OPFS is available, unless set to false.
-     */
-    spill?: boolean;
 }
 
 export enum DuckDBAccessMode {
@@ -64,13 +59,14 @@ export interface DuckDBConfig {
      */
     accessMode?: DuckDBAccessMode;
     /**
-     * The temporary directory of DuckDB, set by the worker when spilling is enabled
+     * Spill data that does not fit in memory to the temporary directory, js_buffer://tmp by default:
+     * buffers held by the runtime outside the WASM heap. Enabled unless set to false.
+     */
+    spill?: boolean;
+    /**
+     * The temporary directory of DuckDB, overrides the default of the runtime
      */
     temporaryDirectory?: string;
-    /**
-     * The space available in the temporary directory in bytes, unlimited if not set
-     */
-    temporaryDirectorySize?: number;
     /**
      * The maximum number of threads.
      * Note that this will only work with cross-origin isolated sites since it requires SharedArrayBuffers.
