@@ -74,6 +74,12 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         if (doc.HasMember("maximumThreads") && doc["maximumThreads"].IsNumber()) {
             config.maximum_threads = doc["maximumThreads"].GetInt();
         }
+        if (doc.HasMember("temporaryDirectory") && doc["temporaryDirectory"].IsString()) {
+            config.temporary_directory = doc["temporaryDirectory"].GetString();
+        }
+        if (doc.HasMember("temporaryDirectorySize") && doc["temporaryDirectorySize"].IsNumber()) {
+            config.temporary_directory_size = static_cast<uint64_t>(doc["temporaryDirectorySize"].GetDouble());
+        }
         if (doc.HasMember("allowUnsignedExtensions") && doc["allowUnsignedExtensions"].IsBool()) {
             config.allow_unsigned_extensions = doc["allowUnsignedExtensions"].GetBool();
         }

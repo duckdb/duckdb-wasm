@@ -167,6 +167,12 @@ RT_FN(void duckdb_web_fs_file_remove(const char *path, size_t pathLen), {
 extern "C" void duckdb_web_fs_glob_add_path(const char *path) {
     GetLocalState().glob_results.push_back(std::string{path});
 }
+/// The runtime reports a directory entry while duckdb_web_fs_directory_list_files runs
+extern "C" void duckdb_web_fs_directory_add_entry(const char *name, bool is_dir) {
+    if (list_files_callback) {
+        (*list_files_callback)(std::string{name}, is_dir);
+    }
+}
 
 WebFileSystem::DataBuffer::DataBuffer(std::unique_ptr<char[]> data, size_t size)
     : data_(std::move(data)), size_(size), capacity_(size) {}
