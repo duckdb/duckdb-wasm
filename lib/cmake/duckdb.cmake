@@ -65,6 +65,7 @@ ExternalProject_Add(
              -DUSE_WASM_THREADS=${USE_WASM_THREADS}
              -DDUCKDB_EXPLICIT_PLATFORM=${DUCKDB_EXPLICIT_PLATFORM}
              -DSMALLER_BINARY=1
+             -DSMALLER_BINARY_EXCEPT=between_select
   BUILD_BYPRODUCTS
     <INSTALL_DIR>/lib/libduckdb_static.a
     <INSTALL_DIR>/lib/libduckdb_fmt.a
