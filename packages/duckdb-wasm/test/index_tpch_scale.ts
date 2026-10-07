@@ -5,11 +5,22 @@
  */
 import * as duckdb from '../src/';
 
-const BUNDLE: duckdb.DuckDBBundle = {
-    mainModule: '/base/packages/duckdb-wasm/dist/duckdb-base.wasm',
-    mainWorker: '/base/packages/duckdb-wasm/dist/duckdb-browser-base.worker.js',
-    pthreadWorker: null,
+const BUNDLES: Record<string, duckdb.DuckDBBundle> = {
+    base: {
+        mainModule: '/base/packages/duckdb-wasm/dist/duckdb-base.wasm',
+        mainWorker: '/base/packages/duckdb-wasm/dist/duckdb-browser-base.worker.js',
+        pthreadWorker: null,
+    },
+    threads: {
+        mainModule: '/base/packages/duckdb-wasm/dist/duckdb-threads.wasm',
+        mainWorker: '/base/packages/duckdb-wasm/dist/duckdb-browser-threads.worker.js',
+        pthreadWorker: null,
+    },
 };
+/** Cross-origin isolated pages compare both bundles at fixed scale factors, others search the base bundle */
+const COMPARE = globalThis.crossOriginIsolated === true;
+const COMPARE_SFS = [1, 2];
+let BUNDLE: duckdb.DuckDBBundle = BUNDLES.base;
 
 /** Doubling steps, then a bisection between the last success and the first failure */
 const START_SF = 0.25;
@@ -33,7 +44,7 @@ function jsHeap(): string {
 function record(stage: Stage) {
     log.push(stage);
     console.log(
-        `[tpch] sf=${stage.sf} spill=${stage.spill ? 'on ' : 'off'} ${stage.stage.padEnd(10)} ` +
+        `[tpch] ${BUNDLE === BUNDLES.threads ? 'threads' : 'base   '} sf=${stage.sf} spill=${stage.spill ? 'on ' : 'off'} ${stage.stage.padEnd(10)} ` +
             `${stage.ok ? 'ok  ' : 'FAIL'} ${String(Math.round(stage.ms)).padStart(7)}ms ${stage.detail}`,
     );
 }
@@ -55,7 +66,8 @@ async function runScaleFactor(sf: number, mode: Mode): Promise<boolean> {
         await db.open({ spill });
         const conn = await db.connect();
         const one = async (sql: string) => (await conn.query(sql)).toArray()[0]?.toJSON();
-        await conn.query(`SET threads = 1`);
+        // The search is single-threaded, the comparison runs each bundle with its default threads
+        if (!COMPARE) await conn.query(`SET threads = 1`);
         if (mode.memoryLimit) {
             await conn.query(`SET memory_limit = '${mode.memoryLimit}'`);
         }
@@ -135,7 +147,30 @@ async function search(mode: Mode): Promise<{ best: number; firstFail: number | n
 }
 
 describe('TPC-H scale factor search', () => {
+    it('compares the bundles at fixed scale factors', async () => {
+        if (!COMPARE) {
+            pending('comparison needs a cross-origin isolated page');
+            return;
+        }
+        for (const name of ['base', 'threads']) {
+            BUNDLE = BUNDLES[name];
+            for (const sf of COMPARE_SFS) {
+                console.log(`[tpch] === bundle=${name} sf=${sf}`);
+                const ok = await runScaleFactor(sf, { spill: true });
+                console.log(`[tpch] RESULT bundle=${name} sf=${sf} ${ok ? 'ok' : 'FAILED'}`);
+            }
+        }
+        console.log('[tpch] SUMMARY');
+        for (const s of log.filter(e => e.stage === 'dbgen' || e.stage.startsWith('q') || !e.ok)) {
+            console.log(`[tpch]   sf=${s.sf} ${s.stage.padEnd(6)} ${s.ok ? 'ok  ' : 'FAIL'} ${String(Math.round(s.ms)).padStart(7)}ms ${s.detail}`);
+        }
+    });
+
     it('finds the largest viable scale factor without and with spilling', async () => {
+        if (COMPARE) {
+            pending('the search runs on a plain page');
+            return;
+        }
         const modes: Mode[] = [{ spill: false }, { spill: true }, { spill: true, memoryLimit: '2GB' }];
         const results: { mode: Mode; best: number; firstFail: number | null }[] = [];
         for (const mode of modes) {
