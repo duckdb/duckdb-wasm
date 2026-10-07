@@ -63,9 +63,24 @@ async function runScaleFactor(sf: number, mode: Mode): Promise<boolean> {
     let ok = true;
     try {
         await db.instantiate(BUNDLE.mainModule, BUNDLE.pthreadWorker);
-        await db.open({ spill });
+        await db.open({ spill, allowUnsignedExtensions: true });
         const conn = await db.connect();
         const one = async (sql: string) => (await conn.query(sql)).toArray()[0]?.toJSON();
+        // tpch is linked in (DUCKDB_WASM_STATIC_TPCH) or loaded from the locally built repository
+        const linked = await one(`SELECT loaded FROM duckdb_extensions() WHERE extension_name = 'tpch'`);
+        if (!linked?.loaded) {
+            const t0 = now();
+            try {
+                await conn.query(`SET custom_extension_repository = '${window.location.origin}/extensions'`);
+                await conn.query(`LOAD tpch`);
+                record({ sf, spill, stage: 'load', ms: now() - t0, ok: true, detail: 'tpch loaded from the local repository' });
+            } catch (e: any) {
+                record({ sf, spill, stage: 'load', ms: now() - t0, ok: false, detail: String(e?.message ?? e).split('\n')[0] });
+                return false;
+            }
+        } else {
+            record({ sf, spill, stage: 'load', ms: 0, ok: true, detail: 'tpch linked in' });
+        }
         // The search is single-threaded, the comparison runs each bundle with its default threads
         if (!COMPARE) await conn.query(`SET threads = 1`);
         if (mode.memoryLimit) {
@@ -161,7 +176,7 @@ describe('TPC-H scale factor search', () => {
             }
         }
         console.log('[tpch] SUMMARY');
-        for (const s of log.filter(e => e.stage === 'dbgen' || e.stage.startsWith('q') || !e.ok)) {
+        for (const s of log.filter(e => e.stage === 'dbgen' || e.stage === 'load' || e.stage.startsWith('q') || !e.ok)) {
             console.log(`[tpch]   sf=${s.sf} ${s.stage.padEnd(6)} ${s.ok ? 'ok  ' : 'FAIL'} ${String(Math.round(s.ms)).padStart(7)}ms ${s.detail}`);
         }
     });

@@ -1,4 +1,5 @@
 #include "duckdb/web/extension_provider.h"
+#include "duckdb/web/main_thread.h"
 
 #include <dlfcn.h>
 #include <emscripten.h>
@@ -155,8 +156,10 @@ bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs,
         url = ExtensionHelper::ExtensionFinalizeUrlTemplate(url_template, extension_name);
     }
 
+    // The fetch and the load run on the main thread: with pthreads this executes on the query thread, whose
+    // JavaScript context (and emscripten file system) is its own, and dlopen is served by the main thread anyway
     FetchedExtension fetched;
-    if (!FetchExtension(url, fetched)) {
+    if (!main_thread::OnMainThread([&] { return FetchExtension(url, fetched); })) {
         error = StringUtil::Format("Extension \"%s\" could not be fetched from \"%s\"", extension_name, url);
         return false;
     }
@@ -196,7 +199,7 @@ bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs,
         }
     }
 
-    auto lib_hdl = OpenFetchedExtension(fetched, "/" + extension_name + EXTENSION_SUFFIX);
+    auto lib_hdl = main_thread::OnMainThread([&] { return OpenFetchedExtension(fetched, "/" + extension_name + EXTENSION_SUFFIX); });
     if (!lib_hdl) {
         throw IOException("Extension \"%s\" could not be loaded: %s", url, GetLibraryError());
     }
