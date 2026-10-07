@@ -70,6 +70,7 @@
         "test:node:coverage": "nyc -r json --report-dir ./coverage/node node ../../node_modules/jasmine/bin/jasmine ./dist/tests-node.cjs",
         "test:firefox": "karma start ./karma/tests-firefox.cjs",
         "test:chrome": "karma start ./karma/tests-chrome.cjs",
+        "test:chrome:threads": "karma start ./karma/tests-chrome-threads.cjs",
         "test:chrome:coverage": "karma start ./karma/tests-chrome-coverage.cjs",
         "test:browser": "karma start ./karma/tests-all.cjs",
         "test:browser:debug": "karma start ./karma/tests-debug.cjs",

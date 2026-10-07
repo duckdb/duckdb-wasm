@@ -131,7 +131,9 @@ if(EMSCRIPTEN)
   if(WITH_WASM_THREADS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1 -DWEBDB_THREADS=1")
     set(DUCKDB_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_PTHREADS=1")
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=1 -sPTHREAD_POOL_SIZE=4 -pthread")
+    # The pool: the query thread, DuckDB's workers (maximum_threads - 1) and room for SET threads; pthread_create
+    # is wrapped, see main_thread.cc
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=1 -sPTHREAD_POOL_SIZE=8 -pthread -Wl,--wrap=pthread_create")
     set(DUCKDB_PLATFORM "wasm_threads")
   else()
     set(CMAKE_CXX_FLAGS
@@ -236,6 +238,8 @@ add_library(
   ${CMAKE_SOURCE_DIR}/src/utils/shared_mutex.cc
   ${CMAKE_SOURCE_DIR}/src/utils/thread.cc
   ${CMAKE_SOURCE_DIR}/src/utils/wasm_response.cc
+  ${CMAKE_SOURCE_DIR}/src/main_thread.cc
+  ${CMAKE_SOURCE_DIR}/src/query_thread.cc
   ${CMAKE_SOURCE_DIR}/src/webdb.cc
   ${CMAKE_SOURCE_DIR}/src/webdb_api.cc)
 
@@ -300,7 +304,7 @@ if(EMSCRIPTEN)
       -s MAXIMUM_MEMORY=4GB \
       -s MODULARIZE=1 \
       -s EXPORT_NAME='DuckDB' \
-      -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"stackSave\", \"stackAlloc\", \"stackRestore\", \"stringToUTF8\", \"lengthBytesUTF8\", \"HEAPU8\", \"HEAP32\", \"HEAPF64\"]' \
+      -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"stackSave\", \"stackAlloc\", \"stackRestore\", \"stringToUTF8\", \"lengthBytesUTF8\", \"HEAPU8\", \"HEAP32\", \"HEAPF64\", \"wasmMemory\"]' \
       --js-library=${CMAKE_SOURCE_DIR}/js-stubs.js")
 
 endif()

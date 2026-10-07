@@ -22,6 +22,30 @@ declare global {
     var DUCKDB_RUNTIME: any;
 }
 
+/** With shared memory another thread can grow the memory, and the exported heap views of this thread are only
+ * refreshed when it touches them through emscripten's own code. The exported views become accessors that refresh
+ * on every read; emscripten keeps assigning them, which the setter accepts. */
+function installHeapAccessors(mod: DuckDBModule): void {
+    const memory = mod.wasmMemory;
+    if (!memory || typeof SharedArrayBuffer === 'undefined' || !(memory.buffer instanceof SharedArrayBuffer)) return;
+    const views = { HEAPU8: Uint8Array, HEAP32: Int32Array, HEAPF64: Float64Array } as const;
+    for (const name of Object.keys(views) as (keyof typeof views)[]) {
+        const Ctor = views[name];
+        let view: any = (mod as any)[name];
+        Object.defineProperty(mod, name, {
+            configurable: true,
+            enumerable: true,
+            get: () => {
+                if (view.buffer !== memory.buffer) view = new Ctor(memory.buffer);
+                return view;
+            },
+            set: (next: any) => {
+                view = next;
+            },
+        });
+    }
+}
+
 /** A DuckDB Feature */
 export enum DuckDBFeature {
     WASM_EXCEPTIONS = 1 << 0,
@@ -96,6 +120,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         // Wait for onRuntimeInitialized
         await this._initPromise;
         this._initPromise = null;
+        installHeapAccessors(this._instance);
         // Remove own progress callback
         this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != onProgress);
         (globalThis as any).DUCKDB_BINDINGS = this;
@@ -163,14 +188,6 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** Disconnect from database */
     public disconnect(conn: number): void {
         this.mod.ccall('duckdb_web_disconnect', null, ['number'], [conn]);
-        if (this.pthread) {
-            for (const worker of [...this.pthread.runningWorkers, ...this.pthread.unusedWorkers]) {
-                worker.postMessage({
-                    cmd: 'dropUDFFunctions',
-                    connectionId: conn,
-                });
-            }
-        }
     }
 
     /** Send a query and return the full result */
@@ -317,14 +334,6 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             def.functionId,
             def,
         );
-        if (this.pthread) {
-            for (const worker of [...this.pthread.runningWorkers, ...this.pthread.unusedWorkers]) {
-                worker.postMessage({
-                    cmd: 'registerUDFFunction',
-                    udf: def,
-                });
-            }
-        }
     }
 
     /** Prepare a statement and return its identifier */
@@ -533,6 +542,10 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         }
         throw new Error(`prepareFileHandle: unsupported protocol ${protocol}`);
     }
+    /** Is a pending query or a result stream open on any connection? */
+    public queriesInFlight(): boolean {
+        return this.mod.ccall('duckdb_web_queries_in_flight', 'boolean', [], []);
+    }
     /** Mount the origin private file system, where the runtime has one */
     public async mountOPFS(): Promise<void> {
         if (this._runtime.mountOPFS) {
@@ -621,21 +634,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         if (globalThis.DUCKDB_RUNTIME._preparedHandles?.[name]) {
             delete globalThis.DUCKDB_RUNTIME._preparedHandles[name];
         }
-        if (this.pthread) {
-            for (const worker of this.pthread.runningWorkers) {
-                worker.postMessage({
-                    cmd: 'registerFileHandle',
-                    fileName: name,
-                    fileHandle: handle,
-                });
-            }
-            for (const worker of this.pthread.unusedWorkers) {
-                worker.postMessage({
-                    cmd: 'dropFileHandle',
-                    fileName: name,
-                });
-            }
-        }
+        // The runtime lives on this thread only, the worker threads reach it through the main thread (main_thread.h)
     }
     /** Drop file */
     public dropFile(name: string): void {

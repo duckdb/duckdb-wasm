@@ -123,6 +123,8 @@ class WebDB {
         bool CancelPendingQuery();
         /// Fetch a data chunk from a pending query
         DuckDBWasmResultsWrapper FetchQueryResults();
+        /// Is a pending query or a result stream open?
+        bool InFlight() const { return current_pending_query_result_ != nullptr || current_query_stream_ != nullptr; }
         /// Get table names
         web::Result<std::string> GetTableNames(std::string_view text);
 
@@ -185,6 +187,9 @@ class WebDB {
 
     /// Get the version
     std::string_view GetVersion();
+    /// Is a query executing on any connection? A pending query that was not polled to completion or a result
+    /// stream that was not fetched to its end keeps DuckDB's worker threads busy between requests
+    bool QueriesInFlight() const;
 
     /// Tokenize a script and return tokens as json
     std::string Tokenize(std::string_view text);

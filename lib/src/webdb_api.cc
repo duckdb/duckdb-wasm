@@ -8,6 +8,7 @@
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "duckdb/web/webdb.h"
+#include "duckdb/web/query_thread.h"
 
 using namespace duckdb::web;
 namespace web = duckdb::web;
@@ -156,6 +157,12 @@ void duckdb_web_copy_file_to_path(WASMResponse* packed, const char* path, const 
     WASMResponseBuffer::Get().Store(*packed, webdb.CopyFileToPath(path, out));
 }
 /// Get the duckdb version
+/// Are queries executing on any connection?
+bool duckdb_web_queries_in_flight() {
+    auto maybe_webdb = WebDB::Get();
+    if (!maybe_webdb.ok()) return false;
+    return maybe_webdb.ValueUnsafe().get().QueriesInFlight();
+}
 void duckdb_web_get_version(WASMResponse* packed) {
     GET_WEBDB(*packed);
     WASMResponseBuffer::Get().Store(*packed, webdb.GetVersion());
@@ -178,13 +185,13 @@ void duckdb_web_tokenize_buffer(WASMResponse* packed, const uint8_t* buffer, siz
 /// Create scalar UDF queries
 void duckdb_web_udf_scalar_create(WASMResponse* packed, ConnectionHdl connHdl, const char* args) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->CreateScalarFunction(args);
+    auto r = query_thread::Run([&] { return c->CreateScalarFunction(args); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Prepare a query statement
 void duckdb_web_prepared_create(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->CreatePreparedStatement(script);
+    auto r = query_thread::Run([&] { return c->CreatePreparedStatement(script); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Prepare a query statement
@@ -192,31 +199,31 @@ void duckdb_web_prepared_create_buffer(WASMResponse* packed, ConnectionHdl connH
                                        size_t buffer_length) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     std::string_view script(reinterpret_cast<const char*>(buffer), buffer_length);
-    auto r = c->CreatePreparedStatement(script);
+    auto r = query_thread::Run([&] { return c->CreatePreparedStatement(script); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Close a prepared statement
 void duckdb_web_prepared_close(WASMResponse* packed, ConnectionHdl connHdl, size_t statement_id) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->ClosePreparedStatement(statement_id);
+    auto r = query_thread::Run([&] { return c->ClosePreparedStatement(statement_id); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Execute a prepared statement and fully materialize result
 void duckdb_web_prepared_run(WASMResponse* packed, ConnectionHdl connHdl, size_t statement_id, const char* args_json) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->RunPreparedStatement(statement_id, args_json);
+    auto r = query_thread::Run([&] { return c->RunPreparedStatement(statement_id, args_json); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Execute a prepared statement and fully materialize result
 void duckdb_web_prepared_send(WASMResponse* packed, ConnectionHdl connHdl, size_t statement_id, const char* args_json) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->SendPreparedStatement(statement_id, args_json);
+    auto r = query_thread::Run([&] { return c->SendPreparedStatement(statement_id, args_json); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Run a query
 void duckdb_web_query_run(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->RunQuery(script);
+    auto r = query_thread::Run([&] { return c->RunQuery(script); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 
@@ -225,14 +232,14 @@ void duckdb_web_query_run_buffer(WASMResponse* packed, ConnectionHdl connHdl, co
                                  size_t buffer_length) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     std::string_view S(reinterpret_cast<const char*>(buffer), buffer_length);
-    auto r = c->RunQuery(S);
+    auto r = query_thread::Run([&] { return c->RunQuery(S); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Start a pending query
 void duckdb_web_pending_query_start(WASMResponse* packed, ConnectionHdl connHdl, const char* script,
                                     bool allow_stream_result) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->PendingQuery(script, allow_stream_result);
+    auto r = query_thread::Run([&] { return c->PendingQuery(script, allow_stream_result); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Start a pending query
@@ -240,30 +247,30 @@ void duckdb_web_pending_query_start_buffer(WASMResponse* packed, ConnectionHdl c
                                            size_t buffer_length, bool allow_stream_result) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     std::string_view S(reinterpret_cast<const char*>(buffer), buffer_length);
-    auto r = c->PendingQuery(S, allow_stream_result);
+    auto r = query_thread::Run([&] { return c->PendingQuery(S, allow_stream_result); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Poll a pending query
 void duckdb_web_pending_query_poll(WASMResponse* packed, ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->PollPendingQuery();
+    auto r = query_thread::Run([&] { return c->PollPendingQuery(); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Cancel a pending query
 bool duckdb_web_pending_query_cancel(ConnectionHdl connHdl, const char* script) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    return c->CancelPendingQuery();
+    return query_thread::Run([&] { return c->CancelPendingQuery(); });
 }
 /// Fetch query results
 void duckdb_web_query_fetch_results(WASMResponse* packed, ConnectionHdl connHdl) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->FetchQueryResults();
+    auto r = query_thread::Run([&] { return c->FetchQueryResults(); });
     WASMResponseBuffer::Get().Store(*packed, r);
 }
 /// Get table names
 void duckdb_web_get_tablenames(WASMResponse* packed, ConnectionHdl connHdl, const char* query) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->GetTableNames(query);
+    auto r = query_thread::Run([&] { return c->GetTableNames(query); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Get table names
@@ -271,28 +278,28 @@ void duckdb_web_get_tablenames_buffer(WASMResponse* packed, ConnectionHdl connHd
                                       size_t buffer_length) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
     std::string_view query(reinterpret_cast<const char*>(buffer), buffer_length);
-    auto r = c->GetTableNames(query);
+    auto r = query_thread::Run([&] { return c->GetTableNames(query); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Insert arrow from an ipc stream
 void duckdb_web_insert_arrow_from_ipc_stream(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
                                              size_t buffer_length, const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->InsertArrowFromIPCStream(nonstd::span{buffer, buffer_length}, std::string_view{options});
+    auto r = query_thread::Run([&] { return c->InsertArrowFromIPCStream(nonstd::span{buffer, buffer_length}, std::string_view{options}); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Insert csv from a file
 void duckdb_web_insert_csv_from_path(WASMResponse* packed, ConnectionHdl connHdl, const char* path,
                                      const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->InsertCSVFromPath(std::string_view{path}, std::string_view{options});
+    auto r = query_thread::Run([&] { return c->InsertCSVFromPath(std::string_view{path}, std::string_view{options}); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Insert json from a file
 void duckdb_web_insert_json_from_path(WASMResponse* packed, ConnectionHdl connHdl, const char* path,
                                       const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = c->InsertJSONFromPath(std::string_view{path}, std::string_view{options});
+    auto r = query_thread::Run([&] { return c->InsertJSONFromPath(std::string_view{path}, std::string_view{options}); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 

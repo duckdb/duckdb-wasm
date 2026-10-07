@@ -197,6 +197,10 @@ class WebFileSystem : public duckdb::FileSystem {
     inline uint32_t AllocateFileID() { return ++next_file_id_; }
     /// Erase the registry entries of a file (requires the file system lock)
     void Unregister(WebFile &file);
+    /// Read at a position, the handle's position is not touched
+    int64_t ReadAt(WebFileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t position);
+    /// Write at a position, the handle's position is not touched
+    int64_t WriteAt(WebFileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t position);
     /// Invalidate readaheads
     void InvalidateReadAheads(size_t file_id, std::unique_lock<SharedMutex> &file_guard);
 

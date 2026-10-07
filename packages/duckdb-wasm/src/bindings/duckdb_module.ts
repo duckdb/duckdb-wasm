@@ -12,4 +12,6 @@ export interface DuckDBModule extends EmscriptenModule {
 
     ccall: typeof ccall;
     PThread: PThread;
+    /** The memory, exported: with shared memory another thread can grow it */
+    wasmMemory?: WebAssembly.Memory;
 }

@@ -67,6 +67,12 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
 
     /** The requests are processed in the order they arrive, even if a request has to wait for asynchronous work */
     private _requests: Promise<void> = Promise.resolve();
+    /** Checkpoint files, unless a query is still executing: a pending query that was not polled to its end or a
+     * result stream that was not fetched to its end keeps DuckDB's worker threads busy between requests */
+    private async checkpointFiles(): Promise<void> {
+        if (this._bindings!.queriesInFlight()) return;
+        await this._bindings!.checkpointFiles();
+    }
 
     /** Process a request from the main thread */
     public onMessage(request: WorkerRequestVariant): Promise<void> {
@@ -117,7 +123,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
         // Catch every exception and forward it as error message to the main thread
         try {
             // Files created by the previous request are moved into place before the next one runs
-            await this._bindings.checkpointFiles();
+            await this.checkpointFiles();
             switch (request.type) {
                 case WorkerRequestType.GET_VERSION:
                     this.postMessage(
@@ -144,7 +150,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 case WorkerRequestType.RESET:
                     this._bindings.reset();
                     // Files written by this request are in place when it is acknowledged
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     this.sendOK(request);
                     break;
 
@@ -155,27 +161,30 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                         request.data.useDirectIO = true;
                     }
                     // DuckDB's home directory is opfs://home where OPFS exists, it is in use from the start
+                    this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'mount' } as any);
                     await this._bindings.mountOPFS();
+                    this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'open' } as any);
                     this._bindings.open(request.data);
+                    this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'opened' } as any);
                     this.sendOK(request);
                     break;
                 }
                 case WorkerRequestType.DROP_FILE:
                     this._bindings.dropFile(request.data);
                     // Files written by this request are in place when it is acknowledged
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.DROP_FILES:
                     this._bindings.dropFiles(request.data);
                     // Files written by this request are in place when it is acknowledged
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.FLUSH_FILES:
                     this._bindings.flushFiles();
                     // Files written by this request are in place when it is acknowledged
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     this.sendOK(request);
                     break;
                 case WorkerRequestType.CONNECT: {
@@ -229,7 +238,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 case WorkerRequestType.RUN_QUERY: {
                     const result = this._bindings.runQuery(request.data[0], request.data[1]);
                     // Files the query wrote are in place when its result is acknowledged
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     this.postMessage(
                         {
                             messageId: this._nextMessageId++,
@@ -256,7 +265,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.START_PENDING_QUERY: {
                     const result = this._bindings.startPendingQuery(request.data[0], request.data[1], request.data[2]);
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     const transfer = [];
                     if (result) {
                         transfer.push(result.buffer);
@@ -274,7 +283,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.POLL_PENDING_QUERY: {
                     const result = this._bindings.pollPendingQuery(request.data);
-                    await this._bindings.checkpointFiles();
+                    await this.checkpointFiles();
                     const transfer = [];
                     if (result) {
                         transfer.push(result.buffer);
@@ -305,6 +314,10 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                 }
                 case WorkerRequestType.FETCH_QUERY_RESULTS: {
                     const result = this._bindings.fetchQueryResults(request.data);
+                    // An empty batch ends the stream
+                    if (!result || result.length == 0) {
+                            await this.checkpointFiles();
+                    }
                     const transfer = result ? [result.buffer] : [];
                     this.postMessage(
                         {

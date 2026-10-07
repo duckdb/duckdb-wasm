@@ -1,0 +1,120 @@
+diff --git a/src/common/file_system.cpp b/src/common/file_system.cpp
+index 5eed10a6fb..2d782d2920 100644
+--- a/src/common/file_system.cpp
++++ b/src/common/file_system.cpp
+@@ -792,6 +792,10 @@ bool FileSystem::IsLocalFileSystem() const {
+ 	return false;
+ }
+ 
++bool FileSystem::IsPrivateFile(const string &path, optional_ptr<FileOpener> opener) {
++	return true;
++}
++
+ bool FileSystem::OnDiskFile(FileHandle &handle) {
+ 	throw NotImplementedException("%s: OnDiskFile is not implemented!", GetName());
+ }
+diff --git a/src/common/local_file_system.cpp b/src/common/local_file_system.cpp
+index 87ba23c523..61ba7fbe1e 100644
+--- a/src/common/local_file_system.cpp
++++ b/src/common/local_file_system.cpp
+@@ -347,8 +347,8 @@ static void TryAcquireFileLock(FileSystem &fs, int fd, const string &path, FileO
+ 	                  extended_error);
+ }
+ 
+-bool LocalFileSystem::IsPrivateFile(const string &path_p, FileOpener *opener) {
+-	auto path = FileSystem::ExpandPath(path_p, opener);
++bool LocalFileSystem::IsPrivateFile(const string &path_p, optional_ptr<FileOpener> opener) {
++	auto path = FileSystem::ExpandPath(path_p, opener.get());
+ 
+ 	struct stat st;
+ 
+@@ -1223,7 +1223,7 @@ static string AdditionalLockInfo(const std::wstring path) {
+ 	return "File is already open in " + conflict_string;
+ }
+ 
+-bool LocalFileSystem::IsPrivateFile(const string &path_p, FileOpener *opener) {
++bool LocalFileSystem::IsPrivateFile(const string &path_p, optional_ptr<FileOpener> opener) {
+ 	// TODO: detect if file is shared in windows
+ 	return true;
+ }
+diff --git a/src/common/virtual_file_system.cpp b/src/common/virtual_file_system.cpp
+index f9539d9973..44ac018def 100644
+--- a/src/common/virtual_file_system.cpp
++++ b/src/common/virtual_file_system.cpp
+@@ -314,6 +314,10 @@ bool VirtualFileSystem::IsPipe(const string &filename, optional_ptr<FileOpener>
+ 	return FindFileSystem(filename, opener).IsPipe(filename, opener);
+ }
+ 
++bool VirtualFileSystem::IsPrivateFile(const string &filename, optional_ptr<FileOpener> opener) {
++	return FindFileSystem(filename, opener).IsPrivateFile(filename, opener);
++}
++
+ void VirtualFileSystem::RemoveFile(const string &filename, optional_ptr<FileOpener> opener) {
+ 	FindFileSystem(filename, opener).RemoveFile(filename, opener);
+ }
+diff --git a/src/include/duckdb/common/file_system.hpp b/src/include/duckdb/common/file_system.hpp
+index 7261cc5d38..b0a59711c2 100644
+--- a/src/include/duckdb/common/file_system.hpp
++++ b/src/include/duckdb/common/file_system.hpp
+@@ -378,6 +378,8 @@ public:
+ 
+ 	//! Whether this is a LocalFileSystem instance.
+ 	DUCKDB_API virtual bool IsLocalFileSystem() const;
++	//! Whether a file is private to the user (mode 600). File systems without permissions report true.
++	DUCKDB_API virtual bool IsPrivateFile(const string &path, optional_ptr<FileOpener> opener = nullptr);
+ 
+ 	//! Return the name of the filesystem. Used for forming diagnosis messages.
+ 	DUCKDB_API virtual std::string GetName() const = 0;
+diff --git a/src/include/duckdb/common/local_file_system.hpp b/src/include/duckdb/common/local_file_system.hpp
+index d4f76a0574..ff60ca0a33 100644
+--- a/src/include/duckdb/common/local_file_system.hpp
++++ b/src/include/duckdb/common/local_file_system.hpp
+@@ -115,7 +115,7 @@ public:
+ 	static std::string GetLastErrorAsString();
+ 
+ 	//! Checks a file is private (checks for 600 on linux/macos, TODO: currently always returns true on windows)
+-	static bool IsPrivateFile(const string &path_p, FileOpener *opener);
++	bool IsPrivateFile(const string &path_p, optional_ptr<FileOpener> opener = nullptr) override;
+ 
+ 	vector<OpenFileInfo> FetchFileWithoutGlob(const string &path, optional_ptr<FileOpener> opener, bool absolute_path);
+ 
+diff --git a/src/include/duckdb/common/opener_file_system.hpp b/src/include/duckdb/common/opener_file_system.hpp
+index 309d3a06d9..fd2d8b6b27 100644
+--- a/src/include/duckdb/common/opener_file_system.hpp
++++ b/src/include/duckdb/common/opener_file_system.hpp
+@@ -188,6 +188,10 @@ public:
+ 		VerifyNoOpener(opener);
+ 		return GetFileSystem().IsPipe(filename, GetOpener());
+ 	}
++	bool IsPrivateFile(const string &filename, optional_ptr<FileOpener> opener) override {
++		VerifyNoOpener(opener);
++		return GetFileSystem().IsPrivateFile(filename, GetOpener());
++	}
+ 	void RemoveFile(const string &filename, optional_ptr<FileOpener> opener) override {
+ 		VerifyNoOpener(opener);
+ 		VerifyCanAccessFile(filename);
+diff --git a/src/include/duckdb/common/virtual_file_system.hpp b/src/include/duckdb/common/virtual_file_system.hpp
+index 50fbefecc3..6a8af5a6fa 100644
+--- a/src/include/duckdb/common/virtual_file_system.hpp
++++ b/src/include/duckdb/common/virtual_file_system.hpp
+@@ -60,6 +60,7 @@ public:
+ 	bool FileExists(const string &filename, optional_ptr<FileOpener> opener) override;
+ 
+ 	bool IsPipe(const string &filename, optional_ptr<FileOpener> opener) override;
++	bool IsPrivateFile(const string &filename, optional_ptr<FileOpener> opener) override;
+ 	void RemoveFile(const string &filename, optional_ptr<FileOpener> opener) override;
+ 	bool TryRemoveFile(const string &filename, optional_ptr<FileOpener> opener) override;
+ 	void RemoveFiles(const vector<string> &filenames, optional_ptr<FileOpener> opener) override;
+diff --git a/src/main/secret/secret_manager.cpp b/src/main/secret/secret_manager.cpp
+index 5eb49e3b87..71d81a554f 100644
+--- a/src/main/secret/secret_manager.cpp
++++ b/src/main/secret/secret_manager.cpp
+@@ -766,7 +766,7 @@ unique_ptr<CatalogEntry> DefaultSecretGenerator::CreateDefaultEntryInternal(cons
+ 	try {
+ 		auto file_reader = BufferedFileReader(fs, secret_path.c_str());
+ 
+-		if (!LocalFileSystem::IsPrivateFile(secret_path, nullptr)) {
++		if (!fs.IsPrivateFile(secret_path)) {
+ 			throw IOException(
+ 			    "The secret file '%s' has incorrect permissions! Please set correct permissions or remove file",
+ 			    secret_path);
