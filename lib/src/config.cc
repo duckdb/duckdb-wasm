@@ -82,6 +82,9 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         if (doc.HasMember("spill") && doc["spill"].IsBool() && !doc["spill"].GetBool()) {
             config.temporary_directory = std::nullopt;
         }
+        if (doc.HasMember("extensionRepository") && doc["extensionRepository"].IsString()) {
+            config.extension_repository = doc["extensionRepository"].GetString();
+        }
         if (doc.HasMember("homeDirectory") && doc["homeDirectory"].IsString()) {
             config.home_directory = doc["homeDirectory"].GetString();
         } else if (duckdb_web_test_platform_feature(PlatformFeature::OPFS)) {

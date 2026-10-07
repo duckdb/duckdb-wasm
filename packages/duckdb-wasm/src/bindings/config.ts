@@ -73,6 +73,10 @@ export interface DuckDBConfig {
      */
     homeDirectory?: string;
     /**
+     * The repository extensions are loaded from (custom_extension_repository), extensions.duckdb.org by default
+     */
+    extensionRepository?: string;
+    /**
      * The maximum number of threads.
      * Note that this will only work with cross-origin isolated sites since it requires SharedArrayBuffers.
      */

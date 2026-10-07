@@ -310,7 +310,7 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** Received an error */
     protected onError(event: ErrorEvent): void {
         console.error(event);
-        console.error(`error in duckdb worker: ${event.message}`);
+        console.error(`error in duckdb worker: ${event.message} (${event.filename}:${event.lineno})`);
         this._pendingRequests.clear();
     }
 

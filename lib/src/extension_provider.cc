@@ -50,20 +50,32 @@ bool FetchExtension(const string &url, FetchedExtension &out) {
                     } else {
                         bytes = require("node:fs").readFileSync(url);
                     }
-                } else {
+                } else if (typeof document === "undefined") {
+                    // A worker: a synchronous request with a binary response
                     var xhr = new XMLHttpRequest();
                     xhr.open("GET", url, false);
                     xhr.responseType = "arraybuffer";
                     xhr.send(null);
                     if (xhr.status != 200) return 0;
                     bytes = new Uint8Array(xhr.response);
+                } else {
+                    // The main thread of a page (blocking bindings) refuses a synchronous request with a binary
+                    // response type: the bytes come as a text of code points below 256
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("GET", url, false);
+                    xhr.overrideMimeType("text/plain; charset=x-user-defined");
+                    xhr.send(null);
+                    if (xhr.status != 200) return 0;
+                    var text = xhr.responseText;
+                    bytes = new Uint8Array(text.length);
+                    for (var i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i) & 0xff;
                 }
             } catch (e) {
                 return 0;
             }
-            var ptr = _malloc(bytes.byteLength);
+            var ptr = _malloc(bytes.byteLength) >>> 0;
             HEAPU8.set(bytes, ptr);
-            HEAPU32[$1 >> 2] = bytes.byteLength;
+            HEAPU32[$1 >>> 2] = bytes.byteLength;
             return ptr;
         },
         url.c_str(), &out.size));
