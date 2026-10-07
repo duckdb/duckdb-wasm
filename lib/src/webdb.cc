@@ -1034,14 +1034,24 @@ void WebDB::FlushFile(std::string_view path) { file_page_buffer_->FlushFile(path
 /// Reset the database
 web::Status WebDB::Reset() {
     DEBUG_TRACE();
-    return Open();
+    // The database is opened again with the configuration it was opened with; what SET changed since (the S3
+    // settings among them) starts over
+    auto config = *config_;
+    config.duckdb_config_options = WebDBConfig::ReadFrom("").duckdb_config_options;
+    return OpenWithConfig(std::move(config));
 }
 
 /// Open a database
 web::Status WebDB::Open(std::string_view args_json) {
     DEBUG_TRACE();
     assert(config_ != nullptr);
-    *config_ = WebDBConfig::ReadFrom(args_json);
+    return OpenWithConfig(WebDBConfig::ReadFrom(args_json));
+}
+
+/// Open a database with a configuration
+web::Status WebDB::OpenWithConfig(WebDBConfig config) {
+    assert(config_ != nullptr);
+    *config_ = std::move(config);
     bool in_memory = config_->path == ":memory:" || config_->path == "";
     AccessMode access_mode = in_memory ? AccessMode::AUTOMATIC : AccessMode::READ_ONLY;
     if (config_->access_mode.has_value()) {
@@ -1059,6 +1069,10 @@ web::Status WebDB::Open(std::string_view args_json) {
         virtual_fs->RegisterSubSystem(make_uniq<io::RemoteWebFileSystem>(*buffered_fs_ptr));
         db_config.file_system = std::move(virtual_fs);
         db_config.SetOptionByName("allow_unsigned_extensions", config_->allow_unsigned_extensions);
+        if (config_->extension_repository.has_value()) {
+            db_config.SetOptionByName("custom_extension_repository",
+                                      duckdb::Value(config_->extension_repository.value()));
+        }
         db_config.SetOption("arrow_lossless_conversion", config_->arrow_lossless_conversion);
         db_config.options.maximum_threads = config_->maximum_threads;
         // The async pool would default to 4x the core count: pthreads come from a fixed pool of workers, and a

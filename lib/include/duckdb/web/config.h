@@ -92,6 +92,8 @@ struct WebDBConfig {
     std::optional<std::string> temporary_directory = "js_buffer://tmp";
     /// The home directory, opfs://home where the runtime has an origin private file system
     std::optional<std::string> home_directory = std::nullopt;
+    /// The extension repository (custom_extension_repository), extensions.duckdb.org otherwise
+    std::optional<std::string> extension_repository = std::nullopt;
     /// The query config
     QueryConfig query = {
         .cast_bigint_to_double = std::nullopt,

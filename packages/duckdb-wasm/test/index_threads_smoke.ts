@@ -27,7 +27,7 @@ describe('threads bundle smoke', () => {
         const worker = new Worker(BUNDLE.mainWorker!);
         const db = new duckdb.AsyncDuckDB(logger, worker);
         await timed('instantiate', () => db.instantiate(BUNDLE.mainModule, BUNDLE.pthreadWorker));
-        await timed('open', () => db.open({ opfs: { fileHandling: 'auto' } }));
+        await timed('open', () => db.open({ opfs: { fileHandling: 'auto' }, extensionRepository: new URL('/extensions', self.location.href).href, allowUnsignedExtensions: true }));
         const conn = await timed('connect', () => db.connect());
         const one = async (sql: string) => (await conn.query(sql)).toArray()[0]?.toJSON();
         const settings = await one(
@@ -44,6 +44,12 @@ describe('threads bundle smoke', () => {
         await timed('registered buffer file', async () => {
             await db.registerFileText('smoke.csv', 'a,b\n1,2\n3,4\n');
             expect(Number((await one(`SELECT sum(a)::BIGINT AS s FROM 'smoke.csv'`)).s)).toEqual(4);
+        });
+        await timed('parquet autoload after queries', async () => {
+            const bytes = new Uint8Array(await (await fetch('/data/uni/studenten.parquet')).arrayBuffer());
+            await db.registerFileBuffer('studenten.parquet', bytes);
+            const r = await one(`SELECT count(*)::INTEGER AS c FROM parquet_scan('studenten.parquet')`);
+            expect(r.c).toEqual(8);
         });
         await timed('spill', async () => {
             await conn.query(`SET memory_limit = '128MB'`);

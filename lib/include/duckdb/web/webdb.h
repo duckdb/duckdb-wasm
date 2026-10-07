@@ -202,6 +202,8 @@ class WebDB {
     web::Status Reset();
     /// Open a database
     web::Status Open(std::string_view args_json = "");
+    /// Open a database with a configuration
+    web::Status OpenWithConfig(WebDBConfig config);
 
     /// Register a file URL
     web::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,

@@ -33,6 +33,23 @@ const resolveData = async (url: string) => {
     }
 };
 
+// Loadable bundles autoload parquet/json/icu from a repository: the tests use the one built locally, which is
+// unsigned. Static bundles ignore it.
+{
+    const defaults = {
+        extensionRepository: path.resolve(__dirname, '../../../build/extension_repository'),
+        allowUnsignedExtensions: true,
+    };
+    const asyncOpen = duckdb.AsyncDuckDB.prototype.open;
+    duckdb.AsyncDuckDB.prototype.open = function (config: duckdb.DuckDBConfig) {
+        return asyncOpen.call(this, { ...defaults, ...config });
+    };
+    const syncOpen = duckdb_blocking.DuckDBBindingsBase.prototype.open;
+    duckdb_blocking.DuckDBBindingsBase.prototype.open = function (config: duckdb.DuckDBConfig) {
+        return syncOpen.call(this, { ...defaults, ...config });
+    };
+}
+
 // Test environment
 let db: duckdb_blocking.DuckDBBindings | null = null;
 let adb: duckdb.AsyncDuckDB | null = null;
@@ -51,10 +68,13 @@ beforeAll(async () => {
     const logger = new duckdb_blocking.VoidLogger();
     db = await duckdb_blocking.createDuckDB(DUCKDB_BUNDLES, logger, duckdb_blocking.NODE_RUNTIME);
     await db.instantiate(_ => {});
+    // The database the constructor opens has no extension repository, open with the test defaults
+    db.open({});
 
     worker = new Worker(DUCKDB_CONFIG.mainWorker);
     adb = new duckdb.AsyncDuckDB(logger, worker);
     await adb.instantiate(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
+    await adb.open({});
 });
 
 afterAll(async () => {
