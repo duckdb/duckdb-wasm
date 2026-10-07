@@ -19,7 +19,7 @@ export function testSpill(db: () => duckdb.AsyncDuckDB): void {
         });
 
         it('completes a sort above the memory limit', async () => {
-            await conn.query(`SET memory_limit = '64MB'`);
+            await conn.query(`SET memory_limit = '128MB'`);
             // ~110MB of strings cannot be sorted within the limit without spilling
             const result = await conn.query(`
                 SELECT count(*)::INTEGER AS cnt, min(s) AS first

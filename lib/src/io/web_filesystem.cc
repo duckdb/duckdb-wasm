@@ -1,4 +1,5 @@
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/main_thread.h"
 #include "duckdb/web/status.h"
 
 #include <cstdint>
@@ -32,11 +33,15 @@ namespace io {
 struct LocalState {
     /// The handles (if any)
     std::unordered_map<size_t, std::unique_ptr<FileHandle>> handles = {};
-    /// The glob results (if any)
-    std::vector<std::string> glob_results = {};
     /// The error message (if any)
     std::string error_msg = {};
 };
+/// The results of the glob in progress: the runtime adds the matches on the main thread while the caller may be
+/// another thread, one glob at a time
+static std::mutex GLOB_MUTEX;
+static std::vector<std::string> GLOB_RESULTS;
+/// One directory listing at a time
+static std::mutex LIST_FILES_MUTEX;
 /// The mutex for local state dictionary
 static std::mutex LOCAL_STATES_MTX;
 /// The thread local stats
@@ -150,8 +155,7 @@ RT_FN(void duckdb_web_fs_directory_create(const char *path, size_t pathLen), {
 });
 RT_FN(bool duckdb_web_fs_directory_list_files(const char *path, size_t pathLen), { return false; });
 RT_FN(void duckdb_web_fs_glob(const char *path, size_t pathLen), {
-    auto &state = GetLocalState();
-    state.glob_results = NATIVE_FS->Glob(std::string{path, pathLen});
+    GLOB_RESULTS = NATIVE_FS->Glob(std::string{path, pathLen});
 });
 RT_FN(void duckdb_web_fs_file_move(const char *from, size_t fromLen, const char *to, size_t toLen), {
     NATIVE_FS->MoveFile(std::string{from, fromLen}, std::string{to, toLen});
@@ -164,8 +168,11 @@ RT_FN(void duckdb_web_fs_file_remove(const char *path, size_t pathLen), {
 });
 #undef RT_FN
 
+/// Runtime calls are served by the main thread, see main_thread.h
+#define RT_CALL(FN, ...) ::duckdb::web::main_thread::OnMainThread([&] { return FN(__VA_ARGS__); })
+
 extern "C" void duckdb_web_fs_glob_add_path(const char *path) {
-    GetLocalState().glob_results.push_back(std::string{path});
+    GLOB_RESULTS.push_back(std::string{path});
 }
 /// The runtime reports a directory entry while duckdb_web_fs_directory_list_files runs
 extern "C" void duckdb_web_fs_directory_add_entry(const char *name, bool is_dir) {
@@ -276,7 +283,8 @@ void WebFileSystem::WebFileHandle::Close() {
     // Dropped while it was still open?
     if (file.drop_when_closed_) {
         fs.Unregister(file);
-        duckdb_web_fs_file_drop_file(file.file_name_.c_str(), file.file_name_.size());
+        fs_guard.unlock();
+        RT_CALL(duckdb_web_fs_file_drop_file, file.file_name_.c_str(), file.file_name_.size());
         return;
     }
     // Is buffered file?
@@ -285,8 +293,11 @@ void WebFileSystem::WebFileHandle::Close() {
             file.data_protocol_ = fs.inferDataProtocol(file.data_url_.value());
             fs.IncrementCacheEpoch();
 
-            size_t n =
-                duckdb_web_fs_file_write(file.file_id_, file.data_buffer_->Get().data(), file.data_buffer_->Size(), 0);
+            // The runtime calls back for the file info, which takes the file system lock
+            fs_guard.unlock();
+            size_t n = RT_CALL(duckdb_web_fs_file_write, file.file_id_, file.data_buffer_->Get().data(),
+                               file.data_buffer_->Size(), 0);
+            fs_guard.lock();
 
             if (n != file.file_size_.value()) {
                 std::string msg = std::string{"Failed to write file: "} + file.file_name_;
@@ -298,7 +309,7 @@ void WebFileSystem::WebFileHandle::Close() {
     }
     // Close the file in the runtime
     fs_guard.unlock();
-    duckdb_web_fs_file_close(file.file_id_);
+    RT_CALL(duckdb_web_fs_file_close, file.file_id_);
     fs_guard.lock();
 
     // Erase the file from the file system
@@ -386,7 +397,7 @@ rapidjson::Value WebFileSystem::WebFile::WriteInfo(rapidjson::Document &doc) con
 /// Constructor
 WebFileSystem::WebFileSystem(std::shared_ptr<WebDBConfig> config)
     : config_(std::move(config)),
-      default_data_protocol_(static_cast<DataProtocol>(duckdb_web_fs_get_default_data_protocol())) {
+      default_data_protocol_(static_cast<DataProtocol>(RT_CALL(duckdb_web_fs_get_default_data_protocol))) {
     assert(WEBFS == nullptr && "Can only register a single WebFileSystem at a time");
     WEBFS = this;
 }
@@ -463,7 +474,7 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
                 auto handle = std::make_unique<WebFileHandle>(file);
                 handle->Pin();
                 fs_guard.unlock();
-                duckdb_web_fs_file_close(file->file_id_);
+                RT_CALL(duckdb_web_fs_file_close, file->file_id_);
                 fs_guard.lock();
                 return handle;
             }
@@ -540,7 +551,7 @@ bool WebFileSystem::TryDropFile(std::string_view file_name) {
 void WebFileSystem::DropFile(std::string_view file_name) {
     DEBUG_TRACE();
     std::string fileNameS = std::string{file_name};
-    duckdb_web_fs_file_drop_file(fileNameS.c_str(), fileNameS.size());
+    RT_CALL(duckdb_web_fs_file_drop_file, fileNameS.c_str(), fileNameS.size());
 }
 
 /// Write the global filesystem info
@@ -712,7 +723,7 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
         case DataProtocol::S3:
             try {
                 // Open the file
-                auto *opened = duckdb_web_fs_file_open(file->file_id_, flags.GetFlagsInternal());
+                auto *opened = RT_CALL(duckdb_web_fs_file_open, file->file_id_, flags.GetFlagsInternal());
                 if (opened == nullptr) {
                     if (flags.ReturnNullIfNotExists()) {
                         return nullptr;
@@ -779,23 +790,10 @@ duckdb::unique_ptr<duckdb::FileHandle> WebFileSystem::OpenFile(const string &url
     return handle;
 }
 
-void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
-    auto &file_hdl = static_cast<WebFileHandle &>(handle);
-    auto file_size = file_hdl.file_->file_size_;
-    auto reader = static_cast<char *>(buffer);
-    file_hdl.position_ = location;
-    while (nr_bytes > 0 && location < file_size) {
-        auto n = Read(handle, reader, nr_bytes);
-        reader += n;
-        nr_bytes -= n;
-    }
-}
-
-int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+int64_t WebFileSystem::ReadAt(WebFileHandle &file_hdl, void *buffer, int64_t nr_bytes, duckdb::idx_t position) {
     DEBUG_TRACE();
     assert(nr_bytes < std::numeric_limits<size_t>::max());
     // Get the file handle
-    auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     // Read with shared lock to protect against truncation
@@ -805,14 +803,13 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         // Read buffers directly from WASM memory
         case DataProtocol::BUFFER: {
             auto file_size = file.data_buffer_->Size();
-            auto n = std::min<size_t>(nr_bytes, file_size - std::min<size_t>(file_hdl.position_, file_size));
-            ::memcpy(buffer, file.data_buffer_->Get().data() + file_hdl.position_, n);
+            auto n = std::min<size_t>(nr_bytes, file_size - std::min<size_t>(position, file_size));
+            ::memcpy(buffer, file.data_buffer_->Get().data() + position, n);
             // Register read
             if (file.file_stats_) {
-                file.file_stats_->RegisterFileReadCached(file_hdl.position_, n);
+                file.file_stats_->RegisterFileReadCached(position, n);
             }
             // Update position
-            file_hdl.position_ += n;
             return n;
         }
 
@@ -821,13 +818,12 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         case DataProtocol::BROWSER_FILEREADER:
         case DataProtocol::BROWSER_FSACCESS:
         case DataProtocol::JS_BUFFER: {
-            auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+            auto n = RT_CALL(duckdb_web_fs_file_read, file.file_id_, buffer, nr_bytes, position);
             // Register read
             if (file.file_stats_) {
-                file.file_stats_->RegisterFileReadCold(file_hdl.position_, n);
+                file.file_stats_->RegisterFileReadCold(position, n);
             }
             // Update position
-            file_hdl.position_ += n;
             return n;
         }
 
@@ -836,20 +832,18 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
         case DataProtocol::S3: {
             if (auto ra = file_hdl.ResolveReadAheadBuffer(file_guard)) {
                 auto reader = [&](auto *out, size_t n, duckdb::idx_t ofs) {
-                    return duckdb_web_fs_file_read(file.file_id_, out, n, ofs);
+                    return RT_CALL(duckdb_web_fs_file_read, file.file_id_, out, n, ofs);
                 };
-                auto n = ra->Read(file.file_id_, file.file_size_.value_or(0), buffer, nr_bytes, file_hdl.position_,
+                auto n = ra->Read(file.file_id_, file.file_size_.value_or(0), buffer, nr_bytes, position,
                                   reader, file.file_stats_.get());
-                file_hdl.position_ += n;
                 return n;
             } else {
-                auto n = duckdb_web_fs_file_read(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+                auto n = RT_CALL(duckdb_web_fs_file_read, file.file_id_, buffer, nr_bytes, position);
                 // Register read
                 if (file.file_stats_) {
-                    file.file_stats_->RegisterFileReadCold(file_hdl.position_, n);
+                    file.file_stats_->RegisterFileReadCold(position, n);
                 }
                 // Update position
-                file_hdl.position_ += n;
                 return n;
             }
         }
@@ -857,23 +851,31 @@ int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr
     return 0;
 }
 
-void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
+
+/// Read at the position of the handle and advance it
+int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
     auto &file_hdl = static_cast<WebFileHandle &>(handle);
-    auto file_size = file_hdl.file_->file_size_;
-    auto writer = static_cast<char *>(buffer);
-    file_hdl.position_ = location;
+    auto n = ReadAt(file_hdl, buffer, nr_bytes, file_hdl.position_);
+    file_hdl.position_ += n;
+    return n;
+}
+/// Read at a location, the position of the handle is not touched: DuckDB shares a handle between threads
+void WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
+    auto &file_hdl = static_cast<WebFileHandle &>(handle);
+    auto reader = static_cast<char *>(buffer);
     while (nr_bytes > 0) {
-        auto n = Write(handle, writer, nr_bytes);
-        writer += n;
+        auto n = ReadAt(file_hdl, reader, nr_bytes, location);
+        if (n <= 0) break;
+        reader += n;
         nr_bytes -= n;
+        location += n;
     }
 }
 
-int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+int64_t WebFileSystem::WriteAt(WebFileHandle &file_hdl, void *buffer, int64_t nr_bytes, duckdb::idx_t position) {
     DEBUG_TRACE();
     assert(nr_bytes < std::numeric_limits<size_t>::max());
     // Get the file handle
-    auto &file_hdl = static_cast<WebFileHandle &>(handle);
     assert(file_hdl.file_);
     auto &file = *file_hdl.file_;
     // First lock shared to protect against concurrent truncation.
@@ -884,20 +886,19 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     switch (file.data_protocol_) {
         // Buffers are trans
         case DataProtocol::BUFFER: {
-            auto pos = file_hdl.position_.load();
-            auto end = file_hdl.position_ + nr_bytes;
+            auto pos = position;
+            auto end = position + nr_bytes;
 
             // Need to resize the buffer?
             // Upgrade to exclusive lock.
             if (end > file.data_buffer_->Size()) {
                 file_guard.unlock();
-                Truncate(handle, std::max<size_t>(end, file.file_size_.value_or(0)));
+                Truncate(file_hdl, std::max<size_t>(end, file.file_size_.value_or(0)));
                 file_guard.lock();
             }
 
             // Copy data to buffer
-            ::memcpy(file.data_buffer_->Get().data() + file_hdl.position_, buffer, nr_bytes);
-            file_hdl.position_ = end;
+            ::memcpy(file.data_buffer_->Get().data() + position, buffer, nr_bytes);
             bytes_read = nr_bytes;
 
             // Register write
@@ -910,7 +911,7 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
         case DataProtocol::NODE_FS:
         case DataProtocol::BROWSER_FSACCESS:
         case DataProtocol::JS_BUFFER: {
-            auto end = file_hdl.position_ + nr_bytes;
+            auto end = position + nr_bytes;
             size_t n;
 
             // Write past end?
@@ -918,29 +919,27 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
                 // Upgrade to exclusive lock
                 file_guard.unlock();
                 std::unique_lock<SharedMutex> appender_guard{file.file_mutex_};
-                n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+                n = RT_CALL(duckdb_web_fs_file_write, file.file_id_, buffer, nr_bytes, position);
                 assert(n == nr_bytes);
-                file.file_size_ = std::max<size_t>(file_hdl.position_ + n, file.file_size_.value_or(0));
+                file.file_size_ = std::max<size_t>(position + n, file.file_size_.value_or(0));
 
                 // Register write
                 if (file.file_stats_) {
                     file.file_stats_->Resize(file.file_size_.value_or(0));
-                    file.file_stats_->RegisterFileWrite(file_hdl.position_, n);
+                    file.file_stats_->RegisterFileWrite(position, n);
                 }
 
                 // Update position
-                file_hdl.position_ = file_hdl.position_ + n;
             } else {
                 // Write is in bounds, rely on atomicity of filesystem writes
-                n = duckdb_web_fs_file_write(file.file_id_, buffer, nr_bytes, file_hdl.position_);
+                n = RT_CALL(duckdb_web_fs_file_write, file.file_id_, buffer, nr_bytes, position);
 
                 // Register write
                 if (file.file_stats_) {
-                    file.file_stats_->RegisterFileWrite(file_hdl.position_, n);
+                    file.file_stats_->RegisterFileWrite(position, n);
                 }
 
                 // Update position
-                file_hdl.position_ = file_hdl.position_ + n;
             }
             bytes_read = n;
             break;
@@ -956,6 +955,26 @@ int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t n
     // Invalidate all readahead buffers
     InvalidateReadAheads(file.file_id_, file_guard);
     return bytes_read;
+}
+
+/// Write at the position of the handle and advance it
+int64_t WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
+    auto &file_hdl = static_cast<WebFileHandle &>(handle);
+    auto n = WriteAt(file_hdl, buffer, nr_bytes, file_hdl.position_);
+    file_hdl.position_ += n;
+    return n;
+}
+/// Write at a location, the position of the handle is not touched: DuckDB shares a handle between threads
+void WebFileSystem::Write(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes, duckdb::idx_t location) {
+    auto &file_hdl = static_cast<WebFileHandle &>(handle);
+    auto writer = static_cast<char *>(buffer);
+    while (nr_bytes > 0) {
+        auto n = WriteAt(file_hdl, writer, nr_bytes, location);
+        if (n <= 0) break;
+        writer += n;
+        nr_bytes -= n;
+        location += n;
+    }
 }
 /// Returns the file last modified time of a file handle, returns timespec with zero on all attributes on error
 int64_t WebFileSystem::GetFileSize(duckdb::FileHandle &handle) {
@@ -991,7 +1010,7 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
         case DataProtocol::NODE_FS:
         case DataProtocol::HTTP:
         case DataProtocol::S3: {
-            duckdb_web_fs_file_truncate(file.file_id_, new_size);
+            RT_CALL(duckdb_web_fs_file_truncate, file.file_id_, new_size);
             break;
         }
     }
@@ -1006,22 +1025,24 @@ void WebFileSystem::Truncate(duckdb::FileHandle &handle, int64_t new_size) {
 }
 /// Check if a directory exists
 bool WebFileSystem::DirectoryExists(const std::string &directory, optional_ptr<FileOpener> opener) {
-    return duckdb_web_fs_directory_exists(directory.c_str(), directory.size());
+    return RT_CALL(duckdb_web_fs_directory_exists, directory.c_str(), directory.size());
 }
 /// Create a directory if it does not exist
 void WebFileSystem::CreateDirectory(const std::string &directory, optional_ptr<FileOpener> opener) {
-    duckdb_web_fs_directory_create(directory.c_str(), directory.size());
+    RT_CALL(duckdb_web_fs_directory_create, directory.c_str(), directory.size());
 }
 /// Recursively remove a directory and all files in it
 void WebFileSystem::RemoveDirectory(const std::string &directory, optional_ptr<FileOpener> opener) {
-    return duckdb_web_fs_directory_remove(directory.c_str(), directory.size());
+    return RT_CALL(duckdb_web_fs_directory_remove, directory.c_str(), directory.size());
 }
 /// List files in a directory, invoking the callback method for each one with (filename, is_dir)
 bool WebFileSystem::ListFiles(const std::string &directory,
                               const std::function<void(const std::string &, bool)> &callback, FileOpener *opener) {
-    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+    // The runtime may call back into the file system (file infos take the file system lock), so the lock is not
+    // held across the call; the listing has its own
+    std::unique_lock<std::mutex> list_guard{LIST_FILES_MUTEX};
     list_files_callback = &callback;
-    bool result = duckdb_web_fs_directory_list_files(directory.c_str(), directory.size());
+    bool result = RT_CALL(duckdb_web_fs_directory_list_files, directory.c_str(), directory.size());
     list_files_callback = {};
     return result;
 }
@@ -1072,7 +1093,8 @@ void WebFileSystem::MoveFile(const std::string &source, const std::string &targe
         files_by_name_.insert({target, file});
     }
 
-    duckdb_web_fs_file_move(source.c_str(), source.size(), target.c_str(), target.size());
+    fs_guard.unlock();
+    RT_CALL(duckdb_web_fs_file_move, source.c_str(), source.size(), target.c_str(), target.size());
 }
 /// Drop a file now if it has no open handles, otherwise when its last handle closes
 void WebFileSystem::DropFileWhenClosed(std::string_view file_name) {
@@ -1108,11 +1130,11 @@ void WebFileSystem::CopyFileContent(const std::string &source, const std::string
 bool WebFileSystem::FileExists(const std::string &filename, optional_ptr<FileOpener> opener) {
     auto iter = files_by_name_.find(filename);
     if (iter != files_by_name_.end()) return true;
-    return duckdb_web_fs_file_exists(filename.c_str(), filename.size());
+    return RT_CALL(duckdb_web_fs_file_exists, filename.c_str(), filename.size());
 }
 /// Remove a file from disk
 void WebFileSystem::RemoveFile(const std::string &filename, optional_ptr<FileOpener> opener) {
-    duckdb_web_fs_file_remove(filename.c_str(), filename.size());
+    RT_CALL(duckdb_web_fs_file_remove, filename.c_str(), filename.size());
     // The registration goes with the file, unless it is still open
     TryDropFile(filename);
 }
@@ -1124,20 +1146,23 @@ void WebFileSystem::FileSync(duckdb::FileHandle &handle) {
 
 /// Runs a glob on the file system, returning a list of matching files
 vector<OpenFileInfo> WebFileSystem::Glob(const std::string &path, FileOpener *opener) {
-    std::unique_lock<LightMutex> fs_guard{fs_mutex_};
     std::vector<string> results;
-    if (!FileSystem::IsRemoteFile(path)) {
-        auto glob = glob_to_regex(path);
-        for (auto [name, file] : files_by_name_) {
-            if (std::regex_match(file->file_name_, glob)) {
-                results.push_back(std::string{name});
+    {
+        std::unique_lock<LightMutex> fs_guard{fs_mutex_};
+        if (!FileSystem::IsRemoteFile(path)) {
+            auto glob = glob_to_regex(path);
+            for (auto [name, file] : files_by_name_) {
+                if (std::regex_match(file->file_name_, glob)) {
+                    results.push_back(std::string{name});
+                }
             }
         }
     }
-    auto &state = GetLocalState();
-    state.glob_results.clear();
-    duckdb_web_fs_glob(path.c_str(), path.size());
-    for (auto &path : state.glob_results) {
+    // The runtime may call back into the file system, the file system lock is not held across the call
+    std::unique_lock<std::mutex> glob_guard{GLOB_MUTEX};
+    GLOB_RESULTS.clear();
+    RT_CALL(duckdb_web_fs_glob, path.c_str(), path.size());
+    for (auto &path : GLOB_RESULTS) {
         results.push_back(std::move(path));
     }
     std::sort(results.begin(), results.end());

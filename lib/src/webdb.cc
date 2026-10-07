@@ -1,6 +1,8 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "duckdb/web/webdb.h"
+#include "duckdb/web/main_thread.h"
+#include "duckdb/web/query_thread.h"
 #include "duckdb/web/status.h"
 
 #include <emscripten/val.h>
@@ -595,8 +597,11 @@ web::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& fun
 
     // actually call the UDF
     WASMResponse response;
-    duckdb_web_udf_scalar_call(&response, function.function_id, desc_buffer.GetString(), desc_buffer.GetLength(),
-                               data_ptrs.data(), data_ptrs.size() * sizeof(uint64_t));
+    // The UDF lives in the JavaScript context of the main thread
+    main_thread::OnMainThread([&] {
+        duckdb_web_udf_scalar_call(&response, function.function_id, desc_buffer.GetString(), desc_buffer.GetLength(),
+                                   data_ptrs.data(), data_ptrs.size() * sizeof(uint64_t));
+    });
     // UDF call failed?
     if (response.statusCode != 0) {
         uintptr_t err_ptr = response.dataOrValue;
@@ -957,6 +962,14 @@ std::string WebDB::Tokenize(std::string_view text) {
     return strbuf.GetString();
 }
 
+/// Are queries executing?
+bool WebDB::QueriesInFlight() const {
+    for (auto& [ptr, conn] : connections_) {
+        if (conn->InFlight()) return true;
+    }
+    return false;
+}
+
 /// Get the version
 std::string_view WebDB::GetVersion() { return database_->LibraryVersion(); }
 
@@ -1048,6 +1061,9 @@ web::Status WebDB::Open(std::string_view args_json) {
         db_config.SetOptionByName("allow_unsigned_extensions", config_->allow_unsigned_extensions);
         db_config.SetOption("arrow_lossless_conversion", config_->arrow_lossless_conversion);
         db_config.options.maximum_threads = config_->maximum_threads;
+        // The async pool would default to 4x the core count: pthreads come from a fixed pool of workers, and a
+        // thread created beyond it from the blocked main thread never starts
+        db_config.options.async_threads = 0;
         // Spilling needs a file system that can create files during a query, the runtime passes a directory
         // when it has one
         db_config.options.use_temporary_directory = config_->temporary_directory.has_value();

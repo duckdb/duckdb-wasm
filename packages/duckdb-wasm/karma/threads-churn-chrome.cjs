@@ -1,0 +1,28 @@
+// Staged smoke test of the threads bundle (test/index_threads_smoke.ts), cross-origin isolated
+const base = require('./karma.base.cjs');
+
+if (process.env.CHROME_BIN === 'undefined') {
+    process.env.CHROME_BIN = require('puppeteer').executablePath();
+}
+
+module.exports = function (config) {
+    const cfg = base(config);
+    config.set({
+        ...cfg,
+        files: [
+            { pattern: 'packages/duckdb-wasm/dist/tests-threads-churn.js' },
+            { pattern: 'packages/duckdb-wasm/dist/*.wasm', included: false, watched: false, served: true },
+            { pattern: 'packages/duckdb-wasm/dist/*.js', included: false, watched: false, served: true },
+        ],
+        preprocessors: {},
+        browsers: ['ChromeHeadlessNoSandbox'],
+        reporters: ['spec'],
+        customHeaders: [
+            { match: '.*', name: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+            { match: '.*', name: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
+        ],
+        client: { jasmine: { failFast: true, timeoutInterval: 240000, random: false } },
+        browserNoActivityTimeout: 300000,
+        singleRun: true,
+    });
+};
