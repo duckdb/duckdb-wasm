@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# TPC-H: dbgen at a scale factor, then the 22 queries, single-threaded, the same statements on each engine.
+# TPC-H: the 22 queries, single-threaded, the same statements on each engine, over a database file generated
+# once outside the sandbox (the sandbox only ever reads it).
 #
-#   scripts/wasi_tpch.sh <engine> [sf] [memory_limit] [memory|disk|external]
 #   scripts/wasi_tpch.sh generate <sf>     -- the CLI generates build/wasi/data/tpch<sf>.db (all threads)
+#   scripts/wasi_tpch.sh <engine> [sf] [memory_limit] [external|memory|disk]
 #
 #   engine   cli       the native DuckDB CLI of the same version (~/.duckdb/cli/<version>/duckdb), the bottom line
 #            host      build/wasi/duckdb_host, the same sources, flags and runner built natively (64-bit)
 #            wasmtime  build/wasi/duckdb_wasi-exnref.wasm under wasmtime, a spill directory and a memory cap
 #            native    build/wasi/native/duckdb_native, the wasm2c translation with the host of wasi/native
-#   disk     the database is a file in the spill directory instead of in memory (scale factors above memory)
-#   external build/wasi/data/tpch<sf>.db, generated outside the sandbox and handed to it read-only; no dbgen
+#            native64  build/wasi/native64/duckdb_native, the same from the 64-bit module (no 4 GB wall)
+#   external (default) build/wasi/data/tpch<sf>.db, generated outside the sandbox and handed to it read-only
+#   memory   dbgen into an in-memory database first (timed too), disk: dbgen into a file in the spill directory
 #
 # e.g. scripts/wasi_tpch.sh wasmtime 1 300MB   -- SF 1 with spilling; an empty memory_limit means no limit
 set -euo pipefail
@@ -18,7 +20,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE=${1:-wasmtime}
 SF=${2:-1}
 MEMORY_LIMIT=${3:-}
-STORAGE=${4:-memory}
+STORAGE=${4:-external}
 CLI=${DUCKDB_CLI:-${HOME}/.duckdb/cli/2.0.0-alpha44357/duckdb}
 SPILL=${PROJECT_ROOT}/build/wasi/spill
 DATA=${PROJECT_ROOT}/build/wasi/data
@@ -66,10 +68,10 @@ case ${ENGINE} in
     wasmtime run -W exceptions -W max-memory-size=4294967296 --dir="${SPILL}::/spill" --dir="${DATA}::/data" \
       "${PROJECT_ROOT}/build/wasi/duckdb_wasi-exnref.wasm" "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
-  native)
+  native|native64)
     mkdir -p "${DATA}"
-    "${PROJECT_ROOT}/build/wasi/native/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
+    "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
-  *) echo "unknown engine '${ENGINE}', expected cli, host, wasmtime or native"; exit 1 ;;
+  *) echo "unknown engine '${ENGINE}', expected cli, host, wasmtime, native or native64"; exit 1 ;;
 esac
 echo "spill files left: $(ls "${SPILL}" | wc -l)"

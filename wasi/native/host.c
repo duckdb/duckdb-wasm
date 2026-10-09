@@ -1,5 +1,6 @@
 // The host of the wasm2c-translated DuckDB: WASI preview1 over POSIX, with the sandbox's whole reach decided
-// here. The module sees standard streams, the directories preopened on the command line (--dir host[::guest],
+// here. SANDBOX_WASM64 selects the 64-bit module: the same calls with 64-bit pointers and sizes (the
+// "DuckDB-sandbox ABI", wasi-libc built for wasm64 with the 32-bit layout checks dropped). The module sees standard streams, the directories preopened on the command line (--dir host[::guest],
 // read-only unless marked :rw), a clock and a random source. Nothing else exists.
 //
 // Paths are resolved relative to the preopened directory with openat; absolute paths and ".." components are
@@ -24,6 +25,15 @@
 #include "wasm-rt.h"
 #include "wasm-rt-impl.h"
 #include "duckdb.h"
+
+// Pointers and sizes as the module passes them
+#ifdef SANDBOX_WASM64
+typedef u64 wptr;
+#define PTR_SIZE 8
+#else
+typedef u32 wptr;
+#define PTR_SIZE 4
+#endif
 
 // ---------------------------------------------------------------------------------------------------------------
 // WASI preview1 constants
@@ -98,16 +108,20 @@ struct w2c_wasi__snapshot__preview1 {
 static struct w2c_wasi__snapshot__preview1 sandbox;
 
 #define MEM (sandbox.inst->w2c_memory)
-static bool InBounds(uint32_t off, uint32_t len) { return (uint64_t)off + len <= MEM.size; }
-static uint8_t *Ptr(uint32_t off, uint32_t len) {
+static bool InBounds(uint64_t off, uint64_t len) { return off <= MEM.size && len <= MEM.size - off; }
+static uint8_t *Ptr(wptr off, uint64_t len) {
     if (!InBounds(off, len)) wasm_rt_trap(WASM_RT_TRAP_OOB);
     return MEM.data + off;
 }
-static uint32_t LoadU32(uint32_t off) { uint32_t v; memcpy(&v, Ptr(off, 4), 4); return v; }
-static void StoreU8(uint32_t off, uint8_t v) { *Ptr(off, 1) = v; }
-static void StoreU16(uint32_t off, uint16_t v) { memcpy(Ptr(off, 2), &v, 2); }
-static void StoreU32(uint32_t off, uint32_t v) { memcpy(Ptr(off, 4), &v, 4); }
-static void StoreU64(uint32_t off, uint64_t v) { memcpy(Ptr(off, 8), &v, 8); }
+static uint32_t LoadU32(wptr off) { uint32_t v; memcpy(&v, Ptr(off, 4), 4); return v; }
+static void StoreU8(wptr off, uint8_t v) { *Ptr(off, 1) = v; }
+static void StoreU16(wptr off, uint16_t v) { memcpy(Ptr(off, 2), &v, 2); }
+static void StoreU32(wptr off, uint32_t v) { memcpy(Ptr(off, 4), &v, 4); }
+static void StoreU64(wptr off, uint64_t v) { memcpy(Ptr(off, 8), &v, 8); }
+// A pointer or a size_t of the module
+static wptr LoadPtr(wptr off) { wptr v; memcpy(&v, Ptr(off, PTR_SIZE), PTR_SIZE); return v; }
+static void StorePtr(wptr off, wptr v) { memcpy(Ptr(off, PTR_SIZE), &v, PTR_SIZE); }
+#define StoreSize StorePtr
 
 static FdEntry *Fd(uint32_t fd) {
     if (fd >= MAX_FDS || sandbox.fds[fd].host_fd < 0) return NULL;
@@ -173,10 +187,10 @@ static void StoreFilestat(uint32_t out, const struct stat *st) {
 }
 
 // iovecs of the guest as host iovecs, bounds checked
-static uint32_t Iovecs(uint32_t iovs, uint32_t iovs_len, struct iovec *out, uint32_t max) {
+static uint32_t Iovecs(wptr iovs, wptr iovs_len, struct iovec *out, uint32_t max) {
     if (iovs_len > max) return WASI_EINVAL;
     for (uint32_t i = 0; i < iovs_len; i++) {
-        uint32_t buf = LoadU32(iovs + i * 8), len = LoadU32(iovs + i * 8 + 4);
+        wptr buf = LoadPtr(iovs + i * 2 * PTR_SIZE), len = LoadPtr(iovs + i * 2 * PTR_SIZE + PTR_SIZE);
         out[i].iov_base = Ptr(buf, len);
         out[i].iov_len = len;
     }
@@ -186,31 +200,31 @@ static uint32_t Iovecs(uint32_t iovs, uint32_t iovs_len, struct iovec *out, uint
 
 // ---------------------------------------------------------------------------------------------------------------
 // Arguments, environment, clock, random, scheduling
-u32 w2c_wasi__snapshot__preview1_args_sizes_get(struct w2c_wasi__snapshot__preview1 *s, u32 count, u32 size) {
+u32 w2c_wasi__snapshot__preview1_args_sizes_get(struct w2c_wasi__snapshot__preview1 *s, wptr count, wptr size) {
     uint32_t total = 0;
     for (int i = 0; i < s->argc; i++) total += strlen(s->argv[i]) + 1;
-    StoreU32(count, (uint32_t)s->argc);
-    StoreU32(size, total);
+    StoreSize(count, (wptr)s->argc);
+    StoreSize(size, total);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_args_get(struct w2c_wasi__snapshot__preview1 *s, u32 argv, u32 buf) {
+u32 w2c_wasi__snapshot__preview1_args_get(struct w2c_wasi__snapshot__preview1 *s, wptr argv, wptr buf) {
     for (int i = 0; i < s->argc; i++) {
         size_t len = strlen(s->argv[i]) + 1;
         memcpy(Ptr(buf, len), s->argv[i], len);
-        StoreU32(argv + i * 4, buf);
+        StorePtr(argv + i * PTR_SIZE, buf);
         buf += len;
     }
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_environ_sizes_get(struct w2c_wasi__snapshot__preview1 *s, u32 count, u32 size) {
-    (void)s; StoreU32(count, 0); StoreU32(size, 0);
+u32 w2c_wasi__snapshot__preview1_environ_sizes_get(struct w2c_wasi__snapshot__preview1 *s, wptr count, wptr size) {
+    (void)s; StoreSize(count, 0); StoreSize(size, 0);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_environ_get(struct w2c_wasi__snapshot__preview1 *s, u32 environ, u32 buf) {
+u32 w2c_wasi__snapshot__preview1_environ_get(struct w2c_wasi__snapshot__preview1 *s, wptr environ, wptr buf) {
     (void)s; (void)environ; (void)buf;
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_clock_time_get(struct w2c_wasi__snapshot__preview1 *s, u32 id, u64 precision, u32 out) {
+u32 w2c_wasi__snapshot__preview1_clock_time_get(struct w2c_wasi__snapshot__preview1 *s, u32 id, u64 precision, wptr out) {
     (void)s; (void)precision;
     struct timespec ts;
     clockid_t clock = id == WASI_CLOCK_REALTIME ? CLOCK_REALTIME : CLOCK_MONOTONIC;
@@ -218,14 +232,14 @@ u32 w2c_wasi__snapshot__preview1_clock_time_get(struct w2c_wasi__snapshot__previ
     StoreU64(out, Nanos(ts));
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_random_get(struct w2c_wasi__snapshot__preview1 *s, u32 buf, u32 len) {
+u32 w2c_wasi__snapshot__preview1_random_get(struct w2c_wasi__snapshot__preview1 *s, wptr buf, wptr len) {
     (void)s;
     arc4random_buf(Ptr(buf, len), len);
     return WASI_ESUCCESS;
 }
 u32 w2c_wasi__snapshot__preview1_sched_yield(struct w2c_wasi__snapshot__preview1 *s) { (void)s; return WASI_ESUCCESS; }
 // Only clock subscriptions (sleeping)
-u32 w2c_wasi__snapshot__preview1_poll_oneoff(struct w2c_wasi__snapshot__preview1 *s, u32 in, u32 out, u32 n, u32 nevents) {
+u32 w2c_wasi__snapshot__preview1_poll_oneoff(struct w2c_wasi__snapshot__preview1 *s, wptr in, wptr out, wptr n, wptr nevents) {
     (void)s;
     uint32_t produced = 0;
     for (uint32_t i = 0; i < n; i++) {
@@ -245,7 +259,7 @@ u32 w2c_wasi__snapshot__preview1_poll_oneoff(struct w2c_wasi__snapshot__preview1
         StoreU8(ev + 10, WASI_EVENTTYPE_CLOCK);
         produced++;
     }
-    StoreU32(nevents, produced);
+    StoreSize(nevents, produced);
     return WASI_ESUCCESS;
 }
 void w2c_wasi__snapshot__preview1_proc_exit(struct w2c_wasi__snapshot__preview1 *s, u32 code) {
@@ -257,15 +271,15 @@ void w2c_wasi__snapshot__preview1_proc_exit(struct w2c_wasi__snapshot__preview1 
 
 // ---------------------------------------------------------------------------------------------------------------
 // File descriptors
-u32 w2c_wasi__snapshot__preview1_fd_prestat_get(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 out) {
+u32 w2c_wasi__snapshot__preview1_fd_prestat_get(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr out) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e || !e->preopen) return WASI_EBADF;
     StoreU8(out, 0);  // a directory
-    StoreU32(out + 4, (uint32_t)strlen(e->guest_path));
+    StoreSize(out + PTR_SIZE, (wptr)strlen(e->guest_path));
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_fd_prestat_dir_name(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 path, u32 len) {
+u32 w2c_wasi__snapshot__preview1_fd_prestat_dir_name(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr path, wptr len) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e || !e->preopen) return WASI_EBADF;
@@ -289,7 +303,7 @@ u32 w2c_wasi__snapshot__preview1_fd_datasync(struct w2c_wasi__snapshot__preview1
     if (!e) return WASI_EBADF;
     return fsync(e->host_fd) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_fd_fdstat_get(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 out) {
+u32 w2c_wasi__snapshot__preview1_fd_fdstat_get(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr out) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -312,7 +326,7 @@ u32 w2c_wasi__snapshot__preview1_fd_fdstat_set_flags(struct w2c_wasi__snapshot__
     int fl = (flags & WASI_FDFLAGS_APPEND) ? O_APPEND : 0;
     return fcntl(e->host_fd, F_SETFL, fl) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_fd_filestat_get(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 out) {
+u32 w2c_wasi__snapshot__preview1_fd_filestat_get(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr out) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -328,7 +342,7 @@ u32 w2c_wasi__snapshot__preview1_fd_filestat_set_size(struct w2c_wasi__snapshot_
     if (!e->writable) return WASI_ENOTCAPABLE;
     return ftruncate(e->host_fd, (off_t)size) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_fd_read(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 iovs, u32 iovs_len, u32 nread) {
+u32 w2c_wasi__snapshot__preview1_fd_read(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr iovs, wptr iovs_len, wptr nread) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -337,27 +351,27 @@ u32 w2c_wasi__snapshot__preview1_fd_read(struct w2c_wasi__snapshot__preview1 *s,
     if (err) return err;
     ssize_t n = readv(e->host_fd, iov, (int)iovs_len);
     if (n < 0) return WasiErrno(errno);
-    StoreU32(nread, (uint32_t)n);
+    StoreSize(nread, (wptr)n);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_fd_pread(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 iovs, u32 iovs_len, u64 offset, u32 nread) {
+u32 w2c_wasi__snapshot__preview1_fd_pread(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr iovs, wptr iovs_len, u64 offset, wptr nread) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
     struct iovec iov[MAX_IOVS];
     uint32_t err = Iovecs(iovs, iovs_len, iov, MAX_IOVS);
     if (err) return err;
-    uint32_t total = 0;
+    wptr total = 0;
     for (uint32_t i = 0; i < iovs_len; i++) {
         ssize_t n = pread(e->host_fd, iov[i].iov_base, iov[i].iov_len, (off_t)(offset + total));
         if (n < 0) return WasiErrno(errno);
         total += (uint32_t)n;
         if ((size_t)n < iov[i].iov_len) break;
     }
-    StoreU32(nread, total);
+    StoreSize(nread, total);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_fd_write(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 iovs, u32 iovs_len, u32 nwritten) {
+u32 w2c_wasi__snapshot__preview1_fd_write(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr iovs, wptr iovs_len, wptr nwritten) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -367,10 +381,10 @@ u32 w2c_wasi__snapshot__preview1_fd_write(struct w2c_wasi__snapshot__preview1 *s
     if (err) return err;
     ssize_t n = writev(e->host_fd, iov, (int)iovs_len);
     if (n < 0) return WasiErrno(errno);
-    StoreU32(nwritten, (uint32_t)n);
+    StoreSize(nwritten, (wptr)n);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_fd_pwrite(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 iovs, u32 iovs_len, u64 offset, u32 nwritten) {
+u32 w2c_wasi__snapshot__preview1_fd_pwrite(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr iovs, wptr iovs_len, u64 offset, wptr nwritten) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -378,17 +392,17 @@ u32 w2c_wasi__snapshot__preview1_fd_pwrite(struct w2c_wasi__snapshot__preview1 *
     struct iovec iov[MAX_IOVS];
     uint32_t err = Iovecs(iovs, iovs_len, iov, MAX_IOVS);
     if (err) return err;
-    uint32_t total = 0;
+    wptr total = 0;
     for (uint32_t i = 0; i < iovs_len; i++) {
         ssize_t n = pwrite(e->host_fd, iov[i].iov_base, iov[i].iov_len, (off_t)(offset + total));
         if (n < 0) return WasiErrno(errno);
         total += (uint32_t)n;
         if ((size_t)n < iov[i].iov_len) break;
     }
-    StoreU32(nwritten, total);
+    StoreSize(nwritten, total);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_fd_seek(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u64 offset, u32 whence, u32 out) {
+u32 w2c_wasi__snapshot__preview1_fd_seek(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u64 offset, u32 whence, wptr out) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -399,7 +413,7 @@ u32 w2c_wasi__snapshot__preview1_fd_seek(struct w2c_wasi__snapshot__preview1 *s,
     return WASI_ESUCCESS;
 }
 // Entries are numbered from 1; the cookie is the number of the next entry to deliver
-u32 w2c_wasi__snapshot__preview1_fd_readdir(struct w2c_wasi__snapshot__preview1 *s, u32 fd, u32 buf, u32 buf_len, u64 cookie, u32 bufused) {
+u32 w2c_wasi__snapshot__preview1_fd_readdir(struct w2c_wasi__snapshot__preview1 *s, u32 fd, wptr buf, wptr buf_len, u64 cookie, wptr bufused) {
     (void)s;
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
@@ -409,7 +423,7 @@ u32 w2c_wasi__snapshot__preview1_fd_readdir(struct w2c_wasi__snapshot__preview1 
     if (!dir) { close(dup_fd); return WasiErrno(errno); }
     rewinddir(dir);
     uint64_t index = 0;
-    uint32_t used = 0;
+    wptr used = 0;
     struct dirent *d;
     while ((d = readdir(dir)) != NULL) {
         index++;
@@ -425,8 +439,8 @@ u32 w2c_wasi__snapshot__preview1_fd_readdir(struct w2c_wasi__snapshot__preview1 
         memcpy(entry + 16, &namlen, 4);
         entry[20] = type; entry[21] = entry[22] = entry[23] = 0;
         // What does not fit is truncated, the caller comes back with a bigger buffer
-        uint32_t room = buf_len - used;
-        uint32_t n = 24 < room ? 24 : room;
+        wptr room = buf_len - used;
+        wptr n = 24 < room ? 24 : room;
         memcpy(Ptr(buf + used, n), entry, n);
         used += n;
         if (n < 24) break;
@@ -437,13 +451,13 @@ u32 w2c_wasi__snapshot__preview1_fd_readdir(struct w2c_wasi__snapshot__preview1 
         if (n < namlen) break;
     }
     closedir(dir);
-    StoreU32(bufused, used);
+    StoreSize(bufused, used);
     return WASI_ESUCCESS;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
 // Paths, below a directory descriptor
-u32 w2c_wasi__snapshot__preview1_path_open(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 dirflags, u32 path, u32 path_len, u32 oflags, u64 rights_base, u64 rights_inheriting, u32 fdflags, u32 out) {
+u32 w2c_wasi__snapshot__preview1_path_open(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 dirflags, wptr path, wptr path_len, u32 oflags, u64 rights_base, u64 rights_inheriting, u32 fdflags, wptr out) {
     (void)s; (void)rights_inheriting;
     FdEntry *dir = Fd(dirfd);
     if (!dir) return WASI_EBADF;
@@ -467,7 +481,7 @@ u32 w2c_wasi__snapshot__preview1_path_open(struct w2c_wasi__snapshot__preview1 *
     StoreU32(out, (uint32_t)fd);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_path_filestat_get(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 flags, u32 path, u32 path_len, u32 out) {
+u32 w2c_wasi__snapshot__preview1_path_filestat_get(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 flags, wptr path, wptr path_len, wptr out) {
     (void)s;
     FdEntry *dir = Fd(dirfd);
     if (!dir) return WASI_EBADF;
@@ -479,7 +493,7 @@ u32 w2c_wasi__snapshot__preview1_path_filestat_get(struct w2c_wasi__snapshot__pr
     StoreFilestat(out, &st);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_path_create_directory(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 path, u32 path_len) {
+u32 w2c_wasi__snapshot__preview1_path_create_directory(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, wptr path, wptr path_len) {
     (void)s;
     FdEntry *dir = Fd(dirfd);
     if (!dir) return WASI_EBADF;
@@ -489,7 +503,7 @@ u32 w2c_wasi__snapshot__preview1_path_create_directory(struct w2c_wasi__snapshot
     if (err) return err;
     return mkdirat(dir->host_fd, p, 0755) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_path_remove_directory(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 path, u32 path_len) {
+u32 w2c_wasi__snapshot__preview1_path_remove_directory(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, wptr path, wptr path_len) {
     (void)s;
     FdEntry *dir = Fd(dirfd);
     if (!dir) return WASI_EBADF;
@@ -499,7 +513,7 @@ u32 w2c_wasi__snapshot__preview1_path_remove_directory(struct w2c_wasi__snapshot
     if (err) return err;
     return unlinkat(dir->host_fd, p, AT_REMOVEDIR) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_path_unlink_file(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 path, u32 path_len) {
+u32 w2c_wasi__snapshot__preview1_path_unlink_file(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, wptr path, wptr path_len) {
     (void)s;
     FdEntry *dir = Fd(dirfd);
     if (!dir) return WASI_EBADF;
@@ -509,7 +523,7 @@ u32 w2c_wasi__snapshot__preview1_path_unlink_file(struct w2c_wasi__snapshot__pre
     if (err) return err;
     return unlinkat(dir->host_fd, p, 0) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_path_rename(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 path, u32 path_len, u32 new_dirfd, u32 new_path, u32 new_path_len) {
+u32 w2c_wasi__snapshot__preview1_path_rename(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, wptr path, wptr path_len, u32 new_dirfd, wptr new_path, wptr new_path_len) {
     (void)s;
     FdEntry *dir = Fd(dirfd), *new_dir = Fd(new_dirfd);
     if (!dir || !new_dir) return WASI_EBADF;
@@ -521,7 +535,7 @@ u32 w2c_wasi__snapshot__preview1_path_rename(struct w2c_wasi__snapshot__preview1
     if (err) return err;
     return renameat(dir->host_fd, p, new_dir->host_fd, np) == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
-u32 w2c_wasi__snapshot__preview1_path_readlink(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, u32 path, u32 path_len, u32 buf, u32 buf_len, u32 bufused) {
+u32 w2c_wasi__snapshot__preview1_path_readlink(struct w2c_wasi__snapshot__preview1 *s, u32 dirfd, wptr path, wptr path_len, wptr buf, wptr buf_len, wptr bufused) {
     (void)s;
     FdEntry *dir = Fd(dirfd);
     if (!dir) return WASI_EBADF;
@@ -530,7 +544,7 @@ u32 w2c_wasi__snapshot__preview1_path_readlink(struct w2c_wasi__snapshot__previe
     if (err) return err;
     ssize_t n = readlinkat(dir->host_fd, p, (char *)Ptr(buf, buf_len), buf_len);
     if (n < 0) return WasiErrno(errno);
-    StoreU32(bufused, (uint32_t)n);
+    StoreSize(bufused, (wptr)n);
     return WASI_ESUCCESS;
 }
 
