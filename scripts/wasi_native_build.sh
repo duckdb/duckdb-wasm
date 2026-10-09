@@ -26,14 +26,16 @@ mkdir -p "${OUT}/c" "${OUT}/o"
 wasm2c --num-outputs=16 -n duckdb "${MODULE}" -o "${OUT}/c/duckdb.c"
 # Guard pages instead of bounds checks (64-bit host), a trap on stack exhaustion
 # The generated duckdb.h comes before any installed DuckDB C API header of the same name
-CFLAGS="-O2 -w -I${OUT}/c -I${WABT}/include -I${RT} -DWASM_RT_USE_MMAP=1 -DWASM_RT_MEMCHECK_GUARD_PAGES=1 ${HOST_FLAGS}"
+CFLAGS="-O2 -w -I${OUT}/c -I${WABT}/include -I${RT} -I${PROJECT_ROOT}/wasi/native/rt -DWASM_RT_USE_MMAP=1 -DWASM_RT_MEMCHECK_GUARD_PAGES=1 ${HOST_FLAGS}"
 compile() {
   local o="${OUT}/o/$(basename "$1" .c).o"
   [ "${o}" -nt "$1" ] || clang ${CFLAGS} -c "$1" -o "${o}"
 }
 running=0
-for f in "${OUT}"/c/duckdb_*.c "${RT}"/wasm-rt-impl.c "${RT}"/wasm-rt-mem-impl.c "${RT}"/wasm-rt-exceptions-impl.c \
-         "${PROJECT_ROOT}"/wasi/native/host.c; do
+# wasm-rt-mem-impl is wabt's with one change: a memory with a declared maximum is reserved at that size and
+# grown in place (wabt grows 64-bit memories with realloc, moving them)
+for f in "${OUT}"/c/duckdb_*.c "${RT}"/wasm-rt-impl.c "${PROJECT_ROOT}"/wasi/native/rt/wasm-rt-mem-impl.c \
+         "${RT}"/wasm-rt-exceptions-impl.c "${PROJECT_ROOT}"/wasi/native/host.c; do
   compile "${f}" &
   running=$((running + 1))
   if [ "${running}" -ge "${JOBS}" ]; then wait -n; running=$((running - 1)); fi
