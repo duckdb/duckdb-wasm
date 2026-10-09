@@ -1,0 +1,53 @@
+diff --git a/src/common/printer.cpp b/src/common/printer.cpp
+index 115c1cae0f..2f832d7d13 100644
+--- a/src/common/printer.cpp
++++ b/src/common/printer.cpp
+@@ -72,6 +72,8 @@ idx_t Printer::TerminalWidth() {
+ 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+ 	rows = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+ 	return rows;
++#elif defined(__wasi__)
++	return 120;
+ #else
+ 	struct winsize w = {};
+ 	ioctl(0, TIOCGWINSZ, &w);
+diff --git a/src/common/process_util.cpp b/src/common/process_util.cpp
+index 41083666e7..97d9184381 100644
+--- a/src/common/process_util.cpp
++++ b/src/common/process_util.cpp
+@@ -59,6 +59,9 @@ bool ProcessUtil::ProcessIsRunning(int64_t pid) {
+ 	auto running = GetExitCodeProcess(process, &exit_code) && exit_code == STILL_ACTIVE;
+ 	CloseHandle(process);
+ 	return running;
++#elif defined(__wasi__)
++	// no processes
++	return false;
+ #else
+ 	// EPERM means it exists and belongs to somebody else
+ 	return kill(static_cast<pid_t>(pid), 0) == 0 || errno == EPERM;
+diff --git a/src/main/http/http_transport_manager.cpp b/src/main/http/http_transport_manager.cpp
+index 4205a688d0..069475ae51 100644
+--- a/src/main/http/http_transport_manager.cpp
++++ b/src/main/http/http_transport_manager.cpp
+@@ -232,7 +232,7 @@ idx_t HTTPTransportManager::CalculateCapacity(idx_t system_concurrency, optional
+ }
+ 
+ optional_idx HTTPTransportManager::GetFileDescriptorLimit() {
+-#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
++#if !defined(_WIN32) && !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	struct rlimit limit;
+ 	if (getrlimit(RLIMIT_NOFILE, &limit) != 0 || limit.rlim_cur == RLIM_INFINITY) {
+ 		return optional_idx();
+diff --git a/src/parallel/task_scheduler.cpp b/src/parallel/task_scheduler.cpp
+index 6adc36a039..c126b8bbad 100644
+--- a/src/parallel/task_scheduler.cpp
++++ b/src/parallel/task_scheduler.cpp
+@@ -360,7 +360,7 @@ void TaskScheduler::YieldThread() {
+ }
+ 
+ idx_t TaskScheduler::GetEstimatedCPUId() {
+-#if defined(__EMSCRIPTEN__)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
+ 	// FIXME: Wasm + multithreads can likely be implemented as
+ 	//   return return (idx_t)std::hash<std::thread::id>()(std::this_thread::get_id());
+ 	return 0;
