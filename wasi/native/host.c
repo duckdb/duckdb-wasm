@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <time.h>
@@ -579,6 +580,12 @@ int main(int argc, char **argv) {
     w2c_duckdb inst;
     sandbox.inst = &inst;
     wasm2c_duckdb_instantiate(&inst, &sandbox);
+    // The lowest page is the far end of the stack (wasi-sdk links --stack-first): inaccessible, a null
+    // dereference or a stack overflow is an access fault, which the runtime's signal handler reports as a trap
+    if (mprotect(inst.w2c_memory.data, 65536, PROT_NONE) != 0) {
+        fprintf(stderr, "cannot protect the null page: %s\n", strerror(errno));
+        return 2;
+    }
     wasm_rt_trap_t trap = (wasm_rt_trap_t)wasm_rt_impl_try();
     if (trap == WASM_RT_TRAP_NONE) {
         w2c_duckdb_0x5Fstart(&inst);

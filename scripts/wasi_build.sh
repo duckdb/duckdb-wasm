@@ -67,7 +67,9 @@ LIBS="${LIBS} $(find "${BUILD_DIR}" -name 'libduckdb_*.a' | grep -v 'cpp_api\|st
 # The extension archives; wasi/main.cpp registers them through their describe functions
 EXTENSIONS="$(find "${BUILD_DIR}" -name 'lib*_extension.a' | tr '\n' ' ')"
 OUT=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${EH}.wasm
-# 8 MB of stack like a native process, up to the 4 GB a 32-bit sandbox can address
+# 8 MB of stack like a native process, up to the 4 GB a 32-bit sandbox can address. wasi-sdk places the stack
+# first, so the lowest page of memory is the far end of the stack: a host can make it inaccessible, and a null
+# dereference (or a stack overflow) traps instead of landing in linear memory
 "${SDK}/bin/clang++" --target=wasm32-wasip1 -O2 ${EH_FLAGS} -DDUCKDB_NO_THREADS=1 ${EMULATED} \
   -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
   "${PROJECT_ROOT}/wasi/wasi_compat.c" \
