@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 
+#include "crash.hpp"
 #include "duckdb.hpp"
 #include "duckdb_static_extension.h"
 
@@ -29,6 +30,7 @@ void Usage() {
     fprintf(stderr,
             "usage: duckdb_wasi [-d database] [-t] [-q] [-c sql]...\n"
             "  -d database  open this database file (default: in memory)\n"
+            "  -r           open the database read-only\n"
             "  -t           print the time each statement took\n"
             "  -q           do not print results, only errors and times\n"
             "  -c sql       run sql; without -c the statements are read from standard input\n");
@@ -36,6 +38,7 @@ void Usage() {
 
 struct Options {
     std::string database = ":memory:";
+    bool read_only = false;
     bool timer = false;
     bool quiet = false;
 };
@@ -66,6 +69,8 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-t")) {
             opts.timer = true;
+        } else if (!strcmp(argv[i], "-r")) {
+            opts.read_only = true;
         } else if (!strcmp(argv[i], "-q")) {
             opts.quiet = true;
         } else if (!strcmp(argv[i], "-d") && i + 1 < argc) {
@@ -87,8 +92,13 @@ int main(int argc, char **argv) {
         return 1;
     }
     try {
-        duckdb::DuckDB db(opts.database);
+        duckdb::DBConfig config;
+        if (opts.read_only) {
+            config.options.access_mode = duckdb::AccessMode::READ_ONLY;
+        }
+        duckdb::DuckDB db(opts.database, &config);
         duckdb::Connection con(db);
+        RegisterCrashFunction(con);
         int failures = 0;
         for (auto &sql : statements) {
             failures += Run(con, sql, opts);

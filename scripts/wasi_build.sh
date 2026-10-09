@@ -2,10 +2,11 @@
 # Builds DuckDB with wasi-sdk (plain clang, no emscripten) into a single wasm32-wasip1 module with the SQL runner
 # of wasi/main.cpp: parquet and tpch linked statically, exceptions, single-threaded.
 #
-#   scripts/wasi_build.sh [exnref|legacy]
+#   scripts/wasi_build.sh [exnref|legacy|host]
 #
 # The exception encoding is the one thing engines disagree on: wasmtime runs exnref, wasm2c translates legacy.
-# Output: build/wasi/duckdb_wasi-<eh>.wasm
+# host: the same sources, flags and runner built with the host clang for the host, the 64-bit native reference.
+# Output: build/wasi/duckdb_wasi-<eh>.wasm, or build/wasi/duckdb_host
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,8 +16,31 @@ DUCKDB=${PROJECT_ROOT}/submodules/duckdb
 case ${EH} in
   exnref) EH_FLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-exnref ;;
   legacy) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb ;;
-  *) echo "unknown exception encoding '${EH}', expected exnref or legacy"; exit 1 ;;
+  host) EH_FLAGS=""; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-host ;;
+  *) echo "unknown target '${EH}', expected exnref, legacy or host"; exit 1 ;;
 esac
+if [ "${EH}" = host ]; then
+  cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DBUILD_EXTENSIONS="parquet;tpch" \
+    -DSTATICALLY_LINK_EXTENSIONS="core_functions;parquet;tpch;json;icu" \
+    -DENABLE_JEMALLOC=OFF -DBUILD_SHELL=FALSE -DBUILD_UNITTESTS=FALSE \
+    -DDUCKDB_CAPABILITIES=none -DENABLE_BUILTIN_HTTPLIB=OFF \
+    -DCMAKE_CXX_FLAGS="-DDUCKDB_NO_THREADS=1 -Wno-unqualified-std-cast-call"
+  cmake --build "${BUILD_DIR}" --target duckdb_static duckdb_cpp_api parquet_extension tpch_extension \
+    core_functions_extension json_extension icu_extension
+  LIBS="$(find "${BUILD_DIR}" -name libduckdb_cpp_api.a) $(find "${BUILD_DIR}" -name libduckdb_static.a)"
+  LIBS="${LIBS} $(find "${BUILD_DIR}" -name 'libduckdb_*.a' | grep -v 'cpp_api\|static\|loadable\|local_extension' | tr '\n' ' ')"
+  EXTENSIONS="$(find "${BUILD_DIR}" -name 'lib*_extension.a' | tr '\n' ' ')"
+  OUT=${PROJECT_ROOT}/build/wasi/duckdb_host
+  clang++ -std=c++17 -O2 -DDUCKDB_NO_THREADS=1 -I"${DUCKDB}/src/include" \
+    "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
+    ${EXTENSIONS} ${LIBS} ${LIBS} -o "${OUT}"
+  ls -la "${OUT}"
+  exit 0
+fi
 # wasi-libc emulates what the sandbox has no business doing for real
 EMULATED="-D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_GETPID"
 EMULATED_LIBS="-lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks -lwasi-emulated-getpid"
@@ -45,7 +69,8 @@ EXTENSIONS="$(find "${BUILD_DIR}" -name 'lib*_extension.a' | tr '\n' ' ')"
 OUT=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${EH}.wasm
 # 8 MB of stack like a native process, up to the 4 GB a 32-bit sandbox can address
 "${SDK}/bin/clang++" --target=wasm32-wasip1 -O2 ${EH_FLAGS} -DDUCKDB_NO_THREADS=1 ${EMULATED} \
-  -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/wasi_compat.c" \
+  -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
+  "${PROJECT_ROOT}/wasi/wasi_compat.c" \
   ${EXTENSIONS} ${LIBS} ${LIBS} -lunwind ${EMULATED_LIBS} \
   -Wl,-z,stack-size=8388608 -Wl,--max-memory=4294967296 \
   -o "${OUT}"
