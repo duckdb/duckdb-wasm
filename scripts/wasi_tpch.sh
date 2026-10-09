@@ -9,7 +9,9 @@
 #            host      build/wasi/duckdb_host, the same sources, flags and runner built natively (64-bit)
 #            wasmtime  build/wasi/duckdb_wasi-exnref.wasm under wasmtime, a spill directory and a memory cap
 #            native    build/wasi/native/duckdb_native, the wasm2c translation with the host of wasi/native
-#            native64  build/wasi/native64/duckdb_native, the same from the 64-bit module (no 4 GB wall)
+#            native64  build/wasi/native64/duckdb_native, the same from the 64-bit module (no 4 GB wall);
+#                      its uncapped setting is memory_limit 12GB, the most that fits under the module's 16 GB
+#                      with DuckDB's other allocations (14GB ran out of memory at SF 100)
 #   external (default) build/wasi/data/tpch<sf>.db, generated outside the sandbox and handed to it read-only
 #   memory   dbgen into an in-memory database first (timed too), disk: dbgen into a file in the spill directory
 #
@@ -68,10 +70,10 @@ case ${ENGINE} in
     wasmtime run -W exceptions -W max-memory-size=4294967296 --dir="${SPILL}::/spill" --dir="${DATA}::/data" \
       "${PROJECT_ROOT}/build/wasi/duckdb_wasi-exnref.wasm" "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
-  native|native64)
+  native|native64|native-tuned|native64-tuned)
     mkdir -p "${DATA}"
     "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
-  *) echo "unknown engine '${ENGINE}', expected cli, host, wasmtime, native or native64"; exit 1 ;;
+  *) echo "unknown engine '${ENGINE}', expected cli, host, wasmtime, native, native64 or their -tuned variants"; exit 1 ;;
 esac
 echo "spill files left: $(ls "${SPILL}" | wc -l)"

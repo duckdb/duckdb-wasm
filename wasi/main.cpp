@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 
 #include "crash.hpp"
 #include "duckdb.hpp"
@@ -33,7 +34,8 @@ void Usage() {
             "  -r           open the database read-only\n"
             "  -t           print the time each statement took\n"
             "  -q           do not print results, only errors and times\n"
-            "  -c sql       run sql; without -c the statements are read from standard input\n");
+            "  -c sql       run sql; without -c statements are read from standard input, one result per\n"
+            "               statement (ended by ';' at the end of a line), until end of input or .quit\n");
 }
 
 struct Options {
@@ -82,11 +84,6 @@ int main(int argc, char **argv) {
             return 2;
         }
     }
-    if (statements.empty()) {
-        std::stringstream buffer;
-        buffer << std::cin.rdbuf();
-        statements.push_back(buffer.str());
-    }
     if (!RegisterLinkedExtensions()) {
         fprintf(stderr, "cannot register the linked extensions\n");
         return 1;
@@ -102,6 +99,32 @@ int main(int argc, char **argv) {
         int failures = 0;
         for (auto &sql : statements) {
             failures += Run(con, sql, opts);
+        }
+        if (statements.empty()) {
+            // The REPL: statements end with ';' at the end of a line, a prompt only when someone is typing
+            bool interactive = isatty(0);
+            std::string pending, line;
+            while (true) {
+                if (interactive) {
+                    fputs("> ", stdout);
+                    fflush(stdout);
+                }
+                if (!std::getline(std::cin, line)) {
+                    break;
+                }
+                if (pending.empty() && (line == ".quit" || line == ".exit")) {
+                    break;
+                }
+                pending += line + "\n";
+                auto end = pending.find_last_not_of(" \t\n");
+                if (end != std::string::npos && pending[end] == ';') {
+                    failures += Run(con, pending, opts);
+                    pending.clear();
+                }
+            }
+            if (pending.find_first_not_of(" \t\n") != std::string::npos) {
+                failures += Run(con, pending, opts);
+            }
         }
         return failures ? 1 : 0;
     } catch (std::exception &ex) {
