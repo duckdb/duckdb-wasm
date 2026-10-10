@@ -9,6 +9,7 @@
 // does not yet).
 #define _GNU_SOURCE
 #include <dirent.h>
+#include <sched.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -260,7 +261,11 @@ u32 w2c_wasi__snapshot__preview1_random_get(struct w2c_wasi__snapshot__preview1 
     arc4random_buf(Ptr(buf, len), len);
     return WASI_ESUCCESS;
 }
-u32 w2c_wasi__snapshot__preview1_sched_yield(struct w2c_wasi__snapshot__preview1 *s) { (void)s; return WASI_ESUCCESS; }
+u32 w2c_wasi__snapshot__preview1_sched_yield(struct w2c_wasi__snapshot__preview1 *s) {
+    (void)s;
+    sched_yield();
+    return WASI_ESUCCESS;
+}
 // Only clock subscriptions (sleeping)
 u32 w2c_wasi__snapshot__preview1_poll_oneoff(struct w2c_wasi__snapshot__preview1 *s, wptr in, wptr out, wptr n, wptr nevents) {
     (void)s;

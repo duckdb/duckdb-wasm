@@ -40,11 +40,11 @@ rm -rf "${SPILL}" && mkdir -p "${SPILL}"
 
 # The sandbox sees the spill directory as /spill, the native engines use the host path
 SPILL_PATH=/spill
-case ${ENGINE} in cli|host) SPILL_PATH=${SPILL} ;; esac
+case ${ENGINE} in cli|host*) SPILL_PATH=${SPILL} ;; esac
 DATABASE=()
 [ "${STORAGE}" = disk ] && DATABASE=(-d "${SPILL_PATH}/tpch.db")
 DATA_PATH=/data
-case ${ENGINE} in cli|host) DATA_PATH=${DATA} ;; esac
+case ${ENGINE} in cli|host*) DATA_PATH=${DATA} ;; esac
 [ "${STORAGE}" = external ] && DATABASE=(-r -d "${DATA_PATH}/tpch${SF}.db")
 THREADS=${THREADS:-1}
 SETUP="SET temp_directory = '${SPILL_PATH}'"
