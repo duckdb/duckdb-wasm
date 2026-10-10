@@ -520,7 +520,7 @@ diff -ru wasi-libc/libc-bottom-half/headers/public/wasi/wasip1.h wasi-libc64/lib
   * @defgroup wasi_snapshot_preview1
 diff -ru wasi-libc/libc-bottom-half/sources/__wasilibc_real.c wasi-libc64/libc-bottom-half/sources/__wasilibc_real.c
 --- wasi-libc/libc-bottom-half/sources/__wasilibc_real.c	2026-10-09 08:14:01
-+++ wasi-libc64/libc-bottom-half/sources/__wasilibc_real.c	2026-10-09 09:45:57
++++ wasi-libc64/libc-bottom-half/sources/__wasilibc_real.c	2026-10-10 05:52:22
 @@ -17,99 +17,82 @@
  #include <string.h>
  #include <wasi/api.h>
@@ -1133,6 +1133,20 @@ diff -ru wasi-libc/libc-bottom-half/sources/__wasilibc_real.c wasi-libc64/libc-b
 +int32_t __imported_wasi_snapshot_preview1_sock_shutdown(int32_t arg0, int32_t arg1)
      __attribute__((__import_module__("wasi_snapshot_preview1"),
                     __import_name__("sock_shutdown")));
+ 
+@@ -602,11 +495,11 @@
+ }
+ 
+ #ifdef _REENTRANT
+-int32_t __imported_wasi_thread_spawn(int32_t arg0)
++int32_t __imported_wasi_thread_spawn(int64_t arg0)
+     __attribute__((__import_module__("wasi"), __import_name__("thread-spawn")));
+ 
+ int32_t __wasi_thread_spawn(void *start_arg) {
+-  return __imported_wasi_thread_spawn((int32_t)start_arg);
++  return __imported_wasi_thread_spawn((int64_t)start_arg);
+ }
+ #endif
  
 diff -ru wasi-libc/libc-top-half/musl/arch/wasm32/atomic_arch.h wasi-libc64/libc-top-half/musl/arch/wasm32/atomic_arch.h
 --- wasi-libc/libc-top-half/musl/arch/wasm32/atomic_arch.h	2026-10-09 08:14:01

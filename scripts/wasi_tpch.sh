@@ -9,6 +9,7 @@
 #
 #   engine   cli       the native DuckDB CLI of the same version (~/.duckdb/cli/<version>/duckdb), the bottom line
 #            host      build/wasi/duckdb_host, the same sources, flags and runner built natively (64-bit)
+#            hostthreads  the same with DuckDB's threads (build/wasi/duckdb_hostthreads)
 #            wasmtime  build/wasi/duckdb_wasi-exnref.wasm under wasmtime, a spill directory and a memory cap
 #            native    build/wasi/native/duckdb_native, the wasm2c translation with the host of wasi/native
 #            nativethreads  build/wasi/nativethreads/duckdb_native, the wasm32 threads module (wasi:thread-spawn)
@@ -47,6 +48,8 @@ case ${ENGINE} in cli|host) DATA_PATH=${DATA} ;; esac
 [ "${STORAGE}" = external ] && DATABASE=(-r -d "${DATA_PATH}/tpch${SF}.db")
 THREADS=${THREADS:-1}
 SETUP="SET temp_directory = '${SPILL_PATH}'"
+# WASI has no way to ask for the core count, DuckDB inside the sandbox sees one: "all" is set explicitly there
+case ${ENGINE} in cli|host*) ;; *) [ "${THREADS}" = all ] && THREADS=$(sysctl -n hw.ncpu 2>/dev/null || nproc) ;; esac
 [ "${THREADS}" != all ] && SETUP="SET threads = ${THREADS}; ${SETUP}"
 if [ -n "${MEMORY_LIMIT}" ]; then
   SETUP="${SETUP}; SET memory_limit = '${MEMORY_LIMIT}'"
@@ -66,8 +69,8 @@ case ${ENGINE} in
     "${CLI}" -no-agent "${CLI_ARGS[@]}" -c ".timer on" -c ".output /dev/null" "${STATEMENTS[@]}" 2>&1 \
       | grep -i "time\|error" | sed 's/Run Time (s): real \([0-9.]*\).*/Run Time (s): \1/'
     ;;
-  host)
-    "${PROJECT_ROOT}/build/wasi/duckdb_host" "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
+  host|hostthreads)
+    "${PROJECT_ROOT}/build/wasi/duckdb_${ENGINE}" "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
   wasmtime)
     # --dir: the only directory the sandbox can see; -W max-memory-size: the hard cap

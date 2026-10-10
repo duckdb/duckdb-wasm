@@ -2,7 +2,7 @@
 # Builds DuckDB with wasi-sdk (plain clang, no emscripten) into a single wasm32-wasip1 module with the SQL runner
 # of wasi/main.cpp: parquet and tpch linked statically, exceptions, single-threaded.
 #
-#   scripts/wasi_build.sh [exnref|legacy|wasm64|threads|threads64|host]
+#   scripts/wasi_build.sh [exnref|legacy|wasm64|threads|threads64|host|hostthreads]
 #
 # The exception encoding is the one thing engines disagree on: wasmtime runs exnref, wasm2c translates legacy.
 # wasm64: the 64-bit sandbox (legacy encoding, for wasm2c), against the sysroot of scripts/wasm64_sysroot.sh;
@@ -24,9 +24,12 @@ case ${EH} in
   threads) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-threads ;;
   threads64) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-threads64 ;;
   host) EH_FLAGS=""; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-host ;;
+  hostthreads) EH_FLAGS=""; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-hostthreads ;;
   *) echo "unknown target '${EH}', expected exnref, legacy or host"; exit 1 ;;
 esac
-if [ "${EH}" = host ]; then
+if [ "${EH}" = host ] || [ "${EH}" = hostthreads ]; then
+  HOST_THREAD_FLAGS="-DDUCKDB_NO_THREADS=1"
+  [ "${EH}" = hostthreads ] && HOST_THREAD_FLAGS=""
   cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -35,14 +38,14 @@ if [ "${EH}" = host ]; then
     -DSTATICALLY_LINK_EXTENSIONS="core_functions;parquet;tpch;json;icu" \
     -DENABLE_JEMALLOC=OFF -DBUILD_SHELL=FALSE -DBUILD_UNITTESTS=FALSE \
     -DDUCKDB_CAPABILITIES=none -DENABLE_BUILTIN_HTTPLIB=OFF \
-    -DCMAKE_CXX_FLAGS="-DDUCKDB_NO_THREADS=1 -Wno-unqualified-std-cast-call"
+    -DCMAKE_CXX_FLAGS="${HOST_THREAD_FLAGS} -Wno-unqualified-std-cast-call"
   cmake --build "${BUILD_DIR}" --target duckdb_static duckdb_cpp_api parquet_extension tpch_extension \
     core_functions_extension json_extension icu_extension
   LIBS="$(find "${BUILD_DIR}" -name libduckdb_cpp_api.a) $(find "${BUILD_DIR}" -name libduckdb_static.a)"
   LIBS="${LIBS} $(find "${BUILD_DIR}" -name 'libduckdb_*.a' | grep -v 'cpp_api\|static\|loadable\|local_extension' | tr '\n' ' ')"
   EXTENSIONS="$(find "${BUILD_DIR}" -name 'lib*_extension.a' | tr '\n' ' ')"
-  OUT=${PROJECT_ROOT}/build/wasi/duckdb_host
-  clang++ -std=c++17 -O2 -DDUCKDB_NO_THREADS=1 -I"${DUCKDB}/src/include" \
+  OUT=${PROJECT_ROOT}/build/wasi/duckdb_${EH}
+  clang++ -std=c++17 -O2 ${HOST_THREAD_FLAGS} -I"${DUCKDB}/src/include" \
     "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
     ${EXTENSIONS} ${LIBS} ${LIBS} -o "${OUT}"
   ls -la "${OUT}"
