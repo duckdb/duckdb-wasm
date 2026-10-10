@@ -1,0 +1,208 @@
+diff --git a/include/mimalloc/atomic.h b/include/mimalloc/atomic.h
+index e8bac31..271794e 100644
+--- a/include/mimalloc/atomic.h
++++ b/include/mimalloc/atomic.h
+@@ -14,7 +14,7 @@ terms of the MIT license. A copy of the license can be found in the file
+ #define WIN32_LEAN_AND_MEAN
+ #endif
+ #include <windows.h>
+-#elif !defined(__wasi__) && (!defined(__EMSCRIPTEN__) || defined(__EMSCRIPTEN_PTHREADS__))
++#elif (!defined(__wasi__) || defined(_REENTRANT)) && (!defined(__EMSCRIPTEN__) || defined(__EMSCRIPTEN_PTHREADS__))
+ #define  MI_USE_PTHREADS
+ #include <pthread.h>
+ #endif
+diff --git a/src/arena.c b/src/arena.c
+index e97ca88..0fd05e8 100644
+--- a/src/arena.c
++++ b/src/arena.c
+@@ -367,13 +367,13 @@ static mi_decl_noinline void* mi_arena_try_alloc(int numa_node, size_t size, siz
+ // try to reserve a fresh arena space
+ static bool mi_arena_reserve(size_t req_size, bool allow_large, mi_arena_id_t *arena_id)
+ {
+-  if (_mi_preloading()) return false;  // use OS only while pre loading
++  if (_mi_preloading()) { _mi_verbose_message("arena reserve: preloading\n"); return false; }  // use OS only while pre loading
+ 
+   const size_t arena_count = mi_atomic_load_acquire(&mi_arena_count);
+-  if (arena_count > (MI_MAX_ARENAS - 4)) return false;
++  if (arena_count > (MI_MAX_ARENAS - 4)) { _mi_verbose_message("arena reserve: too many arenas\n"); return false; }
+ 
+   size_t arena_reserve = mi_option_get_size(mi_option_arena_reserve);
+-  if (arena_reserve == 0) return false;
++  if (arena_reserve == 0) { _mi_verbose_message("arena reserve: option 0\n"); return false; }
+ 
+   if (!_mi_os_has_virtual_reserve()) {
+     arena_reserve = arena_reserve/4;  // be conservative if virtual reserve is not supported (for WASM for example)
+@@ -388,14 +388,30 @@ static bool mi_arena_reserve(size_t req_size, bool allow_large, mi_arena_id_t *a
+       arena_reserve = reserve;
+     }
+   }
++#if defined(__wasi__)
++  // wasm memory never shrinks, so what is handed back to the "OS" is lost: give an oversized request an arena
++  // of its own (reusable afterwards) rather than an OS allocation
++  if (arena_reserve < req_size) { arena_reserve = _mi_align_up(req_size, MI_ARENA_BLOCK_SIZE); }
++#else
+   if (arena_reserve < req_size) return false;  // should be able to at least handle the current allocation size
++#endif
+ 
+   // commit eagerly?
+   bool arena_commit = false;
+   if (mi_option_get(mi_option_arena_eager_commit) == 2)      { arena_commit = _mi_os_has_overcommit(); }
+   else if (mi_option_get(mi_option_arena_eager_commit) == 1) { arena_commit = true; }
+ 
++#if defined(__wasi__)
++  // near the memory cap a smaller arena still beats falling back to unreclaimable OS memory
++  while (true) {
++    if (mi_reserve_os_memory_ex(arena_reserve, arena_commit, allow_large, false /* exclusive? */, arena_id) == 0) return true;
++    _mi_verbose_message("arena reserve: %zu KiB failed for a request of %zu KiB\n", arena_reserve/1024, req_size/1024);
++    if (arena_reserve/2 < req_size || arena_reserve/2 < MI_ARENA_BLOCK_SIZE) return false;
++    arena_reserve = _mi_align_up(arena_reserve/2, MI_ARENA_BLOCK_SIZE);
++  }
++#else
+   return (mi_reserve_os_memory_ex(arena_reserve, arena_commit, allow_large, false /* exclusive? */, arena_id) == 0);
++#endif
+ }
+ 
+ 
+@@ -418,18 +434,33 @@ void* _mi_arena_alloc_aligned(size_t size, size_t alignment, size_t align_offset
+       // otherwise, try to first eagerly reserve a new arena
+       if (req_arena_id == _mi_arena_id_none()) {
+         mi_arena_id_t arena_id = 0;
++#if defined(__wasi__)
++        // one reserve at a time: threads that ran out together must not each grow the memory by a chunk, the
++        // memory is bounded and never given back. Whoever waited retries the arenas the first one just reserved
++        static pthread_mutex_t reserve_lock = PTHREAD_MUTEX_INITIALIZER;
++        pthread_mutex_lock(&reserve_lock);
++        p = mi_arena_try_alloc(numa_node, size, alignment, commit, allow_large, req_arena_id, memid);
++        if (p == NULL && mi_arena_reserve(size, allow_large, &arena_id)) {
++          p = mi_arena_try_alloc_at_id(arena_id, true, numa_node, size, alignment, commit, allow_large, req_arena_id, memid);
++        }
++        pthread_mutex_unlock(&reserve_lock);
++        if (p != NULL) return p;
++#else
+         if (mi_arena_reserve(size, allow_large, &arena_id)) {
+           // and try allocate in there
+           mi_assert_internal(req_arena_id == _mi_arena_id_none());
+           p = mi_arena_try_alloc_at_id(arena_id, true, numa_node, size, alignment, commit, allow_large, req_arena_id, memid);
+           if (p != NULL) return p;
+         }
++#endif
+       }
+     }
+   }
+ 
+   // if we cannot use OS allocation, return NULL
+   if (mi_option_is_enabled(mi_option_disallow_os_alloc) || req_arena_id != _mi_arena_id_none()) {
++    _mi_verbose_message("arena alloc: no OS fallback for %zu KiB (align %zu, offset %zu, req arena %d, arenas %zu)\n",
++                        size/1024, alignment, align_offset, (int)req_arena_id, (size_t)mi_atomic_load_relaxed(&mi_arena_count));
+     errno = ENOMEM;
+     return NULL;
+   }
+diff --git a/src/bitmap.c b/src/bitmap.c
+index 32d1e95..ca2d242 100644
+--- a/src/bitmap.c
++++ b/src/bitmap.c
+@@ -303,14 +303,14 @@ bool _mi_bitmap_try_find_from_claim_across(mi_bitmap_t bitmap, const size_t bitm
+   size_t idx = start_field_idx;
+   for (size_t visited = 0; visited < bitmap_fields; visited++, idx++) {
+     if (idx >= bitmap_fields) { idx = 0; } // wrap
+-    // first try to claim inside a field
+-    /*
++    // first try to claim inside a field (the cross-field search needs free bits at the top of the field, which an
++    // arena of a single field never has: its leftover high bits are claimed when it is created, so without this a
++    // request of more than two blocks can never be served from it)
+     if (count <= MI_BITMAP_FIELD_BITS) {
+       if (_mi_bitmap_try_find_claim_field(bitmap, idx, count, bitmap_idx)) {
+         return true;
+       }
+     }
+-    */
+     // if that fails, then try to claim across fields
+     if (mi_bitmap_try_find_claim_field_across(bitmap, bitmap_fields, idx, count, 0, bitmap_idx)) {
+       return true;
+diff --git a/src/options.c b/src/options.c
+index af2a0e7..0597182 100644
+--- a/src/options.c
++++ b/src/options.c
+@@ -67,12 +67,24 @@ typedef struct mi_option_desc_s {
+ 
+ // in KiB
+ #ifndef MI_DEFAULT_ARENA_RESERVE
+- #if (MI_INTPTR_SIZE>4)
++ #if defined(__wasi__)
++  // wasm memory never shrinks: all memory should live in arenas (mi_arena_reserve quarters this for wasm,
++  // so 1 GiB chunks on wasm64, 256 MiB on wasm32), and nothing is allocated from the "OS" directly
++  #if (MI_INTPTR_SIZE>4)
++   #define MI_DEFAULT_ARENA_RESERVE 4096L*1024L
++  #else
++   #define MI_DEFAULT_ARENA_RESERVE 1024L*1024L
++  #endif
++  #define MI_DEFAULT_DISALLOW_OS_ALLOC 1
++ #elif (MI_INTPTR_SIZE>4)
+   #define MI_DEFAULT_ARENA_RESERVE 1024L*1024L
+  #else
+   #define MI_DEFAULT_ARENA_RESERVE 128L*1024L
+  #endif
+ #endif
++#ifndef MI_DEFAULT_DISALLOW_OS_ALLOC
++#define MI_DEFAULT_DISALLOW_OS_ALLOC 0
++#endif
+ 
+ #ifndef MI_DEFAULT_DISALLOW_ARENA_ALLOC
+ #define MI_DEFAULT_DISALLOW_ARENA_ALLOC 0
+@@ -138,7 +150,7 @@ static mi_option_desc_t options[_mi_option_last] =
+ #endif
+   { 10,  UNINIT, MI_OPTION_LEGACY(purge_delay,reset_delay) },  // purge delay in milli-seconds
+   { 0,   UNINIT, MI_OPTION(use_numa_nodes) },           // 0 = use available numa nodes, otherwise use at most N nodes.
+-  { 0,   UNINIT, MI_OPTION_LEGACY(disallow_os_alloc,limit_os_alloc) },           // 1 = do not use OS memory for allocation (but only reserved arenas)
++  { MI_DEFAULT_DISALLOW_OS_ALLOC, UNINIT, MI_OPTION_LEGACY(disallow_os_alloc,limit_os_alloc) },           // 1 = do not use OS memory for allocation (but only reserved arenas)
+   { 100, UNINIT, MI_OPTION(os_tag) },                   // only apple specific for now but might serve more or less related purpose
+   { 32,  UNINIT, MI_OPTION(max_errors) },               // maximum errors that are output
+   { 32,  UNINIT, MI_OPTION(max_warnings) },             // maximum warnings that are output
+diff --git a/src/prim/wasi/prim.c b/src/prim/wasi/prim.c
+index 745a41f..803342e 100644
+--- a/src/prim/wasi/prim.c
++++ b/src/prim/wasi/prim.c
+@@ -238,10 +238,33 @@ void _mi_prim_out_stderr( const char* msg ) {
+ // Environment
+ //----------------------------------------------------------------
+ 
++// wasi-libc's getenv() sets up `environ` lazily with malloc, which is mimalloc itself initializing right now:
++// read the environment through the WASI calls into static storage instead
++#include <wasi/api.h>
++#include <string.h>
++static const char* mi_wasi_getenv(const char* name) {
++  static char buf[8192];
++  static char* envs[128];
++  static size_t count = 0;
++  static bool loaded = false;
++  if (!loaded) {
++    loaded = true;
++    size_t n = 0, size = 0;
++    if (__wasi_environ_sizes_get(&n, &size) != 0 || n > sizeof(envs)/sizeof(envs[0]) || size > sizeof(buf)) return NULL;
++    if (__wasi_environ_get((uint8_t**)envs, (uint8_t*)buf) != 0) return NULL;
++    count = n;
++  }
++  const size_t len = strlen(name);
++  for (size_t i = 0; i < count; i++) {
++    if (strncmp(envs[i], name, len) == 0 && envs[i][len] == '=') return envs[i] + len + 1;
++  }
++  return NULL;
++}
++
+ bool _mi_prim_getenv(const char* name, char* result, size_t result_size) {
+   // cannot call getenv() when still initializing the C runtime.
+   if (_mi_preloading()) return false;
+-  const char* s = getenv(name);
++  const char* s = mi_wasi_getenv(name);
+   if (s == NULL) {
+     // we check the upper case name too.
+     char buf[64+1];
+@@ -250,7 +273,7 @@ bool _mi_prim_getenv(const char* name, char* result, size_t result_size) {
+       buf[i] = _mi_toupper(name[i]);
+     }
+     buf[len] = 0;
+-    s = getenv(buf);
++    s = mi_wasi_getenv(buf);
+   }
+   if (s == NULL || _mi_strnlen(s,result_size) >= result_size)  return false;
+   _mi_strlcpy(result, s, result_size);

@@ -88,6 +88,28 @@ if [ "${EH}" = wasm64 ]; then
   # 16 GB, the most wasm-ld accepts for a memory64 module; DuckDB's memory_limit and the host cap bound it below
   MAX_MEMORY=17179869184
 fi
+# wasi-libc's dlmalloc serializes every malloc and free of every thread on one lock, a sched_yield spin that
+# capped the threaded sandbox at about four busy threads: the threaded modules allocate through mimalloc
+# instead, thread-local heaps on top of memory.grow (so still inside the module's memory cap). mimalloc v2.2.4
+# plus wasi/mimalloc-wasi-threads.patch (pthread locks on wasi when compiled with -pthread).
+MIMALLOC_LIBS=""
+if [ "${EH}" = threads ] || [ "${EH}" = threads64 ]; then
+  MIMALLOC_SRC=${PROJECT_ROOT}/build/mimalloc-src
+  if [ ! -d "${MIMALLOC_SRC}" ]; then
+    git clone --depth 1 --branch v2.2.4 https://github.com/microsoft/mimalloc.git "${MIMALLOC_SRC}"
+    git -C "${MIMALLOC_SRC}" apply "${PROJECT_ROOT}/wasi/mimalloc-wasi-threads.patch"
+  fi
+  MIMALLOC_DIR=${PROJECT_ROOT}/build/wasi/mimalloc-${EH}
+  if [ ! -f "${MIMALLOC_DIR}/libmimalloc.a" ]; then
+    # (mimalloc is C; the C++ compiler check still links, and the wasm64 libc++ lives in the eh/ directory)
+    cmake -G Ninja -S "${MIMALLOC_SRC}" -B "${MIMALLOC_DIR}" "${TOOLCHAIN[@]}" -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_EXE_LINKER_FLAGS=-fwasm-exceptions \
+      -DMI_BUILD_SHARED=OFF -DMI_BUILD_OBJECT=OFF -DMI_BUILD_TESTS=OFF -DMI_OVERRIDE=ON -DMI_USE_LIBATOMIC=OFF
+    cmake --build "${MIMALLOC_DIR}"
+  fi
+  # first on the link line: its malloc family wins over libc's
+  MIMALLOC_LIBS="-L${MIMALLOC_DIR} -lmimalloc"
+fi
 cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
   "${TOOLCHAIN[@]}" \
   -DCMAKE_BUILD_TYPE=Release \
@@ -116,7 +138,19 @@ OUT=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${EH}.wasm
 "${SDK}/bin/clang++" ${TARGET_FLAGS} -O2 ${EH_FLAGS} ${THREAD_FLAGS} ${EMULATED} \
   -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
   "${PROJECT_ROOT}/wasi/wasi_compat.c" \
-  ${EXTENSIONS} ${LIBS} ${LIBS} -lunwind ${EMULATED_LIBS} \
+  ${MIMALLOC_LIBS} ${EXTENSIONS} ${LIBS} ${LIBS} -lunwind ${EMULATED_LIBS} \
   -Wl,-z,stack-size=8388608 -Wl,--max-memory=${MAX_MEMORY} ${LINK_EXTRA} \
+  -Wl,-Map="${OUT}.map" --no-wasm-opt \
   -o "${OUT}"
+# clang would run wasm-opt -O2 itself when it finds one; it is run here so that WASM_NAMES=1 can keep the name
+# section (-g), which makes wasm2c's C and native profiles carry the DuckDB symbols. With -g wasm-opt merges
+# fewer duplicate functions (57k instead of 36k of 70k), so names are for profiling builds only. The DWARF
+# (libc's only) goes either way, it is of no use to the translated binary.
+if command -v wasm-opt > /dev/null; then
+  if [ "${WASM_NAMES:-0}" = 1 ]; then
+    wasm-opt "${OUT}" -O2 -g --strip-dwarf -o "${OUT}"
+  else
+    wasm-opt "${OUT}" -O2 --strip-dwarf -o "${OUT}"
+  fi
+fi
 ls -la "${OUT}"

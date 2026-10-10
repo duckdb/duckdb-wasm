@@ -39,18 +39,23 @@ index 4205a688d0..069475ae51 100644
  	if (getrlimit(RLIMIT_NOFILE, &limit) != 0 || limit.rlim_cur == RLIM_INFINITY) {
  		return optional_idx();
 diff --git a/src/parallel/task_scheduler.cpp b/src/parallel/task_scheduler.cpp
-index 6adc36a039..c126b8bbad 100644
+index 6adc36a039..52344e136d 100644
 --- a/src/parallel/task_scheduler.cpp
 +++ b/src/parallel/task_scheduler.cpp
-@@ -360,7 +360,7 @@ void TaskScheduler::YieldThread() {
- }
- 
- idx_t TaskScheduler::GetEstimatedCPUId() {
--#if defined(__EMSCRIPTEN__)
-+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
+@@ -364,6 +364,13 @@ idx_t TaskScheduler::GetEstimatedCPUId() {
  	// FIXME: Wasm + multithreads can likely be implemented as
  	//   return return (idx_t)std::hash<std::thread::id>()(std::this_thread::get_id());
  	return 0;
++#elif defined(__wasi__)
++#ifndef DUCKDB_NO_THREADS
++	// no API for the core a thread runs on: spread the threads over the per-core slots by their id
++	return (idx_t)std::hash<std::thread::id>()(std::this_thread::get_id());
++#else
++	return 0;
++#endif
+ #else
+ 	// this code comes from jemalloc
+ #if defined(_WIN32)
 diff --git a/third_party/concurrentqueue/lightweightsemaphore.h b/third_party/concurrentqueue/lightweightsemaphore.h
 index a0875a398a..d4f8734495 100644
 --- a/third_party/concurrentqueue/lightweightsemaphore.h

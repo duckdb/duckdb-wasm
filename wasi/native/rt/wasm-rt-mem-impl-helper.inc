@@ -161,7 +161,14 @@ static uint64_t MEMORY_API_NAME(grow_memory_impl)(MEMORY_TYPE* memory,
   if (delta == 0) {
     return old_pages;
   }
+  // DuckDB sandbox: SANDBOX_TRACE_GROW in the host's environment logs every memory.grow
+  static int trace = -1;
+  if (trace < 0) trace = getenv("SANDBOX_TRACE_GROW") != NULL;
   if (new_pages < old_pages || new_pages > memory->max_pages) {
+    if (trace) {
+      fprintf(stderr, "memory.grow: %llu + %llu pages -> refused, the maximum is %llu pages\n",
+              (unsigned long long)old_pages, (unsigned long long)delta, (unsigned long long)memory->max_pages);
+    }
     return (uint64_t)-1;
   }
 
@@ -174,6 +181,10 @@ static uint64_t MEMORY_API_NAME(grow_memory_impl)(MEMORY_TYPE* memory,
 
   int err = MEMORY_API_NAME(expand_data_allocation)(memory, old_size, new_size,
                                                     delta_size);
+  if (trace) {
+    fprintf(stderr, "memory.grow: %llu + %llu pages (%.1f MiB) -> %s\n", (unsigned long long)old_pages,
+            (unsigned long long)delta, (double)new_size / (1024.0 * 1024.0), err ? "failed" : "ok");
+  }
   if (err != 0) {
     return (uint64_t)-1;
   }

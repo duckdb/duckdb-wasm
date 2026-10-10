@@ -109,6 +109,9 @@ struct w2c_wasi__snapshot__preview1 {
     FdEntry fds[MAX_FDS];
     int argc;
     char **argv;
+    // only what --env names: the host's own environment never leaks in
+    int envc;
+    char **envv;
 };
 
 static struct w2c_wasi__snapshot__preview1 sandbox;
@@ -241,11 +244,19 @@ u32 w2c_wasi__snapshot__preview1_args_get(struct w2c_wasi__snapshot__preview1 *s
     return WASI_ESUCCESS;
 }
 u32 w2c_wasi__snapshot__preview1_environ_sizes_get(struct w2c_wasi__snapshot__preview1 *s, wptr count, wptr size) {
-    (void)s; StoreSize(count, 0); StoreSize(size, 0);
+    uint32_t total = 0;
+    for (int i = 0; i < s->envc; i++) total += strlen(s->envv[i]) + 1;
+    StoreSize(count, (wptr)s->envc);
+    StoreSize(size, total);
     return WASI_ESUCCESS;
 }
 u32 w2c_wasi__snapshot__preview1_environ_get(struct w2c_wasi__snapshot__preview1 *s, wptr environ, wptr buf) {
-    (void)s; (void)environ; (void)buf;
+    for (int i = 0; i < s->envc; i++) {
+        size_t len = strlen(s->envv[i]) + 1;
+        memcpy(Ptr(buf, len), s->envv[i], len);
+        StorePtr(environ + i * PTR_SIZE, buf);
+        buf += len;
+    }
     return WASI_ESUCCESS;
 }
 u32 w2c_wasi__snapshot__preview1_clock_time_get(struct w2c_wasi__snapshot__preview1 *s, u32 id, u64 precision, wptr out) {
@@ -634,8 +645,9 @@ u32 w2c_wasi_thread0x2Dspawn(struct w2c_wasi *w, wptr arg) {
 // The process
 static void Usage(void) {
     fprintf(stderr,
-            "usage: duckdb_native [--dir host[::guest][:rw]]... -- [runner arguments]\n"
+            "usage: duckdb_native [--dir host[::guest][:rw]]... [--env NAME=VALUE]... -- [runner arguments]\n"
             "  --dir   preopen a host directory for the sandbox, read-only unless :rw is appended\n"
+            "  --env   an environment variable for the sandbox (it sees no other, e.g. MIMALLOC_SHOW_ERRORS=1)\n"
             "  the arguments after -- go to the SQL runner (-d database, -t, -q, -c sql)\n");
 }
 
@@ -644,10 +656,14 @@ int main(int argc, char **argv) {
     sandbox.fds[0] = (FdEntry){0, false, false, NULL};
     sandbox.fds[1] = (FdEntry){1, false, true, NULL};
     sandbox.fds[2] = (FdEntry){2, false, true, NULL};
+    static char *guest_envv[64];
+    sandbox.envv = guest_envv;
     int i = 1;
     for (; i < argc; i++) {
         if (!strcmp(argv[i], "--")) { i++; break; }
-        if (!strcmp(argv[i], "--dir") && i + 1 < argc) {
+        if (!strcmp(argv[i], "--env") && i + 1 < argc && sandbox.envc < 64 && strchr(argv[i + 1], '=')) {
+            guest_envv[sandbox.envc++] = argv[++i];
+        } else if (!strcmp(argv[i], "--dir") && i + 1 < argc) {
             char *spec = strdup(argv[++i]);
             bool writable = false;
             size_t len = strlen(spec);

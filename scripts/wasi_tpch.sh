@@ -80,7 +80,10 @@ case ${ENGINE} in
     ;;
   native*)
     mkdir -p "${DATA}"
-    "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
+    # SANDBOX_ENV="NAME=VALUE ..." reaches the sandbox as its environment (e.g. MIMALLOC_SHOW_ERRORS=1)
+    ENV_ARGS=()
+    for kv in ${SANDBOX_ENV:-}; do ENV_ARGS+=(--env "${kv}"); done
+    "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
   *) echo "unknown engine '${ENGINE}', expected cli, host, wasmtime, native, native64 or their -tuned variants"; exit 1 ;;
 esac
