@@ -22,7 +22,7 @@ for engine in ${ENGINES}; do
     case ${engine} in
       host) out=$("${PROJECT_ROOT}/build/wasi/duckdb_host" -c "${sql}" -c "SELECT 'alive' AS s" 2>&1); rc=$? ;;
       wasmtime) out=$(wasmtime run -W exceptions --dir="${SPILL}::/spill" "${PROJECT_ROOT}/build/wasi/duckdb_wasi-exnref.wasm" -c "${sql}" -c "SELECT 'alive' AS s" 2>&1); rc=$? ;;
-      native|native64) out=$("${PROJECT_ROOT}/build/wasi/${engine}/duckdb_native" --dir "${SPILL}::/spill:rw" -- -c "${sql}" -c "SELECT 'alive' AS s" 2>&1); rc=$? ;;
+      native*) out=$("${PROJECT_ROOT}/build/wasi/${engine}/duckdb_native" --dir "${SPILL}::/spill:rw" -- -c "${sql}" -c "SELECT 'alive' AS s" 2>&1); rc=$? ;;
       *) echo "unknown engine ${engine}"; exit 1 ;;
     esac
     alive=no; grep -q "^alive" <<<"${out}" && alive=yes

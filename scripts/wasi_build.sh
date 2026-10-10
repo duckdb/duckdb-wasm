@@ -2,11 +2,13 @@
 # Builds DuckDB with wasi-sdk (plain clang, no emscripten) into a single wasm32-wasip1 module with the SQL runner
 # of wasi/main.cpp: parquet and tpch linked statically, exceptions, single-threaded.
 #
-#   scripts/wasi_build.sh [exnref|legacy|wasm64|host]
+#   scripts/wasi_build.sh [exnref|legacy|wasm64|threads|threads64|host]
 #
 # The exception encoding is the one thing engines disagree on: wasmtime runs exnref, wasm2c translates legacy.
 # wasm64: the 64-bit sandbox (legacy encoding, for wasm2c), against the sysroot of scripts/wasm64_sysroot.sh;
 # its syscalls carry 64-bit pointers, which only our hosts speak.
+# threads: wasm32-wasip1-threads with DuckDB's threads (legacy encoding, for wasm2c --enable-threads); the module
+# imports a shared memory the host owns and spawns threads through wasi:thread-spawn.
 # host: the same sources, flags and runner built with the host clang for the host, the 64-bit native reference.
 # Output: build/wasi/duckdb_wasi-<target>.wasm, or build/wasi/duckdb_host
 set -euo pipefail
@@ -19,6 +21,8 @@ case ${EH} in
   exnref) EH_FLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-exnref ;;
   legacy) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb ;;
   wasm64) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-wasm64 ;;
+  threads) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-threads ;;
+  threads64) EH_FLAGS="-fwasm-exceptions"; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-threads64 ;;
   host) EH_FLAGS=""; BUILD_DIR=${PROJECT_ROOT}/build/wasi/duckdb-host ;;
   *) echo "unknown target '${EH}', expected exnref, legacy or host"; exit 1 ;;
 esac
@@ -51,7 +55,26 @@ EMULATED_LIBS="-lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-proce
 TOOLCHAIN=("-DCMAKE_TOOLCHAIN_FILE=${SDK}/share/cmake/wasi-sdk-p1.cmake")
 TARGET_FLAGS="--target=wasm32-wasip1"
 CXX_EXTRA=""
+THREAD_FLAGS="-DDUCKDB_NO_THREADS=1"
+LINK_EXTRA=""
 MAX_MEMORY=4294967296
+if [ "${EH}" = threads ]; then
+  TOOLCHAIN=("-DCMAKE_TOOLCHAIN_FILE=${PROJECT_ROOT}/wasi/cmake/wasm32-wasip1-threads.cmake" "-DWASI_SDK_PREFIX=${SDK}")
+  TARGET_FLAGS="--target=wasm32-wasip1-threads -pthread"
+  THREAD_FLAGS="-pthread"
+  # one shared memory, owned and handed in by the host, shared by the instance of every thread
+  LINK_EXTRA="-Wl,--import-memory -Wl,--shared-memory"
+fi
+if [ "${EH}" = threads64 ]; then
+  WASM64=${PROJECT_ROOT}/build/wasm64
+  TOOLCHAIN=("-DCMAKE_TOOLCHAIN_FILE=${PROJECT_ROOT}/wasi/cmake/wasm64-wasip1-threads.cmake" "-DWASI_SDK_PREFIX=${SDK}"
+             "-DWASM64_SYSROOT=${WASM64}/sysroot64")
+  TARGET_FLAGS="--target=wasm64-wasip1-threads -pthread --sysroot ${WASM64}/sysroot64 -isystem ${WASM64}/sysroot64/include/wasm64-wasip1-threads/c++/v1"
+  CXX_EXTRA="-isystem ${WASM64}/sysroot64/include/wasm64-wasip1-threads/c++/v1"
+  THREAD_FLAGS="-pthread"
+  LINK_EXTRA="-Wl,--import-memory -Wl,--shared-memory"
+  MAX_MEMORY=17179869184
+fi
 if [ "${EH}" = wasm64 ]; then
   WASM64=${PROJECT_ROOT}/build/wasm64
   TOOLCHAIN=("-DCMAKE_TOOLCHAIN_FILE=${PROJECT_ROOT}/wasi/cmake/wasm64-wasip1.cmake" "-DWASI_SDK_PREFIX=${SDK}"
@@ -72,9 +95,9 @@ cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
   -DENABLE_JEMALLOC=OFF -DBUILD_SHELL=FALSE -DBUILD_UNITTESTS=FALSE \
   -DDUCKDB_CAPABILITIES=none -DENABLE_BUILTIN_HTTPLIB=OFF \
   -DDUCKDB_EXPLICIT_PLATFORM=wasm_wasi \
-  -DCMAKE_CXX_FLAGS="${EH_FLAGS} ${CXX_EXTRA} -DDUCKDB_NO_THREADS=1 ${EMULATED} -Wno-unqualified-std-cast-call" \
-  -DCMAKE_C_FLAGS="${EMULATED}" \
-  -DCMAKE_EXE_LINKER_FLAGS="-fwasm-exceptions -lunwind"
+  -DCMAKE_CXX_FLAGS="${EH_FLAGS} ${CXX_EXTRA} ${THREAD_FLAGS} ${EMULATED} -Wno-unqualified-std-cast-call" \
+  -DCMAKE_C_FLAGS="${EMULATED} ${THREAD_FLAGS}" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fwasm-exceptions -lunwind ${LINK_EXTRA}"
 # The loadable extension targets do not link (no --version-script in wasm-ld) and are not wanted
 cmake --build "${BUILD_DIR}" --target duckdb_static duckdb_cpp_api parquet_extension tpch_extension \
   core_functions_extension json_extension icu_extension
@@ -87,10 +110,10 @@ OUT=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${EH}.wasm
 # 8 MB of stack like a native process, up to the 4 GB a 32-bit sandbox can address. wasi-sdk places the stack
 # first, so the lowest page of memory is the far end of the stack: a host can make it inaccessible, and a null
 # dereference (or a stack overflow) traps instead of landing in linear memory
-"${SDK}/bin/clang++" ${TARGET_FLAGS} -O2 ${EH_FLAGS} -DDUCKDB_NO_THREADS=1 ${EMULATED} \
+"${SDK}/bin/clang++" ${TARGET_FLAGS} -O2 ${EH_FLAGS} ${THREAD_FLAGS} ${EMULATED} \
   -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
   "${PROJECT_ROOT}/wasi/wasi_compat.c" \
   ${EXTENSIONS} ${LIBS} ${LIBS} -lunwind ${EMULATED_LIBS} \
-  -Wl,-z,stack-size=8388608 -Wl,--max-memory=${MAX_MEMORY} \
+  -Wl,-z,stack-size=8388608 -Wl,--max-memory=${MAX_MEMORY} ${LINK_EXTRA} \
   -o "${OUT}"
 ls -la "${OUT}"

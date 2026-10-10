@@ -4,11 +4,14 @@
 #
 #   scripts/wasi_tpch.sh generate <sf>     -- the CLI generates build/wasi/data/tpch<sf>.db (all threads)
 #   scripts/wasi_tpch.sh <engine> [sf] [memory_limit] [external|memory|disk]
+#   THREADS=n     SET threads = n (default 1); THREADS=all leaves DuckDB's default, every core
+#   MEMORY unset  an empty memory_limit leaves DuckDB's default, 80% of RAM
 #
 #   engine   cli       the native DuckDB CLI of the same version (~/.duckdb/cli/<version>/duckdb), the bottom line
 #            host      build/wasi/duckdb_host, the same sources, flags and runner built natively (64-bit)
 #            wasmtime  build/wasi/duckdb_wasi-exnref.wasm under wasmtime, a spill directory and a memory cap
 #            native    build/wasi/native/duckdb_native, the wasm2c translation with the host of wasi/native
+#            nativethreads  build/wasi/nativethreads/duckdb_native, the wasm32 threads module (wasi:thread-spawn)
 #            native64  build/wasi/native64/duckdb_native, the same from the 64-bit module (no 4 GB wall);
 #                      its uncapped setting is memory_limit 12GB, the most that fits under the module's 16 GB
 #                      with DuckDB's other allocations (14GB ran out of memory at SF 100)
@@ -42,7 +45,9 @@ DATABASE=()
 DATA_PATH=/data
 case ${ENGINE} in cli|host) DATA_PATH=${DATA} ;; esac
 [ "${STORAGE}" = external ] && DATABASE=(-r -d "${DATA_PATH}/tpch${SF}.db")
-SETUP="SET threads = 1; SET temp_directory = '${SPILL_PATH}'"
+THREADS=${THREADS:-1}
+SETUP="SET temp_directory = '${SPILL_PATH}'"
+[ "${THREADS}" != all ] && SETUP="SET threads = ${THREADS}; ${SETUP}"
 if [ -n "${MEMORY_LIMIT}" ]; then
   SETUP="${SETUP}; SET memory_limit = '${MEMORY_LIMIT}'"
 fi
@@ -70,7 +75,7 @@ case ${ENGINE} in
     wasmtime run -W exceptions -W max-memory-size=4294967296 --dir="${SPILL}::/spill" --dir="${DATA}::/data" \
       "${PROJECT_ROOT}/build/wasi/duckdb_wasi-exnref.wasm" "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;
-  native|native64|native-tuned|native64-tuned)
+  native*)
     mkdir -p "${DATA}"
     "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;

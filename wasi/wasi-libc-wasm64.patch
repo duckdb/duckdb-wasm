@@ -1179,3 +1179,54 @@ diff -ru wasi-libc/libc-top-half/musl/src/env/__init_tls.c wasi-libc64/libc-top-
            "global.get __init_stack_pointer\n"
            "local.set %0\n"
            : "=r"(ret));
+diff -ru wasi-libc/libc-top-half/musl/src/thread/wasi-threads/wasi_thread_start.s wasi-libc64/libc-top-half/musl/src/thread/wasi-threads/wasi_thread_start.s
+--- wasi-libc/libc-top-half/musl/src/thread/wasi-threads/wasi_thread_start.s	2026-10-09 08:14:01
++++ wasi-libc64/libc-top-half/musl/src/thread/wasi-threads/wasi_thread_start.s	2026-10-10 05:22:36
+@@ -2,25 +2,25 @@
+ 
+ 	.export_name	wasi_thread_start, wasi_thread_start
+ 
+-	.globaltype	__stack_pointer, i32
+-	.globaltype	__tls_base, i32
+-	.functype	__wasi_thread_start_C (i32, i32) -> ()
++	.globaltype	__stack_pointer, i64
++	.globaltype	__tls_base, i64
++	.functype	__wasi_thread_start_C (i32, i64) -> ()
+ 
+ 	.hidden	wasi_thread_start
+ 	.globl	wasi_thread_start
+ 	.type	wasi_thread_start,@function
+ 
+ wasi_thread_start:
+-	.functype	wasi_thread_start (i32, i32) -> ()
++	.functype	wasi_thread_start (i32, i64) -> ()
+ 
+ 	# Set up the minimum C environment.
+ 	# Note: offsetof(start_arg, stack) == 0
+ 	local.get   1  # start_arg
+-	i32.load    0  # stack
++	i64.load    0  # stack
+ 	global.set  __stack_pointer
+ 
+ 	local.get   1  # start_arg
+-	i32.load    4  # tls_base
++	i64.load    8  # tls_base
+ 	global.set  __tls_base
+ 
+ 	# Make the C function do the rest of work.
+@@ -34,13 +34,13 @@
+ 	# by a joining thread. It's safe as we are in ASM and no longer use
+ 	# our C stack or pthread_t. It's impossible to do this safely in C
+ 	# because there is no way to tell the C compiler not to use C stack.
+-	i32.const   __thread_list_lock
++	i64.const   __thread_list_lock
+ 	i32.const   0
+ 	i32.atomic.store 0
+ 	# As an optimization, we can check tl_lock_waiters here.
+ 	# But for now, simply wake up unconditionally as
+ 	# CLONE_CHILD_CLEARTID does.
+-	i32.const   __thread_list_lock
++	i64.const   __thread_list_lock
+ 	i32.const   1
+ 	memory.atomic.notify 0
+ 	drop

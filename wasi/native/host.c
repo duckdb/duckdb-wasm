@@ -26,6 +26,11 @@
 #include "wasm-rt-impl.h"
 #include "duckdb.h"
 
+#ifdef SANDBOX_THREADS
+#include <pthread.h>
+#include <stdatomic.h>
+#endif
+
 // Pointers and sizes as the module passes them
 #ifdef SANDBOX_WASM64
 typedef u64 wptr;
@@ -107,11 +112,26 @@ struct w2c_wasi__snapshot__preview1 {
 
 static struct w2c_wasi__snapshot__preview1 sandbox;
 
+#ifdef SANDBOX_THREADS
+// The threads module imports its memory: one shared memory the host owns, the instance of every thread maps it
+static wasm_rt_shared_memory_t shared_memory;
+struct w2c_env { int unused; };
+wasm_rt_shared_memory_t *w2c_env_memory(struct w2c_env *env) { (void)env; return &shared_memory; }
+#define MEM shared_memory
+#define MEM_DATA ((uint8_t *)shared_memory.data)
+static pthread_mutex_t fd_lock = PTHREAD_MUTEX_INITIALIZER;
+#define FD_LOCK() pthread_mutex_lock(&fd_lock)
+#define FD_UNLOCK() pthread_mutex_unlock(&fd_lock)
+#else
 #define MEM (sandbox.inst->w2c_memory)
+#define MEM_DATA (MEM.data)
+#define FD_LOCK()
+#define FD_UNLOCK()
+#endif
 static bool InBounds(uint64_t off, uint64_t len) { return off <= MEM.size && len <= MEM.size - off; }
 static uint8_t *Ptr(wptr off, uint64_t len) {
     if (!InBounds(off, len)) wasm_rt_trap(WASM_RT_TRAP_OOB);
-    return MEM.data + off;
+    return MEM_DATA + off;
 }
 static uint32_t LoadU32(wptr off) { uint32_t v; memcpy(&v, Ptr(off, 4), 4); return v; }
 static void StoreU8(wptr off, uint8_t v) { *Ptr(off, 1) = v; }
@@ -128,12 +148,15 @@ static FdEntry *Fd(uint32_t fd) {
     return &sandbox.fds[fd];
 }
 static int AllocFd(int host_fd, bool writable) {
+    FD_LOCK();
     for (int i = 3; i < MAX_FDS; i++) {
         if (sandbox.fds[i].host_fd < 0) {
             sandbox.fds[i] = (FdEntry){host_fd, false, writable, NULL};
+            FD_UNLOCK();
             return i;
         }
     }
+    FD_UNLOCK();
     return -1;
 }
 
@@ -293,8 +316,11 @@ u32 w2c_wasi__snapshot__preview1_fd_close(struct w2c_wasi__snapshot__preview1 *s
     FdEntry *e = Fd(fd);
     if (!e) return WASI_EBADF;
     if (e->preopen) return WASI_ENOTSUP;
-    int rc = close(e->host_fd);
+    FD_LOCK();
+    int host_fd = e->host_fd;
     e->host_fd = -1;
+    FD_UNLOCK();
+    int rc = close(host_fd);
     return rc == 0 ? WASI_ESUCCESS : WasiErrno(errno);
 }
 u32 w2c_wasi__snapshot__preview1_fd_datasync(struct w2c_wasi__snapshot__preview1 *s, u32 fd) {
@@ -548,6 +574,57 @@ u32 w2c_wasi__snapshot__preview1_path_readlink(struct w2c_wasi__snapshot__previe
     return WASI_ESUCCESS;
 }
 
+#ifdef SANDBOX_THREADS
+// ---------------------------------------------------------------------------------------------------------------
+// Threads: wasi:thread-spawn starts an OS thread that runs the module's wasi_thread_start on an instance of its
+// own over the shared memory. A trap on any thread ends the process, like a crash of one Worker ends the tab.
+struct w2c_wasi { int unused; };
+static struct w2c_env env_imports;
+static struct w2c_wasi wasi_imports;
+static atomic_int next_tid = 1;
+
+typedef struct { u32 tid; wptr arg; } ThreadStart;
+
+static void *ThreadMain(void *p) {
+    ThreadStart start = *(ThreadStart *)p;
+    free(p);
+    wasm_rt_init_thread();
+    w2c_duckdb inst;
+    wasm2c_duckdb_instantiate(&inst, &env_imports, &wasi_imports, &sandbox);
+    wasm_rt_trap_t trap = (wasm_rt_trap_t)wasm_rt_impl_try();
+    if (trap != WASM_RT_TRAP_NONE) {
+        fprintf(stderr, "sandbox trapped (thread %u): %s\n", start.tid, wasm_rt_strerror(trap));
+        fflush(stderr);
+        _exit(3);
+    }
+    w2c_duckdb_wasi_thread_start(&inst, start.tid, start.arg);
+    wasm2c_duckdb_free(&inst);
+    wasm_rt_free_thread();
+    return NULL;
+}
+
+u32 w2c_wasi_thread0x2Dspawn(struct w2c_wasi *w, wptr arg) {
+    (void)w;
+    ThreadStart *start = malloc(sizeof *start);
+    if (!start) return (u32)-WASI_ENOMEM;
+    start->tid = (u32)atomic_fetch_add(&next_tid, 1) + 1;
+    start->arg = arg;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    // the translated code runs on the native stack of the thread, DuckDB recurses
+    pthread_attr_setstacksize(&attr, 16 << 20);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_t thread;
+    int rc = pthread_create(&thread, &attr, ThreadMain, start);
+    pthread_attr_destroy(&attr);
+    if (rc != 0) {
+        free(start);
+        return (u32)-WASI_EAGAIN;
+    }
+    return start->tid;
+}
+#endif
+
 // ---------------------------------------------------------------------------------------------------------------
 // The process
 static void Usage(void) {
@@ -593,10 +670,16 @@ int main(int argc, char **argv) {
     wasm_rt_init();
     w2c_duckdb inst;
     sandbox.inst = &inst;
+#ifdef SANDBOX_THREADS
+    // Within the limits the module declares for its import: 256 pages to start, 4 GB (16 GB for wasm64) at most
+    wasm_rt_allocate_memory_shared(&shared_memory, 256, PTR_SIZE == 8 ? 262144 : 65536, PTR_SIZE == 8, 65536);
+    wasm2c_duckdb_instantiate(&inst, &env_imports, &wasi_imports, &sandbox);
+#else
     wasm2c_duckdb_instantiate(&inst, &sandbox);
+#endif
     // The lowest page is the far end of the stack (wasi-sdk links --stack-first): inaccessible, a null
     // dereference or a stack overflow is an access fault, which the runtime's signal handler reports as a trap
-    if (mprotect(inst.w2c_memory.data, 65536, PROT_NONE) != 0) {
+    if (mprotect(MEM_DATA, 65536, PROT_NONE) != 0) {
         fprintf(stderr, "cannot protect the null page: %s\n", strerror(errno));
         return 2;
     }

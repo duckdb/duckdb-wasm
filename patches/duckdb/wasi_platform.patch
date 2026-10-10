@@ -51,3 +51,25 @@ index 6adc36a039..c126b8bbad 100644
  	// FIXME: Wasm + multithreads can likely be implemented as
  	//   return return (idx_t)std::hash<std::thread::id>()(std::this_thread::get_id());
  	return 0;
+diff --git a/third_party/concurrentqueue/lightweightsemaphore.h b/third_party/concurrentqueue/lightweightsemaphore.h
+index a0875a398a..d4f8734495 100644
+--- a/third_party/concurrentqueue/lightweightsemaphore.h
++++ b/third_party/concurrentqueue/lightweightsemaphore.h
+@@ -35,7 +35,7 @@ extern "C" {
+ }
+ #elif defined(__MACH__)
+ #include <mach/mach.h>
+-#elif defined(__unix__)
++#elif defined(__unix__) || defined(__wasi__)
+ #include <semaphore.h>
+ #include <chrono>
+ #elif defined(__MVS__)
+@@ -174,7 +174,7 @@ public:
+ 		}
+ 	}
+ };
+-#elif defined(__unix__) || defined(__MVS__)
++#elif defined(__unix__) || defined(__MVS__) || defined(__wasi__)
+ //---------------------------------------------------------
+ // Semaphore (POSIX, Linux, zOS aka MVS)
+ //---------------------------------------------------------

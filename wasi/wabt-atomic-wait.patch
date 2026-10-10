@@ -1,0 +1,405 @@
+diff --git a/src/c-writer.cc b/src/c-writer.cc
+index ef4a2bd..ebd8998 100644
+--- a/src/c-writer.cc
++++ b/src/c-writer.cc
+@@ -491,6 +491,8 @@ class CWriter {
+   void Write(const AtomicStoreExpr& expr);
+   void Write(const AtomicRmwExpr& expr);
+   void Write(const AtomicRmwCmpxchgExpr& expr);
++  void Write(const AtomicWaitExpr& expr);
++  void Write(const AtomicNotifyExpr& expr);
+ 
+   size_t BeginTry(const Block& block);
+   void WriteTryCatch(const TryExpr& tryexpr);
+@@ -3923,7 +3925,7 @@ void CWriter::Write(const ExprList& exprs) {
+         const auto inst = cast<MemoryFillExpr>(&expr);
+         Memory* memory =
+             module_->memories[module_->GetMemoryIndex(inst->memidx)];
+-        Write("memory_fill(",
++        Write(memory->page_limits.is_shared ? "memory_fill_shared(" : "memory_fill(",
+               ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ",
+               StackVar(2), ", ", StackVar(1), ", ", StackVar(0), ");",
+               Newline());
+@@ -3935,7 +3937,7 @@ void CWriter::Write(const ExprList& exprs) {
+         Memory* dest_memory =
+             module_->memories[module_->GetMemoryIndex(inst->destmemidx)];
+         const Memory* src_memory = module_->GetMemory(inst->srcmemidx);
+-        Write("memory_copy(",
++        Write(dest_memory->page_limits.is_shared ? "memory_copy_shared(" : "memory_copy(",
+               ExternalInstancePtr(ModuleFieldType::Memory, dest_memory->name),
+               ", ",
+               ExternalInstancePtr(ModuleFieldType::Memory, src_memory->name),
+@@ -3949,7 +3951,7 @@ void CWriter::Write(const ExprList& exprs) {
+         Memory* dest_memory =
+             module_->memories[module_->GetMemoryIndex(inst->memidx)];
+         const DataSegment* src_data = module_->GetDataSegment(inst->var);
+-        Write("memory_init(",
++        Write(dest_memory->page_limits.is_shared ? "memory_init_shared(" : "memory_init(",
+               ExternalInstancePtr(ModuleFieldType::Memory, dest_memory->name),
+               ", ");
+         if (src_data->data.empty()) {
+@@ -4407,8 +4409,14 @@ void CWriter::Write(const ExprList& exprs) {
+         return;
+       }
+ 
+-      case ExprType::AtomicWait:
+-      case ExprType::AtomicNotify:
++      case ExprType::AtomicWait: {
++        Write(*cast<AtomicWaitExpr>(&expr));
++        break;
++      }
++      case ExprType::AtomicNotify: {
++        Write(*cast<AtomicNotifyExpr>(&expr));
++        break;
++      }
+       case ExprType::CallRef:
+       case ExprType::ReturnCallRef:
+       case ExprType::Quaternary:
+@@ -6174,6 +6182,35 @@ void CWriter::Write(const AtomicRmwCmpxchgExpr& expr) {
+   PushType(result_type);
+ }
+ 
++void CWriter::Write(const AtomicWaitExpr& expr) {
++  Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
++  std::string func = expr.opcode == Opcode::MemoryAtomicWait64
++                         ? "memory_atomic_wait64"
++                         : "memory_atomic_wait32";
++  func = GetMemoryAPIString(*memory, func);
++  // operands: address, expected value, timeout; the result is i32
++  Write(StackVar(2, Type::I32), " = ", func,
++        "(wasm_rt_local_memory_base, wasm_rt_local_memory_size, ");
++  Write(ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ");
++  WriteMemoryAddress(2, memory, expr.offset);
++  Write(", ", StackVar(1), ", ", StackVar(0), ");", Newline());
++  DropTypes(3);
++  PushType(Type::I32);
++}
++
++void CWriter::Write(const AtomicNotifyExpr& expr) {
++  Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
++  std::string func = GetMemoryAPIString(*memory, "memory_atomic_notify");
++  // operands: address, count; the result is the number of waiters woken
++  Write(StackVar(1, Type::I32), " = ", func,
++        "(wasm_rt_local_memory_base, wasm_rt_local_memory_size, ");
++  Write(ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ");
++  WriteMemoryAddress(1, memory, expr.offset);
++  Write(", ", StackVar(0), ");", Newline());
++  DropTypes(2);
++  PushType(Type::I32);
++}
++
+ void CWriter::ReserveExportNames() {
+   for (const Export* export_ : module_->exports) {
+     ReserveExportName(export_->name);
+diff --git a/src/prebuilt/wasm2c_atomicops_source_declarations.cc b/src/prebuilt/wasm2c_atomicops_source_declarations.cc
+index 0bfe0cd..60c86a1 100644
+--- a/src/prebuilt/wasm2c_atomicops_source_declarations.cc
++++ b/src/prebuilt/wasm2c_atomicops_source_declarations.cc
+@@ -489,4 +489,134 @@ R"w2c_template(DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw_cmpxchg, u64, u64);
+ R"w2c_template(
+ #define atomic_fence() atomic_thread_fence(memory_order_seq_cst)
+ )w2c_template"
++R"w2c_template(
++/* memory.atomic.wait32/64 and memory.atomic.notify: the runtime provides the blocking (wasm-rt-atomics.c in
++)w2c_template"
++R"w2c_template( * the embedder); a wait on an unshared memory traps, a notify on one wakes nobody. */
++)w2c_template"
++R"w2c_template(int32_t wasm_rt_memory_atomic_wait32(wasm_rt_shared_memory_t* mem, u64 addr, u32 expected, int64_t timeout_ns);
++)w2c_template"
++R"w2c_template(int32_t wasm_rt_memory_atomic_wait64(wasm_rt_shared_memory_t* mem, u64 addr, u64 expected, int64_t timeout_ns);
++)w2c_template"
++R"w2c_template(u32 wasm_rt_memory_atomic_notify(wasm_rt_shared_memory_t* mem, u64 addr, u32 count);
++)w2c_template"
++R"w2c_template(
++#define DEFINE_ATOMIC_WAIT(name, t1, rt_call)                                      \
++)w2c_template"
++R"w2c_template(  static inline u32 name##_shared(uint8_t* const wasm_rt_local_memory_base,       \
++)w2c_template"
++R"w2c_template(                                  uint64_t wasm_rt_local_memory_size,             \
++)w2c_template"
++R"w2c_template(                                  wasm_rt_shared_memory_t* mem, u64 addr,         \
++)w2c_template"
++R"w2c_template(                                  t1 expected, u64 timeout) {                     \
++)w2c_template"
++R"w2c_template(    MEMCHECK_GENERAL(mem, addr, t1);                                              \
++)w2c_template"
++R"w2c_template(    ATOMIC_ALIGNMENT_CHECK(addr, t1);                                             \
++)w2c_template"
++R"w2c_template(    return (u32)rt_call(mem, addr, expected, (int64_t)timeout);                   \
++)w2c_template"
++R"w2c_template(  }                                                                               \
++)w2c_template"
++R"w2c_template(  static inline u32 name##_shared_default32(                                      \
++)w2c_template"
++R"w2c_template(      uint8_t* const wasm_rt_local_memory_base,                                   \
++)w2c_template"
++R"w2c_template(      uint64_t wasm_rt_local_memory_size, wasm_rt_shared_memory_t* mem,           \
++)w2c_template"
++R"w2c_template(      u64 addr, t1 expected, u64 timeout) {                                       \
++)w2c_template"
++R"w2c_template(    return name##_shared(wasm_rt_local_memory_base, wasm_rt_local_memory_size,    \
++)w2c_template"
++R"w2c_template(                         mem, addr, expected, timeout);                           \
++)w2c_template"
++R"w2c_template(  }                                                                               \
++)w2c_template"
++R"w2c_template(  static inline u32 name(uint8_t* const wasm_rt_local_memory_base,                \
++)w2c_template"
++R"w2c_template(                         uint64_t wasm_rt_local_memory_size,                      \
++)w2c_template"
++R"w2c_template(                         wasm_rt_memory_t* mem, u64 addr, t1 expected,            \
++)w2c_template"
++R"w2c_template(                         u64 timeout) {                                           \
++)w2c_template"
++R"w2c_template(    MEMCHECK_GENERAL(mem, addr, t1);                                              \
++)w2c_template"
++R"w2c_template(    TRAP(UNREACHABLE);                                                            \
++)w2c_template"
++R"w2c_template(  }                                                                               \
++)w2c_template"
++R"w2c_template(  static inline u32 name##_default32(uint8_t* const wasm_rt_local_memory_base,    \
++)w2c_template"
++R"w2c_template(                                     uint64_t wasm_rt_local_memory_size,          \
++)w2c_template"
++R"w2c_template(                                     wasm_rt_memory_t* mem, u64 addr,             \
++)w2c_template"
++R"w2c_template(                                     t1 expected, u64 timeout) {                  \
++)w2c_template"
++R"w2c_template(    return name(wasm_rt_local_memory_base, wasm_rt_local_memory_size, mem, addr,  \
++)w2c_template"
++R"w2c_template(                expected, timeout);                                               \
++)w2c_template"
++R"w2c_template(  }
++)w2c_template"
++R"w2c_template(
++DEFINE_ATOMIC_WAIT(memory_atomic_wait32, u32, wasm_rt_memory_atomic_wait32)
++)w2c_template"
++R"w2c_template(DEFINE_ATOMIC_WAIT(memory_atomic_wait64, u64, wasm_rt_memory_atomic_wait64)
++)w2c_template"
++R"w2c_template(
++static inline u32 memory_atomic_notify_shared(uint8_t* const wasm_rt_local_memory_base,
++)w2c_template"
++R"w2c_template(                                              uint64_t wasm_rt_local_memory_size,
++)w2c_template"
++R"w2c_template(                                              wasm_rt_shared_memory_t* mem, u64 addr,
++)w2c_template"
++R"w2c_template(                                              u32 count) {
++)w2c_template"
++R"w2c_template(  MEMCHECK_GENERAL(mem, addr, u32);
++)w2c_template"
++R"w2c_template(  ATOMIC_ALIGNMENT_CHECK(addr, u32);
++)w2c_template"
++R"w2c_template(  return wasm_rt_memory_atomic_notify(mem, addr, count);
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
++R"w2c_template(static inline u32 memory_atomic_notify_shared_default32(
++)w2c_template"
++R"w2c_template(    uint8_t* const wasm_rt_local_memory_base, uint64_t wasm_rt_local_memory_size,
++)w2c_template"
++R"w2c_template(    wasm_rt_shared_memory_t* mem, u64 addr, u32 count) {
++)w2c_template"
++R"w2c_template(  return memory_atomic_notify_shared(wasm_rt_local_memory_base,
++)w2c_template"
++R"w2c_template(                                     wasm_rt_local_memory_size, mem, addr, count);
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
++R"w2c_template(static inline u32 memory_atomic_notify(uint8_t* const wasm_rt_local_memory_base,
++)w2c_template"
++R"w2c_template(                                       uint64_t wasm_rt_local_memory_size,
++)w2c_template"
++R"w2c_template(                                       wasm_rt_memory_t* mem, u64 addr, u32 count) {
++)w2c_template"
++R"w2c_template(  MEMCHECK_GENERAL(mem, addr, u32);
++)w2c_template"
++R"w2c_template(  return 0;
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
++R"w2c_template(static inline u32 memory_atomic_notify_default32(
++)w2c_template"
++R"w2c_template(    uint8_t* const wasm_rt_local_memory_base, uint64_t wasm_rt_local_memory_size,
++)w2c_template"
++R"w2c_template(    wasm_rt_memory_t* mem, u64 addr, u32 count) {
++)w2c_template"
++R"w2c_template(  return memory_atomic_notify(wasm_rt_local_memory_base, wasm_rt_local_memory_size,
++)w2c_template"
++R"w2c_template(                              mem, addr, count);
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
+ ;
+diff --git a/src/prebuilt/wasm2c_source_declarations.cc b/src/prebuilt/wasm2c_source_declarations.cc
+index 1da5d1d..ca08b86 100644
+--- a/src/prebuilt/wasm2c_source_declarations.cc
++++ b/src/prebuilt/wasm2c_source_declarations.cc
+@@ -1305,6 +1305,55 @@ R"w2c_template(  LOAD_DATA((*dest), dest_addr, src + src_addr, n);
+ R"w2c_template(}
+ )w2c_template"
+ R"w2c_template(
++static inline void memory_fill_shared(wasm_rt_shared_memory_t* mem, u64 d, u32 val, u64 n) {
++)w2c_template"
++R"w2c_template(  RANGE_CHECK(mem, d, n);
++)w2c_template"
++R"w2c_template(  memset((void*)MEM_ADDR(mem, d, n), val, n);
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
++R"w2c_template(
++static inline void memory_copy_shared(wasm_rt_shared_memory_t* dest,
++)w2c_template"
++R"w2c_template(                                      const wasm_rt_shared_memory_t* src,
++)w2c_template"
++R"w2c_template(                                      u64 dest_addr,
++)w2c_template"
++R"w2c_template(                                      u64 src_addr,
++)w2c_template"
++R"w2c_template(                                      u64 n) {
++)w2c_template"
++R"w2c_template(  RANGE_CHECK(dest, dest_addr, n);
++)w2c_template"
++R"w2c_template(  RANGE_CHECK(src, src_addr, n);
++)w2c_template"
++R"w2c_template(  memmove((void*)MEM_ADDR(dest, dest_addr, n), (const void*)MEM_ADDR(src, src_addr, n), n);
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
++R"w2c_template(
++static inline void memory_init_shared(wasm_rt_shared_memory_t* dest,
++)w2c_template"
++R"w2c_template(                                      const u8* src,
++)w2c_template"
++R"w2c_template(                                      u32 src_size,
++)w2c_template"
++R"w2c_template(                                      u64 dest_addr,
++)w2c_template"
++R"w2c_template(                                      u32 src_addr,
++)w2c_template"
++R"w2c_template(                                      u32 n) {
++)w2c_template"
++R"w2c_template(  if (UNLIKELY(src_addr + (uint64_t)n > src_size))
++)w2c_template"
++R"w2c_template(    TRAP(OOB);
++)w2c_template"
++R"w2c_template(  LOAD_DATA((*dest), dest_addr, src + src_addr, n);
++)w2c_template"
++R"w2c_template(}
++)w2c_template"
++R"w2c_template(
+ typedef enum { RefFunc, RefNull, GlobalGet } wasm_elem_segment_expr_type_t;
+ )w2c_template"
+ R"w2c_template(
+diff --git a/src/template/wasm2c.declarations.c b/src/template/wasm2c.declarations.c
+index 19a8e85..4b6d218 100644
+--- a/src/template/wasm2c.declarations.c
++++ b/src/template/wasm2c.declarations.c
+@@ -695,6 +695,33 @@ static inline void memory_init(wasm_rt_memory_t* dest,
+   LOAD_DATA((*dest), dest_addr, src + src_addr, n);
+ }
+ 
++static inline void memory_fill_shared(wasm_rt_shared_memory_t* mem, u64 d, u32 val, u64 n) {
++  RANGE_CHECK(mem, d, n);
++  memset((void*)MEM_ADDR(mem, d, n), val, n);
++}
++
++static inline void memory_copy_shared(wasm_rt_shared_memory_t* dest,
++                                      const wasm_rt_shared_memory_t* src,
++                                      u64 dest_addr,
++                                      u64 src_addr,
++                                      u64 n) {
++  RANGE_CHECK(dest, dest_addr, n);
++  RANGE_CHECK(src, src_addr, n);
++  memmove((void*)MEM_ADDR(dest, dest_addr, n), (const void*)MEM_ADDR(src, src_addr, n), n);
++}
++
++static inline void memory_init_shared(wasm_rt_shared_memory_t* dest,
++                                      const u8* src,
++                                      u32 src_size,
++                                      u64 dest_addr,
++                                      u32 src_addr,
++                                      u32 n) {
++  if (UNLIKELY(src_addr + (uint64_t)n > src_size))
++    TRAP(OOB);
++  RANGE_CHECK(dest, dest_addr, n);
++  load_data((void*)MEM_ADDR(dest, dest_addr, n), src + src_addr, n);
++}
++
+ typedef enum { RefFunc, RefNull, GlobalGet } wasm_elem_segment_expr_type_t;
+ 
+ typedef struct {
+diff --git a/src/template/wasm2c_atomicops.declarations.c b/src/template/wasm2c_atomicops.declarations.c
+index d3ea511..c9473d2 100644
+--- a/src/template/wasm2c_atomicops.declarations.c
++++ b/src/template/wasm2c_atomicops.declarations.c
+@@ -254,3 +254,70 @@ DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw32_cmpxchg_u, u64, u32);
+ DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw_cmpxchg, u64, u64);
+ 
+ #define atomic_fence() atomic_thread_fence(memory_order_seq_cst)
++
++/* memory.atomic.wait32/64 and memory.atomic.notify: the runtime provides the blocking (wasm-rt-atomics.c in
++ * the embedder); a wait on an unshared memory traps, a notify on one wakes nobody. */
++int32_t wasm_rt_memory_atomic_wait32(wasm_rt_shared_memory_t* mem, u64 addr, u32 expected, int64_t timeout_ns);
++int32_t wasm_rt_memory_atomic_wait64(wasm_rt_shared_memory_t* mem, u64 addr, u64 expected, int64_t timeout_ns);
++u32 wasm_rt_memory_atomic_notify(wasm_rt_shared_memory_t* mem, u64 addr, u32 count);
++
++#define DEFINE_ATOMIC_WAIT(name, t1, rt_call)                                      \
++  static inline u32 name##_shared(uint8_t* const wasm_rt_local_memory_base,       \
++                                  uint64_t wasm_rt_local_memory_size,             \
++                                  wasm_rt_shared_memory_t* mem, u64 addr,         \
++                                  t1 expected, u64 timeout) {                     \
++    MEMCHECK_GENERAL(mem, addr, t1);                                              \
++    ATOMIC_ALIGNMENT_CHECK(addr, t1);                                             \
++    return (u32)rt_call(mem, addr, expected, (int64_t)timeout);                   \
++  }                                                                               \
++  static inline u32 name##_shared_default32(                                      \
++      uint8_t* const wasm_rt_local_memory_base,                                   \
++      uint64_t wasm_rt_local_memory_size, wasm_rt_shared_memory_t* mem,           \
++      u64 addr, t1 expected, u64 timeout) {                                       \
++    return name##_shared(wasm_rt_local_memory_base, wasm_rt_local_memory_size,    \
++                         mem, addr, expected, timeout);                           \
++  }                                                                               \
++  static inline u32 name(uint8_t* const wasm_rt_local_memory_base,                \
++                         uint64_t wasm_rt_local_memory_size,                      \
++                         wasm_rt_memory_t* mem, u64 addr, t1 expected,            \
++                         u64 timeout) {                                           \
++    MEMCHECK_GENERAL(mem, addr, t1);                                              \
++    TRAP(UNREACHABLE);                                                            \
++  }                                                                               \
++  static inline u32 name##_default32(uint8_t* const wasm_rt_local_memory_base,    \
++                                     uint64_t wasm_rt_local_memory_size,          \
++                                     wasm_rt_memory_t* mem, u64 addr,             \
++                                     t1 expected, u64 timeout) {                  \
++    return name(wasm_rt_local_memory_base, wasm_rt_local_memory_size, mem, addr,  \
++                expected, timeout);                                               \
++  }
++
++DEFINE_ATOMIC_WAIT(memory_atomic_wait32, u32, wasm_rt_memory_atomic_wait32)
++DEFINE_ATOMIC_WAIT(memory_atomic_wait64, u64, wasm_rt_memory_atomic_wait64)
++
++static inline u32 memory_atomic_notify_shared(uint8_t* const wasm_rt_local_memory_base,
++                                              uint64_t wasm_rt_local_memory_size,
++                                              wasm_rt_shared_memory_t* mem, u64 addr,
++                                              u32 count) {
++  MEMCHECK_GENERAL(mem, addr, u32);
++  ATOMIC_ALIGNMENT_CHECK(addr, u32);
++  return wasm_rt_memory_atomic_notify(mem, addr, count);
++}
++static inline u32 memory_atomic_notify_shared_default32(
++    uint8_t* const wasm_rt_local_memory_base, uint64_t wasm_rt_local_memory_size,
++    wasm_rt_shared_memory_t* mem, u64 addr, u32 count) {
++  return memory_atomic_notify_shared(wasm_rt_local_memory_base,
++                                     wasm_rt_local_memory_size, mem, addr, count);
++}
++static inline u32 memory_atomic_notify(uint8_t* const wasm_rt_local_memory_base,
++                                       uint64_t wasm_rt_local_memory_size,
++                                       wasm_rt_memory_t* mem, u64 addr, u32 count) {
++  MEMCHECK_GENERAL(mem, addr, u32);
++  return 0;
++}
++static inline u32 memory_atomic_notify_default32(
++    uint8_t* const wasm_rt_local_memory_base, uint64_t wasm_rt_local_memory_size,
++    wasm_rt_memory_t* mem, u64 addr, u32 count) {
++  return memory_atomic_notify(wasm_rt_local_memory_base, wasm_rt_local_memory_size,
++                              mem, addr, count);
++}
