@@ -80,8 +80,9 @@ case ${ENGINE} in
     ;;
   native*)
     mkdir -p "${DATA}"
-    # SANDBOX_ENV="NAME=VALUE ..." reaches the sandbox as its environment (e.g. MIMALLOC_SHOW_ERRORS=1)
-    ENV_ARGS=()
+    # SANDBOX_ENV="NAME=VALUE ..." reaches the sandbox as its environment (e.g. MIMALLOC_SHOW_ERRORS=1);
+    # SANDBOX_ARGS="--memory 24GB" are further host options
+    ENV_ARGS=(${SANDBOX_ARGS:-})
     for kv in ${SANDBOX_ENV:-}; do ENV_ARGS+=(--env "${kv}"); done
     "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;

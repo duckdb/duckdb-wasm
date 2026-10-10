@@ -69,11 +69,12 @@ old = """#define RANGE_CHECK(mem, offset, len)            \\
     if (UNLIKELY(res > (mem)->size))             \\
       TRAP(OOB);                                 \\
   } while (0);"""
-new = """/* DuckDB sandbox: the memory is reserved at its 16 GB maximum and inaccessible past its current size, so an
- * address below the cap (less the widest access) is either in bounds or faults into the trap handler */
+new = """/* DuckDB sandbox: a 64-bit memory is reserved at 64 GB (wasm-rt-mem-impl-helper.inc, whatever the cap) and
+ * inaccessible past its current size, so an address below the reservation (less the widest access) is either
+ * in bounds or faults into the trap handler */
 #define RANGE_CHECK(mem, offset, len)                                   \\
   do {                                                                  \\
-    if (UNLIKELY((uint64_t)(offset) >= (uint64_t)17179869184ull - 64)) \\
+    if (UNLIKELY((uint64_t)(offset) >= (uint64_t)68719476736ull - 64)) \\
       TRAP(OOB);                                                        \\
   } while (0);"""
 assert src.count(old) == 1, "RANGE_CHECK not found once in the generated header"

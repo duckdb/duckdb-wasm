@@ -63,6 +63,9 @@ bool MEMORY_API_NAME(wasm_rt_memory_is_default32)(const MEMORY_TYPE* memory) {
   return memory->page_size == WASM_DEFAULT_PAGE_SIZE && !memory->is64;
 }
 
+#ifndef WASM_RT_MEMORY64_RESERVATION
+#define WASM_RT_MEMORY64_RESERVATION (1ull << 36)
+#endif
 /* DuckDB sandbox: a memory with a declared maximum is reserved at that size and grown in place, so its base
  * never moves. wabt grows other memories with realloc. */
 static bool MEMORY_API_NAME(wasm_rt_memory_is_reserved)(const MEMORY_TYPE* memory) {
@@ -72,7 +75,11 @@ static uint64_t MEMORY_API_NAME(reserved_size)(const MEMORY_TYPE* memory) {
   if (MEMORY_API_NAME(wasm_rt_memory_is_default32)(memory)) {
     return get_alloc_size_for_mmap_default32(memory->max_pages);
   }
-  return memory->max_pages * memory->page_size;
+  uint64_t size = memory->max_pages * memory->page_size;
+  /* A 64-bit memory reserves at least 64 GB whatever its maximum, so that the tuned bounds check (one compare
+   * against 64 GB) stays sound for any cap the host picks: below the reservation is either mapped or a fault. */
+  if (memory->is64 && size < WASM_RT_MEMORY64_RESERVATION) size = WASM_RT_MEMORY64_RESERVATION;
+  return size;
 }
 
 void MEMORY_API_NAME(wasm_rt_allocate_memory)(MEMORY_TYPE* memory,

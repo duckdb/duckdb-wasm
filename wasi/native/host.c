@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
@@ -178,7 +179,8 @@ static bool PathOk(const char *path) {
     return true;
 }
 // Copies the guest path into a NUL-terminated host buffer, checking it
-static uint32_t GuestPath(uint32_t ptr, uint32_t len, char *out, size_t out_size) {
+// (pointers and lengths of the module are wptr: a uint32_t here truncated paths living above 4 GB)
+static uint32_t GuestPath(wptr ptr, wptr len, char *out, size_t out_size) {
     if (len + 1 > out_size) return WASI_ENAMETOOLONG;
     memcpy(out, Ptr(ptr, len), len);
     out[len] = 0;
@@ -196,7 +198,7 @@ static uint8_t FileType(mode_t mode) {
     return WASI_FILETYPE_UNKNOWN;
 }
 static uint64_t Nanos(struct timespec ts) { return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec; }
-static void StoreFilestat(uint32_t out, const struct stat *st) {
+static void StoreFilestat(wptr out, const struct stat *st) {
     StoreU64(out + 0, (uint64_t)st->st_dev);
     StoreU64(out + 8, (uint64_t)st->st_ino);
     StoreU8(out + 16, FileType(st->st_mode));
@@ -645,10 +647,23 @@ u32 w2c_wasi_thread0x2Dspawn(struct w2c_wasi *w, wptr arg) {
 // The process
 static void Usage(void) {
     fprintf(stderr,
-            "usage: duckdb_native [--dir host[::guest][:rw]]... [--env NAME=VALUE]... -- [runner arguments]\n"
-            "  --dir   preopen a host directory for the sandbox, read-only unless :rw is appended\n"
-            "  --env   an environment variable for the sandbox (it sees no other, e.g. MIMALLOC_SHOW_ERRORS=1)\n"
+            "usage: duckdb_native [--dir host[::guest][:rw]]... [--env NAME=VALUE]... [--memory SIZE] -- [runner arguments]\n"
+            "  --dir     preopen a host directory for the sandbox, read-only unless :rw is appended\n"
+            "  --env     an environment variable for the sandbox (it sees no other, e.g. MIMALLOC_SHOW_ERRORS=1)\n"
+            "  --memory  the most linear memory the sandbox may grow to, e.g. 24GB (default and maximum: 64GB for a\n"
+            "            64-bit module, 4GB for a 32-bit one; the module's own declared maximum does not apply)\n"
             "  the arguments after -- go to the SQL runner (-d database, -t, -q, -c sql)\n");
+}
+
+// "24GB", "512MB", "65536" (bytes); 0 when malformed
+static uint64_t ParseSize(const char *s) {
+    char *end;
+    unsigned long long v = strtoull(s, &end, 10);
+    if (end == s) return 0;
+    if (!strcasecmp(end, "GB") || !strcasecmp(end, "G")) return v << 30;
+    if (!strcasecmp(end, "MB") || !strcasecmp(end, "M")) return v << 20;
+    if (!strcasecmp(end, "KB") || !strcasecmp(end, "K")) return v << 10;
+    return *end ? 0 : v;
 }
 
 int main(int argc, char **argv) {
@@ -658,11 +673,21 @@ int main(int argc, char **argv) {
     sandbox.fds[2] = (FdEntry){2, false, true, NULL};
     static char *guest_envv[64];
     sandbox.envv = guest_envv;
+    // the memory cap: the address space for a 32-bit module, the runtime's 64 GB reservation for a 64-bit one
+    const uint64_t memory_max = PTR_SIZE == 8 ? (1ull << 36) : (1ull << 32);
+    uint64_t memory_cap = memory_max;
     int i = 1;
     for (; i < argc; i++) {
         if (!strcmp(argv[i], "--")) { i++; break; }
         if (!strcmp(argv[i], "--env") && i + 1 < argc && sandbox.envc < 64 && strchr(argv[i + 1], '=')) {
             guest_envv[sandbox.envc++] = argv[++i];
+        } else if (!strcmp(argv[i], "--memory") && i + 1 < argc) {
+            memory_cap = ParseSize(argv[++i]);
+            if (memory_cap < (1ull << 24) || memory_cap > memory_max || memory_cap % 65536) {
+                fprintf(stderr, "--memory: expected a multiple of 64 KB between 16MB and %lluGB\n",
+                        (unsigned long long)(memory_max >> 30));
+                return 2;
+            }
         } else if (!strcmp(argv[i], "--dir") && i + 1 < argc) {
             char *spec = strdup(argv[++i]);
             bool writable = false;
@@ -693,7 +718,7 @@ int main(int argc, char **argv) {
     sandbox.inst = &inst;
 #ifdef SANDBOX_THREADS
     // Within the limits the module declares for its import: 256 pages to start, 4 GB (16 GB for wasm64) at most
-    wasm_rt_allocate_memory_shared(&shared_memory, 256, PTR_SIZE == 8 ? 262144 : 65536, PTR_SIZE == 8, 65536);
+    wasm_rt_allocate_memory_shared(&shared_memory, 256, memory_cap / 65536, PTR_SIZE == 8, 65536);
     wasm2c_duckdb_instantiate(&inst, &env_imports, &wasi_imports, &sandbox);
 #else
     wasm2c_duckdb_instantiate(&inst, &sandbox);
