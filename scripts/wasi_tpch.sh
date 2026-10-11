@@ -28,7 +28,8 @@ SF=${2:-1}
 MEMORY_LIMIT=${3:-}
 STORAGE=${4:-external}
 CLI=${DUCKDB_CLI:-${HOME}/.duckdb/cli/2.0.0-alpha44357/duckdb}
-SPILL=${PROJECT_ROOT}/build/wasi/spill
+# SPILL_DIR overrides the spill directory, e.g. a RAM disk, for every engine alike
+SPILL=${SPILL_DIR:-${PROJECT_ROOT}/build/wasi/spill}
 DATA=${PROJECT_ROOT}/build/wasi/data
 if [ "${ENGINE}" = generate ]; then
   mkdir -p "${DATA}" && rm -f "${DATA}/tpch${SF}.db"

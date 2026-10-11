@@ -22,14 +22,17 @@ if [ -x "${WABT_SRC}/build/wasm2c" ]; then
   WASM2C=${WABT_SRC}/build/wasm2c
   WABT_INCLUDE=${WABT_SRC}/wasm2c
   RT=${WABT_SRC}/wasm2c
+  SIMDE_INCLUDE=${WABT_SRC}/third_party/simde
 else
   WASM2C=wasm2c
   WABT=${WABT_PREFIX:-/opt/homebrew}
   WABT_INCLUDE=${WABT}/include
   RT=${WABT}/share/wabt/wasm2c
+  SIMDE_INCLUDE=${WABT}/include
 fi
 OUT=${PROJECT_ROOT}/build/wasi/native
 HOST_FLAGS=""
+# the module uses wasm SIMD (scripts/wasi_build.sh); wasm2c has it on by default and maps it onto SIMDe, NEON here
 W2C_FLAGS=""
 LDLIBS=""
 if [ "${TARGET}" = wasm64 ]; then
@@ -52,6 +55,12 @@ OPT="-O2"
 if [ "${TUNED:-}" = 1 ]; then
   OUT=${OUT}-tuned
   OPT="-O3 -flto=thin -DWASM_RT_NONCONFORMING_UNCHECKED_STACK_EXHAUSTION=1"
+fi
+# PLAIN_SHARED=1: plain instead of relaxed-atomic accesses on the shared memory (wasi/wabt-atomic-wait.patch adds
+# the option to wasm2c's template); sound for a race-free module, into <out>-plain
+if [ "${PLAIN_SHARED:-}" = 1 ]; then
+  OUT=${OUT}-plain
+  HOST_FLAGS="${HOST_FLAGS} -DWASM_RT_NONCONFORMING_PLAIN_SHARED_ACCESS=1"
 fi
 MODULE=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${TARGET}.wasm
 mkdir -p "${OUT}/c" "${OUT}/o"
@@ -83,7 +92,7 @@ EOF_CHECK
 fi
 # Guard pages instead of bounds checks (64-bit host), a trap on stack exhaustion
 # The generated duckdb.h comes before any installed DuckDB C API header of the same name
-CFLAGS="${OPT} -w -I${OUT}/c -I${WABT_INCLUDE} -I${RT} -I${PROJECT_ROOT}/wasi/native/rt -DWASM_RT_USE_MMAP=1 -DWASM_RT_MEMCHECK_GUARD_PAGES=1 ${HOST_FLAGS}"
+CFLAGS="${OPT} -w -I${OUT}/c -I${WABT_INCLUDE} -I${SIMDE_INCLUDE} -I${RT} -I${PROJECT_ROOT}/wasi/native/rt -DWASM_RT_USE_MMAP=1 -DWASM_RT_MEMCHECK_GUARD_PAGES=1 ${HOST_FLAGS}"
 compile() {
   local o="${OUT}/o/$(basename "$1" .c).o"
   [ "${o}" -nt "$1" ] || clang ${CFLAGS} -c "$1" -o "${o}"

@@ -1,5 +1,5 @@
 diff --git a/src/c-writer.cc b/src/c-writer.cc
-index ef4a2bd..ebd8998 100644
+index ef4a2bd..1d59ec9 100644
 --- a/src/c-writer.cc
 +++ b/src/c-writer.cc
 @@ -491,6 +491,8 @@ class CWriter {
@@ -55,7 +55,44 @@ index ef4a2bd..ebd8998 100644
        case ExprType::CallRef:
        case ExprType::ReturnCallRef:
        case ExprType::Quaternary:
-@@ -6174,6 +6182,35 @@ void CWriter::Write(const AtomicRmwCmpxchgExpr& expr) {
+@@ -5919,7 +5927,8 @@ void CWriter::Write(const SimdLoadLaneExpr& expr) {
+   // clang-format on
+   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
+   Type result_type = expr.opcode.GetResultType();
+-  Write(StackVar(1, result_type), " = ", func, expr.val,
++  Write(StackVar(1, result_type), " = ",
++        GetMemoryAPIString(*memory, std::string(func) + std::to_string(expr.val)),
+         "(wasm_rt_local_memory_base, wasm_rt_local_memory_size, ");
+   Write(ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ");
+   WriteMemoryAddress(1, memory, expr.offset);
+@@ -5944,7 +5953,7 @@ void CWriter::Write(const SimdStoreLaneExpr& expr) {
+   // clang-format on
+   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
+ 
+-  Write(func, expr.val,
++  Write(GetMemoryAPIString(*memory, std::string(func) + std::to_string(expr.val)),
+         "(wasm_rt_local_memory_base, wasm_rt_local_memory_size, ");
+   Write(ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ");
+   WriteMemoryAddress(1, memory, expr.offset);
+@@ -5988,7 +5997,7 @@ void CWriter::Write(const LoadSplatExpr& expr) {
+   }
+   // clang-format on
+   Type result_type = expr.opcode.GetResultType();
+-  Write(StackVar(0, result_type), " = ", func,
++  Write(StackVar(0, result_type), " = ", GetMemoryAPIString(*memory, func),
+         "(wasm_rt_local_memory_base, wasm_rt_local_memory_size, ");
+   Write(ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ");
+   WriteMemoryAddress(0, memory, expr.offset);
+@@ -6012,7 +6021,7 @@ void CWriter::Write(const LoadZeroExpr& expr) {
+   // clang-format on
+ 
+   Type result_type = expr.opcode.GetResultType();
+-  Write(StackVar(0, result_type), " = ", func,
++  Write(StackVar(0, result_type), " = ", GetMemoryAPIString(*memory, func),
+         "(wasm_rt_local_memory_base, wasm_rt_local_memory_size, ");
+   Write(ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ");
+   WriteMemoryAddress(0, memory, expr.offset);
+@@ -6174,6 +6183,35 @@ void CWriter::Write(const AtomicRmwCmpxchgExpr& expr) {
    PushType(result_type);
  }
  
@@ -92,10 +129,79 @@ index ef4a2bd..ebd8998 100644
    for (const Export* export_ : module_->exports) {
      ReserveExportName(export_->name);
 diff --git a/src/prebuilt/wasm2c_atomicops_source_declarations.cc b/src/prebuilt/wasm2c_atomicops_source_declarations.cc
-index 0bfe0cd..60c86a1 100644
+index 0bfe0cd..87da061 100644
 --- a/src/prebuilt/wasm2c_atomicops_source_declarations.cc
 +++ b/src/prebuilt/wasm2c_atomicops_source_declarations.cc
-@@ -489,4 +489,134 @@ R"w2c_template(DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw_cmpxchg, u64, u64);
+@@ -17,7 +17,41 @@ R"w2c_template(    TRAP(UNALIGNED);                     \
+ R"w2c_template(  }
+ )w2c_template"
+ R"w2c_template(
+-#define DEFINE_SHARED_LOAD(name, t1, t2, t3, force_read)                      \
++// DuckDB sandbox: a plain wasm load or store on a shared memory is a relaxed atomic access here, which the
++)w2c_template"
++R"w2c_template(// C compiler can neither combine nor eliminate. WASM_RT_NONCONFORMING_PLAIN_SHARED_ACCESS makes them ordinary
++)w2c_template"
++R"w2c_template(// accesses instead: the module's own atomics stay atomic, so a race-free program behaves the same, and a racy
++)w2c_template"
++R"w2c_template(// one gets what a native compiler would give it.
++)w2c_template"
++R"w2c_template(#if WASM_RT_NONCONFORMING_PLAIN_SHARED_ACCESS
++)w2c_template"
++R"w2c_template(#define SHARED_LOAD_IMPL(result, t1, mem, addr) \
++)w2c_template"
++R"w2c_template(  wasm_rt_memcpy(&result, (const void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t1)), sizeof(t1))
++)w2c_template"
++R"w2c_template(#define SHARED_STORE_IMPL(t1, mem, addr, wrapped) \
++)w2c_template"
++R"w2c_template(  wasm_rt_memcpy((void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t1)), &wrapped, sizeof(t1))
++)w2c_template"
++R"w2c_template(#else
++)w2c_template"
++R"w2c_template(#define SHARED_LOAD_IMPL(result, t1, mem, addr)                               \
++)w2c_template"
++R"w2c_template(  result = atomic_load_explicit((_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)), \
++)w2c_template"
++R"w2c_template(                                memory_order_relaxed)
++)w2c_template"
++R"w2c_template(#define SHARED_STORE_IMPL(t1, mem, addr, wrapped)                                       \
++)w2c_template"
++R"w2c_template(  atomic_store_explicit((_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)), wrapped, \
++)w2c_template"
++R"w2c_template(                        memory_order_relaxed)
++)w2c_template"
++R"w2c_template(#endif
++)w2c_template"
++R"w2c_template(#define DEFINE_SHARED_LOAD(name, t1, t2, t3, force_read)                      \
+ )w2c_template"
+ R"w2c_template(  static inline t3 name##_unchecked(uint8_t* const wasm_rt_local_memory_base, \
+ )w2c_template"
+@@ -25,11 +59,7 @@ R"w2c_template(                                    wasm_rt_shared_memory_t* mem,
+ )w2c_template"
+ R"w2c_template(    t1 result;                                                                \
+ )w2c_template"
+-R"w2c_template(    result = atomic_load_explicit(                                            \
+-)w2c_template"
+-R"w2c_template(        (_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)),                \
+-)w2c_template"
+-R"w2c_template(        memory_order_relaxed);                                                \
++R"w2c_template(    SHARED_LOAD_IMPL(result, t1, mem, addr);                                  \
+ )w2c_template"
+ R"w2c_template(    t3 ret = (t3)(t2)result;                                                  \
+ )w2c_template"
+@@ -81,11 +111,7 @@ R"w2c_template(      u64 addr, t2 value) {
+ )w2c_template"
+ R"w2c_template(    t1 wrapped = (t1)value;                                                   \
+ )w2c_template"
+-R"w2c_template(    atomic_store_explicit(                                                    \
+-)w2c_template"
+-R"w2c_template(        (_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)), wrapped,       \
+-)w2c_template"
+-R"w2c_template(        memory_order_relaxed);                                                \
++R"w2c_template(    SHARED_STORE_IMPL(t1, mem, addr, wrapped);                                \
+ )w2c_template"
+ R"w2c_template(  }                                                                           \
+ )w2c_template"
+@@ -489,4 +515,134 @@ R"w2c_template(DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw_cmpxchg, u64, u64);
  R"w2c_template(
  #define atomic_fence() atomic_thread_fence(memory_order_seq_cst)
  )w2c_template"
@@ -230,11 +336,158 @@ index 0bfe0cd..60c86a1 100644
 +R"w2c_template(}
 +)w2c_template"
  ;
+diff --git a/src/prebuilt/wasm2c_simd_source_declarations.cc b/src/prebuilt/wasm2c_simd_source_declarations.cc
+index b1cd5f7..31df0f4 100644
+--- a/src/prebuilt/wasm2c_simd_source_declarations.cc
++++ b/src/prebuilt/wasm2c_simd_source_declarations.cc
+@@ -47,17 +47,23 @@ R"w2c_template(// defined and regular pointers otherwse. memcpy into the local w
+ )w2c_template"
+ R"w2c_template(// in both cases.
+ )w2c_template"
+-R"w2c_template(#define DEFINE_SIMD_LOAD_FUNC(name, func, t)                              \
++R"w2c_template(// DuckDB sandbox: every memory operation also exists on a shared memory (the C writer appends _shared), the
++)w2c_template"
++R"w2c_template(// SIMD ones were missing. A v128 access on a shared memory is a plain copy: it has no atomicity to offer.
++)w2c_template"
++R"w2c_template(#define DEFINE_SIMD_LOAD_FUNC_(name, func, t, shared)                     \
+ )w2c_template"
+ R"w2c_template(  static inline v128 name##_unchecked(                                    \
+ )w2c_template"
+-R"w2c_template(      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
++R"w2c_template(      uint8_t* const wasm_rt_local_memory_base,                           \
+ )w2c_template"
+-R"w2c_template(      u64 addr) {                                                         \
++R"w2c_template(      wasm_rt##shared##memory_t* mem, u64 addr) {                         \
+ )w2c_template"
+ R"w2c_template(    t simd_mem_value;                                                     \
+ )w2c_template"
+-R"w2c_template(    wasm_rt_memcpy(&simd_mem_value, MEM_ADDR_MEMOP(mem, addr, sizeof(t)), \
++R"w2c_template(    wasm_rt_memcpy(&simd_mem_value,                                       \
++)w2c_template"
++R"w2c_template(                   (const void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),     \
+ )w2c_template"
+ R"w2c_template(                   sizeof(t));                                            \
+ )w2c_template"
+@@ -69,20 +75,28 @@ R"w2c_template(    return result;
+ )w2c_template"
+ R"w2c_template(  }                                                                       \
+ )w2c_template"
+-R"w2c_template(  DEF_MEM_CHECKS0(name, _, t, return, v128);
++R"w2c_template(  DEF_MEM_CHECKS0(name, shared, t, return, v128);
++)w2c_template"
++R"w2c_template(#define DEFINE_SIMD_LOAD_FUNC(name, func, t)       \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_LOAD_FUNC_(name, func, t, _)         \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_LOAD_FUNC_(name##_shared, func, t, _shared_)
+ )w2c_template"
+ R"w2c_template(
+-#define DEFINE_SIMD_LOAD_LANE(name, func, t, lane)                        \
++#define DEFINE_SIMD_LOAD_LANE_(name, func, t, lane, shared)               \
+ )w2c_template"
+ R"w2c_template(  static inline v128 name##_unchecked(                                    \
+ )w2c_template"
+-R"w2c_template(      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
++R"w2c_template(      uint8_t* const wasm_rt_local_memory_base,                           \
+ )w2c_template"
+-R"w2c_template(      u64 addr, v128 vec) {                                               \
++R"w2c_template(      wasm_rt##shared##memory_t* mem, u64 addr, v128 vec) {               \
+ )w2c_template"
+ R"w2c_template(    t simd_mem_value;                                                     \
+ )w2c_template"
+-R"w2c_template(    wasm_rt_memcpy(&simd_mem_value, MEM_ADDR_MEMOP(mem, addr, sizeof(t)), \
++R"w2c_template(    wasm_rt_memcpy(&simd_mem_value,                                       \
++)w2c_template"
++R"w2c_template(                   (const void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),     \
+ )w2c_template"
+ R"w2c_template(                   sizeof(t));                                            \
+ )w2c_template"
+@@ -94,49 +108,67 @@ R"w2c_template(    return result;
+ )w2c_template"
+ R"w2c_template(  }                                                                       \
+ )w2c_template"
+-R"w2c_template(  DEF_MEM_CHECKS1(name, _, t, return, v128, v128);
++R"w2c_template(  DEF_MEM_CHECKS1(name, shared, t, return, v128, v128);
++)w2c_template"
++R"w2c_template(#define DEFINE_SIMD_LOAD_LANE(name, func, t, lane)       \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_LOAD_LANE_(name, func, t, lane, _)         \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_LOAD_LANE_(name##_shared, func, t, lane, _shared_)
+ )w2c_template"
+ R"w2c_template(
+-#define DEFINE_SIMD_STORE(name, t)                                        \
++#define DEFINE_SIMD_STORE_(name, t, shared)                               \
+ )w2c_template"
+ R"w2c_template(  static inline void name##_unchecked(                                    \
+ )w2c_template"
+-R"w2c_template(      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
++R"w2c_template(      uint8_t* const wasm_rt_local_memory_base,                           \
+ )w2c_template"
+-R"w2c_template(      u64 addr, v128 value) {                                             \
++R"w2c_template(      wasm_rt##shared##memory_t* mem, u64 addr, v128 value) {             \
+ )w2c_template"
+ R"w2c_template(    t simd_mem_value;                                                     \
+ )w2c_template"
+ R"w2c_template(    simde_wasm_v128_store(&simd_mem_value, value);                        \
+ )w2c_template"
+-R"w2c_template(    wasm_rt_memcpy(MEM_ADDR_MEMOP(mem, addr, sizeof(t)), &simd_mem_value, \
++R"w2c_template(    wasm_rt_memcpy((void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),           \
+ )w2c_template"
+-R"w2c_template(                   sizeof(t));                                            \
++R"w2c_template(                   &simd_mem_value, sizeof(t));                           \
+ )w2c_template"
+ R"w2c_template(  }                                                                       \
+ )w2c_template"
+-R"w2c_template(  DEF_MEM_CHECKS1(name, _, t, , void, v128);
++R"w2c_template(  DEF_MEM_CHECKS1(name, shared, t, , void, v128);
++)w2c_template"
++R"w2c_template(#define DEFINE_SIMD_STORE(name, t)       \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_STORE_(name, t, _)         \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_STORE_(name##_shared, t, _shared_)
+ )w2c_template"
+ R"w2c_template(
+-#define DEFINE_SIMD_STORE_LANE(name, func, t, lane)                       \
++#define DEFINE_SIMD_STORE_LANE_(name, func, t, lane, shared)              \
+ )w2c_template"
+ R"w2c_template(  static inline void name##_unchecked(                                    \
+ )w2c_template"
+-R"w2c_template(      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
++R"w2c_template(      uint8_t* const wasm_rt_local_memory_base,                           \
+ )w2c_template"
+-R"w2c_template(      u64 addr, v128 value) {                                             \
++R"w2c_template(      wasm_rt##shared##memory_t* mem, u64 addr, v128 value) {             \
+ )w2c_template"
+ R"w2c_template(    t simd_mem_value;                                                     \
+ )w2c_template"
+ R"w2c_template(    func(&simd_mem_value, value, lane);                                   \
+ )w2c_template"
+-R"w2c_template(    wasm_rt_memcpy(MEM_ADDR_MEMOP(mem, addr, sizeof(t)), &simd_mem_value, \
++R"w2c_template(    wasm_rt_memcpy((void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),           \
+ )w2c_template"
+-R"w2c_template(                   sizeof(t));                                            \
++R"w2c_template(                   &simd_mem_value, sizeof(t));                           \
+ )w2c_template"
+ R"w2c_template(  }                                                                       \
+ )w2c_template"
+-R"w2c_template(  DEF_MEM_CHECKS1(name, _, t, , void, v128);
++R"w2c_template(  DEF_MEM_CHECKS1(name, shared, t, , void, v128);
++)w2c_template"
++R"w2c_template(#define DEFINE_SIMD_STORE_LANE(name, func, t, lane)       \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_STORE_LANE_(name, func, t, lane, _)         \
++)w2c_template"
++R"w2c_template(  DEFINE_SIMD_STORE_LANE_(name##_shared, func, t, lane, _shared_)
+ )w2c_template"
+ R"w2c_template(
+ // clang-format off
 diff --git a/src/prebuilt/wasm2c_source_declarations.cc b/src/prebuilt/wasm2c_source_declarations.cc
-index 1da5d1d..ca08b86 100644
+index 1da5d1d..ee3e867 100644
 --- a/src/prebuilt/wasm2c_source_declarations.cc
 +++ b/src/prebuilt/wasm2c_source_declarations.cc
-@@ -1305,6 +1305,55 @@ R"w2c_template(  LOAD_DATA((*dest), dest_addr, src + src_addr, n);
+@@ -1305,6 +1305,57 @@ R"w2c_template(  LOAD_DATA((*dest), dest_addr, src + src_addr, n);
  R"w2c_template(}
  )w2c_template"
  R"w2c_template(
@@ -282,7 +535,9 @@ index 1da5d1d..ca08b86 100644
 +)w2c_template"
 +R"w2c_template(    TRAP(OOB);
 +)w2c_template"
-+R"w2c_template(  LOAD_DATA((*dest), dest_addr, src + src_addr, n);
++R"w2c_template(  RANGE_CHECK(dest, dest_addr, n);
++)w2c_template"
++R"w2c_template(  load_data((void*)MEM_ADDR(dest, dest_addr, n), src + src_addr, n);
 +)w2c_template"
 +R"w2c_template(}
 +)w2c_template"
@@ -329,10 +584,53 @@ index 19a8e85..4b6d218 100644
  
  typedef struct {
 diff --git a/src/template/wasm2c_atomicops.declarations.c b/src/template/wasm2c_atomicops.declarations.c
-index d3ea511..c9473d2 100644
+index d3ea511..2d5a8be 100644
 --- a/src/template/wasm2c_atomicops.declarations.c
 +++ b/src/template/wasm2c_atomicops.declarations.c
-@@ -254,3 +254,70 @@ DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw32_cmpxchg_u, u64, u32);
+@@ -9,13 +9,28 @@
+     TRAP(UNALIGNED);                     \
+   }
+ 
++// DuckDB sandbox: a plain wasm load or store on a shared memory is a relaxed atomic access here, which the
++// C compiler can neither combine nor eliminate. WASM_RT_NONCONFORMING_PLAIN_SHARED_ACCESS makes them ordinary
++// accesses instead: the module's own atomics stay atomic, so a race-free program behaves the same, and a racy
++// one gets what a native compiler would give it.
++#if WASM_RT_NONCONFORMING_PLAIN_SHARED_ACCESS
++#define SHARED_LOAD_IMPL(result, t1, mem, addr) \
++  wasm_rt_memcpy(&result, (const void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t1)), sizeof(t1))
++#define SHARED_STORE_IMPL(t1, mem, addr, wrapped) \
++  wasm_rt_memcpy((void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t1)), &wrapped, sizeof(t1))
++#else
++#define SHARED_LOAD_IMPL(result, t1, mem, addr)                               \
++  result = atomic_load_explicit((_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)), \
++                                memory_order_relaxed)
++#define SHARED_STORE_IMPL(t1, mem, addr, wrapped)                                       \
++  atomic_store_explicit((_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)), wrapped, \
++                        memory_order_relaxed)
++#endif
+ #define DEFINE_SHARED_LOAD(name, t1, t2, t3, force_read)                      \
+   static inline t3 name##_unchecked(uint8_t* const wasm_rt_local_memory_base, \
+                                     wasm_rt_shared_memory_t* mem, u64 addr) { \
+     t1 result;                                                                \
+-    result = atomic_load_explicit(                                            \
+-        (_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)),                \
+-        memory_order_relaxed);                                                \
++    SHARED_LOAD_IMPL(result, t1, mem, addr);                                  \
+     t3 ret = (t3)(t2)result;                                                  \
+     force_read(ret);                                                          \
+     return ret;                                                               \
+@@ -42,9 +57,7 @@ DEFINE_SHARED_LOAD(i64_load32_u_shared, u32, u64, u64, FORCE_READ_INT)
+       uint8_t* const wasm_rt_local_memory_base, wasm_rt_shared_memory_t* mem, \
+       u64 addr, t2 value) {                                                   \
+     t1 wrapped = (t1)value;                                                   \
+-    atomic_store_explicit(                                                    \
+-        (_Atomic volatile t1*)MEM_ADDR(mem, addr, sizeof(t1)), wrapped,       \
+-        memory_order_relaxed);                                                \
++    SHARED_STORE_IMPL(t1, mem, addr, wrapped);                                \
+   }                                                                           \
+   DEF_MEM_CHECKS1(name, _shared_, t1, , void, t2)
+ 
+@@ -254,3 +267,70 @@ DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw32_cmpxchg_u, u64, u32);
  DEFINE_ATOMIC_CMP_XCHG(i64_atomic_rmw_cmpxchg, u64, u64);
  
  #define atomic_fence() atomic_thread_fence(memory_order_seq_cst)
@@ -403,3 +701,99 @@ index d3ea511..c9473d2 100644
 +  return memory_atomic_notify(wasm_rt_local_memory_base, wasm_rt_local_memory_size,
 +                              mem, addr, count);
 +}
+diff --git a/src/template/wasm2c_simd.declarations.c b/src/template/wasm2c_simd.declarations.c
+index 0de5500..d23c638 100644
+--- a/src/template/wasm2c_simd.declarations.c
++++ b/src/template/wasm2c_simd.declarations.c
+@@ -23,53 +23,69 @@
+ // MEM_ADDR_MEMOP maybe segment pointers if WASM_RT_USE_SEGUE_FOR_THIS_MODULE is
+ // defined and regular pointers otherwse. memcpy into the local works correctly
+ // in both cases.
+-#define DEFINE_SIMD_LOAD_FUNC(name, func, t)                              \
++// DuckDB sandbox: every memory operation also exists on a shared memory (the C writer appends _shared), the
++// SIMD ones were missing. A v128 access on a shared memory is a plain copy: it has no atomicity to offer.
++#define DEFINE_SIMD_LOAD_FUNC_(name, func, t, shared)                     \
+   static inline v128 name##_unchecked(                                    \
+-      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
+-      u64 addr) {                                                         \
++      uint8_t* const wasm_rt_local_memory_base,                           \
++      wasm_rt##shared##memory_t* mem, u64 addr) {                         \
+     t simd_mem_value;                                                     \
+-    wasm_rt_memcpy(&simd_mem_value, MEM_ADDR_MEMOP(mem, addr, sizeof(t)), \
++    wasm_rt_memcpy(&simd_mem_value,                                       \
++                   (const void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),     \
+                    sizeof(t));                                            \
+     v128 result = func(&simd_mem_value);                                  \
+     SIMD_FORCE_READ(result);                                              \
+     return result;                                                        \
+   }                                                                       \
+-  DEF_MEM_CHECKS0(name, _, t, return, v128);
++  DEF_MEM_CHECKS0(name, shared, t, return, v128);
++#define DEFINE_SIMD_LOAD_FUNC(name, func, t)       \
++  DEFINE_SIMD_LOAD_FUNC_(name, func, t, _)         \
++  DEFINE_SIMD_LOAD_FUNC_(name##_shared, func, t, _shared_)
+ 
+-#define DEFINE_SIMD_LOAD_LANE(name, func, t, lane)                        \
++#define DEFINE_SIMD_LOAD_LANE_(name, func, t, lane, shared)               \
+   static inline v128 name##_unchecked(                                    \
+-      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
+-      u64 addr, v128 vec) {                                               \
++      uint8_t* const wasm_rt_local_memory_base,                           \
++      wasm_rt##shared##memory_t* mem, u64 addr, v128 vec) {               \
+     t simd_mem_value;                                                     \
+-    wasm_rt_memcpy(&simd_mem_value, MEM_ADDR_MEMOP(mem, addr, sizeof(t)), \
++    wasm_rt_memcpy(&simd_mem_value,                                       \
++                   (const void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),     \
+                    sizeof(t));                                            \
+     v128 result = func(&simd_mem_value, vec, lane);                       \
+     SIMD_FORCE_READ(result);                                              \
+     return result;                                                        \
+   }                                                                       \
+-  DEF_MEM_CHECKS1(name, _, t, return, v128, v128);
++  DEF_MEM_CHECKS1(name, shared, t, return, v128, v128);
++#define DEFINE_SIMD_LOAD_LANE(name, func, t, lane)       \
++  DEFINE_SIMD_LOAD_LANE_(name, func, t, lane, _)         \
++  DEFINE_SIMD_LOAD_LANE_(name##_shared, func, t, lane, _shared_)
+ 
+-#define DEFINE_SIMD_STORE(name, t)                                        \
++#define DEFINE_SIMD_STORE_(name, t, shared)                               \
+   static inline void name##_unchecked(                                    \
+-      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
+-      u64 addr, v128 value) {                                             \
++      uint8_t* const wasm_rt_local_memory_base,                           \
++      wasm_rt##shared##memory_t* mem, u64 addr, v128 value) {             \
+     t simd_mem_value;                                                     \
+     simde_wasm_v128_store(&simd_mem_value, value);                        \
+-    wasm_rt_memcpy(MEM_ADDR_MEMOP(mem, addr, sizeof(t)), &simd_mem_value, \
+-                   sizeof(t));                                            \
++    wasm_rt_memcpy((void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),           \
++                   &simd_mem_value, sizeof(t));                           \
+   }                                                                       \
+-  DEF_MEM_CHECKS1(name, _, t, , void, v128);
++  DEF_MEM_CHECKS1(name, shared, t, , void, v128);
++#define DEFINE_SIMD_STORE(name, t)       \
++  DEFINE_SIMD_STORE_(name, t, _)         \
++  DEFINE_SIMD_STORE_(name##_shared, t, _shared_)
+ 
+-#define DEFINE_SIMD_STORE_LANE(name, func, t, lane)                       \
++#define DEFINE_SIMD_STORE_LANE_(name, func, t, lane, shared)              \
+   static inline void name##_unchecked(                                    \
+-      uint8_t* const wasm_rt_local_memory_base, wasm_rt_memory_t* mem,    \
+-      u64 addr, v128 value) {                                             \
++      uint8_t* const wasm_rt_local_memory_base,                           \
++      wasm_rt##shared##memory_t* mem, u64 addr, v128 value) {             \
+     t simd_mem_value;                                                     \
+     func(&simd_mem_value, value, lane);                                   \
+-    wasm_rt_memcpy(MEM_ADDR_MEMOP(mem, addr, sizeof(t)), &simd_mem_value, \
+-                   sizeof(t));                                            \
++    wasm_rt_memcpy((void*)MEM_ADDR_MEMOP(mem, addr, sizeof(t)),           \
++                   &simd_mem_value, sizeof(t));                           \
+   }                                                                       \
+-  DEF_MEM_CHECKS1(name, _, t, , void, v128);
++  DEF_MEM_CHECKS1(name, shared, t, , void, v128);
++#define DEFINE_SIMD_STORE_LANE(name, func, t, lane)       \
++  DEFINE_SIMD_STORE_LANE_(name, func, t, lane, _)         \
++  DEFINE_SIMD_STORE_LANE_(name##_shared, func, t, lane, _shared_)
+ 
+ // clang-format off
+ #if WABT_BIG_ENDIAN

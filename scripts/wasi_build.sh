@@ -53,6 +53,9 @@ if [ "${EH}" = host ] || [ "${EH}" = hostthreads ]; then
 fi
 # wasi-libc emulates what the sandbox has no business doing for real
 EMULATED="-D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_GETPID"
+# wasm SIMD: without it nothing in the module vectorizes, while the native build gets NEON everywhere; wasm2c
+# translates it through SIMDe (--enable-simd) and wasmtime runs it. SIMD_FLAGS="" builds the scalar module.
+SIMD_FLAGS=${SIMD_FLAGS--msimd128}
 EMULATED_LIBS="-lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks -lwasi-emulated-getpid"
 
 TOOLCHAIN=("-DCMAKE_TOOLCHAIN_FILE=${SDK}/share/cmake/wasi-sdk-p1.cmake")
@@ -120,8 +123,8 @@ cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
   -DENABLE_JEMALLOC=OFF -DBUILD_SHELL=FALSE -DBUILD_UNITTESTS=FALSE \
   -DDUCKDB_CAPABILITIES=none -DENABLE_BUILTIN_HTTPLIB=OFF \
   -DDUCKDB_EXPLICIT_PLATFORM=wasm_wasi \
-  -DCMAKE_CXX_FLAGS="${EH_FLAGS} ${CXX_EXTRA} ${THREAD_FLAGS} ${EMULATED} -Wno-unqualified-std-cast-call" \
-  -DCMAKE_C_FLAGS="${EMULATED} ${THREAD_FLAGS}" \
+  -DCMAKE_CXX_FLAGS="${EH_FLAGS} ${CXX_EXTRA} ${THREAD_FLAGS} ${SIMD_FLAGS} ${EMULATED} -Wno-unqualified-std-cast-call" \
+  -DCMAKE_C_FLAGS="${EMULATED} ${THREAD_FLAGS} ${SIMD_FLAGS}" \
   -DCMAKE_EXE_LINKER_FLAGS="-fwasm-exceptions -lunwind ${LINK_EXTRA}"
 # The loadable extension targets do not link (no --version-script in wasm-ld) and are not wanted
 cmake --build "${BUILD_DIR}" --target duckdb_static duckdb_cpp_api parquet_extension tpch_extension \
@@ -135,7 +138,7 @@ OUT=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${EH}.wasm
 # 8 MB of stack like a native process, up to the 4 GB a 32-bit sandbox can address. wasi-sdk places the stack
 # first, so the lowest page of memory is the far end of the stack: a host can make it inaccessible, and a null
 # dereference (or a stack overflow) traps instead of landing in linear memory
-"${SDK}/bin/clang++" ${TARGET_FLAGS} -O2 ${EH_FLAGS} ${THREAD_FLAGS} ${EMULATED} \
+"${SDK}/bin/clang++" ${TARGET_FLAGS} -O2 ${EH_FLAGS} ${THREAD_FLAGS} ${SIMD_FLAGS} ${EMULATED} \
   -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
   "${PROJECT_ROOT}/wasi/wasi_compat.c" \
   ${MIMALLOC_LIBS} ${EXTENSIONS} ${LIBS} ${LIBS} -lunwind ${EMULATED_LIBS} \
