@@ -116,6 +116,9 @@ struct w2c_wasi__snapshot__preview1 {
 };
 
 static struct w2c_wasi__snapshot__preview1 sandbox;
+// the HTTP relay's import module (see the HTTP section below)
+struct w2c_sandbox__http { int unused; };
+static struct w2c_sandbox__http sandbox_http;
 
 #ifdef SANDBOX_THREADS
 // The threads module imports its memory: one shared memory the host owns, the instance of every thread maps it
@@ -608,7 +611,7 @@ static void *ThreadMain(void *p) {
     free(p);
     wasm_rt_init_thread();
     w2c_duckdb inst;
-    wasm2c_duckdb_instantiate(&inst, &env_imports, &wasi_imports, &sandbox);
+    wasm2c_duckdb_instantiate(&inst, &env_imports, &sandbox_http, &wasi_imports, &sandbox);
     wasm_rt_trap_t trap = (wasm_rt_trap_t)wasm_rt_impl_try();
     if (trap != WASM_RT_TRAP_NONE) {
         fprintf(stderr, "sandbox trapped (thread %u): %s\n", start.tid, wasm_rt_strerror(trap));
@@ -644,6 +647,52 @@ u32 w2c_wasi_thread0x2Dspawn(struct w2c_wasi *w, wptr arg) {
 #endif
 
 // ---------------------------------------------------------------------------------------------------------------
+// HTTP: the module's "sandbox_http" imports (wasi/http_client.cpp), served by the relay of wasi/native/relay
+// (Rust: rustls, policy, no pointer of the host ever visible to the module). Built without SANDBOX_HTTP the
+// functions exist but every request fails: the module links either way.
+#ifdef SANDBOX_HTTP
+int32_t relay_allow(const char *spec);
+void relay_set_max_response(uint64_t bytes);
+int32_t relay_request(const uint8_t *data, size_t len);
+int32_t relay_status(int32_t id);
+int64_t relay_headers(int32_t id, uint8_t *buf, size_t cap);
+int64_t relay_read(int32_t id, uint8_t *buf, size_t cap);
+int64_t relay_error(int32_t id, uint8_t *buf, size_t cap);
+void relay_close(int32_t id);
+u32 w2c_sandbox__http_request(struct w2c_sandbox__http *s, wptr req, wptr len) {
+    (void)s;
+    return (u32)relay_request(Ptr(req, len), (size_t)len);
+}
+u32 w2c_sandbox__http_status(struct w2c_sandbox__http *s, u32 id) { (void)s; return (u32)relay_status((int32_t)id); }
+u64 w2c_sandbox__http_headers(struct w2c_sandbox__http *s, u32 id, wptr buf, wptr cap) {
+    (void)s;
+    return (u64)relay_headers((int32_t)id, Ptr(buf, cap), (size_t)cap);
+}
+u64 w2c_sandbox__http_read(struct w2c_sandbox__http *s, u32 id, wptr buf, wptr cap) {
+    (void)s;
+    return (u64)relay_read((int32_t)id, Ptr(buf, cap), (size_t)cap);
+}
+u64 w2c_sandbox__http_error(struct w2c_sandbox__http *s, u32 id, wptr buf, wptr cap) {
+    (void)s;
+    return (u64)relay_error((int32_t)id, Ptr(buf, cap), (size_t)cap);
+}
+void w2c_sandbox__http_close(struct w2c_sandbox__http *s, u32 id) { (void)s; relay_close((int32_t)id); }
+#else
+static const char no_relay[] = "this host has no HTTP relay";
+u32 w2c_sandbox__http_request(struct w2c_sandbox__http *s, wptr req, wptr len) { (void)s; Ptr(req, len); return (u32)-1; }
+u32 w2c_sandbox__http_status(struct w2c_sandbox__http *s, u32 id) { (void)s; (void)id; return (u32)-1; }
+u64 w2c_sandbox__http_headers(struct w2c_sandbox__http *s, u32 id, wptr buf, wptr cap) { (void)s; (void)id; Ptr(buf, cap); return (u64)-1; }
+u64 w2c_sandbox__http_read(struct w2c_sandbox__http *s, u32 id, wptr buf, wptr cap) { (void)s; (void)id; Ptr(buf, cap); return (u64)-1; }
+u64 w2c_sandbox__http_error(struct w2c_sandbox__http *s, u32 id, wptr buf, wptr cap) {
+    (void)s; (void)id;
+    size_t n = sizeof no_relay - 1;
+    if (cap > 0) memcpy(Ptr(buf, cap < n ? cap : n), no_relay, cap < n ? cap : n);
+    return (u64)n;
+}
+void w2c_sandbox__http_close(struct w2c_sandbox__http *s, u32 id) { (void)s; (void)id; }
+#endif
+
+// ---------------------------------------------------------------------------------------------------------------
 // The process
 static void Usage(void) {
     fprintf(stderr,
@@ -652,6 +701,9 @@ static void Usage(void) {
             "  --env     an environment variable for the sandbox (it sees no other, e.g. MIMALLOC_SHOW_ERRORS=1)\n"
             "  --memory  the most linear memory the sandbox may grow to, e.g. 24GB (default and maximum: 64GB for a\n"
             "            64-bit module, 4GB for a 32-bit one; the module's own declared maximum does not apply)\n"
+            "  --http-allow  an origin httpfs may reach through the host's relay (https unless http:// is given,\n"
+            "                *.domain for subdomains); without any, the sandbox has no network\n"
+            "  --http-max-response  the most bytes one response may carry (default 1TB)\n"
             "  the arguments after -- go to the SQL runner (-d database, -t, -q, -c sql)\n");
 }
 
@@ -681,6 +733,21 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "--")) { i++; break; }
         if (!strcmp(argv[i], "--env") && i + 1 < argc && sandbox.envc < 64 && strchr(argv[i + 1], '=')) {
             guest_envv[sandbox.envc++] = argv[++i];
+        } else if (!strcmp(argv[i], "--http-allow") && i + 1 < argc) {
+#ifdef SANDBOX_HTTP
+            if (relay_allow(argv[++i]) != 0) { fprintf(stderr, "--http-allow: malformed origin %s\n", argv[i]); return 2; }
+#else
+            fprintf(stderr, "--http-allow: this host was built without the HTTP relay (SANDBOX_HTTP=1)\n");
+            return 2;
+#endif
+        } else if (!strcmp(argv[i], "--http-max-response") && i + 1 < argc) {
+#ifdef SANDBOX_HTTP
+            uint64_t n = ParseSize(argv[++i]);
+            if (n == 0) { fprintf(stderr, "--http-max-response: malformed size\n"); return 2; }
+            relay_set_max_response(n);
+#else
+            i++;
+#endif
         } else if (!strcmp(argv[i], "--memory") && i + 1 < argc) {
             memory_cap = ParseSize(argv[++i]);
             if (memory_cap < (1ull << 24) || memory_cap > memory_max || memory_cap % 65536) {
@@ -719,9 +786,9 @@ int main(int argc, char **argv) {
 #ifdef SANDBOX_THREADS
     // Within the limits the module declares for its import: 256 pages to start, 4 GB (16 GB for wasm64) at most
     wasm_rt_allocate_memory_shared(&shared_memory, 256, memory_cap / 65536, PTR_SIZE == 8, 65536);
-    wasm2c_duckdb_instantiate(&inst, &env_imports, &wasi_imports, &sandbox);
+    wasm2c_duckdb_instantiate(&inst, &env_imports, &sandbox_http, &wasi_imports, &sandbox);
 #else
-    wasm2c_duckdb_instantiate(&inst, &sandbox);
+    wasm2c_duckdb_instantiate(&inst, &sandbox_http, &sandbox);
 #endif
     // The lowest page is the far end of the stack (wasi-sdk links --stack-first): inaccessible, a null
     // dereference or a stack overflow is an access fault, which the runtime's signal handler reports as a trap

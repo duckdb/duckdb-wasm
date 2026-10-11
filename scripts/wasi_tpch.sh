@@ -20,6 +20,7 @@
 #   external (default) build/wasi/data/tpch<sf>.db, generated outside the sandbox and handed to it read-only
 #   memory   dbgen into an in-memory database first (timed too), disk: dbgen into a file in the spill directory
 #   parquet  views over build/wasi/data/parquet<sf>/*.parquet in an in-memory database (the decode cost)
+#   http     the same over HTTP_BASE (default http://127.0.0.1:8765, an nginx on build/wasi/data): httpfs + relay
 #
 # e.g. scripts/wasi_tpch.sh wasmtime 1 300MB   -- SF 1 with spilling; an empty memory_limit means no limit
 set -euo pipefail
@@ -67,13 +68,18 @@ if [ -n "${MEMORY_LIMIT}" ]; then
   SETUP="${SETUP}; SET memory_limit = '${MEMORY_LIMIT}'"
 fi
 STATEMENTS=(-c "${SETUP}")
-# parquet: an in-memory database with the TPC-H tables as views over the parquet files (generate-parquet <sf>)
-if [ "${STORAGE}" = parquet ]; then
+# parquet: an in-memory database with the TPC-H tables as views over the parquet files (generate-parquet <sf>);
+# http: the same files over HTTP (HTTP_BASE, default the nginx of scripts/wasi_http_server.sh on build/wasi/data), httpfs
+# inside the engine, the sandbox reaching it through the host's relay (--http-allow)
+HTTP_BASE=${HTTP_BASE:-http://127.0.0.1:8765}
+if [ "${STORAGE}" = parquet ] || [ "${STORAGE}" = http ]; then
+  PARQUET_BASE="${DATA_PATH}/parquet${SF}"
+  [ "${STORAGE}" = http ] && PARQUET_BASE="${HTTP_BASE}/parquet${SF}"
   for t in region nation supplier customer part partsupp orders lineitem; do
-    STATEMENTS+=(-c "CREATE VIEW ${t} AS SELECT * FROM read_parquet('${DATA_PATH}/parquet${SF}/${t}.parquet')")
+    STATEMENTS+=(-c "CREATE VIEW ${t} AS SELECT * FROM read_parquet('${PARQUET_BASE}/${t}.parquet')")
   done
 fi
-case ${STORAGE} in external|parquet) ;; *) STATEMENTS+=(-c "CALL dbgen(sf = ${SF})") ;; esac
+case ${STORAGE} in external|parquet|http) ;; *) STATEMENTS+=(-c "CALL dbgen(sf = ${SF})") ;; esac
 for q in $(seq 1 22); do
   STATEMENTS+=(-c "PRAGMA tpch(${q})")
 done
@@ -101,6 +107,7 @@ case ${ENGINE} in
     # SANDBOX_ENV="NAME=VALUE ..." reaches the sandbox as its environment (e.g. MIMALLOC_SHOW_ERRORS=1);
     # SANDBOX_ARGS="--memory 24GB" are further host options
     ENV_ARGS=(${SANDBOX_ARGS:-})
+    [ "${STORAGE}" = http ] && ENV_ARGS+=(--http-allow "${HTTP_BASE}")
     for kv in ${SANDBOX_ENV:-}; do ENV_ARGS+=(--env "${kv}"); done
     "${PROJECT_ROOT}/build/wasi/${ENGINE}/duckdb_native" --dir "${SPILL}::/spill:rw" --dir "${DATA}::/data" ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} -- "${DATABASE[@]}" -t -q "${STATEMENTS[@]}"
     ;;

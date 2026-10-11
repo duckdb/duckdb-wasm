@@ -9,12 +9,13 @@
 #include <unistd.h>
 
 #include "crash.hpp"
+#include "http_client.hpp"
 #include "duckdb.hpp"
 #include "duckdb_static_extension.h"
 
 // The extensions linked into this binary, each described by the function DuckDB's build generates for it
 // (codegen/link/<name>_describe.c); registering them explicitly needs no static initializers
-#define LINKED_EXTENSIONS(X) X(core_functions) X(parquet) X(tpch) X(json) X(icu)
+#define LINKED_EXTENSIONS(X) X(core_functions) X(parquet) X(tpch) X(json) X(icu) X(httpfs)
 #define DECLARE(name) extern "C" int32_t duckdb_extension_##name##_describe(duckdb_extension_descriptor *);
 LINKED_EXTENSIONS(DECLARE)
 
@@ -94,6 +95,10 @@ int main(int argc, char **argv) {
             config.options.access_mode = duckdb::AccessMode::READ_ONLY;
         }
         duckdb::DuckDB db(opts.database, &config);
+        // httpfs runs over the host's relay (wasi/http_client.cpp). The instance builds its own HTTP transport
+        // manager (a preset one in the user config is not carried over) and httpfs installs its client when it
+        // loads, so the sandbox's goes in afterwards, as duckdb-wasm does
+        duckdb::DBConfig::GetConfig(*db.instance).SetHTTPUtil(duckdb::MakeSandboxHTTPUtil());
         duckdb::Connection con(db);
         RegisterCrashFunction(con);
         int failures = 0;

@@ -1,0 +1,22 @@
+[package]
+name = "sandbox_relay"
+version = "0.1.0"
+edition = "2021"
+description = "The HTTP relay of the DuckDB sandbox host: TLS, HTTP framing and policy in memory-safe code"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+ureq = { version = "3", default-features = false, features = ["rustls", "platform-verifier"] }
+url = "2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+# never unwind into the C host
+panic = "abort"
+
+# its own root, not a member of any workspace above
+[workspace]

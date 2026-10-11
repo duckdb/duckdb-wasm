@@ -118,8 +118,9 @@ cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
   -DCMAKE_CXX_STANDARD=17 \
-  -DBUILD_EXTENSIONS="parquet;tpch" \
-  -DSTATICALLY_LINK_EXTENSIONS="core_functions;parquet;tpch;json;icu" \
+  -DBUILD_EXTENSIONS="parquet;tpch;httpfs" \
+  -DSTATICALLY_LINK_EXTENSIONS="core_functions;parquet;tpch;json;icu;httpfs" \
+  -DDUCKDB_EXTENSION_CONFIGS="${PROJECT_ROOT}/wasi/extension_config.cmake" -DWASI_SANDBOX=1 \
   -DENABLE_JEMALLOC=OFF -DBUILD_SHELL=FALSE -DBUILD_UNITTESTS=FALSE \
   -DDUCKDB_CAPABILITIES=none -DENABLE_BUILTIN_HTTPLIB=OFF \
   -DDUCKDB_EXPLICIT_PLATFORM=wasm_wasi \
@@ -128,7 +129,7 @@ cmake -G Ninja -S "${DUCKDB}" -B "${BUILD_DIR}" \
   -DCMAKE_EXE_LINKER_FLAGS="-fwasm-exceptions -lunwind ${LINK_EXTRA}"
 # The loadable extension targets do not link (no --version-script in wasm-ld) and are not wanted
 cmake --build "${BUILD_DIR}" --target duckdb_static duckdb_cpp_api parquet_extension tpch_extension \
-  core_functions_extension json_extension icu_extension
+  core_functions_extension json_extension icu_extension httpfs_extension
 
 LIBS="$(find "${BUILD_DIR}" -name libduckdb_cpp_api.a) $(find "${BUILD_DIR}" -name libduckdb_static.a)"
 LIBS="${LIBS} $(find "${BUILD_DIR}" -name 'libduckdb_*.a' | grep -v 'cpp_api\|static\|loadable\|local_extension' | tr '\n' ' ')"
@@ -139,7 +140,8 @@ OUT=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${EH}.wasm
 # first, so the lowest page of memory is the far end of the stack: a host can make it inaccessible, and a null
 # dereference (or a stack overflow) traps instead of landing in linear memory
 "${SDK}/bin/clang++" ${TARGET_FLAGS} -O2 ${EH_FLAGS} ${THREAD_FLAGS} ${SIMD_FLAGS} ${EMULATED} \
-  -I"${DUCKDB}/src/include" "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" \
+  -I"${DUCKDB}/src/include" -I"${PROJECT_ROOT}/build/duckdb-httpfs/src/include" \
+  "${PROJECT_ROOT}/wasi/main.cpp" "${PROJECT_ROOT}/wasi/crash.cpp" "${PROJECT_ROOT}/wasi/http_client.cpp" \
   "${PROJECT_ROOT}/wasi/wasi_compat.c" \
   ${MIMALLOC_LIBS} ${EXTENSIONS} ${LIBS} ${LIBS} -lunwind ${EMULATED_LIBS} \
   -Wl,-z,stack-size=8388608 -Wl,--max-memory=${MAX_MEMORY} ${LINK_EXTRA} \

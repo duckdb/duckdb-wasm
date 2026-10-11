@@ -56,6 +56,17 @@ if [ "${TUNED:-}" = 1 ]; then
   OUT=${OUT}-tuned
   OPT="-O3 -flto=thin -DWASM_RT_NONCONFORMING_UNCHECKED_STACK_EXHAUSTION=1"
 fi
+# SANDBOX_HTTP=1: the host carries the HTTP relay (wasi/native/relay, Rust: rustls + policy) behind the module's
+# sandbox_http imports; without it the module still links and every request fails with "no HTTP relay"
+if [ "${SANDBOX_HTTP:-}" = 1 ]; then
+  (cd "${PROJECT_ROOT}/wasi/native/relay" && cargo build --release --quiet)
+  HOST_FLAGS="${HOST_FLAGS} -DSANDBOX_HTTP=1"
+  LDLIBS="${LDLIBS} ${PROJECT_ROOT}/wasi/native/relay/target/release/libsandbox_relay.a"
+  case "$(uname)" in
+    Darwin) LDLIBS="${LDLIBS} -framework Security -framework CoreFoundation -framework SystemConfiguration" ;;
+    *) LDLIBS="${LDLIBS} -lpthread -ldl -lm" ;;
+  esac
+fi
 # PLAIN_SHARED=1: plain instead of relaxed-atomic accesses on the shared memory (wasi/wabt-atomic-wait.patch adds
 # the option to wasm2c's template); sound for a race-free module, into <out>-plain
 if [ "${PLAIN_SHARED:-}" = 1 ]; then
@@ -65,8 +76,11 @@ fi
 MODULE=${PROJECT_ROOT}/build/wasi/duckdb_wasi-${TARGET}.wasm
 mkdir -p "${OUT}/c" "${OUT}/o"
 
-# 16 translation units of ~50 MB each: wasm2c is quick, clang is not
-"${WASM2C}" ${W2C_FLAGS} --num-outputs=16 -n duckdb "${MODULE}" -o "${OUT}/c/duckdb.c"
+# 16 translation units of ~50 MB each: wasm2c is quick, clang is not. The translation is skipped when it is
+# already newer than the module, so that a host-only change recompiles the host alone (compile() goes by mtime).
+if [ ! "${OUT}/c/duckdb.h" -nt "${MODULE}" ] || [ ! "${OUT}/c/duckdb-impl.h" -nt "${MODULE}" ]; then
+  "${WASM2C}" ${W2C_FLAGS} --num-outputs=16 -n duckdb "${MODULE}" -o "${OUT}/c/duckdb.c"
+fi
 if [ "${TUNED:-}" = 1 ] && { [ "${TARGET}" = wasm64 ] || [ "${TARGET}" = threads64 ]; }; then
   python3 - "${OUT}/c/duckdb-impl.h" <<'EOF_CHECK'
 import sys
@@ -86,6 +100,8 @@ new = """/* DuckDB sandbox: a 64-bit memory is reserved at 64 GB (wasm-rt-mem-im
     if (UNLIKELY((uint64_t)(offset) >= (uint64_t)68719476736ull - 64)) \\
       TRAP(OOB);                                                        \\
   } while (0);"""
+if src.count(new) == 1:
+    sys.exit(0)  # already patched (wasm2c was skipped)
 assert src.count(old) == 1, "RANGE_CHECK not found once in the generated header"
 open(path, "w").write(src.replace(old, new))
 EOF_CHECK
