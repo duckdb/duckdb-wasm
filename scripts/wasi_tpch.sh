@@ -3,6 +3,7 @@
 # once outside the sandbox (the sandbox only ever reads it).
 #
 #   scripts/wasi_tpch.sh generate <sf>     -- the CLI generates build/wasi/data/tpch<sf>.db (all threads)
+#   scripts/wasi_tpch.sh generate-parquet <sf>  -- and build/wasi/data/parquet<sf>/<table>.parquet from it
 #   scripts/wasi_tpch.sh <engine> [sf] [memory_limit] [external|memory|disk]
 #   THREADS=n     SET threads = n (default 1); THREADS=all leaves DuckDB's default, every core
 #   MEMORY unset  an empty memory_limit leaves DuckDB's default, 80% of RAM
@@ -18,6 +19,7 @@
 #                      with DuckDB's other allocations (14GB ran out of memory at SF 100)
 #   external (default) build/wasi/data/tpch<sf>.db, generated outside the sandbox and handed to it read-only
 #   memory   dbgen into an in-memory database first (timed too), disk: dbgen into a file in the spill directory
+#   parquet  views over build/wasi/data/parquet<sf>/*.parquet in an in-memory database (the decode cost)
 #
 # e.g. scripts/wasi_tpch.sh wasmtime 1 300MB   -- SF 1 with spilling; an empty memory_limit means no limit
 set -euo pipefail
@@ -35,6 +37,15 @@ if [ "${ENGINE}" = generate ]; then
   mkdir -p "${DATA}" && rm -f "${DATA}/tpch${SF}.db"
   "${CLI}" -no-agent "${DATA}/tpch${SF}.db" -c ".timer on" -c "CALL dbgen(sf = ${SF})" -c "CHECKPOINT"
   ls -la "${DATA}/tpch${SF}.db"
+  exit 0
+fi
+# parquet files of an existing tpch<sf>.db (snappy, DuckDB's default), for the parquet storage mode
+if [ "${ENGINE}" = generate-parquet ]; then
+  mkdir -p "${DATA}/parquet${SF}"
+  for t in region nation supplier customer part partsupp orders lineitem; do
+    "${CLI}" -no-agent -readonly "${DATA}/tpch${SF}.db" -c "COPY ${t} TO '${DATA}/parquet${SF}/${t}.parquet' (FORMAT parquet)"
+  done
+  ls -la "${DATA}/parquet${SF}"
   exit 0
 fi
 rm -rf "${SPILL}" && mkdir -p "${SPILL}"
@@ -56,7 +67,13 @@ if [ -n "${MEMORY_LIMIT}" ]; then
   SETUP="${SETUP}; SET memory_limit = '${MEMORY_LIMIT}'"
 fi
 STATEMENTS=(-c "${SETUP}")
-[ "${STORAGE}" != external ] && STATEMENTS+=(-c "CALL dbgen(sf = ${SF})")
+# parquet: an in-memory database with the TPC-H tables as views over the parquet files (generate-parquet <sf>)
+if [ "${STORAGE}" = parquet ]; then
+  for t in region nation supplier customer part partsupp orders lineitem; do
+    STATEMENTS+=(-c "CREATE VIEW ${t} AS SELECT * FROM read_parquet('${DATA_PATH}/parquet${SF}/${t}.parquet')")
+  done
+fi
+case ${STORAGE} in external|parquet) ;; *) STATEMENTS+=(-c "CALL dbgen(sf = ${SF})") ;; esac
 for q in $(seq 1 22); do
   STATEMENTS+=(-c "PRAGMA tpch(${q})")
 done
