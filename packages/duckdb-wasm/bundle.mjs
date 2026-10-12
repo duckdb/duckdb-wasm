@@ -24,7 +24,7 @@ import { execSync } from 'child_process';
 //   duckdb-browser-blocking.mjs                  - ESM Blocking Browser Bundle (synchronous API, unstable)
 //   duckdb-browser-base.worker.js                - IIFE Web Worker
 //   duckdb-browser-threads.worker.js             - IIFE Web Worker with threads
-//   duckdb-browser-threads.pthread.worker.js     - IIFE PThread Worker with threads
+//   duckdb-browser-threads.pthread.worker.js     - Compatibility alias for the threads worker
 //   duckdb-node.cjs                              - CommonJS Default Node Bundle
 //   duckdb-node-blocking.cjs                     - CommonJS Blocking Node Bundle (synchronous API, unstable)
 //   duckdb-node-base.worker.cjs                  - CommonJS Worker
@@ -102,7 +102,6 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-threads.wasm'), path.resolve(d
     console.log('[ ESBUILD ] Patch bindings');
     patchFile('./src/bindings/duckdb-base.js', 'child_process');
     patchFile('./src/bindings/duckdb-threads.js', 'child_process');
-    patchFile('./src/bindings/duckdb-threads.pthread.js', 'vm');
 
     // -------------------------------
     // Browser bundles
@@ -202,7 +201,9 @@ fs.copyFile(path.resolve(src, 'bindings', 'duckdb-threads.wasm'), path.resolve(d
 
     console.log('[ ESBUILD ] duckdb-browser-threads.pthread.worker.js');
     await esbuild.build({
-        entryPoints: ['./src/targets/duckdb-browser-threads.pthread.worker.ts'],
+        // Emscripten 6 runs pthreads from the main threads worker. Keep the
+        // legacy filename as a compatibility alias for existing bundle configs.
+        entryPoints: ['./src/targets/duckdb-browser-threads.worker.ts'],
         outfile: 'dist/duckdb-browser-threads.pthread.worker.js',
         platform: 'browser',
         format: 'iife',
