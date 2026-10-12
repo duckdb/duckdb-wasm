@@ -163,24 +163,24 @@ application that embeds its Wasm file:
 yarn workspace @duckdb/duckdb-wasm-shell build:debug
 yarn workspace @duckdb/duckdb-wasm-app build:release
 cp -R build/extension_repository packages/duckdb-wasm-app/build/release/
-npx http-server packages/duckdb-wasm-app/build/release -a 127.0.0.1 -p 8080
+npx http-server packages/duckdb-wasm-app/build/release -c-1 -a 127.0.0.1 -p 8080
 ```
 
 Open `/original.html` at the URL printed by `http-server` and hard-refresh the
-page. Running `make serve` performs the same rebuild as part of the complete
-build.
+page. The `-c-1` option disables the development server cache so an existing
+browser does not reuse an older shell Wasm file or worker. Running `make serve`
+performs the same rebuild as part of the complete build.
 
 ### Local build troubleshooting log
 
 | Failure | Cause | Fix |
 | ------- | ----- | --- |
-| `js-beautify: command not found` | The Wasm post-processing tool is not installed. | The build script installs it with npm automatically. Ensure the npm global binary directory is writable and on `PATH` if installation fails. |
-| `make: yarn: No such file or directory` | Yarn is missing. | Install Yarn Classic with `npm install --global yarn@1.22.22`, then rerun `make serve`. |
 | `duckdb-threads.js: No such file or directory` | Only the base Wasm binding was built. | Run `make build_loadable TARGET=threads`. The `serve` target now builds both base and threaded bindings. |
 | `duckdb-threads.pthread.js: No such file or directory` | Emscripten 6 uses the main threads worker for pthreads and no longer emits the legacy file. | The bundler now creates the legacy filename as a compatibility alias of the main threads worker. |
 | A repeated Wasm build fails while patching `markAsFinished` | The generated Emscripten glue had already been patched. | The glue patch is now idempotent and safely handles repeated builds. |
 | `chmod: duckdb: No such file or directory` during `make build/data` | The data script detected the DuckDB CLI but invoked a nonexistent submodule build. | The script now prefers `DUCKDB_SHELL`, then a native CLI built from the DuckDB submodule, and finally `duckdb` from `PATH`. |
 | `Arrow file does not contain correct footer`, or result queries such as `SELECT 42` hang | The Rust web shell used Arrow `FileReader`, while DuckDB now returns an Arrow IPC stream. | The shell now uses `StreamReader` and returns decoding errors instead of panicking. Rebuild the shell and application using the commands above. |
+| A fixed query starts hanging again after rebuilding | An existing browser tab may still be running a cached shell Wasm file or worker. | `make serve` now disables HTTP caching. Restart the server, close old DuckDB-Wasm tabs, and open `/original.html` again. |
 | `failed to create temp dir for cargo install wasm-bindgen` | `wasm-pack` cannot write to its temporary or Cargo installation directory. | Run the build in an environment with writable temporary and Cargo directories. |
 | `listen EPERM` or an occupied port while starting `http-server` | The environment prevents binding the requested port, or another process already uses it. | Allow local port binding or select another port, for example `-p 8091`. |
 | Puppeteer/Karma fails under Node.js 26 | The current test dependencies are incompatible with Node.js 26. | Run browser tests with Node.js 24. This does not prevent building the shell and app with Node.js 26. |
