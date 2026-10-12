@@ -348,8 +348,12 @@ app_start_corp:
 app: wasm wasmpack shell docs js_tests_release
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 
+.PHONY: build_loadable build_loadable_threads
 build_loadable:
 	USE_GENERATED_EXPORTED_LIST=no DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize ${TARGET}
+
+build_loadable_threads:
+	$(MAKE) build_loadable TARGET=threads
 
 build_loadable_unsigned: build_loadable
         # need to propagate the unsigned flag
@@ -363,7 +367,7 @@ serve_local: build_loadable_unsigned serve_loadable_base
 	npx http-server packages/duckdb-wasm-app/build/release -o "/original.html#queries=v0,SET-custom_extension_repository%3D'http%3A%2F%2F127.0.0.1%3A8080%2Fextension_repository'~" -a 127.0.0.1 -p 8080
 
 .PHONY: serve
-serve: build_loadable serve_loadable_base
+serve: build_loadable_threads build_loadable serve_loadable_base
 	npx http-server packages/duckdb-wasm-app/build/release -o /original.html
 
 .PHONY: app_server
