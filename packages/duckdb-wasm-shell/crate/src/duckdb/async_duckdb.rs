@@ -2,7 +2,7 @@ use super::tokens::{JsScriptTokens, ScriptTokens};
 use super::web_file::WebFile;
 use super::{FileStatistics, JsFileStatistics};
 use crate::arrow_reader::ArrowStreamReader;
-use arrow::ipc::reader::FileReader;
+use arrow::ipc::reader::StreamReader;
 use js_sys::Uint8Array;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -232,7 +232,8 @@ impl AsyncDuckDBConnection {
             .into();
         let copy = ui8array.to_vec();
         let cursor = Cursor::new(copy);
-        let reader = FileReader::try_new(cursor, None).unwrap();
+        let reader = StreamReader::try_new(cursor, None)
+            .map_err(|err| js_sys::Error::new(&err.to_string()))?;
         let mut batches: Vec<arrow::record_batch::RecordBatch> = Vec::new();
         for maybe_batch in reader {
             match maybe_batch {

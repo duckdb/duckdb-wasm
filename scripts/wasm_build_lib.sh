@@ -103,9 +103,16 @@ import sys
 path = sys.argv[1]
 src = open(path).read()
 needle = "markAsFinished(d.thread);"
+guard = "if (PThread.pthreads[d.thread] === worker) "
+patched = guard + needle
 if "pthread_ptr" in src:
-    assert src.count(needle) == 1, "markAsFinished(d.thread) not found once in the emscripten glue"
-    src = src.replace(needle, "if (PThread.pthreads[d.thread] === worker) markAsFinished(d.thread);")
+    # The build script can run again without relinking the generated glue.
+    # Collapse a previously applied guard before ensuring it is present once.
+    while guard + patched in src:
+        src = src.replace(guard + patched, patched)
+    if patched not in src:
+        assert src.count(needle) == 1, "markAsFinished(d.thread) not found once in the emscripten glue"
+        src = src.replace(needle, patched)
     open(path, "w").write(src)
 EOF_PATCH
 

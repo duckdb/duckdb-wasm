@@ -92,14 +92,98 @@ Extension sizes will vary depending, among other things, on provided functionali
 
 ## Build from source
 
+The build requires:
+
+* Node.js and npm. Node.js 24 is required for the current browser test tooling.
+* Yarn Classic. This repository uses a Yarn v1 lockfile.
+* Emscripten 6.0.9 or a compatible 6.0.x release, CMake, and ccache.
+* Rust and rustup for building the shell.
+* The DuckDB CLI when generating the complete test dataset.
+
+Install Yarn Classic and the Rust Wasm target before starting the build:
+
+```shell
+npm install --global yarn@1.22.22
+yarn --version
+rustup target add wasm32-unknown-unknown
+```
+
 ```shell
 git clone https://github.com/duckdb/duckdb-wasm.git
 cd duckdb-wasm
 git submodule init
 git submodule update
 make apply_patches
+make build_loadable TARGET=threads
 make serve
 ```
+
+During the Wasm build, the build script checks for `js-beautify` and installs
+it globally with npm if it is missing. The initial
+`js-beautify: command not found` message is therefore expected when the tool
+is not already installed.
+
+If the build stops with `make: yarn: No such file or directory`, install Yarn
+Classic using the command above and run `make serve` again. There is no need
+to run `make apply_patches` again.
+
+The JavaScript bundle requires both the base and threaded Wasm bindings.
+`make build_loadable TARGET=threads` generates the threaded bindings before
+`make serve`. The `serve` target also ensures that both variants are built.
+
+Node.js 26 can build the shell and application, but it is not currently
+supported by the Karma/Puppeteer test toolchain and can fail with
+`require is not defined in ES module scope` or a missing yargs module. Use
+Node.js 24 when running browser tests.
+
+Some browser tests require generated data files. Generate the small university
+dataset used by the threads smoke test with:
+
+```shell
+./scripts/generate_uni.sh
+```
+
+Use `make build/data` to generate all test datasets. The data generator first
+uses `DUCKDB_SHELL` when set, then looks for a native DuckDB CLI built in the
+DuckDB submodule, and finally falls back to `duckdb` on `PATH`. CMake policy
+warnings, Rust deprecation warnings, TypeDoc warnings, and Webpack asset-size
+warnings may appear during a successful build; they are non-fatal if the
+command exits successfully.
+
+The development server uses port 8080 when available. If that port is already
+in use, `http-server` selects another port; open the URL printed under
+`Available on` in the terminal.
+
+### Rebuild the web shell
+
+After changing the Rust shell, rebuild both the shell package and the
+application that embeds its Wasm file:
+
+```shell
+yarn workspace @duckdb/duckdb-wasm-shell build:debug
+yarn workspace @duckdb/duckdb-wasm-app build:release
+cp -R build/extension_repository packages/duckdb-wasm-app/build/release/
+npx http-server packages/duckdb-wasm-app/build/release -a 127.0.0.1 -p 8080
+```
+
+Open `/original.html` at the URL printed by `http-server` and hard-refresh the
+page. Running `make serve` performs the same rebuild as part of the complete
+build.
+
+### Local build troubleshooting log
+
+| Failure | Cause | Fix |
+| ------- | ----- | --- |
+| `js-beautify: command not found` | The Wasm post-processing tool is not installed. | The build script installs it with npm automatically. Ensure the npm global binary directory is writable and on `PATH` if installation fails. |
+| `make: yarn: No such file or directory` | Yarn is missing. | Install Yarn Classic with `npm install --global yarn@1.22.22`, then rerun `make serve`. |
+| `duckdb-threads.js: No such file or directory` | Only the base Wasm binding was built. | Run `make build_loadable TARGET=threads`. The `serve` target now builds both base and threaded bindings. |
+| `duckdb-threads.pthread.js: No such file or directory` | Emscripten 6 uses the main threads worker for pthreads and no longer emits the legacy file. | The bundler now creates the legacy filename as a compatibility alias of the main threads worker. |
+| A repeated Wasm build fails while patching `markAsFinished` | The generated Emscripten glue had already been patched. | The glue patch is now idempotent and safely handles repeated builds. |
+| `chmod: duckdb: No such file or directory` during `make build/data` | The data script detected the DuckDB CLI but invoked a nonexistent submodule build. | The script now prefers `DUCKDB_SHELL`, then a native CLI built from the DuckDB submodule, and finally `duckdb` from `PATH`. |
+| `Arrow file does not contain correct footer`, or result queries such as `SELECT 42` hang | The Rust web shell used Arrow `FileReader`, while DuckDB now returns an Arrow IPC stream. | The shell now uses `StreamReader` and returns decoding errors instead of panicking. Rebuild the shell and application using the commands above. |
+| `failed to create temp dir for cargo install wasm-bindgen` | `wasm-pack` cannot write to its temporary or Cargo installation directory. | Run the build in an environment with writable temporary and Cargo directories. |
+| `listen EPERM` or an occupied port while starting `http-server` | The environment prevents binding the requested port, or another process already uses it. | Allow local port binding or select another port, for example `-p 8091`. |
+| Puppeteer/Karma fails under Node.js 26 | The current test dependencies are incompatible with Node.js 26. | Run browser tests with Node.js 24. This does not prevent building the shell and app with Node.js 26. |
 
 ## Repository Structure
 
