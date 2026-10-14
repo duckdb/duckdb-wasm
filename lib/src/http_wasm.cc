@@ -10,35 +10,10 @@
 #include "duckdb_static_extension.h"
 
 namespace duckdb {
-class HTTPLogger;
-class FileOpener;
-struct FileOpenerInfo;
-class HTTPState;
-HTTPHeaders TransformHeadersWasm(const HTTPHeaders &header_map, const HTTPParams &params) {
-    auto &httpfs_params = params.Cast<HTTPFSParams>();
-
-    HTTPHeaders res_headers;
-    for (auto &header : header_map) {
-        res_headers.Insert(header.first, header.second);
-    }
-    if (!httpfs_params.pre_merged_headers) {
-        for (auto &entry : params.extra_headers) {
-            res_headers.Insert(entry.first, entry.second);
-        }
-    }
-    return res_headers;
-}
-
 class HTTPWasmClient : public HTTPClient {
    public:
-    HTTPWasmClient(HTTPFSParams &http_params, const string &proto_host_port) {
-        host_port = proto_host_port;
-        state = http_params.state;
-    }
-    void Initialize(HTTPParams &params) override {
-        auto &http_params = params.Cast<HTTPFSParams>();
-        state = http_params.state;
-    }
+    explicit HTTPWasmClient(const string& proto_host_port) : HTTPClient(proto_host_port), host_port(proto_host_port) {}
+    void Initialize(HTTPParams&) override {}
     string host_port;
 
     unique_ptr<HTTPResponse> Get(GetRequestInfo &info) override {
@@ -60,7 +35,7 @@ class HTTPWasmClient : public HTTPClient {
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-        auto headers = TransformHeadersWasm(info.headers, info.params);
+        const auto &headers = info.headers;
 
         int n = 0;
         for (auto h : headers) {
@@ -318,7 +293,7 @@ class HTTPWasmClient : public HTTPClient {
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-        auto headers = TransformHeadersWasm(info.headers, info.params);
+        const auto& headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -581,7 +556,7 @@ res->headers.Insert(head, tail);
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-        auto headers = TransformHeadersWasm(info.headers, info.params);
+        const auto& headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -756,7 +731,7 @@ res->headers.Insert(head, tail);
             path = "https://" + path;
         }
 
-        auto headers = TransformHeadersWasm(info.headers, info.params);
+        const auto& headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -952,7 +927,7 @@ res->headers.Insert(head, tail);
             path = "https://" + path;
         }
 
-        auto headers = TransformHeadersWasm(info.headers, info.params);
+        const auto& headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -1097,13 +1072,10 @@ res->headers.Insert(head, tail);
         return res;
     }
 
-   private:
-    optional_ptr<HTTPState> state;
 };
 
-unique_ptr<HTTPClient> HTTPWasmUtil::InitializeClient(HTTPParams &http_params, const string &proto_host_port) {
-    auto client = make_uniq<HTTPWasmClient>(http_params.Cast<HTTPFSParams>(), proto_host_port);
-    return std::move(client);
+unique_ptr<HTTPClient> HTTPWasmUtil::InitializeClient(HTTPParams&, const string& proto_host_port) {
+    return make_uniq<HTTPWasmClient>(proto_host_port);
 }
 
 string HTTPWasmUtil::GetName() const { return "WasmHTTPUtils"; }

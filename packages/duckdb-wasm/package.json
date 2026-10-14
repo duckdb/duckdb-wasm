@@ -72,6 +72,7 @@
         "test:chrome": "karma start ./karma/tests-chrome.cjs",
         "test:chrome:threads": "karma start ./karma/tests-chrome-threads.cjs",
         "test:chrome:threads:smoke": "karma start ./karma/threads-smoke-chrome.cjs",
+        "test:chrome:httpfs": "karma start ./karma/httpfs-chrome.cjs",
         "test:chrome:coverage": "karma start ./karma/tests-chrome-coverage.cjs",
         "test:browser": "karma start ./karma/tests-all.cjs",
         "test:browser:debug": "karma start ./karma/tests-debug.cjs",
@@ -79,12 +80,7 @@
         "test:coverage": "npm run test:chrome:coverage && npm run test:node:coverage && npm run report",
         "lint": "eslint src test"
     },
-    "files": [
-        "dist",
-        "!dist/tests-*",
-        "!dist/duckdb-browser-base.worker.js.map",
-        "!dist/types/test"
-    ],
+    "files": ["dist", "!dist/tests-*", "!dist/duckdb-browser-base.worker.js.map", "!dist/types/test"],
     "main": "dist/duckdb-browser.cjs",
     "module": "dist/duckdb-browser.mjs",
     "types": "dist/duckdb-browser.d.ts",
