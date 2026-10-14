@@ -28,6 +28,7 @@ JS_FILTER=
 
 EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
+HTTPFS_SOURCE_DIR=$(abspath ${DUCKDB_HTTPFS_DIRECTORY})
 
 cpp_lib: lib_tests
 
@@ -354,6 +355,42 @@ build_loadable:
 
 build_loadable_threads:
 	$(MAKE) build_loadable TARGET=threads
+
+.PHONY: check_httpfs_local reconfigure_httpfs_local build_httpfs_local serve_httpfs_local
+check_httpfs_local:
+	@if [ -z "$(strip ${DUCKDB_HTTPFS_DIRECTORY})" ]; then \
+		echo "Set DUCKDB_HTTPFS_DIRECTORY to the HTTPFS source checkout."; \
+		exit 1; \
+	fi
+	@if [ ! -f "${HTTPFS_SOURCE_DIR}/CMakeLists.txt" ]; then \
+		echo "DUCKDB_HTTPFS_DIRECTORY must contain the HTTPFS CMakeLists.txt: ${HTTPFS_SOURCE_DIR}"; \
+		exit 1; \
+	fi
+
+reconfigure_httpfs_local: check_httpfs_local
+	@for httpfs_variant in base threads; do \
+		httpfs_build_dir="build/relsize/$${httpfs_variant}/third_party/duckdb/src/duckdb_ep-build"; \
+		if [ -f "$${httpfs_build_dir}/CMakeCache.txt" ]; then \
+			echo "Reconfiguring $${httpfs_variant} with HTTPFS from ${HTTPFS_SOURCE_DIR}"; \
+			DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+				cmake -S submodules/duckdb -B "$${httpfs_build_dir}" || exit $$?; \
+		fi; \
+	done
+
+build_httpfs_local: reconfigure_httpfs_local
+	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" $(MAKE) build_loadable TARGET=base
+	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+		cmake --build build/relsize/base/third_party/duckdb/src/duckdb_ep-build \
+		--target duckdb_local_extension_repo --parallel ${CORES}
+	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" $(MAKE) build_loadable TARGET=threads
+	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+		cmake --build build/relsize/threads/third_party/duckdb/src/duckdb_ep-build \
+		--target duckdb_local_extension_repo --parallel ${CORES}
+	yarn workspace @duckdb/duckdb-wasm build:release
+
+serve_httpfs_local: build_httpfs_local serve_loadable_base
+	npx http-server packages/duckdb-wasm-app/build/release \
+		-c-1 -o /original.html -a 127.0.0.1 -p 8081
 
 build_loadable_unsigned: build_loadable
         # need to propagate the unsigned flag
