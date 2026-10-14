@@ -11,8 +11,7 @@ duckdb_extension_load(icu)
 duckdb_extension_load(tpcds)
 duckdb_extension_load(tpch)
 
-#duckdb_extension_load(httpfs)
-
+include("${EXTENSION_CONFIG_BASE_DIR}/httpfs.cmake")
 
 # Arrow IPC reading and writing, linked statically into DuckDB-Wasm
 duckdb_extension_load(nanoarrow
