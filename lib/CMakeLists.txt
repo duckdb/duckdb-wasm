@@ -17,6 +17,9 @@ if(DEFINED ENV{DUCKDB_WASM_LOADABLE_EXTENSIONS})
   set(DUCKDB_WASM_LOADABLE_EXTENSIONS ON)
 endif()
 
+# The glue post-processing must use the effective option, including environment and cache overrides.
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/wasm_loadable_extensions"
+     CONTENT "$<BOOL:${DUCKDB_WASM_LOADABLE_EXTENSIONS}>")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -DDUCKDB_WASM=1 -DFSST_MUST_ALIGN")
 
@@ -152,7 +155,7 @@ endif()
 if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=1 -s ENVIRONMENT='web,node,worker' -s ALLOW_TABLE_GROWTH -lembind")
 
-  if ($ENV{USE_GENERATED_EXPORTED_LIST} STREQUAL "yes")
+  if ("$ENV{USE_GENERATED_EXPORTED_LIST}" STREQUAL "yes")
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=2 -s EXPORTED_FUNCTIONS='@exported_list.txt'")
   else()
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")

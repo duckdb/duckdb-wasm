@@ -489,6 +489,14 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb-base.wasm
                   retention-days: 1
 
+            - name: Upload extension repository
+              uses: actions/upload-artifact@v7
+              with:
+                  name: extension-repository-base-loadable
+                  path: ./build/extension_repository
+                  if-no-files-found: error
+                  retention-days: 1
+
     wasm_threads_loadable:
         name: Wasm / threads (loadable version)
         runs-on: ubuntu-latest
@@ -527,6 +535,10 @@ jobs:
               run: |
                   USE_GENERATED_EXPORTED_LIST="$DEFAULT_USE_GENERATED_EXPORTED_LIST" DUCKDB_PLATFORM="wasm_threads" DUCKDB_WASM_LOADABLE_EXTENSIONS="signed" GEN=ninja ./scripts/wasm_build_lib.sh relsize threads
 
+            - name: Test pthread completion handler
+              run: |
+                  node ./scripts/test_wasm_pthread_glue.cjs ./packages/duckdb-wasm/src/bindings/duckdb-threads.js
+
             - name: Upload artifact
               uses: actions/upload-artifact@v7
               with:
@@ -542,6 +554,7 @@ jobs:
               with:
                   name: extension-repository-threads-loadable
                   path: ./build/extension_repository
+                  if-no-files-found: error
                   retention-days: 1
 
     js_libs:
@@ -919,6 +932,11 @@ jobs:
               with:
                   name: wasm-threads-loadable
                   path: ./packages/duckdb-wasm/src/bindings/
+
+            - uses: actions/download-artifact@v8
+              with:
+                  name: extension-repository-base-loadable
+                  path: ./build/extension_repository/
 
             - uses: actions/download-artifact@v8
               with:
