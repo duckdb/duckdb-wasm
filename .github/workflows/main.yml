@@ -537,6 +537,13 @@ jobs:
                       ./packages/duckdb-wasm/src/bindings/duckdb-threads.wasm
                   retention-days: 1
 
+            - name: Upload extension repository
+              uses: actions/upload-artifact@v7
+              with:
+                  name: extension-repository-threads-loadable
+                  path: ./build/extension_repository
+                  retention-days: 1
+
     js_libs:
         name: Js / Libraries
         runs-on: ubuntu-latest
@@ -648,7 +655,7 @@ jobs:
               shell: bash
               run: |
                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
-            
+
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
             #              with:
@@ -913,6 +920,11 @@ jobs:
                   name: wasm-threads-loadable
                   path: ./packages/duckdb-wasm/src/bindings/
 
+            - uses: actions/download-artifact@v8
+              with:
+                  name: extension-repository-threads-loadable
+                  path: ./build/extension_repository/
+
             - name: Prepare repository
               run: |
                   git fetch --tags --no-recurse-submodules -f
@@ -974,7 +986,12 @@ jobs:
               shell: bash
               run: |
                       CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
-            
+
+            - name: Test loadable threaded bundle on Chrome
+              shell: bash
+              run: |
+                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:threads:smoke
+
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
             #              with:
