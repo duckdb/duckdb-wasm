@@ -94,10 +94,11 @@ js-beautify ${BUILD_DIR}/duckdb_wasm.js > ${BUILD_DIR}/beauty.js
 cp ${BUILD_DIR}/beauty.js ${BUILD_DIR}/beauty2.js
 awk '!(/var .*wasmExports\[/ || /var [_a-z0-9A-Z]+ = Module\[\"[_a-z0-9A-Z]+\"\] = [0-9]+;/) || /var _duckdb_web/ || /var _main/ || /var _calloc/ || /var _malloc/ || /var _free/ || /var stack/ || /var ___dl_seterr/ || /var __em/ || /var _em/ || /var _pthread/' ${BUILD_DIR}/beauty2.js > ${BUILD_DIR}/duckdb_wasm.js
 
-# A thread joined by the main thread is cleaned up (and its pthread_t freed) before the main thread processes the
-# exiting worker's "finished" message: that message then lands on whatever thread is allocated at the same address,
-# and dlsync skips the thread as finished, so it runs extension code with an unsynced table. Only the worker still
-# registered for the pthread_t may mark it finished. Builds without pthreads have no such message.
+# In loadable threaded builds, a thread joined by the main thread is cleaned up (and its pthread_t freed) before the
+# main thread processes the exiting worker's "finished" message. That message can then land on whichever thread is
+# allocated at the same address, and dlsync skips that thread as finished, so it runs extension code with an unsynced
+# table. Only the worker still registered for the pthread_t may mark it finished.
+if [ "$FEATURES" = "threads" ] && [ -n "${DUCKDB_WASM_LOADABLE_EXTENSIONS+x}" ]; then
 python3 - ${BUILD_DIR}/duckdb_wasm.js <<'EOF_PATCH'
 import sys
 path = sys.argv[1]
@@ -115,6 +116,7 @@ if "pthread_ptr" in src:
         src = src.replace(needle, patched)
     open(path, "w").write(src)
 EOF_PATCH
+fi
 
 cp ${BUILD_DIR}/duckdb_wasm.wasm ${DUCKDB_LIB_DIR}/duckdb${SUFFIX}.wasm
 sed \
