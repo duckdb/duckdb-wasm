@@ -98,23 +98,23 @@ awk '!(/var .*wasmExports\[/ || /var [_a-z0-9A-Z]+ = Module\[\"[_a-z0-9A-Z]+\"\]
 # main thread processes the exiting worker's "finished" message. That message can then land on whichever thread is
 # allocated at the same address, and dlsync skips that thread as finished, so it runs extension code with an unsynced
 # table. Only the worker still registered for the pthread_t may mark it finished.
-if [ "$FEATURES" = "threads" ] && [ -n "${DUCKDB_WASM_LOADABLE_EXTENSIONS+x}" ]; then
-python3 - ${BUILD_DIR}/duckdb_wasm.js <<'EOF_PATCH'
+LOADABLE_EXTENSIONS=$(cat "${BUILD_DIR}/wasm_loadable_extensions")
+if [ "$FEATURES" = "threads" ] && [ "$LOADABLE_EXTENSIONS" = "1" ]; then
+python3 - "${BUILD_DIR}/duckdb_wasm.js" <<'EOF_PATCH'
 import sys
 path = sys.argv[1]
 src = open(path).read()
 needle = "markAsFinished(d.thread);"
 guard = "if (PThread.pthreads[d.thread] === worker) "
 patched = guard + needle
-if "pthread_ptr" in src:
-    # The build script can run again without relinking the generated glue.
-    # Collapse a previously applied guard before ensuring it is present once.
-    while guard + patched in src:
-        src = src.replace(guard + patched, patched)
-    if patched not in src:
-        assert src.count(needle) == 1, "markAsFinished(d.thread) not found once in the emscripten glue"
-        src = src.replace(needle, patched)
-    open(path, "w").write(src)
+assert src.count(needle) == 1, "markAsFinished(d.thread) not found once in the emscripten glue"
+# The build script can run again without relinking the generated glue.
+# Collapse a previously applied guard before ensuring it is present once.
+while guard + patched in src:
+    src = src.replace(guard + patched, patched)
+if patched not in src:
+    src = src.replace(needle, patched)
+open(path, "w").write(src)
 EOF_PATCH
 fi
 
