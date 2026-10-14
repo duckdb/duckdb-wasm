@@ -154,6 +154,93 @@ The development server uses port 8080 when available. If that port is already
 in use, `http-server` selects another port; open the URL printed under
 `Available on` in the terminal.
 
+### Develop HTTPFS locally
+
+HTTPFS is loaded as a separate Wasm side module. Build it with the same DuckDB
+revision, Emscripten toolchain, and platform settings as the DuckDB-Wasm main
+module.
+
+Keep the HTTPFS checkout outside the generated `build/` directory. From the
+DuckDB-Wasm repository, run:
+
+```shell
+make build_httpfs_local DUCKDB_HTTPFS_DIRECTORY=$PWD/duckdb-httpfs
+```
+
+`DUCKDB_HTTPFS_DIRECTORY` must point to the HTTPFS source root that contains
+its top-level `CMakeLists.txt`. The target:
+
+* validates and converts the path to an absolute path;
+* reconfigures existing base and threaded builds to use that checkout;
+* builds both DuckDB-Wasm main modules and HTTPFS side modules; and
+* rebuilds the JavaScript package.
+
+During configuration, confirm that CMake reports the expected source:
+
+```text
+Load extension 'httpfs' from local path ".../duckdb-httpfs"
+```
+
+The generated HTTPFS modules are placed at:
+
+```text
+build/extension_repository/<duckdb-revision>/wasm_base/httpfs.duckdb_extension.wasm
+build/extension_repository/<duckdb-revision>/wasm_threads/httpfs.duckdb_extension.wasm
+```
+
+#### Load the local extension in a browser
+
+Local extension builds are unsigned. Configure both the local repository and
+the unsigned-extension policy before opening the database.
+
+For the React application:
+
+```tsx
+<DuckDBProvider
+    config={{
+        allowUnsignedExtensions: true,
+        extensionRepository: `${window.location.origin}/extension_repository`,
+    }}
+>
+```
+
+For the direct JavaScript API:
+
+```ts
+await db.open({
+    allowUnsignedExtensions: true,
+    extensionRepository: new URL('/extension_repository', location.href).href,
+});
+```
+
+These are startup options. SQL cannot enable unsigned extensions after the
+database has been opened.
+
+Build the modules, prepare the application, copy the local extension
+repository, and start the development server with:
+
+```shell
+make serve_httpfs_local DUCKDB_HTTPFS_DIRECTORY=$PWD/duckdb-httpfs
+```
+
+The target opens `/original.html`. Use a fresh browser tab after rebuilding so
+an older worker does not keep stale modules, then run:
+
+```sql
+INSTALL AND LOAD httpfs;
+```
+
+#### Troubleshooting
+
+* A request to `https://extensions.duckdb.org` means that the local
+  `extensionRepository` setting was not applied.
+* An unsigned-extension error means that `allowUnsignedExtensions` was not
+  enabled before opening the database.
+* An OpenSSL or `curl/curl.h` error means that the selected HTTPFS revision
+  does not contain the required Emscripten build guards.
+* The warning that HTTPFS has a `vcpkg.json` but the build does not use vcpkg
+  is expected for this Emscripten build.
+
 ### Rebuild the web shell
 
 After changing the Rust shell, rebuild both the shell package and the
@@ -163,7 +250,7 @@ application that embeds its Wasm file:
 yarn workspace @duckdb/duckdb-wasm-shell build:debug
 yarn workspace @duckdb/duckdb-wasm-app build:release
 cp -R build/extension_repository packages/duckdb-wasm-app/build/release/
-npx http-server packages/duckdb-wasm-app/build/release -c-1 -a 127.0.0.1 -p 8080
+npx http-server packages/duckdb-wasm-app/build/release -c-1 -a 127.0.0.1 -p 8081
 ```
 
 Open `/original.html` at the URL printed by `http-server` and hard-refresh the
