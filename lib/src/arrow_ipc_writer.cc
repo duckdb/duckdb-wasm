@@ -1,5 +1,4 @@
 #include "duckdb/web/arrow_ipc_writer.h"
-#include "duckdb/web/status.h"
 
 #include <cmath>
 #include <cstring>
@@ -11,6 +10,7 @@
 #include "duckdb/function/table/arrow/arrow_duck_schema.hpp"
 #include "duckdb/main/client_properties.hpp"
 #include "duckdb/main/query_result.hpp"
+#include "duckdb/web/status.h"
 #include "nanoarrow/nanoarrow.hpp"
 #include "nanoarrow/nanoarrow_ipc.hpp"
 
@@ -25,9 +25,9 @@ web::Status NanoarrowStatus(ArrowErrorCode code, ArrowError& error, const char* 
     return web::Status::ExecutionError(std::string{what} + ": " + ArrowErrorMessage(&error));
 }
 
-#define RETURN_NOT_OK_NANOARROW(EXPR, WHAT)                             \
-    do {                                                                \
-        ArrowError nanoarrow_error__{};                                 \
+#define RETURN_NOT_OK_NANOARROW(EXPR, WHAT)                                \
+    do {                                                                   \
+        ArrowError nanoarrow_error__{};                                    \
         WEB_RETURN_NOT_OK(NanoarrowStatus(EXPR, nanoarrow_error__, WHAT)); \
     } while (0)
 
@@ -152,16 +152,15 @@ struct ArrowIPCWriter::Impl {
         ArrowConverter::ToArrowArray(*to_convert, array.get(), arrow_options, extension_type_cast);
         nanoarrow::UniqueArrayView view;
         ArrowError error{};
-        WEB_RETURN_NOT_OK(NanoarrowStatus(ArrowArrayViewInitFromSchema(view.get(), schema.get(), &error), error,
-                                            "array view"));
+        WEB_RETURN_NOT_OK(
+            NanoarrowStatus(ArrowArrayViewInitFromSchema(view.get(), schema.get(), &error), error, "array view"));
         WEB_RETURN_NOT_OK(
             NanoarrowStatus(ArrowArrayViewSetArray(view.get(), array.get(), &error), error, "array view"));
         // Dictionaries precede the batch that uses them and are repeated for every batch, as each array carries
         // its own (nanoarrow does the same in ArrowIpcWriterWriteArrayStream)
         int64_t next_dictionary_id = 0;
         WEB_RETURN_NOT_OK(WriteDictionaries(*view.get(), next_dictionary_id));
-        return NanoarrowStatus(ArrowIpcWriterWriteArrayView(writer.get(), view.get(), &error), error,
-                               "record batch");
+        return NanoarrowStatus(ArrowIpcWriterWriteArrayView(writer.get(), view.get(), &error), error, "record batch");
     }
 
     /// Casts decimals the way Arrow did: the unscaled value as double times 10^-scale, which is not exactly

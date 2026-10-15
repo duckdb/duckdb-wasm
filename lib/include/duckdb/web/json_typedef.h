@@ -2,10 +2,10 @@
 #define INCLUDE_DUCKDB_WEB_JSON_TYPEDEF_H_
 
 #include <memory>
-#include "duckdb/web/status.h"
 #include <string>
 
 #include "duckdb/common/types.hpp"
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {
@@ -20,7 +20,7 @@ web::Result<duckdb::child_list_t<duckdb::LogicalType>> SQLToDuckDBFields(const r
 web::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duckdb::LogicalType& type);
 /// Serialize a SQL type as string
 web::Result<rapidjson::Value> WriteSQLField(rapidjson::Document& doc, std::string_view name,
-                                              const duckdb::LogicalType& type, bool nullable);
+                                            const duckdb::LogicalType& type, bool nullable);
 
 }  // namespace json
 }  // namespace web

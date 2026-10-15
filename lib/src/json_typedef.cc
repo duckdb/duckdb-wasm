@@ -1,8 +1,4 @@
 #include "duckdb/web/json_typedef.h"
-#include "duckdb/web/status.h"
-
-#include "duckdb/common/optional_idx.hpp"
-
 
 #include <algorithm>
 #include <duckdb/common/types.hpp>
@@ -15,11 +11,12 @@
 #include <variant>
 #include <vector>
 
+#include "duckdb/common/optional_idx.hpp"
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/writer.h"
-
 
 namespace duckdb {
 namespace web {
@@ -283,7 +280,8 @@ web::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duckd
             out.AddMember("sqlType", "struct", alloc);
             rapidjson::Value children(rapidjson::kArrayType);
             for (auto& child : duckdb::StructType::GetChildTypes(type)) {
-                WEB_ASSIGN_OR_RAISE(auto field, WriteSQLField(doc, child.first.GetIdentifierName(), child.second, true));
+                WEB_ASSIGN_OR_RAISE(auto field,
+                                    WriteSQLField(doc, child.first.GetIdentifierName(), child.second, true));
                 children.PushBack(field, alloc);
             }
             out.AddMember("fields", children, alloc);
@@ -339,7 +337,7 @@ web::Result<rapidjson::Value> WriteSQLType(rapidjson::Document& doc, const duckd
 }
 
 web::Result<rapidjson::Value> WriteSQLField(rapidjson::Document& doc, std::string_view name,
-                                              const duckdb::LogicalType& type, bool nullable) {
+                                            const duckdb::LogicalType& type, bool nullable) {
     auto& alloc = doc.GetAllocator();
     WEB_ASSIGN_OR_RAISE(auto out, WriteSQLType(doc, type));
     out.AddMember("name", rapidjson::StringRef(name.data(), name.length()), alloc);

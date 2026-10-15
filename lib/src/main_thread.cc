@@ -93,10 +93,8 @@ void ServeUntil(std::atomic<int> &done) {
 /// pthread_create from a pthread asks the main thread through a message the main thread only sees in its event
 /// loop; while it serves a query from ServeUntil the thread would never start (SET threads = N runs on the query
 /// thread). Linked with --wrap=pthread_create: the creation itself is proxied to the main thread.
-extern "C" int __real_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *),
-                                     void *arg);
-extern "C" int __wrap_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *),
-                                     void *arg) {
+extern "C" int __real_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg);
+extern "C" int __wrap_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg) {
     return duckdb::web::main_thread::OnMainThread([&] { return __real_pthread_create(thread, attr, start, arg); });
 }
 #endif

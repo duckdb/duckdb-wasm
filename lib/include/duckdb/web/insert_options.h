@@ -1,6 +1,6 @@
 #include <string>
-#include "duckdb/web/status.h"
 
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {

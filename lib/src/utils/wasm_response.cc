@@ -1,8 +1,8 @@
 #include "duckdb/web/utils/wasm_response.h"
-#include "duckdb/web/status.h"
 
 #include <cstdint>
 
+#include "duckdb/web/status.h"
 #include "duckdb/web/webdb.h"
 
 namespace duckdb {

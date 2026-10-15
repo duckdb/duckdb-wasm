@@ -1,14 +1,14 @@
 #include <cstring>
-#include "duckdb/web/status.h"
 #include <exception>
 #include <iostream>
 #include <stdexcept>
 
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/query_thread.h"
+#include "duckdb/web/status.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "duckdb/web/webdb.h"
-#include "duckdb/web/query_thread.h"
 
 using namespace duckdb::web;
 namespace web = duckdb::web;
@@ -285,7 +285,9 @@ void duckdb_web_get_tablenames_buffer(WASMResponse* packed, ConnectionHdl connHd
 void duckdb_web_insert_arrow_from_ipc_stream(WASMResponse* packed, ConnectionHdl connHdl, const uint8_t* buffer,
                                              size_t buffer_length, const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = query_thread::Run([&] { return c->InsertArrowFromIPCStream(nonstd::span{buffer, buffer_length}, std::string_view{options}); });
+    auto r = query_thread::Run([&] {
+        return c->InsertArrowFromIPCStream(nonstd::span{buffer, buffer_length}, std::string_view{options});
+    });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Insert csv from a file
@@ -299,7 +301,8 @@ void duckdb_web_insert_csv_from_path(WASMResponse* packed, ConnectionHdl connHdl
 void duckdb_web_insert_json_from_path(WASMResponse* packed, ConnectionHdl connHdl, const char* path,
                                       const char* options) {
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    auto r = query_thread::Run([&] { return c->InsertJSONFromPath(std::string_view{path}, std::string_view{options}); });
+    auto r =
+        query_thread::Run([&] { return c->InsertJSONFromPath(std::string_view{path}, std::string_view{options}); });
     WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 
