@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <memory>
 #include <sstream>
-#include <type_traits>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace duckdb {
@@ -60,34 +60,27 @@ class Status {
 
     /// Create a status
     static Status OK() { return Status(); }
-    template <typename... Args>
-    static Status FromArgs(StatusCode code, Args&&... args) {
+    template <typename... Args> static Status FromArgs(StatusCode code, Args&&... args) {
         std::ostringstream ss;
         (ss << ... << std::forward<Args>(args));
         return Status(code, ss.str());
     }
-    template <typename... Args>
-    static Status Invalid(Args&&... args) {
+    template <typename... Args> static Status Invalid(Args&&... args) {
         return FromArgs(StatusCode::Invalid, std::forward<Args>(args)...);
     }
-    template <typename... Args>
-    static Status KeyError(Args&&... args) {
+    template <typename... Args> static Status KeyError(Args&&... args) {
         return FromArgs(StatusCode::KeyError, std::forward<Args>(args)...);
     }
-    template <typename... Args>
-    static Status ExecutionError(Args&&... args) {
+    template <typename... Args> static Status ExecutionError(Args&&... args) {
         return FromArgs(StatusCode::ExecutionError, std::forward<Args>(args)...);
     }
-    template <typename... Args>
-    static Status NotImplemented(Args&&... args) {
+    template <typename... Args> static Status NotImplemented(Args&&... args) {
         return FromArgs(StatusCode::NotImplemented, std::forward<Args>(args)...);
     }
-    template <typename... Args>
-    static Status IOError(Args&&... args) {
+    template <typename... Args> static Status IOError(Args&&... args) {
         return FromArgs(StatusCode::IOError, std::forward<Args>(args)...);
     }
-    template <typename... Args>
-    static Status UnknownError(Args&&... args) {
+    template <typename... Args> static Status UnknownError(Args&&... args) {
         return FromArgs(StatusCode::UnknownError, std::forward<Args>(args)...);
     }
 
@@ -97,13 +90,13 @@ class Status {
 };
 
 /// A value or a status
-template <typename T>
-class Result {
+template <typename T> class Result {
    public:
     /// Constructor from a value, or anything that converts to one
-    template <typename U, typename = typename std::enable_if<std::is_convertible<U&&, T>::value &&
-                                                             !std::is_same<typename std::decay<U>::type, Status>::value &&
-                                                             !std::is_same<typename std::decay<U>::type, Result<T>>::value>::type>
+    template <typename U,
+              typename = typename std::enable_if<std::is_convertible<U&&, T>::value &&
+                                                 !std::is_same<typename std::decay<U>::type, Status>::value &&
+                                                 !std::is_same<typename std::decay<U>::type, Result<T>>::value>::type>
     Result(U&& value) : status_(), value_(std::make_unique<T>(std::forward<U>(value))) {}  // NOLINT: implicit by design
     /// Constructor from a status
     Result(Status status) : status_(std::move(status)) {  // NOLINT: implicit by design
@@ -112,8 +105,8 @@ class Result {
         }
     }
     /// Constructor from a result of a convertible type
-    template <typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value &&
-                                                             !std::is_same<U, T>::value>::type>
+    template <typename U,
+              typename = typename std::enable_if<std::is_convertible<U, T>::value && !std::is_same<U, T>::value>::type>
     Result(Result<U>&& other) : status_(other.status()) {  // NOLINT
         if (other.ok()) value_ = std::make_unique<T>(std::move(other).ValueUnsafe());
     }
@@ -156,9 +149,7 @@ class Buffer {
     /// Create a buffer of a given size
     static std::shared_ptr<Buffer> Allocate(size_t size) { return std::make_shared<Buffer>(std::string(size, '\0')); }
     /// Create a buffer from a string
-    static std::shared_ptr<Buffer> FromString(std::string data) {
-        return std::make_shared<Buffer>(std::move(data));
-    }
+    static std::shared_ptr<Buffer> FromString(std::string data) { return std::make_shared<Buffer>(std::move(data)); }
 
     /// Get the data
     const uint8_t* data() const { return reinterpret_cast<const uint8_t*>(data_.data()); }
@@ -172,9 +163,9 @@ class Buffer {
     std::string data_;
 };
 
-#define WEB_RETURN_NOT_OK(EXPR)                 \
-    do {                                        \
-        auto web_status__ = (EXPR);             \
+#define WEB_RETURN_NOT_OK(EXPR)                      \
+    do {                                             \
+        auto web_status__ = (EXPR);                  \
         if (!web_status__.ok()) return web_status__; \
     } while (0)
 

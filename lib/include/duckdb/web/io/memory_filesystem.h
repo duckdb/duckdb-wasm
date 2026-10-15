@@ -2,10 +2,10 @@
 #define INCLUDE_DUCKDB_WEB_IO_MEMORY_FILESYSTEM_H_
 
 #include <unordered_set>
-#include "duckdb/web/status.h"
 
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/web/status.h"
 
 namespace duckdb {
 namespace web {

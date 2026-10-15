@@ -6,8 +6,8 @@
 
 #include "duckdb/common/http_util.hpp"
 #include "duckdb/main/database.hpp"
-#include "duckdb_static_extension.h"
 #include "duckdb/web/config.h"
+#include "duckdb_static_extension.h"
 
 namespace duckdb {
 class HTTPLogger;
@@ -1108,14 +1108,14 @@ unique_ptr<HTTPClient> HTTPWasmUtil::InitializeClient(HTTPParams &http_params, c
 
 string HTTPWasmUtil::GetName() const { return "WasmHTTPUtils"; }
 
-static void RegisterHTTPWasmClient(DatabaseInstance& db) { db.config.SetHTTPUtil(make_shared_ptr<HTTPWasmUtil>()); }
+static void RegisterHTTPWasmClient(DatabaseInstance &db) { db.config.SetHTTPUtil(make_shared_ptr<HTTPWasmUtil>()); }
 
 }  // namespace duckdb
 
 //! The HTTP client of DuckDB-Wasm, on XMLHttpRequest in browsers and a child process in NodeJS. It takes the place of
 //! DuckDB's httplib capability, which is not linked, and registers under the same name for every database opened
 //! afterwards. Extensions such as httpfs use it through HTTPUtil and provide no client of their own.
-extern "C" int32_t duckdb_extension_httplib_describe(duckdb_extension_descriptor* descriptor) {
+extern "C" int32_t duckdb_extension_httplib_describe(duckdb_extension_descriptor *descriptor) {
     if (descriptor->version < 2) {
         descriptor->set_error(descriptor, "httplib needs descriptor layout 2");
         return 1;

@@ -2,7 +2,6 @@
 #define INCLUDE_DUCKDB_WEB_IO_FILE_STATS_H_
 
 #include <atomic>
-#include "duckdb/web/status.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -12,6 +11,7 @@
 #include <vector>
 
 #include "duckdb/web/io/file_page_defaults.h"
+#include "duckdb/web/status.h"
 #include "duckdb/web/utils/parallel.h"
 
 namespace duckdb {

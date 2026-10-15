@@ -1,5 +1,4 @@
 #include "duckdb/web/extension_provider.h"
-#include "duckdb/web/main_thread.h"
 
 #include <dlfcn.h>
 #include <emscripten.h>
@@ -14,6 +13,7 @@
 #include "duckdb/main/extension_helper.hpp"
 #include "duckdb/main/extension_repository_manager.hpp"
 #include "duckdb/main/settings.hpp"
+#include "duckdb/web/main_thread.h"
 
 namespace duckdb {
 namespace web {
@@ -38,19 +38,19 @@ bool FetchExtension(const string &url, FetchedExtension &out) {
             var url = UTF8ToString($0);
             var bytes;
             try {
-                if (typeof XMLHttpRequest === "undefined") {
+                if (typeof XMLHttpRequest == = "undefined") {
                     if (url.startsWith("http://") || url.startsWith("https://")) {
                         var script =
                             "fetch(process.argv[1]).then(r=>{if(!r.ok)process.exit(2);return r.arrayBuffer()})" +
                             ".then(b=>process.stdout.write(Buffer.from(b)),()=>process.exit(3))";
-                        bytes = require("node:child_process").execFileSync(process.execPath, [ "-e", script, url ], {
-                            maxBuffer : 1073741824,
-                            stdio : [ "ignore", "pipe", "ignore" ]
+                        bytes = require("node:child_process").execFileSync(process.execPath, ["-e", script, url], {
+                            maxBuffer:
+                                1073741824, stdio : [ "ignore", "pipe", "ignore" ]
                         });
                     } else {
                         bytes = require("node:fs").readFileSync(url);
                     }
-                } else if (typeof document === "undefined") {
+                } else if (typeof document == = "undefined") {
                     // A worker: a synchronous request with a binary response
                     var xhr = new XMLHttpRequest();
                     xhr.open("GET", url, false);
@@ -126,8 +126,8 @@ unique_ptr<ExtensionInstallInfo> WasmExtensionProvider::Install(DatabaseInstance
 }
 
 bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const string &extension,
-                                           const string &repository_name, bool core_only,
-                                           ExtensionInitResult &result, string &error) {
+                                           const string &repository_name, bool core_only, ExtensionInitResult &result,
+                                           string &error) {
     bool direct_load = ExtensionHelper::IsFullPath(extension);
     string extension_name;
     string url;
@@ -211,7 +211,8 @@ bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs,
         }
     }
 
-    auto lib_hdl = main_thread::OnMainThread([&] { return OpenFetchedExtension(fetched, "/" + extension_name + EXTENSION_SUFFIX); });
+    auto lib_hdl = main_thread::OnMainThread(
+        [&] { return OpenFetchedExtension(fetched, "/" + extension_name + EXTENSION_SUFFIX); });
     if (!lib_hdl) {
         throw IOException("Extension \"%s\" could not be loaded: %s", url, GetLibraryError());
     }

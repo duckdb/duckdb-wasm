@@ -1,11 +1,11 @@
 #include "duckdb/web/io/file_stats.h"
-#include "duckdb/web/status.h"
 
 #include <cstdint>
 #include <iostream>
 #include <limits>
 #include <mutex>
 
+#include "duckdb/web/status.h"
 #include "duckdb/web/utils/parallel.h"
 
 namespace duckdb {

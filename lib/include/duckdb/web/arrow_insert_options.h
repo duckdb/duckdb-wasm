@@ -2,11 +2,11 @@
 #define INCLUDE_DUCKDB_WEB_ARROW_INSERT_OPTIONS_H_
 
 #include <iostream>
-#include "duckdb/web/status.h"
 #include <memory>
 #include <optional>
 #include <string>
 
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {

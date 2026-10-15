@@ -2,7 +2,6 @@
 #define INCLUDE_DUCKDB_WEB_ARROW_IPC_WRITER_H_
 
 #include <memory>
-#include "duckdb/web/status.h"
 #include <string>
 #include <vector>
 
@@ -10,6 +9,7 @@
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/web/config.h"
+#include "duckdb/web/status.h"
 
 namespace duckdb {
 namespace web {
@@ -20,8 +20,8 @@ namespace web {
 class ArrowIPCWriter {
    public:
     /// Constructor, prepares the Arrow schema of a result
-    ArrowIPCWriter(ClientContext& context, vector<LogicalType> types, vector<string> names,
-                   const QueryConfig& config, bool lossless_conversion);
+    ArrowIPCWriter(ClientContext& context, vector<LogicalType> types, vector<string> names, const QueryConfig& config,
+                   bool lossless_conversion);
     /// Destructor
     ~ArrowIPCWriter();
 

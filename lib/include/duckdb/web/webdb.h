@@ -2,10 +2,9 @@
 #define INCLUDE_DUCKDB_WEB_WEBDB_H_
 
 #include <cstring>
-#include "duckdb/web/status.h"
+#include <duckdb/main/prepared_statement.hpp>
 #include <duckdb/main/query_result.hpp>
 #include <duckdb/main/query_result_stream.hpp>
-#include <duckdb/main/prepared_statement.hpp>
 #include <initializer_list>
 #include <stdexcept>
 #include <string>
@@ -24,12 +23,12 @@
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/status.h"
 #include "duckdb/web/udf.h"
 #include "nonstd/span.h"
 
 namespace duckdb {
 namespace web {
-
 
 struct DuckDBWasmResultsWrapper {
     // Additional ResponseStatuses to be >= 256, and mirrored to packages/duckdb-wasm/src/status.ts
@@ -94,13 +93,13 @@ class WebDB {
         web::Result<std::shared_ptr<web::Buffer>> StreamQueryResult(duckdb::unique_ptr<duckdb::QueryResult> result);
         // Execute a prepared statement by setting up all arguments and returning the query result
         web::Result<duckdb::unique_ptr<duckdb::QueryResult>> ExecutePreparedStatement(size_t statement_id,
-                                                                                        std::string_view args_json,
-                                                                                        bool allow_stream_result);
+                                                                                      std::string_view args_json,
+                                                                                      bool allow_stream_result);
         // Submit the pending statement at current_pending_statement_index_
         web::Status SubmitPendingStatement();
         // Call scalar UDF function
         web::Status CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk, ExpressionState& state,
-                                            Vector& vec);
+                                          Vector& vec);
 
        public:
         /// Constructor
@@ -131,11 +130,10 @@ class WebDB {
         /// Prepare a statement and return its identifier
         web::Result<size_t> CreatePreparedStatement(std::string_view text);
         /// Execute a prepared statement with the given parameters in stringifed json format and return full result
-        web::Result<std::shared_ptr<web::Buffer>> RunPreparedStatement(size_t statement_id,
-                                                                           std::string_view args_json);
+        web::Result<std::shared_ptr<web::Buffer>> RunPreparedStatement(size_t statement_id, std::string_view args_json);
         /// Execute a prepared statement with the given parameters in stringifed json format and stream result
         web::Result<std::shared_ptr<web::Buffer>> SendPreparedStatement(size_t statement_id,
-                                                                            std::string_view args_json);
+                                                                        std::string_view args_json);
         /// Close a prepared statement by its identifier
         web::Status ClosePreparedStatement(size_t statement_id);
 
@@ -207,7 +205,7 @@ class WebDB {
 
     /// Register a file URL
     web::Status RegisterFileURL(std::string_view file_name, std::string_view file_url,
-                                  io::WebFileSystem::DataProtocol protocol, bool direct_io);
+                                io::WebFileSystem::DataProtocol protocol, bool direct_io);
     /// Register a file URL
     web::Status RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer, size_t buffer_length);
     /// Glob all known file infos

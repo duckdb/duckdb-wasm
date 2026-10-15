@@ -1,6 +1,4 @@
 #include "duckdb/web/io/web_filesystem.h"
-#include "duckdb/web/main_thread.h"
-#include "duckdb/web/status.h"
 
 #include <cstdint>
 #include <iostream>
@@ -14,6 +12,8 @@
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/glob.h"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/main_thread.h"
+#include "duckdb/web/status.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/scope_guard.h"
 #include "duckdb/web/utils/thread.h"
@@ -171,9 +171,7 @@ RT_FN(void duckdb_web_fs_file_remove(const char *path, size_t pathLen), {
 /// Runtime calls are served by the main thread, see main_thread.h
 #define RT_CALL(FN, ...) ::duckdb::web::main_thread::OnMainThread([&] { return FN(__VA_ARGS__); })
 
-extern "C" void duckdb_web_fs_glob_add_path(const char *path) {
-    GLOB_RESULTS.push_back(std::string{path});
-}
+extern "C" void duckdb_web_fs_glob_add_path(const char *path) { GLOB_RESULTS.push_back(std::string{path}); }
 /// The runtime reports a directory entry while duckdb_web_fs_directory_list_files runs
 extern "C" void duckdb_web_fs_directory_add_entry(const char *name, bool is_dir) {
     if (list_files_callback) {
@@ -324,8 +322,7 @@ void WebFileSystem::WebFileHandle::Close() {
 /// reassigned by MoveFile while a pinned handle of the previous file is still around, and a failed open erases
 /// the entries before the handle closes.
 void WebFileSystem::Unregister(WebFile &file) {
-    if (auto iter = files_by_name_.find(file.file_name_);
-        iter != files_by_name_.end() && iter->second.get() == &file) {
+    if (auto iter = files_by_name_.find(file.file_name_); iter != files_by_name_.end() && iter->second.get() == &file) {
         files_by_name_.erase(iter);
     }
     if (file.data_url_.has_value()) {
@@ -418,8 +415,8 @@ void WebFileSystem::InvalidateReadAheads(size_t file_id, std::unique_lock<Shared
 
 /// Register a file URL
 web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileURL(std::string_view file_name,
-                                                                                            std::string_view file_url,
-                                                                                            DataProtocol protocol) {
+                                                                                          std::string_view file_url,
+                                                                                          DataProtocol protocol) {
     DEBUG_TRACE();
     // Check if the file exists
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
@@ -453,8 +450,8 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
 }
 
 /// Register a file buffer
-web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(
-    std::string_view file_name, DataBuffer file_buffer) {
+web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::RegisterFileBuffer(std::string_view file_name,
+                                                                                             DataBuffer file_buffer) {
     DEBUG_TRACE();
     // Check if the file exists
     std::unique_lock<LightMutex> fs_guard{fs_mutex_};
@@ -834,8 +831,8 @@ int64_t WebFileSystem::ReadAt(WebFileHandle &file_hdl, void *buffer, int64_t nr_
                 auto reader = [&](auto *out, size_t n, duckdb::idx_t ofs) {
                     return RT_CALL(duckdb_web_fs_file_read, file.file_id_, out, n, ofs);
                 };
-                auto n = ra->Read(file.file_id_, file.file_size_.value_or(0), buffer, nr_bytes, position,
-                                  reader, file.file_stats_.get());
+                auto n = ra->Read(file.file_id_, file.file_size_.value_or(0), buffer, nr_bytes, position, reader,
+                                  file.file_stats_.get());
                 return n;
             } else {
                 auto n = RT_CALL(duckdb_web_fs_file_read, file.file_id_, buffer, nr_bytes, position);
@@ -850,7 +847,6 @@ int64_t WebFileSystem::ReadAt(WebFileHandle &file_hdl, void *buffer, int64_t nr_
     }
     return 0;
 }
-
 
 /// Read at the position of the handle and advance it
 int64_t WebFileSystem::Read(duckdb::FileHandle &handle, void *buffer, int64_t nr_bytes) {
@@ -1058,8 +1054,8 @@ void WebFileSystem::MoveFile(const std::string &source, const std::string &targe
         bool target_is_handle = target_iter != files_by_name_.end() &&
                                 target_iter->second->GetDataProtocol() == BROWSER_FSACCESS &&
                                 !hasPrefix(target, "opfs://");
-        bool source_is_handle = source_iter != files_by_name_.end() &&
-                                source_iter->second->GetDataProtocol() == BROWSER_FSACCESS;
+        bool source_is_handle =
+            source_iter != files_by_name_.end() && source_iter->second->GetDataProtocol() == BROWSER_FSACCESS;
         if (target_is_handle && !source_is_handle) {
             // Open handles on the target keep working, they see the new content
             fs_guard.unlock();
