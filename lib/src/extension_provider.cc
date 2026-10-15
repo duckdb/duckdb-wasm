@@ -38,7 +38,7 @@ bool FetchExtension(const string &url, FetchedExtension &out) {
             var url = UTF8ToString($0);
             var bytes;
             try {
-                if (typeof XMLHttpRequest == = "undefined") {
+                if (typeof XMLHttpRequest == "undefined") {
                     if (url.startsWith("http://") || url.startsWith("https://")) {
                         var script =
                             "fetch(process.argv[1]).then(r=>{if(!r.ok)process.exit(2);return r.arrayBuffer()})" +
@@ -50,7 +50,7 @@ bool FetchExtension(const string &url, FetchedExtension &out) {
                     } else {
                         bytes = require("node:fs").readFileSync(url);
                     }
-                } else if (typeof document == = "undefined") {
+                } else if (typeof document == "undefined") {
                     // A worker: a synchronous request with a binary response
                     var xhr = new XMLHttpRequest();
                     xhr.open("GET", url, false);
