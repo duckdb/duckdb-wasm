@@ -1096,6 +1096,16 @@ jobs:
                   name: wasm-threads-loadable
                   path: ./packages/duckdb-wasm/src/bindings/
 
+            - uses: actions/download-artifact@v8
+              with:
+                  name: extension-repository-base-loadable
+                  path: ./build/extension_repository/
+
+            - uses: actions/download-artifact@v8
+              with:
+                  name: extension-repository-threads-loadable
+                  path: ./build/extension_repository/
+
             - name: Prepare repository
               run: |
                   git fetch --tags --no-recurse-submodules -f
