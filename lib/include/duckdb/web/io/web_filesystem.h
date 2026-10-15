@@ -2,7 +2,6 @@
 #define INCLUDE_DUCKDB_WEB_IO_WEB_FILESYSTEM_H_
 
 #include <atomic>
-#include "duckdb/web/status.h"
 #include <mutex>
 #include <optional>
 #include <shared_mutex>
@@ -14,6 +13,7 @@
 #include "duckdb/web/config.h"
 #include "duckdb/web/io/file_stats.h"
 #include "duckdb/web/io/readahead_buffer.h"
+#include "duckdb/web/status.h"
 #include "duckdb/web/utils/parallel.h"
 #include "duckdb/web/utils/wasm_response.h"
 #include "nonstd/span.h"
@@ -228,10 +228,9 @@ class WebFileSystem : public duckdb::FileSystem {
     rapidjson::Value WriteFileInfo(rapidjson::Document &doc, std::string_view file_name, uint32_t cache_epoch);
     /// Register a file URL
     web::Result<std::unique_ptr<WebFileHandle>> RegisterFileURL(std::string_view file_name, std::string_view file_url,
-                                                                  DataProtocol protocol);
+                                                                DataProtocol protocol);
     /// Register a file buffer
-    web::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name,
-                                                                     DataBuffer file_buffer);
+    web::Result<std::unique_ptr<WebFileHandle>> RegisterFileBuffer(std::string_view file_name, DataBuffer file_buffer);
     /// Try to drop a specific file
     bool TryDropFile(std::string_view file_name);
     /// drop a specific file

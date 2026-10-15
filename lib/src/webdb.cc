@@ -1,9 +1,6 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "duckdb/web/webdb.h"
-#include "duckdb/web/main_thread.h"
-#include "duckdb/web/query_thread.h"
-#include "duckdb/web/status.h"
 
 #include <emscripten/val.h>
 
@@ -23,24 +20,22 @@
 #include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/common/arrow/arrow_converter.hpp"
 #include "duckdb/common/file_system.hpp"
-#include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/common/http_util.hpp"
-#include "duckdb/parser/parsed_data/create_scalar_function_info.hpp"
-#include "duckdb/function/table/arrow.hpp"
-#include "duckdb/main/buffered_data/buffered_data.hpp"
-#include "duckdb_static_extension.h"
-#include "nanoarrow/nanoarrow.hpp"
-#include "nanoarrow/nanoarrow_ipc.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/data_chunk.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/types/vector_buffer.hpp"
 #include "duckdb/common/virtual_file_system.hpp"
+#include "duckdb/function/table/arrow.hpp"
 #include "duckdb/function/table/arrow/arrow_duck_schema.hpp"
+#include "duckdb/main/buffered_data/buffered_data.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/main/settings.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
+#include "duckdb/parser/keyword_helper.hpp"
+#include "duckdb/parser/parsed_data/create_scalar_function_info.hpp"
 #include "duckdb/parser/parser.hpp"
+#include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/arrow_ipc_writer.h"
 #include "duckdb/web/config.h"
@@ -48,21 +43,26 @@
 #include "duckdb/web/environment.h"
 #include "duckdb/web/extension_provider.h"
 #include "duckdb/web/extensions/json_extension.h"
-#include "duckdb/web/extensions/tpch_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
+#include "duckdb/web/extensions/tpch_extension.h"
 #include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/http_wasm.h"
 #include "duckdb/web/io/buffered_filesystem.h"
-#include "duckdb/web/io/remote_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
 #include "duckdb/web/io/ifstream.h"
+#include "duckdb/web/io/remote_filesystem.h"
 #include "duckdb/web/io/web_filesystem.h"
 #include "duckdb/web/json_dataview.h"
-#include "duckdb/parser/keyword_helper.hpp"
 #include "duckdb/web/json_insert_options.h"
+#include "duckdb/web/main_thread.h"
+#include "duckdb/web/query_thread.h"
+#include "duckdb/web/status.h"
 #include "duckdb/web/udf.h"
 #include "duckdb/web/utils/debug.h"
 #include "duckdb/web/utils/wasm_response.h"
+#include "duckdb_static_extension.h"
+#include "nanoarrow/nanoarrow.hpp"
+#include "nanoarrow/nanoarrow_ipc.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/rapidjson.h"
@@ -122,8 +122,7 @@ web::Result<std::reference_wrapper<WebDB>> WebDB::Get() {
 }
 
 /// Constructor
-WebDB::Connection::Connection(WebDB& webdb)
-    : webdb_(webdb), connection_(*webdb.database_) {}
+WebDB::Connection::Connection(WebDB& webdb) : webdb_(webdb), connection_(*webdb.database_) {}
 /// Constructor
 WebDB::Connection::~Connection() = default;
 
@@ -219,9 +218,9 @@ web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::StreamQueryResult(
     }
 
     // Serialize the schema, the record batches follow in FetchQueryResults
-    current_ipc_writer_ = std::make_unique<ArrowIPCWriter>(*connection_.context, std::move(types), std::move(names),
-                                                           webdb_.config_->query,
-                                                           webdb_.config_->arrow_lossless_conversion);
+    current_ipc_writer_ =
+        std::make_unique<ArrowIPCWriter>(*connection_.context, std::move(types), std::move(names),
+                                         webdb_.config_->query, webdb_.config_->arrow_lossless_conversion);
     return current_ipc_writer_->SerializeSchema();
 }
 
@@ -247,7 +246,7 @@ web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::RunQuery(std::strin
 }
 
 web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::PendingQuery(std::string_view text,
-                                                                              bool allow_stream_result) {
+                                                                          bool allow_stream_result) {
     try {
         auto statements = connection_.ExtractStatements(std::string{text});
         if (statements.size() == 0) {
@@ -484,7 +483,7 @@ web::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecuteP
                 values.emplace_back(v.GetBool());
             else
                 return web::Status{web::StatusCode::Invalid,
-                                     "Invalid column type encountered for argument " + std::to_string(index)};
+                                   "Invalid column type encountered for argument " + std::to_string(index)};
             ++index;
         }
 
@@ -497,14 +496,14 @@ web::Result<duckdb::unique_ptr<duckdb::QueryResult>> WebDB::Connection::ExecuteP
 }
 
 web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::RunPreparedStatement(size_t statement_id,
-                                                                                      std::string_view args_json) {
+                                                                                  std::string_view args_json) {
     auto result = ExecutePreparedStatement(statement_id, args_json, false);
     if (!result.ok()) return result.status();
     return MaterializeQueryResult(std::move(*result));
 }
 
 web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::SendPreparedStatement(size_t statement_id,
-                                                                                       std::string_view args_json) {
+                                                                                   std::string_view args_json) {
     auto result = ExecutePreparedStatement(statement_id, args_json, true);
     if (!result.ok()) return result.status();
     return StreamQueryResult(std::move(*result));
@@ -566,7 +565,7 @@ static data_ptr_t create_additional_buffer(vector<double>& data_ptrs, additional
 
 // this talks to udf_runtime.ts, changes need to be mirrored there
 web::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& function, DataChunk& chunk,
-                                                       ExpressionState& state, Vector& out) {
+                                                     ExpressionState& state, Vector& out) {
     auto data_size = chunk.size();
     vector<string> type_desc;
 
@@ -647,7 +646,7 @@ web::Status WebDB::Connection::CallScalarUDFFunction(UDFFunctionDeclaration& fun
 
 /// Insert a record batch
 web::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uint8_t> stream,
-                                                          std::string_view options_json) {
+                                                        std::string_view options_json) {
     try {
         // First call?
         if (!arrow_insert_options_) {
@@ -816,8 +815,9 @@ web::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::st
                                                                  std::move(unnamed_params), named_params);
             vector<string> unnest_columns;
             for (auto& column : rel->Columns()) {
-                unnest_columns.push_back("unnest(" + KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"') +
-                                         ") AS " + KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"'));
+                unnest_columns.push_back("unnest(" +
+                                         KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"') + ") AS " +
+                                         KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"'));
             }
             rel = rel->Project(unnest_columns);
         }
@@ -1142,7 +1142,7 @@ web::Status WebDB::OpenWithConfig(WebDBConfig config) {
 }
 /// Register a file URL
 web::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view file_url,
-                                     io::WebFileSystem::DataProtocol protocol, bool direct_io) {
+                                   io::WebFileSystem::DataProtocol protocol, bool direct_io) {
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return web::Status::Invalid("WebFileSystem is not configured");
@@ -1170,7 +1170,7 @@ web::Status WebDB::RegisterFileURL(std::string_view file_name, std::string_view 
 }
 /// Register a file URL
 web::Status WebDB::RegisterFileBuffer(std::string_view file_name, std::unique_ptr<char[]> buffer,
-                                        size_t buffer_length) {
+                                      size_t buffer_length) {
     // No web filesystem configured?
     auto web_fs = io::WebFileSystem::Get();
     if (!web_fs) return web::Status::Invalid("WebFileSystem is not configured");

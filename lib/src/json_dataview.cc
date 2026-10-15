@@ -1,6 +1,4 @@
 #include "duckdb/web/json_dataview.h"
-#include "duckdb/web/status.h"
-
 
 #include <algorithm>
 #include <cstdint>
@@ -19,11 +17,11 @@
 
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/web/json_typedef.h"
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/writer.h"
-
 
 namespace duckdb {
 namespace web {
@@ -44,8 +42,7 @@ std::pair<T*, size_t> create_additional_buffer(std::vector<double>& data_ptrs, a
 
 /// Serialize a DuckDB Vector as JSON data view
 web::Result<rapidjson::Value> CreateDataView(rapidjson::Document& doc, duckdb::DataChunk& chunk,
-                                               std::vector<double>& data_ptrs,
-                                               additional_buffers_t& additional_buffers) {
+                                             std::vector<double>& data_ptrs, additional_buffers_t& additional_buffers) {
     auto allocator = doc.GetAllocator();
 
     // TODO create the descriptor in the bind phase for performance

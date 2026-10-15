@@ -26,8 +26,7 @@ void ServeUntil(std::atomic<int> &done);
 void Wake();
 
 /// Run a callable on the main thread and return its result
-template <typename F>
-auto OnMainThread(F &&fn) -> decltype(fn()) {
+template <typename F> auto OnMainThread(F &&fn) -> decltype(fn()) {
     using R = decltype(fn());
     if (IsMainThread()) return fn();
     if constexpr (std::is_void_v<R>) {

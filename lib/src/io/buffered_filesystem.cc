@@ -1,12 +1,11 @@
 #include "duckdb/web/io/buffered_filesystem.h"
 
-#include "duckdb/common/compressed_file_system.hpp"
-
 #include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include "duckdb/common/compressed_file_system.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/main/client_context.hpp"

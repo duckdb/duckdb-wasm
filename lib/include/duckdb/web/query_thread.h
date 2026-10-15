@@ -22,8 +22,7 @@ bool ShouldDispatch();
 void Stop();
 
 /// Run a callable on the query thread, exceptions come back to the caller
-template <typename F>
-auto Run(F &&fn) -> decltype(fn()) {
+template <typename F> auto Run(F &&fn) -> decltype(fn()) {
     using R = decltype(fn());
     if (!ShouldDispatch()) return fn();
     std::exception_ptr error;

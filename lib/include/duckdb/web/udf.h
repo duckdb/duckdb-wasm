@@ -2,12 +2,12 @@
 #define INCLUDE_DUCKDB_WEB_UDF_H_
 
 #include <cstdint>
-#include "duckdb/web/status.h"
 #include <optional>
 #include <string>
 #include <string_view>
 
 #include "duckdb/common/types.hpp"
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {

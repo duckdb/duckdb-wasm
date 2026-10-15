@@ -1,5 +1,4 @@
 #include "duckdb/web/io/memory_filesystem.h"
-#include "duckdb/web/status.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -8,6 +7,7 @@
 
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/status.h"
 
 namespace duckdb {
 namespace web {

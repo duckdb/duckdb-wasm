@@ -2,12 +2,12 @@
 #define INCLUDE_DUCKDB_WEB_CSV_TABLE_OPTIONS_H_
 
 #include <iostream>
-#include "duckdb/web/status.h"
 #include <memory>
 #include <optional>
 #include <string>
 
 #include "duckdb/common/types.hpp"
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 
 namespace duckdb {

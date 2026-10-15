@@ -1,5 +1,4 @@
 #include "duckdb/web/udf.h"
-#include "duckdb/web/status.h"
 
 #include <iostream>
 #include <memory>
@@ -8,6 +7,7 @@
 
 #include "duckdb/web/insert_options.h"
 #include "duckdb/web/json_typedef.h"
+#include "duckdb/web/status.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/istreamwrapper.h"
