@@ -1,6 +1,7 @@
 import * as pthread_api from '../bindings/duckdb-coi.pthread';
 import DuckDB from '../bindings/duckdb-coi';
 import { BROWSER_RUNTIME } from '../bindings/runtime_browser';
+import { keepHeapViewsCurrent } from '../bindings/duckdb_module';
 
 // Register the global DuckDB runtime
 globalThis.DUCKDB_RUNTIME = {};
@@ -23,6 +24,8 @@ globalThis.onmessage = (e: any) => {
         m['buffer'] = m['wasmMemory'].buffer;
         m['ENVIRONMENT_IS_PTHREAD'] = true;
         DuckDB(m).then((instance: any) => {
+            // The runtime functions called on this thread access the heap through this module
+            keepHeapViewsCurrent(instance);
             pthread_api.setModule(instance);
         });
     } else if (e.data.cmd === 'registerFileHandle') {
