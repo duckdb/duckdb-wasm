@@ -1,4 +1,4 @@
-import { DuckDBModule, PThread } from './duckdb_module';
+import { DuckDBModule, PThread, keepHeapViewsCurrent } from './duckdb_module';
 import { DuckDBConfig } from './config';
 import { Logger } from '../log';
 import { InstantiationProgress } from './progress';
@@ -94,6 +94,8 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
         // Wait for onRuntimeInitialized
         await this._initPromise;
         this._initPromise = null;
+        // Other threads can grow the shared memory under the bindings
+        keepHeapViewsCurrent(this._instance);
         // Remove own progress callback
         this.onInstantiationProgress = this.onInstantiationProgress.filter(x => x != onProgress);
         (globalThis as any).DUCKDB_BINDINGS = this;
