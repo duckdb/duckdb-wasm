@@ -50,7 +50,7 @@ bool FetchExtension(const string &url, FetchedExtension &out) {
                     } else {
                         bytes = require("node:fs").readFileSync(url);
                     }
-                } else if (typeof document == "undefined") {
+                } else if (typeof document === "undefined") {
                     // A worker: a synchronous request with a binary response
                     var xhr = new XMLHttpRequest();
                     xhr.open("GET", url, false);
