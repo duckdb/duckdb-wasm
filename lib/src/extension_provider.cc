@@ -38,8 +38,8 @@ bool FetchExtension(const string &url, FetchedExtension &out) {
             var url = UTF8ToString($0);
             var bytes;
             try {
-                if (typeof XMLHttpRequest == "undefined") {
-                    if (url.startsWith("http://") || url.startsWith("https://")) {
+                if (typeof XMLHttpRequest === "undefined") {
+if (url.startsWith("http://") || url.startsWith("https://")) {
                         var script =
                             "fetch(process.argv[1]).then(r=>{if(!r.ok)process.exit(2);return r.arrayBuffer()})" +
                             ".then(b=>process.stdout.write(Buffer.from(b)),()=>process.exit(3))";
