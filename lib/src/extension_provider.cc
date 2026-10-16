@@ -20,11 +20,11 @@ namespace web {
 
 namespace {
 
-constexpr const char *EXTENSION_SUFFIX = ".duckdb_extension.wasm";
+constexpr const char* EXTENSION_SUFFIX = ".duckdb_extension.wasm";
 
 /// A fetched extension on the wasm heap
 struct FetchedExtension {
-    char *data = nullptr;
+    char* data = nullptr;
     uint32_t size = 0;
 
     ~FetchedExtension() { free(data); }
@@ -32,20 +32,21 @@ struct FetchedExtension {
 
 /// Fetch an extension synchronously, either through XHR (web workers), or through the file system or a child
 /// process (NodeJS). Returns false if the extension could not be fetched.
-bool FetchExtension(const string &url, FetchedExtension &out) {
-    out.data = reinterpret_cast<char *>(EM_ASM_PTR(
+bool FetchExtension(const string& url, FetchedExtension& out) {
+    // clang-format off
+    out.data = reinterpret_cast<char*>(EM_ASM_PTR(
         {
             var url = UTF8ToString($0);
             var bytes;
             try {
                 if (typeof XMLHttpRequest === "undefined") {
-if (url.startsWith("http://") || url.startsWith("https://")) {
+                    if (url.startsWith("http://") || url.startsWith("https://")) {
                         var script =
                             "fetch(process.argv[1]).then(r=>{if(!r.ok)process.exit(2);return r.arrayBuffer()})" +
                             ".then(b=>process.stdout.write(Buffer.from(b)),()=>process.exit(3))";
                         bytes = require("node:child_process").execFileSync(process.execPath, ["-e", script, url], {
-                            maxBuffer:
-                                1073741824, stdio : [ "ignore", "pipe", "ignore" ]
+                            maxBuffer: 1073741824,
+                            stdio: ["ignore", "pipe", "ignore"]
                         });
                     } else {
                         bytes = require("node:fs").readFileSync(url);
@@ -79,20 +80,24 @@ if (url.startsWith("http://") || url.startsWith("https://")) {
             return ptr;
         },
         url.c_str(), &out.size));
+    // clang-format on
     return out.data != nullptr;
 }
 
 /// Open a fetched extension as side module. dlopen reads from emscripten's file system.
-void *OpenFetchedExtension(const FetchedExtension &extension, const string &path) {
-    EM_ASM({ FS.writeFile(UTF8ToString($0), HEAPU8.subarray($1, $1 + $2)); }, path.c_str(), extension.data,
-           extension.size);
+void* OpenFetchedExtension(const FetchedExtension& extension, const string& path) {
+    // clang-format off
+    EM_ASM({ FS.writeFile(UTF8ToString($0), HEAPU8.subarray($1, $1 + $2)); }, path.c_str(), extension.data, extension.size);
+    // clang-format on
     auto handle = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+    // clang-format off
     EM_ASM({ FS.unlink(UTF8ToString($0)); }, path.c_str());
+    // clang-format on
     return handle;
 }
 
 /// The repositories maintained by DuckDB are also served over https, which is required on https sites
-string UpgradeToHTTPS(const string &url) {
+string UpgradeToHTTPS(const string& url) {
     const string prefix = "http://";
     if (!StringUtil::StartsWith(url, prefix)) {
         return url;
@@ -112,9 +117,9 @@ bool WasmExtensionProvider::SupportsExternalExtensions() const { return true; }
 
 bool WasmExtensionProvider::UsesExtensionDirectory() const { return false; }
 
-unique_ptr<ExtensionInstallInfo> WasmExtensionProvider::Install(DatabaseInstance &db, FileSystem &fs,
-                                                                const string &local_path, const string &extension,
-                                                                ExtensionInstallOptions &options,
+unique_ptr<ExtensionInstallInfo> WasmExtensionProvider::Install(DatabaseInstance& db, FileSystem& fs,
+                                                                const string& local_path, const string& extension,
+                                                                ExtensionInstallOptions& options,
                                                                 optional_ptr<ClientContext> context) {
     // Nothing is stored, but an explicit repository is remembered for when the extension is loaded
     if (options.repository && !ExtensionHelper::IsFullPath(extension)) {
@@ -125,9 +130,9 @@ unique_ptr<ExtensionInstallInfo> WasmExtensionProvider::Install(DatabaseInstance
     return nullptr;
 }
 
-bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs, const string &extension,
-                                           const string &repository_name, bool core_only, ExtensionInitResult &result,
-                                           string &error) {
+bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance& db, FileSystem& fs, const string& extension,
+                                           const string& repository_name, bool core_only, ExtensionInitResult& result,
+                                           string& error) {
     bool direct_load = ExtensionHelper::IsFullPath(extension);
     string extension_name;
     string url;
@@ -236,11 +241,11 @@ bool WasmExtensionProvider::TryInitialLoad(DatabaseInstance &db, FileSystem &fs,
     return true;
 }
 
-void *WasmExtensionProvider::OpenLibrary(const string &filename, const string &filebase) {
+void* WasmExtensionProvider::OpenLibrary(const string& filename, const string& filebase) {
     throw InternalException("WasmExtensionProvider opens extensions in TryInitialLoad");
 }
 
-void *WasmExtensionProvider::TryLoadFunction(void *library, const string &function_name) {
+void* WasmExtensionProvider::TryLoadFunction(void* library, const string& function_name) {
     return dlsym(library, function_name.c_str());
 }
 
