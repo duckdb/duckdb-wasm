@@ -98,7 +98,9 @@ import { testFTS } from './fts.test';
 import { testPivot } from './pivot.test';
 import { testSpill } from './spill.test';
 import { testJsBufferFile } from './js_buffer_file.test';
+import { testInstantiation } from './instantiation.test';
 
+testInstantiation();
 testUDF(() => db!);
 longQueries(() => adb!);
 testTableNames(() => db!);
