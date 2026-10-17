@@ -69,14 +69,14 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
     /** Instantiate the module */
     protected onInstantiationProgress: ((p: InstantiationProgress) => void)[] = [];
     /** Instantiate the database */
-    public async instantiate(onProgress: (progress: InstantiationProgress) => void = _ => {}): Promise<this> {
+    public async instantiate(onProgress?: (progress: InstantiationProgress) => void): Promise<this> {
         // Already opened?
         if (this._instance != null) {
             return this;
         }
         // Open in progress?
         if (this._initPromise != null) {
-            this.onInstantiationProgress.push(onProgress);
+            if (onProgress) this.onInstantiationProgress.push(onProgress);
             await this._initPromise;
         }
         // Create a promise that we can await
@@ -84,7 +84,7 @@ export abstract class DuckDBBindingsBase implements DuckDBBindings {
             this._initPromiseResolver = resolve;
         });
         // Register progress handler
-        this.onInstantiationProgress = [onProgress];
+        this.onInstantiationProgress = onProgress ? [onProgress] : [];
         // Initialize duckdb
         this._instance = await this.instantiateImpl({
             print: console.log.bind(console),
