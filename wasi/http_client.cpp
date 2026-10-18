@@ -126,7 +126,9 @@ private:
 	                                 const string *content_type,
 	                                 const std::function<bool(const HTTPResponse &)> *response_handler,
 	                                 const std::function<bool(const_data_ptr_t, idx_t)> *content_handler) {
-		auto headers = BaseRequest::MergeHeaders(request.headers, request.params);
+		// request.headers already carry the extra headers of the parameters (BaseRequest merges them), as
+		// duckdb-wasm's client also forwards them unchanged
+		HTTPHeaders headers = request.headers;
 		if (content_type) {
 			headers.Insert("Content-Type", *content_type);
 		}
