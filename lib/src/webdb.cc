@@ -184,10 +184,11 @@ web::Result<bool> ArrowIPCStreamComplete(const std::vector<uint8_t>& stream, siz
     return false;
 }
 
-/// Can a stream be opened on a submitted query result? A statement that must run to completion (DuckDB's former
-/// FORCED eagerness) is now retained at submission, so the lifetime says it all.
+/// Can a stream be opened on a submitted query result? DuckDB decides which statements stream by default (a SELECT
+/// producing a query result); anything else, a CREATE TABLE AS for one, must run to completion before its result
+/// is returned. A result already retained cannot be streamed either.
 bool CanStream(const QueryResult& result) {
-    return !result.HasError() && result.HasBufferedData() &&
+    return !result.HasError() && result.HasBufferedData() && StreamsByDefault(result.GetStatementType(), result) &&
            result.GetBufferedData().Lifetime() != ResultLifetime::RETAINED;
 }
 }  // namespace
@@ -284,7 +285,8 @@ web::Status WebDB::Connection::SubmitPendingStatement() {
     // Only the result of the last statement is returned, and only that may be streamed.
     // Everything else is materialized while polling.
     bool is_last = current_pending_statement_index_ + 1 == current_pending_statements_.size();
-    if (!(is_last && current_allow_stream_result_ && CanStream(*result))) {
+    current_pending_query_streams_ = is_last && current_allow_stream_result_ && CanStream(*result);
+    if (!current_pending_query_streams_) {
         result->Materialize();
     }
     current_pending_query_result_ = std::move(result);
@@ -301,10 +303,24 @@ web::Result<std::shared_ptr<web::Buffer>> WebDB::Connection::PollPendingQuery() 
     uint64_t elapsed;
     auto polling_interval = webdb_.config_->query.query_polling_interval.value_or(DEFAULT_QUERY_POLLING_INTERVAL);
     do {
-        // Poll does not run tasks and is safe on results that already completed
-        auto state = current_pending_query_result_->Poll();
-        if (!IsObservable(state)) {
+        QueryResultState state;
+        if (current_pending_query_streams_) {
+            // Poll runs no task and is safe on results that already completed. READY means the engine waits for
+            // the retention decision: the result is handed over at that point and its stream drives it
+            state = current_pending_query_result_->Poll();
+            if (!IsObservable(state)) {
+                state = current_pending_query_result_->ExecuteTask();
+            }
+        } else {
+            // A materialized result (the decision was made at submission) runs here until it finished. Only the
+            // ExecuteTask call that reports FINISHED ends the query (Poll's FINISHED does not), and a query nobody
+            // ended is aborted when its result closes; Complete makes the end explicit and collects the rows
             state = current_pending_query_result_->ExecuteTask();
+            if (state == QueryResultState::READY) {
+                state = QueryResultState::NOT_READY;
+            } else if (state == QueryResultState::FINISHED) {
+                current_pending_query_result_->Complete();
+            }
         }
         switch (state) {
             case QueryResultState::FINISHED:

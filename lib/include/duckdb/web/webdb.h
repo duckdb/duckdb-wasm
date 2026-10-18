@@ -64,6 +64,8 @@ class WebDB {
         size_t current_pending_statement_index_ = 0;
         /// The value of allow_stream_result passed to PendingQuery
         bool current_allow_stream_result_ = false;
+        /// Will the result of the current pending query be streamed? Otherwise it is driven to completion while polling
+        bool current_pending_query_streams_ = false;
         /// The current pending query result (if any)
         duckdb::unique_ptr<duckdb::QueryResult> current_pending_query_result_ = nullptr;
         /// The current pending query was canceled
