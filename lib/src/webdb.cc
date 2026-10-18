@@ -184,10 +184,10 @@ web::Result<bool> ArrowIPCStreamComplete(const std::vector<uint8_t>& stream, siz
     return false;
 }
 
-/// Can a stream be opened on a submitted query result?
+/// Can a stream be opened on a submitted query result? A statement that must run to completion (DuckDB's former
+/// FORCED eagerness) is now retained at submission, so the lifetime says it all.
 bool CanStream(const QueryResult& result) {
     return !result.HasError() && result.HasBufferedData() &&
-           result.GetStatementProperties().result_eagerness != ResultEagerness::FORCED &&
            result.GetBufferedData().Lifetime() != ResultLifetime::RETAINED;
 }
 }  // namespace
