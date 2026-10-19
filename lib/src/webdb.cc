@@ -1102,6 +1102,11 @@ web::Status WebDB::OpenWithConfig(WebDBConfig config) {
         }
         db_config.options.access_mode = access_mode;
         db_config.SetOptionByName("duckdb_api", "wasm");
+#ifdef WASM_LOADABLE_EXTENSIONS
+        // Loadable extensions are transient side modules. Keep their DuckDB installation metadata and binaries
+        // in the cross-platform JavaScript buffer file system instead of requiring a writable home directory.
+        db_config.SetOptionByName("extension_directory", duckdb::Value("js_buffer://duckdb/extensions"));
+#endif
         if (config_->home_directory.has_value()) {
             auto& home = config_->home_directory.value();
             db_config.SetOptionByName("home_directory", duckdb::Value(home));
@@ -1134,7 +1139,9 @@ web::Status WebDB::OpenWithConfig(WebDBConfig config) {
         }
 
 #ifdef WASM_LOADABLE_EXTENSIONS
-        config.SetExternalExtensionProvider(make_shared_ptr<WasmExtensionProvider>());
+        auto extension_provider = make_shared_ptr<WasmExtensionProvider>();
+        config.SetExternalExtensionProvider(extension_provider);
+        extension_provider->RegisterAutoloadableExtensions(*db->instance, FileSystem::GetFileSystem(*db->instance));
 #endif
 
         if (!config.encryption_util) {

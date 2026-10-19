@@ -30,6 +30,17 @@ EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
 HTTPFS_SOURCE_DIR=$(abspath ${DUCKDB_HTTPFS_DIRECTORY})
 
+# Test commands default to Node 24 because newer Node releases are not yet
+# compatible with the generated Emscripten bindings. Both commands remain
+# overridable for CI and non-Homebrew installations.
+YARN_BIN?=$(shell command -v yarn)
+YARN_CLI?=$(shell node -e 'const fs = require("fs"); console.log(fs.realpathSync(process.argv[1]))' "${YARN_BIN}")
+TEST_YARN?=npx --yes --package=node@24 node "${YARN_CLI}"
+CHROME_BIN?=$(shell command -v google-chrome 2>/dev/null || command -v chromium 2>/dev/null || \
+	if [ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]; then \
+		printf '%s' "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"; \
+	fi)
+
 cpp_lib: lib_tests
 
 # ---------------------------------------------------------------------------
@@ -388,7 +399,30 @@ build_httpfs_local: reconfigure_httpfs_local
 		--target duckdb_local_extension_repo --parallel ${CORES}
 	yarn workspace @duckdb/duckdb-wasm build:release
 
-serve_httpfs_local: build_httpfs_local serve_loadable_base
+.PHONY: tests
+tests: DUCKDB_HTTPFS_DIRECTORY?=${HOME}/work/duckdb-httpfs
+tests: check_httpfs_local
+	$(MAKE) apply_patches
+	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" $(MAKE) build_httpfs_local
+	${TEST_YARN} workspace @duckdb/duckdb-wasm test:node
+	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome
+	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:threads
+	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:httpfs
+	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:threads:smoke
+	${TEST_YARN} workspace @duckdb/duckdb-wasm lint
+	python3 ./scripts/run_clang_format.py \
+		lib/include/duckdb/web/extension_provider.h \
+		lib/src/extension_provider.cc \
+		lib/src/io/web_filesystem.cc \
+		lib/src/webdb.cc
+	git diff --check
+
+.PHONY: prepare_httpfs_local_app
+prepare_httpfs_local_app: build_httpfs_local wasmpack shell docs
+	DUCKDB_WASM_LOCAL_EXTENSIONS=1 yarn workspace @duckdb/duckdb-wasm-app build:release
+	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
+
+serve_httpfs_local: prepare_httpfs_local_app
 	npx http-server packages/duckdb-wasm-app/build/release \
 		-c-1 -o /original.html -a 127.0.0.1 -p 8081
 

@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
 import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
-import { NavBarContainer } from './components/navbar';
 import { DuckDBConnectionProvider, DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
 
 import '../static/fonts/fonts.module.css';
@@ -15,6 +14,8 @@ import 'react-popper-tooltip/dist/styles.css';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm_base from '@duckdb/duckdb-wasm/dist/duckdb-base.wasm';
 import duckdb_wasm_threads from '@duckdb/duckdb-wasm/dist/duckdb-threads.wasm';
+
+declare const __DUCKDB_WASM_LOCAL_EXTENSIONS__: boolean;
 
 const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     base: {
@@ -31,6 +32,12 @@ const DUCKDB_BUNDLES: duckdb.DuckDBBundles = {
     },
 };
 const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING);
+const duckDBConfig: duckdb.DuckDBConfig | undefined = __DUCKDB_WASM_LOCAL_EXTENSIONS__
+    ? {
+          allowUnsignedExtensions: true,
+          extensionRepository: `${window.location.origin}/extension_repository`,
+      }
+    : undefined;
 
 const paths = /(.*)(\/versus|\/docs\/.*|\/)$/;
 const pathMatches = (window?.location?.pathname || '').match(paths);
@@ -43,22 +50,12 @@ const element = document.getElementById('root');
 const root = createRoot(element!);
 root.render(
     <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
-        <DuckDBProvider>
+        <DuckDBProvider config={duckDBConfig}>
             <DuckDBConnectionProvider>
                 <BrowserRouter basename={basename}>
                     <Routes>
-                        <Route
-                            index
-                            element={
-                                    <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />
-                            }
-                        />
-                        <Route
-                            path="/versus"
-                            element={
-                                    <Versus />
-                            }
-                        />
+                        <Route index element={<Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />} />
+                        <Route path="/versus" element={<Versus />} />
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                 </BrowserRouter>

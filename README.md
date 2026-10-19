@@ -188,12 +188,44 @@ build/extension_repository/<duckdb-revision>/wasm_base/httpfs.duckdb_extension.w
 build/extension_repository/<duckdb-revision>/wasm_threads/httpfs.duckdb_extension.wasm
 ```
 
+#### Run the HTTPFS test suite
+
+With the HTTPFS checkout at `$HOME/work/duckdb-httpfs`, run the complete
+build and test sequence with:
+
+```shell
+make tests
+```
+
+Use `DUCKDB_HTTPFS_DIRECTORY` when the checkout is elsewhere:
+
+```shell
+make tests DUCKDB_HTTPFS_DIRECTORY=/path/to/duckdb-httpfs
+```
+
+The target applies the repository patches, builds the base and threaded Wasm
+modules with the local HTTPFS side module, and then runs the Node.js, base
+Chrome, threaded Chrome, dedicated HTTPFS, threaded smoke, lint, and formatting
+checks. It runs JavaScript tests with Node.js 24 and detects Google Chrome or
+Chromium automatically. Override the detected commands when necessary:
+
+```shell
+make tests \
+    CHROME_BIN=/path/to/chrome \
+    TEST_YARN='node /path/to/yarn.js'
+```
+
+The Chrome suites run sequentially because they share the same local S3 test
+server port.
+
 #### Load the local extension in a browser
 
-Local extension builds are unsigned. Configure both the local repository and
-the unsigned-extension policy before opening the database.
+Local extension builds are unsigned. `make serve_httpfs_local` enables them
+only in its local application build and configures `/extension_repository`
+before opening the database. Normal application builds keep signature
+verification enabled.
 
-For the React application:
+For another local React application, use the equivalent startup configuration:
 
 ```tsx
 <DuckDBProvider

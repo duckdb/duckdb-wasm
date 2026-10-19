@@ -428,7 +428,21 @@ web::Result<std::unique_ptr<WebFileSystem::WebFileHandle>> WebFileSystem::Regist
             handle->Pin();
             return handle;
         }
-        return web::Status::Invalid("File already registered: ", file_name);
+        if (file->handle_count_ != file->pin_count_) {
+            return web::Status::Invalid("File already registered and open: ", file_name);
+        }
+        if (file->data_url_.has_value()) {
+            files_by_url_.erase(file->data_url_.value());
+        }
+        file->data_protocol_ = protocol;
+        file->data_url_ = file_url;
+        file->data_buffer_.reset();
+        file->file_size_ = std::nullopt;
+        file->last_modification_time_ = std::nullopt;
+        files_by_url_.insert({std::string{file_url}, file});
+        auto handle = std::make_unique<WebFileHandle>(std::move(file));
+        handle->Pin();
+        return handle;
     }
 
     // Allocate a new web file

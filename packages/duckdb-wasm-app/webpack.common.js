@@ -1,6 +1,7 @@
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
+import webpack from 'webpack';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -22,6 +23,9 @@ export function configure(params) {
         },
         resolve: {
             extensions: ['.ts', '.tsx', '.js', '.mjs', '.jsx', '.css', '.wasm'],
+            alias: {
+                '@duckdb/duckdb-wasm': path.resolve(__dirname, '../duckdb-wasm'),
+            },
         },
         module: {
             rules: [
@@ -132,6 +136,9 @@ export function configure(params) {
             },
         },
         plugins: [
+            new webpack.DefinePlugin({
+                __DUCKDB_WASM_LOCAL_EXTENSIONS__: JSON.stringify(process.env.DUCKDB_WASM_LOCAL_EXTENSIONS === '1'),
+            }),
             new HtmlWebpackPlugin({
                 template: './static/index.html',
                 filename: './original.html',
