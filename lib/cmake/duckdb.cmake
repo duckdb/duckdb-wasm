@@ -40,6 +40,11 @@ endif()
 ExternalProject_Add(
   duckdb_ep
   SOURCE_DIR "${DUCKDB_CORE_DIR}"
+  # SOURCE_DIR is a local checkout. ExternalProject otherwise considers a
+  # stamped build complete even when that checkout moves to a new revision.
+  # Always invoke its incremental build so installed headers and libraries
+  # cannot lag behind the DuckDB sources used by DuckDB-Wasm.
+  BUILD_ALWAYS TRUE
   PREFIX "${CMAKE_BINARY_DIR}/third_party/duckdb"
   INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/duckdb/install"
   CMAKE_ARGS -G${CMAKE_GENERATOR}
@@ -63,6 +68,7 @@ ExternalProject_Add(
              -DDUCKDB_EXTENSION_CONFIGS=${CMAKE_SOURCE_DIR}/../${DUCKDB_EXTENSION_CONFIGS}
              -DDUCKDB_NANOARROW_DIR=${DUCKDB_NANOARROW_DIR}
              -DNANOARROW_IPC_COMPRESSION=OFF
+             -DWASM_LOADABLE_EXTENSIONS=${DUCKDB_WASM_LOADABLE_EXTENSIONS}
              -DUSE_WASM_THREADS=${USE_WASM_THREADS}
              -DDUCKDB_EXPLICIT_PLATFORM=${DUCKDB_EXPLICIT_PLATFORM}
              -DSMALLER_BINARY=1

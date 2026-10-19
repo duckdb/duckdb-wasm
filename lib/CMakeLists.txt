@@ -182,8 +182,8 @@ include("${CMAKE_SOURCE_DIR}/cmake/gflags.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/googletest.cmake")
 include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
 
-# Only DuckDB-Wasm itself needs to know whether extensions are loadable, for DuckDB it is a matter of which
-# external extension provider is registered
+# DuckDB-Wasm needs this definition when registering its external extension provider.
+# DuckDB core receives the corresponding CMake option in cmake/duckdb.cmake.
 if(DUCKDB_WASM_LOADABLE_EXTENSIONS)
   add_compile_definitions(WASM_LOADABLE_EXTENSIONS=1)
 endif()
