@@ -12,8 +12,8 @@
 namespace duckdb {
 class HTTPWasmClient : public HTTPClient {
    public:
-    explicit HTTPWasmClient(const string& proto_host_port) : HTTPClient(proto_host_port), host_port(proto_host_port) {}
-    void Initialize(HTTPParams&) override {}
+    explicit HTTPWasmClient(const string &proto_host_port) : HTTPClient(proto_host_port), host_port(proto_host_port) {}
+    void Initialize(HTTPParams &) override {}
     string host_port;
 
     unique_ptr<HTTPResponse> Get(GetRequestInfo &info) override {
@@ -293,7 +293,7 @@ class HTTPWasmClient : public HTTPClient {
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-        const auto& headers = info.headers;
+        const auto &headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -556,7 +556,7 @@ res->headers.Insert(head, tail);
         if ((path.rfind("https://", 0) != 0) && (path.rfind("http://", 0) != 0)) {
             path = "https://" + path;
         }
-        const auto& headers = info.headers;
+        const auto &headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -731,7 +731,7 @@ res->headers.Insert(head, tail);
             path = "https://" + path;
         }
 
-        const auto& headers = info.headers;
+        const auto &headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -927,7 +927,7 @@ res->headers.Insert(head, tail);
             path = "https://" + path;
         }
 
-        const auto& headers = info.headers;
+        const auto &headers = info.headers;
         int n = 0;
         for (auto h : headers) {
             n++;
@@ -1071,10 +1071,9 @@ res->headers.Insert(head, tail);
 
         return res;
     }
-
 };
 
-unique_ptr<HTTPClient> HTTPWasmUtil::InitializeClient(HTTPParams&, const string& proto_host_port) {
+unique_ptr<HTTPClient> HTTPWasmUtil::InitializeClient(HTTPParams &, const string &proto_host_port) {
     return make_uniq<HTTPWasmClient>(proto_host_port);
 }
 
