@@ -82,7 +82,7 @@ endif ()
 # -Os shrinks the module by 600KB but slows down TPC-H by a factor of 2!
 # Dedicated module?
 
-set(DUCKDB_PLATFORM "wasm_base")
+set(DUCKDB_PLATFORM "wasm_eh")
 
 if(EMSCRIPTEN)
   # Bump stack size from default 64KB to 1MB

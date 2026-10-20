@@ -387,7 +387,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  DUCKDB_PLATFORM="wasm_base" ./scripts/wasm_build_lib.sh relperf base
+                  DUCKDB_PLATFORM="wasm_eh" ./scripts/wasm_build_lib.sh relperf base
 
             - name: Upload artifact
               uses: actions/upload-artifact@v7
@@ -478,7 +478,7 @@ jobs:
 
             - name: Build Wasm module
               run: |
-                  USE_GENERATED_EXPORTED_LIST="$DEFAULT_USE_GENERATED_EXPORTED_LIST" DUCKDB_PLATFORM="wasm_base" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize base
+                  USE_GENERATED_EXPORTED_LIST="$DEFAULT_USE_GENERATED_EXPORTED_LIST" DUCKDB_PLATFORM="wasm_eh" DUCKDB_WASM_LOADABLE_EXTENSIONS=1 GEN=ninja ./scripts/wasm_build_lib.sh relsize base
 
             - name: Upload artifact
               uses: actions/upload-artifact@v7
