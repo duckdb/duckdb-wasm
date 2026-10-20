@@ -20,6 +20,30 @@ import {
 import { DuckDBModule } from './duckdb_module';
 import * as udf from './udf_runtime';
 
+/** Send a synchronous XHR and return its binary body.
+ *
+ * Browsers do not allow responseType=arraybuffer on a synchronous request from the document main thread.
+ * The blocking bindings still need synchronous file access there, so preserve bytes through a single-byte
+ * response encoding in that environment.
+ */
+function sendBinaryXHR(xhr: XMLHttpRequest): Uint8Array {
+    const onDocumentMainThread = typeof document !== 'undefined';
+    if (onDocumentMainThread) {
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+    } else {
+        xhr.responseType = 'arraybuffer';
+    }
+    xhr.send(null);
+    if (!onDocumentMainThread) {
+        return new Uint8Array(xhr.response);
+    }
+    const text = xhr.responseText;
+    const result = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+        result[i] = text.charCodeAt(i) & 0xff;
+    }
+    return result;
+}
 
 export const BROWSER_RUNTIME: DuckDBRuntime & {
     _files: Map<string, any>;
@@ -372,9 +396,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             } else {
                                 xhr.open('GET', file.dataUrl!, false);
                             }
-                            xhr.responseType = 'arraybuffer';
                             xhr.setRequestHeader('Range', `bytes=0-0`);
-                            xhr.send(null);
+                            const response = sendBinaryXHR(xhr);
                             let actualContentLength = null;
                             try { actualContentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
                             const contentRange = actualContentLength?.split('/')[1];
@@ -425,11 +448,10 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 +contentLength2 == +contentLength
                             ) {
                                 console.warn(`fall back to full HTTP read for: ${file.dataUrl}`);
-                                const data = (mod._malloc(xhr.response.byteLength) >>> 0);
-                                const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
-                                mod.HEAPU8.set(src, data);
+                                const data = (mod._malloc(response.byteLength) >>> 0);
+                                mod.HEAPU8.set(response, data);
                                 const result = (mod._malloc(3 * 8) >>> 0);
-                                mod.HEAPF64[(result >>> 3) + 0] = xhr.response.byteLength;
+                                mod.HEAPF64[(result >>> 3) + 0] = response.byteLength;
                                 mod.HEAPF64[(result >>> 3) + 1] = data;
                                 let modification_time = 0;
                                 try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
@@ -446,16 +468,14 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         } else {
                             xhr.open('GET', file.dataUrl!, false);
                         }
-                        xhr.responseType = 'arraybuffer';
-                        xhr.send(null);
+                        const response = sendBinaryXHR(xhr);
 
                         // Return buffer
                         if (xhr.status == 200) {
-                            const data = (mod._malloc(xhr.response.byteLength) >>> 0);
-                            const src = new Uint8Array(xhr.response, 0, xhr.response.byteLength);
-                            mod.HEAPU8.set(src, data);
+                            const data = (mod._malloc(response.byteLength) >>> 0);
+                            mod.HEAPU8.set(response, data);
                             const result = (mod._malloc(3 * 8) >>> 0);
-                            mod.HEAPF64[(result >>> 3) + 0] = xhr.response.byteLength;
+                            mod.HEAPF64[(result >>> 3) + 0] = response.byteLength;
                             mod.HEAPF64[(result >>> 3) + 1] = data;
                             let modification_time = 0;
                             try { modification_time = new Date(xhr.getResponseHeader('Last-Modified')??"").getTime() / 1000; } catch (e: any) {console.warn(`Failed to get Last-Modified on request`);}
@@ -767,14 +787,13 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         } else {
                             xhr.open('GET', file.dataUrl!, false);
                         }
-                        xhr.responseType = 'arraybuffer';
                         xhr.setRequestHeader('Range', `bytes=${location}-${location + bytes - 1}`);
-                        xhr.send(null);
+                        const response = sendBinaryXHR(xhr);
                         if (
                             xhr.status == 206 /* Partial content */ ||
-                            (xhr.status == 200 && bytes == xhr.response.byteLength && location == 0)
+                            (xhr.status == 200 && bytes == response.byteLength && location == 0)
                         ) {
-                            const src = new Uint8Array(xhr.response, 0, Math.min(xhr.response.byteLength, bytes));
+                            const src = response.subarray(0, Math.min(response.byteLength, bytes));
                             mod.HEAPU8.set(src, buf);
                             return src.byteLength;
                         } else if (xhr.status == 200) {
@@ -784,9 +803,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 `Range request for ${file.dataUrl} did not return a partial response: ${xhr.status} "${xhr.statusText}"`,
                             );
                             const src = new Uint8Array(
-                                xhr.response,
-                                location,
-                                Math.min(xhr.response.byteLength - location, bytes),
+                                response.buffer,
+                                response.byteOffset + location,
+                                Math.min(response.byteLength - location, bytes),
                             );
                             mod.HEAPU8.set(src, buf);
                             return src.byteLength;
