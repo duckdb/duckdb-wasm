@@ -22,6 +22,9 @@ export function configure(params) {
         },
         resolve: {
             extensions: ['.ts', '.tsx', '.js', '.mjs', '.jsx', '.css', '.wasm'],
+            alias: {
+                '@duckdb/duckdb-wasm': path.resolve(__dirname, '../duckdb-wasm'),
+            },
         },
         module: {
             rules: [
