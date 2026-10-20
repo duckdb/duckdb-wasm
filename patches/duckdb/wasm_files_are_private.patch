@@ -1,0 +1,15 @@
+diff --git a/src/common/local_file_system.cpp b/src/common/local_file_system.cpp
+index 664659e76aa..5460bf4c6c4 100644
+--- a/src/common/local_file_system.cpp
++++ b/src/common/local_file_system.cpp
+@@ -348,6 +348,10 @@ static void TryAcquireFileLock(FileSystem &fs, int fd, const string &path, FileO
+ }
+ 
+ bool LocalFileSystem::IsPrivateFile(const string &path_p, FileOpener *opener) {
++#ifdef __EMSCRIPTEN__
++	// files in the browser have no permission bits, and the path may belong to a different file system (opfs://)
++	return true;
++#endif
+ 	auto path = FileSystem::ExpandPath(path_p, opener);
+ 
+ 	struct stat st;
