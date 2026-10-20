@@ -184,7 +184,7 @@ Load extension 'httpfs' from local path ".../duckdb-httpfs"
 The generated HTTPFS modules are placed at:
 
 ```text
-build/extension_repository/<duckdb-revision>/wasm_base/httpfs.duckdb_extension.wasm
+build/extension_repository/<duckdb-revision>/wasm_eh/httpfs.duckdb_extension.wasm
 build/extension_repository/<duckdb-revision>/wasm_threads/httpfs.duckdb_extension.wasm
 ```
 
