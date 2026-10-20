@@ -40,6 +40,9 @@ endif()
 ExternalProject_Add(
   duckdb_ep
   SOURCE_DIR "${DUCKDB_CORE_DIR}"
+  # The source is a local checkout: without this, existing stamps make ExternalProject skip the build after the
+  # submodule moves and the stale installed library gets linked
+  BUILD_ALWAYS TRUE
   PREFIX "${CMAKE_BINARY_DIR}/third_party/duckdb"
   INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/duckdb/install"
   CMAKE_ARGS -G${CMAKE_GENERATOR}
