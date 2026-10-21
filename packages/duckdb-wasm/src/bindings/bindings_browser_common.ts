@@ -1,4 +1,4 @@
-import { DuckDBModule } from './duckdb_module';
+import { DuckDBModule, WasmHash } from './duckdb_module';
 import { DuckDBBindingsBase } from './bindings_base';
 import { DuckDBRuntime } from './runtime';
 import { LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
@@ -33,11 +33,85 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         throw new Error(`WASM instantiation requested unexpected file: prefix=${prefix} path=${path}`);
     }
 
+    /** Build the module object that is passed to the Emscripten factory */
+    protected moduleArg(moduleOverrides: Partial<DuckDBModule>): Partial<DuckDBModule> {
+        // Emscripten sets `wasmHash` on this very object before it calls `instantiateWasm()`.
+        const module: Partial<DuckDBModule> = {
+            ...moduleOverrides,
+            locateFile: this.locateFile.bind(this),
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (module as any).instantiateWasm = (imports: any, success: any) =>
+            this.instantiateWasm(imports, success, module.wasmHash);
+        return module;
+    }
+
+    /** Log a Cross-Origin Storage event */
+    protected logCOS(level: LogLevel, value: string): void {
+        this.logger.log({
+            timestamp: new Date(),
+            level,
+            origin: LogOrigin.BINDINGS,
+            topic: LogTopic.INSTANTIATE,
+            event: level == LogLevel.ERROR ? LogEvent.ERROR : LogEvent.OK,
+            value: `Cross-Origin Storage: ${value}`,
+        });
+    }
+
+    /** Fetch the wasm module from Cross-Origin Storage, or from the network if it is not stored there */
+    protected async fetchWasm(wasmHash?: WasmHash): Promise<Response> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cos = (globalThis.navigator as any)?.crossOriginStorage;
+        if (!wasmHash || typeof cos?.getFileHandle !== 'function') {
+            return fetch(new Request(this.mainModuleURL));
+        }
+        const hash = { algorithm: wasmHash.algorithm, value: wasmHash.value };
+        try {
+            const handle = await cos.getFileHandle(hash);
+            const file: File = await handle.getFile();
+            this.logCOS(LogLevel.INFO, `loaded ${hash.value}`);
+            // Stored files carry no reliable type, and streaming compilation insists on `application/wasm`.
+            return new Response(file.stream(), {
+                headers: { 'Content-Type': 'application/wasm', 'Content-Length': String(file.size) },
+            });
+        } catch (e: any) {
+            if (e?.name !== 'NotFoundError') {
+                this.logCOS(LogLevel.WARNING, `lookup failed, using the network: ${e}`);
+                return fetch(new Request(this.mainModuleURL));
+            }
+        }
+        // Not stored yet: compile from the network and store a copy of the same bytes on the side.
+        const response = await fetch(new Request(this.mainModuleURL));
+        if (!response.ok || !response.body) {
+            return response;
+        }
+        const [body, copy] = response.body.tee();
+        const store = async () => {
+            try {
+                // Any origin may read the stored copy, since DuckDB ships the same binary to every site that
+                // loads it. Emscripten's `-sCROSS_ORIGIN_STORAGE_ORIGINS` only reaches its own loader, which this
+                // one replaces, so it has no effect here.
+                const handle = await cos.getFileHandle(hash, { create: true, origins: '*' });
+                const writable = await handle.createWritable();
+                // `pipeTo()` closes the writable at the end, which is where COS verifies the hash.
+                await copy.pipeTo(writable);
+                this.logCOS(LogLevel.INFO, `stored ${hash.value}`);
+            } catch (e: any) {
+                // An unread branch would buffer the whole module in memory.
+                copy.cancel().catch(() => {});
+                this.logCOS(LogLevel.WARNING, `storing failed: ${e}`);
+            }
+        };
+        store();
+        return new Response(body, response);
+    }
+
     /** Instantiate the wasm module */
     protected instantiateWasm(
         // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
         imports: any,
         success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
+        wasmHash?: WasmHash,
     ): Emscripten.WebAssemblyExports {
         // We rely on the following here:
         //
@@ -56,8 +130,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             if (typeof TransformStream === 'function') {
                 const fetchWithProgress = async () => {
                     // Try to determine file size
-                    const request = new Request(this.mainModuleURL);
-                    const response = await fetch(request);
+                    const response = await this.fetchWasm(wasmHash);
                     const contentLengthHdr = response.headers.get('content-length');
                     const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
 
@@ -94,8 +167,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 });
             } else {
                 console.warn('instantiating without progress handler since transform streams are unavailable');
-                const request = new Request(this.mainModuleURL);
-                WebAssembly.instantiateStreaming(fetch(request), imports).then(output => {
+                WebAssembly.instantiateStreaming(this.fetchWasm(wasmHash), imports).then(output => {
                     success(output.instance, output.module);
                 });
             }

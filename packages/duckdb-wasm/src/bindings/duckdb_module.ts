@@ -14,4 +14,12 @@ export interface DuckDBModule extends EmscriptenModule {
     PThread: PThread;
     /** The memory, exported: with shared memory another thread can grow it */
     wasmMemory?: WebAssembly.Memory;
+
+    /** The SHA-256 of the wasm module, set by builds linked with `-sCROSS_ORIGIN_STORAGE` */
+    wasmHash?: WasmHash;
+}
+
+export interface WasmHash {
+    algorithm: string;
+    value: string;
 }
