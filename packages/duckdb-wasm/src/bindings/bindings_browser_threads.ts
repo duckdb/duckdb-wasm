@@ -18,7 +18,7 @@ export class DuckDB extends DuckDBBrowserBindings {
 
     /** Instantiate the bindings */
     protected instantiateImpl(moduleOverrides: Partial<DuckDBModule>): Promise<DuckDBModule> {
-        return DuckDBWasm(this.moduleArg(moduleOverrides));
+        return this.instantiateModule(DuckDBWasm, moduleOverrides);
     }
 }
 
