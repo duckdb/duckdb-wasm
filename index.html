@@ -127,11 +127,11 @@
   <script>
 // === Configuration ===
 // Path to the frontend WASM shell (linenoise + box renderer)
-const SHELL_WASM_JS_URL = './static/assets/duckdb.js';
+const SHELL_WASM_JS_URL = './static/assets/duckdb.2be644b88c.js';
 // Path to the experimental worker (loads duckdb-wasm backend)
-const WORKER_URL = './static/assets/worker.js';
+const WORKER_URL = './static/assets/worker.8db4dcde36.js';
 // Path to the duckdb-wasm .wasm file (passed to worker for instantiation)
-const DUCKDB_WASM_URL = './duckdb-eh.wasm';
+const DUCKDB_WASM_URL = './duckdb-eh.f88168bf7a.wasm'; // resolved by the worker, next to it
 
 // === Mobile hamburger toggle ===
 const hamburgerBtn = document.querySelector('.hamburger');
@@ -1018,6 +1018,8 @@ function drainStartupQueue() {
 function loadFrontendWasm() {
   setStatus('loading shell WASM...');
   window.Module = {
+    // the content-hashed frontend: emscripten's glue asks for 'duckdb.wasm'
+    locateFile: (path, prefix) => path === 'duckdb.wasm' ? './static/assets/duckdb.c4e41a523a.wasm' : prefix + path,
     print: onWasmPrint,
     printErr: onWasmPrintErr,
     onRuntimeInitialized: () => {
