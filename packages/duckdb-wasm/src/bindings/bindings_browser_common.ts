@@ -111,7 +111,14 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             }
         };
         store();
-        return new Response(body, response);
+        // Like on a hit, insist on `application/wasm`: with the store branch already reading the body, a server
+        // that sends another type leaves no way to fetch the module again. Keep the length for progress.
+        const headers: Record<string, string> = { 'Content-Type': 'application/wasm' };
+        const contentLength = response.headers.get('content-length');
+        if (contentLength) {
+            headers['Content-Length'] = contentLength;
+        }
+        return new Response(body, { status: response.status, statusText: response.statusText, headers });
     }
 
     /** Instantiate the wasm module */
