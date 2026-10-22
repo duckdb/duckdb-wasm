@@ -1,4 +1,4 @@
-FROM ubuntu:23.10
+FROM ubuntu:24.04
 
 RUN apt-get update -qq \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -7,31 +7,29 @@ RUN apt-get update -qq \
         bison flex \
         brotli rsync \
         libpthread-stubs0-dev \
-        chromium-browser \
         wget gnupg ca-certificates procps libxss1 \
         zip sqlite3 \
         software-properties-common \
     && add-apt-repository ppa:mozillateam/ppa \
     && mkdir -p /etc/apt/preferences.d/ \
     && apt-get update -qq \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
     && apt-get clean \
     && export CHROME_BIN=/usr/bin/google-chrome \
     && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/google.list
 
-ARG EMSDK_VERSION="3.1.56"
+ARG EMSDK_VERSION="6.0.9"
 RUN mkdir -p /opt/emsdk \
     && cd /opt/emsdk \
     && curl -SL https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz | tar -xz --strip-components=1 \
     && ./emsdk install ${EMSDK_VERSION} \
     && ./emsdk activate ${EMSDK_VERSION} \
     && /bin/bash ./emsdk_env.sh \
-    && rm -rf ./emscripten/tag-*/tests \
-    && rm -rf ./emscripten/tag-*/site \
-    && rm -rf ./emscripten/tag-*/docs \
+    && rm -rf ./upstream/emscripten/test \
+    && rm -rf ./upstream/emscripten/docs \
     && rm -rf ./zips \
     && find . -name "*.o" -exec rm {} \; \
     && find . -name "*.a" -exec rm {} \; \

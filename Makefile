@@ -20,6 +20,8 @@ DUCKDB_HASH=${shell cd submodules/duckdb && git reflog -n 1 | head -c 10}
 
 CACHE_DIRS=${ROOT_DIR}/.ccache/ ${ROOT_DIR}/.emscripten_cache/
 DOCKER_EXEC_ENVIRONMENT=docker compose run duckdb-wasm-ci
+# Build natively when emcc is on the PATH, and in the CI image otherwise.
+EXEC_ENVIRONMENT:=$(if $(shell command -v emcc),,$(DOCKER_EXEC_ENVIRONMENT))
 
 CORES=$(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
@@ -48,7 +50,7 @@ check_format:
 # Building
 .PHONY: set_environment
 set_environment:
-	command -v emcc &> /dev/null && EXEC_ENVIRONMENT="" && echo '\033[1m=== Using native mode ===\033[0m' && echo 'Emscripten from' && which emcc || (EXEC_ENVIRONMENT=echo ${DOCKER_EXEC_ENVIRONMENT} && echo '\033[1m === Using docker environment === \033[0m')
+	command -v emcc &> /dev/null && echo '\033[1m=== Using native mode ===\033[0m' && echo 'Emscripten from' && which emcc || echo '\033[1m === Using docker environment === \033[0m'
 
 build/data:
 	${ROOT_DIR}/scripts/generate_uni.sh

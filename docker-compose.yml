@@ -1,7 +1,7 @@
 version: "3.0"
 services:
   duckdb-wasm-ci:
-    image: duckdb/wasm-ci:0.75
+    image: duckdb/wasm-ci:0.76
     build:
       context: ./actions/image
       args:
