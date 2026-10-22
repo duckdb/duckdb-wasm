@@ -105,7 +105,8 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 await copy.pipeTo(writable);
                 this.logCOS(LogLevel.INFO, `stored ${hash.value}`);
             } catch (e: any) {
-                // An unread branch would buffer the whole module in memory.
+                // If `getFileHandle()` or `createWritable()` failed, `pipeTo()` never read this branch, and the tee
+                // would buffer the whole module for it. After a failed `pipeTo()`, this is a no-op.
                 copy.cancel().catch(() => {});
                 this.logCOS(LogLevel.WARNING, `storing failed: ${e}`);
             }
@@ -211,7 +212,8 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             };
             xhr.open('GET', url);
             xhr.responseType = 'arraybuffer';
-            xhr.onerror = onError('Failed to load WASM: ');
+            // The error event is a bare `ProgressEvent`, which carries no details.
+            xhr.onerror = () => onError('Failed to load WASM: ')(new Error(`network error loading ${url}`));
             xhr.onprogress = e => {
                 progress.bytesTotal = e.total;
                 progress.bytesLoaded = e.loaded;
