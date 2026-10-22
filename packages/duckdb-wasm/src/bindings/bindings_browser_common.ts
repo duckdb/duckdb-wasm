@@ -1,4 +1,4 @@
-import { DuckDBModule } from './duckdb_module';
+import { DuckDBModule, WasmHash } from './duckdb_module';
 import { DuckDBBindingsBase } from './bindings_base';
 import { DuckDBRuntime } from './runtime';
 import { LogLevel, LogTopic, LogOrigin, LogEvent } from '../log';
@@ -33,11 +33,102 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         throw new Error(`WASM instantiation requested unexpected file: prefix=${prefix} path=${path}`);
     }
 
+    /** Run the Emscripten factory with our own file lookup and wasm instantiation */
+    protected instantiateModule(
+        factory: (moduleOverrides: Partial<DuckDBModule>) => Promise<DuckDBModule>,
+        moduleOverrides: Partial<DuckDBModule>,
+    ): Promise<DuckDBModule> {
+        // Emscripten gives `instantiateWasm()` no way to report a failure, so the factory would never settle.
+        let fail: (error: Error) => void = () => {};
+        const failed = new Promise<never>((_, reject) => {
+            fail = reject;
+        });
+        // Emscripten sets `wasmHash` on this very object before it calls `instantiateWasm()`.
+        const module: Partial<DuckDBModule> = {
+            ...moduleOverrides,
+            locateFile: this.locateFile.bind(this),
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (module as any).instantiateWasm = (imports: any, success: any) =>
+            this.instantiateWasm(imports, success, module.wasmHash, fail);
+        return Promise.race([factory(module), failed]);
+    }
+
+    /** Log a Cross-Origin Storage event */
+    protected logCOS(level: LogLevel, value: string): void {
+        this.logger.log({
+            timestamp: new Date(),
+            level,
+            origin: LogOrigin.BINDINGS,
+            topic: LogTopic.INSTANTIATE,
+            event: level == LogLevel.ERROR ? LogEvent.ERROR : LogEvent.OK,
+            value: `Cross-Origin Storage: ${value}`,
+        });
+    }
+
+    /** Fetch the wasm module from Cross-Origin Storage, or from the network if it is not stored there */
+    protected async fetchWasm(wasmHash?: WasmHash): Promise<Response> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cos = (globalThis.navigator as any)?.crossOriginStorage;
+        if (!wasmHash || typeof cos?.getFileHandle !== 'function') {
+            return fetch(new Request(this.mainModuleURL));
+        }
+        const hash = { algorithm: wasmHash.algorithm, value: wasmHash.value };
+        try {
+            const handle = await cos.getFileHandle(hash);
+            const file: File = await handle.getFile();
+            this.logCOS(LogLevel.INFO, `loaded ${hash.value}`);
+            // Stored files carry no reliable type, and streaming compilation insists on `application/wasm`.
+            return new Response(file.stream(), {
+                headers: { 'Content-Type': 'application/wasm', 'Content-Length': String(file.size) },
+            });
+        } catch (e: any) {
+            if (e?.name !== 'NotFoundError') {
+                this.logCOS(LogLevel.WARNING, `lookup failed, using the network: ${e}`);
+                return fetch(new Request(this.mainModuleURL));
+            }
+        }
+        // Not stored yet: compile from the network and store a copy of the same bytes on the side.
+        const response = await fetch(new Request(this.mainModuleURL));
+        if (!response.ok || !response.body) {
+            return response;
+        }
+        const [body, copy] = response.body.tee();
+        const store = async () => {
+            try {
+                // Any origin may read the stored copy, since DuckDB ships the same binary to every site that
+                // loads it. Emscripten's `-sCROSS_ORIGIN_STORAGE_ORIGINS` only reaches its own loader, which this
+                // one replaces, so it has no effect here.
+                const handle = await cos.getFileHandle(hash, { create: true, origins: '*' });
+                const writable = await handle.createWritable();
+                // `pipeTo()` closes the writable at the end, which is where COS verifies the hash.
+                await copy.pipeTo(writable);
+                this.logCOS(LogLevel.INFO, `stored ${hash.value}`);
+            } catch (e: any) {
+                // If `getFileHandle()` or `createWritable()` failed, `pipeTo()` never read this branch, and the tee
+                // would buffer the whole module for it. After a failed `pipeTo()`, this is a no-op.
+                copy.cancel().catch(() => {});
+                this.logCOS(LogLevel.WARNING, `storing failed: ${e}`);
+            }
+        };
+        store();
+        // Like on a hit, insist on `application/wasm`: with the store branch already reading the body, a server
+        // that sends another type leaves no way to fetch the module again. Keep the length for progress.
+        const headers: Record<string, string> = { 'Content-Type': 'application/wasm' };
+        const contentLength = response.headers.get('content-length');
+        if (contentLength) {
+            headers['Content-Length'] = contentLength;
+        }
+        return new Response(body, { status: response.status, statusText: response.statusText, headers });
+    }
+
     /** Instantiate the wasm module */
     protected instantiateWasm(
         // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
         imports: any,
         success: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
+        wasmHash?: WasmHash,
+        fail: (error: Error) => void = () => {},
     ): Emscripten.WebAssemblyExports {
         // We rely on the following here:
         //
@@ -49,6 +140,17 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
         //
         globalThis.DUCKDB_RUNTIME = this._runtime;
         const handlers = this.onInstantiationProgress;
+        const onError = (prefix: string) => (error: any) => {
+            this.logger.log({
+                timestamp: new Date(),
+                level: LogLevel.ERROR,
+                origin: LogOrigin.BINDINGS,
+                topic: LogTopic.INSTANTIATE,
+                event: LogEvent.ERROR,
+                value: prefix + error,
+            });
+            fail(error instanceof Error ? error : new Error(String(error)));
+        };
 
         // Does the browser support streaming instantiation?
         if (WebAssembly.instantiateStreaming) {
@@ -56,8 +158,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             if (typeof TransformStream === 'function') {
                 const fetchWithProgress = async () => {
                     // Try to determine file size
-                    const request = new Request(this.mainModuleURL);
-                    const response = await fetch(request);
+                    const response = await this.fetchWasm(wasmHash);
                     const contentLengthHdr = response.headers.get('content-length');
                     const contentLength = contentLengthHdr ? parseInt(contentLengthHdr, 10) || 0 : 0;
 
@@ -91,13 +192,12 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 const response = fetchWithProgress();
                 WebAssembly.instantiateStreaming(response, imports).then(output => {
                     success(output.instance, output.module);
-                });
+                }, onError('Failed to instantiate WASM: '));
             } else {
                 console.warn('instantiating without progress handler since transform streams are unavailable');
-                const request = new Request(this.mainModuleURL);
-                WebAssembly.instantiateStreaming(fetch(request), imports).then(output => {
+                WebAssembly.instantiateStreaming(this.fetchWasm(wasmHash), imports).then(output => {
                     success(output.instance, output.module);
-                });
+                }, onError('Failed to instantiate WASM: '));
             }
         } else if (typeof XMLHttpRequest == 'function') {
             // Otherwise we fall back to XHRs
@@ -112,17 +212,8 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
             };
             xhr.open('GET', url);
             xhr.responseType = 'arraybuffer';
-            xhr.onerror = error => {
-                this.logger.log({
-                    timestamp: new Date(),
-                    level: LogLevel.ERROR,
-                    origin: LogOrigin.BINDINGS,
-                    topic: LogTopic.INSTANTIATE,
-                    event: LogEvent.ERROR,
-                    value: 'Failed to load WASM: ' + error,
-                });
-                throw new Error(error.toString());
-            };
+            // The error event is a bare `ProgressEvent`, which carries no details.
+            xhr.onerror = () => onError('Failed to load WASM: ')(new Error(`network error loading ${url}`));
             xhr.onprogress = e => {
                 progress.bytesTotal = e.total;
                 progress.bytesLoaded = e.loaded;
@@ -140,17 +231,7 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                     .then(output => {
                         success(output.instance, output.module);
                     })
-                    .catch(error => {
-                        this.logger.log({
-                            timestamp: new Date(),
-                            level: LogLevel.ERROR,
-                            origin: LogOrigin.BINDINGS,
-                            topic: LogTopic.INSTANTIATE,
-                            event: LogEvent.ERROR,
-                            value: 'Failed to instantiate WASM: ' + error,
-                        });
-                        throw new Error(error);
-                    });
+                    .catch(onError('Failed to instantiate WASM: '));
             };
             xhr.send();
         } else {
@@ -159,11 +240,10 @@ export abstract class DuckDBBrowserBindings extends DuckDBBindingsBase {
                 const request = new Request(this.mainModuleURL);
                 const response = await fetch(request);
                 const buffer = await response.arrayBuffer();
-                WebAssembly.instantiate(buffer, imports).then(output => {
-                    success(output.instance, output.module);
-                });
+                const output = await WebAssembly.instantiate(buffer, imports);
+                success(output.instance, output.module);
             };
-            run();
+            run().catch(onError('Failed to instantiate WASM: '));
         }
         return [];
     }

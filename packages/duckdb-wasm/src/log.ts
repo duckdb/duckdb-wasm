@@ -52,6 +52,7 @@ export type ProgressEntry = {
 export type ExecutionProgressHandler = (p: ProgressEntry) => void;
 
 export type LogEntryVariant =
+    | LogEntry<LogOrigin.BINDINGS, LogTopic.INSTANTIATE, LogEvent.OK, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.INSTANTIATE, LogEvent.ERROR, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.FILESYSTEM, LogEvent.RUN, string>
     | LogEntry<LogOrigin.BINDINGS, LogTopic.QUERY, LogEvent.START, void>
