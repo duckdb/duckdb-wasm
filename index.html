@@ -18,6 +18,31 @@
   <link rel="icon" type="image/png" sizes="32x32" href="https://duckdb.org/images/favicon/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="https://duckdb.org/images/favicon/favicon-16x16.png">
   <link rel="shortcut icon" href="https://duckdb.org/images/favicon/favicon.ico">
+  <script>
+  // The shell's assets, in one place. Preloaded from here, before the stylesheets and the blocking xterm
+  // scripts below, so that all four downloads start with the page; the fetches later on reuse them
+  // (same-origin credentials, which is what the emscripten glue and the worker use).
+  const SHELL_ASSETS = {
+    shellJs: './static/assets/duckdb.946a785b55.js',       // the frontend shell (linenoise, parser, box renderer)
+    shellWasm: './static/assets/duckdb.32c6463d0f.wasm',
+    worker: './static/assets/worker.8db4dcde36.js',        // the experimental wire worker
+    engine: './static/assets/duckdb-eh.f88168bf7a.wasm',   // duckdb-wasm, fetched by the worker
+  };
+  for (const [key, href] of [['shellJs', SHELL_ASSETS.shellJs], ['shellWasm', SHELL_ASSETS.shellWasm], ['worker', SHELL_ASSETS.worker]]) {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.href = href;
+    link.as = key === 'shellJs' ? 'script' : key === 'worker' ? 'worker' : 'fetch';
+    if (link.as === 'fetch') link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+  }
+  // The engine is not preloaded: a document preload is not shared with a worker's fetch and it would
+  // download twice. The worker that uses it is started right here instead, with its instantiate request
+  // (tag 0); the shell's code adopts the worker and the queued answer later.
+  const ENGINE_URL = new URL(SHELL_ASSETS.engine, location.href).href;
+  const EARLY_WORKER = new Worker(SHELL_ASSETS.worker);
+  EARLY_WORKER.postMessage({ op: 'instantiate', tag: 0, mainModuleURL: ENGINE_URL });
+  </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
   <link rel="stylesheet" href="https://duckdb.org/css/main.css">
   <script data-cfasync="false">
@@ -125,13 +150,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
   <script>
-// === Configuration ===
-// Path to the frontend WASM shell (linenoise + box renderer)
-const SHELL_WASM_JS_URL = './static/assets/duckdb.2be644b88c.js';
-// Path to the experimental worker (loads duckdb-wasm backend)
-const WORKER_URL = './static/assets/worker.8db4dcde36.js';
-// Path to the duckdb-wasm .wasm file (passed to worker for instantiation)
-const DUCKDB_WASM_URL = './duckdb-eh.f88168bf7a.wasm'; // resolved by the worker, next to it
+// === Configuration === (the URLs live in SHELL_ASSETS at the top of <head>, where they are preloaded)
+const SHELL_WASM_JS_URL = SHELL_ASSETS.shellJs;
+const WORKER_URL = SHELL_ASSETS.worker;
+// Absolute: the worker resolves it against its own URL otherwise, and the preload would not be reused
+const DUCKDB_WASM_URL = new URL(SHELL_ASSETS.engine, location.href).href;
 
 // === Mobile hamburger toggle ===
 const hamburgerBtn = document.querySelector('.hamburger');
@@ -798,9 +821,16 @@ let worker = null;
 let workerReady = false;
 let nextTag = 1;
 
+// Adopts the worker started in <head> and resolves with its answer to the early instantiate (tag 0);
+// the answer may already be queued on the port, it is delivered once onmessage is set.
 function initWorker() {
-  setStatus('loading worker...');
-  worker = new Worker(WORKER_URL);
+  worker = EARLY_WORKER;
+  const instantiated = new Promise((resolve, reject) => {
+    pendingCallbacks[0] = (status, data, error) => {
+      if (status !== 0) reject(new Error(error || 'worker error'));
+      else resolve(data);
+    };
+  });
 
   worker.onmessage = (event) => {
     const { tag, status, data, error, duration } = event.data;
@@ -830,6 +860,7 @@ function initWorker() {
     console.error('[worker] error event:', e);
     setStatus('worker error');
   };
+  return instantiated;
 }
 
 // Pending callbacks for init-phase messages
@@ -938,7 +969,8 @@ function readU32(data, offset) {
 }
 
 function flushPending() {
-  if (!wasmModule) return;
+  // before the engine is up the shell's requests stay queued in the frontend; boot() flushes them
+  if (!wasmModule || !workerReady) return;
   while (wasmModule._wasm_has_pending()) {
     const ptr = wasmModule._wasm_take_pending();
     const size = wasmModule._wasm_pending_size();
@@ -1019,11 +1051,10 @@ function loadFrontendWasm() {
   setStatus('loading shell WASM...');
   window.Module = {
     // the content-hashed frontend: emscripten's glue asks for 'duckdb.wasm'
-    locateFile: (path, prefix) => path === 'duckdb.wasm' ? './static/assets/duckdb.c4e41a523a.wasm' : prefix + path,
+    locateFile: (path, prefix) => path === 'duckdb.wasm' ? SHELL_ASSETS.shellWasm : prefix + path,
     print: onWasmPrint,
     printErr: onWasmPrintErr,
     onRuntimeInitialized: () => {
-      setStatus('shell ready');
       wasmModule = window.Module;
       wasmModule.onWasmOutput = function(bytes) {
         const text = new TextDecoder().decode(bytes);
@@ -1031,18 +1062,15 @@ function loadFrontendWasm() {
       };
       // Use connId=1 — the worker manages the real connection internally
       wasmModule._wasm_init(1n); // uint64_t: a BigInt under WASM_BIGINT
+      // the engine may or may not be up yet: with it the prompt is query-backed, without it static
+      wasmModule._wasm_set_backend_ready(workerReady ? 1 : 0);
       initDone = true;
       // TODO: get version from the backend (DuckDB::LibraryVersion() is not available in frontend WASM).
-      // TODO: figure out what to show while the backend is loading (the WASM binary is ~67MB).
       term.write('\r\n\x1b[90mDuckDB Web Shell running...\x1b[0m\r\n');
       term.write('DuckDB v2.0.0 (Cyanoptera)\r\n');
       term.write('\x1b[90mEnter ".help" for usage hints.\x1b[0m\r\n');
       wasmModule._wasm_start_editing();
       flushPending();
-
-      // Set up default .connect wrappers (silently, via worker)
-      sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack_init = 'ATTACH OR REPLACE ''quack:$$PARAMS$$'' AS connect_backend;';", castMode: 0 });
-      sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack = 'CALL rpc_call_by_name(''connect_backend'', ''$$QUERY$$'');';", castMode: 0 });
 
       // Queue commands from URL hash (e.g. #queries=v0,SELECT-42,FROM-range(10))
       const hash = window.location.hash;
@@ -1132,13 +1160,14 @@ term.onData((data) => {
 // === Boot sequence ===
 
 async function boot() {
+  // The shell frontend first: it is small and the prompt, highlighting and completion work without the
+  // engine. The engine loads meanwhile; requests the shell issues before it is up wait in its queue.
+  loadFrontendWasm();
   try {
-    // 1. Start worker and load duckdb-wasm
-    initWorker();
-    setStatus('instantiating DuckDB...');
-    await sendToWorkerAsync('instantiate', { mainModuleURL: DUCKDB_WASM_URL });
+    setStatus('loading DuckDB engine...');
+    // the worker and its instantiate request were started in <head>; this awaits that answer
+    await initWorker();
 
-    // 2. Open database and create connection
     setStatus('opening database...');
     const params = new URLSearchParams(location.search);
     const allowUnsigned = params.get('allowUnsignedExtensions') === 'true';
@@ -1146,8 +1175,21 @@ async function boot() {
     await sendToWorkerAsync('open', { config: openConfig });
     await sendToWorkerAsync('connect');
 
-    // 3. Load the frontend shell WASM
-    loadFrontendWasm();
+    // Set up default .connect wrappers (silently, via worker)
+    await sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack_init = 'ATTACH OR REPLACE ''quack:$$PARAMS$$'' AS connect_backend;';", castMode: 0 });
+    await sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack = 'CALL rpc_call_by_name(''connect_backend'', ''$$QUERY$$'');';", castMode: 0 });
+
+    workerReady = true;
+    setStatus('');
+    if (wasmModule && initDone) {
+      wasmModule._wasm_set_backend_ready(1);
+      // an untouched static prompt becomes the real one; anything typed meanwhile is sent now
+      if (wasmModule._wasm_is_editing() && wasmModule._wasm_is_line_empty()) {
+        term.write('\r\x1b[2K');
+        wasmModule._wasm_start_editing();
+      }
+      flushPending();
+    }
   } catch (e) {
     setStatus('error: ' + e.message);
     console.error(e);
