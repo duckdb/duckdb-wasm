@@ -23,8 +23,8 @@
   // scripts below, so that all four downloads start with the page; the fetches later on reuse them
   // (same-origin credentials, which is what the emscripten glue and the worker use).
   const SHELL_ASSETS = {
-    shellJs: './static/assets/duckdb.946a785b55.js',       // the frontend shell (linenoise, parser, box renderer)
-    shellWasm: './static/assets/duckdb.32c6463d0f.wasm',
+    shellJs: './static/assets/duckdb.aeec1c4afb.js',       // the frontend shell (linenoise, parser, box renderer)
+    shellWasm: './static/assets/duckdb.b1caed5ef4.wasm',
     worker: './static/assets/worker.8db4dcde36.js',        // the experimental wire worker
     engine: './static/assets/duckdb-eh.f88168bf7a.wasm',   // duckdb-wasm, fetched by the worker
   };
@@ -41,8 +41,32 @@
   // (tag 0); the shell's code adopts the worker and the queued answer later.
   const ENGINE_URL = new URL(SHELL_ASSETS.engine, location.href).href;
   const EARLY_WORKER = new Worker(SHELL_ASSETS.worker);
+  // A Worker's message event fires whether or not anyone listens: the engine's answer can arrive before the
+  // shell's code installs its handler (initWorker), so it waits here and is replayed then.
+  const EARLY_MESSAGES = [];
+  EARLY_WORKER.onmessage = (event) => { EARLY_MESSAGES.push(event); };
   EARLY_WORKER.postMessage({ op: 'instantiate', tag: 0, mainModuleURL: ENGINE_URL });
+
+  // Embedding. A page that puts the shell in an iframe hands it the SQL to run as a plain string, so nothing
+  // has to be URL-encoded:
+  //   iframe.contentWindow.postMessage({ type: 'duckdb-shell', run: 'INSTALL AND LOAD h3 FROM community; ...' }, '*')
+  // The shell answers { type: 'duckdb-shell', status: 'ready' } once the engine is up. The listener is installed
+  // here, before the frame's load event, and the scripts wait in EMBED_QUEUE until the shell takes them.
+  // `?embed` trims the page to the terminal, Share and the color mode.
+  const EMBED_QUEUE = [];
+  window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (!data || data.type !== 'duckdb-shell' || typeof data.run !== 'string') return;
+    EMBED_QUEUE.push({ sql: data.run, origin: event.origin });
+    if (window.embedTakeQueue) window.embedTakeQueue();
+  });
+  if (new URLSearchParams(location.search).has('embed')) {
+    document.documentElement.classList.add('embed');
+  }
   </script>
+  <style>
+    .embed #nav-new, .embed #nav-import, .embed .landingmenu nav > div:has(.hasSub), .embed .hamburger { display: none; }
+  </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
   <link rel="stylesheet" href="https://duckdb.org/css/main.css">
   <script data-cfasync="false">
@@ -281,14 +305,8 @@ document.querySelectorAll('.example-link').forEach(link => {
   });
 });
 
-// === .connect command ===
-// .connect <template>      — activate query wrapping (use $$QUERY$$ placeholder)
-// .connect <name>:<params> — read wrapper from variable, run init, activate
-// .connect off             — deactivate
-// .connect                 — show status
-window.shellExecutionWrapper = null;
-
-// Helper: query a variable via the worker and extract the string value
+// === Reading one value back from the engine ===
+// A query run through the worker, not the terminal; the frontend extracts the first value (SET VARIABLE lookups)
 async function getVariable(varName) {
   const sql = "SELECT getvariable('" + varName.replace(/'/g, "''") + "')::VARCHAR;";
   const data = await sendToWorkerAsync('query', { sql, castMode: 0 });
@@ -297,6 +315,7 @@ async function getVariable(varName) {
   wasmModule.HEAPU8.set(data, ptr);
   const resultPtr = wasmModule._wasm_extract_first_value(ptr, data.length);
   wasmModule._free(ptr);
+  if (!resultPtr) return null;   // error, no rows, or NULL
   // Read null-terminated string from WASM heap
   let end = resultPtr;
   while (wasmModule.HEAPU8[end] !== 0) end++;
@@ -304,67 +323,6 @@ async function getVariable(varName) {
   wasmModule._free(resultPtr);
   return value || null;
 }
-
-window.shellConnect = (arg) => {
-  if (!arg || arg === '') {
-    if (window.shellExecutionWrapper) {
-      term.write('Active wrapper: ' + window.shellExecutionWrapper + '\r\n');
-    } else {
-      term.write('No active connection wrapper.\r\n');
-    }
-    return;
-  }
-  if (arg === 'off') {
-    window.shellExecutionWrapper = null;
-    term.write('Disconnected.\r\n');
-    return;
-  }
-
-  const colonPos = arg.indexOf(':');
-  if (colonPos === -1) {
-    // Raw template
-    window.shellExecutionWrapper = arg;
-    term.write('Connected: queries will be wrapped.\r\n');
-    return;
-  }
-
-  // name:params — read variables, run init, activate wrapper
-  const name = arg.substring(0, colonPos);
-  const params = arg.substring(colonPos + 1);
-  const initVar = 'shell_connect_wrapper_' + name + '_init';
-  const wrapperVar = 'shell_connect_wrapper_' + name;
-
-  window.asyncBusy = true;
-  (async () => {
-    try {
-      // Read wrapper template
-      const wrapperTpl = await getVariable(wrapperVar);
-      if (!wrapperTpl) {
-        term.write('Error: variable ' + wrapperVar + ' not set.\r\n');
-        return;
-      }
-
-      // Read and run init template (if exists)
-      const initTpl = await getVariable(initVar);
-      if (initTpl) {
-        const initSql = initTpl.replace(/\$\$PARAMS\$\$/g, params);
-        term.write('\x1b[90mConnect init: ' + initSql + '\x1b[0m\r\n');
-        await sendToWorkerAsync('query', { sql: initSql, castMode: 0 });
-      }
-
-      // Activate wrapper with params substituted
-      window.shellExecutionWrapper = wrapperTpl.replace(/\$\$PARAMS\$\$/g, params);
-      term.write('\x1b[90mConnected via: ' + window.shellExecutionWrapper.replace('$$QUERY$$', '...') + '\x1b[0m\r\n');
-      term.write('To restore local compute: .connect off\r\n');
-    } catch (e) {
-      term.write('Error connecting: ' + e.message + '\r\n');
-    } finally {
-      window.asyncBusy = false;
-      wasmModule._wasm_start_editing();
-      flushPending();
-    }
-  })();
-};
 
 // === Dark mode ===
 const LIGHT_THEME = {
@@ -456,7 +414,7 @@ window.pendingFolders = new Set();
 
 // === .share: session URL encoding ===
 window.shareHistory = [];
-const SHARE_ALLOWED_DOT = ['.mode', '.timer', '.maxrows', '.maxwidth', '.nullvalue', '.separator', '.headers', '.changes', '.connect',
+const SHARE_ALLOWED_DOT = ['.mode', '.timer', '.maxrows', '.maxwidth', '.nullvalue', '.separator', '.headers', '.changes',
   '.tables', '.schema', '.indexes', '.columns', '.describe', '.functions', '.types'];
 
 function isShareable(line) {
@@ -855,6 +813,10 @@ function initWorker() {
       deliverToFrontend(tag, status, data);
     }
   };
+  // what the engine answered before this handler existed (see the head script)
+  for (const event of EARLY_MESSAGES.splice(0)) {
+    worker.onmessage(event);
+  }
 
   worker.onerror = (e) => {
     console.error('[worker] error event:', e);
@@ -990,11 +952,7 @@ function flushPending() {
         const connId = readU64(raw, 9);
         const castMode = raw[17];
         const sqlLen = readU32(raw, 18);
-        let sql = new TextDecoder().decode(raw.subarray(22, 22 + sqlLen));
-        // Apply execution wrapper if active (.connect)
-        if (window.shellExecutionWrapper) {
-          sql = window.shellExecutionWrapper.replace(/\$\$QUERY\$\$/g, sql.replace(/'/g, "''"));
-        }
+        const sql = new TextDecoder().decode(raw.subarray(22, 22 + sqlLen));
         worker.postMessage({
           op: opcode === 3 ? 'query' : 'send_query',
           tag, sql, castMode,
@@ -1090,6 +1048,18 @@ function loadFrontendWasm() {
         }
       }
 
+      // Scripts handed over by an embedding page (see the head script); they run after the URL hash ones,
+      // whole: the frontend splits the statements and continues incomplete lines, as it does for a paste.
+      window.embedTakeQueue = () => {
+        while (EMBED_QUEUE.length > 0) {
+          const { sql, origin } = EMBED_QUEUE.shift();
+          term.write('\x1b[90m-- queries from ' + origin + '\x1b[0m\r\n');
+          (isDemo ? window.demoQueue : startupQueue).push(sql);
+        }
+        if (!isDemo) drainStartupQueue();
+      };
+      window.embedTakeQueue();
+
       if (isDemo && window.demoQueue.length > 0) {
         // Show play button
         const demoBtn = document.getElementById('nav-demo');
@@ -1107,6 +1077,281 @@ function loadFrontendWasm() {
   script.src = SHELL_WASM_JS_URL;
   document.body.appendChild(script);
 }
+
+// === .aws: sign in to AWS from the page; the credentials reach DuckDB as a hidden secret ===
+// .aws login [region]   prints the AWS Sign-In link (the cross-device flow of `aws login`): sign in to the
+//                       console in any tab, choose a session, and the page shows a code to bring back
+// .aws login <code>     exchanges the code (PKCE + DPoP) for 15-minute credentials, refreshed from the refresh
+//                       token until the console session ends, and runs CREATE SECRET aws (TYPE s3, ...)
+//                       through the worker: not echoed, not in the history, not shareable
+// .aws                  status      .aws logout   drops the secret and forgets the session
+// Credentials live in page memory only and do not survive a reload. The Sign-In token endpoint answers no
+// CORS preflight, so the exchange goes through a local relay given as ?awsRelay=<url> (development only);
+// the DPoP proof names the real endpoint, the relay only forwards.
+// AWS Sign-In's public clients. The same-device one redirects to http://127.0.0.1:<any port>/oauth/callback and
+// nowhere else, so on a loopback origin the sign-in tab comes back to ./oauth/callback/ and hands the code to
+// this tab over a BroadcastChannel; everywhere else the cross-device client shows the code for the user to paste.
+const AWS_SIGNIN_CLIENT_SAME_DEVICE = 'arn:aws:signin:::devtools/same-device';
+const AWS_SIGNIN_CLIENT_CROSS_DEVICE = 'arn:aws:signin:::devtools/cross-device';
+// The token endpoint answers no browser today, so the exchange needs a relay the user chose: ?awsRelay=,
+// `.aws relay <url>` (remembered in this browser) or SET VARIABLE shell_aws_relay. Never a default: a relay sees
+// the short-lived credentials. Each login first checks whether AWS accepts the page directly; then no relay.
+const AWS_RELAY_STORAGE_KEY = 'duckdb-shell-aws-relay';
+let awsRelay = new URLSearchParams(location.search).get('awsRelay');
+try { awsRelay = awsRelay || localStorage.getItem(AWS_RELAY_STORAGE_KEY); } catch (e) { /* no storage */ }
+async function awsResolveRelay() {
+  if (awsRelay) return awsRelay;
+  try {
+    const v = await getVariable('shell_aws_relay');
+    if (v && v !== 'NULL' && /^https?:\/\//.test(v)) return v;
+  } catch (e) { /* no such variable */ }
+  return null;
+}
+// Can this page talk to the token endpoint itself? The real request shape, so the browser runs the real preflight:
+// a CORS failure throws, any answer (a 400 for this body) means the direct path works.
+async function awsProbeDirect(region) {
+  try {
+    await fetch(awsSigninBase(region) + '/v1/token', { method: 'POST', headers: { 'Content-Type': 'application/json', 'DPoP': 'probe' }, body: '{}' });
+    return true;
+  } catch (e) { return false; }
+}
+// Origins AWS Sign-In redirects to (the same-device client accepts http://127.0.0.1:<port>/oauth/callback and
+// nothing else). Whether a redirect is accepted cannot be observed from a page, so this is declared, not probed.
+const AWS_CALLBACK_HOSTS = ['127.0.0.1'];
+const AWS_REGION_RE = /^[a-z]{2}(-gov)?-[a-z]+-\d$/;
+window.awsSession = null;
+
+const awsB64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const awsUtf8 = (s) => new TextEncoder().encode(s);
+const awsSigninBase = (region) => `https://${region}.signin.aws.amazon.com`;
+const awsLink = (url, label) => '\x1b]8;;' + url + '\x07' + (label || url) + '\x1b]8;;\x07';
+// AWS Sign-In's error codes, in the user's terms
+const AWS_ERRORS = {
+  AUTHCODE_EXPIRED: 'the code has expired or was already used; run .aws login again',
+  INSUFFICIENT_PERMISSIONS: 'this principal may not use AWS Sign-In for developer tools (it needs the SignInLocalDevelopmentAccess policy, actions signin:AuthorizeOAuth2Access and signin:CreateOAuth2Token)',
+  TOKEN_EXPIRED: 'the console session has ended',
+  USER_CREDENTIALS_CHANGED: 'the password of this principal changed, the session is no longer valid',
+};
+
+// RFC 9449 proof: ES256 JWS over {htm, htu, iat, jti} carrying the public key, signed with the session's
+// non-extractable key (WebCrypto returns the raw r||s signature JWS expects)
+async function awsDpopProof(keys, url) {
+  const jwk = await crypto.subtle.exportKey('jwk', keys.publicKey);
+  const header = { typ: 'dpop+jwt', alg: 'ES256', jwk: { kty: 'EC', x: jwk.x, y: jwk.y, crv: 'P-256' } };
+  const payload = { htm: 'POST', htu: url, iat: Math.floor(Date.now() / 1000), jti: crypto.randomUUID() };
+  const input = awsB64url(awsUtf8(JSON.stringify(header))) + '.' + awsB64url(awsUtf8(JSON.stringify(payload)));
+  const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, keys.privateKey, awsUtf8(input));
+  return input + '.' + awsB64url(signature);
+}
+
+async function awsTokenRequest(session, body) {
+  const url = awsSigninBase(session.region) + '/v1/token';
+  const proof = await awsDpopProof(session.keys, url);
+  const relay = session.relay;
+  const target = relay ? relay + (relay.includes('?') ? '&' : '?') + 'region=' + session.region : url;
+  let res;
+  try {
+    res = await fetch(target, { method: 'POST', headers: { 'Content-Type': 'application/json', 'DPoP': proof }, body: JSON.stringify({ clientId: session.clientId, ...body }) });
+  } catch (e) {
+    throw new Error(relay ? 'the token relay at ' + relay + ' is not reachable' : 'AWS Sign-In does not accept token requests from a browser page (no CORS on ' + url + ')');
+  }
+  const text = await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch (e) { /* not JSON */ }
+  if (!res.ok) {
+    const code = json && json.error;
+    throw new Error('AWS Sign-In: ' + (code ? (AWS_ERRORS[code] || code + (json.message ? ' — ' + json.message : '')) : res.status + ' ' + text.slice(0, 200)));
+  }
+  return json.tokenOutput || json;
+}
+
+// The worker answers a query with the wire metadata: [has_error u8] [u32 len] [message]
+function awsWireError(data) {
+  if (!data || data.length < 5 || data[0] === 0) return null;
+  const len = new DataView(data.buffer, data.byteOffset + 1, 4).getUint32(0, true);
+  return new TextDecoder().decode(data.subarray(5, 5 + len));
+}
+
+async function awsRunHidden(sql) {
+  const data = await sendToWorkerAsync('query', { sql, castMode: 0 });
+  const error = awsWireError(data);
+  if (error) throw new Error(error);
+}
+
+const awsQuote = (v) => "'" + String(v).replace(/'/g, "''") + "'";
+
+async function awsInstallSecret(s) {
+  await awsRunHidden(`CREATE OR REPLACE SECRET aws (TYPE s3, KEY_ID ${awsQuote(s.creds.accessKeyId)}, SECRET ${awsQuote(s.creds.secretAccessKey)}, SESSION_TOKEN ${awsQuote(s.creds.sessionToken)}, REGION ${awsQuote(s.region)})`);
+}
+
+function awsTakeTokens(s, out) {
+  s.creds = out.accessToken;
+  s.refreshToken = out.refreshToken;
+  s.expiresAt = Date.now() + (out.expiresIn || 900) * 1000;
+  if (out.idToken) {
+    const claims = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(out.idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))));
+    s.identity = claims.sub || '';
+    s.accountId = (s.identity.split(':')[4]) || '';
+  }
+}
+
+function awsScheduleRefresh(s) {
+  clearTimeout(s.timer);
+  s.timer = setTimeout(async () => {
+    try {
+      awsTakeTokens(s, await awsTokenRequest(s, { grantType: 'refresh_token', refreshToken: s.refreshToken }));
+      await awsInstallSecret(s);
+      awsScheduleRefresh(s);
+    } catch (e) {
+      await awsLogout(false);
+      term.write('\r\n\x1b[31mAWS credentials not refreshed (' + e.message + '); secret aws dropped. Run .aws login again.\x1b[0m\r\n');
+      if (wasmModule && wasmModule._wasm_is_editing() && wasmModule._wasm_is_line_empty()) {
+        wasmModule._wasm_start_editing();
+      }
+    }
+  }, Math.max(5000, s.expiresAt - Date.now() - 60000));
+}
+
+async function awsLoginStart(region) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const codeVerifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), b => alphabet[b % alphabet.length]).join('');
+  const challenge = awsB64url(await crypto.subtle.digest('SHA-256', awsUtf8(codeVerifier)));
+  const keys = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const state = crypto.randomUUID();
+  if (window.awsSession) await awsLogout(false);
+  // how the exchange will travel, before anything opens
+  const direct = await awsProbeDirect(region);
+  const relay = direct ? null : await awsResolveRelay();
+  if (!direct && !relay) {
+    term.write('AWS Sign-In does not accept token requests from a browser page yet, so the exchange needs a relay, and none is configured.\r\n');
+    term.write('A relay forwards the request to AWS and sees the short-lived credentials: use one you operate. Then:\r\n');
+    term.write('  .aws relay https://relay.example.com/token        (remembered in this browser)\r\n');
+    term.write("  SET VARIABLE shell_aws_relay = 'https://relay.example.com/token';\r\n");
+    return;
+  }
+  const callback = location.origin + '/oauth/callback';
+  const redirectOk = 'BroadcastChannel' in window && AWS_CALLBACK_HOSTS.includes(location.hostname);
+  const clientId = redirectOk ? AWS_SIGNIN_CLIENT_SAME_DEVICE : AWS_SIGNIN_CLIENT_CROSS_DEVICE;
+  const redirect = redirectOk ? callback : awsSigninBase(region) + '/v1/sessions/confirmation';
+  const s = window.awsSession = { region, codeVerifier, state, keys, startedAt: Date.now(), clientId, redirect, relay };
+  if (redirectOk) {
+    s.channel = new BroadcastChannel('duckdb-shell-aws');
+    s.channel.onmessage = (e) => { if (e.data && e.data.state === s.state && e.data.code) awsCallbackArrived(s, e.data.code); };
+  }
+  const params = new URLSearchParams({ response_type: 'code', client_id: clientId, state, code_challenge_method: 'SHA-256', scope: 'openid', redirect_uri: redirect });
+  const url = awsSigninBase(region) + '/v1/authorize?' + params.toString() + '&code_challenge=' + challenge;
+  // the Enter that ran the command is a user activation, so the tab opens without a click; the link stays
+  // for browsers that block it
+  const opened = window.open(url, '_blank', 'noopener');
+  term.write((opened ? 'Sign in to AWS in the tab that opened' : 'Open ' + awsLink(url, 'AWS Sign-In') + ' in a new tab and sign in') + '. You will be brought back here by itself,\r\n');
+  term.write('or shown a code: then run   .aws login <code>\r\n');
+  if (relay) term.write('\x1b[90m(token exchange through the relay at ' + relay + ')\x1b[0m\r\n');
+}
+
+async function awsLoginFinish(code) {
+  const s = window.awsSession;
+  if (!s || !s.codeVerifier) throw new Error('run .aws login first, then bring back the code');
+  let decoded;
+  try { decoded = atob(code.trim()); } catch (e) { throw new Error('this is not the code shown by AWS Sign-In'); }
+  const q = new URLSearchParams(decoded);
+  if (!q.get('code') || !q.get('state')) throw new Error('the code is missing its state or authorization code');
+  if (q.get('state') !== s.state) throw new Error('the code belongs to another .aws login attempt; run .aws login again');
+  await awsExchange(s, q.get('code'));
+}
+
+// The code reached this tab: exchange it, install the secret, say so
+async function awsExchange(s, code) {
+  const out = await awsTokenRequest(s, { grantType: 'authorization_code', code, codeVerifier: s.codeVerifier, redirectUri: s.redirect });
+  delete s.codeVerifier;
+  delete s.state;
+  if (s.channel) { s.channel.close(); delete s.channel; }
+  awsTakeTokens(s, out);
+  await awsInstallSecret(s);
+  awsScheduleRefresh(s);
+  term.write('Signed in as \x1b[1m' + s.identity + '\x1b[0m\r\n');
+  term.write('Secret \x1b[1maws\x1b[0m (TYPE s3, REGION ' + s.region + ') is active for s3://; credentials rotate every ' + Math.round((out.expiresIn || 900) / 60) + ' min until the console session ends. .aws for status, .aws logout to end.\r\n');
+}
+
+// The callback page posted the code while the user sits at the prompt: finish in the background and redraw
+async function awsCallbackArrived(s, code) {
+  if (window.awsSession !== s || !s.codeVerifier) return;
+  const wasEditing = wasmModule && wasmModule._wasm_is_editing();
+  if (wasEditing) term.write('\r\x1b[2K');
+  window.asyncBusy = true;
+  try {
+    await awsExchange(s, code);
+  } catch (e) {
+    term.write('\x1b[31m' + e.message + '\x1b[0m\r\n');
+  } finally {
+    window.asyncBusy = false;
+    if (wasEditing) { wasmModule._wasm_start_editing(); flushPending(); }
+  }
+}
+
+async function awsLogout(say) {
+  const s = window.awsSession;
+  window.awsSession = null;
+  if (!s) { if (say) term.write('Not signed in to AWS.\r\n'); return; }
+  clearTimeout(s.timer);
+  if (s.channel) s.channel.close();
+  if (s.creds && workerReady) {
+    try { await awsRunHidden('DROP SECRET IF EXISTS aws'); } catch (e) { /* the engine may be mid-query; the secret dies with the page anyway */ }
+  }
+  if (say) term.write('Signed out of AWS; secret aws dropped.\r\n');
+}
+
+function awsStatus() {
+  const s = window.awsSession;
+  if (!s || !s.creds) {
+    term.write(s ? 'AWS sign-in started; waiting for the code (.aws login <code>).\r\n' : 'Not signed in to AWS. Run .aws login [region].\r\n');
+    return;
+  }
+  const left = Math.max(0, Math.round((s.expiresAt - 60000 - Date.now()) / 1000));
+  const since = Math.round((Date.now() - s.startedAt) / 60000);
+  term.write('Signed in as \x1b[1m' + s.identity + '\x1b[0m (account ' + s.accountId + ', region ' + s.region + ') since ' + (since < 1 ? 'less than a minute' : since + ' min') + '\r\n');
+  term.write('Secret aws is active; credentials rotate in ' + Math.floor(left / 60) + 'm' + String(left % 60).padStart(2, '0') + 's' + (s.relay ? ' through the relay at ' + s.relay : ', directly with AWS') + '. .aws logout ends the session.\r\n');
+}
+
+window.awsCommand = (args) => {
+  const parts = args.trim().split(/\s+/).filter(Boolean);
+  const run = async () => {
+    if (window.parent !== window) throw new Error('.aws is not available while the shell is embedded in another page');
+    const sub = parts[0] || 'status';
+    if (sub === 'login') {
+      const arg = parts[1];
+      if (!arg || AWS_REGION_RE.test(arg)) await awsLoginStart(arg || 'us-east-1');
+      else await awsLoginFinish(arg);
+    } else if (sub === 'relay') {
+      const arg = parts[1];
+      if (!arg) {
+        const r = await awsResolveRelay();
+        term.write(r ? 'Token relay: ' + r + '\r\n' : 'No token relay configured; .aws relay <url> sets one, .aws relay off forgets it.\r\n');
+      } else if (arg === 'off') {
+        awsRelay = null;
+        try { localStorage.removeItem(AWS_RELAY_STORAGE_KEY); } catch (e) { /* no storage */ }
+        term.write('Token relay forgotten (a SET VARIABLE shell_aws_relay still applies if set).\r\n');
+      } else if (/^https?:\/\//.test(arg)) {
+        awsRelay = arg;
+        try { localStorage.setItem(AWS_RELAY_STORAGE_KEY, arg); } catch (e) { /* no storage */ }
+        term.write('Token relay: ' + arg + ' (remembered in this browser; it will see your short-lived AWS credentials)\r\n');
+      } else {
+        throw new Error('usage: .aws relay <https url> | .aws relay off');
+      }
+    } else if (sub === 'logout') {
+      await awsLogout(true);
+    } else if (sub === 'status') {
+      awsStatus();
+    } else {
+      throw new Error('usage: .aws login [region]  |  .aws login <code>  |  .aws  |  .aws relay [<url>|off]  |  .aws logout');
+    }
+  };
+  window.asyncBusy = true;
+  run().catch(e => term.write('\x1b[31m' + e.message + '\x1b[0m\r\n')).finally(() => {
+    window.asyncBusy = false;
+    wasmModule._wasm_start_editing();
+    flushPending();
+  });
+};
 
 // === xterm.js input handling ===
 
@@ -1175,9 +1420,6 @@ async function boot() {
     await sendToWorkerAsync('open', { config: openConfig });
     await sendToWorkerAsync('connect');
 
-    // Set up default .connect wrappers (silently, via worker)
-    await sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack_init = 'ATTACH OR REPLACE ''quack:$$PARAMS$$'' AS connect_backend;';", castMode: 0 });
-    await sendToWorkerAsync('query', { sql: "SET VARIABLE shell_connect_wrapper_quack = 'CALL rpc_call_by_name(''connect_backend'', ''$$QUERY$$'');';", castMode: 0 });
 
     workerReady = true;
     setStatus('');
@@ -1189,6 +1431,9 @@ async function boot() {
         wasmModule._wasm_start_editing();
       }
       flushPending();
+    }
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'duckdb-shell', status: 'ready' }, '*');
     }
   } catch (e) {
     setStatus('error: ' + e.message);

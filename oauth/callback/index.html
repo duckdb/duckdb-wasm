@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DuckDB shell: AWS sign-in</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 3rem auto; max-width: 40rem; padding: 0 1rem; color: #222; }
+    pre { background: #f4f4f4; padding: .75rem; border-radius: 6px; white-space: pre-wrap; word-break: break-all; user-select: all; }
+    @media (prefers-color-scheme: dark) { body { background: #111; color: #ddd; } pre { background: #222; } }
+  </style>
+</head>
+<body>
+  <!-- AWS Sign-In lands here (same-device flow, loopback origins only) with ?code=&state=. The shell tab that
+       started the sign-in listens on the channel below and finishes the exchange; this tab has nothing else to do. -->
+  <h2>Signed in to AWS</h2>
+  <p id="msg">Handing the authorization back to the DuckDB shell… you can close this tab.</p>
+  <p id="fallback" hidden>If the shell did not continue on its own, paste this in the shell as <code>.aws login &lt;code&gt;</code>:</p>
+  <pre id="code" hidden></pre>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const code = q.get('code'), state = q.get('state');
+    if (code && state) {
+      document.getElementById('code').textContent = btoa('state=' + state + '&code=' + code);
+      try { new BroadcastChannel('duckdb-shell-aws').postMessage({ code, state }); } catch (e) { /* no channel: the paste below */ }
+      history.replaceState(null, '', location.pathname);   // the code is single-use; keep it out of the history
+      setTimeout(() => { document.getElementById('fallback').hidden = false; document.getElementById('code').hidden = false; }, 2000);
+      setTimeout(() => window.close(), 800);
+    } else {
+      document.getElementById('msg').textContent = q.get('error') ? 'AWS Sign-In reported: ' + q.get('error') + (q.get('error_description') ? ' — ' + q.get('error_description') : '') : 'No authorization code in this URL.';
+    }
+  </script>
+</body>
+</html>
