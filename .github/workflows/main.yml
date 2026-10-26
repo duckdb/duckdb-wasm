@@ -568,17 +568,16 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: true
+                  # npm_version.sh needs the top-level repository's history and tags.
                   fetch-depth: 0
+
+            - name: Prepare JavaScript checkout
+              run: ./scripts/ci_prepare_js.sh
 
             - uses: actions/setup-node@v6
               with:
                   node-version: '18.x'
                   registry-url: 'https://registry.npmjs.org'
-
-            - name: Git submodule status
-              run: |
-                  git submodule status > git_submodule_status.txt
 
             - name: Cache rust build
               uses: actions/cache@v5
@@ -624,11 +623,6 @@ jobs:
               with:
                   name: wasm-threads
                   path: ./packages/duckdb-wasm/src/bindings/
-
-            - name: Prepare repository
-              run: |
-                  git fetch --tags --no-recurse-submodules -f
-                  (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -876,17 +870,16 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: true
+                  # npm_version.sh needs the top-level repository's history and tags.
                   fetch-depth: 0
+
+            - name: Prepare JavaScript checkout
+              run: ./scripts/ci_prepare_js.sh
 
             - uses: actions/setup-node@v6
               with:
                   node-version: '18.x'
                   registry-url: 'https://registry.npmjs.org'
-
-            - name: Git submodule status
-              run: |
-                  git submodule status > git_submodule_status.txt
 
             - name: Cache rust build
               uses: actions/cache@v5
@@ -942,11 +935,6 @@ jobs:
               with:
                   name: extension-repository-threads-loadable
                   path: ./build/extension_repository/
-
-            - name: Prepare repository
-              run: |
-                  git fetch --tags --no-recurse-submodules -f
-                  (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
@@ -1039,17 +1027,16 @@ jobs:
         steps:
             - uses: actions/checkout@v6
               with:
-                  submodules: true
+                  # npm_version.sh needs the top-level repository's history and tags.
                   fetch-depth: 0
+
+            - name: Prepare JavaScript checkout
+              run: ./scripts/ci_prepare_js.sh
 
             - uses: actions/setup-node@v6
               with:
                   node-version: '24'
                   registry-url: 'https://registry.npmjs.org'
-
-            - name: Git submodule status
-              run: |
-                  git submodule status > git_submodule_status.txt
 
             - name: Cache rust build
               uses: actions/cache@v5
@@ -1105,11 +1092,6 @@ jobs:
               with:
                   name: extension-repository-threads-loadable
                   path: ./build/extension_repository/
-
-            - name: Prepare repository
-              run: |
-                  git fetch --tags --no-recurse-submodules -f
-                  (cd ./submodules/duckdb && git fetch --all --tags)
 
             - name: Prepare environment
               uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
