@@ -358,9 +358,6 @@ jobs:
     wasm_base:
         name: Wasm / base
         runs-on: ubuntu-latest
-        needs:
-            - dataprep
-            - tpchgen
         steps:
             - uses: actions/checkout@v6
               with:
@@ -401,9 +398,6 @@ jobs:
     wasm_threads:
         name: Wasm / threads
         runs-on: ubuntu-latest
-        needs:
-            - dataprep
-            - tpchgen
         steps:
             - uses: actions/checkout@v6
               with:
@@ -445,9 +439,6 @@ jobs:
     wasm_base_loadable:
         name: Wasm / base (loadable version)
         runs-on: ubuntu-latest
-        needs:
-            - dataprep
-            - tpchgen
         steps:
             - uses: actions/checkout@v6
               with:
@@ -500,9 +491,6 @@ jobs:
     wasm_threads_loadable:
         name: Wasm / threads (loadable version)
         runs-on: ubuntu-latest
-        needs:
-            - dataprep
-            - tpchgen
         steps:
             - uses: actions/checkout@v6
               with:
@@ -561,6 +549,8 @@ jobs:
         name: Js / Libraries
         runs-on: ubuntu-latest
         needs:
+            - dataprep
+            - tpchgen
             - wasm_base
             - wasm_threads
             - clang_format
@@ -869,6 +859,8 @@ jobs:
         name: Js / Libraries (loadable version)
         runs-on: ubuntu-latest
         needs:
+            - dataprep
+            - tpchgen
             - wasm_base_loadable
             - wasm_threads_loadable
             - clang_format
