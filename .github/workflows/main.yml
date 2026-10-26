@@ -384,8 +384,6 @@ jobs:
         name: Wasm / base
         runs-on: ubuntu-latest
         needs:
-            - dataprep
-            - tpchgen
             - duckdb_version
         env:
             OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
@@ -430,8 +428,6 @@ jobs:
         name: Wasm / threads
         runs-on: ubuntu-latest
         needs:
-            - dataprep
-            - tpchgen
             - duckdb_version
         env:
             OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
@@ -477,8 +473,6 @@ jobs:
         name: Wasm / base (loadable version)
         runs-on: ubuntu-latest
         needs:
-            - dataprep
-            - tpchgen
             - duckdb_version
         env:
             OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
@@ -535,8 +529,6 @@ jobs:
         name: Wasm / threads (loadable version)
         runs-on: ubuntu-latest
         needs:
-            - dataprep
-            - tpchgen
             - duckdb_version
         env:
             OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
@@ -598,6 +590,8 @@ jobs:
         name: Js / Libraries
         runs-on: ubuntu-latest
         needs:
+            - dataprep
+            - tpchgen
             - wasm_base
             - wasm_threads
             - clang_format
@@ -906,6 +900,8 @@ jobs:
         name: Js / Libraries (loadable version)
         runs-on: ubuntu-latest
         needs:
+            - dataprep
+            - tpchgen
             - wasm_base_loadable
             - wasm_threads_loadable
             - clang_format
