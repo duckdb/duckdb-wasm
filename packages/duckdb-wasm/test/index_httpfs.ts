@@ -4,7 +4,7 @@ declare const __karma__: { config: { args: string[] } };
 
 for (const variant of ['base', 'threads']) {
     describe(`loadable HTTPFS (${variant})`, () => {
-        it('preserves remote reads, secrets and S3 after loading', async () => {
+        it('preserves remote reads, Azure ETags, secrets and S3 after loading', async () => {
             const worker = new Worker(`/static/duckdb-browser-${variant}.worker.js`);
             const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
             let stage = 'instantiate';
@@ -62,6 +62,18 @@ for (const variant of ['base', 'threads']) {
                 await expectAsync(query("SET httpfs_client_implementation='curl'")).toBeRejectedWithError(
                     /only.*wasm.*default/,
                 );
+
+                // Keep range reads conditional so the server validates the quoted Azure ETag.
+                await query('SET force_download_threshold=0');
+                const azureRead = (name: string) =>
+                    query(`SELECT content FROM read_text([{'filename':'${origin}/httpfs-fixture/${name}.csv'}])`);
+                expect((await azureRead('azure-etag')).getChildAt(0)!.get(0)).toEqual(
+                    'id,name\n1,duck\n2,goose\n3,swan\n',
+                );
+                await expectAsync(azureRead('azure-etag-changed')).toBeRejectedWithError(
+                    /changed after it was opened: the server rejected/,
+                );
+                await query('RESET force_download_threshold');
 
                 await query("SET extra_http_headers=MAP {'X-HTTPFS-Setting': 'setting'}");
                 await query(`CREATE SECRET browser_header (
