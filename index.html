@@ -852,6 +852,7 @@ function sendToWorkerAsync(op, params = {}) {
 // We reconstruct this envelope from the worker's structured response.
 
 function deliverToFrontend(tag, status, data) {
+  inflightQueries.delete(tag);
   const payload = data || new Uint8Array(0);
   const envelope = new Uint8Array(8 + 1 + payload.length);
   const view = new DataView(envelope.buffer);
@@ -928,6 +929,10 @@ function readU32(data, offset) {
   return view.getUint32(0, true);
 }
 
+// Queries the frontend sent whose answer has not come back: its prompt is made of queries too, and a statement fed
+// while one is out gets the prompt printed before its result.
+const inflightQueries = new Set();
+
 function flushPending() {
   // before the engine is up the shell's requests stay queued in the frontend; boot() flushes them
   if (!wasmModule || !workerReady) return;
@@ -947,6 +952,7 @@ function flushPending() {
       case 3: // QUERY: [tag(8)] [op(1)] [conn(8)] [castMode(1)] [sqlLen(4)] [sql...]
       case 4: { // SEND_QUERY: same format
         window.workerTimeMs = 0; // reset accumulator for new query
+        inflightQueries.add(tag);
         const connId = readU64(raw, 9);
         const castMode = raw[17];
         const sqlLen = readU32(raw, 18);
@@ -1005,6 +1011,11 @@ function drainStartupQueue() {
   if (!wasmModule._wasm_is_editing()) {
     // Shell not ready yet (e.g. waiting for prompt query after USE) — retry
     drainTimer = setTimeout(drainStartupQueue, 50);
+    return;
+  }
+  if (inflightQueries.size > 0) {
+    // the prompt is still being worked out: the statement goes after it
+    drainTimer = setTimeout(drainStartupQueue, 20);
     return;
   }
   const sql = startupQueue.shift();
