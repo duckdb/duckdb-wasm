@@ -1,3 +1,4 @@
+/scripts/__pycache__/
 *.tgz
 /.deploy
 /perf.data*
