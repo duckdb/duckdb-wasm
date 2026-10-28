@@ -9,13 +9,42 @@ PROJECT_ROOT="$(cd $(dirname "$BASH_SOURCE[0]") && cd .. && pwd)" &> /dev/null
 MODE=${1:-Fast}
 FEATURES=${2:-base}
 DUCKDB_LOCATION=${3:-"$PROJECT_ROOT/submodules/duckdb"}
+LOCAL_EXTENSIONS=()
+LOCAL_SOURCES=()
+for name in httpfs aws quack; do
+  case "$name" in
+    httpfs) source=${DUCKDB_HTTPFS_DIRECTORY:-} ;;
+    aws) source=${DUCKDB_AWS_DIRECTORY:-} ;;
+    quack) source=${DUCKDB_QUACK_DIRECTORY:-} ;;
+  esac
+  [ -n "$source" ] || continue
+  for file in CMakeLists.txt extension_config.cmake; do
+    if [ ! -f "${source}/${file}" ]; then
+      echo "DUCKDB_$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')_DIRECTORY must contain ${file}: ${source}" >&2
+      exit 1
+    fi
+  done
+  LOCAL_EXTENSIONS+=("$name")
+  LOCAL_SOURCES+=("$(cd "$source" && pwd)")
+done
+
+if [ -n "${DUCKDB_AWS_DIRECTORY:-}" ] || [ -n "${DUCKDB_QUACK_DIRECTORY:-}" ]; then
+  VCPKG_TOOLCHAIN_PATH=${VCPKG_TOOLCHAIN_PATH:-${HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake}
+  if [ ! -f "${VCPKG_TOOLCHAIN_PATH}" ]; then
+    echo "AWS or Quack dependencies require VCPKG_TOOLCHAIN_PATH pointing to vcpkg/scripts/buildsystems/vcpkg.cmake." >&2
+    exit 1
+  fi
+  VCPKG_TOOLCHAIN_PATH="$(cd "$(dirname "${VCPKG_TOOLCHAIN_PATH}")" && pwd)/$(basename "${VCPKG_TOOLCHAIN_PATH}")"
+  export EMSCRIPTEN_ROOT="$(em-config EMSCRIPTEN_ROOT)"
+fi
+
 echo "MODE=${MODE}"
 echo "${DUCKDB_LOCATION}"
 
 CPP_SOURCE_DIR="${PROJECT_ROOT}/lib"
 DUCKDB_LIB_DIR="${PROJECT_ROOT}/packages/duckdb-wasm/src/bindings"
 
-CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
+CORES=${CORES:-$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)}
 
 # Extra CMake flags, e.g. -DDUCKDB_WASM_STATIC_TPCH=1 for benchmarks
 ADDITIONAL_FLAGS=${EXTRA_CMAKE_FLAGS:-}
@@ -45,14 +74,19 @@ LINK_FLAGS="${LINK_FLAGS} ${EXTRA_LINK_FLAGS:-}"
 echo "MODE=${MODE}"
 echo "FEATURES=${FEATURES}"
 
-BUILD_DIR="${PROJECT_ROOT}/build/${MODE}/${FEATURES}"
-mkdir -p ${BUILD_DIR}
+case ${GEN:-make} in
+  ninja) GENERATOR=Ninja; BUILD_SUFFIX=-ninja ;;
+  make) GENERATOR="Unix Makefiles"; BUILD_SUFFIX= ;;
+  *) echo "Unknown GEN '${GEN}'; use ninja or make" >&2; exit 1 ;;
+esac
+BUILD_DIR="${PROJECT_ROOT}/build/${MODE}/${FEATURES}${BUILD_SUFFIX}"
+mkdir -p "${BUILD_DIR}"
 
 set -x
 
 DUCKDB_WASM_VERSION_NAME=${DUCKDB_WASM_VERSION:-unknown}
 
-emcmake cmake \
+emcmake cmake -G "${GENERATOR}" \
     -S${CPP_SOURCE_DIR} \
     -B${BUILD_DIR} \
     -DDUCKDB_WASM_VERSION=${DUCKDB_WASM_VERSION_NAME} \
@@ -63,15 +97,12 @@ emcmake cmake \
     -DDUCKDB_EXTENSION_CONFIGS=extension_config_wasm.cmake \
     ${ADDITIONAL_FLAGS}
 
-emmake make \
-    -C${BUILD_DIR} \
-    -j${CORES} \
-    duckdb_wasm
+cmake --build "${BUILD_DIR}" --parallel "${CORES}" --target duckdb_wasm
 
 if [ "${USE_GENERATED_EXPORTED_LIST:-no}" == "yes" ]; then
-make TARGET=${FEATURES} update_exported_list
+make TARGET="${FEATURES}${BUILD_SUFFIX}" update_exported_list
 
-emcmake cmake \
+emcmake cmake -G "${GENERATOR}" \
     -S${CPP_SOURCE_DIR} \
     -B${BUILD_DIR} \
     -DDUCKDB_WASM_VERSION=${DUCKDB_WASM_VERSION_NAME} \
@@ -83,10 +114,56 @@ emcmake cmake \
     -DUSE_GENERATED_EXPORTED_LIST=1 \
     ${ADDITIONAL_FLAGS}
 
-emmake make \
-    -C${BUILD_DIR} \
-    -j${CORES} \
-    duckdb_wasm
+cmake --build "${BUILD_DIR}" --parallel "${CORES}" --target duckdb_wasm
+fi
+
+LOADABLE_EXTENSIONS=$(cat "${BUILD_DIR}/wasm_loadable_extensions")
+if [ "${#LOCAL_EXTENSIONS[@]}" -gt 0 ] && [ "$LOADABLE_EXTENSIONS" != 1 ]; then
+  echo "Local extensions require DUCKDB_WASM_LOADABLE_EXTENSIONS=1." >&2
+  exit 1
+fi
+if [ "$LOADABLE_EXTENSIONS" = 1 ]; then
+  CORE_BUILD="${BUILD_DIR}/third_party/duckdb/src/duckdb_ep-build"
+  PLATFORM=$(<"${CORE_BUILD}/duckdb_platform_out")
+  MAIN_FLAGS=
+  MAIN_VERSION=
+  while IFS= read -r line; do
+    case "$line" in
+      CMAKE_CXX_FLAGS:*) MAIN_FLAGS=${line#*=} ;;
+      DUCKDB_EXPLICIT_VERSION:*) MAIN_VERSION=${line#*=} ;;
+    esac
+  done < "${CORE_BUILD}/CMakeCache.txt"
+  THREADS=OFF
+  [ "$FEATURES" != threads ] || THREADS=ON
+  STAGE_ARGS=("${PROJECT_ROOT}/build" "$MODE" "$FEATURES" "$BUILD_SUFFIX")
+
+  for ((i = 0; i < ${#LOCAL_EXTENSIONS[@]}; i++)); do
+    name=${LOCAL_EXTENSIONS[$i]}
+    source=${LOCAL_SOURCES[$i]}
+    EXTENSION_BUILD="${PROJECT_ROOT}/build/local_extensions/${name}/${FEATURES}${BUILD_SUFFIX}"
+    DEPENDENCY_FLAGS=(-DENABLE_JEMALLOC=OFF)
+    if [ "$name" = aws ] || [ "$name" = quack ]; then
+      DEPENDENCY_FLAGS+=(
+        "-DCMAKE_TOOLCHAIN_FILE=${VCPKG_TOOLCHAIN_PATH}"
+        "-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSCRIPTEN_ROOT}/cmake/Modules/Platform/Emscripten.cmake"
+        "-DVCPKG_MANIFEST_DIR=${source}"
+        "-DVCPKG_OVERLAY_TRIPLETS=${PROJECT_ROOT}/scripts/vcpkg-triplets/${FEATURES}"
+        -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DVCPKG_BUILD=1
+      )
+    fi
+    echo "Building ${name} (${PLATFORM}) from ${source}"
+    emcmake cmake -G "${GENERATOR}" -S "${DUCKDB_LOCATION}" -B "${EXTENSION_BUILD}" \
+      -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="${MAIN_FLAGS}" \
+      -DDUCKDB_EXTENSION_CONFIGS="${source}/extension_config.cmake" \
+      -DDUCKDB_EXPLICIT_VERSION="${MAIN_VERSION}" -DDUCKDB_EXPLICIT_PLATFORM="${PLATFORM}" \
+      -DWASM_LOADABLE_EXTENSIONS=ON -DUSE_WASM_THREADS="${THREADS}" \
+      -DBUILD_EXTENSIONS_ONLY=ON -DBUILD_UNITTESTS=OFF -DBUILD_SHELL=OFF \
+      "${DEPENDENCY_FLAGS[@]}"
+    # emmake's CC/CXX environment would also cross-compile vcpkg's native host tools.
+    cmake --build "${EXTENSION_BUILD}" --target "${name}_loadable_extension" --parallel "${CORES}"
+    STAGE_ARGS+=("$name")
+  done
+  python3 "${PROJECT_ROOT}/scripts/stage_local_extensions.py" "${STAGE_ARGS[@]}"
 fi
 
 js-beautify -v || npm install -g js-beautify
@@ -98,7 +175,6 @@ awk '!(/var .*wasmExports\[/ || /var [_a-z0-9A-Z]+ = Module\[\"[_a-z0-9A-Z]+\"\]
 # main thread processes the exiting worker's "finished" message. That message can then land on whichever thread is
 # allocated at the same address, and dlsync skips that thread as finished, so it runs extension code with an unsynced
 # table. Only the worker still registered for the pthread_t may mark it finished.
-LOADABLE_EXTENSIONS=$(cat "${BUILD_DIR}/wasm_loadable_extensions")
 if [ "$FEATURES" = "threads" ] && [ "$LOADABLE_EXTENSIONS" = "1" ]; then
 python3 - "${BUILD_DIR}/duckdb_wasm.js" <<'EOF_PATCH'
 import sys

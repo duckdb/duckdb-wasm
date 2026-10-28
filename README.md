@@ -154,92 +154,104 @@ The development server uses port 8080 when available. If that port is already
 in use, `http-server` selects another port; open the URL printed under
 `Available on` in the terminal.
 
-### Develop HTTPFS locally
+### Local extensions
 
-HTTPFS is loaded as a separate Wasm side module. Build it with the same DuckDB
-revision, Emscripten toolchain, and platform settings as the DuckDB-Wasm main
-module.
+Use the same DuckDB revision, version label, Emscripten toolchain and platform
+for the main module and each extension. Renaming a directory does not change
+an extension's metadata. Check the running engine with:
 
-Keep the HTTPFS checkout outside the generated `build/` directory. From the
-DuckDB-Wasm repository, run:
-
-```shell
-make build_httpfs_local DUCKDB_HTTPFS_DIRECTORY=$PWD/duckdb-httpfs
+```sql
+PRAGMA version;
+PRAGMA platform;
 ```
 
-`DUCKDB_HTTPFS_DIRECTORY` must point to the HTTPFS source root that contains
-its top-level `CMakeLists.txt`. The target:
-
-* validates and converts the path to an absolute path;
-* reconfigures existing base and threaded builds to use that checkout;
-* builds both DuckDB-Wasm main modules and HTTPFS side modules; and
-* rebuilds the JavaScript package.
-
-During configuration, confirm that CMake reports the expected source:
+Keep extension checkouts outside the generated `build/` directory. Repository
+paths must include the platform:
 
 ```text
-Load extension 'httpfs' from local path ".../duckdb-httpfs"
+extension_repository/<version-or-commit>/<platform>/<name>.duckdb_extension.wasm
 ```
 
-The generated HTTPFS modules are placed at:
+For example, a base extension built for `v2.0.0` belongs under
+`extension_repository/v2.0.0/wasm_eh/`, not directly under `v2.0.0/`.
 
-```text
-build/extension_repository/<duckdb-revision>/wasm_eh/httpfs.duckdb_extension.wasm
-build/extension_repository/<duckdb-revision>/wasm_threads/httpfs.duckdb_extension.wasm
-```
+#### Unsigned modules
 
-#### Load the local extension in a browser
+Local builds are unsigned. Enable them only for code you trust, before opening
+the database. SQL cannot enable unsigned extensions afterward.
 
-Local extension builds are unsigned. Configure both the local repository and
-the unsigned-extension policy before opening the database.
-
-For the React application:
+Open `/original.html?local-extensions` on `localhost`, `127.0.0.1` or `[::1]`.
+The `local-extensions` flag enables unsigned modules and selects the same-origin
+`/extension_repository`. Ordinary app URLs keep signature verification enabled.
+For other React apps:
 
 ```tsx
-<DuckDBProvider
-    config={{
-        allowUnsignedExtensions: true,
-        extensionRepository: `${window.location.origin}/extension_repository`,
-    }}
->
+<DuckDBProvider config={{ allowUnsignedExtensions: true }}>
 ```
 
 For the direct JavaScript API:
 
 ```ts
-await db.open({
-    allowUnsignedExtensions: true,
-    extensionRepository: new URL('/extension_repository', location.href).href,
-});
+await db.open({ allowUnsignedExtensions: true });
 ```
 
-These are startup options. SQL cannot enable unsigned extensions after the
-database has been opened.
+Other embeddings can set `extensionRepository` to
+`new URL('/extension_repository', location.href).href` in the startup config.
 
-Build the modules, prepare the application, copy the local extension
-repository, and start the development server with:
+#### Build and serve local checkouts
+
+CI and local builds use `scripts/wasm_build_lib.sh`. Set a checkout variable
+to also build that extension; unset or empty variables skip it.
+There is no separate local build command.
 
 ```shell
-make serve_httpfs_local DUCKDB_HTTPFS_DIRECTORY=$PWD/duckdb-httpfs
+export DUCKDB_HTTPFS_DIRECTORY="$HOME/work/duckdb-httpfs"
+export DUCKDB_AWS_DIRECTORY="$HOME/work/duckdb-aws"
+export DUCKDB_QUACK_DIRECTORY="$HOME/work/duckdb-quack"
+
+make build_loadable TARGET=base
+make build_loadable TARGET=threads
 ```
 
-The target opens `/original.html`. Use a fresh browser tab after rebuilding so
-an older worker does not keep stale modules, then run:
+These targets call the same per-variant script used by CI. To build both
+variants, rebuild the JavaScript package, shell and app, and start the server:
+
+```shell
+make serve_local PORT=8091
+```
+
+Each checkout must contain `CMakeLists.txt` and `extension_config.cmake` and
+support Wasm. Invalid paths fail before compilation. Extension builds use the
+main module's DuckDB sources, version and compiler flags. Each repo keeps its
+own dependencies; there is no local extension config or merged vcpkg manifest.
+
+The loadable Make targets use Ninja by default. Install `ninja` on `PATH`, or
+pass `GEN=make` to reuse Make builds. Ninja uses separate directories
+so it does not invalidate the old Make caches:
+
+```text
+build/relsize/{base,threads}-ninja/
+build/local_extensions/{httpfs,aws,quack}/{base,threads}-ninja/
+```
+
+AWS and Quack require vcpkg. `VCPKG_TOOLCHAIN_PATH` defaults to
+`$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake`; override it if needed. Base and
+threaded dependencies are built separately with matching compiler flags.
+HTTPFS does not need vcpkg for Wasm.
+
+Each variant writes to `build/extension_repository`, the directory CI uploads.
+Unsetting an override removes its old generated module for that version and
+platform. Source checkouts and compiler caches are not removed.
+
+`serve_local` copies the repository into the app and opens
+`/original.html?local-extensions` on port 8081 by default. Override it with
+`PORT` as above. No manual copying or SQL repository setting is needed:
 
 ```sql
 INSTALL AND LOAD httpfs;
+INSTALL AND LOAD aws;
+INSTALL AND LOAD quack;
 ```
-
-#### Troubleshooting
-
-* A request to `https://extensions.duckdb.org` means that the local
-  `extensionRepository` setting was not applied.
-* An unsigned-extension error means that `allowUnsignedExtensions` was not
-  enabled before opening the database.
-* An OpenSSL or `curl/curl.h` error means that the selected HTTPFS revision
-  does not contain the required Emscripten build guards.
-* The warning that HTTPFS has a `vcpkg.json` but the build does not use vcpkg
-  is expected for this Emscripten build.
 
 ### Rebuild the web shell
 
@@ -271,6 +283,10 @@ performs the same rebuild as part of the complete build.
 | `failed to create temp dir for cargo install wasm-bindgen` | `wasm-pack` cannot write to its temporary or Cargo installation directory. | Run the build in an environment with writable temporary and Cargo directories. |
 | `listen EPERM` or an occupied port while starting `http-server` | The environment prevents binding the requested port, or another process already uses it. | Allow local port binding or select another port, for example `-p 8091`. |
 | Puppeteer/Karma fails under Node.js 26 | The current test dependencies are incompatible with Node.js 26. | Run browser tests with Node.js 24. This does not prevent building the shell and app with Node.js 26. |
+| Extension fetch returns HTTP 403 or 404 | The binary is unavailable at the requested version/platform path, or the server points at another checkout. | Check the full URL and server directory. |
+| Extension metadata mismatch | The binary was built for another version or platform. | Rebuild it; renaming the directory does not change its metadata. |
+| Unsigned-extension error | The local startup config was not enabled. | Open `/original.html?local-extensions` on localhost in a fresh tab. |
+| HTTPFS fails on OpenSSL or `curl/curl.h` | The HTTPFS revision lacks the required Emscripten guards. | Use a revision with those guards. A warning about its unused `vcpkg.json` is expected for an HTTPFS-only Wasm build. |
 
 ## Repository Structure
 
