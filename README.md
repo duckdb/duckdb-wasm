@@ -92,6 +92,8 @@ Extension sizes will vary depending, among other things, on provided functionali
 
 ## Build from source
 
+### Prerequisites
+
 The build requires:
 
 * Node.js and npm. Node.js 24 is required for the current browser test tooling.
@@ -108,33 +110,75 @@ yarn --version
 rustup target add wasm32-unknown-unknown
 ```
 
+### Checkout and patches
+
 ```shell
 git clone https://github.com/duckdb/duckdb-wasm.git
 cd duckdb-wasm
-git submodule init
-git submodule update
+git submodule update --init
 make apply_patches
-make build_loadable TARGET=threads
+```
+
+Apply patches after initializing the submodules. Do not repeat this step when
+retrying a build after installing a missing tool. The nanoarrow submodule's
+own DuckDB checkout is not used by the Wasm build.
+
+### Release version
+
+The DuckDB version is pinned by `submodules/duckdb`. For a release-tag checkout,
+set `OVERRIDE_GIT_DESCRIBE` to that tag before building. For example, when the
+submodule is at `v2.0.0`:
+
+```shell
+git -C submodules/duckdb describe --tags --exact-match
+export OVERRIDE_GIT_DESCRIBE=v2.0.0
+```
+
+Keep the override exported for every build command, including `make serve`.
+Without it, this core build generates a development version and looks for
+extensions under the commit hash. Matching binaries may not be published there.
+Do not give development code an unrelated release label.
+
+### Build and serve
+
+```shell
 make serve
 ```
+
+This builds both Wasm variants, the JavaScript bindings, Rust shell, app and
+docs. It also copies `build/extension_repository` into the app before starting
+`http-server`. A separate `make build_loadable TARGET=threads` is unnecessary.
+
+Open `/original.html` at the URL printed under `Available on`. The server uses
+port 8080 if it is free, otherwise it selects another port. After rebuilding,
+close old DuckDB-Wasm tabs and open a fresh one so an old worker cannot reuse
+stale modules.
+
+To rebuild only one main module, use `make build_loadable TARGET=base` or
+`make build_loadable TARGET=threads`. The JavaScript package still needs both
+variants to bundle the app.
+
+### Rebuild the shell or app
+
+After editing the Rust shell, rebuild the shell package and the app that embeds
+it. For app-only edits, skip the first command:
+
+```shell
+yarn workspace @duckdb/duckdb-wasm-shell build:debug
+yarn workspace @duckdb/duckdb-wasm-app build:release
+cp -R build/extension_repository packages/duckdb-wasm-app/build/release/
+npx http-server packages/duckdb-wasm-app/build/release -c-1 -a 127.0.0.1 -p 8081
+```
+
+Copy the extension repository after rebuilding the app, because Webpack cleans
+its output directory. The `-c-1` option disables the HTTP cache.
 
 During the Wasm build, the build script checks for `js-beautify` and installs
 it globally with npm if it is missing. The initial
 `js-beautify: command not found` message is therefore expected when the tool
 is not already installed.
 
-If the build stops with `make: yarn: No such file or directory`, install Yarn
-Classic using the command above and run `make serve` again. There is no need
-to run `make apply_patches` again.
-
-The JavaScript bundle requires both the base and threaded Wasm bindings.
-`make build_loadable TARGET=threads` generates the threaded bindings before
-`make serve`. The `serve` target also ensures that both variants are built.
-
-Node.js 26 can build the shell and application, but it is not currently
-supported by the Karma/Puppeteer test toolchain and can fail with
-`require is not defined in ES module scope` or a missing yargs module. Use
-Node.js 24 when running browser tests.
+### Test data
 
 Some browser tests require generated data files. Generate the small university
 dataset used by the threads smoke test with:
@@ -149,10 +193,6 @@ DuckDB submodule, and finally falls back to `duckdb` on `PATH`. CMake policy
 warnings, Rust deprecation warnings, TypeDoc warnings, and Webpack asset-size
 warnings may appear during a successful build; they are non-fatal if the
 command exits successfully.
-
-The development server uses port 8080 when available. If that port is already
-in use, `http-server` selects another port; open the URL printed under
-`Available on` in the terminal.
 
 ### Local extensions
 
@@ -253,28 +293,11 @@ INSTALL AND LOAD aws;
 INSTALL AND LOAD quack;
 ```
 
-### Rebuild the web shell
-
-After changing the Rust shell, rebuild both the shell package and the
-application that embeds its Wasm file:
-
-```shell
-yarn workspace @duckdb/duckdb-wasm-shell build:debug
-yarn workspace @duckdb/duckdb-wasm-app build:release
-cp -R build/extension_repository packages/duckdb-wasm-app/build/release/
-npx http-server packages/duckdb-wasm-app/build/release -c-1 -a 127.0.0.1 -p 8081
-```
-
-Open `/original.html` at the URL printed by `http-server` and hard-refresh the
-page. The `-c-1` option disables the development server cache so an existing
-browser does not reuse an older shell Wasm file or worker. Running `make serve`
-performs the same rebuild as part of the complete build.
-
 ### Local build troubleshooting log
 
 | Failure | Cause | Fix |
 | ------- | ----- | --- |
-| `duckdb-threads.js: No such file or directory` | Only the base Wasm binding was built. | Run `make build_loadable TARGET=threads`. The `serve` target now builds both base and threaded bindings. |
+| `duckdb-threads.js: No such file or directory` | Only the base Wasm binding was built. | Run `make serve` to build both base and threaded bindings. |
 | `duckdb-threads.pthread.js: No such file or directory` | Emscripten 6 uses the main threads worker for pthreads and no longer emits the legacy file. | The bundler now creates the legacy filename as a compatibility alias of the main threads worker. |
 | A repeated Wasm build fails while patching `markAsFinished` | The generated Emscripten glue had already been patched. | The glue patch is now idempotent and safely handles repeated builds. |
 | `chmod: duckdb: No such file or directory` during `make build/data` | The data script detected the DuckDB CLI but invoked a nonexistent submodule build. | The script now prefers `DUCKDB_SHELL`, then a native CLI built from the DuckDB submodule, and finally `duckdb` from `PATH`. |
