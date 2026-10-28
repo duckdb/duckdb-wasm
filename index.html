@@ -984,13 +984,27 @@ function flushPending() {
 
 let wasmModule = null;
 let initDone = false;
+// A share link is URL-encoded by the shell, but a hand-written one carries SQL format strings (strftime '%G',
+// printf '%s') as they are: a '%' that does not start an escape stands for itself.
+function decodeShareComponent(s) {
+  try {
+    return decodeURIComponent(s.replace(/%(?![0-9a-fA-F]{2})/g, '%25'));
+  } catch (e) {
+    return s; // an escape that is not UTF-8: the text as it is
+  }
+}
+
 let startupQueue = [];  // queued commands from URL hash, fed one at a time
 
+let drainTimer = null;
 function drainStartupQueue() {
-  if (startupQueue.length === 0 || !wasmModule || !initDone) return;
+  // the queries of a link or an embedding page start once the engine is up, not while the shell still loads
+  if (startupQueue.length === 0 || !wasmModule || !initDone || !workerReady) return;
+  clearTimeout(drainTimer);
+  drainTimer = null;
   if (!wasmModule._wasm_is_editing()) {
     // Shell not ready yet (e.g. waiting for prompt query after USE) — retry
-    setTimeout(drainStartupQueue, 50);
+    drainTimer = setTimeout(drainStartupQueue, 50);
     return;
   }
   const sql = startupQueue.shift();
@@ -1002,6 +1016,8 @@ function drainStartupQueue() {
   wasmModule._free(p);
   flushPending();
   settleAfterFeed();
+  // a line that only continues a statement gets no answer to wake the queue: go on with the next one
+  if (startupQueue.length > 0) drainTimer = setTimeout(drainStartupQueue, 0);
 }
 
 function loadFrontendWasm() {
@@ -1034,9 +1050,11 @@ function loadFrontendWasm() {
       const isDemo = new URLSearchParams(location.search).has('demo');
 
       if (hash.includes('queries=v0')) {
-        const splits = hash.replace(/^#(savequeries&)?/, '').replace(/%0A/gi, ',').split(',');
+        // the queries are separated by raw commas (a comma inside a query is %2C); a newline inside a query stays one,
+        // so a multi-line statement is fed whole, as a paste, and not as one query per line
+        const splits = hash.replace(/^#(savequeries&)?/, '').split(',');
         for (let i = 1; i < splits.length; i++) {
-          const sql = extraswaps(decodeURIComponent(splits[i]));
+          const sql = extraswaps(decodeShareComponent(splits[i]));
           if (sql) {
             if (isDemo) {
               window.demoQueue.push(sql);
@@ -1454,15 +1472,20 @@ async function boot() {
 
     workerReady = true;
     setStatus('');
+    let promptRefreshed = false;
     if (wasmModule && initDone) {
       wasmModule._wasm_set_backend_ready(1);
       // an untouched static prompt becomes the real one; anything typed meanwhile is sent now
       if (wasmModule._wasm_is_editing() && wasmModule._wasm_is_line_empty()) {
         term.write('\r\x1b[2K');
         wasmModule._wasm_start_editing();
+        promptRefreshed = true;
       }
       flushPending();
     }
+    // the queued queries of a link start after the real prompt is up: the answer to its query continues the
+    // queue; with no prompt refresh to wait for, continue it here
+    if (!promptRefreshed) drainStartupQueue();
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'duckdb-shell', status: 'ready' }, '*');
     }
