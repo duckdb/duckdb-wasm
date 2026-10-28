@@ -23,10 +23,10 @@
   // scripts below, so that all four downloads start with the page; the fetches later on reuse them
   // (same-origin credentials, which is what the emscripten glue and the worker use).
   const SHELL_ASSETS = {
-    shellJs: './static/assets/duckdb.aeec1c4afb.js',       // the frontend shell (linenoise, parser, box renderer)
-    shellWasm: './static/assets/duckdb.b1caed5ef4.wasm',
-    worker: './static/assets/worker.8db4dcde36.js',        // the experimental wire worker
-    engine: './static/assets/duckdb-eh.f88168bf7a.wasm',   // duckdb-wasm, fetched by the worker
+    shellJs: './static/assets/duckdb.54f38d3fcc.js',       // the frontend shell (linenoise, parser, box renderer)
+    shellWasm: './static/assets/duckdb.c522d4112e.wasm',
+    worker: './static/assets/worker.7086060c3f.js',        // the experimental wire worker
+    engine: './static/assets/duckdb-eh.fd1251452a.wasm',   // duckdb-wasm, fetched by the worker
   };
   for (const [key, href] of [['shellJs', SHELL_ASSETS.shellJs], ['shellWasm', SHELL_ASSETS.shellWasm], ['worker', SHELL_ASSETS.worker]]) {
     const link = document.createElement('link');
@@ -282,6 +282,7 @@ function injectCommand(cmd) {
   wasmModule._wasm_feed_key(ptr, encoded.length);
   wasmModule._free(ptr);
   flushPending();
+  settleAfterFeed();
 }
 document.getElementById('nav-share').addEventListener('click', (e) => {
   e.preventDefault();
@@ -870,16 +871,13 @@ function deliverToFrontend(tag, status, data) {
   wasmModule._free(ptr);
 
   flushPending();
-
-  if (!window.asyncBusy && wasmModule._wasm_is_idle() && !wasmModule._wasm_has_pending() && !wasmModule._wasm_is_editing()) {
-    wasmModule._wasm_start_editing();
-    flushPending();
-  }
+  settleAfterFeed();
 
   // After editing started (possibly from prompt response), drain buffered input
   if (wasmModule._wasm_is_editing() && wasmModule._wasm_has_buffered_input()) {
     wasmModule._wasm_feed_key(0, 0);
     flushPending();
+    settleAfterFeed();
   }
 
   // Drain next startup command if queued
@@ -1003,6 +1001,7 @@ function drainStartupQueue() {
   wasmModule._wasm_feed_key(p, enc.length);
   wasmModule._free(p);
   flushPending();
+  settleAfterFeed();
 }
 
 function loadFrontendWasm() {
@@ -1082,9 +1081,10 @@ function loadFrontendWasm() {
 // .aws login [region]   prints the AWS Sign-In link (the cross-device flow of `aws login`): sign in to the
 //                       console in any tab, choose a session, and the page shows a code to bring back
 // .aws login <code>     exchanges the code (PKCE + DPoP) for 15-minute credentials, refreshed from the refresh
-//                       token until the console session ends, and runs CREATE SECRET aws (TYPE s3, ...)
-//                       through the worker: not echoed, not in the history, not shareable
-// .aws                  status      .aws logout   drops the secret and forgets the session
+//                       token until the console session ends, and runs CREATE SECRET aws (TYPE s3, ...) and
+//                       CREATE SECRET aws_sdk (TYPE aws, ...) through the worker: not echoed, not in the
+//                       history, not shareable
+// .aws                  status      .aws logout   drops the secrets and forgets the session
 // Credentials live in page memory only and do not survive a reload. The Sign-In token endpoint answers no
 // CORS preflight, so the exchange goes through a local relay given as ?awsRelay=<url> (development only);
 // the DPoP proof names the real endpoint, the relay only forwards.
@@ -1180,9 +1180,24 @@ async function awsRunHidden(sql) {
 
 const awsQuote = (v) => "'" + String(v).replace(/'/g, "''") + "'";
 
+// Two secrets from the same credentials: `aws` (TYPE s3) signs s3:// through httpfs, `aws_sdk` (TYPE aws) signs
+// the aws extension's own calls (CloudFormation, Redshift, RDS, ...). The second needs the aws extension, which
+// CREATE SECRET autoloads; where that is not possible the s3 secret stands alone and the status says why.
 async function awsInstallSecret(s) {
-  await awsRunHidden(`CREATE OR REPLACE SECRET aws (TYPE s3, KEY_ID ${awsQuote(s.creds.accessKeyId)}, SECRET ${awsQuote(s.creds.secretAccessKey)}, SESSION_TOKEN ${awsQuote(s.creds.sessionToken)}, REGION ${awsQuote(s.region)})`);
+  const creds = `KEY_ID ${awsQuote(s.creds.accessKeyId)}, SECRET ${awsQuote(s.creds.secretAccessKey)}, SESSION_TOKEN ${awsQuote(s.creds.sessionToken)}, REGION ${awsQuote(s.region)}`;
+  await awsRunHidden(`CREATE OR REPLACE SECRET aws (TYPE s3, ${creds})`);
+  try {
+    await awsRunHidden(`CREATE OR REPLACE SECRET aws_sdk (TYPE aws, ${creds})`);
+    s.sdkSecret = true;
+    delete s.sdkSecretError;
+  } catch (e) {
+    s.sdkSecret = false;
+    s.sdkSecretError = e.message;
+  }
 }
+
+const awsSecretsLine = (s) => 'Secret \x1b[1maws\x1b[0m (TYPE s3, REGION ' + s.region + ') is active for s3://' + (s.sdkSecret ? ' and \x1b[1maws_sdk\x1b[0m (TYPE aws) for the aws extension' : '');
+const awsSdkSecretNote = (s) => s.sdkSecret ? '' : '\x1b[90m(no aws_sdk secret: ' + s.sdkSecretError + ')\x1b[0m\r\n';
 
 function awsTakeTokens(s, out) {
   s.creds = out.accessToken;
@@ -1204,7 +1219,7 @@ function awsScheduleRefresh(s) {
       awsScheduleRefresh(s);
     } catch (e) {
       await awsLogout(false);
-      term.write('\r\n\x1b[31mAWS credentials not refreshed (' + e.message + '); secret aws dropped. Run .aws login again.\x1b[0m\r\n');
+      term.write('\r\n\x1b[31mAWS credentials not refreshed (' + e.message + '); secrets aws and aws_sdk dropped. Run .aws login again.\x1b[0m\r\n');
       if (wasmModule && wasmModule._wasm_is_editing() && wasmModule._wasm_is_line_empty()) {
         wasmModule._wasm_start_editing();
       }
@@ -1269,7 +1284,8 @@ async function awsExchange(s, code) {
   await awsInstallSecret(s);
   awsScheduleRefresh(s);
   term.write('Signed in as \x1b[1m' + s.identity + '\x1b[0m\r\n');
-  term.write('Secret \x1b[1maws\x1b[0m (TYPE s3, REGION ' + s.region + ') is active for s3://; credentials rotate every ' + Math.round((out.expiresIn || 900) / 60) + ' min until the console session ends. .aws for status, .aws logout to end.\r\n');
+  term.write(awsSecretsLine(s) + '; credentials rotate every ' + Math.round((out.expiresIn || 900) / 60) + ' min until the console session ends. .aws for status, .aws logout to end.\r\n');
+  term.write(awsSdkSecretNote(s));
 }
 
 // The callback page posted the code while the user sits at the prompt: finish in the background and redraw
@@ -1295,9 +1311,11 @@ async function awsLogout(say) {
   clearTimeout(s.timer);
   if (s.channel) s.channel.close();
   if (s.creds && workerReady) {
-    try { await awsRunHidden('DROP SECRET IF EXISTS aws'); } catch (e) { /* the engine may be mid-query; the secret dies with the page anyway */ }
+    for (const name of ['aws', 'aws_sdk']) {
+      try { await awsRunHidden('DROP SECRET IF EXISTS ' + name); } catch (e) { /* the engine may be mid-query; the secrets die with the page anyway */ }
+    }
   }
-  if (say) term.write('Signed out of AWS; secret aws dropped.\r\n');
+  if (say) term.write('Signed out of AWS; secrets aws and aws_sdk dropped.\r\n');
 }
 
 function awsStatus() {
@@ -1309,7 +1327,8 @@ function awsStatus() {
   const left = Math.max(0, Math.round((s.expiresAt - 60000 - Date.now()) / 1000));
   const since = Math.round((Date.now() - s.startedAt) / 60000);
   term.write('Signed in as \x1b[1m' + s.identity + '\x1b[0m (account ' + s.accountId + ', region ' + s.region + ') since ' + (since < 1 ? 'less than a minute' : since + ' min') + '\r\n');
-  term.write('Secret aws is active; credentials rotate in ' + Math.floor(left / 60) + 'm' + String(left % 60).padStart(2, '0') + 's' + (s.relay ? ' through the relay at ' + s.relay : ', directly with AWS') + '. .aws logout ends the session.\r\n');
+  term.write(awsSecretsLine(s) + '; credentials rotate in ' + Math.floor(left / 60) + 'm' + String(left % 60).padStart(2, '0') + 's' + (s.relay ? ' through the relay at ' + s.relay : ', directly with AWS') + '. .aws logout ends the session.\r\n');
+  term.write(awsSdkSecretNote(s));
 }
 
 window.awsCommand = (args) => {
@@ -1396,11 +1415,23 @@ term.onData((data) => {
 
   flushPending();
 
-  if (!window.asyncBusy && wasmModule._wasm_is_idle() && !wasmModule._wasm_has_pending() && !wasmModule._wasm_is_editing()) {
+  settleAfterFeed();
+});
+
+// A synchronous dot command (.timer, .mode, ...) answers without the engine, so no response comes back to
+// restart the prompt: do it here, and go on with input still buffered behind it (the rest of a paste).
+function settleAfterFeed() {
+  // bounded: each round consumes buffered input, and a frontend that declines to edit (a statement is in
+  // flight) is left to the response that will restart it
+  for (let round = 0; round < 10000; round++) {
+    if (window.asyncBusy || !wasmModule._wasm_is_idle() || wasmModule._wasm_has_pending() || wasmModule._wasm_is_editing()) return;
     wasmModule._wasm_start_editing();
     flushPending();
+    if (!wasmModule._wasm_is_editing() || !wasmModule._wasm_has_buffered_input()) return;
+    wasmModule._wasm_feed_key(0, 0);
+    flushPending();
   }
-});
+}
 
 // === Boot sequence ===
 
