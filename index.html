@@ -23,10 +23,10 @@
   // scripts below, so that all four downloads start with the page; the fetches later on reuse them
   // (same-origin credentials, which is what the emscripten glue and the worker use).
   const SHELL_ASSETS = {
-    shellJs: './static/assets/duckdb.54f38d3fcc.js',       // the frontend shell (linenoise, parser, box renderer)
-    shellWasm: './static/assets/duckdb.c522d4112e.wasm',
-    worker: './static/assets/worker.7086060c3f.js',        // the experimental wire worker
-    engine: './static/assets/duckdb-eh.fd1251452a.wasm',   // duckdb-wasm, fetched by the worker
+    shellJs: './static/assets/duckdb.087a37a1ec.js',       // the frontend shell (linenoise, parser, box renderer)
+    shellWasm: './static/assets/duckdb.b1d87cedf1.wasm',
+    worker: './static/assets/worker.ec60d07e58.js',        // the experimental wire worker
+    engine: './static/assets/duckdb-eh.9ea52324b7.wasm',   // duckdb-wasm, fetched by the worker
   };
   for (const [key, href] of [['shellJs', SHELL_ASSETS.shellJs], ['shellWasm', SHELL_ASSETS.shellWasm], ['worker', SHELL_ASSETS.worker]]) {
     const link = document.createElement('link');
@@ -308,9 +308,7 @@ document.querySelectorAll('.example-link').forEach(link => {
 
 // === Reading one value back from the engine ===
 // A query run through the worker, not the terminal; the frontend extracts the first value (SET VARIABLE lookups)
-async function getVariable(varName) {
-  const sql = "SELECT getvariable('" + varName.replace(/'/g, "''") + "')::VARCHAR;";
-  const data = await sendToWorkerAsync('query', { sql, castMode: 0 });
+function firstValueOf(data) {
   if (!data || data.length === 0) return null;
   const ptr = wasmModule._malloc(data.length);
   wasmModule.HEAPU8.set(data, ptr);
@@ -323,6 +321,37 @@ async function getVariable(varName) {
   const value = new TextDecoder().decode(wasmModule.HEAPU8.subarray(resultPtr, end));
   wasmModule._free(resultPtr);
   return value || null;
+}
+
+async function getVariable(varName) {
+  const sql = "SELECT getvariable('" + varName.replace(/'/g, "''") + "')::VARCHAR;";
+  return firstValueOf(await sendToWorkerAsync('query', { sql, castMode: 0 }));
+}
+
+// === The grammar of the engine's grammar extensions ===
+// `SET active_grammar_extensions = ['duckpgq']` changes what the engine parses. The frontend checks syntax too, so
+// once a statement mentions the setting the engine is asked for the changes of its active extensions
+// (duckdb_grammar_changes(): rule definitions, fields joined by 0x1F and rows by 0x1E) and the frontend parses the
+// same grammar, passing such statements on as text. The queue waits for the answer.
+const GRAMMAR_CHANGES_SQL = "SELECT coalesce(string_agg(concat_ws(chr(31), type, rule_name, definition, " +
+  "CASE WHEN collapsible THEN '1' ELSE '0' END, CASE WHEN suppress_suggestions THEN '1' ELSE '0' END, " +
+  "CASE WHEN has_code THEN '1' ELSE '0' END), chr(30)), '')::VARCHAR FROM duckdb_grammar_changes()";
+const grammarCheckTags = new Set();
+let grammarSyncing = false;
+async function syncGrammar() {
+  grammarSyncing = true;
+  try {
+    const encoded = firstValueOf(await sendToWorkerAsync('query', { sql: GRAMMAR_CHANGES_SQL, castMode: 0 })) || '';
+    const bytes = new TextEncoder().encode(encoded);
+    const ptr = wasmModule._malloc(bytes.length + 1);
+    wasmModule.HEAPU8.set(bytes, ptr);
+    wasmModule._wasm_set_grammar(ptr, bytes.length);
+    wasmModule._free(ptr);
+  } catch (e) {
+    console.warn('grammar sync failed', e);
+  } finally {
+    grammarSyncing = false;
+  }
 }
 
 // === Dark mode ===
@@ -853,6 +882,10 @@ function sendToWorkerAsync(op, params = {}) {
 
 function deliverToFrontend(tag, status, data) {
   inflightQueries.delete(tag);
+  if (grammarCheckTags.delete(tag)) {
+    grammarSyncing = true; // until the sync below settles, so nothing is parsed with the old grammar
+    setTimeout(syncGrammar, 0);
+  }
   const payload = data || new Uint8Array(0);
   const envelope = new Uint8Array(8 + 1 + payload.length);
   const view = new DataView(envelope.buffer);
@@ -957,6 +990,7 @@ function flushPending() {
         const castMode = raw[17];
         const sqlLen = readU32(raw, 18);
         const sql = new TextDecoder().decode(raw.subarray(22, 22 + sqlLen));
+        if (/active_grammar_extensions|\breset\s+all\b/i.test(sql)) grammarCheckTags.add(tag);
         worker.postMessage({
           op: opcode === 3 ? 'query' : 'send_query',
           tag, sql, castMode,
@@ -1013,7 +1047,7 @@ function drainStartupQueue() {
     drainTimer = setTimeout(drainStartupQueue, 50);
     return;
   }
-  if (inflightQueries.size > 0) {
+  if (inflightQueries.size > 0 || grammarSyncing) {
     // the prompt is still being worked out: the statement goes after it
     drainTimer = setTimeout(drainStartupQueue, 20);
     return;
