@@ -30,7 +30,8 @@ env:
   EMSCRIPTEN_VERSION: '6.0.9'
   EMSCRIPTEN_VERSION_COI: '6.0.9'
   DEFAULT_USE_GENERATED_EXPORTED_LIST: 'no'
-  # DuckDB >= v2.0 no longer derives its version from git tags, the wasm builds pick this up instead
+  # DuckDB >= v2.0 no longer derives its version from git tags, the wasm builds pick this up instead.
+  # The Wasm jobs override it with the duckdb_version job, which falls back to the submodule's release tag.
   OVERRIDE_GIT_DESCRIBE: ${{ inputs.override_git_describe }}
 
 jobs:
@@ -94,6 +95,30 @@ jobs:
               with:
                   script: |-
                       yarn workspace @duckdb/benchmarks run lint
+
+    duckdb_version:
+        name: DuckDB version
+        runs-on: ubuntu-latest
+        outputs:
+            version: ${{ steps.resolve.outputs.version }}
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Resolve DuckDB version
+              id: resolve
+              env:
+                  INPUT_VERSION: ${{ inputs.override_git_describe }}
+              run: |
+                  # Push and tag builds have no override input, so use the release tag the submodule is on, if any
+                  version="${INPUT_VERSION}"
+                  if [ -z "${version}" ]; then
+                      sha=$(git rev-parse HEAD:submodules/duckdb)
+                      url=$(git config -f .gitmodules submodule.submodules/duckdb.url)
+                      version=$(git ls-remote --tags "${url}" 'v*.*.*' \
+                          | awk -v sha="${sha}" '$1 == sha { sub("^refs/tags/", "", $2); sub("\\^\\{\\}$", "", $2); print $2; exit }')
+                  fi
+                  echo "DuckDB version: ${version:-<none, keep the dev version>}"
+                  echo "version=${version}" >> "$GITHUB_OUTPUT"
 
     tpchgen:
         name: TPCH Generator
@@ -361,6 +386,9 @@ jobs:
         needs:
             - dataprep
             - tpchgen
+            - duckdb_version
+        env:
+            OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
         steps:
             - uses: actions/checkout@v6
               with:
@@ -404,6 +432,9 @@ jobs:
         needs:
             - dataprep
             - tpchgen
+            - duckdb_version
+        env:
+            OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
         steps:
             - uses: actions/checkout@v6
               with:
@@ -448,6 +479,9 @@ jobs:
         needs:
             - dataprep
             - tpchgen
+            - duckdb_version
+        env:
+            OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
         steps:
             - uses: actions/checkout@v6
               with:
@@ -503,6 +537,9 @@ jobs:
         needs:
             - dataprep
             - tpchgen
+            - duckdb_version
+        env:
+            OVERRIDE_GIT_DESCRIBE: ${{ needs.duckdb_version.outputs.version }}
         steps:
             - uses: actions/checkout@v6
               with:
