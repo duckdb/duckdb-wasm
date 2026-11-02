@@ -375,14 +375,14 @@ serve_loadable_base: wasmpack shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
 
-.PHONY: serve_local
-serve_local: build_loadable_threads build_loadable
-	$(MAKE) serve_loadable_base
+.PHONY: serve_base
+serve_base: build_loadable_threads build_loadable serve_loadable_base
 	npx http-server packages/duckdb-wasm-app/build/release -c-1 -o '/original.html?local-extensions' -a 127.0.0.1 -p "${PORT}"
 
-.PHONY: serve
-serve: build_loadable_threads build_loadable serve_loadable_base
-	npx http-server packages/duckdb-wasm-app/build/release -c-1 -o /original.html
+# Cross-origin isolation is required for the wasm_threads bundle; http-server cannot send those headers.
+.PHONY: serve_threads
+serve_threads: build_loadable_threads build_loadable serve_loadable_base
+	python3 ${ROOT_DIR}/scripts/serve_coi.py packages/duckdb-wasm-app/build/release "${PORT}" --open
 
 .PHONY: app_server
 app_server:
