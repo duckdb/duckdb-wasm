@@ -33,12 +33,23 @@ function fixture() {
             response.end('Missing S3 signature');
             return;
         }
+        const isAzureETag = path.startsWith('/httpfs-fixture/azure-etag');
+        const azureETag = '"0x8DF244B89B2FF0C"';
+        const etag = isAzureETag ? azureETag : '"httpfs-fixture"';
+        if (isAzureETag && request.method !== 'HEAD') {
+            const current = path === '/httpfs-fixture/azure-etag-changed.csv' ? '"0x8DF244B89B2FF0D"' : azureETag;
+            if (request.headers['if-match'] !== current) {
+                response.writeHead(412, { ETag: current, 'Content-Length': 0 });
+                response.end();
+                return;
+            }
+        }
         const data = path.endsWith('.gz') ? compressedCSV : csv;
         const headers = {
             'Content-Type': 'application/octet-stream',
             'Content-Length': data.length,
             'Accept-Ranges': 'bytes',
-            ETag: '"httpfs-fixture"',
+            ETag: etag,
             'Cache-Control': 'no-store',
         };
         const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range || '');
