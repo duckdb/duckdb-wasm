@@ -1,10 +1,11 @@
 name: 'Main'
 on:
     push:
-    pull_request:
-    create:
+        branches:
+            - '**'
         tags:
             - v*
+    pull_request:
     workflow_call:
       inputs:
         override_git_describe:
@@ -1224,7 +1225,7 @@ jobs:
             - name: Publish to NPM on tag
               env:
                   TAG: 'latest'
-              if: github.event_name == 'create'
+              if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
               run: |
                   echo "${TAG}"
                   ./scripts/npm_publish_lib.sh
