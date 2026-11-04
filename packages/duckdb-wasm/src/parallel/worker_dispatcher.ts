@@ -13,7 +13,7 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
     protected abstract instantiate(
         mainModule: string,
         pthreadWorker: string | null,
-        progress: (p: InstantiationProgress) => void,
+        progress?: (p: InstantiationProgress) => void,
     ): Promise<DuckDBBindings>;
     /** Post a response to the main thread */
     protected abstract postMessage(response: WorkerResponseVariant, transfer: ArrayBuffer[]): void;
@@ -93,17 +93,22 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
                     this.failWith(request, new Error('duckdb already initialized'));
                 }
                 try {
-                    this._bindings = await this.instantiate(request.data[0], request.data[1], p => {
-                        this.postMessage(
-                            {
-                                messageId: this._nextMessageId++,
-                                requestId: request.messageId,
-                                type: WorkerResponseType.INSTANTIATE_PROGRESS,
-                                data: p,
-                            },
-                            [],
-                        );
-                    });
+                    // Only forward progress if the caller asked for it (older clients don't say).
+                    const forwardProgress =
+                        request.data[2] === false
+                            ? undefined
+                            : (p: InstantiationProgress) => {
+                                  this.postMessage(
+                                      {
+                                          messageId: this._nextMessageId++,
+                                          requestId: request.messageId,
+                                          type: WorkerResponseType.INSTANTIATE_PROGRESS,
+                                          data: p,
+                                      },
+                                      [],
+                                  );
+                              };
+                    this._bindings = await this.instantiate(request.data[0], request.data[1], forwardProgress);
                     this.sendOK(request);
                 } catch (e: any) {
                     console.log(e);

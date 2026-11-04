@@ -15,7 +15,7 @@ class NodeWorker extends AsyncDuckDBDispatcher {
     protected async instantiate(
         mainModulePath: string,
         pthreadWorkerPath: string | null,
-        progress: (p: InstantiationProgress) => void,
+        progress?: (p: InstantiationProgress) => void,
     ): Promise<DuckDBBindings> {
         const bindings = new DuckDB(this, NODE_RUNTIME, mainModulePath, pthreadWorkerPath);
         return await bindings.instantiate(progress);
