@@ -27,6 +27,10 @@
       setTimeout(() => { document.getElementById('fallback').hidden = false; document.getElementById('code').hidden = false; }, 2000);
       setTimeout(() => window.close(), 800);
     } else {
+      // a refusal (access_denied, an unregistered redirect, ...) reaches the shell tab as well
+      if (q.get('error') && state) {
+        try { new BroadcastChannel('duckdb-shell-aws').postMessage({ state, error: q.get('error'), error_description: q.get('error_description') }); } catch (e) { /* no channel */ }
+      }
       document.getElementById('msg').textContent = q.get('error') ? 'AWS Sign-In reported: ' + q.get('error') + (q.get('error_description') ? ' — ' + q.get('error_description') : '') : 'No authorization code in this URL.';
     }
   </script>
