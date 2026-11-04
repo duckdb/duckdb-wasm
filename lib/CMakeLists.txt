@@ -164,6 +164,20 @@ else()
   set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker' -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")
 endif()
 
+# Cross-Origin Storage (https://github.com/WICG/cross-origin-storage) lets
+# sites that load the same duckdb.wasm share one stored copy of it. The flag
+# embeds the SHA-256 of the final .wasm as `Module['wasmHash']`, which the
+# browser bindings' `instantiateWasm()` uses to look the binary up in COS.
+# Emscripten added the setting in 6.0.1 and rejects it before that.
+option(WITH_WASM_COS "Embed the Wasm hash for Cross-Origin Storage" ON)
+if(EMSCRIPTEN AND WITH_WASM_COS)
+  if(EMSCRIPTEN_VERSION VERSION_GREATER_EQUAL "6.0.1")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sCROSS_ORIGIN_STORAGE")
+  else()
+    message(STATUS "Emscripten ${EMSCRIPTEN_VERSION} lacks CROSS_ORIGIN_STORAGE, building without it")
+  endif()
+endif()
+
 # ---------------------------------------------------------------------------
 # Parallelism
 
