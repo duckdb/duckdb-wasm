@@ -19,6 +19,31 @@
   <link rel="icon" type="image/png" sizes="16x16" href="https://duckdb.org/images/favicon/favicon-16x16.png">
   <link rel="shortcut icon" href="https://duckdb.org/images/favicon/favicon.ico">
   <script>
+  // AWS Sign-In redirects the sign-in tab to <origin>/oauth/callback?code=…&state=… (or ?error=…). This tab has
+  // nothing to run: it hands the answer to the shell tab that started the sign-in over a same-origin channel,
+  // shows the code for pasting should that tab not answer, and stops the rest of the page from booting.
+  if (location.pathname.replace(/\/$/, '') === '/oauth/callback') {
+    const q = new URLSearchParams(location.search);
+    if (q.get('state') && (q.get('code') || q.get('error'))) {
+      try {
+        new BroadcastChannel('duckdb-shell-aws').postMessage({ state: q.get('state'), code: q.get('code'), error: q.get('error'), error_description: q.get('error_description') });
+      } catch (e) { /* no channel: the code below */ }
+      const failed = q.get('error');
+      const paste = !failed && btoa('state=' + q.get('state') + '&code=' + q.get('code'));
+      history.replaceState(null, '', location.pathname);   // the code is single-use; keep it out of the history
+      document.documentElement.innerHTML = '<head><meta charset="utf-8"><title>DuckDB shell: AWS sign-in</title></head>' +
+        '<body style="font-family:system-ui;padding:2rem;max-width:40rem;margin:auto"><h2></h2><p></p><pre hidden style="white-space:pre-wrap;word-break:break-all;user-select:all"></pre></body>';
+      const [h, p, pre] = ['h2', 'p', 'pre'].map(t => document.querySelector(t));
+      h.textContent = failed ? 'AWS Sign-In reported: ' + failed : 'Signed in to AWS';
+      p.textContent = failed ? (q.get('error_description') || '') : 'You can close this tab.';
+      if (paste) setTimeout(() => { p.textContent = 'If the shell did not continue on its own, paste this there as ".aws login <code>":'; pre.textContent = paste; pre.hidden = false; }, 2000);
+      if (!failed) setTimeout(() => window.close(), 300);
+      window.stop();                          // no more parsing or loading: the rest of the page must not boot
+      throw new Error('callback handled');
+    }
+  }
+  </script>
+  <script>
   // The shell's assets, in one place. Preloaded from here, before the stylesheets and the blocking xterm
   // scripts below, so that all four downloads start with the page; the fetches later on reuse them
   // (same-origin credentials, which is what the emscripten glue and the worker use).
@@ -1181,12 +1206,26 @@ async function awsProbeDirect(region) {
 // Origins AWS Sign-In redirects to (the same-device client accepts http://127.0.0.1:<port>/oauth/callback and
 // nothing else). Whether a redirect is accepted cannot be observed from a page, so this is declared, not probed.
 const AWS_CALLBACK_HOSTS = ['127.0.0.1'];
+// Sign-In's OAuth endpoint, for pointing the page at another stage (.aws endpoint <host>, remembered in this
+// browser; e.g. us-east-1.testing.oauth.signin.aws). Unset, the page uses <region>.signin.aws.amazon.com.
+const AWS_ENDPOINT_STORAGE_KEY = 'duckdb-shell-aws-endpoint';
+const AWS_HOST_RE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/;
+let awsSigninHost = null;
+try { awsSigninHost = localStorage.getItem(AWS_ENDPOINT_STORAGE_KEY); } catch (e) { /* no storage */ }
+// Web clients: a registered client per origin that may be redirected to <origin>/oauth/callback, so the sign-in
+// tab comes back by itself instead of showing a code. They exist on the stage given by .aws endpoint, so they apply
+// only while an endpoint is set; .aws client <arn> chooses one by hand (remembered), .aws client off forgets it.
+const AWS_WEB_CLIENTS = { 'shell.duckdb.org': 'arn:aws:signin:::devtools/duckdb-testing' };
+const AWS_CLIENT_STORAGE_KEY = 'duckdb-shell-aws-client';
+let awsClientOverride = null;
+try { awsClientOverride = localStorage.getItem(AWS_CLIENT_STORAGE_KEY); } catch (e) { /* no storage */ }
+const awsWebClient = () => awsClientOverride || (awsSigninHost ? AWS_WEB_CLIENTS[location.hostname] : null) || null;
 const AWS_REGION_RE = /^[a-z]{2}(-gov)?-[a-z]+-\d$/;
 window.awsSession = null;
 
 const awsB64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const awsUtf8 = (s) => new TextEncoder().encode(s);
-const awsSigninBase = (region) => `https://${region}.signin.aws.amazon.com`;
+const awsSigninBase = (region) => `https://${awsSigninHost || region + '.signin.aws.amazon.com'}`;
 const awsLink = (url, label) => '\x1b]8;;' + url + '\x07' + (label || url) + '\x1b]8;;\x07';
 // AWS Sign-In's error codes, in the user's terms
 const AWS_ERRORS = {
@@ -1211,7 +1250,8 @@ async function awsTokenRequest(session, body) {
   const url = awsSigninBase(session.region) + '/v1/token';
   const proof = await awsDpopProof(session.keys, url);
   const relay = session.relay;
-  const target = relay ? relay + (relay.includes('?') ? '&' : '?') + 'region=' + session.region : url;
+  // the relay forwards to the same endpoint the proof names (its host, when it is not the default one)
+  const target = relay ? relay + (relay.includes('?') ? '&' : '?') + 'region=' + session.region + (awsSigninHost ? '&host=' + encodeURIComponent(awsSigninHost) : '') : url;
   let res;
   try {
     res = await fetch(target, { method: 'POST', headers: { 'Content-Type': 'application/json', 'DPoP': proof }, body: JSON.stringify({ clientId: session.clientId, ...body }) });
@@ -1308,13 +1348,18 @@ async function awsLoginStart(region) {
     return;
   }
   const callback = location.origin + '/oauth/callback';
-  const redirectOk = 'BroadcastChannel' in window && AWS_CALLBACK_HOSTS.includes(location.hostname);
-  const clientId = redirectOk ? AWS_SIGNIN_CLIENT_SAME_DEVICE : AWS_SIGNIN_CLIENT_CROSS_DEVICE;
+  const webClient = awsWebClient();
+  const redirectOk = 'BroadcastChannel' in window && (AWS_CALLBACK_HOSTS.includes(location.hostname) || !!webClient);
+  const clientId = webClient || (redirectOk ? AWS_SIGNIN_CLIENT_SAME_DEVICE : AWS_SIGNIN_CLIENT_CROSS_DEVICE);
   const redirect = redirectOk ? callback : awsSigninBase(region) + '/v1/sessions/confirmation';
   const s = window.awsSession = { region, codeVerifier, state, keys, startedAt: Date.now(), clientId, redirect, relay };
   if (redirectOk) {
     s.channel = new BroadcastChannel('duckdb-shell-aws');
-    s.channel.onmessage = (e) => { if (e.data && e.data.state === s.state && e.data.code) awsCallbackArrived(s, e.data.code); };
+    s.channel.onmessage = (e) => {
+      if (!e.data || e.data.state !== s.state) return;
+      if (e.data.code) awsCallbackArrived(s, e.data.code);
+      else if (e.data.error) awsCallbackFailed(s, e.data.error, e.data.error_description);
+    };
   }
   const params = new URLSearchParams({ response_type: 'code', client_id: clientId, state, code_challenge_method: 'SHA-256', scope: 'openid', redirect_uri: redirect });
   const url = awsSigninBase(region) + '/v1/authorize?' + params.toString() + '&code_challenge=' + challenge;
@@ -1365,6 +1410,17 @@ async function awsCallbackArrived(s, code) {
     window.asyncBusy = false;
     if (wasEditing) { wasmModule._wasm_start_editing(); flushPending(); }
   }
+}
+
+// The sign-in tab came back with an error (the user denied, the client may not use this redirect, ...)
+function awsCallbackFailed(s, error, description) {
+  if (window.awsSession !== s || !s.codeVerifier) return;
+  const wasEditing = wasmModule && wasmModule._wasm_is_editing();
+  if (wasEditing) term.write('\r\x1b[2K');
+  term.write('\x1b[31mAWS Sign-In: ' + (AWS_ERRORS[error] || error + (description ? ' — ' + description : '')) + '\x1b[0m\r\n');
+  if (s.channel) s.channel.close();
+  window.awsSession = null;
+  if (wasEditing) { wasmModule._wasm_start_editing(); flushPending(); }
 }
 
 async function awsLogout(say) {
@@ -1419,12 +1475,43 @@ window.awsCommand = (args) => {
       } else {
         throw new Error('usage: .aws relay <https url> | .aws relay off');
       }
+    } else if (sub === 'endpoint') {
+      const arg = parts[1];
+      if (!arg) {
+        term.write(awsSigninHost ? 'Sign-In endpoint: ' + awsSigninHost + '\r\n' : 'Sign-In endpoint: <region>.signin.aws.amazon.com (default); .aws endpoint <host> sets one, .aws endpoint off forgets it.\r\n');
+      } else if (arg === 'off') {
+        awsSigninHost = null;
+        try { localStorage.removeItem(AWS_ENDPOINT_STORAGE_KEY); } catch (e) { /* no storage */ }
+        term.write('Sign-In endpoint forgotten; back to <region>.signin.aws.amazon.com.\r\n');
+      } else if (AWS_HOST_RE.test(arg)) {
+        awsSigninHost = arg;
+        try { localStorage.setItem(AWS_ENDPOINT_STORAGE_KEY, arg); } catch (e) { /* no storage */ }
+        term.write('Sign-In endpoint: ' + arg + ' (remembered in this browser; the authorization code and tokens go to this host)\r\n');
+      } else {
+        throw new Error('usage: .aws endpoint <host> | .aws endpoint off');
+      }
+    } else if (sub === 'client') {
+      const arg = parts[1];
+      if (!arg) {
+        const c = awsWebClient();
+        term.write(c ? 'Sign-In client: ' + c + (awsClientOverride ? '' : ' (for ' + location.hostname + ')') + '\r\n' : 'No web client for ' + location.hostname + '; .aws client <arn> sets one, .aws client off forgets it.\r\n');
+      } else if (arg === 'off') {
+        awsClientOverride = null;
+        try { localStorage.removeItem(AWS_CLIENT_STORAGE_KEY); } catch (e) { /* no storage */ }
+        term.write('Sign-In client forgotten.\r\n');
+      } else if (/^arn:aws:signin:::[\w./-]+$/.test(arg)) {
+        awsClientOverride = arg;
+        try { localStorage.setItem(AWS_CLIENT_STORAGE_KEY, arg); } catch (e) { /* no storage */ }
+        term.write('Sign-In client: ' + arg + ' (remembered in this browser; the redirect is ' + location.origin + '/oauth/callback)\r\n');
+      } else {
+        throw new Error('usage: .aws client <arn:aws:signin:::…> | .aws client off');
+      }
     } else if (sub === 'logout') {
       await awsLogout(true);
     } else if (sub === 'status') {
       awsStatus();
     } else {
-      throw new Error('usage: .aws login [region]  |  .aws login <code>  |  .aws  |  .aws relay [<url>|off]  |  .aws logout');
+      throw new Error('usage: .aws login [region]  |  .aws login <code>  |  .aws  |  .aws relay [<url>|off]  |  .aws endpoint [<host>|off]  |  .aws client [<arn>|off]  |  .aws logout');
     }
   };
   window.asyncBusy = true;
