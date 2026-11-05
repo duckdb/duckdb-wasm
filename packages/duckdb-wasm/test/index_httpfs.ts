@@ -76,6 +76,22 @@ for (const variant of ['base', 'threads']) {
                     ENDPOINT '${location.host}', URL_STYLE 'path', USE_SSL false
                 )`);
                 expect(await scalar("SELECT count(*) FROM 's3://test-bucket/data.csv'")).toEqual(3);
+
+                // A PUT answer carries headers and, for JSON APIs such as S3 Tables, a body. Both must reach
+                // httpfs through the browser client: the ETag header for multipart uploads, the body for
+                // whoever reads it. The HTTP log shows the headers; the body is only visible when httpfs
+                // rejects the status (see the 202 answer in karma/httpfs-chrome.cjs).
+                await query("CALL enable_logging('HTTP')");
+                await query("COPY (SELECT 42 AS answer) TO 's3://test-bucket/put-ok.csv'");
+                const putLog = await query(`
+                    SELECT response.status, response.headers['content-type']
+                    FROM duckdb_logs_parsed('HTTP') WHERE request.type = 'PUT'`);
+                expect(putLog.numRows).toEqual(1);
+                expect(putLog.getChildAt(0)!.get(0)).toEqual('OK_200');
+                expect(putLog.getChildAt(1)!.get(0)).toEqual('application/json');
+                await expectAsync(
+                    query("COPY (SELECT 42 AS answer) TO 's3://test-bucket/put-accepted.csv'"),
+                ).toBeRejectedWithError(/PutBodyPreserved/);
                 expect(await scalar('SELECT 42')).toEqual(42);
                 await conn.close();
             };

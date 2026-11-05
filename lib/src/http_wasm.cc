@@ -10,6 +10,29 @@
 #include "duckdb_static_extension.h"
 
 namespace duckdb {
+
+namespace {
+
+//! Response headers as XMLHttpRequest.getAllResponseHeaders() formats them: one "name: value" per
+//! CRLF-terminated line, names lower-cased by the browser (HTTPHeaders is case-insensitive).
+void ParseResponseHeaders(const string &raw, HTTPHeaders &headers) {
+    for (auto &line : StringUtil::Split(raw, "\r\n")) {
+        auto colon = line.find(':');
+        if (colon == string::npos) {
+            continue;
+        }
+        auto value = line.find_first_not_of(' ', colon + 1);
+        headers.Insert(line.substr(0, colon), value == string::npos ? string() : line.substr(value));
+    }
+}
+
+uint32_t ReadLittleEndian32(const char *bytes) {
+    auto p = reinterpret_cast<const uint8_t *>(bytes);
+    return uint32_t(p[0]) | (uint32_t(p[1]) << 8) | (uint32_t(p[2]) << 16) | (uint32_t(p[3]) << 24);
+}
+
+}  // namespace
+
 class HTTPWasmClient : public HTTPClient {
    public:
     explicit HTTPWasmClient(const string &proto_host_port) : HTTPClient(proto_host_port), host_port(proto_host_port) {}
@@ -249,18 +272,7 @@ class HTTPWasmClient : public HTTPClient {
 
             char *ptr = reinterpret_cast<char *>(next);
 
-            string headers = string(ptr + 8, len_headers);
-
-            vector<string> vec_headers = StringUtil::Split(headers, "\r\n");
-
-            for (auto h : vec_headers) {
-                int j = 0;
-                while (j < h.size() && h[j] != ':') j++;
-                string head = string(h.c_str(), j);
-                while (j < h.size() && h[j] != ' ') j++;
-                string tail = string(h.c_str() + j + 1);
-                res->headers.Insert(head, tail);
-            }
+            ParseResponseHeaders(string(ptr + 8, len_headers), res->headers);
 
             res->body = string(exe + 8, len);
 
@@ -503,26 +515,7 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
 
 		char * ptr = reinterpret_cast<char*>(next) ;
 
-
-	string headers = string(ptr + 8, len_headers);
-
-vector<string> vec_headers = StringUtil::Split(headers, "\r\n");
-
-for (auto h : vec_headers) {
-int i = 0;
-while (i < h.size() && h[i] != ':') i++;
-
-string head = string(h.c_str(), i);
-
-while (i < h.size() && h[i] != ' ') i++;
-string tail = string(h.c_str() + i+1);
-
-res->headers.Insert(head, tail);	
-	}
-	
-
-
-
+		ParseResponseHeaders(string(ptr + 8, len_headers), res->headers);
 
             res->body = string(exe + 8, len);
             /*
@@ -814,14 +807,11 @@ res->headers.Insert(head, tail);
                     return 0;
                 }
                 if (xhr.status === 0) return 0;
-		var uInt8Array;
-                if (xhr.status >= 400) {
-                    var errb = xhr.response;
-                    uInt8Array = errb ? new Uint8Array(errb) : new Uint8Array(0);
-                } else {
-                    var et = xhr.getResponseHeader("Etag");
-                    uInt8Array = et ? Uint8Array.from(Array.from(et).map(letter => letter.charCodeAt(0))) : new Uint8Array(0);
-                }
+                // Same layout as GET: the body buffer, whose first 4 bytes point at a headers buffer
+                // carrying the HTTP status and every response header. S3 uploads read the ETag header;
+                // JSON APIs such as S3 Tables CreateTableBucket read the body.
+                var uInt8Array = xhr.response;
+                if (!uInt8Array) uInt8Array = new ArrayBuffer(0);
 
                 var len = uInt8Array.byteLength;
                 var fileOnWasmHeap = _malloc(len + 8);
@@ -845,13 +835,53 @@ res->headers.Insert(head, tail);
                 len -= LEN123[3];
                 len /= 256;
                 Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+
+                var headers = Uint8Array.from(Array.from(xhr.getAllResponseHeaders()).map(letter => letter.charCodeAt(0)));
+                len = headers.byteLength;
+                var headersOnWasmHeap = _malloc(len + 8);
+                for (var iii = 0; iii < len; iii++) {
+                    Module.HEAPU8[iii + headersOnWasmHeap + 8] = headers[iii];
+                }
+
+                LEN123 = new Uint8Array(4);
+                LEN123[0] = len % 256;
+                len -= LEN123[0];
+                len /= 256;
+                LEN123[1] = len % 256;
+                len -= LEN123[1];
+                len /= 256;
+                LEN123[2] = len % 256;
+                len -= LEN123[2];
+                len /= 256;
+                LEN123[3] = len % 256;
+                len -= LEN123[3];
+                len /= 256;
+                Module.HEAPU8.set(LEN123, headersOnWasmHeap + 4);
+
                 var st123 = xhr.status;
                 var STAT123 = new Uint8Array(4);
                 STAT123[0] = st123 % 256; st123 -= STAT123[0]; st123 /= 256;
                 STAT123[1] = st123 % 256; st123 -= STAT123[1]; st123 /= 256;
                 STAT123[2] = st123 % 256; st123 -= STAT123[2]; st123 /= 256;
                 STAT123[3] = st123 % 256;
-                Module.HEAPU8.set(STAT123, fileOnWasmHeap + 0);
+                Module.HEAPU8.set(STAT123, headersOnWasmHeap + 0);
+
+                len = headersOnWasmHeap;
+                LEN123 = new Uint8Array(4);
+                LEN123[0] = len % 256;
+                len -= LEN123[0];
+                len /= 256;
+                LEN123[1] = len % 256;
+                len -= LEN123[1];
+                len /= 256;
+                LEN123[2] = len % 256;
+                len -= LEN123[2];
+                len /= 256;
+                LEN123[3] = len % 256;
+                len -= LEN123[3];
+                len /= 256;
+                Module.HEAPU8.set(LEN123, fileOnWasmHeap);
+
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "PUT", payload, buffer_length);
@@ -873,33 +903,19 @@ res->headers.Insert(head, tail);
             res->reason = "Please consult the browser console for details, might be potentially a CORS error";
         } else {
             res = duckdb::make_uniq<HTTPResponse>(HTTPStatusCode::OK_200);
-            int32_t status_code = 0;
-            status_code |= static_cast<uint8_t>((((uint8_t *)exe)[0]));
-            status_code |= static_cast<uint8_t>((((uint8_t *)exe)[1])) << 8;
-            status_code |= static_cast<uint8_t>((((uint8_t *)exe)[2])) << 16;
-            status_code |= static_cast<uint8_t>((((uint8_t *)exe)[3])) << 24;
+            char *headers_block = reinterpret_cast<char *>(static_cast<uintptr_t>(ReadLittleEndian32(exe)));
+            uint32_t body_length = ReadLittleEndian32(exe + 4);
+            int32_t status_code = static_cast<int32_t>(ReadLittleEndian32(headers_block));
+            uint32_t headers_length = ReadLittleEndian32(headers_block + 4);
             if (status_code != 0) {
                 res->status = HTTPUtil::ToStatusCode(status_code);
                 res->reason = HTTPUtil::GetStatusMessage(res->status);
             }
-            uint64_t LEN = 0;
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[3 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[2 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[1 + 4];
-            LEN *= 256;
-            LEN += ((uint8_t *)exe)[0 + 4];
-            if (status_code >= 200 && status_code < 300) {
-                res->headers.Insert("ETag", string(exe + 8, LEN));
-            } else {
-                res->body = string(exe + 8, LEN);
-            }
-
-            // info.buffer_out += string(exe + 4, LEN);
+            ParseResponseHeaders(string(headers_block + 8, headers_length), res->headers);
+            res->body = string(exe + 8, body_length);
 
             free(exe);
+            free(headers_block);
         }
 
         return res;
