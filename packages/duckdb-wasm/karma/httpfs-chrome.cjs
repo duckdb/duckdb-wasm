@@ -8,7 +8,8 @@ const compressedCSV = gzipSync(csv);
 function fixture() {
     return (request, response, next) => {
         const path = request.url.split('?')[0];
-        if (!path.startsWith('/httpfs-fixture/') && path !== '/test-bucket/data.csv') {
+        const s3Path = path === '/test-bucket/data.csv' || path.startsWith('/test-bucket/put-');
+        if (!path.startsWith('/httpfs-fixture/') && !s3Path) {
             return next();
         }
         if (path === '/httpfs-fixture/protected.csv') {
@@ -28,9 +29,26 @@ function fixture() {
                 }
             }
         }
-        if (path === '/test-bucket/data.csv' && !request.headers.authorization?.includes('Credential=browser-test/')) {
+        if (s3Path && !request.headers.authorization?.includes('Credential=browser-test/')) {
             response.writeHead(403);
             response.end('Missing S3 signature');
+            return;
+        }
+        if (request.method === 'PUT') {
+            request.on('data', () => {});
+            request.on('end', () => {
+                if (path === '/test-bucket/put-accepted.csv') {
+                    // httpfs only shows a PUT body in its error text, and the body was dropped for 2xx statuses
+                    // only, so answer with a 2xx that httpfs rejects as an upload status.
+                    response.writeHead(202, { 'Content-Type': 'application/xml', ETag: '"put-accepted"' });
+                    response.end(
+                        '<Error><Code>PutBodyPreserved</Code><Message>202 body reached httpfs</Message></Error>',
+                    );
+                    return;
+                }
+                response.writeHead(200, { 'Content-Type': 'application/json', ETag: '"put-ok"' });
+                response.end('{"arn":"arn:aws:s3tables:us-east-1:123456789012:bucket/put-ok"}');
+            });
             return;
         }
         const data = path.endsWith('.gz') ? compressedCSV : csv;
