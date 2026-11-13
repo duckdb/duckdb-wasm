@@ -59,6 +59,8 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
+                var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
@@ -72,8 +74,8 @@ class HTTPWasmClient : public HTTPClient {
                 var i = 0;
                 var len = $1;
                 while (i < len*2) {
-                    var ptr1 = HEAP32[($2)/4 + i ];
-                    var ptr2 = HEAP32[($2)/4 + i + 1];
+                    var ptr1 = H32[($2)/4 + i ];
+                    var ptr2 = H32[($2)/4 + i + 1];
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
@@ -105,11 +107,12 @@ class HTTPWasmClient : public HTTPClient {
 
                 var len = uInt8Array.byteLength;
                 var fileOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
 
                 var properArray = new Uint8Array(uInt8Array);
 
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + fileOnWasmHeap + 8] = properArray[iii];
+                    H8[iii + fileOnWasmHeap + 8] = properArray[iii];
                 }
 
                 var LEN123 = new Uint8Array(4);
@@ -125,13 +128,14 @@ class HTTPWasmClient : public HTTPClient {
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+                H8.set(LEN123, fileOnWasmHeap + 4);
 
 		var headers = Uint8Array.from(Array.from(xhr.getAllResponseHeaders()).map(letter => letter.charCodeAt(0)));
 		len = headers.byteLength;
                 var headersOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + headersOnWasmHeap + 8] = headers[iii];
+                    H8[iii + headersOnWasmHeap + 8] = headers[iii];
                 }
 
                 LEN123 = new Uint8Array(4);
@@ -147,7 +151,7 @@ class HTTPWasmClient : public HTTPClient {
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, headersOnWasmHeap + 4);
+                H8.set(LEN123, headersOnWasmHeap + 4);
 
                 // Stash the real HTTP status in the (otherwise unused) first 4
                 // bytes of the headers buffer so C++ can recover it.
@@ -157,7 +161,7 @@ class HTTPWasmClient : public HTTPClient {
                 STAT123[1] = st123 % 256; st123 -= STAT123[1]; st123 /= 256;
                 STAT123[2] = st123 % 256; st123 -= STAT123[2]; st123 /= 256;
                 STAT123[3] = st123 % 256;
-                Module.HEAPU8.set(STAT123, headersOnWasmHeap + 0);
+                H8.set(STAT123, headersOnWasmHeap + 0);
 
 		len = headersOnWasmHeap;
                 LEN123 = new Uint8Array(4);
@@ -173,7 +177,7 @@ class HTTPWasmClient : public HTTPClient {
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap);
+                H8.set(LEN123, fileOnWasmHeap);
 
                 return fileOnWasmHeap;
             },
@@ -318,6 +322,8 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
+                var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
@@ -331,8 +337,8 @@ class HTTPWasmClient : public HTTPClient {
                 var i = 0;
                 var len = $1;
                 while (i < len*2) {
-                    var ptr1 = HEAP32[($2)/4 + i ];
-                    var ptr2 = HEAP32[($2)/4 + i + 1];
+                    var ptr1 = H32[($2)/4 + i ];
+                    var ptr2 = H32[($2)/4 + i + 1];
 
 console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                     try {
@@ -362,11 +368,12 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                 if (!uInt8Array) uInt8Array = new ArrayBuffer(0);
                 var len = uInt8Array.byteLength;
                 var fileOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
 
                 var properArray = new Uint8Array(uInt8Array);
 
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + fileOnWasmHeap + 8] = properArray[iii];
+                    H8[iii + fileOnWasmHeap + 8] = properArray[iii];
                 }
 
                 var LEN123 = new Uint8Array(4);
@@ -382,13 +389,14 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+                H8.set(LEN123, fileOnWasmHeap + 4);
 
 		var headers = Uint8Array.from(Array.from(xhr.getAllResponseHeaders()).map(letter => letter.charCodeAt(0)));
 		len = headers.byteLength;
                 var headersOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + headersOnWasmHeap + 8] = headers[iii];
+                    H8[iii + headersOnWasmHeap + 8] = headers[iii];
                 }
 
                 LEN123 = new Uint8Array(4);
@@ -404,7 +412,7 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, headersOnWasmHeap + 4);
+                H8.set(LEN123, headersOnWasmHeap + 4);
 
                 var st123 = xhr.status;
                 var STAT123 = new Uint8Array(4);
@@ -412,7 +420,7 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                 STAT123[1] = st123 % 256; st123 -= STAT123[1]; st123 /= 256;
                 STAT123[2] = st123 % 256; st123 -= STAT123[2]; st123 /= 256;
                 STAT123[3] = st123 % 256;
-                Module.HEAPU8.set(STAT123, headersOnWasmHeap + 0);
+                H8.set(STAT123, headersOnWasmHeap + 0);
 
 		len = headersOnWasmHeap;
                 LEN123 = new Uint8Array(4);
@@ -428,7 +436,7 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap);
+                H8.set(LEN123, fileOnWasmHeap);
 
                 return fileOnWasmHeap;
             },
@@ -585,6 +593,8 @@ res->headers.Insert(head, tail);
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
+                var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
@@ -598,8 +608,8 @@ res->headers.Insert(head, tail);
                 var i = 0;
                 var len = $1;
                 while (i < len*2) {
-                    var ptr1 = HEAP32[($2)/4 + i ];
-                    var ptr2 = HEAP32[($2)/4 + i + 1];
+                    var ptr1 = H32[($2)/4 + i ];
+                    var ptr2 = H32[($2)/4 + i + 1];
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
@@ -623,7 +633,7 @@ res->headers.Insert(head, tail);
 			var post_payload = new Uint8Array($5);
 
 			for (var iii = 0; iii < $5; iii++) {
-				post_payload[iii] = Module.HEAPU8[iii + $4];
+				post_payload[iii] = H8[iii + $4];
 			}
 			xhr.send(post_payload);
                 } catch {
@@ -635,11 +645,12 @@ res->headers.Insert(head, tail);
 
                 var len = uInt8Array.byteLength;
                 var fileOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
 
                 var properArray = new Uint8Array(uInt8Array);
 
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + fileOnWasmHeap + 8] = properArray[iii];
+                    H8[iii + fileOnWasmHeap + 8] = properArray[iii];
                 }
                 var LEN123 = new Uint8Array(4);
                 LEN123[0] = len % 256;
@@ -654,14 +665,14 @@ res->headers.Insert(head, tail);
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+                H8.set(LEN123, fileOnWasmHeap + 4);
                 var st123 = xhr.status;
                 var STAT123 = new Uint8Array(4);
                 STAT123[0] = st123 % 256; st123 -= STAT123[0]; st123 /= 256;
                 STAT123[1] = st123 % 256; st123 -= STAT123[1]; st123 /= 256;
                 STAT123[2] = st123 % 256; st123 -= STAT123[2]; st123 /= 256;
                 STAT123[3] = st123 % 256;
-                Module.HEAPU8.set(STAT123, fileOnWasmHeap + 0);
+                H8.set(STAT123, fileOnWasmHeap + 0);
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "POST", payload, buffer_length);
@@ -760,6 +771,8 @@ res->headers.Insert(head, tail);
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
+                var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
@@ -774,8 +787,8 @@ res->headers.Insert(head, tail);
                 var len = $1;
                 var hasContentType = false;
                 while (i < len*2) {
-                    var ptr1 = HEAP32[($2)/4 + i ];
-                    var ptr2 = HEAP32[($2)/4 + i + 1];
+                    var ptr1 = H32[($2)/4 + i ];
+                    var ptr2 = H32[($2)/4 + i + 1];
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
@@ -807,7 +820,7 @@ res->headers.Insert(head, tail);
 			var post_payload = new Uint8Array($5);
 
 			for (var iii = 0; iii < $5; iii++) {
-				post_payload[iii] = Module.HEAPU8[iii + $4];
+				post_payload[iii] = H8[iii + $4];
 			}
 			xhr.send(post_payload);
                 } catch {
@@ -825,11 +838,12 @@ res->headers.Insert(head, tail);
 
                 var len = uInt8Array.byteLength;
                 var fileOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
 
                 var properArray = new Uint8Array(uInt8Array);
 
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + fileOnWasmHeap + 8] = properArray[iii];
+                    H8[iii + fileOnWasmHeap + 8] = properArray[iii];
                 }
                 var LEN123 = new Uint8Array(4);
                 LEN123[0] = len % 256;
@@ -844,14 +858,14 @@ res->headers.Insert(head, tail);
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+                H8.set(LEN123, fileOnWasmHeap + 4);
                 var st123 = xhr.status;
                 var STAT123 = new Uint8Array(4);
                 STAT123[0] = st123 % 256; st123 -= STAT123[0]; st123 /= 256;
                 STAT123[1] = st123 % 256; st123 -= STAT123[1]; st123 /= 256;
                 STAT123[2] = st123 % 256; st123 -= STAT123[2]; st123 /= 256;
                 STAT123[3] = st123 % 256;
-                Module.HEAPU8.set(STAT123, fileOnWasmHeap + 0);
+                H8.set(STAT123, fileOnWasmHeap + 0);
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "PUT", payload, buffer_length);
@@ -952,6 +966,8 @@ res->headers.Insert(head, tail);
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
+                var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
                     return 0;
                 }
@@ -965,8 +981,8 @@ res->headers.Insert(head, tail);
                 var i = 0;
                 var len = $1;
                 while (i < len*2) {
-                    var ptr1 = HEAP32[($2)/4 + i ];
-                    var ptr2 = HEAP32[($2)/4 + i + 1];
+                    var ptr1 = H32[($2)/4 + i ];
+                    var ptr2 = H32[($2)/4 + i + 1];
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
@@ -995,11 +1011,12 @@ res->headers.Insert(head, tail);
 
                 var len = uInt8Array.byteLength;
                 var fileOnWasmHeap = _malloc(len + 8);
+                H8 = new Uint8Array(wasmMemory.buffer);   // malloc may have grown the memory
 
                 var properArray = new Uint8Array(uInt8Array);
 
                 for (var iii = 0; iii < len; iii++) {
-                    Module.HEAPU8[iii + fileOnWasmHeap + 8] = properArray[iii];
+                    H8[iii + fileOnWasmHeap + 8] = properArray[iii];
                 }
                 var LEN123 = new Uint8Array(4);
                 LEN123[0] = len % 256;
@@ -1014,14 +1031,14 @@ res->headers.Insert(head, tail);
                 LEN123[3] = len % 256;
                 len -= LEN123[3];
                 len /= 256;
-                Module.HEAPU8.set(LEN123, fileOnWasmHeap + 4);
+                H8.set(LEN123, fileOnWasmHeap + 4);
                 var st123 = xhr.status;
                 var STAT123 = new Uint8Array(4);
                 STAT123[0] = st123 % 256; st123 -= STAT123[0]; st123 /= 256;
                 STAT123[1] = st123 % 256; st123 -= STAT123[1]; st123 /= 256;
                 STAT123[2] = st123 % 256; st123 -= STAT123[2]; st123 /= 256;
                 STAT123[3] = st123 % 256;
-                Module.HEAPU8.set(STAT123, fileOnWasmHeap + 0);
+                H8.set(STAT123, fileOnWasmHeap + 0);
                 return fileOnWasmHeap;
             },
             path.c_str(), n, z, "DELETE");
