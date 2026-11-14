@@ -397,15 +397,27 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                                 xhr.open('GET', file.dataUrl!, false);
                             }
                             xhr.setRequestHeader('Range', `bytes=0-0`);
+
                             const response = sendBinaryXHR(xhr);
-                            let actualContentLength = null;
-                            try { actualContentLength = xhr.getResponseHeader('Content-Length'); } catch (e: any) {console.warn(`Failed to get Content-Length on request`);}
-                            const contentRange = actualContentLength?.split('/')[1];
-                            const contentLength2 = actualContentLength;
+
+                            contentLength = null;
+                            try {
+                                contentLength = xhr.getResponseHeader('Content-Length');
+                            } catch (e: any) {
+                                console.warn(`Failed to get Content-Length on request`);
+                            }
+
+                            let contentRange = null;
+                            try {
+                                contentRange = xhr.getResponseHeader('Content-Range');
+                            } catch (e: any) {
+                                console.warn(`Failed to get Content-Range on request`);
+                            }
+                            const fullLengthFromRange = contentRange?.split('/')[1] || null;
 
                             let presumedLength = null;
-                            if (contentRange !== undefined) {
-                                presumedLength = contentRange;
+                            if (fullLengthFromRange !== null) {
+                                presumedLength = fullLengthFromRange;
                             } else if (!file.reliableHeadRequests) {
                                 // Send a dummy HEAD request with range protocol
                                 //          -> good IFF status is 206 and contentLenght is present
@@ -429,11 +441,11 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
 
                             if (
                                 xhr.status == 206 &&
-                                contentLength2 !== null &&
-                                +contentLength2 == 1 &&
+                                fullLengthFromRange !== null &&
+                                +fullLengthFromRange == 1 &&
                                 presumedLength !== null
                             ) {
-                                const result = (mod._malloc(3 * 8) >>> 0);
+                                const result = mod._malloc(3 * 8) >>> 0;
                                 mod.HEAPF64[(result >>> 3) + 0] = +presumedLength;
                                 mod.HEAPF64[(result >>> 3) + 1] = 0;
                                 let modification_time = 0;
@@ -443,9 +455,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                             }
                             if (
                                 xhr.status == 200 &&
-                                contentLength2 !== null &&
+                                fullLengthFromRange !== null &&
                                 contentLength !== null &&
-                                +contentLength2 == +contentLength
+                                +fullLengthFromRange == +contentLength
                             ) {
                                 console.warn(`fall back to full HTTP read for: ${file.dataUrl}`);
                                 const data = (mod._malloc(response.byteLength) >>> 0);
@@ -734,7 +746,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                 handle.close();
             }
         }
-
     },
     truncateFile: (mod: DuckDBModule, fileId: number, newSize: number) => {
         BROWSER_RUNTIME.debug('truncate', fileId, `size=${newSize}`);
