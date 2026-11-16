@@ -574,7 +574,7 @@ jobs:
 
             - name: Test pthread completion handler
               run: |
-                  node ./scripts/test_wasm_pthread_glue.cjs ./packages/duckdb-wasm/src/bindings/duckdb-threads.js
+                  make wasm_tests_pthread_glue
 
             - name: Upload artifact
               uses: actions/upload-artifact@v7
@@ -701,21 +701,24 @@ jobs:
                       rm -rf ./packages/duckdb-wasm-app/build/
                       yarn workspace @duckdb/duckdb-wasm-app build:release
 
-            - name: Test @duckdb/duckdb-wasm on Chrome
+            - name: Test @duckdb/duckdb-wasm on Chrome and Node.js
               shell: bash
               run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
+                      CHROME_BIN="$(command -v google-chrome)" make js_tests_release DUCKDB_WASM_LOADABLE_EXTENSIONS=
+
+            - name: Test static threaded bundle
+              shell: bash
+              run: |
+                      CHROME_BIN="$(command -v google-chrome)" make \
+                          js_tests_browser_threads \
+                          js_tests_browser_threads_smoke \
+                          wasm_tests_threads_close_inflight
 
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
             #              with:
             #                  script: |-
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
-
-            - name: Test @duckdb/duckdb-wasm on Node.js
-              shell: bash
-              run: |
-                      yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Coverage @duckdb/duckdb-wasm
               shell: bash
@@ -1037,26 +1040,24 @@ jobs:
               run: |
                   ./scripts/npm_measure_lib.sh
 
-            - name: Test @duckdb/duckdb-wasm on Chrome
+            - name: Test @duckdb/duckdb-wasm on Chrome and Node.js
               shell: bash
               run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
+                      CHROME_BIN="$(command -v google-chrome)" make js_tests_release DUCKDB_WASM_LOADABLE_EXTENSIONS=
 
-            - name: Test loadable threaded bundle on Chrome
+            - name: Test loadable threaded bundle
               shell: bash
               run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome:threads:smoke
+                      CHROME_BIN="$(command -v google-chrome)" make \
+                          js_tests_browser_threads \
+                          js_tests_browser_threads_smoke \
+                          wasm_tests_threads_close_inflight
 
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
             #              with:
             #                  script: |-
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
-
-            - name: Test @duckdb/duckdb-wasm on Node.js
-              shell: bash
-              run: |
-                      yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Deploy GitHub Page
               if: false
@@ -1195,21 +1196,16 @@ jobs:
               run: |
                   ./scripts/npm_measure_lib.sh
 
-            - name: Test @duckdb/duckdb-wasm on Chrome
+            - name: Test @duckdb/duckdb-wasm on Chrome and Node.js
               shell: bash
               run: |
-                      CHROME_BIN=`which google-chrome` yarn workspace @duckdb/duckdb-wasm test:chrome
-            
+                      CHROME_BIN="$(command -v google-chrome)" make js_tests_release DUCKDB_WASM_LOADABLE_EXTENSIONS=
+
             #            - name: Test @duckdb/duckdb-wasm on Firefox
             #              uses: duckdb/duckdb-wasm-ci-env@f10a0954b7b2b98e8526e0f7bbcb10e614defcbd
             #              with:
             #                  script: |-
             #                      yarn workspace @duckdb/duckdb-wasm test:firefox
-
-            - name: Test @duckdb/duckdb-wasm on Node.js
-              shell: bash
-              run: |
-                      yarn workspace @duckdb/duckdb-wasm test:node
 
             - name: Publish to NPM
               env:

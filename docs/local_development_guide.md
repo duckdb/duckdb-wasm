@@ -293,6 +293,66 @@ warnings, Rust deprecation warnings, TypeDoc warnings, and Webpack asset-size
 warnings may appear during a successful build; they are non-fatal if the
 command exits successfully.
 
+### 6.1 Checking a DuckDB release
+
+After changing `submodules/duckdb`, check both `wasm_eh` (base) and
+`wasm_threads`, first with static extensions and then with loadable extensions.
+Start with the candidate revision checked out, the patches from section 2
+applied, and the test data from this section prepared. Set the version label
+as described in section 3; unset `OVERRIDE_GIT_DESCRIBE` for an untagged candidate.
+Do not run `git submodule update` after changing the revision until the new
+submodule pin is staged or committed, or it can reset DuckDB to the old revision.
+
+Run from the repository root, sequentially without `make -j`. Karma uses
+Puppeteer's Chrome by default. On macOS, use installed Chrome if Puppeteer's
+cached executable cannot launch:
+
+```shell
+export CHROME_BIN="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+"$CHROME_BIN" --version
+```
+
+The version command must succeed before running the browser tests. Use `set +e`
+in an interactive terminal so a failed command does not exit the shell and close
+the tab. The `&&` chains below stop at the first failure without exiting the shell.
+
+Static builds and tests:
+
+```shell
+set +e
+unset DUCKDB_WASM_LOADABLE_EXTENSIONS
+export KARMA_NO_FAIL_FAST=1
+
+make wasm_relperf CORES=6 GEN=ninja &&
+make js_tests_release js_tests_browser_threads js_tests_browser_threads_smoke \
+    wasm_tests_threads_close_inflight
+```
+
+Then rebuild with loadable extensions and repeat the tests:
+
+```shell
+make build_loadable build_loadable_threads CORES=6 GEN=ninja &&
+make wasm_tests_pthread_glue &&
+make js_tests_release js_tests_browser_threads js_tests_browser_threads_smoke \
+    wasm_tests_threads_close_inflight
+```
+
+Keep `DUCKDB_WASM_LOADABLE_EXTENSIONS` unset while running the test targets:
+setting it to `1` makes `js_tests_release` skip Node.js tests and suppress Chrome
+failures. The loadable build targets set it only for their build commands.
+
+`js_tests_release` runs the Chrome base and Node.js suites. The other browser
+targets run the full threaded suite and the threaded smoke test, rebuilding the
+JavaScript release package but not WASM. `wasm_tests_threads_close_inflight`
+checks close, reset and open during active threaded queries in Node.js. If a
+query finishes before teardown, the test retries with twice the workload, up to
+four attempts. Hangs and real errors are not retried; exhausted attempts fail.
+`wasm_tests_pthread_glue` checks the generated loadable threaded glue.
+Every command must exit successfully. Expect zero Jasmine failures, Chrome
+reporting `SUCCESS`, and all six teardown scenarios reporting `ok`. The glue check
+reports `Pthread completion handler: current, reused and freed thread checks passed`.
+These checks do not run native C++ tests, benchmarks, or linting.
+
 ## 7. Troubleshooting
 
 | Failure | Cause | Fix |
@@ -306,6 +366,8 @@ command exits successfully.
 | `PRAGMA platform` is `wasm_eh` on `make serve_threads` | The page is not cross-origin isolated. | Check `crossOriginIsolated` and the two headers from section 4.2; open a fresh tab. |
 | `failed to create temp dir for cargo install wasm-bindgen` | `wasm-pack` cannot write to its temporary or Cargo installation directory. | Run the build in an environment with writable temporary and Cargo directories. |
 | `listen EPERM` or an occupied port while starting a server | The environment prevents binding the requested port, or another process already uses it. | Allow local port binding or select another port, for example `PORT=8091`. |
+| Terminal tab closes after a failed Make command | `set -e` exits the interactive shell when a command fails. | Run `set +e` and use the `&&` chains in section 6.1. |
+| Karma cannot launch Chrome on macOS: `spawn Unknown system error -88` | macOS rejects the Chrome executable as a malformed Mach-O file (`EBADMACHO`). | Set `CHROME_BIN` to installed Chrome and check `"$CHROME_BIN" --version`, as in section 6.1. |
 | Puppeteer/Karma fails under Node.js 26 | The current test dependencies are incompatible with Node.js 26. | Run browser tests with Node.js 24. This does not prevent building the shell and app with Node.js 26. |
 | `could not be fetched from .../<commit-hash>/...` with the submodule at a tag | Built without `OVERRIDE_GIT_DESCRIBE`. | Export it as in section 3 and rebuild both variants. |
 | Extension fetch returns HTTP 403 or 404 | The binary is unavailable at the requested version/platform path, or the server points at another checkout. | Check the full URL and server directory; run the `curl` loop in section 5.4; use `FROM core` or a local checkout. |
