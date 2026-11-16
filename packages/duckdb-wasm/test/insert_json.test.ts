@@ -107,6 +107,18 @@ export function testJSONInsert(db: () => duckdb.DuckDBBindings): void {
                 compareTable(results, test.expectedColumns);
             });
         }
+        it('failed object of columns aborts the transaction', () => {
+            conn.query('BEGIN');
+            conn.query('CREATE TABLE written_before_import (i INTEGER)');
+            expect(() =>
+                conn.insertJSONFromPath('missing_columns.json', {
+                    name: 'missing_columns',
+                    shape: duckdb.JSONTableShape.COLUMN_OBJECT,
+                }),
+            ).toThrowError();
+            expect(() => conn.query('SELECT 1')).toThrowError(/Current transaction is aborted/);
+            conn.query('ROLLBACK');
+        });
     });
 }
 
