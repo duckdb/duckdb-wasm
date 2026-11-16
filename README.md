@@ -97,6 +97,10 @@ prerequisites, checkout and patches, building and serving the `wasm_eh` and
 `wasm_threads` bundles, loading extensions from the published repositories or
 from unsigned local checkouts, test data, and troubleshooting.
 
+After changing the DuckDB core revision, follow
+[Checking a DuckDB release](docs/local_development_guide.md#61-checking-a-duckdb-release)
+to build and test both Wasm variants with static and loadable extensions.
+
 ## Repository Structure
 
 | Subproject                                               | Description    | Language   |

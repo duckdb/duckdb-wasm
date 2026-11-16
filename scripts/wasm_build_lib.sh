@@ -97,6 +97,8 @@ emcmake cmake -G "${GENERATOR}" \
     -DDUCKDB_EXTENSION_CONFIGS=extension_config_wasm.cmake \
     ${ADDITIONAL_FLAGS}
 
+# Ninja must see the updated installed headers and archives before planning the wrapper build.
+cmake --build "${BUILD_DIR}" --parallel "${CORES}" --target duckdb_ep
 cmake --build "${BUILD_DIR}" --parallel "${CORES}" --target duckdb_wasm
 
 if [ "${USE_GENERATED_EXPORTED_LIST:-no}" == "yes" ]; then

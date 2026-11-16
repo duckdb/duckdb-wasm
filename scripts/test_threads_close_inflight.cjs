@@ -8,12 +8,13 @@
 //
 // Usage: node scripts/test_threads_close_inflight.cjs [options] [scenario ...]
 //   --threads=N      maximumThreads for the database (default 4: the query thread and three workers)
-//   --copies=N       how many times the file is read by one query (default 16)
+//   --copies=N       initial file reads per query (default 16; doubles after an inconclusive attempt)
 //   --query=blob|csv read_blob reads a file in one call and does nothing else, so a worker is inside a read whenever
 //                    it runs (default). read_csv parses between reads, so teardown does not always overlap a read.
 //   --timeout=S      seconds after which a child is killed and reported as HANG (default 30)
 //
 // Each scenario runs in a child process, because a blocked main thread cannot fire JavaScript timers.
+const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -23,6 +24,7 @@ const root = path.resolve(__dirname, '..');
 const bindings = path.join(root, 'packages/duckdb-wasm/src/bindings');
 const dataFile = path.join(os.tmpdir(), 'duckdb-wasm-close-inflight.csv');
 const dataRows = 3000000;
+const maxAttempts = 4;
 
 const queries = {
     blob: files => `SELECT count(*), sum(octet_length(content)) FROM read_blob([${files}])`,
@@ -31,7 +33,7 @@ const queries = {
 
 // The controls run the same teardown and finish: cancelPendingQuery destroys the result on the query thread while
 // the main thread serves, a finished query has no tasks in flight, and without workers the query thread only runs
-// tasks inside a poll (more copies keep that query unfinished after two polls).
+// tasks inside a poll (more copies keep that query unfinished after the first poll).
 const scenarios = {
     close: { expect: 'ok' },
     reset: { expect: 'ok' },
@@ -63,7 +65,7 @@ function child(scenario) {
     }
     const started = Date.now();
     const step = message => log(`  [${String(Date.now() - started).padStart(5)}ms] ${message}`);
-    const config = { maximumThreads: threads };
+    const config = { maximumThreads: threads, query: { queryPollingInterval: 0 } };
     (async () => {
         const db = new ThreadsBindings(new lib.VoidLogger(), lib.NODE_RUNTIME);
         await db.instantiate();
@@ -86,7 +88,7 @@ function child(scenario) {
         const submitted = Date.now();
         let header = db.startPendingQuery(conn, query, false);
         if (scenario === 'finished-then-close') {
-            let polls = 1;
+            let polls = 0;
             while (header === null) {
                 header = db.pollPendingQuery(conn);
                 polls++;
@@ -99,7 +101,11 @@ function child(scenario) {
                 process.exit(3);
             }
             step(`query still running after one poll, ${Date.now() - submitted}ms`);
-            if (scenario === 'cancel-then-close') step(`cancelPendingQuery -> ${db.cancelPendingQuery(conn)}`);
+            if (scenario === 'cancel-then-close') {
+                const cancelled = db.cancelPendingQuery(conn);
+                assert.equal(cancelled, true, 'Expected cancellation of an active pending query');
+                step(`cancelPendingQuery -> ${cancelled}`);
+            }
         }
         const teardown = {
             reset: ['db.reset()', () => db.reset()],
@@ -118,6 +124,34 @@ function child(scenario) {
         step(`ERROR ${error.stack || error}`);
         process.exit(1);
     });
+}
+
+function runScenario(name, { threads, copies, queryName, timeout, report = log }, runChild = spawnSync) {
+    let attempts = 0;
+    let outcome;
+    while (attempts < maxAttempts) {
+        attempts++;
+        report(`${name} (maximumThreads ${threads}, ${copies} copies, ${queryName}, attempt ${attempts}/${maxAttempts}):`);
+        const run = runChild(
+            process.execPath,
+            [__filename, '--child', `--threads=${threads}`, `--copies=${copies}`, `--query=${queryName}`, name],
+            { stdio: 'inherit', timeout: timeout * 1000, killSignal: 'SIGKILL' },
+        );
+        outcome = run.signal === 'SIGKILL' ? 'HANG'
+            : run.error ? `error ${run.error.code || run.error.message}`
+            : run.signal ? `signal ${run.signal}`
+            : run.status === 0 ? 'ok' : `exit ${run.status}`;
+        if (outcome === 'HANG') report(`  killed after ${timeout}s`);
+        if (run.status !== 3 || run.error || run.signal) break;
+        if (attempts === maxAttempts) {
+            outcome = 'INCONCLUSIVE';
+            report(`  no active query observed after ${maxAttempts} attempts`);
+            break;
+        }
+        copies *= 2;
+        report(`  query finished too early; retrying with ${copies} copies`);
+    }
+    return { name, threads, copies, attempts, outcome, expect: scenarios[name].expect };
 }
 
 function parent() {
@@ -147,24 +181,20 @@ function parent() {
     const results = [];
     for (const name of names) {
         const threads = scenarios[name].threads ?? option('threads', 4);
-        const copies = scenarios[name].copies ?? option('copies', 16);
-        log(`${name} (maximumThreads ${threads}, ${copies} copies, ${queryName}, expected ${scenarios[name].expect}):`);
-        const run = spawnSync(
-            process.execPath,
-            [__filename, '--child', `--threads=${threads}`, `--copies=${copies}`, `--query=${queryName}`, name],
-            { stdio: 'inherit', timeout: timeout * 1000, killSignal: 'SIGKILL' },
-        );
-        const outcome = run.signal === 'SIGKILL' ? 'HANG' : run.status === 0 ? 'ok' : `exit ${run.status}`;
-        if (outcome === 'HANG') log(`  killed after ${timeout}s`);
-        results.push({ name, threads, outcome, expect: scenarios[name].expect });
+        const copies = Number(scenarios[name].copies ?? option('copies', 16));
+        results.push(runScenario(name, { threads, copies, queryName, timeout }));
     }
     log('');
-    for (const { name, threads, outcome, expect } of results) {
+    for (const { name, threads, copies, attempts, outcome, expect } of results) {
         const note = outcome === expect ? '' : `(expected ${expect})`;
-        log(`${name.padEnd(22)} threads=${threads}  ${outcome.padEnd(7)} ${note}`);
+        log(`${name.padEnd(22)} threads=${threads}  ${outcome.padEnd(12)} copies=${copies} attempts=${attempts} ${note}`);
     }
     process.exitCode = results.every(result => result.outcome === result.expect) ? 0 : 1;
 }
 
-if (args.includes('--child')) child(selected[0]);
-else parent();
+module.exports = { runScenario };
+
+if (require.main === module) {
+    if (args.includes('--child')) child(selected[0]);
+    else parent();
+}

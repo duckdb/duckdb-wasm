@@ -314,6 +314,23 @@ else
 	yarn workspace @duckdb/duckdb-wasm test
 endif
 
+.PHONY: js_tests_browser_threads
+js_tests_browser_threads: js_release
+	yarn workspace @duckdb/duckdb-wasm test:chrome:threads
+
+.PHONY: js_tests_browser_threads_smoke
+js_tests_browser_threads_smoke: js_release
+	yarn workspace @duckdb/duckdb-wasm test:chrome:threads:smoke
+
+.PHONY: wasm_tests_threads_close_inflight
+wasm_tests_threads_close_inflight: js_release
+	node --test ${ROOT_DIR}/scripts/test_threads_close_inflight.test.cjs
+	node ${ROOT_DIR}/scripts/test_threads_close_inflight.cjs
+
+.PHONY: wasm_tests_pthread_glue
+wasm_tests_pthread_glue:
+	node ${ROOT_DIR}/scripts/test_wasm_pthread_glue.cjs ${ROOT_DIR}/packages/duckdb-wasm/src/bindings/duckdb-threads.js
+
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser
 js_tests_browser: js_debug build/data
