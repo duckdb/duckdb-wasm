@@ -30,7 +30,7 @@
 #include "duckdb/function/table/arrow.hpp"
 #include "duckdb/function/table/arrow/arrow_duck_schema.hpp"
 #include "duckdb/main/buffered_data/buffered_data.hpp"
-#include "duckdb/main/client_context.hpp"
+#include "duckdb/main/prepared_statement.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/main/settings.hpp"
 #include "duckdb/parser/expression/columnref_expression.hpp"
@@ -876,9 +876,13 @@ web::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::st
             auto scan = TableFunctionScan("read_json", std::move(unnamed_params), named_params);
             auto scan_select = make_uniq<SelectStatement>();
             scan_select->node = SelectStar(scan->Copy());
-            auto signature = connection_.context->BindStatement(std::move(scan_select));
+            // Prepared rather than only bound, so a failed scan aborts an open transaction as a failed statement does
+            auto prepared = connection_.Prepare(std::move(scan_select));
+            if (prepared->HasError()) {
+                prepared->GetErrorObject().Throw();
+            }
             vector<string> unnest_columns;
-            for (auto& name : signature.names) {
+            for (auto& name : prepared->GetNames()) {
                 unnest_columns.push_back("unnest(" + KeywordHelper::WriteQuoted(name.GetIdentifierName(), '"') +
                                          ") AS " + KeywordHelper::WriteQuoted(name.GetIdentifierName(), '"'));
             }
