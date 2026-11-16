@@ -42,7 +42,8 @@ extern "C" void duckdb_web_fail_with(const char* path) { throw std::runtime_erro
 /// Reset the database
 void duckdb_web_reset(WASMResponse* packed) {
     GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.Reset());
+    auto r = query_thread::Run([&] { return webdb.Reset(); });
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 
 /// Create a conn
@@ -55,7 +56,7 @@ ConnectionHdl duckdb_web_connect() {
 void duckdb_web_disconnect(ConnectionHdl connHdl) {
     GET_WEBDB_OR_RETURN();
     auto c = reinterpret_cast<WebDB::Connection*>(connHdl);
-    webdb.Disconnect(c);
+    query_thread::Run([&] { webdb.Disconnect(c); });
 }
 /// Access a buffer
 void* duckdb_web_access_buffer(ConnectionHdl /*connHdl*/, BufferHdl bufferHdl) {
@@ -74,7 +75,8 @@ void duckdb_web_flush_file(const char* path) {
 /// Open a database
 void duckdb_web_open(WASMResponse* packed, const char* args) {
     GET_WEBDB(*packed);
-    WASMResponseBuffer::Get().Store(*packed, webdb.Open(args));
+    auto r = query_thread::Run([&] { return webdb.Open(args); });
+    WASMResponseBuffer::Get().Store(*packed, std::move(r));
 }
 /// Lookup global file info
 void duckdb_web_get_global_file_info(WASMResponse* packed, size_t cache_epoch) {

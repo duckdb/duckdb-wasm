@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "duckdb/web/io/web_filesystem.h"
+#include "duckdb/web/main_thread.h"
 #include "duckdb/web/webdb.h"
 
 namespace duckdb {
@@ -24,12 +25,16 @@ extern "C" bool duckdb_web_test_platform_feature(uint32_t feature);
 bool duckdb_web_test_platform_feature(uint32_t _feature) { return false; }
 #endif
 
+bool TestPlatformFeature(PlatformFeature feature) {
+    return main_thread::OnMainThread([&] { return duckdb_web_test_platform_feature(feature); });
+}
+
 }  // namespace
 
 /// Get feature flags
 uint32_t ResolveFeatureFlags() {
     auto flags = STATIC_WEBDB_FEATURES;
-    if (duckdb_web_test_platform_feature(PlatformFeature::BIGINT64ARRAY)) {
+    if (TestPlatformFeature(PlatformFeature::BIGINT64ARRAY)) {
         flags |= 1 << WebDBFeature::BIGINT64ARRAY;
     }
     return flags;
@@ -87,7 +92,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         }
         if (doc.HasMember("homeDirectory") && doc["homeDirectory"].IsString()) {
             config.home_directory = doc["homeDirectory"].GetString();
-        } else if (duckdb_web_test_platform_feature(PlatformFeature::OPFS)) {
+        } else if (TestPlatformFeature(PlatformFeature::OPFS)) {
             // What DuckDB keeps next to the user (persistent secrets) persists across sessions
             config.home_directory = "opfs://home";
         }
@@ -135,7 +140,7 @@ WebDBConfig WebDBConfig::ReadFrom(std::string_view args_json) {
         }
     }
     if (!config.query.cast_bigint_to_double.has_value()) {
-        config.query.cast_bigint_to_double = !duckdb_web_test_platform_feature(PlatformFeature::BIGINT64ARRAY);
+        config.query.cast_bigint_to_double = !TestPlatformFeature(PlatformFeature::BIGINT64ARRAY);
     }
     return config;
 }
