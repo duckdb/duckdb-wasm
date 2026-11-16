@@ -191,6 +191,10 @@ export function testArrowInsert(db: () => duckdb.DuckDBBindings): void {
                 compareTable(results, test.expectedColumns);
             });
         }
+        it('empty table name', () => {
+            const table = arrow.tableFromArrays({ a: Int32Array.from([1, 2, 3]) });
+            expect(() => conn.insertArrowTable(table, { name: '' })).toThrowError(/Empty table name not supported/);
+        });
     });
 }
 
