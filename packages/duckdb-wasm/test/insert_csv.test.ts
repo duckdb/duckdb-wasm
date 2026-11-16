@@ -202,6 +202,11 @@ export function testCSVInsert(db: () => duckdb.DuckDBBindings): void {
                 compareTable(results, test.expectedColumns);
             });
         }
+        it('missing file names the table', () => {
+            expect(() => conn.insertCSVFromPath('missing.csv', { name: 'missing_csv' })).toThrowError(
+                /Failed to create table 'missing_csv': .*No files found/,
+            );
+        });
     });
 }
 
