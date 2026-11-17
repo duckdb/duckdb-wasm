@@ -36,9 +36,10 @@ export function test2301(db: () => duckdb.AsyncDuckDB): void {
         it('2301 send', async () => {
             for (const allowStreamResult of [false, true]) {
                 const reader = await conn.send(SQL, allowStreamResult);
-                const batches = await reader.readAll();
-                expectCRS(reader.schema);
-                expect(batches.reduce((n, b) => n + b.numRows, 0)).toEqual(1);
+                // readAll closes the reader at the end of the stream, which resets reader.schema
+                const table = new arrow.Table(await reader.readAll());
+                expectCRS(table.schema);
+                expect(table.numRows).toEqual(1);
             }
         });
 
