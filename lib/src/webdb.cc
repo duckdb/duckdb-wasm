@@ -19,6 +19,7 @@
 #include "duckdb.hpp"
 #include "duckdb/common/arrow/arrow.hpp"
 #include "duckdb/common/arrow/arrow_converter.hpp"
+#include "duckdb/common/exception/parser_exception.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/http_util.hpp"
 #include "duckdb/common/types.hpp"
@@ -29,12 +30,23 @@
 #include "duckdb/function/table/arrow.hpp"
 #include "duckdb/function/table/arrow/arrow_duck_schema.hpp"
 #include "duckdb/main/buffered_data/buffered_data.hpp"
+#include "duckdb/main/prepared_statement.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/main/settings.hpp"
+#include "duckdb/parser/expression/columnref_expression.hpp"
+#include "duckdb/parser/expression/comparison_expression.hpp"
 #include "duckdb/parser/expression/constant_expression.hpp"
+#include "duckdb/parser/expression/function_expression.hpp"
+#include "duckdb/parser/expression/star_expression.hpp"
 #include "duckdb/parser/keyword_helper.hpp"
 #include "duckdb/parser/parsed_data/create_scalar_function_info.hpp"
+#include "duckdb/parser/parsed_data/create_table_info.hpp"
 #include "duckdb/parser/parser.hpp"
+#include "duckdb/parser/query_node/select_node.hpp"
+#include "duckdb/parser/statement/create_statement.hpp"
+#include "duckdb/parser/statement/insert_statement.hpp"
+#include "duckdb/parser/statement/select_statement.hpp"
+#include "duckdb/parser/tableref/table_function_ref.hpp"
 #include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/web/arrow_insert_options.h"
 #include "duckdb/web/arrow_ipc_writer.h"
@@ -45,7 +57,6 @@
 #include "duckdb/web/extensions/json_extension.h"
 #include "duckdb/web/extensions/parquet_extension.h"
 #include "duckdb/web/extensions/tpch_extension.h"
-#include "duckdb/web/functions/table_function_relation.h"
 #include "duckdb/web/http_wasm.h"
 #include "duckdb/web/io/buffered_filesystem.h"
 #include "duckdb/web/io/file_page_buffer.h"
@@ -144,6 +155,49 @@ Value ColumnTypesValue(const child_list_t<LogicalType>& columns) {
         values.emplace_back(col.first, Value(col.second.ToString()));
     }
     return Value::STRUCT(std::move(values));
+}
+unique_ptr<TableFunctionRef> TableFunctionScan(const std::string& function_name, vector<Value> unnamed_params,
+                                               const std::unordered_map<std::string, Value>& named_params = {}) {
+    vector<unique_ptr<ParsedExpression>> children;
+    for (auto& param : unnamed_params) {
+        children.push_back(ConstantExpression::FromValue(param));
+    }
+    for (auto& [name, value] : named_params) {
+        children.push_back(make_uniq<ComparisonExpression>(ExpressionType::COMPARE_EQUAL,
+                                                           make_uniq<ColumnRefExpression>(Identifier(name)),
+                                                           ConstantExpression::FromValue(value)));
+    }
+    auto scan = make_uniq<TableFunctionRef>();
+    scan->function = make_uniq<FunctionExpression>(Identifier(function_name), std::move(children));
+    return scan;
+}
+unique_ptr<QueryNode> SelectStar(unique_ptr<TableRef> from) {
+    auto node = make_uniq<SelectNode>();
+    node->select_list.push_back(make_uniq<StarExpression>());
+    node->from_table = std::move(from);
+    return std::move(node);
+}
+void CreateOrInsert(duckdb::Connection& connection, bool create_new, const std::string& schema_name,
+                    const std::string& table_name, unique_ptr<QueryNode> node) {
+    auto select = make_uniq<SelectStatement>();
+    select->node = std::move(node);
+    auto name = QualifiedName(Identifier::InvalidCatalog(), Identifier(schema_name), Identifier(table_name));
+    if (create_new) {
+        if (table_name.empty()) {
+            throw ParserException("Empty table name not supported");
+        }
+        auto info = make_uniq<CreateTableInfo>();
+        info->SetQualifiedName(std::move(name));
+        info->query = std::move(select);
+        auto statement = make_uniq<CreateStatement>();
+        statement->info = std::move(info);
+        connection.Query(std::move(statement))->ThrowIfError("Failed to create table '" + table_name + "': ");
+    } else {
+        auto statement = make_uniq<InsertStatement>();
+        statement->node->qualified_name = std::move(name);
+        statement->node->select_statement = std::move(select);
+        connection.Query(std::move(statement))->ThrowIfError("Failed to insert into table '" + table_name + "': ");
+    }
 }
 /// Does the buffered Arrow IPC stream end with its end-of-stream marker? Messages are scanned from the given
 /// offset, which is advanced past every complete message.
@@ -691,14 +745,11 @@ web::Status WebDB::Connection::InsertArrowFromIPCStream(nonstd::span<const uint8
         buffer_struct.emplace_back("size", Value::UBIGINT(arrow_ipc_stream_.size()));
         auto buffer_value = Value::STRUCT(std::move(buffer_struct));
         auto buffers = Value::LIST(buffer_value.type(), {buffer_value});
-        auto func = connection_.TableFunction("scan_arrow_ipc", vector<Value>{std::move(buffers)});
+        auto scan = TableFunctionScan("scan_arrow_ipc", vector<Value>{std::move(buffers)});
 
         /// Create or insert
-        if (arrow_insert_options_->create_new) {
-            func->Create(Identifier(arrow_insert_options_->schema_name), Identifier(arrow_insert_options_->table_name));
-        } else {
-            func->Insert(Identifier(arrow_insert_options_->schema_name), Identifier(arrow_insert_options_->table_name));
-        }
+        CreateOrInsert(connection_, arrow_insert_options_->create_new, arrow_insert_options_->schema_name,
+                       arrow_insert_options_->table_name, SelectStar(std::move(scan)));
 
         // Reset the ipc stream
         arrow_insert_options_.reset();
@@ -756,15 +807,11 @@ web::Status WebDB::Connection::InsertCSVFromPath(std::string_view path, std::str
         named_params.insert({"auto_detect", Value::BOOLEAN(options.auto_detect.value_or(true))});
 
         /// Execute the csv scan
-        auto func = duckdb::make_shared_ptr<TableFunctionRelation>(connection_.context, "read_csv",
-                                                                   std::move(unnamed_params), named_params);
+        auto scan = TableFunctionScan("read_csv", std::move(unnamed_params), named_params);
 
         /// Create or insert
-        if (options.create_new) {
-            func->Create(Identifier(options.schema_name), Identifier(options.table_name));
-        } else {
-            func->Insert(Identifier(options.schema_name), Identifier(options.table_name));
-        }
+        CreateOrInsert(connection_, options.create_new, options.schema_name, options.table_name,
+                       SelectStar(std::move(scan)));
 
     } catch (const std::exception& e) {
         return web::Status::UnknownError(e.what());
@@ -806,15 +853,14 @@ web::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::st
         std::vector<Value> unnamed_params;
         unnamed_params.emplace_back(std::string{path});
         std::unordered_map<std::string, Value> named_params;
-        shared_ptr<Relation> rel;
+        unique_ptr<QueryNode> node;
         if (shape == json::JSONTableShape::ROW_ARRAY) {
             // [{"a":1,"b":2}, {"a":3,"b":4}]
             named_params.insert({"format", Value("array")});
             if (options.columns.has_value()) {
                 named_params.insert({"columns", ColumnTypesValue(*options.columns)});
             }
-            rel = duckdb::make_shared_ptr<TableFunctionRelation>(connection_.context, "read_json",
-                                                                 std::move(unnamed_params), named_params);
+            node = SelectStar(TableFunctionScan("read_json", std::move(unnamed_params), named_params));
         } else {
             // {"a":[1,3],"b":[2,4]}: a single record of lists that is unnested into rows
             named_params.insert({"format", Value("unstructured")});
@@ -827,23 +873,37 @@ web::Status WebDB::Connection::InsertJSONFromPath(std::string_view path, std::st
                 }
                 named_params.insert({"columns", ColumnTypesValue(list_columns)});
             }
-            rel = duckdb::make_shared_ptr<TableFunctionRelation>(connection_.context, "read_json",
-                                                                 std::move(unnamed_params), named_params);
-            vector<string> unnest_columns;
-            for (auto& column : rel->Columns()) {
-                unnest_columns.push_back("unnest(" +
-                                         KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"') + ") AS " +
-                                         KeywordHelper::WriteQuoted(column.Name().GetIdentifierName(), '"'));
+            auto scan = TableFunctionScan("read_json", std::move(unnamed_params), named_params);
+            auto scan_select = make_uniq<SelectStatement>();
+            scan_select->node = SelectStar(scan->Copy());
+            // Prepared rather than only bound, so a failed scan aborts an open transaction as a failed statement does
+            auto prepared = connection_.Prepare(std::move(scan_select));
+            if (prepared->HasError()) {
+                prepared->GetErrorObject().Throw();
             }
-            rel = rel->Project(unnest_columns);
+            vector<string> unnest_columns;
+            for (auto& name : prepared->GetNames()) {
+                unnest_columns.push_back("unnest(" + KeywordHelper::WriteQuoted(name.GetIdentifierName(), '"') +
+                                         ") AS " + KeywordHelper::WriteQuoted(name.GetIdentifierName(), '"'));
+            }
+            if (unnest_columns.empty()) {
+                throw ParserException("Zero expressions provided");
+            }
+            auto projection = make_uniq<SelectNode>();
+            for (auto& column : unnest_columns) {
+                auto expressions = Parser(*connection_.context).ParseExpressionList(column);
+                if (expressions.size() != 1) {
+                    throw ParserException("Expected a single expression in the expression list");
+                }
+                projection->select_list.push_back(std::move(expressions[0]));
+            }
+            projection->from_table = std::move(scan);
+            projection->aggregate_handling = AggregateHandling::NO_AGGREGATES_ALLOWED;
+            node = std::move(projection);
         }
 
         /// Create or insert
-        if (options.create_new) {
-            rel->Create(Identifier(schema_name), Identifier(options.table_name));
-        } else {
-            rel->Insert(Identifier(schema_name), Identifier(options.table_name));
-        }
+        CreateOrInsert(connection_, options.create_new, schema_name, options.table_name, std::move(node));
 
     } catch (const std::exception& e) {
         return web::Status::UnknownError(e.what());
