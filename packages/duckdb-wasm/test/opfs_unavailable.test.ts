@@ -62,8 +62,42 @@ async function selectAnswer(conn: AsyncDuckDBConnection): Promise<number> {
     return result.getChildAt(0)?.get(0);
 }
 
-/** DuckDB where the browser refuses OPFS. `bundle` is a single-threaded bundle */
+/** DuckDB where OPFS is disabled by the config or refused by the browser. `bundle` is a single-threaded bundle */
 export function testOPFSUnavailable(bundle: () => DuckDBBundle): void {
+    describe('OPFS disabled', () => {
+        const instance = new Instance();
+
+        afterEach(async () => {
+            await instance.stop();
+        });
+
+        it('opens without OPFS: no opfs://home', async () => {
+            const conn = await instance.open(bundle(), { opfs: { disabled: true } });
+            expect(await selectAnswer(conn)).toEqual(42);
+            expect(await homeDirectory(conn)).not.toEqual('opfs://home');
+        });
+
+        it('refuses an opfs:// database', async () => {
+            await instance.start(bundle());
+            await expectAsync(
+                instance.db!.open({ path: 'opfs://opfs_disabled.db', opfs: { disabled: true } }),
+            ).toBeRejectedWithError(/OPFS is disabled in the config/);
+        });
+
+        it("runs SQL with an opfs:// string under fileHandling 'auto'", async () => {
+            const conn = await instance.open(bundle(), { opfs: { disabled: true, fileHandling: 'auto' } });
+            const result = await conn.query(`SELECT 'opfs://opfs_disabled.csv' AS s`);
+            expect(result.getChildAt(0)?.get(0)).toEqual('opfs://opfs_disabled.csv');
+        });
+
+        it('refuses registering opfs:// files', async () => {
+            await instance.open(bundle(), { opfs: { disabled: true } });
+            await expectAsync(instance.db!.registerOPFSFileName('opfs://opfs_disabled.csv')).toBeRejectedWithError(
+                /OPFS is disabled in the config/,
+            );
+        });
+    });
+
     for (const refusal of REFUSALS) {
         describe(`OPFS refused by the browser (${refusal.name}, as in ${refusal.browser})`, () => {
             const instance = new Instance();
@@ -89,6 +123,11 @@ export function testOPFSUnavailable(bundle: () => DuckDBBundle): void {
                 await expectAsync(instance.db!.open({ path: 'opfs://opfs_refused.db' })).toBeRejectedWithError(
                     new RegExp(REFUSAL_MESSAGE),
                 );
+            });
+
+            it('opens with OPFS disabled', async () => {
+                const conn = await instance.open(bundle(), { opfs: { disabled: true } }, refusal);
+                expect(await selectAnswer(conn)).toEqual(42);
             });
         });
     }
