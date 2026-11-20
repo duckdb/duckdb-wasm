@@ -202,6 +202,24 @@ export function testCSVInsert(db: () => duckdb.DuckDBBindings): void {
                 compareTable(results, test.expectedColumns);
             });
         }
+        it('append with create false', () => {
+            conn.query('DROP TABLE IF EXISTS main.appended');
+            db().registerFileBuffer(TEST_FILE, encoder.encode('a,b\n1,2\n3,4\n'));
+            conn.insertCSVFromPath(TEST_FILE, { name: 'appended' });
+            conn.insertCSVFromPath(TEST_FILE, { name: 'appended', create: false });
+            const rows = conn.query('SELECT a, b FROM main.appended ORDER BY a').toArray();
+            expect(rows.map(r => [Number(r.a), Number(r.b)])).toEqual([
+                [1, 2],
+                [1, 2],
+                [3, 4],
+                [3, 4],
+            ]);
+        });
+        it('missing file names the table', () => {
+            expect(() => conn.insertCSVFromPath('missing.csv', { name: 'missing_csv' })).toThrowError(
+                /Failed to create table 'missing_csv': .*No files found/,
+            );
+        });
     });
 }
 
