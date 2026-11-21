@@ -241,7 +241,7 @@ export function callScalarUDF(
                 // Now copy all the strings to the new buffer back to back
                 let writerOffset = 0;
                 for (let row = 0; row < desc.rows; ++row) {
-                    resultData[row] = writerOffset;
+                    resultData[row] = resultStringPtr + writerOffset;
                     const resultUTF8 = resultDataUTF8[row];
                     const writer = resultStringBuf.subarray(writerOffset, writerOffset + resultUTF8.length);
                     writer.set(resultUTF8);
