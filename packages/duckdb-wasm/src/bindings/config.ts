@@ -40,6 +40,12 @@ export interface DuckDBOPFSConfig {
      * - "manual": Files must be manually registered and dropped.
      */
     fileHandling?: "auto" | "manual";
+    /**
+     * Do not use OPFS, even where the browser has it: it is not mounted, DuckDB's home directory is not
+     * opfs://home, and opening or registering `opfs://` files fails. Applies to a worker that has not mounted
+     * OPFS for an earlier open.
+     */
+    disabled?: boolean;
 }
 
 export enum DuckDBAccessMode {

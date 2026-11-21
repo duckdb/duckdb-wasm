@@ -156,13 +156,19 @@ export abstract class AsyncDuckDBDispatcher implements Logger {
 
                 case WorkerRequestType.OPEN: {
                     const path = request.data.path;
+                    const opfsDisabled = request.data.opfs?.disabled === true;
                     if (path?.startsWith('opfs://')) {
+                        if (opfsDisabled) {
+                            throw new Error(`Cannot open ${path}: OPFS is disabled in the config (opfs.disabled)`);
+                        }
                         await this._bindings.prepareDBFileHandle(path, DuckDBDataProtocol.BROWSER_FSACCESS);
                         request.data.useDirectIO = true;
                     }
-                    // DuckDB's home directory is opfs://home where OPFS exists, it is in use from the start
-                    this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'mount' } as any);
-                    await this._bindings.mountOPFS();
+                    // DuckDB's home directory is opfs://home where OPFS is mounted, it is in use from the start
+                    if (!opfsDisabled) {
+                        this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'mount' } as any);
+                        await this._bindings.mountOPFS();
+                    }
                     this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'open' } as any);
                     this._bindings.open(request.data);
                     this.log({ timestamp: new Date(), level: 1, origin: 3, topic: 3, event: 3, value: 'opened' } as any);
