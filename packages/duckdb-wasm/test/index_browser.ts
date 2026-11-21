@@ -125,6 +125,9 @@ import { longQueries } from './long_queries.test';
 import { testPivot } from './pivot.test';
 import { testSpill } from './spill.test';
 import { testJsBufferFile } from './js_buffer_file.test';
+import { testInstantiation } from './instantiation.test';
+
+testInstantiation();
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;

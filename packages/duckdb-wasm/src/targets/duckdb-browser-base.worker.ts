@@ -15,7 +15,7 @@ class WebWorker extends AsyncDuckDBDispatcher {
     protected async instantiate(
         mainModuleURL: string,
         pthreadWorkerURL: string | null,
-        progress: (p: InstantiationProgress) => void,
+        progress?: (p: InstantiationProgress) => void,
     ): Promise<DuckDBBindings> {
         const bindings = new DuckDB(this, BROWSER_RUNTIME, mainModuleURL, pthreadWorkerURL);
         return await bindings.instantiate(progress);
