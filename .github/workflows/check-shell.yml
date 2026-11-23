@@ -1,0 +1,22 @@
+name: Check shell page
+
+on:
+    pull_request:
+        branches: [gh-pages]
+    push:
+        branches: [gh-pages]
+
+permissions:
+    contents: read
+
+jobs:
+    check:
+        name: Validate shell page
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: actions/setup-python@v6
+              with:
+                  python-version: '3.12'
+            - name: Check file references, hashes and licences
+              run: python3 scripts/shell_page.py check .
