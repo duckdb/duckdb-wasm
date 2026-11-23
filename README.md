@@ -2,14 +2,14 @@
 
 GitHub Pages publishes the files on the `gh-pages` branch at shell.duckdb.org. The shell's JavaScript used to be written directly in `index.html`, and the page downloaded xterm from jsDelivr. With this change, `index.html` loads separate JavaScript files from the same site.
 
-Use `scripts/shell_page.py` in this checkout to rename and check the page scripts before deployment. The proposed security headers must be configured separately at Cloudflare.
+Use `scripts/shell_page.py` in this checkout to rename page scripts, upgrade terminal dependencies and check the page before deployment. The proposed security headers must be configured separately at Cloudflare.
 
 ```
 index.html       HTML, styles and file URLs for the shell
 static/shell/    the shell's JavaScript, named <name>.<hash>.js
 static/vendor/   third-party files, grouped by package and version
 static/assets/   compiled DuckDB engine, worker and shell frontend
-scripts/         page maintenance tool
+scripts/         page maintenance and terminal upgrade tool
 ```
 
 ## Before and after
@@ -17,7 +17,7 @@ scripts/         page maintenance tool
 | | Before | After |
 |---|---|---|
 | Shell JavaScript | About 1400 lines written directly inside four `<script>` elements in `index.html` | Four `.js` files in `static/shell/`, loaded with `<script src="…">` |
-| Terminal (xterm, addon-fit) | Downloaded from jsDelivr as generated `.min` files, without a browser integrity check | Files from the npm packages, stored in `static/vendor/xterm-5.5.0/` and `static/vendor/addon-fit-0.10.0/` with each package's `LICENSE` |
+| Terminal (xterm, addon-fit) | Downloaded from jsDelivr as version-pinned npm files, with browser Subresource Integrity (SRI) checks | The same npm files hosted under `static/vendor/xterm-5.5.0/` and `static/vendor/addon-fit-0.10.0/`, with each package's `LICENSE` |
 | URLs of engine, worker and frontend | The JavaScript object `SHELL_ASSETS`, defined directly in `index.html` | Four `data-` attributes on the `<script>` element that loads `shell-boot` |
 | Editing shell JavaScript | Edit `index.html`, then push | Edit the `.js` file, run `shell_page.py rename`, then push |
 | Updating engine or worker files | Change their URLs in `SHELL_ASSETS` in `index.html`, then push | Change the corresponding `data-` attributes in `index.html`, then push |
@@ -33,7 +33,7 @@ The compiled files stay in `static/assets/`. Their names still include a hash of
 flowchart TD
     code["Edit shell JavaScript<br/>a file in static/shell/"]
     bump["Deploy a tested shell/DuckDB build<br/>add compiled files and update data- attributes"]
-    xterm["Upgrade npm terminal dependencies<br/>new version folders and checksums"]
+    xterm["shell_page.py upgrade-terminal<br/>downloads npm files and updates URLs/checksums"]
     rename["shell_page.py rename<br/>puts the content hash in the filename<br/>and updates index.html"]
     check["shell_page.py check<br/>checks file URLs, hashes and licences"]
     push["Commit and push to gh-pages"]
@@ -92,18 +92,28 @@ The current files come from npm packages:
 - `@xterm/xterm@5.5.0`: `lib/xterm.js`, `css/xterm.css` and `LICENSE`.
 - `@xterm/addon-fit@0.10.0`: `lib/addon-fit.js` and `LICENSE`.
 
-1. Select compatible package versions and download their npm tarballs. Verify each tarball against the npm registry's integrity value.
-2. Copy the package files, without editing them, into new folders under `static/vendor/`: `xterm-<version>/` and `addon-fit-<version>/`. Keep each package's `LICENSE` beside its files.
-3. Update the stylesheet and two script URLs in `index.html` to use the new version folders.
-4. Update the file paths and expected SHA-256 values in `VENDORED` in `scripts/shell_page.py`. These are full SHA-256 digests encoded as Base64 with a `sha256-` prefix, not the shortened hexadecimal hashes used in script filenames.
-5. Run `python3 scripts/shell_page.py check .`, then test typing, resizing, colours and terminal links in a browser.
-6. Commit the package files, `index.html` and the updated checksum entries together, then deploy. Keep the previous version folders available during rollout. After deployment, run the HTTP 200 check above.
+From the root of this checkout, select exact versions and run:
+
+```sh
+# Replace these examples with the new versions you have reviewed.
+python3 scripts/shell_page.py upgrade-terminal . --xterm 5.5.0 --addon-fit 0.10.0
+git diff -- index.html scripts/shell_page.py
+git status --short
+```
+
+The example versions are already installed, so the command refuses to overwrite their folders. Omit `--xterm` or `--addon-fit` to upgrade only the other package. A checkout path other than `.` can be supplied when running from another directory.
+
+`upgrade-terminal` downloads exact versions from the npm registry, verifies each tarball's SHA-512 against the registry's integrity value, and copies only the required package files and licences. It updates the HTML URLs and expected SHA-256 values in `VENDORED` in `scripts/shell_page.py`, then runs the page check. No package installation or npm lifecycle script runs.
+
+All downloads and package validation finish before any files are written. Invalid versions, existing destination folders, a tarball integrity mismatch or a missing package file stop the upgrade. Previous version folders are preserved. Validation still works if Python assertions are disabled. Filesystem write failures are not rolled back; inspect the working tree before retrying.
+
+Test typing, resizing, colours and terminal links in a browser; the command does not determine whether the selected versions are compatible. Update the version references in this README. Commit the new folders, `index.html`, `scripts/shell_page.py` and documentation together, then deploy. After deployment, run the HTTP 200 check above.
 
 ## How these changes address the audit
 
 After `.aws login`, JavaScript running in the page can read its AWS credentials. The file changes remove third-party CDN scripts and allow a CSP that blocks JavaScript written directly in HTML. The remaining protections require response headers at Cloudflare:
 
-- Self-hosted xterm: the browser downloads the terminal files from the shell's own site instead of jsDelivr. `check` compares them with the SHA-256 of the npm package files. The previous `.min` URLs are generated by jsDelivr and are not suitable for stable Subresource Integrity (SRI) checks.
+- Self-hosted xterm: the browser downloads the terminal files from the shell's own site instead of jsDelivr. Upstream already added browser SRI checks to the CDN files; this change chooses the audit's alternative of DuckDB-controlled hosting and allows `script-src 'self'`. `check` compares the local files with the SHA-256 of the npm package files before deployment; it is not browser SRI.
 - Content Security Policy (CSP): the old page would stop working under the proposed `script-src 'self' 'wasm-unsafe-eval'` policy. The new page works with it: the browser allows JavaScript files from the same site and WebAssembly compilation, but blocks JavaScript written directly in HTML, `eval()` and scripts from other sites.
 - X-Frame-Options and CSP `frame-ancestors`: block other sites from loading the sign-in page in an iframe and covering it with misleading controls. Sites that want a DuckDB shell include the code on their own pages instead.
 - Cross-Origin-Opener-Policy (COOP): `same-origin` prevents a page on another site from keeping access to a shell tab it opened.
@@ -114,3 +124,84 @@ Limitations:
 - The headers take effect only when they are set at Cloudflare.
 - Nothing runs `check` automatically. It is a manual step until the site is built by a workflow.
 - A copy of the shell on another domain gets none of the headers.
+
+## TODO: configure security headers at Cloudflare
+
+These changes are not applied by this repository. The Cloudflare administrator must configure them after deploying this page change.
+
+Domain: **`shell.duckdb.org` only**, in the Cloudflare zone that manages that hostname (expected: `duckdb.org`). Do not apply these rules to the entire zone, other DuckDB hosts, or customer domains.
+
+### Response Header Transform Rules
+
+In the Cloudflare dashboard, select the zone, then **Rules > Overview > Create rule > Response Header Transform Rule**. Use **Set static**, not **Add static**: additional CSP headers would impose additional restrictions instead of replacing the policy.
+
+Create these rules in the following order. Later rules replace the CSP set by the first rule.
+
+1. [ ] **Shell: all responses.** Filter:
+
+   ```text
+   http.host eq "shell.duckdb.org"
+   ```
+
+   Set these header names and values:
+
+   ```http
+   Strict-Transport-Security: max-age=86400; includeSubDomains
+   Cross-Origin-Opener-Policy: same-origin
+   X-Frame-Options: DENY
+   X-Content-Type-Options: nosniff
+   Referrer-Policy: no-referrer
+   Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://duckdb.org; img-src 'self' data: https://duckdb.org; font-src https://duckdb.org; connect-src 'self' https://us-east-1.testing.oauth.signin.aws; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+   ```
+
+   This covers `/`, `/index.html`, `/oauth/callback`, `/oauth/callback/` and other paths served with the shell HTML. The testing Sign-In origin above matches `AWS_SIGNIN_CONFIG.endpoint` in the current page. Before a production rollout, replace it with the AWS-approved production origin in both the page configuration and this policy; do not guess that origin or broaden it to all HTTPS hosts.
+
+2. [ ] **Shell: static files and workers.** Filter:
+
+   ```text
+   http.host eq "shell.duckdb.org" and starts_with(http.request.uri.path, "/static/")
+   ```
+
+   Set only this header; keep the other headers from rule 1:
+
+   ```http
+   Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https:; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+   ```
+
+   This covers `/static/assets/*`, `/static/shell/*` and `/static/vendor/*`. The engine worker needs its own policy: `connect-src https:` allows HTTPS datasets, extensions and AWS API requests. Applying the page's narrower policy to the worker would block those requests.
+
+3. [ ] **Shell: API documentation.** Filter:
+
+   ```text
+   http.host eq "shell.duckdb.org" and starts_with(http.request.uri.path, "/docs/")
+   ```
+
+   Set only this header; keep the other headers from rule 1:
+
+   ```http
+   Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'sha256-10m9WSfFWWa1qM9Z5+4hPCEFJP7DRPogeAkaBk+dSEo='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+   ```
+
+   This covers `/docs/` and its pages and assets. The SHA-256 permits the inline theme script in the documentation currently on this branch; recalculate it if a documentation update changes that script.
+
+### Other Cloudflare settings and rollout
+
+- [ ] In **Rules > Overview**, create a **Single Redirect** for `http://shell.duckdb.org/*` to `https://shell.duckdb.org/${1}`: status **301**, preserve the query string. Do not enable zone-wide **Always Use HTTPS**, because native DuckDB uses HTTP extension repositories on other hosts.
+- [ ] In **Web Analytics > Manage site > Advanced options > Add rule**, exclude hostname `shell.duckdb.org`, all paths, from automatic analytics injection. Otherwise Cloudflare adds a script from `static.cloudflareinsights.com`, which the proposed CSP blocks.
+- [ ] Test the report-only policies in Chrome, Firefox and Safari: shell startup, extension and remote data loading, file import/download, AWS login and callback, and `/docs/`. Resolve unexpected CSP messages before enforcement. No reporting endpoint is configured here; inspect the browser console. `X-Frame-Options: DENY` blocks framing immediately, even during this report-only stage.
+- [ ] In all three header rules, remove `Content-Security-Policy-Report-Only` and set **`Content-Security-Policy` with the same respective value**. Recheck the page and worker responses after enforcement.
+- [ ] After one week with working HTTPS, change rule 1 to `Strict-Transport-Security: max-age=31536000; includeSubDomains`. Do not add `preload` or enable HSTS for the entire `duckdb.org` zone as part of this task.
+
+Check the public responses, not just the Cloudflare dashboard:
+
+```sh
+curl -sI http://shell.duckdb.org/  # 301 to HTTPS
+for p in / /oauth/callback /static/assets/worker.c9d26c9032.js /docs/; do
+    echo "== $p"
+    curl -sI "https://shell.duckdb.org$p" | grep -i -E '^(strict-transport-security|cross-origin-opener-policy|x-frame-options|x-content-type-options|referrer-policy|content-security-policy):'
+done
+```
+
+After enforcement, all four responses must include the common headers. `/` and `/oauth/callback` must have the page CSP, the worker the static-files CSP, and `/docs/` the documentation CSP. Update the worker URL in this check when deploying a different build.
+
+These rules must not introduce `Cross-Origin-Embedder-Policy` yet. Cross-origin isolation for threaded Wasm is a separate rollout and would require changes to resources loaded from `duckdb.org`.
