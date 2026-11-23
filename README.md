@@ -10,6 +10,7 @@ static/shell/    the shell's JavaScript, named <name>.<hash>.js
 static/vendor/   third-party files, grouped by package and version
 static/assets/   compiled DuckDB engine, worker and shell frontend
 scripts/         page maintenance and terminal upgrade tool
+.github/workflows/check-shell.yml   CI validation for gh-pages
 ```
 
 ## Before and after
@@ -122,8 +123,17 @@ After `.aws login`, JavaScript running in the page can read its AWS credentials.
 Limitations:
 
 - The headers take effect only when they are set at Cloudflare.
-- Nothing runs `check` automatically. It is a manual step until the site is built by a workflow.
+- CI validation is not a deployment gate until the repository administrator requires it before merging. A check after a direct push does not stop GitHub Pages from publishing that push.
 - A copy of the shell on another domain gets none of the headers.
+
+## CI validation
+
+`.github/workflows/check-shell.yml` runs `python3 scripts/shell_page.py check .` with Python 3.12 on pull requests targeting `gh-pages` and on pushes to `gh-pages`. The job is named **Validate shell page** and has read-only repository permissions. It validates the checked-out page; it does not rename files, upgrade packages or deploy anything.
+
+- [ ] After merging this workflow, require **Validate shell page** in the branch protection or ruleset for `gh-pages`, and require changes to go through pull requests. The workflow has no path filter, so documentation-only PRs also receive the required check.
+- [ ] In a separate PR on `main`, add the page check to `scripts/deploy_benchmarks.sh`, after the benchmark files are copied into its `gh-pages` worktree and before it commits and pushes. It can use `scripts/shell_page.py` from that worktree. Pushes made with `GITHUB_TOKEN` do not normally trigger another workflow, so this branch's push check does not replace that pre-publication check.
+
+This workflow can be introduced by a PR targeting `gh-pages`. Pushing this feature branch alone does not trigger it; the push filter is for `gh-pages`, not the feature branch.
 
 ## TODO: configure security headers at Cloudflare
 
@@ -188,9 +198,11 @@ Create these rules in the following order. Later rules replace the CSP set by th
 
 - [ ] In **Rules > Overview**, create a **Single Redirect** for `http://shell.duckdb.org/*` to `https://shell.duckdb.org/${1}`: status **301**, preserve the query string. Do not enable zone-wide **Always Use HTTPS**, because native DuckDB uses HTTP extension repositories on other hosts.
 - [ ] In **Web Analytics > Manage site > Advanced options > Add rule**, exclude hostname `shell.duckdb.org`, all paths, from automatic analytics injection. Otherwise Cloudflare adds a script from `static.cloudflareinsights.com`, which the proposed CSP blocks.
-- [ ] Test the report-only policies in Chrome, Firefox and Safari: shell startup, extension and remote data loading, file import/download, AWS login and callback, and `/docs/`. Resolve unexpected CSP messages before enforcement. No reporting endpoint is configured here; inspect the browser console. `X-Frame-Options: DENY` blocks framing immediately, even during this report-only stage.
-- [ ] In all three header rules, remove `Content-Security-Policy-Report-Only` and set **`Content-Security-Policy` with the same respective value**. Recheck the page and worker responses after enforcement.
-- [ ] After one week with working HTTPS, change rule 1 to `Strict-Transport-Security: max-age=31536000; includeSubDomains`. Do not add `preload` or enable HSTS for the entire `duckdb.org` zone as part of this task.
+- [ ] Test the report-only policies in Chrome, Firefox and Safari: shell startup, extension and remote data loading, file import/download, AWS login and callback, and `/docs/`. Report-only CSP logs violations but does not block scripts or requests. No reporting endpoint is configured here; inspect the browser console. `X-Frame-Options: DENY` blocks framing immediately, even during this report-only stage.
+- [ ] After resolving unexpected CSP violations, replace `Content-Security-Policy-Report-Only` with `Content-Security-Policy` in all three rules, keeping each rule's tested value. This enables blocking. Verify the headers on the page, worker and documentation responses, then repeat the browser checks.
+- [ ] Start HSTS with rule 1's `max-age=86400` (one day). Agree an observation period with the Cloudflare administrator. After verifying HTTPS, certificates, redirects and the AWS callback during that period, increase it to `Strict-Transport-Security: max-age=31536000; includeSubDomains` (one year). A fixed one-week delay is not required by HSTS.
+
+  Browsers store HSTS, and each new response refreshes its duration. Changing Cloudflare settings does not immediately clear policies already stored by visitors, so the shorter initial duration limits the impact of an HTTPS configuration problem. Do not add `preload` or enable HSTS for the entire `duckdb.org` zone as part of this task. On `shell.duckdb.org`, `includeSubDomains` covers only names below `shell.duckdb.org`, not other DuckDB hosts.
 
 Check the public responses, not just the Cloudflare dashboard:
 
