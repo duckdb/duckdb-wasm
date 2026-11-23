@@ -470,6 +470,54 @@ export function testOPFS(baseDir: string, bundle: () => DuckDBBundle): void {
             }
         });
 
+        it('Reading an OPFS file in auto mode does not flush its read-only handle', async () => {
+            // The worker reports every failed flush() over a broadcast channel. Closing a file the worker swallows
+            // the error, the query itself succeeds
+            const channel = `opfs-flush-${Math.random()}`;
+            const source = `
+                const channel = new BroadcastChannel(${JSON.stringify(channel)});
+                const flush = FileSystemSyncAccessHandle.prototype.flush;
+                FileSystemSyncAccessHandle.prototype.flush = function () {
+                    try {
+                        return flush.call(this);
+                    } catch (e) {
+                        channel.postMessage(String(e));
+                        throw e;
+                    }
+                };
+                importScripts(${JSON.stringify(bundle().mainWorker!)});
+            `;
+            const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+            const failures: string[] = [];
+            const listener = new BroadcastChannel(channel);
+            listener.onmessage = e => failures.push(e.data);
+
+            const db2 = new AsyncDuckDB(logger, new Worker(url));
+            await db2.instantiate(bundle().mainModule, bundle().pthreadWorker);
+            await db2.open({ opfs: { fileHandling: 'auto' } });
+            const conn2 = await db2.connect();
+            try {
+                await conn2.query(
+                    `COPY (SELECT range AS i FROM range(1000)) TO 'opfs://readonly.parquet' (FORMAT PARQUET)`,
+                );
+                // Reads take read-only handles, there is nothing to flush when they are closed
+                for (let i = 0; i < 2; ++i) {
+                    const count = await conn2.query(
+                        `SELECT count(*)::INTEGER AS cnt FROM read_parquet('opfs://readonly.parquet')`,
+                    );
+                    expect(count.getChildAt(0)?.get(0)).toEqual(1000);
+                }
+                // Broadcast messages are delivered asynchronously
+                await new Promise(resolve => setTimeout(resolve, 100));
+                expect(failures).toEqual([]);
+            } finally {
+                listener.close();
+                URL.revokeObjectURL(url);
+                await conn2.close();
+                await db2.terminate();
+            }
+        });
+
         it('Persistent secrets live in opfs://home and are shared between instances', async () => {
             const home = await conn.query(`SELECT current_setting('home_directory') AS home`);
             expect(home.getChildAt(0)?.get(0)).toEqual('opfs://home');

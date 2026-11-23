@@ -690,7 +690,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                     // already has nothing to flush
                     const handle: FileSystemSyncAccessHandle = BROWSER_RUNTIME._files?.get(file.fileName);
                     if (handle) {
-                        handle.flush();
+                        // A file prepared for reading has a read-only handle, it has nothing to flush and flush() throws
+                        if (!BROWSER_RUNTIME._opfsScratch?.isReadOnly(file.fileName)) handle.flush();
                         const open = BROWSER_RUNTIME._opfsOpen.get(file.fileName) ?? 0;
                         if (open > 0) BROWSER_RUNTIME._opfsOpen.set(file.fileName, open - 1);
                     }
