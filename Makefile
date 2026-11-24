@@ -15,6 +15,8 @@ LIB_RELWITHDEBINFO_DIR="${ROOT_DIR}/build/RelWithDebInfo"
 LIB_XRAY_DIR="${ROOT_DIR}/build/Xray"
 DUCKDB_WASM_DIR="${ROOT_DIR}/packages/duckdb/src/wasm"
 TARGET=base
+GEN?=ninja
+PORT?=8081
 
 DUCKDB_HASH=${shell cd submodules/duckdb && git reflog -n 1 | head -c 10}
 
@@ -30,7 +32,10 @@ JS_FILTER=
 
 EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
-HTTPFS_SOURCE_DIR=$(abspath ${DUCKDB_HTTPFS_DIRECTORY})
+DUCKDB_HTTPFS_DIRECTORY?=
+DUCKDB_AWS_DIRECTORY?=
+DUCKDB_QUACK_DIRECTORY?=
+VCPKG_TOOLCHAIN_PATH?=${HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 cpp_lib: lib_tests
 
@@ -309,6 +314,23 @@ else
 	yarn workspace @duckdb/duckdb-wasm test
 endif
 
+.PHONY: js_tests_browser_threads
+js_tests_browser_threads: js_release
+	yarn workspace @duckdb/duckdb-wasm test:chrome:threads
+
+.PHONY: js_tests_browser_threads_smoke
+js_tests_browser_threads_smoke: js_release
+	yarn workspace @duckdb/duckdb-wasm test:chrome:threads:smoke
+
+.PHONY: wasm_tests_threads_close_inflight
+wasm_tests_threads_close_inflight: js_release
+	node --test ${ROOT_DIR}/scripts/test_threads_close_inflight.test.cjs
+	node ${ROOT_DIR}/scripts/test_threads_close_inflight.cjs
+
+.PHONY: wasm_tests_pthread_glue
+wasm_tests_pthread_glue:
+	node ${ROOT_DIR}/scripts/test_wasm_pthread_glue.cjs ${ROOT_DIR}/packages/duckdb-wasm/src/bindings/duckdb-threads.js
+
 # Run the duckdb javascript tests in browser
 .PHONY: js_tests_browser
 js_tests_browser: js_debug build/data
@@ -353,46 +375,15 @@ app: wasm wasmpack shell docs js_tests_release
 
 .PHONY: build_loadable build_loadable_threads
 build_loadable:
-	USE_GENERATED_EXPORTED_LIST=no DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize ${TARGET}
+	DUCKDB_HTTPFS_DIRECTORY="${DUCKDB_HTTPFS_DIRECTORY}" \
+	DUCKDB_AWS_DIRECTORY="${DUCKDB_AWS_DIRECTORY}" \
+	DUCKDB_QUACK_DIRECTORY="${DUCKDB_QUACK_DIRECTORY}" \
+	VCPKG_TOOLCHAIN_PATH="${VCPKG_TOOLCHAIN_PATH}" CORES="${CORES}" GEN="${GEN}" \
+	USE_GENERATED_EXPORTED_LIST=no DUCKDB_WASM_LOADABLE_EXTENSIONS=1 \
+		./scripts/wasm_build_lib.sh relsize ${TARGET}
 
 build_loadable_threads:
 	$(MAKE) build_loadable TARGET=threads
-
-.PHONY: check_httpfs_local reconfigure_httpfs_local build_httpfs_local serve_httpfs_local
-check_httpfs_local:
-	@if [ -z "$(strip ${DUCKDB_HTTPFS_DIRECTORY})" ]; then \
-		echo "Set DUCKDB_HTTPFS_DIRECTORY to the HTTPFS source checkout."; \
-		exit 1; \
-	fi
-	@if [ ! -f "${HTTPFS_SOURCE_DIR}/CMakeLists.txt" ]; then \
-		echo "DUCKDB_HTTPFS_DIRECTORY must contain the HTTPFS CMakeLists.txt: ${HTTPFS_SOURCE_DIR}"; \
-		exit 1; \
-	fi
-
-reconfigure_httpfs_local: check_httpfs_local
-	@for httpfs_variant in base threads; do \
-		httpfs_build_dir="build/relsize/$${httpfs_variant}/third_party/duckdb/src/duckdb_ep-build"; \
-		if [ -f "$${httpfs_build_dir}/CMakeCache.txt" ]; then \
-			echo "Reconfiguring $${httpfs_variant} with HTTPFS from ${HTTPFS_SOURCE_DIR}"; \
-			DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
-				cmake -S submodules/duckdb -B "$${httpfs_build_dir}" || exit $$?; \
-		fi; \
-	done
-
-build_httpfs_local: reconfigure_httpfs_local
-	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" $(MAKE) build_loadable TARGET=base
-	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
-		cmake --build build/relsize/base/third_party/duckdb/src/duckdb_ep-build \
-		--target duckdb_local_extension_repo --parallel ${CORES}
-	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" $(MAKE) build_loadable TARGET=threads
-	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
-		cmake --build build/relsize/threads/third_party/duckdb/src/duckdb_ep-build \
-		--target duckdb_local_extension_repo --parallel ${CORES}
-	yarn workspace @duckdb/duckdb-wasm build:release
-
-serve_httpfs_local: build_httpfs_local serve_loadable_base
-	npx http-server packages/duckdb-wasm-app/build/release \
-		-c-1 -o /original.html -a 127.0.0.1 -p 8081
 
 build_loadable_unsigned: build_loadable
         # need to propagate the unsigned flag
@@ -401,13 +392,14 @@ serve_loadable_base: wasmpack shell docs
 	yarn workspace @duckdb/duckdb-wasm-app build:release
 	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
 
-.PHONY: serve_local
-serve_local: build_loadable_unsigned serve_loadable_base
-	npx http-server packages/duckdb-wasm-app/build/release -c-1 -o "/original.html#queries=v0,SET-custom_extension_repository%3D'http%3A%2F%2F127.0.0.1%3A8080%2Fextension_repository'~" -a 127.0.0.1 -p 8080
+.PHONY: serve_base
+serve_base: build_loadable_threads build_loadable serve_loadable_base
+	npx http-server packages/duckdb-wasm-app/build/release -c-1 -o '/original.html?local-extensions' -a 127.0.0.1 -p "${PORT}"
 
-.PHONY: serve
-serve: build_loadable_threads build_loadable serve_loadable_base
-	npx http-server packages/duckdb-wasm-app/build/release -c-1 -o /original.html
+# Cross-origin isolation is required for the wasm_threads bundle; http-server cannot send those headers.
+.PHONY: serve_threads
+serve_threads: build_loadable_threads build_loadable serve_loadable_base
+	python3 ${ROOT_DIR}/scripts/serve_coi.py packages/duckdb-wasm-app/build/release "${PORT}" --open
 
 .PHONY: app_server
 app_server:

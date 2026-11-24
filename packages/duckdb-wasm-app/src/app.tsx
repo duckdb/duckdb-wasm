@@ -2,6 +2,7 @@ import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Versus } from './pages/versus';
 import { Shell } from './pages/shell';
+import { localExtensionConfig } from './local_extensions';
 import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
 import { NavBarContainer } from './components/navbar';
 import { DuckDBConnectionProvider, DuckDBPlatform, DuckDBProvider } from '@duckdb/react-duckdb';
@@ -43,7 +44,7 @@ const element = document.getElementById('root');
 const root = createRoot(element!);
 root.render(
     <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
-        <DuckDBProvider>
+        <DuckDBProvider config={localExtensionConfig(new URL(window.location.href))}>
             <DuckDBConnectionProvider>
                 <BrowserRouter basename={basename}>
                     <Routes>
