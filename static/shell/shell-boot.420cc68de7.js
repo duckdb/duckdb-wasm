@@ -33,11 +33,14 @@ EARLY_WORKER.postMessage({ op: 'instantiate', tag: 0, mainModuleURL: ENGINE_URL 
 // Embedding. A page that puts the shell in an iframe hands it the SQL to run as a plain string, so nothing
 // has to be URL-encoded:
 //   iframe.contentWindow.postMessage({ type: 'duckdb-shell', run: 'INSTALL AND LOAD h3 FROM community; ...' }, '*')
+// Only the framing page is heard. A shell in a tab of its own takes no message, also not from the window that
+// opened it: .aws login works only there, so SQL handed over by another page never runs next to AWS credentials.
 // The shell answers { type: 'duckdb-shell', status: 'ready' } once the engine is up. The listener is installed
 // here, before the frame's load event, and the scripts wait in EMBED_QUEUE until the shell takes them.
 // `?embed` trims the page to the terminal, Share and the color mode.
 const EMBED_QUEUE = [];
 window.addEventListener('message', (event) => {
+  if (window.parent === window || event.source !== window.parent) return;
   const data = event.data;
   if (!data || data.type !== 'duckdb-shell' || typeof data.run !== 'string') return;
   EMBED_QUEUE.push({ sql: data.run, origin: event.origin });
