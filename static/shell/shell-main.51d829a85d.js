@@ -284,15 +284,22 @@ function extraswaps(s) {
   return r;
 }
 
+// An input that creates a secret or names an S3 credential setting stays out of the link, and .share says so
+const SHARE_CREDENTIAL_RE = /\bcreate\s+(or\s+replace\s+)?((temporary|temp|persistent)\s+)?secret\b|\bs3_(access_key_id|secret_access_key|session_token)\b/i;
+let shareLeftOutCredential = false;
+
 window.shareTrack = (line) => {
-  if (isShareable(line)) {
+  if (SHARE_CREDENTIAL_RE.test(line)) {
+    shareLeftOutCredential = true;
+  } else if (isShareable(line)) {
     window.shareHistory.push(line);
   }
 };
 
 window.shareGenerate = () => {
+  const leftOut = shareLeftOutCredential ? '\x1b[90mStatements that set credentials are not in the link.\x1b[0m\r\n' : '';
   if (window.shareHistory.length === 0) {
-    term.write('No commands to share.\r\n');
+    term.write('No commands to share.\r\n' + leftOut);
     return;
   }
   const parts = window.shareHistory.map(s => encodeURIComponent(extraswaps(s)));
@@ -301,7 +308,7 @@ window.shareGenerate = () => {
   const url = baseUrl + '#' + hash;
   window.location.hash = hash;
   // Print as clickable OSC 8 link
-  term.write('\x1b]8;;' + url + '\x07' + url + '\x1b]8;;\x07\r\n');
+  term.write('\x1b]8;;' + url + '\x07' + url + '\x1b]8;;\x07\r\n' + leftOut);
 };
 
 // Unified file registration — called from .files add, .pick, and drag-and-drop.
@@ -854,6 +861,10 @@ function decodeShareComponent(s) {
 }
 
 let startupQueue = [];  // queued commands from URL hash, fed one at a time
+// The URL hash queued statements: the author of the link chose them, so this session may not sign in to AWS
+let startedFromLink = false;
+// The link switched the extension signature check off (boot passes it to the engine)
+const ALLOW_UNSIGNED_EXTENSIONS = new URLSearchParams(location.search).get('allowUnsignedExtensions') === 'true';
 
 let drainTimer = null;
 function drainStartupQueue() {
@@ -930,6 +941,7 @@ function loadFrontendWasm() {
         for (let i = 1; i < splits.length; i++) {
           const sql = extraswaps(decodeShareComponent(splits[i]));
           if (sql) {
+            startedFromLink = true;
             if (isDemo) {
               window.demoQueue.push(sql);
             } else {
@@ -1206,6 +1218,15 @@ function awsStatus() {
   term.write(awsSdkSecretNote(s));
 }
 
+// Sign-in needs a session that only the user typed into. Statements queued by a link ran unread, and a link can
+// switch the extension signature check off: both would act with the credentials.
+function awsRequireCleanSession() {
+  const reason = startedFromLink ? 'this session was opened with queries in its link'
+    : ALLOW_UNSIGNED_EXTENSIONS ? 'this session allows unsigned extensions' : null;
+  if (!reason) return;
+  throw new Error('.aws login is not available: ' + reason + '. Open ' + awsLink(location.origin + location.pathname) + ' in a new tab and sign in there.');
+}
+
 window.awsCommand = (args) => {
   const parts = args.trim().split(/\s+/).filter(Boolean);
   const run = async () => {
@@ -1215,6 +1236,7 @@ window.awsCommand = (args) => {
     if (sub === 'login') {
       const arg = parts[1];
       if (parts.length > 2 || (arg && !AWS_REGION_RE.test(arg))) throw new Error(usage);
+      awsRequireCleanSession();
       await awsLoginStart(arg || 'us-east-1');
     } else if (sub === 'logout' && parts.length === 1) {
       await awsLogout(true);
@@ -1305,9 +1327,7 @@ async function boot() {
     await initWorker();
 
     setStatus('opening database...');
-    const params = new URLSearchParams(location.search);
-    const allowUnsigned = params.get('allowUnsignedExtensions') === 'true';
-    const openConfig = allowUnsigned ? JSON.stringify({ allowUnsignedExtensions: true }) : '';
+    const openConfig = ALLOW_UNSIGNED_EXTENSIONS ? JSON.stringify({ allowUnsignedExtensions: true }) : '';
     await sendToWorkerAsync('open', { config: openConfig });
     await sendToWorkerAsync('connect');
     try {
