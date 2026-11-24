@@ -8,6 +8,7 @@
 #include "duckdb/common/vector/flat_vector.hpp"
 #include "duckdb/common/vector_operations/vector_operations.hpp"
 #include "duckdb/function/table/arrow/arrow_duck_schema.hpp"
+#include "duckdb/main/client_context.hpp"
 #include "duckdb/main/client_properties.hpp"
 #include "duckdb/main/query_result.hpp"
 #include "duckdb/web/status.h"
@@ -84,7 +85,11 @@ struct ArrowIPCWriter::Impl {
             needs_cast |= casted_types.back() != type;
         }
         extension_type_cast = ArrowTypeExtensionData::GetExtensionTypes(context, casted_types);
-        ArrowConverter::ToArrowSchema(schema.get(), casted_types, names, arrow_options);
+        // Extension types may look up the catalog while populating the schema, a GEOMETRY with a CRS resolves the
+        // CRS definition for the geoarrow metadata. A materialized result has already committed its auto-commit
+        // transaction, so start one if none is active (a streaming or explicit transaction is reused).
+        context.RunFunctionInTransaction(
+            [&]() { ArrowConverter::ToArrowSchema(schema.get(), casted_types, names, arrow_options); });
         PatchSchema();
     }
 
