@@ -4,6 +4,45 @@ declare const __karma__: { config: { args: string[] } };
 
 for (const variant of ['base', 'threads']) {
     describe(`loadable HTTPFS (${variant})`, () => {
+        it('loads once in a fresh database with autoload enabled or disabled', async () => {
+            const worker = new Worker(`/static/duckdb-browser-${variant}.worker.js`);
+            const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
+            try {
+                await db.instantiate(
+                    `/static/duckdb-${variant}.wasm`,
+                    variant === 'threads' ? '/static/duckdb-browser-threads.pthread.worker.js' : undefined,
+                );
+                for (const autoload of [true, false]) {
+                    await db.open({
+                        allowUnsignedExtensions: true,
+                        extensionRepository: new URL('/extensions', location.href).href,
+                    });
+                    const conn = await db.connect();
+                    const scalar = async (sql: string) => Number((await conn.query(sql)).getChildAt(0)!.get(0));
+                    try {
+                        expect(
+                            await scalar(
+                                "SELECT count(*) FROM duckdb_extensions() WHERE extension_name='httpfs' AND loaded",
+                            ),
+                        ).toEqual(0);
+                        await conn.query(`SET autoload_known_extensions=${autoload}`);
+                        await conn.query('LOAD httpfs');
+                        await conn.query('LOAD httpfs');
+                        expect(
+                            await scalar(
+                                "SELECT count(*) FROM duckdb_extensions() WHERE extension_name='httpfs' AND loaded",
+                            ),
+                        ).toEqual(1);
+                        expect(await scalar("SELECT count(*) FROM duckdb_secret_types() WHERE type='s3'")).toEqual(1);
+                    } finally {
+                        await conn.close();
+                    }
+                }
+            } finally {
+                await db.terminate();
+            }
+        }, 100000);
+
         it('preserves remote reads, secrets and S3 after loading', async () => {
             const worker = new Worker(`/static/duckdb-browser-${variant}.worker.js`);
             const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
