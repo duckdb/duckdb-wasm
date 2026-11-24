@@ -112,6 +112,7 @@ import { testBatchStream } from './batch_stream.test';
 import { testAsyncBatchStream } from './batch_stream_async.test';
 import { testFilesystem } from './filesystem.test';
 import { testOPFS } from './opfs.test';
+import { testOPFSUnavailable } from './opfs_unavailable.test';
 import { testArrowInsert, testArrowInsertAsync } from './insert_arrow.test';
 import { testJSONInsert, testJSONInsertAsync } from './insert_json.test';
 import { testCSVInsert, testCSVInsertAsync } from './insert_csv.test';
@@ -146,6 +147,8 @@ testBatchStream(() => db!);
 testAsyncBatchStream(() => adb!);
 testFilesystem(() => adb!, resolveData, dataURL, duckdb.DuckDBDataProtocol.HTTP);
 testOPFS(dataURL, () => DUCKDB_BUNDLE!);
+// The refusal is simulated by wrapping the worker script, which only the single-threaded worker allows
+testOPFSUnavailable(() => ({ ...DUCKDB_BUNDLES.base, pthreadWorker: null }));
 testArrowInsert(() => db!);
 testArrowInsertAsync(() => adb!);
 testJSONInsert(() => db!);

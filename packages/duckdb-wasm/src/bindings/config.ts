@@ -40,6 +40,13 @@ export interface DuckDBOPFSConfig {
      * - "manual": Files must be manually registered and dropped.
      */
     fileHandling?: "auto" | "manual";
+    /**
+     * Open as if the browser refused OPFS (`navigator.storage.getDirectory()` rejected), even where it grants it:
+     * OPFS is not mounted, DuckDB's home directory is not opfs://home, and opening or registering `opfs://` files
+     * fails with "OPFS is disabled in the config". Under fileHandling 'auto', `opfs://` strings in the SQL are not
+     * registered. Like a refusal, it only applies to a worker that has not mounted OPFS for an earlier open.
+     */
+    disabled?: boolean;
 }
 
 export enum DuckDBAccessMode {

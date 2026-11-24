@@ -50,7 +50,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _fileInfoCache: Map<number, DuckDBFileInfo>;
     _globalFileInfo: DuckDBGlobalFileInfo | null;
     _preparedHandles: Record<string, FileSystemSyncAccessHandle>;
-    _opfsRoot: FileSystemDirectoryHandle | null;
     _opfsScratch: OPFSScratch | null;
     _opfsScratchMount: Promise<OPFSScratch> | null;
     _logger: Logger | null;
@@ -75,7 +74,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     _udfFunctions: new Map(),
     _globalFileInfo: null,
     _preparedHandles: {} as any,
-    _opfsRoot: null,
     _opfsScratch: null,
     _opfsScratchMount: null,
     _logger: null,
@@ -173,9 +171,6 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
         }
     },
     async assignOPFSRoot(): Promise<void> {
-        if (!BROWSER_RUNTIME._opfsRoot) {
-            BROWSER_RUNTIME._opfsRoot = await navigator.storage.getDirectory();
-        }
         if (!BROWSER_RUNTIME._opfsScratch) {
             // Mounted once per instance, the mount is shared by concurrent callers
             if (!BROWSER_RUNTIME._opfsScratchMount) {
@@ -191,6 +186,17 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
     async mountOPFS(): Promise<void> {
         if (typeof navigator === 'undefined' || typeof navigator.storage?.getDirectory !== 'function') {
             return;
+        }
+        if (!BROWSER_RUNTIME._opfsScratch) {
+            try {
+                await navigator.storage.getDirectory();
+            } catch (e: any) {
+                // The browser can refuse OPFS although it has the API (Firefox private browsing, storage access
+                // denied): the database opens without it, opfs:// paths fail when used. A mount that fails
+                // once OPFS is granted still fails the open
+                console.warn(`OPFS is not available, DuckDB opens without it: ${e?.message ?? e}`);
+                return;
+            }
         }
         await BROWSER_RUNTIME.assignOPFSRoot();
     },
@@ -283,7 +289,8 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
             case 1:
                 return typeof BigInt64Array !== 'undefined';
             case 2:
-                return typeof navigator !== 'undefined' && typeof navigator.storage?.getDirectory === 'function';
+                // OPFS is in use once it is mounted, the API alone does not mean the browser grants it
+                return BROWSER_RUNTIME._opfsScratch !== null;
             default:
                 console.warn(`test for unknown feature: ${feature}`);
                 return false;

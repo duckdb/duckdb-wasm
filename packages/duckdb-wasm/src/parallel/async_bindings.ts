@@ -615,6 +615,9 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     /** Prepare an opfs:// file (or the files a glob pattern matches) for the next queries, returns their names.
      * Registered files are held open until they are dropped, for writing unless `mode` is 'read' */
     public async registerOPFSFileName(name: string, mode: OPFSAccessMode = 'write'): Promise<string[]> {
+        if (this._config.opfs?.disabled) {
+            throw new Error(`Cannot register ${name}: OPFS is disabled in the config (opfs.disabled)`);
+        }
         const task = new WorkerTask<WorkerRequestType.REGISTER_OPFS_FILE_NAME, [string, OPFSAccessMode], string[]>(
             WorkerRequestType.REGISTER_OPFS_FILE_NAME,
             [name, mode],
@@ -715,9 +718,9 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
     }
 
     /** opfs:// files named in SQL are prepared ahead of the query when the config asks for it, whether the
-     * database itself lives in OPFS or not */
+     * database itself lives in OPFS or not. Not with OPFS disabled: an opfs:// string in the SQL can be data */
     private shouldOPFSFileHandling(): boolean {
-        return this.config.opfs?.fileHandling == 'auto';
+        return this.config.opfs?.fileHandling == 'auto' && !this.config.opfs?.disabled;
     }
 
     private async registerOPFSFileFromSQL(text: string) {
