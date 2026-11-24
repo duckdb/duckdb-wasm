@@ -104,11 +104,8 @@ class HTTPWasmClient : public HTTPClient {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			else {
+				xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -356,11 +353,8 @@ class HTTPWasmClient : public HTTPClient {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			else {
+				xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -607,11 +601,8 @@ class HTTPWasmClient : public HTTPClient {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			else {
+				xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -787,11 +778,8 @@ class HTTPWasmClient : public HTTPClient {
 			if (z === "Host") z = "X-Host-Override";
 			if (z.toLowerCase() === "content-type") hasContentType = true;
 			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			else {
+				xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -1004,11 +992,8 @@ class HTTPWasmClient : public HTTPClient {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			else {
+				xhr.setRequestHeader(z, UTF8ToString(ptr2));
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
