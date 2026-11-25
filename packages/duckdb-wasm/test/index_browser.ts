@@ -125,6 +125,7 @@ import { longQueries } from './long_queries.test';
 import { testPivot } from './pivot.test';
 import { testSpill } from './spill.test';
 import { testJsBufferFile } from './js_buffer_file.test';
+import { testAsyncWorkerErrors } from './async_worker_errors.test';
 
 const baseURL = window.location.origin;
 const dataURL = `${baseURL}/data`;
@@ -140,6 +141,7 @@ testAllTypes(() => db!);
 testAllTypesAsync(() => adb!);
 testSpill(() => adb!);
 testJsBufferFile();
+testAsyncWorkerErrors();
 testBindings(() => db!, dataURL);
 testAsyncBindings(() => adb!, dataURL, duckdb.DuckDBDataProtocol.HTTP);
 testBatchStream(() => db!);

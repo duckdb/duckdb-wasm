@@ -98,6 +98,7 @@ import { testFTS } from './fts.test';
 import { testPivot } from './pivot.test';
 import { testSpill } from './spill.test';
 import { testJsBufferFile } from './js_buffer_file.test';
+import { testAsyncWorkerErrors } from './async_worker_errors.test';
 
 testUDF(() => db!);
 longQueries(() => adb!);
@@ -108,6 +109,7 @@ testAllTypes(() => db!);
 testAllTypesAsync(() => adb!);
 testSpill(() => adb!);
 testJsBufferFile();
+testAsyncWorkerErrors();
 testBindings(() => db!, dataDir);
 testAsyncBindings(() => adb!, dataDir, duckdb.DuckDBDataProtocol.NODE_FS);
 testBatchStream(() => db!);
