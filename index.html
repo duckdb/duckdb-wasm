@@ -29,6 +29,8 @@
           data-engine="./static/assets/duckdb-eh.5bdb46b6d8.wasm"></script>
   <style>
     .embed #nav-new, .embed #nav-import, .embed .landingmenu nav > div:has(.hasSub), .embed .hamburger { display: none; }
+    /* main.css hides .downloadlogo (opacity 0) and keeps it as the right-click target over the logo. Show the variant of the active theme. */
+    html.darkmode .downloadlogo-light, html:not(.darkmode) .downloadlogo-dark { display: none; }
   </style>
   <link rel="stylesheet" href="./static/vendor/xterm-5.5.0/xterm.css">
   <link rel="stylesheet" href="https://duckdb.org/css/main.css" crossorigin="anonymous">
@@ -70,7 +72,10 @@
     <div class="headerline">
       <div class="headercontent">
         <div class="duckdbhome">
-          <a href="https://duckdb.org/"><img src="/static/img/DuckDB_inline-lightmode.svg" alt="DuckDB Web Shell" class="downloadlogo"></a>
+          <a href="https://duckdb.org/">
+            <img src="/static/img/DuckDB_inline-lightmode.svg" alt="DuckDB Web Shell" class="downloadlogo downloadlogo-light">
+            <img src="/static/img/DuckDB_inline-darkmode.svg" alt="DuckDB Web Shell" class="downloadlogo downloadlogo-dark">
+          </a>
           <div class="webshell-logo" aria-hidden="true"></div>
         </div>
         <div class="landingmenu">
