@@ -8,7 +8,7 @@ import * as arrow from 'apache-arrow';
 export interface DuckDBBindings {
     open(config: DuckDBConfig): void;
     reset(): void;
-    instantiate(onProgress: (p: InstantiationProgress) => void): Promise<this>;
+    instantiate(onProgress?: (p: InstantiationProgress) => void): Promise<this>;
 
     getVersion(): string;
     getFeatureFlags(): number;
