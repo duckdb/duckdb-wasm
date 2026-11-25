@@ -307,21 +307,31 @@ export class AsyncDuckDB implements AsyncDuckDBBindings {
         task.promiseRejecter(new Error(`unexpected response type: ${response.type.toString()}`));
     }
 
+    /** Reject every pending request, nothing is waiting for the worker afterwards */
+    protected rejectPendingRequests(reason: Error): void {
+        const pending = Array.from(this._pendingRequests.values());
+        this._pendingRequests.clear();
+        for (const task of pending) {
+            task.promiseRejecter(reason);
+        }
+    }
+
     /** Received an error */
     protected onError(event: ErrorEvent): void {
         console.error(event);
-        console.error(`error in duckdb worker: ${event.message} (${event.filename}:${event.lineno})`);
-        this._pendingRequests.clear();
+        const message = `error in duckdb worker: ${event.message} (${event.filename}:${event.lineno})`;
+        console.error(message);
+        this.rejectPendingRequests(new Error(message));
     }
 
     /** The worker was closed */
     protected onClose(): void {
         this._workerShutdownResolver(null);
         if (this._pendingRequests.size != 0) {
-            console.warn(`worker terminated with ${this._pendingRequests.size} pending requests`);
-            return;
+            const message = `worker terminated with ${this._pendingRequests.size} pending requests`;
+            console.warn(message);
+            this.rejectPendingRequests(new Error(message));
         }
-        this._pendingRequests.clear();
     }
 
     /** Is in detached state, no worker defined */
