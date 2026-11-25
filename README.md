@@ -145,7 +145,7 @@ Domain: **`shell.duckdb.org` only**, in the Cloudflare zone that manages that ho
 
 In the Cloudflare dashboard, select the zone, then **Rules > Overview > Create rule > Response Header Transform Rule**. Use **Set static**, not **Add static**: additional CSP headers would impose additional restrictions instead of replacing the policy.
 
-Create these rules in the following order. Later rules replace the CSP set by the first rule.
+Create these rules in the following order. Later rules replace the CSP set by the first rule. Use `Content-Security-Policy` from the start: the browser immediately blocks resources that each policy does not allow.
 
 1. [ ] **Shell: all responses.** Filter:
 
@@ -161,7 +161,7 @@ Create these rules in the following order. Later rules replace the CSP set by th
    X-Frame-Options: DENY
    X-Content-Type-Options: nosniff
    Referrer-Policy: no-referrer
-   Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://duckdb.org; img-src 'self' data: https://duckdb.org; font-src https://duckdb.org; connect-src 'self' https://us-east-1.testing.oauth.signin.aws; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+   Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://duckdb.org; img-src 'self' data: https://duckdb.org; font-src https://duckdb.org; connect-src 'self' https://us-east-1.testing.oauth.signin.aws; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
    ```
 
    This covers `/`, `/index.html`, `/oauth/callback`, `/oauth/callback/` and other paths served with the shell HTML. The testing Sign-In origin above matches `AWS_SIGNIN_CONFIG.endpoint` in the current page. Before a production rollout, replace it with the AWS-approved production origin in both the page configuration and this policy; do not guess that origin or broaden it to all HTTPS hosts.
@@ -175,7 +175,7 @@ Create these rules in the following order. Later rules replace the CSP set by th
    Set only this header; keep the other headers from rule 1:
 
    ```http
-   Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https:; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+   Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https:; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
    ```
 
    This covers `/static/assets/*`, `/static/shell/*` and `/static/vendor/*`. The engine worker needs its own policy: `connect-src https:` allows HTTPS datasets, extensions and AWS API requests. Applying the page's narrower policy to the worker would block those requests.
@@ -189,7 +189,7 @@ Create these rules in the following order. Later rules replace the CSP set by th
    Set only this header; keep the other headers from rule 1:
 
    ```http
-   Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' 'sha256-10m9WSfFWWa1qM9Z5+4hPCEFJP7DRPogeAkaBk+dSEo='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-10m9WSfFWWa1qM9Z5+4hPCEFJP7DRPogeAkaBk+dSEo='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
    ```
 
    This covers `/docs/` and its pages and assets. The SHA-256 permits the inline theme script in the documentation currently on this branch; recalculate it if a documentation update changes that script.
@@ -198,8 +198,6 @@ Create these rules in the following order. Later rules replace the CSP set by th
 
 - [ ] In **Rules > Overview**, create a **Single Redirect** for `http://shell.duckdb.org/*` to `https://shell.duckdb.org/${1}`: status **301**, preserve the query string. Do not enable zone-wide **Always Use HTTPS**, because native DuckDB uses HTTP extension repositories on other hosts.
 - [ ] In **Web Analytics > Manage site > Advanced options > Add rule**, exclude hostname `shell.duckdb.org`, all paths, from automatic analytics injection. Otherwise Cloudflare adds a script from `static.cloudflareinsights.com`, which the proposed CSP blocks.
-- [ ] Test the report-only policies in Chrome, Firefox and Safari: shell startup, extension and remote data loading, file import/download, AWS login and callback, and `/docs/`. Report-only CSP logs violations but does not block scripts or requests. No reporting endpoint is configured here; inspect the browser console. `X-Frame-Options: DENY` blocks framing immediately, even during this report-only stage.
-- [ ] After resolving unexpected CSP violations, replace `Content-Security-Policy-Report-Only` with `Content-Security-Policy` in all three rules, keeping each rule's tested value. This enables blocking. Verify the headers on the page, worker and documentation responses, then repeat the browser checks.
 - [ ] Start HSTS with rule 1's `max-age=86400` (one day). Agree an observation period with the Cloudflare administrator. After verifying HTTPS, certificates, redirects and the AWS callback during that period, increase it to `Strict-Transport-Security: max-age=31536000; includeSubDomains` (one year). A fixed one-week delay is not required by HSTS.
 
   Browsers store HSTS, and each new response refreshes its duration. Changing Cloudflare settings does not immediately clear policies already stored by visitors, so the shorter initial duration limits the impact of an HTTPS configuration problem. Do not add `preload` or enable HSTS for the entire `duckdb.org` zone as part of this task. On `shell.duckdb.org`, `includeSubDomains` covers only names below `shell.duckdb.org`, not other DuckDB hosts.
@@ -214,6 +212,6 @@ for p in / /oauth/callback /static/assets/worker.c9d26c9032.js /docs/; do
 done
 ```
 
-After enforcement, all four responses must include the common headers. `/` and `/oauth/callback` must have the page CSP, the worker the static-files CSP, and `/docs/` the documentation CSP. Update the worker URL in this check when deploying a different build.
+After applying these settings, all four responses must include the common headers. `/` and `/oauth/callback` must have the page CSP, the worker the static-files CSP, and `/docs/` the documentation CSP. Update the worker URL in this check when deploying a different build.
 
 These rules must not introduce `Cross-Origin-Embedder-Policy` yet. Cross-origin isolation for threaded Wasm is a separate rollout and would require changes to resources loaded from `duckdb.org`.
