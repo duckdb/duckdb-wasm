@@ -501,9 +501,9 @@ export const BROWSER_RUNTIME: DuckDBRuntime & {
                         return result;
                     }
 
-                    // Depending on file flags, return nullptr
-                    if (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS) {
-                       return 0;
+                    // A missing file is not found unless the open may create it
+                    if (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS || !(flags & FileFlags.FILE_FLAGS_WRITE)) {
+                        return 0;
                     }
 
                     // Fall back to empty buffered file in the browser
