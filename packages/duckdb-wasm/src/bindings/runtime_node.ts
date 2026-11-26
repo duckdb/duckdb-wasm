@@ -90,8 +90,11 @@ export const NODE_RUNTIME: DuckDBRuntime & {
                 case DuckDBDataProtocol.NODE_FS: {
                     let fd = NODE_RUNTIME._files?.get(file.dataUrl!);
                     if (fd === null || fd === undefined) {
-                        // Depending on file flags, return nullptr
-                        if (flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS) {
+                        // A missing file is not found unless the open may create it
+                        if (
+                            flags & FileFlags.FILE_FLAGS_NULL_IF_NOT_EXISTS ||
+                            (!(flags & FileFlags.FILE_FLAGS_WRITE) && !fs.existsSync(file.dataUrl!))
+                        ) {
                             return 0;
                         }
 

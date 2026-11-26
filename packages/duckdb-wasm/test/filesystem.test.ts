@@ -207,6 +207,14 @@ export function testFilesystem(
             const table = await new arrow.Table<{ cnt: arrow.Int }>(batches);
             expect(table.getChildAt(0)?.get(0)).toBeGreaterThan(60_000);
         });
+
+        it('Reading an unregistered file fails without creating it', async () => {
+            const glob = async () =>
+                (await conn.query(`SELECT count(*)::INTEGER AS n FROM glob('missing.bin')`)).getChildAt(0)?.get(0);
+            expect(await glob()).toBe(0);
+            await expectAsync(db().copyFileToBuffer('missing.bin')).toBeRejected();
+            expect(await glob()).toBe(0);
+        });
     });
 
     describe('Export', () => {
